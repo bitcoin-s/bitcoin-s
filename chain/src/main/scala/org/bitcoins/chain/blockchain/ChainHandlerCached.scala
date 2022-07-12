@@ -3,6 +3,7 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
+  ChainStateDescriptorDAO,
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
@@ -22,6 +23,7 @@ case class ChainHandlerCached(
     override val blockHeaderDAO: BlockHeaderDAO,
     override val filterHeaderDAO: CompactFilterHeaderDAO,
     override val filterDAO: CompactFilterDAO,
+    override val stateDAO: ChainStateDescriptorDAO,
     blockchains: Vector[Blockchain],
     override val blockFilterCheckpoints: Map[
       DoubleSha256DigestBE,
@@ -31,6 +33,7 @@ case class ChainHandlerCached(
     extends ChainHandler(blockHeaderDAO,
                          filterHeaderDAO,
                          filterDAO,
+                         stateDAO,
                          blockFilterCheckpoints) {
 
   /** Gets the best block header from the given [[blockchains]] parameter */
@@ -63,7 +66,8 @@ object ChainHandlerCached {
   def fromDatabase(
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
-      filterDAO: CompactFilterDAO)(implicit
+      filterDAO: CompactFilterDAO,
+      stateDAO: ChainStateDescriptorDAO)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[ChainHandlerCached] = {
     val bestChainsF = blockHeaderDAO.getBlockchains()
@@ -72,6 +76,7 @@ object ChainHandlerCached {
       new ChainHandlerCached(blockHeaderDAO = blockHeaderDAO,
                              filterHeaderDAO = filterHeaderDAO,
                              filterDAO = filterDAO,
+                             stateDAO = stateDAO,
                              blockchains = chains,
                              blockFilterCheckpoints = Map.empty))
   }

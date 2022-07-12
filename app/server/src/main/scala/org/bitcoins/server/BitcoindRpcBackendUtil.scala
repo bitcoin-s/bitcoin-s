@@ -15,8 +15,8 @@ import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.wallet.{Wallet, WalletNotInitialized}
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.{Wallet, WalletNotInitialized}
 import org.bitcoins.zmq.ZMQSubscriber
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -29,12 +29,14 @@ object BitcoindRpcBackendUtil extends Logging {
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(
       bitcoind: BitcoindRpcClient,
-      wallet: WalletApi with NeutrinoWalletApi)(implicit
+      wallet: WalletApi with NeutrinoWalletApi,
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
       system: ActorSystem,
       walletConfig: WalletAppConfig): Future[Unit] = {
     logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
-    for {
+    val res = for {
+      _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
       _ = logger.info(
@@ -69,6 +71,21 @@ object BitcoindRpcBackendUtil extends Logging {
           doSync(syncHeight.height, bitcoindHeight, bitcoind, wallet)
       }
     } yield ()
+    res.onComplete { case _ =>
+      setSyncingFlag(false, bitcoind, chainCallbacksOpt)
+    }
+    res
+  }
+
+  private def setSyncingFlag(
+      syncing: Boolean,
+      bitcoind: BitcoindRpcClient,
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      ec: ExecutionContext) = for {
+    _ <- bitcoind.setSyncing(false)
+  } yield {
+    chainCallbacksOpt.map(_.executeOnSyncFlagChanged(logger, syncing))
+    ()
   }
 
   /** Helper method to sync the wallet until the bitcoind height */
@@ -368,6 +385,7 @@ object BitcoindRpcBackendUtil extends Logging {
   def startBitcoindBlockPolling(
       wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
+      chainCallbacksOpt: Option[ChainCallbacks],
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
       ec: ExecutionContext): Future[Cancellable] = {
@@ -383,49 +401,61 @@ object BitcoindRpcBackendUtil extends Logging {
       def pollBitcoind(): Future[Unit] = {
         if (processingBitcoindBlocks.compareAndSet(false, true)) {
           logger.trace("Polling bitcoind for block count")
-          val res: Future[Unit] = bitcoind.getBlockCount.flatMap { count =>
-            val prevCount = atomicPrevCount.get()
-            if (prevCount < count) {
-              logger.info(
-                s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
 
-              // use .tail so we don't process the previous block that we already did
-              val range = prevCount.to(count).tail
-              val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
-                .mapAsync(parallelism = numParallelism) { height =>
-                  bitcoind.getBlockHash(height).map(_.flip)
+          bitcoind.setSyncing(true)
+          val res: Future[Unit] = for {
+            _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
+            count <- bitcoind.getBlockCount
+            retval <- {
+              val prevCount = atomicPrevCount.get()
+              if (prevCount < count) {
+                logger.info(
+                  s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
+
+                // use .tail so we don't process the previous block that we already did
+                val range = prevCount.to(count).tail
+                val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
+                  .mapAsync(parallelism = numParallelism) { height =>
+                    bitcoind.getBlockHash(height).map(_.flip)
+                  }
+                  .map { hash =>
+                    val _ = atomicPrevCount.incrementAndGet()
+                    hash
+                  }
+                  .toMat(Sink.seq)(Keep.right)
+                  .run()
+
+                val requestsBlocksF = for {
+                  hashes <- hashFs
+                  _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+                } yield logger.debug(
+                  "Successfully polled bitcoind for new blocks")
+
+                requestsBlocksF.failed.foreach { case err =>
+                  val failedCount = atomicPrevCount.get
+                  atomicPrevCount.set(prevCount)
+                  logger.error(
+                    s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+                    err)
                 }
-                .map { hash =>
-                  val _ = atomicPrevCount.incrementAndGet()
-                  hash
-                }
-                .toMat(Sink.seq)(Keep.right)
-                .run()
 
-              val requestsBlocksF = for {
-                hashes <- hashFs
-                _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-              } yield logger.debug(
-                "Successfully polled bitcoind for new blocks")
-
-              requestsBlocksF.failed.foreach { case err =>
-                val failedCount = atomicPrevCount.get
-                atomicPrevCount.set(prevCount)
-                logger.error(
-                  s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
-                  err)
+                requestsBlocksF
+              } else if (prevCount > count) {
+                Future.failed(new RuntimeException(
+                  s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+              } else {
+                logger.debug(s"In sync $prevCount count=$count")
+                Future.unit
               }
-
-              requestsBlocksF
-            } else if (prevCount > count) {
-              Future.failed(new RuntimeException(
-                s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-            } else {
-              logger.debug(s"In sync $prevCount count=$count")
-              Future.unit
             }
+          } yield {
+            retval
           }
-          res.onComplete(_ => processingBitcoindBlocks.set(false))
+
+          res.onComplete { _ =>
+            processingBitcoindBlocks.set(false)
+            setSyncingFlag(false, bitcoind, chainCallbacksOpt)
+          }
           res
         } else {
           logger.info(

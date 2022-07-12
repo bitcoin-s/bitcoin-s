@@ -174,5 +174,10 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     /** calculates the median time passed */
     override def getMedianTimePast(): Future[Long] =
       Future.successful(0L)
+
+    override def isSyncing(): Future[Boolean] = Future.successful(false)
+
+    override def setSyncing(value: Boolean): Future[ChainApi] =
+      Future.successful(this)
   }
 }

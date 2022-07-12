@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS "state_descriptors" ("type" VARCHAR(254) PRIMARY KEY NOT NULL, "descriptor" TEXT NOT NULL);

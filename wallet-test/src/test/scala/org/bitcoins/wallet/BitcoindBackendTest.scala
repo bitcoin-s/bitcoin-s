@@ -1,5 +1,7 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.{ChainCallbacks, OnSyncFlagChanged}
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
@@ -17,6 +19,17 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
     implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
     val bitcoind = walletAppConfigWithBitcoind.bitcoind
     val amountToSend = Bitcoins.one
+    @volatile var syncingValues = Vector.empty[Boolean]
+    val callback: OnSyncFlagChanged = { (value: Boolean) =>
+      Future {
+        synchronized {
+          syncingValues = syncingValues :+ value
+        }
+      }
+    }
+
+    val callbacks = ChainCallbacks.onOnSyncFlagChanged(callback)
+
     for {
       header <- bitcoind.getBestBlockHeader()
 
@@ -40,7 +53,12 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ <-
         wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE, header.height)
 
-      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      syncing <- bitcoind.isSyncing()
+      _ = assert(!syncing)
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind,
+                                                       wallet,
+                                                       Some(callbacks))
+      _ <- AsyncUtil.awaitConditionF { () => bitcoind.isSyncing().map(!_) }
 
       balance <- wallet.getBalance()
 
@@ -50,6 +68,9 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
     } yield {
       assert(balance == amountToSend)
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
+      synchronized {
+        assert(syncingValues == Vector(true, false))
+      }
     }
   }
 
@@ -84,7 +105,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ <- wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE,
                                                       header.height)
 
-      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet, None)
 
       utxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
     } yield {
@@ -172,7 +193,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
           bitcoindAddr)
 
         // sync wallet
-        _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+        _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet, None)
 
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
         confirmedBalance <- wallet.getConfirmedBalance()

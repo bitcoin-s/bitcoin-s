@@ -170,6 +170,11 @@ trait ChainUnitTest
                 destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
+  def withChainStateDescriptorDAO(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(build = () => ChainUnitTest.createChainStateDescriptorDAO(),
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
+  }
+
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => ChainUnitTest.createChainHandler(),
                 () => ChainUnitTest.destroyAllTables())(test)
@@ -197,10 +202,12 @@ trait ChainUnitTest
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
       filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
+      stateDAO = ChainStateDescriptorDAO()
       chainHandler = ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
                                                filterHeaderDAO =
                                                  filterHeaderDAO,
-                                               filterDAO = filterDAO)
+                                               filterDAO = filterDAO,
+                                               stateDAO = stateDAO)
     } yield chainHandler
   }
 
@@ -417,7 +424,8 @@ trait ChainUnitTest
       blockHeaderDAO: BlockHeaderDAO): Future[ReorgFixtureBlockHeaderDAO] = {
     val handler = ChainHandler.fromDatabase(blockHeaderDAO,
                                             CompactFilterHeaderDAO(),
-                                            CompactFilterDAO())
+                                            CompactFilterDAO(),
+                                            ChainStateDescriptorDAO())
     val chainFixtureF = buildChainHandlerCompetingHeaders(handler)
     for {
       chainFixture <- chainFixtureF
@@ -476,6 +484,13 @@ object ChainUnitTest extends ChainVerificationLogger {
 
     val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
     chainHandlerF.map(_.blockHeaderDAO)
+  }
+
+  def createChainStateDescriptorDAO()(implicit
+      ec: ExecutionContext,
+      appConfig: ChainAppConfig): Future[ChainStateDescriptorDAO] = {
+    appConfig.migrate()
+    Future.successful(ChainStateDescriptorDAO())
   }
 
   def createFilterHeaderDAO()(implicit
@@ -655,10 +670,12 @@ object ChainUnitTest extends ChainVerificationLogger {
     lazy val blockHeaderDAO = BlockHeaderDAO()
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
     lazy val filterDAO = CompactFilterDAO()
+    lazy val stateDAO = ChainStateDescriptorDAO()
 
     ChainHandlerCached.fromDatabase(blockHeaderDAO = blockHeaderDAO,
                                     filterHeaderDAO = filterHeaderDAO,
-                                    filterDAO = filterDAO)
+                                    filterDAO = filterDAO,
+                                    stateDAO = stateDAO)
 
   }
 
