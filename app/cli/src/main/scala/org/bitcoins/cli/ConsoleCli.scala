@@ -3,15 +3,7 @@ package org.bitcoins.cli
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.rpc.{
-  AppServerCliCommand,
-  ContactAdd,
-  ContactRemove,
-  ContactsList,
-  LoadWallet,
-  OracleServerCliCommand,
-  ServerlessCliCommand
-}
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
@@ -862,6 +854,7 @@ object ConsoleCli {
           arg[String]("aesPassword")
             .text(
               "The aesPassword for the wallet. This encrypts the seed on disk")
+            .optional()
             .action((aesPassword, conf) =>
               conf.copy(command = conf.command match {
                 case loadWallet: LoadWallet =>
@@ -871,6 +864,7 @@ object ConsoleCli {
               })),
           arg[String]("bip39Password")
             .text("The BIP39 password for the wallet")
+            .optional()
             .action((bip39Password, conf) =>
               conf.copy(command = conf.command match {
                 case loadWallet: LoadWallet =>
@@ -2280,6 +2274,13 @@ object ConsoleCli {
         val args = Seq(up.writeJs(offerHash))
         RequestParam("offer-remove", args)
 
+      case l: LoadWallet =>
+        val walletName = l.walletName.map(Str(_)).getOrElse(Null)
+        val aesPassword =
+          l.password.map(s => Str(s.toStringSensitive)).getOrElse(Null)
+        val bip39Password = l.bip39Password.map(Str(_)).getOrElse(Null)
+        val args = Seq(walletName, aesPassword, bip39Password)
+        RequestParam("loadwallet", args)
       case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
           _: OracleServerCliCommand) =>
         sys.error(s"Command $cmd unsupported")

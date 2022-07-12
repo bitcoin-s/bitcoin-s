@@ -163,7 +163,7 @@ object LoadWallet {
       case walletNameJs :: Nil =>
         LoadWallet(JsonRpcUtil.jsToStringOpt(walletNameJs), None, None)
       case Nil =>
-        LoadWallet(None, None, None)
+        LoadWallet.empty
       case other =>
         throw new IllegalArgumentException(
           s"Bad number of arguments: ${other.length}. Expected: 3")

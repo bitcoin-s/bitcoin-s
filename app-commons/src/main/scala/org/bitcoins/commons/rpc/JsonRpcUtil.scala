@@ -18,9 +18,10 @@ object JsonRpcUtil {
     js match {
       case Arr(arr) =>
         arr.toList match {
-          case walletNameJs :: passJs :: Nil =>
+          case ujson.Str(walletNameJs) :: ujson.Str(
+                passJs) :: ujson.Null :: Nil =>
             (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
-          case walletNameJs :: Nil =>
+          case ujson.Str(walletNameJs) :: ujson.Null :: ujson.Null :: Nil =>
             (jsToStringOpt(walletNameJs), None)
           case Nil =>
             (None, None)

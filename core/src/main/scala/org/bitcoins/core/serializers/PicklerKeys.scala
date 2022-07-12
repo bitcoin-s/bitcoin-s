@@ -162,4 +162,8 @@ object PicklerKeys {
   final val typeKey: String = "type"
   final val payloadKey: String = "payload"
 
+  final val walletNameKey: String = "walletName"
+  final val passwordKey: String = "password"
+  final val bip39PasswordKey: String = "bip39Password"
+
 }

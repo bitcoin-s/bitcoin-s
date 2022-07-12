@@ -3,6 +3,7 @@ package org.bitcoins.commons.serializers
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.RescanComplete
+import org.bitcoins.commons.rpc.LoadWallet
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -1577,5 +1578,31 @@ object Picklers {
 
   private def readRescanComplete(value: ujson.Value): RescanComplete = {
     RescanComplete(value.str)
+  }
+
+  private def writeLoadWallet(l: LoadWallet): ujson.Obj = {
+    ujson.Obj(
+      PicklerKeys.walletNameKey -> ujson.Str(l.walletName.getOrElse("")),
+      //these two will print masked strings, is this what we want?
+      PicklerKeys.passwordKey -> l.password
+        .map(p => ujson.Str(p.toString))
+        .getOrElse(ujson.Null),
+      PicklerKeys.bip39PasswordKey -> l.bip39Password
+        .map(p => ujson.Str(p.toString))
+        .getOrElse(ujson.Null)
+    )
+  }
+
+  private def readLoadWallet(obj: ujson.Obj): LoadWallet = {
+    val walletName = obj(PicklerKeys.walletNameKey).str
+    val password = AesPassword.fromString(obj(PicklerKeys.passwordKey).str)
+    val bip39Password = obj(PicklerKeys.bip39PasswordKey).str
+    LoadWallet(walletName = Some(walletName),
+               password = Some(password),
+               bip39Password = Some(bip39Password))
+  }
+
+  implicit val loadWallet: ReadWriter[LoadWallet] = {
+    readwriter[ujson.Obj].bimap(writeLoadWallet(_), readLoadWallet(_))
   }
 }
