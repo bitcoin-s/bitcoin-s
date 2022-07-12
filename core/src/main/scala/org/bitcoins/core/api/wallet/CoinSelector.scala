@@ -1,9 +1,9 @@
 package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo._
-import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.FeeUnit
 
 import scala.annotation.tailrec
@@ -16,9 +16,9 @@ trait CoinSelector {
     * should only be used for research purposes
     */
   def randomSelection(
-      walletUtxos: Vector[SpendingInfoDb],
+      walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+      feeRate: FeeUnit): Vector[CoinSelectorUtxo] = {
     val randomUtxos = Random.shuffle(walletUtxos)
 
     accumulate(randomUtxos, outputs, feeRate)
@@ -28,11 +28,11 @@ trait CoinSelector {
     * below their fees. Better for high fee environments than accumulateSmallestViable.
     */
   def accumulateLargest(
-      walletUtxos: Vector[SpendingInfoDb],
+      walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+      feeRate: FeeUnit): Vector[CoinSelectorUtxo] = {
     val sortedUtxos =
-      walletUtxos.sortBy(_.output.value).reverse
+      walletUtxos.sortBy(_.prevOut.value).reverse
 
     accumulate(sortedUtxos, outputs, feeRate)
   }
@@ -43,29 +43,29 @@ trait CoinSelector {
     * Has the potential privacy breach of connecting a ton of UTXOs to one address.
     */
   def accumulateSmallestViable(
-      walletUtxos: Vector[SpendingInfoDb],
+      walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
-    val sortedUtxos = walletUtxos.sortBy(_.output.value)
+      feeRate: FeeUnit): Vector[CoinSelectorUtxo] = {
+    val sortedUtxos = walletUtxos.sortBy(_.prevOut.value)
 
     accumulate(sortedUtxos, outputs, feeRate)
   }
 
   /** Greedily selects from walletUtxos in order, skipping outputs with values below their fees */
   def accumulate(
-      walletUtxos: Vector[SpendingInfoDb],
+      walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+      feeRate: FeeUnit): Vector[CoinSelectorUtxo] = {
     val totalValue = outputs.foldLeft(CurrencyUnits.zero) {
       case (totVal, output) => totVal + output.value
     }
 
     @tailrec
     def addUtxos(
-        alreadyAdded: Vector[SpendingInfoDb],
+        alreadyAdded: Vector[CoinSelectorUtxo],
         valueSoFar: CurrencyUnit,
         bytesSoFar: Long,
-        utxosLeft: Vector[SpendingInfoDb]): Vector[SpendingInfoDb] = {
+        utxosLeft: Vector[CoinSelectorUtxo]): Vector[CoinSelectorUtxo] = {
       val fee = feeRate * bytesSoFar
       if (valueSoFar > totalValue + fee) {
         alreadyAdded
@@ -79,7 +79,7 @@ trait CoinSelector {
           addUtxos(alreadyAdded, valueSoFar, bytesSoFar, utxosLeft.tail)
         } else {
           val newAdded = alreadyAdded.:+(nextUtxo)
-          val newValue = valueSoFar + nextUtxo.output.value
+          val newValue = valueSoFar + nextUtxo.prevOut.value
           val approxUtxoSize = CoinSelector.approximateUtxoSize(nextUtxo)
 
           addUtxos(newAdded,
@@ -93,30 +93,38 @@ trait CoinSelector {
     addUtxos(Vector.empty, CurrencyUnits.zero, bytesSoFar = 0L, walletUtxos)
   }
 
-  def calculateUtxoFee(utxo: SpendingInfoDb, feeRate: FeeUnit): CurrencyUnit = {
+  def calculateUtxoFee(
+      utxo: CoinSelectorUtxo,
+      feeRate: FeeUnit): CurrencyUnit = {
     val approxUtxoSize = CoinSelector.approximateUtxoSize(utxo)
     feeRate * approxUtxoSize
   }
 
   def calcEffectiveValue(
-      utxo: SpendingInfoDb,
+      utxo: CoinSelectorUtxo,
       feeRate: FeeUnit): CurrencyUnit = {
     val utxoFee = calculateUtxoFee(utxo, feeRate)
-    utxo.output.value - utxoFee
+    utxo.prevOut.value - utxoFee
   }
 }
 
 object CoinSelector extends CoinSelector {
 
   /** Cribbed from [[https://github.com/bitcoinjs/coinselect/blob/master/utils.js]] */
-  def approximateUtxoSize(utxo: SpendingInfoDb): Long = {
+  def approximateUtxoSize(utxo: CoinSelectorUtxo): Long = {
     val inputBase = 32 + 4 + 1 + 4
     val scriptSize = utxo.redeemScriptOpt match {
       case Some(script) => script.bytes.length
       case None =>
         utxo.scriptWitnessOpt match {
           case Some(script) => script.bytes.length
-          case None         => 107 // PUBKEYHASH
+          case None =>
+            utxo.prevOut.scriptPubKey match {
+              case _: NonWitnessScriptPubKey        => 107 // P2PKH
+              case _: WitnessScriptPubKeyV0         => 107 // P2WPKH
+              case _: TaprootScriptPubKey           => 64 // Single Schnorr signature
+              case _: UnassignedWitnessScriptPubKey => 0 // unknown
+            }
         }
     }
 
@@ -125,10 +133,10 @@ object CoinSelector extends CoinSelector {
 
   def selectByAlgo(
       coinSelectionAlgo: CoinSelectionAlgo,
-      walletUtxos: Vector[SpendingInfoDb],
+      walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      longTermFeeRateOpt: Option[FeeUnit] = None): Vector[SpendingInfoDb] =
+      longTermFeeRateOpt: Option[FeeUnit] = None): Vector[CoinSelectorUtxo] =
     coinSelectionAlgo match {
       case RandomSelection =>
         randomSelection(walletUtxos, outputs, feeRate)
@@ -147,7 +155,7 @@ object CoinSelector extends CoinSelector {
               "longTermFeeRateOpt must be defined for LeastWaste")
         }
       case SelectedUtxos(outPoints) =>
-        val result = walletUtxos.foldLeft(Vector.empty[SpendingInfoDb]) {
+        val result = walletUtxos.foldLeft(Vector.empty[CoinSelectorUtxo]) {
           (acc, utxo) =>
             val outPoint = (utxo.outPoint.txId, utxo.outPoint.vout.toInt)
             if (outPoints(outPoint)) acc :+ utxo else acc
@@ -170,7 +178,7 @@ object CoinSelector extends CoinSelector {
   private case class CoinSelectionResults(
       waste: CurrencyUnit,
       totalSpent: CurrencyUnit,
-      selection: Vector[SpendingInfoDb])
+      selection: Vector[CoinSelectorUtxo])
 
   implicit
   private val coinSelectionResultsOrder: Ordering[CoinSelectionResults] = {
@@ -181,11 +189,11 @@ object CoinSelector extends CoinSelector {
   }
 
   def selectByLeastWaste(
-      walletUtxos: Vector[SpendingInfoDb],
+      walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
       longTermFeeRate: FeeUnit
-  ): Vector[SpendingInfoDb] = {
+  ): Vector[CoinSelectorUtxo] = {
     val target = outputs.map(_.value).sum
     val results = CoinSelectionAlgo.independentAlgos.flatMap { algo =>
       // Skip failed selection attempts
@@ -207,7 +215,7 @@ object CoinSelector extends CoinSelector {
                                             feeRate,
                                             longTermFeeRate)
 
-        val totalSpent = selection.map(_.output.value).sum
+        val totalSpent = selection.map(_.prevOut.value).sum
         CoinSelectionResults(waste, totalSpent, selection)
       }.toOption
     }
@@ -236,7 +244,7 @@ object CoinSelector extends CoinSelector {
     * @return The waste
     */
   def calculateSelectionWaste(
-      utxos: Vector[SpendingInfoDb],
+      utxos: Vector[CoinSelectorUtxo],
       changeCostOpt: Option[CurrencyUnit],
       target: CurrencyUnit,
       feeRate: FeeUnit,

@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
+import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder._
@@ -93,6 +93,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         selectableUtxos = walletUtxos
           .map(_._1)
           .filter(_.output.value > Policy.dustThreshold)
+          .map(CoinSelectorUtxo.fromSpendingInfoDb)
 
         utxos = CoinSelector.selectByAlgo(
           coinSelectionAlgo = coinSelectionAlgo,
@@ -101,7 +102,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           feeRate = feeRate,
           longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
         )
-        filtered = walletUtxos.filter(utxo => utxos.contains(utxo._1))
+        filtered = walletUtxos.filter(utxo =>
+          utxos.exists(_.outPoint == utxo._1.outPoint))
         _ <-
           if (markAsReserved) markUTXOsAsReserved(filtered.map(_._1))
           else Future.unit
