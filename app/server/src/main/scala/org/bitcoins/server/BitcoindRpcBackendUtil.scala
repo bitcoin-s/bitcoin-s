@@ -2,9 +2,11 @@ package org.bitcoins.server
 
 import akka.Done
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.BoundedSourceQueue
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
@@ -106,7 +108,9 @@ object BitcoindRpcBackendUtil extends Logging {
         _ <- {
           if (hasFilters) {
             filterSync(hashes, bitcoind.asInstanceOf[V19BlockFilterRpc], wallet)
-          } else wallet.nodeApi.downloadBlocks(hashes)
+          } else {
+            wallet.nodeApi.downloadBlocks(hashes)
+          }
         }
       } yield wallet
     }
@@ -216,7 +220,10 @@ object BitcoindRpcBackendUtil extends Logging {
       }
       .batch(1000, filter => Vector(filter))(_ :+ _)
       .foldAsync(wallet) { case (wallet, filterRes) =>
-        wallet.processCompactFilters(filterRes)
+        for {
+          compactFilters <- wallet.processCompactFilters(filterRes)
+          _ <- compactFilters.updateUtxoPendingStates()
+        } yield compactFilters
       }
       .run()
     runStream.map { _ =>
@@ -237,45 +244,19 @@ object BitcoindRpcBackendUtil extends Logging {
     import system.dispatcher
     new NodeApi {
 
+      private val queueF: Future[BoundedSourceQueue[DoubleSha256Digest]] = {
+        walletF.map(w =>
+          buildWalletStream(bitcoindRpcClient, w, chainCallbacksOpt))
+      }
+
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
-        val numParallelism = Runtime.getRuntime.availableProcessors()
-        walletF
-          .flatMap { wallet =>
-            val runStream: Future[Done] = Source(blockHashes)
-              .mapAsync(parallelism = numParallelism) { hash =>
-                val blockF = bitcoindRpcClient.getBlockRaw(hash)
-                val blockHeaderResultF = bitcoindRpcClient.getBlockHeader(hash)
-                for {
-                  block <- blockF
-                  blockHeaderResult <- blockHeaderResultF
-                } yield (block, blockHeaderResult)
-              }
-              .foldAsync(wallet) { case (wallet, (block, blockHeaderResult)) =>
-                val blockProcessedF = wallet.processBlock(block)
-                val executeCallbackF: Future[Wallet] = blockProcessedF.flatMap {
-                  wallet =>
-                    chainCallbacksOpt match {
-                      case None           => Future.successful(wallet)
-                      case Some(callback) =>
-                        //this can be slow as we aren't batching headers at all
-                        val headerWithHeights =
-                          Vector((blockHeaderResult.height, block.blockHeader))
-                        val f = callback
-                          .executeOnBlockHeaderConnectedCallbacks(
-                            logger,
-                            headerWithHeights)
-                        f.map(_ => wallet)
-                    }
-                }
-                executeCallbackF
-              }
-              .run()
-            runStream.map(_ => wallet)
-          }
-          .flatMap(_.updateUtxoPendingStates())
-          .map(_ => ())
+        val offers: Future[Unit] = queueF.map { queue =>
+          blockHashes.foreach(hash => queue.offer(hash))
+        }
+
+        offers.map(_ => ())
       }
 
       /** Broadcasts the given transaction over the P2P network
@@ -285,6 +266,54 @@ object BitcoindRpcBackendUtil extends Logging {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
     }
+  }
+
+  private def buildWalletStream(
+      bitcoindRpcClient: BitcoindRpcClient,
+      initWallet: Wallet,
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      system: ActorSystem): BoundedSourceQueue[DoubleSha256Digest] = {
+    import system.dispatcher
+
+    val numParallelism = Runtime.getRuntime.availableProcessors()
+    val source: Source[Wallet, BoundedSourceQueue[DoubleSha256Digest]] = {
+      Source
+        .queue[DoubleSha256Digest](128)
+        .mapAsync[(Block, GetBlockHeaderResult)](numParallelism) {
+          case hash: DoubleSha256Digest =>
+            val blockF = bitcoindRpcClient.getBlockRaw(hash)
+            val blockHeaderResultF = bitcoindRpcClient.getBlockHeader(hash)
+            for {
+              block <- blockF
+              blockHeaderResult <- blockHeaderResultF
+            } yield (block, blockHeaderResult)
+        }
+        .foldAsync(initWallet) { case (wallet, (block, blockHeaderResult)) =>
+          val blockProcessedF = wallet.processBlock(block)
+          val updatedUtxosF = blockProcessedF
+            //.flatMap(_.updateUtxoPendingStates())
+            .flatMap(_ => blockProcessedF)
+          val executeCallbackF: Future[Wallet] = updatedUtxosF.flatMap {
+            wallet =>
+              chainCallbacksOpt match {
+                case None           => Future.successful(wallet)
+                case Some(callback) =>
+                  //this can be slow as we aren't batching headers at all
+                  val headerWithHeights =
+                    Vector((blockHeaderResult.height, block.blockHeader))
+                  val f = callback
+                    .executeOnBlockHeaderConnectedCallbacks(logger,
+                                                            headerWithHeights)
+                  f.map(_ => wallet)
+              }
+          }
+          executeCallbackF
+        }
+    }
+
+    source
+      .toMat(Sink.ignore)(Keep.left)
+      .run()
   }
 
   /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
