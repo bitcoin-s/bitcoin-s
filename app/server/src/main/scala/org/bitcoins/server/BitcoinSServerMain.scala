@@ -31,6 +31,7 @@ import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
+import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.BitcoindException.InWarmUp
@@ -123,8 +124,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletCreationTimeOpt = Some(creationTime))(chainConf, system)
 
     val defaultApi =
-      BitGoFeeRateProvider(Some(walletConf.requiredConfirmations),
-                           //walletConf.network, bitgo doesn't have segregated networks?
+      MempoolSpaceProvider(HourFeeTarget,
+                           walletConf.network,
                            walletConf.torConf.socks5ProxyParams)
     val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
       defaultApi,
