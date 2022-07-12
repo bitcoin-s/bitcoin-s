@@ -85,7 +85,7 @@ class TaprootTxTests extends BitcoinSAsyncTest {
     }
   }
 
-  it must "run the failure test cases through the script interpreter" ignore {
+  it must "run the failure test cases through the script interpreter" in {
     testCases.foreach { testCase =>
       testCase.failureTxSigComponentsOpt match {
         case Some(_) =>

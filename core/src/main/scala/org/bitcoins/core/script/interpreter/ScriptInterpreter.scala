@@ -812,7 +812,6 @@ sealed abstract class ScriptInterpreter {
       program: ExecutionInProgressScriptProgram,
       opCount: Int): ExecutedScriptProgram = {
     val scriptByteVector = BytesUtil.toByteVector(program.script)
-
     val sigVersion = program.txSignatureComponent.sigVersion
     val isTaprootSigVersion =
       sigVersion == SigVersionTapscript || sigVersion == SigVersionTaprootKeySpend
