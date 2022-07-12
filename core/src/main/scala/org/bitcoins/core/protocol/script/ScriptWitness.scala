@@ -339,11 +339,11 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
       //means SIGHASH_DEFAULT is implicitly encoded
       //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#Common_signature_message
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-      TaprootKeyPath(sig, None, annexOpt)
+      new TaprootKeyPath(sig, None, annexOpt)
     } else if (sigBytes.length == 65) {
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
       val hashType = HashType.fromByte(sigBytes.last)
-      TaprootKeyPath(sig, Some(hashType), annexOpt)
+      new TaprootKeyPath(sig, Some(hashType), annexOpt)
     } else {
       sys.error(
         s"Unknown sig bytes length, should be 64 or 65, got=${sigBytes.length}")
