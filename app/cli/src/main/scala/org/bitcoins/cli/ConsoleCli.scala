@@ -8,6 +8,7 @@ import org.bitcoins.commons.rpc.{
   ContactAdd,
   ContactRemove,
   ContactsList,
+  LoadWallet,
   OracleServerCliCommand,
   ServerlessCliCommand
 }
@@ -842,6 +843,38 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case wps: KeyManagerPassphraseSet =>
                   wps.copy(password = pass)
+                case other => other
+              }))
+        ),
+      cmd("loadwallet")
+        .action((_, conf) => conf.copy(command = LoadWallet.empty))
+        .text("Loads a wallet with the given wallet name")
+        .children(
+          arg[String]("walletName")
+            .text("The wallet name to load")
+            .required()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case loadWallet: LoadWallet =>
+                  loadWallet.copy(walletName = Some(walletName))
+                case other => other
+              })),
+          arg[String]("aesPassword")
+            .text(
+              "The aesPassword for the wallet. This encrypts the seed on disk")
+            .action((aesPassword, conf) =>
+              conf.copy(command = conf.command match {
+                case loadWallet: LoadWallet =>
+                  val pw = AesPassword.fromString(aesPassword)
+                  loadWallet.copy(password = Some(pw))
+                case other => other
+              })),
+          arg[String]("bip39Password")
+            .text("The BIP39 password for the wallet")
+            .action((bip39Password, conf) =>
+              conf.copy(command = conf.command match {
+                case loadWallet: LoadWallet =>
+                  loadWallet.copy(bip39Password = Some(bip39Password))
                 case other => other
               }))
         ),

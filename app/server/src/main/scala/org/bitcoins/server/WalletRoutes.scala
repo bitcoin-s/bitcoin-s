@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
 import grizzled.slf4j.Logging
+import org.bitcoins.commons.rpc.LoadWallet
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb

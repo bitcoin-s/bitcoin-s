@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
+import org.bitcoins.commons.rpc.JsonRpcUtil
 import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.DLC
@@ -290,7 +291,8 @@ case class ExportSeed(
 object ExportSeed extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExportSeed] = Try {
-    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    val (walletNameOpt, passwordOpt) =
+      JsonRpcUtil.jsToWalletNameAndPassword(jsArr)
     ExportSeed(walletNameOpt, passwordOpt)
   }
 }
@@ -302,7 +304,8 @@ case class MarkSeedAsBackedUp(
 object MarkSeedAsBackedUp extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[MarkSeedAsBackedUp] = Try {
-    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    val (walletNameOpt, passwordOpt) =
+      JsonRpcUtil.jsToWalletNameAndPassword(jsArr)
     MarkSeedAsBackedUp(walletNameOpt, passwordOpt)
   }
 }
@@ -314,7 +317,8 @@ case class GetSeedBackupTime(
 object GetSeedBackupTime extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetSeedBackupTime] = Try {
-    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    val (walletNameOpt, passwordOpt) =
+      JsonRpcUtil.jsToWalletNameAndPassword(jsArr)
     GetSeedBackupTime(walletNameOpt, passwordOpt)
   }
 }
@@ -332,7 +336,7 @@ object ImportSeed extends ServerJsonModels {
         Try {
           val walletNameOpt = jsToStringOpt(walletNameJs)
           val mnemonic = jsToMnemonics(mnemonicJs)
-          val pass = jsToAESPassword(passJs)
+          val pass = JsonRpcUtil.jsToAESPassword(passJs)
 
           ImportSeed(walletNameOpt, mnemonic, pass)
         }
@@ -368,7 +372,7 @@ object ImportXprv extends ServerJsonModels {
         Try {
           val walletNameOpt = jsToStringOpt(walletNameJs)
           val xprv = ExtPrivateKey.fromString(xprvJs.str)
-          val pass = jsToAESPassword(passJs)
+          val pass = JsonRpcUtil.jsToAESPassword(passJs)
 
           ImportXprv(walletNameOpt, xprv, pass)
         }
@@ -1545,34 +1549,6 @@ object GetDLCOffer {
   }
 }
 
-case class LoadWallet(
-    walletName: Option[String],
-    password: Option[AesPassword],
-    bip39Password: Option[String])
-
-object LoadWallet extends ServerJsonModels {
-
-  def fromJsArr(arr: ujson.Arr): Try[LoadWallet] = Try {
-    arr.arr.toList match {
-      case _ :: _ :: bip39PasswordJs :: Nil =>
-        val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(arr)
-        LoadWallet(walletNameOpt,
-                   passwordOpt,
-                   nullToOpt(bip39PasswordJs).map(_.str))
-      case _ :: _ :: Nil =>
-        val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(arr)
-        LoadWallet(walletNameOpt, passwordOpt, None)
-      case walletNameJs :: Nil =>
-        LoadWallet(jsToStringOpt(walletNameJs), None, None)
-      case Nil =>
-        LoadWallet(None, None, None)
-      case other =>
-        throw new IllegalArgumentException(
-          s"Bad number of arguments: ${other.length}. Expected: 3")
-    }
-  }
-}
-
 trait ServerJsonModels {
 
   def jsToOracleAnnouncementTLV(js: Value): OracleAnnouncementTLV =
@@ -1653,13 +1629,9 @@ trait ServerJsonModels {
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
-  def nullToOpt(value: Value): Option[Value] =
-    value match {
-      case Null                      => None
-      case Arr(arr) if arr.isEmpty   => None
-      case Arr(arr) if arr.size == 1 => Some(arr.head)
-      case _: Value                  => Some(value)
-    }
+  def nullToOpt(value: Value): Option[Value] = {
+    JsonRpcUtil.nullToOpt(value)
+  }
 
   def jsToSchnorrDigitalSignature(js: Value): SchnorrDigitalSignature =
     js match {
@@ -1692,46 +1664,8 @@ trait ServerJsonModels {
       vec :+ jsToOracleAttestmentTLV(tlv))
   }
 
-  def jsToAESPassword(js: Value): Option[AesPassword] = {
-    js match {
-      case Str(str) =>
-        Some(AesPassword.fromString(str))
-      case Null =>
-        None
-      case Arr(_) | False | True | Num(_) | Obj(_) =>
-        throw new IllegalArgumentException("password must be a string or null")
-    }
-  }
-
   def jsToStringOpt(js: Value): Option[String] = {
-    js match {
-      case Str(str) =>
-        Some(str)
-      case Null =>
-        None
-      case Arr(_) | False | True | Num(_) | Obj(_) =>
-        throw new IllegalArgumentException("password must be a string or null")
-    }
-  }
-
-  def jsToWalletNameAndPassword(
-      js: Value): (Option[String], Option[AesPassword]) = {
-    js match {
-      case Arr(arr) =>
-        arr.toList match {
-          case walletNameJs :: passJs :: Nil =>
-            (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
-          case walletNameJs :: Nil =>
-            (jsToStringOpt(walletNameJs), None)
-          case Nil =>
-            (None, None)
-          case other =>
-            throw new IllegalArgumentException(
-              s"Bad number of arguments: ${other.length}. Expected: 2")
-        }
-      case _: Value =>
-        throw new IllegalArgumentException(s"Expected json.Arr")
-    }
+    JsonRpcUtil.jsToStringOpt(js)
   }
 
   def jsToMnemonics(js: Value): MnemonicCode = {

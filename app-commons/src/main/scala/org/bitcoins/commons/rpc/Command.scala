@@ -1,7 +1,7 @@
 package org.bitcoins.commons.rpc
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{AesPassword, Sha256Digest}
 
 import java.net.{InetSocketAddress, URI}
 import scala.util.{Failure, Try}
@@ -132,6 +132,41 @@ object DLCContactRemove {
         val exn = new IllegalArgumentException(
           s"Bad number or arguments to contact-remove, got=${other.length} expected=1")
         Failure(exn)
+    }
+  }
+}
+
+case class LoadWallet(
+    walletName: Option[String],
+    password: Option[AesPassword],
+    bip39Password: Option[String])
+    extends CommandRpc
+    with AppServerCliCommand
+
+object LoadWallet {
+
+  val empty: LoadWallet =
+    LoadWallet(walletName = None, password = None, bip39Password = None)
+
+  def fromJsArr(arr: ujson.Arr): Try[LoadWallet] = Try {
+    arr.arr.toList match {
+      case _ :: _ :: bip39PasswordJs :: Nil =>
+        val (walletNameOpt, passwordOpt) =
+          JsonRpcUtil.jsToWalletNameAndPassword(arr)
+        LoadWallet(walletNameOpt,
+                   passwordOpt,
+                   JsonRpcUtil.nullToOpt(bip39PasswordJs).map(_.str))
+      case _ :: _ :: Nil =>
+        val (walletNameOpt, passwordOpt) =
+          JsonRpcUtil.jsToWalletNameAndPassword(arr)
+        LoadWallet(walletNameOpt, passwordOpt, None)
+      case walletNameJs :: Nil =>
+        LoadWallet(JsonRpcUtil.jsToStringOpt(walletNameJs), None, None)
+      case Nil =>
+        LoadWallet(None, None, None)
+      case other =>
+        throw new IllegalArgumentException(
+          s"Bad number of arguments: ${other.length}. Expected: 3")
     }
   }
 }
