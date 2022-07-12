@@ -89,10 +89,10 @@ class TaprootTxTests extends BitcoinSAsyncTest {
     testCases.foreach { testCase =>
       testCase.failureTxSigComponentsOpt match {
         case Some(_) =>
-            withClue(testCase.comment) {
-              val result = ScriptInterpreter.run(testCase.failProgramOpt.get)
-              assert(result != ScriptOk)
-            }
+          withClue(testCase.comment) {
+            val result = ScriptInterpreter.run(testCase.failProgramOpt.get)
+            assert(result != ScriptOk)
+          }
         case None =>
           ()
       }
