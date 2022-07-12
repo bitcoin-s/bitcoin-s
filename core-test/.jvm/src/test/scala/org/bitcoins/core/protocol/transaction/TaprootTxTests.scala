@@ -85,14 +85,18 @@ class TaprootTxTests extends BitcoinSAsyncTest {
     }
   }
 
-  it must "run the failure test cases through the script interpreter" ignore {
+  private val skip = Vector("siglen/invalid_csa_neg")
+
+  it must "run the failure test cases through the script interpreter" in {
     testCases.foreach { testCase =>
       testCase.failureTxSigComponentsOpt match {
         case Some(_) =>
-          withClue(testCase.comment) {
-            val result = ScriptInterpreter.run(testCase.failProgramOpt.get)
-            assert(result != ScriptOk)
-          }
+          if (!skip.contains(testCase.comment)) {
+            withClue(testCase.comment) {
+              val result = ScriptInterpreter.run(testCase.failProgramOpt.get)
+              assert(result != ScriptOk)
+            }
+          } else ()
         case None =>
           ()
       }
