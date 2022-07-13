@@ -50,6 +50,21 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   behavior of "NeutrinoNode"
 
+  it must "have not syncing status after sync" in {
+    nodeConnectedWithBitcoinds =>
+      val node = nodeConnectedWithBitcoinds.node
+      val bitcoind = nodeConnectedWithBitcoinds.bitcoinds(0)
+
+      for {
+        _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
+        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
+        syncing2 = node.getDataMessageHandler.syncing
+      } yield {
+        assert(!syncing && !syncing2)
+      }
+  }
+
   it must "switch to different peer and sync if current is unavailable" in {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node

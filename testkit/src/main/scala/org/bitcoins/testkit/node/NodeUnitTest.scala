@@ -519,8 +519,6 @@ object NodeUnitTest extends P2PLogger {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
-      _ = assert(!syncing)
 
     } yield node
   }
