@@ -9,6 +9,7 @@ import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.{AesPassword, CryptoUtil}
 import org.bitcoins.keymanager.{ReadMnemonicError, WalletStorage}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.keymanager.config.KeyManagerAppConfig.DEFAULT_WALLET_NAME
 import scodec.bits.BitVector
 
 import java.nio.file.{Files, Path}
@@ -29,11 +30,11 @@ case class KeyManagerAppConfig(
 
   lazy val networkParameters: NetworkParameters = chain.network
 
-  lazy val walletNameOpt: Option[String] = {
+  lazy val walletName: String = {
     val nameOpt = config.getStringOrNone(s"bitcoin-s.wallet.walletName")
     require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
             s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
-    nameOpt
+    nameOpt.getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME)
   }
 
   lazy val seedFolder: Path = baseDatadir
@@ -45,10 +46,10 @@ case class KeyManagerAppConfig(
   }
 
   private val seedFileName: String = {
-    val prefix = walletNameOpt match {
-      case Some(walletName) =>
-        s"$walletName-"
-      case None => ""
+    val prefix = if (walletName == DEFAULT_WALLET_NAME) {
+      DEFAULT_WALLET_NAME
+    } else {
+      s"$walletName-"
     }
     s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}"
   }
@@ -214,6 +215,10 @@ case class KeyManagerAppConfig(
 }
 
 object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {
+
+  /** Default wallet name is the empty string for now */
+  final val DEFAULT_WALLET_NAME: String = ""
+
   override val moduleName: String = "keymanager"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit

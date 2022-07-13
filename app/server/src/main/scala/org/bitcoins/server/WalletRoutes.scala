@@ -1011,7 +1011,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             KeyManagerAppConfig.moduleName -> Obj(
               "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString)
             ),
-            "walletName" -> Str(walletConf.walletNameOpt.getOrElse("")),
+            "walletName" -> Str(walletConf.walletName),
             "xpub" -> Str(accountDb.xpub.toString),
             "hdPath" -> Str(accountDb.hdAccount.toString),
             "height" -> Num(walletState.height),
