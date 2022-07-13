@@ -12,7 +12,7 @@ import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
   AddressLabelTagName,
   AddressLabelTagType,
@@ -28,7 +28,8 @@ import upickle.default._
 
 import java.nio.file.{Files, Path}
 import java.time.Instant
-import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
@@ -972,16 +973,14 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("estimatefee", _) =>
       complete {
-        val feeRateF = wallet
-          .getFeeRate()
-          .recover { case scala.util.control.NonFatal(exn) =>
-            logger.error(
-              s"Failed to fetch fee rate from wallet, returning -1 sats/vbyte",
-              exn)
-            SatoshisPerVirtualByte.negativeOne
-          }
+        val start = System.currentTimeMillis()
+        val feeRateF = getFeeRate()
 
-        feeRateF.map(f => Server.httpSuccess(f.toSatsPerVByte))
+        feeRateF.map { f =>
+          logger.info(s"Retrieved fee rate ${f.toSatsPerVByte}, it took ${System
+            .currentTimeMillis() - start}ms")
+          Server.httpSuccess(f.toSatsPerVByte)
+        }
       }
 
     case ServerCommand("getdlcwalletaccounting", _) =>
@@ -1041,6 +1040,28 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       Server.httpSuccess(s"$numDropped label dropped")
     } else {
       Server.httpSuccess(s"$numDropped labels dropped")
+    }
+  }
+
+  /** Gets the fee rate for the wallet with a timeout on the request of 1 second */
+  private def getFeeRate(): Future[FeeUnit] = {
+    val resultF = wallet
+      .getFeeRate()
+      .recover { case scala.util.control.NonFatal(exn) =>
+        logger.error(
+          s"Failed to fetch fee rate from wallet, returning -1 sats/vbyte",
+          exn)
+        SatoshisPerVirtualByte.negativeOne
+      }
+    //due to tor variability, we need to make sure we give a prompt response.
+    //timeout the fee rate request after 1 second
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4460#issuecomment-1182325014
+    try {
+      val result = Await.result(resultF, 1.second)
+      Future.successful(result)
+    } catch {
+      case scala.util.control.NonFatal(_) =>
+        Future.successful(SatoshisPerVirtualByte.negativeOne)
     }
   }
 }
