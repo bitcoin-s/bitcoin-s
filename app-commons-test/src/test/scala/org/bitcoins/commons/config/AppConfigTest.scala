@@ -72,7 +72,6 @@ class AppConfigTest extends BitcoinSAsyncTest {
     val appConfig = BitcoinSAppConfig.fromClassPathConfig()
     assert(appConfig.nodeConf.network == RegTest)
     assert(appConfig.walletConf.requiredConfirmations == 6)
-    assert(!appConfig.chainConf.forceRecalcChainWork)
   }
 
   it must "fill in typesafe config variables correctly" in {

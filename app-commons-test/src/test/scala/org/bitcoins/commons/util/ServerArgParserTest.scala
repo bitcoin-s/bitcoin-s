@@ -27,7 +27,6 @@ class ServerArgParserTest extends BitcoinSUnitTest {
       "my.cool.site.com",
       "--datadir",
       s"${datadirString}",
-      "--force-recalc-chainwork",
       "--wsbind",
       "ws.my.cool.site.com",
       "--wsport",
@@ -42,7 +41,6 @@ class ServerArgParserTest extends BitcoinSUnitTest {
     assert(config.hasPath(datadirPathConfigKey))
     assert(config.hasPath(s"bitcoin-s.server.rpcbind"))
     assert(config.hasPath(s"bitcoin-s.server.rpcport"))
-    assert(config.hasPath(s"bitcoin-s.chain.force-recalc-chainwork"))
     assert(config.hasPath("bitcoin-s.server.wsport"))
     assert(config.hasPath("bitcoin-s.server.wsbind"))
 

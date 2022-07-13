@@ -5,7 +5,7 @@ import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
+import org.bitcoins.commons.config.AppConfigFactory
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.util.Mutable
@@ -120,9 +120,6 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   lazy val filterBatchSize: Int =
     config.getInt(s"bitcoin-s.${moduleName}.neutrino.filter-batch-size")
 
-  lazy val forceRecalcChainWork: Boolean =
-    config.getBooleanOrElse(s"bitcoin-s.$moduleName.force-recalc-chainwork",
-                            default = false)
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {

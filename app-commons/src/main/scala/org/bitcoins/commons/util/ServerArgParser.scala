@@ -91,9 +91,6 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
     }
   }
 
-  lazy val forceChainWorkRecalc: Boolean =
-    commandLineArgs.exists(_.toLowerCase == "--force-recalc-chainwork")
-
   /** Converts the given command line args into a Config object.
     * There is one exclusion to this, we cannot write the --conf
     * flag to the config file as that is self referential
@@ -117,12 +114,6 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
       case None => s""
     }
 
-    val forceChainWorkRecalcString = if (forceChainWorkRecalc) {
-      s"bitcoin-s.chain.force-recalc-chainwork=$forceChainWorkRecalc\n"
-    } else {
-      ""
-    }
-
     val wsBindString = wsBindOpt match {
       case Some(wsBind) =>
         s"bitcoin-s.server.wsbind=$wsBind\n"
@@ -141,7 +132,6 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
       rpcPortString +
         rpcBindString +
         datadirString +
-        forceChainWorkRecalcString +
         wsBindString +
         wsPortString
 
