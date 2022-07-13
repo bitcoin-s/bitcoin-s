@@ -161,16 +161,41 @@ trait WalletRpc { self: Client =>
       walletName: String): Future[BitcoinAddress] =
     getRawChangeAddressInternal(Some(addressType), Some(walletName))
 
+  private def getWalletInfo(
+      walletName: Option[String]): Future[GetWalletInfoResult] = {
+    self.version.flatMap {
+      case BitcoindVersion.V21 | BitcoindVersion.V22 | BitcoindVersion.V23 |
+          BitcoindVersion.Unknown =>
+        bitcoindCall[GetWalletInfoResultPostV21]("getwalletinfo",
+                                                 List(Json.toJson(walletName)))
+      case BitcoindVersion.V16 | BitcoindVersion.V17 | BitcoindVersion.V18 |
+          BitcoindVersion.V19 | BitcoindVersion.V20 |
+          BitcoindVersion.Experimental =>
+        bitcoindCall[GetWalletInfoResultPreV21]("getwalletinfo",
+                                                List(Json.toJson(walletName)))
+    }
+  }
+
   def getWalletInfo: Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
+    getWalletInfo(None)
   }
 
   def getWalletInfo(walletName: String): Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResult]("getwalletinfo",
-                                      uriExtensionOpt =
-                                        Some(walletExtension(walletName)))
+    getWalletInfo(Some(walletExtension(walletName)))
   }
 
+  /** @return
+    */
+  /**  def getWalletInfo: Future[GetWalletInfoResult] = {
+    *    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
+    *  }
+    *
+    *  def getWalletInfo(walletName: String): Future[GetWalletInfoResult] = {
+    *    bitcoindCall[GetWalletInfoResult]("getwalletinfo",
+    *                                      uriExtensionOpt =
+    *                                        Some(walletExtension(walletName)))
+    *  }
+    */
   def keyPoolRefill(
       keyPoolSize: Int = 100,
       walletNameOpt: Option[String] = None): Future[Unit] = {

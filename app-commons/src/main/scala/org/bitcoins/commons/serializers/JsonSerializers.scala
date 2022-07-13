@@ -15,7 +15,7 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime}
 import org.bitcoins.commons.jsonmodels.SerializedTransaction.tokenToString
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
@@ -418,8 +418,13 @@ object JsonSerializers {
       (__ \ "details").read[Vector[TransactionDetails]] and
       (__ \ "hex").read[Transaction])(GetTransactionResult)
 
-  implicit val getWalletInfoResultReads: Reads[GetWalletInfoResult] =
-    Json.reads[GetWalletInfoResult]
+  implicit val getWalletInfoResultReadsPreV21: Reads[
+    GetWalletInfoResultPreV21] =
+    Json.reads[GetWalletInfoResultPreV21]
+
+  implicit val getWalletInfoResultReadsPostV21: Reads[
+    GetWalletInfoResultPostV21] =
+    Json.reads[GetWalletInfoResultPostV21]
 
   implicit val importMultiErrorReads: Reads[ImportMultiError] =
     Json.reads[ImportMultiError]
@@ -496,6 +501,21 @@ object JsonSerializers {
       (__ \ "otheraccount").readNullable[String] and
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "abandoned").readNullable[Boolean])(ListTransactionsResult)
+
+  /**  implicit val listDescriptorsReads: Reads[listDescriptorsResult]=
+    *    ((__ \ "desc").read[String] and
+    *      (__ \ "next").read[String] and
+    *      (__ \ "range").read[Array[Int]] and
+    *      (__ \ "timestamp").readNullable[ZonedDateTime] and
+    *      (__ \ "internal").read[Boolean] and
+    *      (__ \ "active").read[Boolean])(listDescriptorsResult)
+    */
+
+  implicit val descriptorsClassReads: Reads[descriptorsClass] =
+    Json.reads[descriptorsClass]
+
+  implicit val listDescriptorsReads: Reads[listDescriptorsResult] =
+    Json.reads[listDescriptorsResult]
 
   implicit val unspentOutputReads: Reads[UnspentOutput] =
     Json.reads[UnspentOutput]

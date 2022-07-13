@@ -1,11 +1,7 @@
 package org.bitcoins.rpc.v22
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  DecodeScriptResultPreV22,
-  DecodeScriptResultV22,
-  GetNodeAddressesResultPostV22
-}
+import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
@@ -16,8 +12,9 @@ import org.bitcoins.testkit.rpc.{
   BitcoindRpcTestUtil
 }
 import org.scalatest.Assertion
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
 
@@ -162,7 +159,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       result
   }
 
-
   it should "return a network address" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] =
@@ -175,4 +171,54 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       succeed
     }
   }
+
+  /**        it should "output descriptors" in { nodePair: FixtureParam =>
+    *              val client=nodePair.node1
+    *              client.createWallet("descriptorWallet", descriptors = true )
+    *                val resultWalletF: Future[Vector[listDescriptorsResult]] =
+    *                client.listDescriptors()
+    *                resultWalletF.map{resultWallet =>
+    *                  resultWallet.foreach {result =>
+    *                    result.descriptors.map{ descrResult => assert(descrResult.desc.isInstanceOf[String] &&
+    *                    descrResult.timestamp.isInstancesOf[Int] && descrResult.active.isInstanceOf[Boolean] &&
+    *                    descrResult.internal.isInstanceOf[Boolean] && descrResult.range.isInstanceOf[Array[(Int,Int)]]
+    *                    && descrResult.next.isInstanceOf[Int]
+    *                    )
+    *          }
+    *                    assert (result.wallet_name == "descriptorWallet" && result.descriptors.desc.isDefined
+    *                      && result.descriptors.timestamp.isInstanceOf[Int] && result.descriptors.active.isInstanceOf[Boolean]
+    *                      && result.descriptors.internal.isInstanceOf[Boolean] && result.descriptors.range.isInstanceOf[Array[(Int,Int)]] &&
+    *                      result.descriptors.next.isInstanceOf[Int]
+    *              )
+    *                  }
+    *              }
+    *           }
+    */
+
+  it should "output descriptors" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val walletsUF: Future[Vector[String]] = client.listWallets
+    val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
+      val walletsUI: Future[Vector[Unit]] =
+        Future.sequence(walletsU.map { wallet =>
+          client.unloadWallet(wallet)
+        })
+      walletsUI
+    }.flatten
+    Await.ready(walletsUnload, 3.seconds)
+    val descriptorWallet: Future[CreateWalletResult] =
+      client.createWallet("descriptorWallet", descriptors = true)
+    Await.ready(descriptorWallet, 3.seconds)
+    val resultWalletF: Future[Vector[listDescriptorsResult]] =
+      client.listDescriptors()
+    descriptorWallet.flatMap { _ =>
+      resultWalletF.map { resultWallet =>
+        resultWallet.map { result =>
+          assert(result.wallet_name == "descriptorWallet")
+        }
+        succeed
+      }
+    }
+  }
+
 }

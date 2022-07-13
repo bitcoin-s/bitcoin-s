@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.client.v22
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetNodeAddressesResultPostV22
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  listDescriptorsResult,
+  GetNodeAddressesResultPostV22
+}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.rpc.client.common.Client
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
@@ -11,6 +14,20 @@ import scala.concurrent.Future
 
 trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
   self: Client =>
+
+  def listDescriptors(): Future[Vector[listDescriptorsResult]] = {
+    bitcoindCall[Vector[listDescriptorsResult]](
+      "listdescriptors"
+    )
+  }
+
+  def listDescriptors(
+      Private: Option[Boolean]): Future[Vector[listDescriptorsResult]] = {
+    bitcoindCall[Vector[listDescriptorsResult]](
+      "listdescriptors",
+      List(Json.toJson(Private))
+    )
+  }
 
   private def getNodeAddresses(
       count: Option[Int]): Future[Vector[GetNodeAddressesResultPostV22]] = {

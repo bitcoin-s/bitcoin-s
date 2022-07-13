@@ -10,10 +10,12 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV21
+import org.scalatest.Assertion
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
 import java.io.File
 import java.nio.file.Files
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
 
@@ -205,4 +207,19 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
         hashes <- client.generateToDescriptor(numBlocks, descriptor)
       } yield assert(hashes.size == numBlocks)
   }
+
+  it should "create a descriptor wallet" in { client: BitcoindV21RpcClient =>
+    val descriptorWallet: Future[CreateWalletResult] =
+      client.createWallet("descriptorWallet", descriptors = true)
+    Await.ready(descriptorWallet, 5.seconds)
+    val checkDescriptor: Future[Assertion] =
+      client.getWalletInfo("descriptorWallet").map {
+        case walletInfoPostV21: GetWalletInfoResultPostV21 =>
+          assert(walletInfoPostV21.descriptors)
+        case _: GetWalletInfoResultPreV21 =>
+          fail("descriptors only available on V21 or higher")
+      }
+    checkDescriptor
+  }
+
 }
