@@ -75,6 +75,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     for {
       startedConfig <- startedConfigF
+      chainApi = ChainHandler.fromDatabase()
+      //on server startup we assume we are out of sync with the bitcoin network
+      //so we set this flag to true.
+      _ <- chainApi.setSyncing(true)
       start <- {
         nodeConf.nodeType match {
           case _: InternalImplementationNodeType =>
@@ -273,7 +277,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       client <- bitcoindRpcConf.clientF
       _ <- client.start()
     } yield client
-
     val tuple = buildWsSource
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
