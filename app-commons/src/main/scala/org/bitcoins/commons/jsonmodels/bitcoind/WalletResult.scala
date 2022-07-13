@@ -476,11 +476,11 @@ case class listDescriptorsResult(
 
 case class descriptorsClass(
     desc: String,
-    timestamp: Option[ZonedDateTime],
+    timestamp: ZonedDateTime,
     active: Boolean,
-    internal: Boolean,
-    range: Array[(Int, Int)],
-    next: String
+    internal: Option[Boolean],
+    range: Option[Array[(Int, Int)]],
+    next: Option[Int]
 ) extends WalletResult
 
 case class EmbeddedResult(

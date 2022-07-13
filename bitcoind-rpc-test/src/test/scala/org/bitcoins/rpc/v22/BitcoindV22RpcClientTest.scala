@@ -205,10 +205,10 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         })
       walletsUI
     }.flatten
-    Await.ready(walletsUnload, 3.seconds)
+    Await.ready(walletsUnload, 5.seconds)
     val descriptorWallet: Future[CreateWalletResult] =
       client.createWallet("descriptorWallet", descriptors = true)
-    Await.ready(descriptorWallet, 3.seconds)
+    Await.ready(descriptorWallet, 5.seconds)
     val resultWalletF: Future[Vector[listDescriptorsResult]] =
       client.listDescriptors()
     descriptorWallet.flatMap { _ =>
