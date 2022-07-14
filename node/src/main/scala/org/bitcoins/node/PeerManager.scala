@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem, Props}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p.{
@@ -12,8 +12,9 @@ import org.bitcoins.core.p2p.{
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageSender
+import org.bitcoins.node.networking.{P2PClient, P2PClientSupervisor}
+import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -38,7 +39,13 @@ case class PeerManager(
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
-  val finder: PeerFinder = PeerFinder(paramPeers, node, skipPeers = () => peers)
+  val supervisor: ActorRef =
+    system.actorOf(Props[P2PClientSupervisor](),
+                   name =
+                     BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
+
+  val finder: PeerFinder =
+    PeerFinder(paramPeers, node, skipPeers = () => peers, supervisor)
 
   def connectedPeerCount: Int = _peerData.size
 

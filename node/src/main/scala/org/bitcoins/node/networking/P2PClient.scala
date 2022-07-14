@@ -1,9 +1,10 @@
 package org.bitcoins.node.networking
 
-import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
+import akka.actor.{Actor, ActorRef, Props, Terminated}
 import akka.event.LoggingReceive
 import akka.io.Tcp.SO.KeepAlive
 import akka.io.{IO, Tcp}
+import akka.pattern.ask
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.{NetworkHeader, NetworkMessage, NetworkPayload}
@@ -26,7 +27,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageReceiverState
 }
-import org.bitcoins.node.util.BitcoinSNodeUtil
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
 import scodec.bits.ByteVector
@@ -559,20 +559,23 @@ object P2PClient extends P2PLogger {
           config)
 
   def apply(
-      context: ActorRefFactory,
       peer: Peer,
       peerMessageReceiver: PeerMessageReceiver,
       onReconnect: Peer => Future[Unit],
       onStop: Peer => Future[Unit],
-      maxReconnectionTries: Int = 16)(implicit
-      config: NodeAppConfig): P2PClient = {
-    val actorRef = context.actorOf(props = props(peer,
-                                                 peerMessageReceiver,
-                                                 onReconnect,
-                                                 onStop,
-                                                 maxReconnectionTries),
-                                   name =
-                                     BitcoinSNodeUtil.createActorName(getClass))
+      maxReconnectionTries: Int = 16,
+      supervisor: ActorRef)(implicit config: NodeAppConfig): P2PClient = {
+
+    val clientProps = props(peer,
+                            peerMessageReceiver,
+                            onReconnect,
+                            onStop,
+                            maxReconnectionTries)
+
+    implicit val timeout: Timeout = Timeout(10.second)
+    val actorRefF = supervisor ? clientProps
+    val actorRef =
+      Await.result(actorRefF, timeout.duration).asInstanceOf[ActorRef]
 
     P2PClient(actorRef, peer)
   }

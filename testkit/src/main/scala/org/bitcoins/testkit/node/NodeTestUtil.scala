@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.node
 
-import akka.actor.{ActorRefFactory, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -18,16 +18,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 abstract class NodeTestUtil extends P2PLogger {
 
-  def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(implicit
-      ref: ActorRefFactory,
+  def client(
+      peer: Peer,
+      peerMsgReceiver: PeerMessageReceiver,
+      supervisor: ActorRef)(implicit
       conf: NodeAppConfig
   ): P2PClient = {
-    P2PClient.apply(ref,
-                    peer,
+    P2PClient.apply(peer,
                     peerMsgReceiver,
                     (_: Peer) => Future.unit,
                     (_: Peer) => Future.unit,
-                    16)
+                    16,
+                    supervisor)
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]

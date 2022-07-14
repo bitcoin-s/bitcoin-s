@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.{ActorRef, ActorSystem, Cancellable}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
@@ -17,7 +17,8 @@ import scala.util.Random
 case class PeerFinder(
     paramPeers: Vector[Peer],
     node: NeutrinoNode,
-    skipPeers: () => Vector[Peer])(implicit
+    skipPeers: () => Vector[Peer],
+    supervisor: ActorRef)(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
@@ -177,7 +178,7 @@ case class PeerFinder(
 
   /** creates and initialises a new test peer */
   def tryPeer(peer: Peer): Unit = {
-    _peerData.put(peer, PeerData(peer, node))
+    _peerData.put(peer, PeerData(peer, node, supervisor))
     _peerData(peer).peerMessageSender.connect()
   }
 

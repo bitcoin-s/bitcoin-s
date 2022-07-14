@@ -221,14 +221,13 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[PeerHandler] = {
     import system.dispatcher
     val nodeF = buildNode(peer, walletCreationTimeOpt)
-    val peerMsgReceiverF = nodeF.map { node =>
-      PeerMessageReceiver.preConnection(peer, node)
-    }
     //the problem here is the 'self', this needs to be an ordinary peer message handler
     //that can handle the handshake
     val peerHandlerF = for {
-      peerMsgReceiver <- peerMsgReceiverF
-      client = NodeTestUtil.client(peer, peerMsgReceiver)
+      node <- nodeF
+      peerMsgReceiver = PeerMessageReceiver.preConnection(peer, node)
+      supervisor = node.peerManager.supervisor
+      client = NodeTestUtil.client(peer, peerMsgReceiver, supervisor)
       peerMsgSender = PeerMessageSender(client)
     } yield PeerHandler(client, peerMsgSender)
 
