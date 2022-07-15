@@ -7,7 +7,10 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairV22, BitcoindRpcTestUtil}
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesCachedPairV22,
+  BitcoindRpcTestUtil
+}
 import org.scalatest.Assertion
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
@@ -220,49 +223,48 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     *  }
     */
 
-  it should "output descriptors" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val descriptorWallet: Future[CreateWalletResult] =
-      client.createWallet("descriptorWallet", descriptors = true)
-    Await.ready(descriptorWallet, 10.seconds)
-    val resultWalletF: Future[Vector[listDescriptorsResult]] = {
-      client.listDescriptors(walletName = "descriptorWallet")
-    }
-    descriptorWallet.flatMap { _ =>
-      resultWalletF.map { resultWallet =>
-        resultWallet.map { result =>
-          assert(result.wallet_name == "descriptorWallet")
+  it should "output wallet name from listdescriptors" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val descriptorWallet: Future[CreateWalletResult] =
+        client.createWallet("descriptorWallet", descriptors = true)
+      Await.ready(descriptorWallet, 10.seconds)
+      val resultWalletF: Future[listDescriptorsResult] = {
+        client.listDescriptors(walletName = "descriptorWallet")
+      }
+      descriptorWallet.flatMap { _ =>
+        resultWalletF.map { resultWallet =>
+          assert(resultWallet.wallet_name == "descriptorWallet")
         }
         succeed
       }
-    }
+
   }
 
-  it should "output descriptors all " in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val descriptorWallet: Future[CreateWalletResult] =
-      client.createWallet("descriptorWallet", descriptors = true)
-    Await.ready(descriptorWallet, 10.seconds)
-    val resultWalletF: Future[Vector[listDescriptorsResult]] = {
-      client.listDescriptors(walletName = "descriptorWallet")
-    }
-    val resultOfDescriptorTest: Future[Assertion] = descriptorWallet.flatMap { _ =>
-      resultWalletF.map { resultWallet =>
-        resultWallet.map { result =>
-          val descriptorsA: Vector[Assertion] = result.descriptors.map { dArray =>
-            dArray.map{ d =>
-              assert(d.desc.isInstanceOf[String] && d.isInstanceOf[ZonedDateTime]
-              && d.active.isInstanceOf[Boolean] && d.internal.isInstanceOf[Boolean]
-              && d.range.isInstanceOf[Vector[(Int, Int)]] && d.next.isInstanceOf[Int]
-            )
-            succeed
+
+  it should "output descriptors from listdescriptors" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val descriptorWallet: Future[CreateWalletResult] =
+        client.createWallet("descriptorWalletTwo", descriptors = true)
+      Await.ready(descriptorWallet, 10.seconds)
+      val resultWalletF: Future[listDescriptorsResult] = {
+        client.listDescriptors(walletName = "descriptorWalletTwo")
+      }
+      descriptorWallet.flatMap { _ =>
+        resultWalletF.map { resultWallet =>
+          resultWallet.descriptors.map { d =>
+            assert(
+              d.desc.isInstanceOf[String] && d.timestamp
+                .isInstanceOf[ZonedDateTime]
+                && d.active.isInstanceOf[Boolean] && d.internal
+                .isInstanceOf[Option[Boolean]]
+                && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
+                .isInstanceOf[Option[Int]])
           }
-          }
-          descriptorsA
+          succeed
         }
       }
-    }
-    resultOfDescriptorTest
   }
 
   /**  it should "output more than one txid" in { nodePair: FixtureParam=>

@@ -15,8 +15,8 @@ import scala.concurrent.Future
 trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
   self: Client =>
 
-  def listDescriptors(): Future[Vector[listDescriptorsResult]] = {
-    bitcoindCall[Vector[listDescriptorsResult]](
+  def listDescriptors(): Future[listDescriptorsResult] = {
+    bitcoindCall[listDescriptorsResult](
       "listdescriptors"
     )
   }
@@ -32,8 +32,8 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
 
   def listDescriptors(
       Private: Option[Boolean],
-      walletName: String): Future[Vector[listDescriptorsResult]] = {
-    bitcoindCall[Vector[listDescriptorsResult]](
+      walletName: String): Future[listDescriptorsResult] = {
+    bitcoindCall[listDescriptorsResult](
       "listdescriptors",
       List(Json.toJson(Private)),
       uriExtensionOpt = Some(walletExtension(walletName))
@@ -41,16 +41,15 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
   }
 
   def listDescriptors(
-      Private: Option[Boolean]): Future[Vector[listDescriptorsResult]] = {
-    bitcoindCall[Vector[listDescriptorsResult]](
+      Private: Option[Boolean]): Future[listDescriptorsResult] = {
+    bitcoindCall[listDescriptorsResult](
       "listdescriptors",
       List(Json.toJson(Private))
     )
   }
 
-  def listDescriptors(
-      walletName: String): Future[Vector[listDescriptorsResult]] = {
-    bitcoindCall[Vector[listDescriptorsResult]](
+  def listDescriptors(walletName: String): Future[listDescriptorsResult] = {
+    bitcoindCall[listDescriptorsResult](
       "listdescriptors",
       uriExtensionOpt = Some(walletExtension(walletName))
     )

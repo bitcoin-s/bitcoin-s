@@ -480,7 +480,7 @@ case class descriptorsClass(
     timestamp: ZonedDateTime,
     active: Boolean,
     internal: Option[Boolean],
-    range: Option[Vector[(Int,Int)]],
+    range: Option[Vector[Int]],
     next: Option[Int]
 ) extends WalletResult
 
