@@ -10,7 +10,7 @@ import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import java.net.{InetAddress, UnknownHostException}
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
 import scala.util.Random
 
@@ -131,7 +131,9 @@ case class PeerFinder(
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
-          peers.foreach(tryPeer)
+          val peersF = Future.sequence(peers.map(tryPeer))
+          Await.result(peersF, 10.seconds)
+          ()
         }
       }
     }
@@ -139,9 +141,10 @@ case class PeerFinder(
   override def start(): Future[PeerFinder] = {
     logger.debug(s"Starting PeerFinder")
 
-    (getPeersFromParam ++ getPeersFromConfig).distinct.foreach(tryPeer)
+    val initPeerF = Future.sequence(
+      (getPeersFromParam ++ getPeersFromConfig).distinct.map(tryPeer))
 
-    if (nodeAppConfig.enablePeerDiscovery) {
+    val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
         (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
@@ -159,6 +162,8 @@ case class PeerFinder(
       logger.info("Peer discovery disabled.")
       Future.successful(this)
     }
+
+    initPeerF.flatMap(_ => peerDiscoveryF)
   }
 
   override def stop(): Future[PeerFinder] = {
@@ -167,19 +172,21 @@ case class PeerFinder(
     //delete try queue
     _peersToTry.clear()
 
-    _peerData.foreach(_._2.client.close())
+    val closeF = Future.sequence(_peerData.map(_._2.client.map(_.close())))
 
-    AsyncUtil
+    val waitStopF = AsyncUtil
       .retryUntilSatisfied(_peerData.isEmpty,
                            interval = 1.seconds,
-                           maxTries = 10)
+                           maxTries = 30)
       .map(_ => this)
+
+    closeF.flatMap(_ => waitStopF)
   }
 
   /** creates and initialises a new test peer */
-  def tryPeer(peer: Peer): Unit = {
+  def tryPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer, PeerData(peer, node, supervisor))
-    _peerData(peer).peerMessageSender.connect()
+    _peerData(peer).peerMessageSender.map(_.connect())
   }
 
   def removePeer(peer: Peer): Unit = {

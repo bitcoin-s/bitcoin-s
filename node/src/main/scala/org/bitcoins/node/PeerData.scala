@@ -10,6 +10,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 /** PeerData contains objects specific to a peer associated together
@@ -19,10 +20,13 @@ case class PeerData(
     node: Node,
     supervisor: ActorRef
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig) {
+  import system.dispatcher
 
-  lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
+  lazy val peerMessageSender: Future[PeerMessageSender] = {
+    client.map(PeerMessageSender(_))
+  }
 
-  lazy val client: P2PClient = {
+  lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
       PeerMessageReceiver.newReceiver(node = node, peer = peer)
     P2PClient(

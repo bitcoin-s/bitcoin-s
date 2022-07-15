@@ -72,12 +72,15 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
       val peerMsgReceiver =
         PeerMessageReceiver(normal, node, peer)(system, node.nodeAppConfig)
 
-      val newMsgReceiver = peerMsgReceiver.disconnect()
+      val newMsgReceiverF = peerMsgReceiver.disconnect()
 
-      assert(
-        newMsgReceiver.state
-          .isInstanceOf[PeerMessageReceiverState.Disconnected])
-      assert(newMsgReceiver.isDisconnected)
+      newMsgReceiverF.map { newMsgReceiver =>
+        assert(
+          newMsgReceiver.state
+            .isInstanceOf[PeerMessageReceiverState.Disconnected])
+        assert(newMsgReceiver.isDisconnected)
+      }
+
   }
 
   it must "change a peer message receiver to be initializing disconnect" in {
@@ -118,12 +121,12 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
           .isInstanceOf[PeerMessageReceiverState.InitializedDisconnect])
       assert(!newMsgReceiver.isDisconnected)
 
-      val disconnectRecv = newMsgReceiver.disconnect()
-
-      assert(
-        disconnectRecv.state
-          .isInstanceOf[PeerMessageReceiverState.InitializedDisconnectDone])
-      assert(disconnectRecv.isDisconnected)
-      assert(disconnectRecv.state.clientDisconnectP.isCompleted)
+      newMsgReceiver.disconnect().map { disconnectRecv =>
+        assert(
+          disconnectRecv.state
+            .isInstanceOf[PeerMessageReceiverState.InitializedDisconnectDone])
+        assert(disconnectRecv.isDisconnected)
+        assert(disconnectRecv.state.clientDisconnectP.isCompleted)
+      }
   }
 }

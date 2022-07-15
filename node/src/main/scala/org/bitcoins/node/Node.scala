@@ -72,9 +72,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
-  def clients: Vector[P2PClient] = peerManager.clients
+  def clients: Vector[Future[P2PClient]] = peerManager.clients
 
-  def peerMsgSenders: Vector[PeerMessageSender] = peerManager.peerMsgSenders
+  def peerMsgSenders: Vector[Future[PeerMessageSender]] =
+    peerManager.peerMsgSenders
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -82,7 +83,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * `private[node]`.
     */
   def send(msg: NetworkPayload, peer: Peer): Future[Unit] = {
-    peerManager.peerData(peer).peerMessageSender.sendMsg(msg)
+    val senderF = peerManager.peerData(peer).peerMessageSender
+    senderF.flatMap(_.sendMsg(msg))
   }
 
   /** Starts our node */
@@ -163,7 +165,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
           Future.sequence(
-            peerMsgSenders.map(_.sendInventoryMessage(transactions: _*)))
+            peerMsgSenders.map(
+              _.flatMap(_.sendInventoryMessage(transactions: _*))))
         } else {
           Future.failed(
             new RuntimeException(
@@ -186,7 +189,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           peerManager
             .peerData(peer)
             .peerMessageSender
-            .sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*)
+            .flatMap(_.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
+                                          blockHashes: _*))
         case None =>
           throw new RuntimeException(
             "IBD not started yet. Cannot query for blocks.")

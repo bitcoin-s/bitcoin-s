@@ -16,7 +16,6 @@ import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -244,14 +243,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
     val networkMsg = NetworkMessage(conf.network, msg)
     client.actor ! networkMsg
-
-    msg match {
-      case _: ExpectsResponse =>
-        logger.debug(s"${msg.commandName} expects response")
-        client.actor ! ExpectResponseCommand(msg)
-      case _ =>
-    }
-
     Future.unit
   }
 }

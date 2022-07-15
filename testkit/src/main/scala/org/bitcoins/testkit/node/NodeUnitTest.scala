@@ -227,7 +227,7 @@ object NodeUnitTest extends P2PLogger {
       node <- nodeF
       peerMsgReceiver = PeerMessageReceiver.preConnection(peer, node)
       supervisor = node.peerManager.supervisor
-      client = NodeTestUtil.client(peer, peerMsgReceiver, supervisor)
+      client <- NodeTestUtil.client(peer, peerMsgReceiver, supervisor)
       peerMsgSender = PeerMessageSender(client)
     } yield PeerHandler(client, peerMsgSender)
 

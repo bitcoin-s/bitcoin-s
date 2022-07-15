@@ -22,8 +22,9 @@ abstract class NodeTestUtil extends P2PLogger {
       peer: Peer,
       peerMsgReceiver: PeerMessageReceiver,
       supervisor: ActorRef)(implicit
-      conf: NodeAppConfig
-  ): P2PClient = {
+      conf: NodeAppConfig,
+      system: ActorSystem
+  ): Future[P2PClient] = {
     P2PClient.apply(peer,
                     peerMsgReceiver,
                     (_: Peer) => Future.unit,

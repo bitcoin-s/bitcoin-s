@@ -73,9 +73,6 @@
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
-    <!-- See exceptions thrown in actor-->
-    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
-
     <!-- See peer details -->
     <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
 
