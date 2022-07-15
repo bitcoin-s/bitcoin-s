@@ -7,13 +7,11 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV22,
-  BitcoindRpcTestUtil
-}
+import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairV22, BitcoindRpcTestUtil}
 import org.scalatest.Assertion
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
+import java.time.ZonedDateTime
 import scala.concurrent.{Await, Future}
 
 class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
@@ -195,22 +193,41 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     *           }
     */
 
+  /**  it should "output descriptors" in { nodePair: FixtureParam =>
+    *    val client = nodePair.node1
+    *    val walletsUF: Future[Vector[String]] = client.listWallets
+    *    val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
+    *      val walletsUI: Future[Vector[Unit]] =
+    *        Future.sequence(walletsU.map { wallet =>
+    *          client.unloadWallet(wallet)
+    *        })
+    *      walletsUI
+    *    }.flatten
+    *    Await.ready(walletsUnload, 5.seconds)
+    *    val descriptorWallet: Future[CreateWalletResult] =
+    *      client.createWallet("descriptorWallet", descriptors = true)
+    *    Await.ready(descriptorWallet, 5.seconds)
+    *    val resultWalletF: Future[Vector[listDescriptorsResult]] =
+    *      client.listDescriptors()
+    *    descriptorWallet.flatMap { _ =>
+    *      resultWalletF.map { resultWallet =>
+    *        resultWallet.map { result =>
+    *          assert(result.wallet_name == "descriptorWallet")
+    *        }
+    *        succeed
+    *      }
+    *    }
+    *  }
+    */
+
   it should "output descriptors" in { nodePair: FixtureParam =>
     val client = nodePair.node1
-    val walletsUF: Future[Vector[String]] = client.listWallets
-    val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
-      val walletsUI: Future[Vector[Unit]] =
-        Future.sequence(walletsU.map { wallet =>
-          client.unloadWallet(wallet)
-        })
-      walletsUI
-    }.flatten
-    Await.ready(walletsUnload, 5.seconds)
     val descriptorWallet: Future[CreateWalletResult] =
       client.createWallet("descriptorWallet", descriptors = true)
-    Await.ready(descriptorWallet, 5.seconds)
-    val resultWalletF: Future[Vector[listDescriptorsResult]] =
-      client.listDescriptors()
+    Await.ready(descriptorWallet, 10.seconds)
+    val resultWalletF: Future[Vector[listDescriptorsResult]] = {
+      client.listDescriptors(walletName = "descriptorWallet")
+    }
     descriptorWallet.flatMap { _ =>
       resultWalletF.map { resultWallet =>
         resultWallet.map { result =>
@@ -220,5 +237,50 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       }
     }
   }
+
+  it should "output descriptors all " in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val descriptorWallet: Future[CreateWalletResult] =
+      client.createWallet("descriptorWallet", descriptors = true)
+    Await.ready(descriptorWallet, 10.seconds)
+    val resultWalletF: Future[Vector[listDescriptorsResult]] = {
+      client.listDescriptors(walletName = "descriptorWallet")
+    }
+    val resultOfDescriptorTest: Future[Assertion] = descriptorWallet.flatMap { _ =>
+      resultWalletF.map { resultWallet =>
+        resultWallet.map { result =>
+          val descriptorsA: Vector[Assertion] = result.descriptors.map { dArray =>
+            dArray.map{ d =>
+              assert(d.desc.isInstanceOf[String] && d.isInstanceOf[ZonedDateTime]
+              && d.active.isInstanceOf[Boolean] && d.internal.isInstanceOf[Boolean]
+              && d.range.isInstanceOf[Vector[(Int, Int)]] && d.next.isInstanceOf[Int]
+            )
+            succeed
+          }
+          }
+          descriptorsA
+        }
+      }
+    }
+    resultOfDescriptorTest
+  }
+
+  /**  it should "output more than one txid" in { nodePair: FixtureParam=>
+    *    val NodePair(client, otherClient) = nodePair
+    *    val tx1F: Future[DoubleSha256DigestBE]  = BitcoindRpcTestUtil.
+    *      createRawCoinbaseTransaction(client, otherClient).map{ tx1 =>
+    *      tx1.txIdBE
+    *    val tx2F : Future[DoubleSha256DigestBE]  = BitcoindRpcTestUtil.
+    *      createRawCoinbaseTransaction(client, otherClient).map{ tx2 =>
+    *      tx2.txIdBE
+    *  }
+    *    Await.ready(tx1F,5.seconds)
+    *    Await.ready(tx2F, 5.seconds)
+    *    val transactionAcceptT: Future[Assertion] = client.testMempoolAccept(Vector[tx1F,tx2F]).map{ testMempoolResult =>
+    *        assert(testMempoolResult.txid.length > 1 )
+    *      }
+    *    transactionAcceptT
+    *  }
+    */
 
 }

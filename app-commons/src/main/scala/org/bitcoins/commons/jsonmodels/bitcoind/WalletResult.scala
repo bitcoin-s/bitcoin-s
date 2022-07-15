@@ -133,6 +133,7 @@ case class GetWalletInfoResultPostV21(
     paytxfee: BitcoinFeeUnit,
     hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int],
+    private_keys_enabled: Boolean,
     descriptors: Boolean)
     extends GetWalletInfoResult
 
@@ -479,7 +480,7 @@ case class descriptorsClass(
     timestamp: ZonedDateTime,
     active: Boolean,
     internal: Option[Boolean],
-    range: Option[Array[(Int, Int)]],
+    range: Option[Vector[(Int,Int)]],
     next: Option[Int]
 ) extends WalletResult
 

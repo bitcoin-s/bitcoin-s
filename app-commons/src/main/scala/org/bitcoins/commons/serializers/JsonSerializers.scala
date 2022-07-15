@@ -1,35 +1,33 @@
 package org.bitcoins.commons.serializers
 
-import java.io.File
-import java.net.{InetAddress, URI}
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol._
-import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee._
-import org.bitcoins.commons.serializers.JsonReaders._
-import org.bitcoins.commons.serializers.JsonWriters._
-
-import java.time.{LocalDateTime}
 import org.bitcoins.commons.jsonmodels.SerializedTransaction.tokenToString
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.wallet._
+import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.hd.BIP32Path
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt._
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import scodec.bits.ByteVector
 
+import java.io.File
+import java.net.{InetAddress, URI}
+import java.time.LocalDateTime
 import scala.concurrent.duration.DurationLong
 
 object JsonSerializers {
@@ -502,13 +500,38 @@ object JsonSerializers {
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "abandoned").readNullable[Boolean])(ListTransactionsResult)
 
-  /**  implicit val listDescriptorsReads: Reads[listDescriptorsResult]=
-    *    ((__ \ "desc").read[String] and
-    *      (__ \ "next").read[String] and
-    *      (__ \ "range").read[Array[Int]] and
-    *      (__ \ "timestamp").readNullable[ZonedDateTime] and
-    *      (__ \ "internal").read[Boolean] and
-    *      (__ \ "active").read[Boolean])(listDescriptorsResult)
+  /**    implicit val descriptorsClassReads: Reads[descriptorsClass] =
+    *        ((__ \ "desc").read[String] and
+    *          (__ \ "timestamp").read[ZonedDateTime] and
+    *          (__ \ "active").read[Boolean] and
+    *          (__ \ "internal").readNullable[Boolean] and
+    *          (__ \ "range").readNullable[Vector[(Int, Int)]] and
+    *          (__ \ "next").readNullable[Int])(descriptorsClass)
+    *
+    *      implicit val listDescriptorsResultReads: Reads[listDescriptorsResult] =
+    *        ((__ \ "wallet_name").read[String] and
+    *          (__ \ "descriptors").read[Vector[descriptorsClass]])(
+    *          listDescriptorsResult)
+    *
+    *  implicit val listDescriptorsResultReads: Reads[listDescriptorsResult] =
+    *    Reads[listDescriptorsResult] { js =>
+    *      for {
+    *        wallet_name <- (js \ "wallet_name").validate[String]
+    *        descriptors <- (js \ "descriptors").validate[Vector[descriptorsClass]]
+    *      } yield listDescriptorsResult(wallet_name, descriptors)
+    *    }
+    *
+    *  implicit val descriptorsClassReads: Reads[descriptorsClass] =
+    *    Reads[descriptorsClass] { js =>
+    *      for {
+    *        desc <- (js \ "desc").validate[String]
+    *        timestamp <- (js \ "timestamp").validate[ZonedDateTime]
+    *        active <- (js \ "active").validate[Boolean]
+    *        internal <- (js \ "internal").validateOpt[Boolean]
+    *        range <- (js \ "range").validateOpt[Vector[(Int, Int)]]
+    *        next <- (js \ "next").validateOpt[Int]
+    *      } yield descriptorsClass(desc, timestamp, active, internal, range, next)
+    *    }
     */
 
   implicit val descriptorsClassReads: Reads[descriptorsClass] =
@@ -691,6 +714,15 @@ object JsonSerializers {
 
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads
+
+  /**  implicit val testMempoolAcceptResultReads: Reads[
+    *    TestMempoolAcceptResultPreV22] =
+    *    TestMempoolAcceptResultReadsPreV22
+    *
+    *  implicit val testMempoolAcceptResultReads: Reads[
+    *    TestMempoolAcceptResultPreV22] =
+    *    TestMempoolAcceptResultReadsPostV22
+    */
 
   implicit val indexInfoResultReads: Reads[IndexInfoResult] =
     Json.reads[IndexInfoResult]

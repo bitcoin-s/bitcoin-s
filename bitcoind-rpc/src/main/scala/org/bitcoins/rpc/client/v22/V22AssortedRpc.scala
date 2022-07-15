@@ -21,11 +21,38 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
     )
   }
 
+  /**  def listDescriptors(Private: Option[Boolean],
+    *                      walletName: Option[String] = None): Future[Vector[listDescriptorsResult]] = {
+    *    bitcoindCall[Vector[listDescriptorsResult]](
+    *      "listdescriptors", List(Json.toJson(Private)),
+    *      uriExtensionOpt = walletName.map(walletExtension)
+    *    )
+    *  }
+    */
+
+  def listDescriptors(
+      Private: Option[Boolean],
+      walletName: String): Future[Vector[listDescriptorsResult]] = {
+    bitcoindCall[Vector[listDescriptorsResult]](
+      "listdescriptors",
+      List(Json.toJson(Private)),
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
+  }
+
   def listDescriptors(
       Private: Option[Boolean]): Future[Vector[listDescriptorsResult]] = {
     bitcoindCall[Vector[listDescriptorsResult]](
       "listdescriptors",
       List(Json.toJson(Private))
+    )
+  }
+
+  def listDescriptors(
+      walletName: String): Future[Vector[listDescriptorsResult]] = {
+    bitcoindCall[Vector[listDescriptorsResult]](
+      "listdescriptors",
+      uriExtensionOpt = Some(walletExtension(walletName))
     )
   }
 
@@ -52,5 +79,16 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
   override def getNodeAddresses(): Future[
     Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(None)
+
+  /**  def testMempoolAccept(
+    *      transaction: Transaction,
+    *      allowHighFees: Boolean = false): Future[
+    *    TestMempoolAcceptResultPostV22] = {
+    *    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
+    *      "testmempoolaccept",
+    *      List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
+    *      .map(_.head)
+    *  }
+    */
 
 }

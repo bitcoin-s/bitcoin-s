@@ -222,4 +222,19 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
     checkDescriptor
   }
 
+  it should "create a wallet with private keys disabled" in {
+    client: BitcoindV21RpcClient =>
+      val descriptorWallet: Future[CreateWalletResult] =
+        client.createWallet("privKeyWallet", disablePrivateKeys = true)
+      Await.ready(descriptorWallet, 5.seconds)
+      val privKeyStatus: Future[Assertion] =
+        client.getWalletInfo("privKeyWallet").map {
+          case walletInfoPostV21: GetWalletInfoResultPostV21 =>
+            assert(!walletInfoPostV21.private_keys_enabled)
+          case _: GetWalletInfoResultPreV21 =>
+            fail("private key parameter only available on V21 or higher")
+        }
+      privKeyStatus
+  }
+
 }
