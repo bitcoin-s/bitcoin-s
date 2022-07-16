@@ -1,14 +1,15 @@
 package org.bitcoins.chain.config
 
 import java.nio.file.Files
-
 import com.typesafe.config.ConfigFactory
+import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 
 class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
@@ -77,6 +78,25 @@ class ChainAppConfigTest extends ChainUnitTest {
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
+  }
+
+  it must "add a callback and then remove the callback" in { _ =>
+    val tempDir = Files.createTempDirectory("bitcoin-s")
+    val appConfig = ChainAppConfig(baseDatadir = tempDir, Vector.empty)
+    assert(appConfig.isCallbackEmpty)
+
+    val dummyCallback: OnBlockHeaderConnected = {
+      case _: Vector[(Int, BlockHeader)] =>
+        Future.unit
+    }
+    val printlnCallback = ChainCallbacks.onBlockHeaderConnected(dummyCallback)
+
+    appConfig.addCallbacks(printlnCallback)
+    assert(!appConfig.isCallbackEmpty)
+
+    //clear the callback
+    appConfig.clearCallbacks()
+    assert(appConfig.isCallbackEmpty)
   }
 
   override def afterAll(): Unit = {

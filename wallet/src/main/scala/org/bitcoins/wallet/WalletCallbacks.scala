@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import grizzled.slf4j.Logger
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -13,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * The appropriate callback is executed whenever the wallet finishes,
   * the corresponding function.
   */
-trait WalletCallbacks {
+trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
 
   def onTransactionProcessed: CallbackHandler[
     Transaction,
@@ -107,7 +108,7 @@ trait OnBlockProcessed extends Callback[Block]
 /** Triggered when a rescan is */
 trait OnRescanComplete extends Callback[Unit]
 
-object WalletCallbacks {
+object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
 
   private case class WalletCallbacksImpl(
       onTransactionProcessed: CallbackHandler[
@@ -159,7 +160,7 @@ object WalletCallbacks {
   }
 
   /** Empty callbacks that does nothing with the received data */
-  val empty: WalletCallbacks =
+  override val empty: WalletCallbacks =
     apply(Vector.empty,
           Vector.empty,
           Vector.empty,

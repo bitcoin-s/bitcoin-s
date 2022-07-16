@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
-import org.bitcoins.core.util.{Mutable, NetworkUtil}
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
 import org.bitcoins.tor.client.TorClient
 import org.bitcoins.tor.{Socks5ProxyParams, TorCallbacks, TorParams}
@@ -27,13 +27,6 @@ case class TorAppConfig(
     extends AppConfig
     with CallbackConfig[TorCallbacks] {
 
-  private val callbacks = new Mutable(TorCallbacks.empty)
-
-  override def callBacks: TorCallbacks = callbacks.atomicGet
-
-  override def addCallbacks(newCallbacks: TorCallbacks): TorCallbacks = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-  }
   override protected[bitcoins] def moduleName: String = TorAppConfig.moduleName
   override protected[bitcoins] type ConfigType = TorAppConfig
 
@@ -41,6 +34,7 @@ case class TorAppConfig(
       configs: Vector[Config]): TorAppConfig =
     TorAppConfig(baseDatadir, subModuleNameOpt, configs)
 
+  override lazy val callbackFactory: TorCallbacks.type = TorCallbacks
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
 
   lazy val torDir: Path = baseDatadir.resolve("tor")
@@ -163,6 +157,7 @@ case class TorAppConfig(
   }
 
   override def stop(): Future[Unit] = {
+    clearCallbacks()
     if (torProvided) {
       Future.unit
     } else {
@@ -182,7 +177,7 @@ case class TorAppConfig(
     AsyncUtil
       .retryUntilSatisfied(checkIfLogExists, 1.second, 60)
       //execute started callbacks
-      .flatMap(_ => callbacks.atomicGet.executeOnTorStarted())
+      .flatMap(_ => callBacks.executeOnTorStarted())
       .recover { case _: AsyncUtil.RpcRetryException =>
         throw new RuntimeException(
           s"Could not start tor, please try again in a few minutes")

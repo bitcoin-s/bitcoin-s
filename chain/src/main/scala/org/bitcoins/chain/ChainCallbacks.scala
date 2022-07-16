@@ -1,12 +1,13 @@
 package org.bitcoins.chain
 
 import grizzled.slf4j.Logger
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ChainCallbacks {
+trait ChainCallbacks extends ModuleCallbacks[ChainCallbacks] {
 
   def onBlockHeaderConnected: CallbackHandler[
     Vector[(Int, BlockHeader)],
@@ -14,7 +15,7 @@ trait ChainCallbacks {
 
   def onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged]
 
-  def +(other: ChainCallbacks): ChainCallbacks
+  override def +(other: ChainCallbacks): ChainCallbacks
 
   def executeOnBlockHeaderConnectedCallbacks(
       logger: Logger,
@@ -45,7 +46,7 @@ trait OnBlockHeaderConnected extends Callback[Vector[(Int, BlockHeader)]]
 
 trait OnSyncFlagChanged extends Callback[Boolean]
 
-object ChainCallbacks {
+object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
 
   private case class ChainCallbacksImpl(
       onBlockHeaderConnected: CallbackHandler[
@@ -67,7 +68,7 @@ object ChainCallbacks {
   def onOnSyncFlagChanged(f: OnSyncFlagChanged): ChainCallbacks =
     ChainCallbacks(onSyncFlagChanged = Vector(f))
 
-  lazy val empty: ChainCallbacks =
+  override val empty: ChainCallbacks =
     ChainCallbacks(onBlockHeaderConnected = Vector.empty)
 
   def apply(
