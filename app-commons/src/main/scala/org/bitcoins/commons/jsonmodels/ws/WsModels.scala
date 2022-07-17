@@ -1,6 +1,7 @@
 package org.bitcoins.commons.jsonmodels.ws
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.commons.serializers.WsPicklers
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -96,6 +97,7 @@ object TorWsType extends StringFactory[TorWsType] {
 sealed trait WsNotification[T] {
   def `type`: WsType
   def payload: T
+  def json: ujson.Value
 }
 
 sealed trait ChainNotification[T] extends WsNotification[T] {
@@ -115,41 +117,73 @@ object WalletNotification {
   case class NewAddressNotification(payload: BitcoinAddress)
       extends WalletNotification[BitcoinAddress] {
     override val `type`: WalletWsType = WalletWsType.NewAddress
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.newAddressPickler)
+    }
   }
 
   case class TxProcessedNotification(payload: Transaction)
       extends WalletNotification[Transaction] {
     override val `type`: WalletWsType = WalletWsType.TxProcessed
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.txProcessedPickler)
+    }
   }
 
   case class TxBroadcastNotification(payload: Transaction)
       extends WalletNotification[Transaction] {
     override val `type`: WalletWsType = WalletWsType.TxBroadcast
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.txBroadcastPickler)
+    }
   }
 
   case class ReservedUtxosNotification(payload: Vector[SpendingInfoDb])
       extends WalletNotification[Vector[SpendingInfoDb]] {
     override val `type`: WalletWsType = WalletWsType.ReservedUtxos
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.reservedUtxosPickler)
+    }
   }
 
   case class DLCStateChangeNotification(payload: DLCStatus)
       extends WalletNotification[DLCStatus] {
     override val `type`: WalletWsType = WalletWsType.DLCStateChange
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.dlcStateChangePickler)
+    }
   }
 
   case class DLCOfferAddNotification(payload: IncomingDLCOfferDb)
       extends WalletNotification[IncomingDLCOfferDb] {
     override val `type`: WalletWsType = WalletWsType.DLCOfferAdd
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.dlcOfferAddPickler)
+    }
   }
 
   case class DLCOfferRemoveNotification(payload: Sha256Digest)
       extends WalletNotification[Sha256Digest] {
     override val `type`: WalletWsType = WalletWsType.DLCOfferRemove
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.dlcOfferRemovePickler)
+    }
   }
 
   case class RescanComplete(payload: String)
       extends WalletNotification[String] {
     override val `type`: WalletWsType = WalletWsType.RescanComplete
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.rescanPickler)
+    }
   }
 }
 
@@ -158,11 +192,19 @@ object ChainNotification {
   case class BlockProcessedNotification(payload: GetBlockHeaderResult)
       extends ChainNotification[GetBlockHeaderResult] {
     override val `type`: ChainWsType = ChainWsType.BlockProcessed
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.blockProcessedPickler)
+    }
   }
 
   case class SyncFlagChangedNotification(payload: Boolean)
       extends ChainNotification[Boolean] {
     override val `type`: ChainWsType = ChainWsType.SyncFlagChanged
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.syncFlagChangedPickler)
+    }
   }
 }
 
@@ -171,5 +213,9 @@ object TorNotification {
   case object TorStartedNotification extends TorNotification[Unit] {
     override val `type`: TorWsType = TorWsType.TorStarted
     override val payload: Unit = ()
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.torStartedPickler)
+    }
   }
 }
