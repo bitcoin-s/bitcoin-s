@@ -36,7 +36,8 @@ case class KeyManagerAppConfig(
 
   lazy val walletName: String = {
     val nameOpt =
-      walletNameOverride.orElse(config.getStringOrNone(s"bitcoin-s.wallet.walletName"))
+      walletNameOverride.orElse(
+        config.getStringOrNone(s"bitcoin-s.wallet.walletName"))
     require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
             s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
     nameOpt.getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME)

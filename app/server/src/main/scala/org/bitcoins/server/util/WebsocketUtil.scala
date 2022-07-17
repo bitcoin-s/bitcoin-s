@@ -30,7 +30,6 @@ import org.bitcoins.dlc.wallet.{
 }
 import org.bitcoins.tor.{OnTorStarted, TorCallbacks}
 import org.bitcoins.wallet._
-import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 

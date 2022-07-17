@@ -79,7 +79,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
             _ <- stateDescriptorDAO.updateRescanning(false)
             _ <- walletCallbacks.executeOnRescanComplete(
               logger,
-              walletConfig.walletNameOpt)
+              walletConfig.walletName)
           } yield {
             logger.info(s"Finished rescanning the wallet. It took ${System
               .currentTimeMillis() - startTime}ms")

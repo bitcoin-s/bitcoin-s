@@ -602,8 +602,7 @@ class WalletHolder(implicit ec: ExecutionContext)
   override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] =
     delegate(_.getSyncDescriptorOpt())
 
-  override def getWalletName(): Future[Option[String]] = delegate(
-    _.getWalletName())
+  override def getWalletName(): Future[String] = delegate(_.getWalletName())
 
   override def getInfo(): Future[WalletInfo] = delegate(_.getInfo())
 

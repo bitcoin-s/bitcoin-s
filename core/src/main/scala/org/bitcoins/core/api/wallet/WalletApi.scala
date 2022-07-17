@@ -417,7 +417,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]]
 
-  def getWalletName(): Future[Option[String]]
+  def getWalletName(): Future[String]
 
   def getInfo(): Future[WalletInfo]
 }

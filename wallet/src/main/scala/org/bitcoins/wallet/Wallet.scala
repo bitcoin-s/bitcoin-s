@@ -916,8 +916,8 @@ abstract class Wallet
     }
   }
 
-  override def getWalletName(): Future[Option[String]] = {
-    Future.successful(walletConfig.walletNameOpt)
+  override def getWalletName(): Future[String] = {
+    Future.successful(walletConfig.walletName)
   }
 
   override def getInfo(): Future[WalletInfo] = {
@@ -927,7 +927,7 @@ abstract class Wallet
       rescan <- isRescanning()
     } yield {
       WalletInfo(
-        walletName = walletConfig.walletNameOpt.getOrElse(""),
+        walletName = walletConfig.walletName,
         rootXpub = keyManager.getRootXPub,
         xpub = accountDb.xpub,
         hdAccount = accountDb.hdAccount,

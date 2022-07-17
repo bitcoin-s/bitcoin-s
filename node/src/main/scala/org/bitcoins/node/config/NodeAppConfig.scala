@@ -52,11 +52,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override lazy val callbackFactory: NodeCallbacks.type = NodeCallbacks
 
-  def replaceCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
-    callbacks.atomicSet(NodeCallbacks.empty)
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-  }
-
   /** Ensures correct tables and other required information is in
     * place for our node.
     */

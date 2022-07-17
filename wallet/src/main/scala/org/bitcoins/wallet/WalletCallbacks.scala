@@ -31,7 +31,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
 
   def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
-  def onRescanComplete: CallbackHandler[Option[String], OnRescanComplete]
+  def onRescanComplete: CallbackHandler[String, OnRescanComplete]
 
   def +(other: WalletCallbacks): WalletCallbacks
 
@@ -83,10 +83,10 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
                      err))
   }
 
-  def executeOnRescanComplete(logger: Logger, walletNameOpt: Option[String])(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnRescanComplete(logger: Logger, walletName: String)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onRescanComplete.execute(
-      walletNameOpt,
+      walletName,
       (err: Throwable) =>
         logger.error(s"${onRescanComplete.name} Callback failed with error: ",
                      err))
@@ -106,7 +106,7 @@ trait OnNewAddressGenerated extends Callback[BitcoinAddress]
 trait OnBlockProcessed extends Callback[Block]
 
 /** Triggered when a rescan is */
-trait OnRescanComplete extends Callback[Option[String]]
+trait OnRescanComplete extends Callback[String]
 
 object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
 
@@ -122,7 +122,7 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
         BitcoinAddress,
         OnNewAddressGenerated],
       onBlockProcessed: CallbackHandler[Block, OnBlockProcessed],
-      onRescanComplete: CallbackHandler[Option[String], OnRescanComplete]
+      onRescanComplete: CallbackHandler[String, OnRescanComplete]
   ) extends WalletCallbacks {
 
     override def +(other: WalletCallbacks): WalletCallbacks =
@@ -198,8 +198,8 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
         onBlockProcessed
       ),
       onRescanComplete =
-        CallbackHandler[Option[String], OnRescanComplete]("onRescanComplete",
-                                                          onRescanComplete)
+        CallbackHandler[String, OnRescanComplete]("onRescanComplete",
+                                                  onRescanComplete)
     )
   }
 }

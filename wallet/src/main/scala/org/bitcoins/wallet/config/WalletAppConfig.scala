@@ -338,7 +338,8 @@ object WalletAppConfig
     extends AppConfigFactory[WalletAppConfig]
     with WalletLogger {
 
-  final val DEFAULT_WALLET_NAME: String = ""
+  final val DEFAULT_WALLET_NAME: String =
+    KeyManagerAppConfig.DEFAULT_WALLET_NAME
 
   val moduleName: String = "wallet"
 
