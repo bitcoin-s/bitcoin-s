@@ -1,7 +1,29 @@
 package org.bitcoins.core.api
 
-trait CallbackConfig[T] {
-  def addCallbacks(newCallbacks: T): T
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
+import org.bitcoins.core.util.Mutable
 
-  def callBacks: T
+trait CallbackConfig[T <: ModuleCallbacks[T]] {
+
+  private[this] val atomicCallbacks: Mutable[T] = new Mutable(
+    callbackFactory.empty)
+
+  def isCallbackEmpty: Boolean =
+    atomicCallbacks.atomicGet == callbackFactory.empty
+
+  def addCallbacks(newCallbacks: T): T = {
+    atomicCallbacks.atomicUpdate(newCallbacks) { case (t1, t2) =>
+      t1.+(t2)
+    }
+  }
+
+  def callBacks: T = atomicCallbacks.atomicGet
+
+  /** Clears all callbacks */
+  def clearCallbacks(): Unit = {
+    atomicCallbacks.atomicSet(callbackFactory.empty)
+    ()
+  }
+
+  def callbackFactory: CallbackFactory[T]
 }

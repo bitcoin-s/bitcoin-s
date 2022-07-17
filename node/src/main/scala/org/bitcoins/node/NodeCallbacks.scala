@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import grizzled.slf4j.Logger
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -13,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * The appropriate callback is executed whenever the node receives
   * a `getdata` message matching it.
   */
-trait NodeCallbacks {
+trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
 
   def onCompactFiltersReceived: CallbackHandler[
     Vector[(DoubleSha256Digest, GolombFilter)],
@@ -31,7 +32,7 @@ trait NodeCallbacks {
     Vector[BlockHeader],
     OnBlockHeadersReceived]
 
-  def +(other: NodeCallbacks): NodeCallbacks
+  override def +(other: NodeCallbacks): NodeCallbacks
 
   def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
@@ -103,7 +104,7 @@ trait OnCompactFiltersReceived
 /** Callback for handling a received block header */
 trait OnBlockHeadersReceived extends Callback[Vector[BlockHeader]]
 
-object NodeCallbacks {
+object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
 
   // Use Impl pattern here to enforce the correct names on the CallbackHandlers
   private case class NodeCallbacksImpl(
@@ -154,7 +155,7 @@ object NodeCallbacks {
     NodeCallbacks(onBlockHeadersReceived = Vector(f))
 
   /** Empty callbacks that does nothing with the received data */
-  val empty: NodeCallbacks =
+  override val empty: NodeCallbacks =
     NodeCallbacks(Vector.empty,
                   Vector.empty,
                   Vector.empty,

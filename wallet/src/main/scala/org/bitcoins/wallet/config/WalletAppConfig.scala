@@ -8,7 +8,6 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.Mutable
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.keymanagement._
 import org.bitcoins.crypto.AesPassword
@@ -70,13 +69,7 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors(),
                                  rescanThreadFactory)
 
-  private val callbacks = new Mutable(WalletCallbacks.empty)
-
-  override def callBacks: WalletCallbacks = callbacks.atomicGet
-
-  override def addCallbacks(newCallbacks: WalletCallbacks): WalletCallbacks = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-  }
+  override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
 
   lazy val kmConf: KeyManagerAppConfig =
     KeyManagerAppConfig(baseDatadir, configOverrides)
@@ -217,6 +210,7 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       stopHikariLogger()
     }
 
+    clearCallbacks()
     stopRebroadcastTxsScheduler()
     //this eagerly shuts down all scheduled tasks on the scheduler
     //in the future, we should actually cancel all things that are scheduled
