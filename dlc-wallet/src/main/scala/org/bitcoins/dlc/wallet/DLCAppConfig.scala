@@ -17,6 +17,7 @@ import org.bitcoins.dlc.wallet.models.{
   OfferedDbState,
   SetupCompleteDLCDbState
 }
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -78,28 +79,30 @@ case class DLCAppConfig(
   lazy val walletConf: WalletAppConfig =
     walletConfigOpt.getOrElse(WalletAppConfig(baseDatadir, configOverrides))
 
-  lazy val walletNameOpt: Option[String] = walletConf.walletNameOpt
+  lazy val walletName: String = walletConf.walletName
 
   override lazy val dbPath: Path = {
     val pathStrOpt =
       config.getStringOrNone(s"bitcoin-s.$moduleName.db.path")
-    (pathStrOpt, walletNameOpt) match {
-      case (Some(pathStr), Some(walletName)) =>
-        Paths.get(pathStr).resolve(walletName)
-      case (Some(pathStr), None) =>
-        Paths.get(pathStr)
-      case (None, Some(_)) | (None, None) =>
+    pathStrOpt match {
+      case Some(pathStr) =>
+        if (walletName == KeyManagerAppConfig.DEFAULT_WALLET_NAME) {
+          Paths.get(pathStr)
+        } else {
+          Paths.get(pathStr).resolve(walletName)
+        }
+      case None =>
         sys.error(s"Could not find dbPath for $moduleName.db.path")
     }
   }
 
   override lazy val schemaName: Option[String] = {
-    (driver, walletNameOpt) match {
-      case (PostgreSQL, Some(walletName)) =>
-        Some(s"${moduleName}_$walletName")
-      case (PostgreSQL, None) =>
-        Some(moduleName)
-      case (SQLite, None) | (SQLite, Some(_)) =>
+    driver match {
+      case PostgreSQL =>
+        val schema = PostgresUtil.getSchemaName(moduleName = moduleName,
+                                                walletName = walletName)
+        Some(schema)
+      case SQLite =>
         None
     }
   }

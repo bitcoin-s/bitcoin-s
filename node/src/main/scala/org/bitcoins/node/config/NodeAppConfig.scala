@@ -13,7 +13,7 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
-import org.bitcoins.core.util.{Mutable, TimeUtil}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
@@ -50,13 +50,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override def appConfig: NodeAppConfig = this
 
-  private val callbacks = new Mutable(NodeCallbacks.empty)
-
-  override def callBacks: NodeCallbacks = callbacks.atomicGet
-
-  override def addCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-  }
+  override lazy val callbackFactory: NodeCallbacks.type = NodeCallbacks
 
   def replaceCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
     callbacks.atomicSet(NodeCallbacks.empty)
@@ -103,6 +97,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   override def stop(): Future[Unit] = {
+    clearCallbacks()
     val _ = stopHikariLogger()
     super.stop()
   }

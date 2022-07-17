@@ -670,7 +670,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConfA.kmConf.seedExists())
 
       val otherWalletName = StringGenerators.genNonEmptyString
-        .suchThat(_ != walletConfA.walletNameOpt.getOrElse(""))
+        .suchThat(_ != walletConfA.walletName)
         .sampleSome
 
       val walletConfB = walletConfA.withOverrides(

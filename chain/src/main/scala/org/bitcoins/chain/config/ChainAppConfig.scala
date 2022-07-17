@@ -8,7 +8,6 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.config.AppConfigFactory
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
-import org.bitcoins.core.util.Mutable
 import org.bitcoins.db._
 
 import java.nio.file.Path
@@ -35,13 +34,7 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override lazy val appConfig: ChainAppConfig = this
 
-  private val callbacks = new Mutable(ChainCallbacks.empty)
-
-  override def callBacks: ChainCallbacks = callbacks.atomicGet
-
-  override def addCallbacks(newCallbacks: ChainCallbacks): ChainCallbacks = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-  }
+  override lazy val callbackFactory: ChainCallbacks.type = ChainCallbacks
 
   /** Checks whether or not the chain project is initialized by
     * trying to read the genesis block header from our block
@@ -102,6 +95,7 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
+    clearCallbacks()
     super.stop()
   }
 

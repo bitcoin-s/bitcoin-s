@@ -8,7 +8,6 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.util.Mutable
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.keymanagement._
 import org.bitcoins.crypto.AesPassword
@@ -73,13 +72,7 @@ case class WalletAppConfig(
     Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors(),
                                  rescanThreadFactory)
 
-  private val callbacks = new Mutable(WalletCallbacks.empty)
-
-  override def callBacks: WalletCallbacks = callbacks.atomicGet
-
-  override def addCallbacks(newCallbacks: WalletCallbacks): WalletCallbacks = {
-    callbacks.atomicUpdate(newCallbacks)(_ + _)
-  }
+  override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
 
   lazy val kmConf: KeyManagerAppConfig =
     kmConfOpt.getOrElse(KeyManagerAppConfig(baseDatadir, configOverrides))
@@ -158,28 +151,26 @@ case class WalletAppConfig(
 
   lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
 
-  lazy val walletNameOpt: Option[String] = kmConf.walletNameOpt
+  lazy val walletName: String = kmConf.walletName
 
   override lazy val dbPath: Path = {
     val pathStrOpt =
       config.getStringOrNone(s"bitcoin-s.$moduleName.db.path")
-    (pathStrOpt, walletNameOpt) match {
-      case (Some(pathStr), Some(walletName)) =>
+    pathStrOpt match {
+      case Some(pathStr) =>
         Paths.get(pathStr).resolve(walletName)
-      case (Some(pathStr), None) =>
-        Paths.get(pathStr)
-      case (None, Some(_)) | (None, None) =>
+      case None =>
         sys.error(s"Could not find dbPath for $moduleName.db.path")
     }
   }
 
   override lazy val schemaName: Option[String] = {
-    (driver, walletNameOpt) match {
-      case (PostgreSQL, Some(walletName)) =>
-        Some(s"${moduleName}_$walletName")
-      case (PostgreSQL, None) =>
-        Some(moduleName)
-      case (SQLite, None) | (SQLite, Some(_)) =>
+    driver match {
+      case PostgreSQL =>
+        val schema = PostgresUtil.getSchemaName(moduleName = moduleName,
+                                                walletName = walletName)
+        Some(schema)
+      case SQLite =>
         None
     }
   }
@@ -198,7 +189,7 @@ case class WalletAppConfig(
       isExists <- seedExists()
       _ <- {
         logger.info(
-          s"Starting wallet with xpub=${masterXpub} walletName=${walletNameOpt}")
+          s"Starting wallet with xpub=${masterXpub} walletName=${walletName}")
         if (!isExists) {
           masterXPubDAO
             .create(masterXpub)
@@ -222,6 +213,7 @@ case class WalletAppConfig(
       stopHikariLogger()
     }
 
+    clearCallbacks()
     stopRebroadcastTxsScheduler()
     //this eagerly shuts down all scheduled tasks on the scheduler
     //in the future, we should actually cancel all things that are scheduled

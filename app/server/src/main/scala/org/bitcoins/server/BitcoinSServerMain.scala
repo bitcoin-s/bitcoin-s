@@ -240,8 +240,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcConf: DLCAppConfig): Unit = {
     val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
     chainConf.addCallbacks(chainCallbacks)
-    val walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
 
+    val walletCallbacks =
+      WebsocketUtil.buildWalletCallbacks(wsQueue, walletConf.walletName)
     walletConf.addCallbacks(walletCallbacks)
 
     val dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
@@ -361,6 +362,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       (wallet, walletConfig, dlcConfig, chainCallbacks) <- walletF
       _ = walletConfig.addCallbacks(walletCallbacks)
 
+<<<<<<< HEAD
+=======
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(
+        wsQueue,
+        walletConf.walletName)
+      _ = walletConf.addCallbacks(walletCallbacks)
+
+      (wallet, chainCallbacks) <- walletF
+>>>>>>> master
       //intentionally doesn't map on this otherwise we
       //wait until we are done syncing the entire wallet
       //which could take 1 hour

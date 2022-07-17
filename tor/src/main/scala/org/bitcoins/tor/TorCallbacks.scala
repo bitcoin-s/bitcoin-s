@@ -1,13 +1,14 @@
 package org.bitcoins.tor
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait OnTorStarted extends Callback[Unit]
 
-trait TorCallbacks extends Logging {
+trait TorCallbacks extends ModuleCallbacks[TorCallbacks] with Logging {
   def onTorStarted: CallbackHandler[Unit, OnTorStarted]
 
   def executeOnTorStarted()(implicit ec: ExecutionContext): Future[Unit] = {
@@ -20,7 +21,7 @@ trait TorCallbacks extends Logging {
   def +(other: TorCallbacks): TorCallbacks
 }
 
-object TorCallbacks {
+object TorCallbacks extends CallbackFactory[TorCallbacks] {
 
   private case class TorCallbacksImpl(
       onTorStarted: CallbackHandler[Unit, OnTorStarted]
@@ -31,7 +32,7 @@ object TorCallbacks {
     }
   }
 
-  val empty = apply(Vector.empty)
+  override val empty: TorCallbacks = apply(Vector.empty)
 
   def apply(onTorStarted: OnTorStarted): TorCallbacks = {
     apply(Vector(onTorStarted))
