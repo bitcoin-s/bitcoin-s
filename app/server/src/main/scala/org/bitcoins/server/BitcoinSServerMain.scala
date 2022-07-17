@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{
   BroadcastHub,
   Keep,
@@ -9,6 +8,7 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
+import akka.stream.{KillSwitches, OverflowStrategy, SharedKillSwitch}
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
@@ -58,6 +58,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
   implicit lazy val torConf: TorAppConfig = conf.torConf
+
+  private val nodeCallbackKillSwitch: SharedKillSwitch = {
+    KillSwitches.shared("node-callback-killswitch")
+  }
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
@@ -132,12 +136,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletConf.feeProviderTargetOpt,
       walletConf.torConf.socks5ProxyParams,
       walletConf.network)
+
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
       _ = logger.info("Initialized chain api")
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
-      nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
+      nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(
+        wallet,
+        nodeCallbackKillSwitch)
       _ = nodeConf.addCallbacks(nodeCallbacks)
     } yield {
       logger.info(
@@ -297,6 +304,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                                chainQueryApi = bitcoind,
                                                feeRateApi = feeProvider)
       val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
+
       for {
         _ <- isTorStartedF
         tmpWallet <- tmpWalletF
@@ -304,8 +312,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           bitcoind,
           tmpWallet,
           Some(chainCallbacks))
+
         nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(
-          wallet)
+          wallet,
+          nodeCallbackKillSwitch)
         _ = nodeConf.addCallbacks(nodeCallbacks)
         _ = logger.info("Starting wallet")
         _ <- wallet.start()
