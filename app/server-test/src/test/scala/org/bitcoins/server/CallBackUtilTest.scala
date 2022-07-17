@@ -44,12 +44,12 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         tx2 <- tx2F
         callbacks <- callbacksF
         _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx1)
-        _ <- AsyncUtil.nonBlockingSleep(1000.millis)
+        _ <- AsyncUtil.nonBlockingSleep(500.millis)
         initBalance <- initBalanceF
         balance2 <- wallet.getBalance()
         _ = killSwitch.shutdown()
         _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx2)
-        _ <- AsyncUtil.nonBlockingSleep(1000.millis)
+        _ <- AsyncUtil.nonBlockingSleep(500.millis)
         balance3 <- wallet.getBalance()
       } yield {
         assert(balance2 > initBalance)
@@ -81,12 +81,12 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         tx2 <- tx2F
         callbacks <- callbacksF
         _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx1)
-        _ <- AsyncUtil.nonBlockingSleep(1000.millis)
+        _ <- AsyncUtil.nonBlockingSleep(500.millis)
         initBalance <- initBalanceF
         balance2 <- wallet.getBalance()
         _ = killSwitch.shutdown()
         _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx2)
-        _ <- AsyncUtil.nonBlockingSleep(1000.millis)
+        _ <- AsyncUtil.nonBlockingSleep(500.millis)
         balance3 <- wallet.getBalance()
       } yield {
         assert(balance2 > initBalance)
