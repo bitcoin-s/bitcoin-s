@@ -11,6 +11,8 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV22,
   BitcoindRpcTestUtil
 }
+//import org.scalacheck.Gen.const
+//import org.scalacheck.util.Pretty.prettyAny
 import org.scalatest.Assertion
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
@@ -39,31 +41,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     }
   }
 
-  it should "be able to decode a reedem script" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
-    val pubKey1 = ecPrivKey1.publicKey
-    for {
-      address <- client.getNewAddress(addressType = AddressType.Legacy)
-      multisig <-
-        client
-          .addMultiSigAddress(
-            2,
-            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
-      decoded <- client.decodeScript(multisig.redeemScript)
-    } yield {
-      decoded match {
-        case decodedPreV22: DecodeScriptResultPreV22 =>
-          assert(decodedPreV22.reqSigs.contains(2))
-          assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
-          assert(decodedPreV22.addresses.get.contains(address))
-        case decodedV22: DecodeScriptResultV22 =>
-          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
-      }
-
-    }
-  }
-
   it should "be able to decode a raw transaction" in { nodePair: FixtureParam =>
     val client1 = nodePair.node1
     val client2 = nodePair.node2
@@ -84,6 +61,7 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
   it should "be able to get a raw transaction using both rpcs available" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
+
       for {
         block <- BitcoindRpcTestUtil.getFirstBlock(client)
         txid = block.tx.head.txid
@@ -173,55 +151,7 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     }
   }
 
-  /**        it should "output descriptors" in { nodePair: FixtureParam =>
-    *              val client=nodePair.node1
-    *              client.createWallet("descriptorWallet", descriptors = true )
-    *                val resultWalletF: Future[Vector[listDescriptorsResult]] =
-    *                client.listDescriptors()
-    *                resultWalletF.map{resultWallet =>
-    *                  resultWallet.foreach {result =>
-    *                    result.descriptors.map{ descrResult => assert(descrResult.desc.isInstanceOf[String] &&
-    *                    descrResult.timestamp.isInstancesOf[Int] && descrResult.active.isInstanceOf[Boolean] &&
-    *                    descrResult.internal.isInstanceOf[Boolean] && descrResult.range.isInstanceOf[Array[(Int,Int)]]
-    *                    && descrResult.next.isInstanceOf[Int]
-    *                    )
-    *          }
-    *                    assert (result.wallet_name == "descriptorWallet" && result.descriptors.desc.isDefined
-    *                      && result.descriptors.timestamp.isInstanceOf[Int] && result.descriptors.active.isInstanceOf[Boolean]
-    *                      && result.descriptors.internal.isInstanceOf[Boolean] && result.descriptors.range.isInstanceOf[Array[(Int,Int)]] &&
-    *                      result.descriptors.next.isInstanceOf[Int]
-    *              )
-    *                  }
-    *              }
-    *           }
-    */
 
-  /**  it should "output descriptors" in { nodePair: FixtureParam =>
-    *    val client = nodePair.node1
-    *    val walletsUF: Future[Vector[String]] = client.listWallets
-    *    val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
-    *      val walletsUI: Future[Vector[Unit]] =
-    *        Future.sequence(walletsU.map { wallet =>
-    *          client.unloadWallet(wallet)
-    *        })
-    *      walletsUI
-    *    }.flatten
-    *    Await.ready(walletsUnload, 5.seconds)
-    *    val descriptorWallet: Future[CreateWalletResult] =
-    *      client.createWallet("descriptorWallet", descriptors = true)
-    *    Await.ready(descriptorWallet, 5.seconds)
-    *    val resultWalletF: Future[Vector[listDescriptorsResult]] =
-    *      client.listDescriptors()
-    *    descriptorWallet.flatMap { _ =>
-    *      resultWalletF.map { resultWallet =>
-    *        resultWallet.map { result =>
-    *          assert(result.wallet_name == "descriptorWallet")
-    *        }
-    *        succeed
-    *      }
-    *    }
-    *  }
-    */
 
   it should "output wallet name from listdescriptors" in {
     nodePair: FixtureParam =>
@@ -241,7 +171,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
 
   }
 
-
   it should "output descriptors from listdescriptors" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
@@ -258,13 +187,50 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
               d.desc.isInstanceOf[String] && d.timestamp
                 .isInstanceOf[ZonedDateTime]
                 && d.active.isInstanceOf[Boolean] && d.internal
-                .isInstanceOf[Option[Boolean]]
+                  .isInstanceOf[Option[Boolean]]
                 && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
-                .isInstanceOf[Option[Int]])
+                  .isInstanceOf[Option[Int]])
           }
           succeed
         }
       }
+  }
+
+  it should "be able to decode a reedem script" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val walletsUF: Future[Vector[String]] = client.listWallets
+    val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
+      val walletsUI: Future[Vector[Unit]] =
+        Future.sequence(walletsU.map { wallet =>
+          client.unloadWallet(wallet)
+        })
+      walletsUI
+    }.flatten
+    Await.ready(walletsUnload, 5.seconds)
+    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    val pubKey1 = ecPrivKey1.publicKey
+    val walletDecode: Future[CreateWalletResult] =
+      client.createWallet("decodeRWallet")
+    Await.ready(walletDecode, 10.seconds)
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Legacy)
+      multisig <-
+        client
+          .addMultiSigAddress(
+            2,
+            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
+      decoded <- client.decodeScript(multisig.redeemScript)
+    } yield {
+      decoded match {
+        case decodedPreV22: DecodeScriptResultPreV22 =>
+          assert(decodedPreV22.reqSigs.contains(2))
+          assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
+          assert(decodedPreV22.addresses.get.contains(address))
+        case decodedV22: DecodeScriptResultV22 =>
+          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
+      }
+
+    }
   }
 
   /**  it should "output more than one txid" in { nodePair: FixtureParam=>
