@@ -1,9 +1,16 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ws.Message
 import akka.stream.{KillSwitches, OverflowStrategy, UniqueKillSwitch}
-import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{
+  BroadcastHub,
+  Keep,
+  Sink,
+  Source,
+  SourceQueueWithComplete
+}
+
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
@@ -11,6 +18,7 @@ import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
+import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
@@ -165,8 +173,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val tuple = buildWsSource
 
-    val wsQueue: SourceQueueWithComplete[Message] = tuple._1
-    val wsSource: Source[Message, NotUsed] = tuple._2
+    val wsQueue: SourceQueueWithComplete[WsNotification[_]] = tuple._1
+    val wsSource: Source[WsNotification[_], NotUsed] = tuple._2
 
     val callbacksF: Future[Unit] = for {
       (_, walletConfig, dlcConfig) <- configuredWalletF
@@ -229,7 +237,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def buildNeutrinoCallbacks(
-      wsQueue: SourceQueueWithComplete[Message],
+      wsQueue: SourceQueueWithComplete[WsNotification[_]],
       chainApi: ChainApi,
       walletConf: WalletAppConfig,
       dlcConf: DLCAppConfig): Unit = {
@@ -281,8 +289,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- client.start()
     } yield client
     val tuple = buildWsSource
-    val wsQueue: SourceQueueWithComplete[Message] = tuple._1
-    val wsSource: Source[Message, NotUsed] = tuple._2
+    val wsQueue: SourceQueueWithComplete[WsNotification[_]] = tuple._1
+    val wsSource: Source[WsNotification[_], NotUsed] = tuple._2
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     val _ = torConf.addCallbacks(torCallbacks)
     val isTorStartedF = if (torConf.torProvided) {
@@ -391,7 +399,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNodeF: Future[DLCNode],
       torConfStarted: Future[Unit],
       serverCmdLineArgs: ServerArgParser,
-      wsSource: Source[Message, NotUsed])(implicit
+      wsSource: Source[WsNotification[_], NotUsed])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -524,8 +532,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     * to create a flow that emits websocket messages
     */
   private def buildWsSource: (
-      SourceQueueWithComplete[Message],
-      Source[Message, NotUsed]) = {
+      SourceQueueWithComplete[WsNotification[_]],
+      Source[WsNotification[_], NotUsed]) = {
     val maxBufferSize: Int = 25
 
     /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
@@ -536,7 +544,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       //the BroadcastHub.sink is needed to avoid these errors
       // 'Websocket handler failed with Processor actor'
       Source
-        .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
+        .queue[WsNotification[_]](maxBufferSize, OverflowStrategy.dropHead)
         .toMat(BroadcastHub.sink)(Keep.both)
         .run()
     }

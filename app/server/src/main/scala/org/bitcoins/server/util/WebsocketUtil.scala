@@ -1,6 +1,5 @@
 package org.bitcoins.server.util
 
-import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.{
@@ -12,9 +11,10 @@ import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
   WalletNotification,
-  WalletWsType
+  WalletWsType,
+  WsNotification
 }
-import org.bitcoins.commons.serializers.WsPicklers
+
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -36,7 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object WebsocketUtil extends Logging {
 
   def buildChainCallbacks(
-      queue: SourceQueueWithComplete[Message],
+      queue: SourceQueueWithComplete[WsNotification[_]],
       chainApi: ChainApi)(implicit ec: ExecutionContext): ChainCallbacks = {
     val onBlockProcessed: OnBlockHeaderConnected = {
       case headersWithHeight: Vector[(Int, BlockHeader)] =>
@@ -49,13 +49,7 @@ object WebsocketUtil extends Logging {
           notifications =
             results.map(result =>
               ChainNotification.BlockProcessedNotification(result))
-          notificationsJson = notifications.map { notification =>
-            upickle.default.writeJs(notification)(
-              WsPicklers.blockProcessedPickler)
-          }
-
-          msgs = notificationsJson.map(n => TextMessage.Strict(n.toString()))
-          _ <- FutureUtil.sequentially(msgs) { case msg =>
+          _ <- FutureUtil.sequentially(notifications) { case msg =>
             val x: Future[Unit] = queue
               .offer(msg)
               .map(_ => ())
@@ -69,11 +63,8 @@ object WebsocketUtil extends Logging {
 
     val onSyncFlagChanged: OnSyncFlagChanged = { syncing =>
       val notification = ChainNotification.SyncFlagChangedNotification(syncing)
-      val notificationJson =
-        upickle.default.writeJs(notification)(WsPicklers.syncFlagChangedPickler)
-      val msg = TextMessage.Strict(notificationJson.toString())
       for {
-        _ <- queue.offer(msg)
+        _ <- queue.offer(notification)
       } yield ()
     }
 
@@ -83,14 +74,11 @@ object WebsocketUtil extends Logging {
 
   /** Builds websocket callbacks for the wallet */
   def buildWalletCallbacks(
-      walletQueue: SourceQueueWithComplete[Message],
+      walletQueue: SourceQueueWithComplete[WsNotification[_]],
       walletName: String)(implicit ec: ExecutionContext): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
       val notification = WalletNotification.NewAddressNotification(addr)
-      val json =
-        upickle.default.writeJs(notification)(WsPicklers.newAddressPickler)
-      val msg = TextMessage.Strict(json.toString())
-      val offerF = walletQueue.offer(msg)
+      val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
@@ -109,19 +97,13 @@ object WebsocketUtil extends Logging {
     val onReservedUtxo: OnReservedUtxos = { utxos =>
       val notification =
         WalletNotification.ReservedUtxosNotification(utxos)
-      val notificationJson =
-        upickle.default.writeJs(notification)(WsPicklers.reservedUtxosPickler)
-      val msg = TextMessage.Strict(notificationJson.toString())
-      val offerF = walletQueue.offer(msg)
+      val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
     val onRescanComplete: OnRescanComplete = { _ =>
       val notification = WalletNotification.RescanComplete(walletName)
-      val notificationJson =
-        upickle.default.writeJs(notification)(WsPicklers.rescanPickler)
-      val msg = TextMessage.Strict(notificationJson.toString())
-      val offerF = walletQueue.offer(msg)
+      val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
@@ -135,15 +117,11 @@ object WebsocketUtil extends Logging {
     )
   }
 
-  def buildTorCallbacks(queue: SourceQueueWithComplete[Message])(implicit
-      ec: ExecutionContext): TorCallbacks = {
+  def buildTorCallbacks(queue: SourceQueueWithComplete[WsNotification[_]])(
+      implicit ec: ExecutionContext): TorCallbacks = {
     val onTorStarted: OnTorStarted = { _ =>
       val notification = TorStartedNotification
-      val json =
-        upickle.default.writeJs(notification)(WsPicklers.torStartedPickler)
-
-      val msg = TextMessage.Strict(json.toString())
-      val offerF = queue.offer(msg)
+      val offerF = queue.offer(notification)
       offerF.map(_ => ())
     }
 
@@ -153,53 +131,42 @@ object WebsocketUtil extends Logging {
   private def buildTxNotification(
       wsType: WalletWsType,
       tx: Transaction,
-      walletQueue: SourceQueueWithComplete[Message])(implicit
+      walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val json = wsType match {
+    val notification = wsType match {
       case WalletWsType.TxProcessed =>
-        val notification = WalletNotification.TxProcessedNotification(tx)
-        upickle.default.writeJs(notification)(WsPicklers.txProcessedPickler)
+        WalletNotification.TxProcessedNotification(tx)
       case WalletWsType.TxBroadcast =>
-        val notification = WalletNotification.TxBroadcastNotification(tx)
-        upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
+        WalletNotification.TxBroadcastNotification(tx)
       case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
           WalletWsType.DLCStateChange | WalletWsType.DLCOfferAdd |
           WalletWsType.DLCOfferRemove | WalletWsType.RescanComplete) =>
         sys.error(s"Cannot build tx notification for $x")
     }
 
-    val msg = TextMessage.Strict(json.toString())
-    val offerF = walletQueue.offer(msg)
+    val offerF = walletQueue.offer(notification)
     offerF.map(_ => ())
   }
 
-  def buildDLCWalletCallbacks(walletQueue: SourceQueueWithComplete[Message])(
-      implicit ec: ExecutionContext): DLCWalletCallbacks = {
+  def buildDLCWalletCallbacks(
+      walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
+      ec: ExecutionContext): DLCWalletCallbacks = {
     val onStateChange: OnDLCStateChange = { status: DLCStatus =>
       val notification = WalletNotification.DLCStateChangeNotification(status)
-      val json =
-        upickle.default.writeJs(notification)(WsPicklers.dlcStateChangePickler)
-      val msg = TextMessage.Strict(json.toString())
-      val offerF = walletQueue.offer(msg)
+      val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
     val onOfferAdd: OnDLCOfferAdd = { offerDb: IncomingDLCOfferDb =>
       val notification = WalletNotification.DLCOfferAddNotification(offerDb)
-      val json =
-        upickle.default.writeJs(notification)(WsPicklers.dlcOfferAddPickler)
-      val msg = TextMessage.Strict(json.toString())
-      val offerF = walletQueue.offer(msg)
+      val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
     val onOfferRemove: OnDLCOfferRemove = { offerHash: Sha256Digest =>
       val notification =
         WalletNotification.DLCOfferRemoveNotification(offerHash)
-      val json =
-        upickle.default.writeJs(notification)(WsPicklers.dlcOfferRemovePickler)
-      val msg = TextMessage.Strict(json.toString())
-      val offerF = walletQueue.offer(msg)
+      val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
