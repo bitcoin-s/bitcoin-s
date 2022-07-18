@@ -24,10 +24,13 @@ class BitcoindV22RpcClient(override val instance: BitcoindInstance)(implicit
     with PsbtRpc
     with V19BlockFilterRpc
     with V20MultisigRpc
+    with TestMempoolAcceptRpc
     with V22AssortedRpc {
 
-  override lazy val version: Future[BitcoindVersion] =
+  override lazy val version: Future[BitcoindVersion] = {
     Future.successful(BitcoindVersion.V22)
+
+  }
 
 }
 

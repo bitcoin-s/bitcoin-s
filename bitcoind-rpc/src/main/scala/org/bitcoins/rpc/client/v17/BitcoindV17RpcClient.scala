@@ -99,6 +99,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
 
   // testmempoolaccept expects (and returns) a list of txes,
   // but currently only lists of length 1 is supported
+
   def testMempoolAccept(
       transaction: Transaction,
       allowHighFees: Boolean = false): Future[TestMempoolAcceptResult] = {

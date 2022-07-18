@@ -161,6 +161,29 @@ case class TestMempoolAcceptResult(
     rejectReason: Option[String]
 )
 
+/** sealed trait TestMempoolAcceptResult {
+  *  def txid: DoubleSha256DigestBE
+  *  def allowed: Boolean
+  *  def rejectReason: Option[String]
+  * }
+  *
+  * case class TestMempoolAcceptResultPreV22(
+  *    txid: DoubleSha256DigestBE,
+  *    allowed: Boolean,
+  *    rejectReason: Option[String]
+  * ) extends TestMempoolAcceptResult
+  */
+
+case class TestMempoolAcceptResultPostV22(
+    txid: DoubleSha256DigestBE,
+    wtxid: DoubleSha256DigestBE,
+    packageError: String,
+    allowed: Boolean,
+    vsize: Option[Int],
+    fees: Option[FeeInfo],
+    rejectReason: Option[String]
+)
+
 final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])
     extends OtherResult
     with SeqWrapper[BitcoinAddress] {

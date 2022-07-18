@@ -50,4 +50,5 @@ trait V17LabelRpc { self: Client =>
                                              JsBoolean(includeEmpty),
                                              JsBoolean(includeWatchOnly)))
   }
+
 }
