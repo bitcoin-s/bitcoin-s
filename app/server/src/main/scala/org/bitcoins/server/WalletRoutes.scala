@@ -19,9 +19,11 @@ import org.bitcoins.core.wallet.utxo.{
   TxoState
 }
 import org.bitcoins.crypto.{AesPassword, NetworkElement}
+import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
+import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
@@ -33,9 +35,10 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
-    loadWallet: (Option[String], Option[AesPassword]) => Future[Unit] = {
-      (_, _) => Future.unit
-    })(implicit system: ActorSystem, walletConf: WalletAppConfig)
+    loadWallet: (Option[String], Option[AesPassword]) => Future[
+      (WalletHolder, WalletAppConfig, DLCAppConfig)])(implicit
+    system: ActorSystem,
+    walletConf: WalletAppConfig)
     extends ServerRoute
     with Logging {
   import system.dispatcher
