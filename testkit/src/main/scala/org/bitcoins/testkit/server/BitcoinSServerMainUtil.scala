@@ -41,6 +41,8 @@ object BitcoinSServerMainUtil {
          |bitcoin-s.server.rpcport = ${RpcUtil.randomPort}
          |bitcoin-s.server.wsport= ${RpcUtil.randomPort}
          |bitcoin-s.server.password=topsecret
+         |bitcoin-s.fee-provider.poll-delay = 5s
+         |bitcoin-s.fee-provider.poll-interval = 1s
          |
          |""".stripMargin
 

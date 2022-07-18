@@ -23,7 +23,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil, Mutable}
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
@@ -40,8 +40,10 @@ import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Random, Success}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Random, Success, Try}
 
 abstract class Wallet
     extends AnyHDWalletApi
@@ -150,6 +152,7 @@ abstract class Wallet
       _ <- checkRootAccount
       _ <- downloadMissingUtxos
       _ = walletConfig.startRebroadcastTxsScheduler(this)
+      _ = startFeeRateCallbackScheduler()
     } yield {
       this
     }
@@ -915,6 +918,38 @@ abstract class Wallet
       logger.debug(s"Created new account ${created.hdAccount}")
       this
     }
+  }
+
+  def startFeeRateCallbackScheduler(): Unit = {
+    val feeRateChangedRunnable = new Runnable {
+      private val lastFeeRate =
+        new Mutable[Try[FeeUnit]](Failure(new RuntimeException("init")))
+      override def run(): Unit = {
+        getFeeRate()
+          .map(feeRate => Success(feeRate))
+          .recover { case NonFatal(ex) =>
+            logger.error("Cannot get fee rate ", ex)
+            Failure(ex)
+          }
+          .foreach { tryFeeRate =>
+            lastFeeRate.atomicUpdate(tryFeeRate) { (oldRate, newRate) =>
+              if (oldRate != newRate) {
+                walletCallbacks.executeOnFeeRateChanged(
+                  logger,
+                  newRate.getOrElse(SatoshisPerVirtualByte.negativeOne))
+              }
+              newRate
+            }
+          }
+        ()
+      }
+    }
+
+    val _ = scheduler.scheduleAtFixedRate(
+      feeRateChangedRunnable,
+      walletConfig.feeRatePollDelay.toSeconds,
+      walletConfig.feeRatePollInterval.toSeconds,
+      TimeUnit.SECONDS)
   }
 }
 
