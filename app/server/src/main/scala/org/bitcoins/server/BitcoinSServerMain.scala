@@ -680,8 +680,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       nodeApi = walletHolder.nodeApi
       chainQueryApi = walletHolder.chainQueryApi
       feeRateApi = walletHolder.feeRateApi
-
-      _ <- walletHolder.stop()
+      _ <- {
+        if (walletHolder.isInitialized) {
+          walletHolder
+            .stop()
+            .map(_ => ())
+        } else {
+          Future.unit
+        }
+      }
       _ <- walletConfig.start()
       _ <- dlcConfig.start()
       dlcWallet <- dlcConfig.createDLCWallet(nodeApi,
@@ -709,7 +716,17 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletName,
                                                        Some(aesPasswordOpt))
         .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
-
+      _ <- {
+        if (walletHolder.isInitialized) {
+          walletHolder
+            .stop()
+            .map(_ => ())
+        } else {
+          Future.unit
+        }
+      }
+      _ <- walletConfig.start()
+      _ <- dlcConfig.start()
       dlcWallet <- dlcConfig.createDLCWallet(
         nodeApi = nodeApi,
         chainQueryApi = bitcoind,
