@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ws.Message
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials.Missing
@@ -16,10 +16,11 @@ import akka.http.scaladsl.server.directives.{
   PathDirectives
 }
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.{default => up}
 
@@ -32,7 +33,7 @@ case class Server(
     rpcport: Int,
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
-    wsSource: Source[Message, NotUsed])(implicit system: ActorSystem)
+    wsSource: Source[WsNotification[_], NotUsed])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -208,9 +209,19 @@ case class Server(
     }
   }
 
+  private val notificationToMsgFn: WsNotification[_] => Message = {
+    notification =>
+      val msg = TextMessage.Strict(notification.json.toString())
+      msg
+  }
+  private val notificationToMsgFlow = Flow.fromFunction(notificationToMsgFn)
+
+  private val msgSource: Source[Message, NotUsed] = {
+    wsSource.viaMat(notificationToMsgFlow)(Keep.right)
+  }
+
   private def wsHandler: Flow[Message, Message, Any] = {
-    //we don't allow input, so use Sink.ignore
-    Flow.fromSinkAndSource(Sink.ignore, wsSource)
+    Flow.fromSinkAndSource(Sink.ignore, msgSource)
   }
 
 }
