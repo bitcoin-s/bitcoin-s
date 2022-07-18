@@ -18,12 +18,10 @@ import org.bitcoins.core.wallet.utxo.{
   AddressLabelTagType,
   TxoState
 }
-import org.bitcoins.crypto.{AesPassword, NetworkElement}
-import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
-import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
@@ -35,8 +33,7 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
-    loadWallet: (Option[String], Option[AesPassword]) => Future[
-      (WalletHolder, WalletAppConfig, DLCAppConfig)])(implicit
+    loadWalletApi: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute
@@ -1014,7 +1011,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
       withValidServerCommand(LoadWallet.fromJsArr(arr)) {
         case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>
           complete {
-            loadWallet(walletNameOpt, aesPasswordOpt).map { _ =>
+            loadWalletApi.load(walletNameOpt, aesPasswordOpt).map { _ =>
               val walletName =
                 walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
               Server.httpSuccess(walletName)
