@@ -201,7 +201,12 @@ case class NodeCallbackStreamManager(callbacks: NodeCallbacks)(implicit
     Future.unit
   }
 
+  /** Consider calling [[stop()]] before creating a new instance of callbacks
+    * this is because the previous stream will keep running and a new stream
+    * will be created
+    */
   override def +(other: NodeCallbacks): NodeCallbacks = {
-    ???
+    val newCallbacks = other.+(this)
+    NodeCallbackStreamManager(newCallbacks)
   }
 }
