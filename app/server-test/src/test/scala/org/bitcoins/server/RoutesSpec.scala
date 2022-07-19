@@ -79,7 +79,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       holder,
       mockChainApi,
       mockNode,
-      feeProvider = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
+      feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
   }
 
   val walletRoutes: WalletRoutes =

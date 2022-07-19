@@ -37,7 +37,7 @@ class WalletRoutesSpec
       holder,
       mockChainApi,
       mockNode,
-      feeProvider = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
+      feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
   }
 
   val walletRoutes: WalletRoutes =
