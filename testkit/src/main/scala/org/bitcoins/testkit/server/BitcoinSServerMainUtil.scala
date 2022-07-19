@@ -14,7 +14,6 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.{FileUtil, TorUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.sys.env
 
 object BitcoinSServerMainUtil {
 
