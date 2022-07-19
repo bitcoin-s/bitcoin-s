@@ -129,7 +129,9 @@ case class NodeCallbackStreamManager(callbacks: NodeCallbacks)(implicit
       _ <- merkleBlockCompleteF
       _ <- blockSinkCompleteF
     } yield {
-      logger.info(s"Done draining akka streams for NodeCallbackStreamManager, it took=${System.currentTimeMillis() - start}ms")
+      logger.info(
+        s"Done draining akka streams for NodeCallbackStreamManager, it took=${System
+          .currentTimeMillis() - start}ms")
       ()
     }
   }

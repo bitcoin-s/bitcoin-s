@@ -8,13 +8,8 @@ import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.node.{
-  NodeCallbacks,
-  OnBlockHeadersReceived,
-  OnBlockReceived,
-  OnCompactFiltersReceived,
-  OnTxReceived
-}
+import org.bitcoins.node.callback.NodeCallbackStreamManager
+import org.bitcoins.node._
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.Future
@@ -24,7 +19,7 @@ object CallbackUtil extends Logging {
   def createNeutrinoNodeCallbacksForWallet(
       wallet: Wallet,
       killSwitch: SharedKillSwitch)(implicit
-      system: ActorSystem): Future[NodeCallbacks] = {
+      system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     //val killSwitch = KillSwitches.shared("node-callback-kill-switch")
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
@@ -93,17 +88,21 @@ object CallbackUtil extends Logging {
         .runWith(onHeaderSink)
         .map(_ => ())
     }
-    Future.successful(
-      NodeCallbacks(onTxReceived = Vector(onTx),
-                    onBlockReceived = Vector(onBlock),
-                    onCompactFiltersReceived = Vector(onCompactFilters),
-                    onBlockHeadersReceived = Vector(onHeaders)))
+
+    val callbacks = NodeCallbacks(onTxReceived = Vector(onTx),
+                                  onBlockReceived = Vector(onBlock),
+                                  onCompactFiltersReceived =
+                                    Vector(onCompactFilters),
+                                  onBlockHeadersReceived = Vector(onHeaders))
+
+    val streamManager = NodeCallbackStreamManager(callbacks)
+    Future.successful(streamManager)
   }
 
   def createBitcoindNodeCallbacksForWallet(
       wallet: Wallet,
       killSwitch: SharedKillSwitch)(implicit
-      system: ActorSystem): Future[NodeCallbacks] = {
+      system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
@@ -118,6 +117,8 @@ object CallbackUtil extends Logging {
         .runWith(txSink)
         .map(_ => ())
     }
-    Future.successful(NodeCallbacks(onTxReceived = Vector(onTx)))
+    val callbacks = NodeCallbacks(onTxReceived = Vector(onTx))
+    val streamManager = NodeCallbackStreamManager(callbacks)
+    Future.successful(streamManager)
   }
 }
