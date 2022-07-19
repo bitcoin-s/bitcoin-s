@@ -10,12 +10,10 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV21
-import org.scalatest.Assertion
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 
 import java.io.File
 import java.nio.file.Files
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
 
@@ -208,51 +206,70 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
       } yield assert(hashes.size == numBlocks)
   }
 
+  /**    it should "create a descriptor wallet" in { client: BitcoindV21RpcClient =>
+    *        val descriptorWallet: Future[CreateWalletResult] =
+    *          client.createWallet("descriptorWallet", descriptors = true)
+    *        Await.ready(descriptorWallet, 10.seconds)
+    *        val checkDescriptor: Future[Assertion] =
+    *          client.getWalletInfo("descriptorWallet").map {
+    *  case walletInfoPostV21: GetWalletInfoResultPostV21 =>
+    *              assert(!walletInfoPostV21.descriptors)
+    *            case _: GetWalletInfoResultPreV21 =>
+    *              fail("descriptors only available on V21 or higher")
+    *          }
+    *        Await.ready(checkDescriptor, 10.seconds)
+    *        val unload = client.unloadWallet("descriptorWallet")
+    *        Await.ready(unload, 10.seconds)
+    *        checkDescriptor
+    *      }
+    */
+
   it should "create a descriptor wallet" in { client: BitcoindV21RpcClient =>
-    val descriptorWallet: Future[CreateWalletResult] =
-      client.createWallet("descriptorWallet", descriptors = true)
-    Await.ready(descriptorWallet, 10.seconds)
-    val checkDescriptor: Future[Assertion] =
-      client.getWalletInfo("descriptorWallet").map {
+    for {
+      _ <- client.createWallet("descriptorWallet", descriptors = true)
+      descript <- client.getWalletInfo("descriptorWallet")
+      _ <- client.unloadWallet("descriptorWallet")
+    } yield {
+      descript match {
         case walletInfoPostV21: GetWalletInfoResultPostV21 =>
           assert(walletInfoPostV21.descriptors)
         case _: GetWalletInfoResultPreV21 =>
           fail("descriptors only available on V21 or higher")
       }
-    Await.ready(checkDescriptor, 10.seconds)
-    val unload = client.unloadWallet("descriptorWallet")
-    Await.ready(unload, 10.seconds)
-    checkDescriptor
+    }
   }
-
   it should "create a wallet with private keys disabled" in {
     client: BitcoindV21RpcClient =>
-      val descriptorWallet: Future[CreateWalletResult] =
-        client.createWallet("privKeyWallet", disablePrivateKeys = true)
-      Await.ready(descriptorWallet, 5.seconds)
-      val privKeyStatus: Future[Assertion] =
-        client.getWalletInfo("privKeyWallet").map {
+      for {
+        _ <- client.createWallet("privKeyWallet", disablePrivateKeys = true)
+        walletPriv <- client.getWalletInfo("privKeyWallet")
+        _ <- client.unloadWallet("privKeyWallet")
+      } yield {
+        walletPriv match {
           case walletInfoPostV21: GetWalletInfoResultPostV21 =>
             assert(!walletInfoPostV21.private_keys_enabled)
           case _: GetWalletInfoResultPreV21 =>
             fail("private key parameter only available on V21 or higher")
         }
-      Await.ready(privKeyStatus, 10.seconds)
-      val unload = client.unloadWallet("privKeyWallet")
-      Await.ready(unload, 10.seconds)
-      privKeyStatus
-  }
-  it should "print the wallets" in { client: BitcoindV21RpcClient =>
-    val walletsUF: Future[Assertion] = client.listWallets.map { wallets =>
-      println(s"wallets=$wallets")
-      val convertToAs: String = wallets.foldLeft("")((_, _) => "succeed")
-      convertToAs match {
-        case "succeed" =>
-          succeed
-        case _ => succeed
       }
-    }
-    walletsUF
   }
 
+  /**  it should "create a wallet with private keys disabled" in {
+    *    client: BitcoindV21RpcClient =>
+    *      val descriptorWallet: Future[CreateWalletResult] =
+    *        client.createWallet("privKeyWallet", disablePrivateKeys = true)
+    *      Await.ready(descriptorWallet, 5.seconds)
+    *      val privKeyStatus: Future[Assertion] =
+    *        client.getWalletInfo("privKeyWallet").map {
+    *          case walletInfoPostV21: GetWalletInfoResultPostV21 =>
+    *            assert(!walletInfoPostV21.private_keys_enabled)
+    *          case _: GetWalletInfoResultPreV21 =>
+    *            fail("private key parameter only available on V21 or higher")
+    *        }
+    *      Await.ready(privKeyStatus, 10.seconds)
+    *      val unload = client.unloadWallet("privKeyWallet")
+    *      Await.ready(unload, 10.seconds)
+    *      privKeyStatus
+    *  }
+    */
 }

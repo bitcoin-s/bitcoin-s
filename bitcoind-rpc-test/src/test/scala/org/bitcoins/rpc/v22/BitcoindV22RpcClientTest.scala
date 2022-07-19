@@ -12,11 +12,10 @@ import org.bitcoins.testkit.rpc.{
   BitcoindRpcTestUtil
 }
 import org.scalatest.Assertion
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 //import org.bitcoins.rpc.client.v22.TestMempoolAcceptRpc
 
 import java.time.ZonedDateTime
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
 
@@ -153,45 +152,80 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
   it should "output wallet name from listdescriptors" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
-      val descriptorWallet: Future[CreateWalletResult] =
-        client.createWallet("descriptorWallet", descriptors = true)
-      Await.ready(descriptorWallet, 10.seconds)
-      val resultWalletF: Future[listDescriptorsResult] = {
-        client.listDescriptors(walletName = "descriptorWallet")
+      for {
+        _ <- client.createWallet("descriptorWallet", descriptors = true)
+        resultWallets <- client.listDescriptors(walletName = "descriptorWallet")
+        _ <- client.unloadWallet("descriptorWallet")
+      } yield {
+        assert(resultWallets.wallet_name == "descriptorWallet")
       }
-      descriptorWallet.flatMap { _ =>
-        resultWalletF.map { resultWallet =>
-          assert(resultWallet.wallet_name == "descriptorWallet")
-        }
-        succeed
-      }
-
   }
 
+  /**  it should "output wallet name from listdescriptors" in {
+    *    nodePair: FixtureParam =>
+    *      val client = nodePair.node1
+    *      val descriptorWallet: Future[CreateWalletResult] =
+    *        client.createWallet("descriptorWallet", descriptors = true)
+    *      Await.ready(descriptorWallet, 10.seconds)
+    *      val resultWalletF: Future[listDescriptorsResult] = {
+    *        client.listDescriptors(walletName = "descriptorWallet")
+    *      }
+    *      descriptorWallet.flatMap { _ =>
+    *        resultWalletF.map { resultWallet =>
+    *          assert(resultWallet.wallet_name == "descriptorWallet")
+    *        }
+    *        succeed
+    *      }
+    *
+    *  }
+    */
   it should "output descriptors from listdescriptors" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
-      val descriptorWallet: Future[CreateWalletResult] =
-        client.createWallet("descriptorWalletTwo", descriptors = true)
-      Await.ready(descriptorWallet, 10.seconds)
-      val resultWalletF: Future[listDescriptorsResult] = {
-        client.listDescriptors(walletName = "descriptorWalletTwo")
-      }
-      descriptorWallet.flatMap { _ =>
-        resultWalletF.map { resultWallet =>
-          resultWallet.descriptors.map { d =>
-            assert(
-              d.desc.isInstanceOf[String] && d.timestamp
-                .isInstanceOf[ZonedDateTime]
-                && d.active.isInstanceOf[Boolean] && d.internal
-                  .isInstanceOf[Option[Boolean]]
-                && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
-                  .isInstanceOf[Option[Int]])
-          }
-          succeed
+      for {
+        _ <- client.createWallet("descriptorWalletTwo", descriptors = true)
+        resultWallet <- client.listDescriptors(walletName =
+          "descriptorWalletTwo")
+        _ <- client.unloadWallet("descriptorWalletTwo")
+      } yield {
+        resultWallet.descriptors.map { d =>
+          assert(
+            d.desc.isInstanceOf[String] && d.timestamp
+              .isInstanceOf[ZonedDateTime]
+              && d.active.isInstanceOf[Boolean] && d.internal
+                .isInstanceOf[Option[Boolean]]
+              && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
+                .isInstanceOf[Option[Int]])
         }
+        succeed
       }
   }
+
+  /**  it should "output descriptors from listdescriptors" in {
+    *    nodePair: FixtureParam =>
+    *      val client = nodePair.node1
+    *      val descriptorWallet: Future[CreateWalletResult] =
+    *        client.createWallet("descriptorWalletTwo", descriptors = true)
+    *      Await.ready(descriptorWallet, 10.seconds)
+    *      val resultWalletF: Future[listDescriptorsResult] = {
+    *        client.listDescriptors(walletName = "descriptorWalletTwo")
+    *      }
+    *      descriptorWallet.flatMap { _ =>
+    *        resultWalletF.map { resultWallet =>
+    *          resultWallet.descriptors.map { d =>
+    *            assert(
+    *              d.desc.isInstanceOf[String] && d.timestamp
+    *                .isInstanceOf[ZonedDateTime]
+    *                && d.active.isInstanceOf[Boolean] && d.internal
+    *                  .isInstanceOf[Option[Boolean]]
+    *                && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
+    *                  .isInstanceOf[Option[Int]])
+    *          }
+    *          succeed
+    *        }
+    *      }
+    *  }
+    */
 
   /** Future.sequence(walletsU.map {
     *          case wallet @ "descriptorWallet" =>
@@ -205,23 +239,53 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     *    Await.ready(walletsUnload, 5.seconds)
     */
 
+  /**  it should "be able to decode a reedem script" in { nodePair: FixtureParam =>
+    *    val client = nodePair.node1
+    *    //val walletsUF: Future[Vector[String]] = client.listWallets
+    *    //val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
+    *    //val walletsUI: Future[Vector[Unit]] =
+    *    //Future.sequence(walletsU.map { wallet =>
+    *    //client.unloadWallet(wallet)
+    *    // })
+    *    //walletsUI
+    *    //}.flatten
+    *    //Await.ready(walletsUnload, 5.seconds)
+    *    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    *    val pubKey1 = ecPrivKey1.publicKey
+    *    //val walletDecode: Future[CreateWalletResult] =
+    *    //client.createWallet("decodeRWallet")
+    *    //Await.ready(walletDecode, 10.seconds)
+    *    for {
+    *      _ <- client.unloadWallet("")
+    *      _ <- client.createWallet("decodeRWallet")
+    *      address <- client.getNewAddress(addressType = AddressType.Legacy)
+    *      multisig <-
+    *        client
+    *          .addMultiSigAddress(
+    *            2,
+    *            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
+    *      decoded <- client.decodeScript(multisig.redeemScript)
+    *    } yield {
+    *      decoded match {
+    *        case decodedPreV22: DecodeScriptResultPreV22 =>
+    *          assert(decodedPreV22.reqSigs.contains(2))
+    *          assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
+    *          assert(decodedPreV22.addresses.get.contains(address))
+    *        case decodedV22: DecodeScriptResultV22 =>
+    *          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
+    *      }
+    *
+    *    }
+    *  }
+    */
+
   it should "be able to decode a reedem script" in { nodePair: FixtureParam =>
     val client = nodePair.node1
-    val walletsUF: Future[Vector[String]] = client.listWallets
-    val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
-      val walletsUI: Future[Vector[Unit]] =
-        Future.sequence(walletsU.map { wallet =>
-          client.unloadWallet(wallet)
-        })
-      walletsUI
-    }.flatten
-    Await.ready(walletsUnload, 5.seconds)
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
-    val walletDecode: Future[CreateWalletResult] =
-      client.createWallet("decodeRWallet")
-    Await.ready(walletDecode, 10.seconds)
     for {
+      _ <- client.unloadWallet("")
+      _ <- client.createWallet("decodeRWallet")
       address <- client.getNewAddress(addressType = AddressType.Legacy)
       multisig <-
         client
@@ -242,34 +306,37 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     }
   }
 
-  /**  it should "output more than one txid" in { nodePair: FixtureParam =>
-    *    val NodePair(client, otherClient) = nodePair
-    *    val tx1F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
-    *      .createRawCoinbaseTransaction(client, otherClient)
-    *      .map { tx1 =>
-    *        tx1.txIdBE
-    *        val tx2F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
+  /**    it should "output more than one txid" in { nodePair: FixtureParam =>
+    *        val NodePair(client, otherClient) = nodePair
+    *        val tx1F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
     *          .createRawCoinbaseTransaction(client, otherClient)
-    *          .map { tx2 =>
-    *            tx2.txIdBE
+    *          .map { tx1 =>
+    *            tx1.txIdBE
+    *            val tx2F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
+    *              .createRawCoinbaseTransaction(client, otherClient)
+    *              .map { tx2 =>
+    *                tx2.txIdBE
+    *              }
+    *            Await.ready(tx1F, 5.seconds)
+    *            Await.ready(tx2F, 5.seconds)
+    *            val transactionAcceptT: Future[Assertion] =
+    *              client.testMempoolAccept(List[tx1F, tx2F]).map { testMempoolResult =>
+    *                assert(testMempoolResult.txid.length > 1)
+    *              }
+    *            transactionAcceptT
     *          }
-    *        Await.ready(tx1F, 5.seconds)
-    *        Await.ready(tx2F, 5.seconds)
-    *        val transactionAcceptT: Future[Assertion] =
-    *          client.testMempoolAccept(List[tx1F, tx2F]).map { testMempoolResult =>
-    *            assert(testMempoolResult.txid.length > 1)
-    *          }
-    *        transactionAcceptT
     *      }
-    *  }
-    *
-    *  it should "print the wallets" in { nodePair: FixtureParam =>
-    *    val client = nodePair.node1
-    *    val walletsUF: Future[Assertion] = client.listWallets.map { wallets =>
-    *      println(s"wallets=$wallets")
-    *      Future.sequence(wallets.map { _ => succeed })
-    *    }.flatten
-    *    walletsUF
+    *  it should "output more than one txid" in { nodePair: FixtureParam =>
+    *    val NodePair(client, otherClient) = nodePair
+    *    for {
+    *      transaction1 <- BitcoindRpcTestUtil
+    *        .createRawCoinbaseTransaction(client, otherClient)
+    *      transaction2 <- BitcoindRpcTestUtil
+    *        .createRawCoinbaseTransaction(client, otherClient)
+    *      mempoolAccept <- client.testMempoolAccept(Vector[(transaction1, transaction2)])
+    *    } yield {
+    *      assert(mempoolAccept.txid.length >1)
+    *    }
     *  }
     */
 
