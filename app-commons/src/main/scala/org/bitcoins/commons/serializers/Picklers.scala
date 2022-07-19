@@ -34,7 +34,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.util.TimeUtil._
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -1578,4 +1578,20 @@ object Picklers {
   private def readRescanComplete(value: ujson.Value): RescanComplete = {
     RescanComplete(value.str)
   }
+
+  implicit val feeUnit: ReadWriter[FeeUnit] = {
+    readwriter[ujson.Value].bimap(writeFeeUnit(_), readFeeUnit(_))
+  }
+
+  private def writeFeeUnit(unit: FeeUnit): Value = unit match {
+    case SatoshisPerVirtualByte(currencyUnit) =>
+      ujson.Num(currencyUnit.satoshis.toDouble)
+    case err: FeeUnit =>
+      throw new RuntimeException(s"Unsupported fee unit type: `$err`")
+  }
+
+  private def readFeeUnit(value: Value): FeeUnit = {
+    SatoshisPerVirtualByte.fromLong(value.num.toLong)
+  }
+
 }

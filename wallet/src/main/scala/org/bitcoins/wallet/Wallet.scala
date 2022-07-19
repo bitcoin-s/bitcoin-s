@@ -40,7 +40,9 @@ import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 abstract class Wallet
@@ -150,6 +152,7 @@ abstract class Wallet
       _ <- checkRootAccount
       _ <- downloadMissingUtxos
       _ = walletConfig.startRebroadcastTxsScheduler(this)
+      _ = startFeeRateCallbackScheduler()
     } yield {
       this
     }
@@ -915,6 +918,31 @@ abstract class Wallet
       logger.debug(s"Created new account ${created.hdAccount}")
       this
     }
+  }
+
+  def startFeeRateCallbackScheduler(): Unit = {
+    val feeRateChangedRunnable = new Runnable {
+      override def run(): Unit = {
+        getFeeRate()
+          .map(feeRate => Some(feeRate))
+          .recover { case NonFatal(ex) =>
+            logger.error("Cannot get fee rate ", ex)
+            None
+          }
+          .foreach { feeRateOpt =>
+            walletCallbacks.executeOnFeeRateChanged(
+              logger,
+              feeRateOpt.getOrElse(SatoshisPerVirtualByte.negativeOne))
+          }
+        ()
+      }
+    }
+
+    val _ = scheduler.scheduleAtFixedRate(
+      feeRateChangedRunnable,
+      walletConfig.feeRatePollDelay.toSeconds,
+      walletConfig.feeRatePollInterval.toSeconds,
+      TimeUnit.SECONDS)
   }
 }
 

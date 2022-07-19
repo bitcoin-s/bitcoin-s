@@ -107,13 +107,20 @@ object WebsocketUtil extends Logging {
       offerF.map(_ => ())
     }
 
+    val onFeeRate: OnFeeRateChanged = { feeRate =>
+      val notification = WalletNotification.FeeRateChange(feeRate)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
     WalletCallbacks(
       onTransactionProcessed = Vector(onTxProcessed),
       onTransactionBroadcast = Vector(onTxBroadcast),
       onReservedUtxos = Vector(onReservedUtxo),
       onNewAddressGenerated = Vector(onAddressCreated),
       onBlockProcessed = Vector.empty,
-      onRescanComplete = Vector(onRescanComplete)
+      onRescanComplete = Vector(onRescanComplete),
+      onFeeRateChanged = Vector(onFeeRate)
     )
   }
 
@@ -140,7 +147,8 @@ object WebsocketUtil extends Logging {
         WalletNotification.TxBroadcastNotification(tx)
       case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
           WalletWsType.DLCStateChange | WalletWsType.DLCOfferAdd |
-          WalletWsType.DLCOfferRemove | WalletWsType.RescanComplete) =>
+          WalletWsType.DLCOfferRemove | WalletWsType.RescanComplete |
+          WalletWsType.FeeRateChange) =>
         sys.error(s"Cannot build tx notification for $x")
     }
 
