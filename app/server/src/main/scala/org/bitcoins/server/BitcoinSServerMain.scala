@@ -212,10 +212,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       //make sure callbacks are registered before we start sync
       node <- startedNodeF
       _ <- startedTorConfigF
+      _ <- node.sync()
       wallet <- configuredWalletF
       _ <- handleDuplicateSpendingInfoDb(wallet)
       _ <- restartRescanIfNeeded(wallet)
-      _ <- node.sync()
     } yield {
       logger.info(
         s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
