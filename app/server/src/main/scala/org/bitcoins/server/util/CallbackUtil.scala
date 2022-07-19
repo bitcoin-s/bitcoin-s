@@ -1,7 +1,6 @@
 package org.bitcoins.server.util
 
 import akka.actor.ActorSystem
-import akka.stream.SharedKillSwitch
 import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.gcs.GolombFilter
@@ -16,12 +15,9 @@ import scala.concurrent.Future
 
 object CallbackUtil extends Logging {
 
-  def createNeutrinoNodeCallbacksForWallet(
-      wallet: Wallet,
-      killSwitch: SharedKillSwitch)(implicit
+  def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
       system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
-    //val killSwitch = KillSwitches.shared("node-callback-kill-switch")
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
       wallet
@@ -63,28 +59,24 @@ object CallbackUtil extends Logging {
     lazy val onTx: OnTxReceived = { tx =>
       Source
         .single(tx)
-        .via(killSwitch.flow)
         .runWith(txSink)
         .map(_ => ())
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
       Source
         .single(blockFilters)
-        .via(killSwitch.flow)
         .runWith(compactFilterSink)
         .map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
       Source
         .single(block)
-        .via(killSwitch.flow)
         .runWith(blockSink)
         .map(_ => ())
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
       Source
         .single(headers)
-        .via(killSwitch.flow)
         .runWith(onHeaderSink)
         .map(_ => ())
     }
@@ -99,9 +91,7 @@ object CallbackUtil extends Logging {
     Future.successful(streamManager)
   }
 
-  def createBitcoindNodeCallbacksForWallet(
-      wallet: Wallet,
-      killSwitch: SharedKillSwitch)(implicit
+  def createBitcoindNodeCallbacksForWallet(wallet: Wallet)(implicit
       system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
@@ -113,7 +103,6 @@ object CallbackUtil extends Logging {
     val onTx: OnTxReceived = { tx =>
       Source
         .single(tx)
-        .via(killSwitch.flow)
         .runWith(txSink)
         .map(_ => ())
     }

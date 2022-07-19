@@ -8,7 +8,7 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
-import akka.stream.{KillSwitches, OverflowStrategy, SharedKillSwitch}
+import akka.stream.OverflowStrategy
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
@@ -58,10 +58,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
   implicit lazy val torConf: TorAppConfig = conf.torConf
-
-  private val nodeCallbackKillSwitch: SharedKillSwitch = {
-    KillSwitches.shared("node-callback-killswitch")
-  }
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
@@ -142,9 +138,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       node <- nodeF
       _ = logger.info("Initialized chain api")
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
-      nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(
-        wallet,
-        nodeCallbackKillSwitch)
+      nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
       _ = nodeConf.addCallbacks(nodeCallbacks)
     } yield {
       logger.info(
@@ -314,8 +308,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           Some(chainCallbacks))
 
         nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(
-          wallet,
-          nodeCallbackKillSwitch)
+          wallet)
         _ = nodeConf.addCallbacks(nodeCallbacks)
         _ = logger.info("Starting wallet")
         _ <- wallet.start()
