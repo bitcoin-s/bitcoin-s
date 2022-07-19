@@ -23,7 +23,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil, Mutable}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
@@ -922,8 +922,6 @@ abstract class Wallet
 
   def startFeeRateCallbackScheduler(): Unit = {
     val feeRateChangedRunnable = new Runnable {
-      private val lastFeeRate =
-        new Mutable[Option[FeeUnit]](None)
       override def run(): Unit = {
         getFeeRate()
           .map(feeRate => Some(feeRate))
@@ -932,14 +930,9 @@ abstract class Wallet
             None
           }
           .foreach { feeRateOpt =>
-            lastFeeRate.atomicUpdate(feeRateOpt) { (oldRate, newRate) =>
-              if (newRate.isEmpty || oldRate != newRate) {
-                walletCallbacks.executeOnFeeRateChanged(
-                  logger,
-                  newRate.getOrElse(SatoshisPerVirtualByte.negativeOne))
-              }
-              newRate
-            }
+            walletCallbacks.executeOnFeeRateChanged(
+              logger,
+              feeRateOpt.getOrElse(SatoshisPerVirtualByte.negativeOne))
           }
         ()
       }
