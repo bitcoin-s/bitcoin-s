@@ -1,7 +1,13 @@
 package org.bitcoins.server.util
 
+import akka.actor.ActorSystem
+import akka.stream.SharedKillSwitch
+import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
-import org.bitcoins.core.api.node.{ExternalImplementationNodeType, NodeType}
+import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node.{
   NodeCallbacks,
   OnBlockHeadersReceived,
@@ -9,62 +15,108 @@ import org.bitcoins.node.{
   OnCompactFiltersReceived,
   OnTxReceived
 }
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.wallet.Wallet
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 object CallbackUtil extends Logging {
 
-  def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
-      nodeConf: NodeAppConfig,
-      ec: ExecutionContext): Future[NodeCallbacks] = {
-    lazy val onTx: OnTxReceived = { tx =>
+  def createNeutrinoNodeCallbacksForWallet(
+      wallet: Wallet,
+      killSwitch: SharedKillSwitch)(implicit
+      system: ActorSystem): Future[NodeCallbacks] = {
+    import system.dispatcher
+    //val killSwitch = KillSwitches.shared("node-callback-kill-switch")
+    val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
+      wallet
+        .processTransaction(tx, blockHashOpt = None)
+        .map(_ => ())
+    }
+
+    val compactFilterSink = {
+      Sink.foreachAsync[Vector[(DoubleSha256Digest, GolombFilter)]](1) {
+        case blockFilters: Vector[(DoubleSha256Digest, GolombFilter)] =>
+          logger.debug(
+            s"Executing onCompactFilters callback with filter count=${blockFilters.length}")
+          wallet
+            .processCompactFilters(blockFilters = blockFilters)
+            .map(_ => ())
+      }
+    }
+
+    val blockSink = {
+      Sink.foreachAsync[Block](1) { case block: Block =>
+        logger.debug(
+          s"Executing onBlock callback=${block.blockHeader.hashBE.hex}")
+        wallet.processBlock(block).map(_ => ())
+      }
+    }
+
+    val onHeaderSink = {
+      Sink.foreachAsync(1) { headers: Vector[BlockHeader] =>
+        logger.debug(
+          s"Executing block header with header count=${headers.length}")
+        if (headers.isEmpty) {
+          Future.unit
+        } else {
+          wallet.updateUtxoPendingStates().map(_ => ())
+        }
+      }
+    }
+
+    lazy val onTx: OnTxReceived = { tx =>
+      Source
+        .single(tx)
+        .via(killSwitch.flow)
+        .runWith(txSink)
+        .map(_ => ())
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
-      logger.debug(
-        s"Executing onCompactFilters callback with filter count=${blockFilters.length}")
-      wallet
-        .processCompactFilters(blockFilters = blockFilters)
+      Source
+        .single(blockFilters)
+        .via(killSwitch.flow)
+        .runWith(compactFilterSink)
         .map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
-      logger.debug(
-        s"Executing onBlock callback=${block.blockHeader.hashBE.hex}")
-      wallet.processBlock(block).map(_ => ())
+      Source
+        .single(block)
+        .via(killSwitch.flow)
+        .runWith(blockSink)
+        .map(_ => ())
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
-      logger.debug(
-        s"Executing block header with header count=${headers.length}")
-      if (headers.isEmpty) {
-        Future.unit
-      } else {
-        wallet.updateUtxoPendingStates().map(_ => ())
-      }
+      Source
+        .single(headers)
+        .via(killSwitch.flow)
+        .runWith(onHeaderSink)
+        .map(_ => ())
     }
-    nodeConf.nodeType match {
-      case NodeType.NeutrinoNode =>
-        Future.successful(
-          NodeCallbacks(onTxReceived = Vector(onTx),
-                        onBlockReceived = Vector(onBlock),
-                        onCompactFiltersReceived = Vector(onCompactFilters),
-                        onBlockHeadersReceived = Vector(onHeaders)))
-      case NodeType.FullNode =>
-        Future.failed(new RuntimeException("Not yet implemented"))
-      case _: ExternalImplementationNodeType =>
-        Future.failed(
-          new RuntimeException(
-            "Cannot create callbacks for an external implementation"))
-    }
+    Future.successful(
+      NodeCallbacks(onTxReceived = Vector(onTx),
+                    onBlockReceived = Vector(onBlock),
+                    onCompactFiltersReceived = Vector(onCompactFilters),
+                    onBlockHeadersReceived = Vector(onHeaders)))
   }
 
-  def createBitcoindNodeCallbacksForWallet(wallet: Wallet)(implicit
-      ec: ExecutionContext): Future[NodeCallbacks] = {
-    val onTx: OnTxReceived = { tx =>
+  def createBitcoindNodeCallbacksForWallet(
+      wallet: Wallet,
+      killSwitch: SharedKillSwitch)(implicit
+      system: ActorSystem): Future[NodeCallbacks] = {
+    import system.dispatcher
+    val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
+      wallet
+        .processTransaction(tx, blockHashOpt = None)
+        .map(_ => ())
+    }
+    val onTx: OnTxReceived = { tx =>
+      Source
+        .single(tx)
+        .via(killSwitch.flow)
+        .runWith(txSink)
+        .map(_ => ())
     }
     Future.successful(NodeCallbacks(onTxReceived = Vector(onTx)))
   }

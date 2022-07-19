@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
+import akka.stream.{KillSwitches, SharedKillSwitch}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.AppConfig
@@ -15,7 +16,6 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -645,10 +645,11 @@ object BitcoinSWalletTest extends WalletLogger {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)(config.walletConf, system)
       //add callbacks for wallet
+      killSwitch = KillSwitches.shared("fundedWalletAndBitcoind-killswitch")
       nodeCallbacks <-
-        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)(
-          config.nodeConf,
-          system.dispatcher)
+        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(
+          wallet,
+          killSwitch)(system)
       _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- FundWalletUtil.fundWalletWithBitcoind(withBitcoind)
@@ -693,10 +694,11 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   /** Constructs callbacks for the wallet from the node to process blocks and compact filters */
-  def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
-      nodeAppConfig: NodeAppConfig,
-      ec: ExecutionContext): Future[NodeCallbacks] = {
-    CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
+  def createNeutrinoNodeCallbacksForWallet(
+      wallet: Wallet,
+      killSwitch: SharedKillSwitch)(implicit
+      system: ActorSystem): Future[NodeCallbacks] = {
+    CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet, killSwitch)
   }
 
   /** Makes sure our wallet is fully funded with the default amounts specified in
