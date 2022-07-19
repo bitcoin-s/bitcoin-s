@@ -3,17 +3,14 @@ package org.bitcoins.testkit.server
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.config.{
-  BitcoindInstance,
-  BitcoindInstanceLocal,
-  BitcoindInstanceRemote
-}
+import org.bitcoins.rpc.config.{BitcoindInstance, BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.{FileUtil, TorUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.sys.env
 
 object BitcoinSServerMainUtil {
 
@@ -41,7 +38,7 @@ object BitcoinSServerMainUtil {
          |bitcoin-s.server.rpcport = ${RpcUtil.randomPort}
          |bitcoin-s.server.wsport= ${RpcUtil.randomPort}
          |bitcoin-s.server.password=topsecret
-         |bitcoin-s.fee-provider.poll-delay = 5s
+         |bitcoin-s.fee-provider.poll-delay = ${if (env.contains("CI")) "15s" else "5s"}
          |bitcoin-s.fee-provider.poll-interval = 1s
          |
          |""".stripMargin
