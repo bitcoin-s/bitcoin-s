@@ -97,7 +97,7 @@ case class DLCWalletNeutrinoBackendLoader(
     walletHolder: WalletHolder,
     chainQueryApi: ChainQueryApi,
     nodeApi: NodeApi,
-    feeProvider: FeeRateApi)(implicit
+    feeRateApi: FeeRateApi)(implicit
     override val conf: BitcoinSAppConfig,
     ec: ExecutionContext)
     extends DLCWalletLoaderApi {
@@ -114,9 +114,6 @@ case class DLCWalletNeutrinoBackendLoader(
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
     } yield ()
 
-    val nodeApi = walletHolder.nodeApi
-    val chainQueryApi = walletHolder.chainQueryApi
-    val feeRateApi = walletHolder.feeRateApi
     for {
       _ <- replacedNodeCallbacks
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(

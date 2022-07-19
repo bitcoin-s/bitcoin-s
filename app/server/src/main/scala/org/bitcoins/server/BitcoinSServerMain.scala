@@ -142,7 +142,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         DLCWalletNeutrinoBackendLoader(walletHolder,
                                        chainApi,
                                        nodeApi = node,
-                                       feeProvider = feeProvider)
+                                       feeRateApi = feeProvider)
       }
     }
 
