@@ -923,17 +923,17 @@ abstract class Wallet
   def startFeeRateCallbackScheduler(): Unit = {
     val feeRateChangedRunnable = new Runnable {
       private val lastFeeRate =
-        new Mutable[Try[FeeUnit]](Failure(new RuntimeException("init")))
+        new Mutable[Option[FeeUnit]](None)
       override def run(): Unit = {
         getFeeRate()
-          .map(feeRate => Success(feeRate))
+          .map(feeRate => Some(feeRate))
           .recover { case NonFatal(ex) =>
             logger.error("Cannot get fee rate ", ex)
-            Failure(ex)
+            None
           }
-          .foreach { tryFeeRate =>
-            lastFeeRate.atomicUpdate(tryFeeRate) { (oldRate, newRate) =>
-              if (oldRate != newRate) {
+          .foreach { feeRateOpt =>
+            lastFeeRate.atomicUpdate(feeRateOpt) { (oldRate, newRate) =>
+              if (newRate.isEmpty || oldRate != newRate) {
                 walletCallbacks.executeOnFeeRateChanged(
                   logger,
                   newRate.getOrElse(SatoshisPerVirtualByte.negativeOne))
