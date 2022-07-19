@@ -13,7 +13,6 @@ import org.bitcoins.testkit.rpc.{
 }
 import org.scalatest.Assertion
 //import org.bitcoins.rpc.client.v22.TestMempoolAcceptRpc
-
 import java.time.ZonedDateTime
 import scala.concurrent.Future
 
@@ -148,16 +147,55 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       succeed
     }
   }
+  it should "create a descriptor wallet" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    for {
+      _ <- client.unloadWallet("")
+      _ <- client.createWallet("descriptorWallet", descriptors = true)
+      descript <- client.getWalletInfo("descriptorWallet")
+      _ <- client.unloadWallet("descriptorWallet")
+      _ <- client.loadWallet("")
+    } yield {
+      descript match {
+        case walletInfoPostV22: GetWalletInfoResultPostV22 =>
+          assert(walletInfoPostV22.descriptors)
+        case _: GetWalletInfoResultPreV22 =>
+          fail("descriptors only available on V22 or higher")
+      }
+    }
+  }
+
+  it should "create a wallet with private keys disabled" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        _ <- client.unloadWallet("")
+        _ <- client.createWallet("privKeyWallet", disablePrivateKeys = true)
+        walletPriv <- client.getWalletInfo("privKeyWallet")
+        _ <- client.unloadWallet("privKeyWallet")
+        _ <- client.loadWallet("")
+      } yield {
+        walletPriv match {
+          case walletInfoPostV22: GetWalletInfoResultPostV22 =>
+            assert(!walletInfoPostV22.private_keys_enabled)
+          case _: GetWalletInfoResultPreV22 =>
+            fail("private key parameter only available on V22 or higher")
+        }
+      }
+  }
 
   it should "output wallet name from listdescriptors" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
-        _ <- client.createWallet("descriptorWallet", descriptors = true)
-        resultWallets <- client.listDescriptors(walletName = "descriptorWallet")
-        _ <- client.unloadWallet("descriptorWallet")
+        _ <- client.unloadWallet("")
+        _ <- client.createWallet("descriptorWalletThree", descriptors = true)
+        resultWallets <- client.listDescriptors(walletName =
+          "descriptorWalletThree")
+        _ <- client.unloadWallet("descriptorWalletThree")
+        _ <- client.loadWallet("")
       } yield {
-        assert(resultWallets.wallet_name == "descriptorWallet")
+        assert(resultWallets.wallet_name == "descriptorWalletThree")
       }
   }
 
@@ -183,10 +221,12 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
+        _ <- client.unloadWallet("")
         _ <- client.createWallet("descriptorWalletTwo", descriptors = true)
         resultWallet <- client.listDescriptors(walletName =
           "descriptorWalletTwo")
         _ <- client.unloadWallet("descriptorWalletTwo")
+        _ <- client.loadWallet("")
       } yield {
         resultWallet.descriptors.map { d =>
           assert(
@@ -293,6 +333,8 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
             2,
             Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
       decoded <- client.decodeScript(multisig.redeemScript)
+      _ <- client.loadWallet("")
+      _ <- client.unloadWallet("decodeRWallet")
     } yield {
       decoded match {
         case decodedPreV22: DecodeScriptResultPreV22 =>
@@ -306,26 +348,27 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     }
   }
 
-  /**    it should "output more than one txid" in { nodePair: FixtureParam =>
-    *        val NodePair(client, otherClient) = nodePair
-    *        val tx1F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
+  /**  it should "output more than one txid" in { nodePair: FixtureParam =>
+    *    val NodePair(client, otherClient) = nodePair
+    *    val tx1F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
+    *      .createRawCoinbaseTransaction(client, otherClient)
+    *      .map { tx1 =>
+    *        tx1.txIdBE
+    *        val tx2F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
     *          .createRawCoinbaseTransaction(client, otherClient)
-    *          .map { tx1 =>
-    *            tx1.txIdBE
-    *            val tx2F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
-    *              .createRawCoinbaseTransaction(client, otherClient)
-    *              .map { tx2 =>
-    *                tx2.txIdBE
-    *              }
-    *            Await.ready(tx1F, 5.seconds)
-    *            Await.ready(tx2F, 5.seconds)
-    *            val transactionAcceptT: Future[Assertion] =
-    *              client.testMempoolAccept(List[tx1F, tx2F]).map { testMempoolResult =>
-    *                assert(testMempoolResult.txid.length > 1)
-    *              }
-    *            transactionAcceptT
+    *          .map { tx2 =>
+    *            tx2.txIdBE
     *          }
+    *        Await.ready(tx1F, 5.seconds)
+    *        Await.ready(tx2F, 5.seconds)
+    *        val transactionAcceptT: Future[Assertion] =
+    *          client.testMempoolAccept(Vector[tx1F, tx2F]).map {
+    *            testMempoolResult =>
+    *              assert(testMempoolResult.txid.length > 1)
+    *          }
+    *        transactionAcceptT
     *      }
+    *  }
     *  it should "output more than one txid" in { nodePair: FixtureParam =>
     *    val NodePair(client, otherClient) = nodePair
     *    for {
@@ -333,9 +376,10 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     *        .createRawCoinbaseTransaction(client, otherClient)
     *      transaction2 <- BitcoindRpcTestUtil
     *        .createRawCoinbaseTransaction(client, otherClient)
-    *      mempoolAccept <- client.testMempoolAccept(Vector[(transaction1, transaction2)])
+    *      mempoolAccept <- client.testMempoolAccept(
+    *        Array[(transaction1, transaction2)])
     *    } yield {
-    *      assert(mempoolAccept.txid.length >1)
+    *      assert(mempoolAccept.txid.length > 1)
     *    }
     *  }
     */

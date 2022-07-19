@@ -224,36 +224,6 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
     *      }
     */
 
-  it should "create a descriptor wallet" in { client: BitcoindV21RpcClient =>
-    for {
-      _ <- client.createWallet("descriptorWallet", descriptors = true)
-      descript <- client.getWalletInfo("descriptorWallet")
-      _ <- client.unloadWallet("descriptorWallet")
-    } yield {
-      descript match {
-        case walletInfoPostV21: GetWalletInfoResultPostV21 =>
-          assert(walletInfoPostV21.descriptors)
-        case _: GetWalletInfoResultPreV21 =>
-          fail("descriptors only available on V21 or higher")
-      }
-    }
-  }
-  it should "create a wallet with private keys disabled" in {
-    client: BitcoindV21RpcClient =>
-      for {
-        _ <- client.createWallet("privKeyWallet", disablePrivateKeys = true)
-        walletPriv <- client.getWalletInfo("privKeyWallet")
-        _ <- client.unloadWallet("privKeyWallet")
-      } yield {
-        walletPriv match {
-          case walletInfoPostV21: GetWalletInfoResultPostV21 =>
-            assert(!walletInfoPostV21.private_keys_enabled)
-          case _: GetWalletInfoResultPreV21 =>
-            fail("private key parameter only available on V21 or higher")
-        }
-      }
-  }
-
   /**  it should "create a wallet with private keys disabled" in {
     *    client: BitcoindV21RpcClient =>
     *      val descriptorWallet: Future[CreateWalletResult] =

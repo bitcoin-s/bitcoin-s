@@ -46,7 +46,7 @@ trait TestMempoolAcceptRpc { self: Client =>
     */
 
   def testMempoolAccept(
-      transaction: Transaction,
+      transaction: Vector[Transaction],
       allowHighFees: Boolean = false): Future[
     TestMempoolAcceptResultPostV22] = {
     bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](

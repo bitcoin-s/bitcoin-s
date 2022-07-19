@@ -420,12 +420,12 @@ object JsonSerializers {
       (__ \ "hex").read[Transaction])(GetTransactionResult)
 
   implicit val getWalletInfoResultReadsPreV21: Reads[
-    GetWalletInfoResultPreV21] =
-    Json.reads[GetWalletInfoResultPreV21]
+    GetWalletInfoResultPreV22] =
+    Json.reads[GetWalletInfoResultPreV22]
 
   implicit val getWalletInfoResultReadsPostV21: Reads[
-    GetWalletInfoResultPostV21] =
-    Json.reads[GetWalletInfoResultPostV21]
+    GetWalletInfoResultPostV22] =
+    Json.reads[GetWalletInfoResultPostV22]
 
   implicit val importMultiErrorReads: Reads[ImportMultiError] =
     Json.reads[ImportMultiError]

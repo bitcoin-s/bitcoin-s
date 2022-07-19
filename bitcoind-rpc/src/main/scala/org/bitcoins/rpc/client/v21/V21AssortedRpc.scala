@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.client.v21
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetWalletInfoResultPostV21
+import org.bitcoins.commons.jsonmodels.bitcoind.GetWalletInfoResultPostV22
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.rpc.client.common.{Client, WalletRpc}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
@@ -13,17 +13,17 @@ trait V21AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
   self: Client =>
 
   private def getWalletInfo(
-      walletName: Option[String]): Future[GetWalletInfoResultPostV21] = {
-    bitcoindCall[GetWalletInfoResultPostV21]("getwalletinfo",
+      walletName: Option[String]): Future[GetWalletInfoResultPostV22] = {
+    bitcoindCall[GetWalletInfoResultPostV22]("getwalletinfo",
                                              List(Json.toJson(walletName)))
   }
 
-  override def getWalletInfo: Future[GetWalletInfoResultPostV21] = {
+  override def getWalletInfo: Future[GetWalletInfoResultPostV22] = {
     getWalletInfo(None)
   }
 
   override def getWalletInfo(
-      walletName: String): Future[GetWalletInfoResultPostV21] =
+      walletName: String): Future[GetWalletInfoResultPostV22] =
     getWalletInfo(Some(walletName))
 
 }

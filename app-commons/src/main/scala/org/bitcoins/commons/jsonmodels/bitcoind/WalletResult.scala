@@ -105,7 +105,7 @@ sealed trait GetWalletInfoResult extends WalletResult {
 
 }
 
-case class GetWalletInfoResultPreV21(
+case class GetWalletInfoResultPreV22(
     walletname: String,
     walletversion: Int,
     balance: Bitcoins,
@@ -120,7 +120,7 @@ case class GetWalletInfoResultPreV21(
     unlocked_until: Option[Int])
     extends GetWalletInfoResult
 
-case class GetWalletInfoResultPostV21(
+case class GetWalletInfoResultPostV22(
     walletname: String,
     walletversion: Int,
     balance: Bitcoins,
