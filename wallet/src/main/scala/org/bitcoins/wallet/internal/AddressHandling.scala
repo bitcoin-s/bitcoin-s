@@ -23,8 +23,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, Future, TimeoutException}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 /** Provides functionality related to addresses. This includes
@@ -512,76 +511,5 @@ private[wallet] trait AddressHandling extends WalletLogger {
       address: BitcoinAddress,
       addressTagName: AddressTagName): Future[Int] = {
     addressTagDAO.dropByAddressAndName(address, addressTagName)
-  }
-
-  private lazy val addressRequestQueue = {
-    val queue = new java.util.concurrent.ArrayBlockingQueue[AddressRequest](
-      walletConfig.addressQueueSize
-    )
-
-    //uses the wallet background thread to query addresses
-    scheduler.scheduleAtFixedRate(AddressQueueRunnable,
-                                  0,
-                                  25,
-                                  TimeUnit.MILLISECONDS)
-
-    queue
-  }
-
-  /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
-    * seeing if things are in the queue. This is needed because otherwise
-    * wallet address generation is not async safe.
-    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
-    */
-  private case object AddressQueueRunnable extends Runnable {
-
-    override def run(): Unit = {
-      val addressRequestOpt: Option[AddressRequest] = {
-        try {
-          //don't want to block forever if queue is empty
-          if (!addressRequestQueue.isEmpty) {
-            Some(addressRequestQueue.take())
-          } else {
-            None
-          }
-        } catch {
-          case _: java.lang.InterruptedException =>
-            return ()
-          case err: Throwable => throw err
-        }
-      }
-
-      addressRequestOpt match {
-        case None => //no requests, do nothing
-        case Some(addressRequest) =>
-          val AddressRequest(account, chainType, promise) = addressRequest
-          logger.debug(
-            s"Processing $account $chainType in our address request queue")
-          val resultF = for {
-            addressDb <- getNewAddressDb(account, chainType)
-            writtenAddressDb <- addressDAO.create(addressDb)
-          } yield {
-            promise.success(writtenAddressDb)
-            writtenAddressDb
-          }
-          //make sure this is completed before we iterate to the next one
-          //otherwise we will possibly have a race condition
-
-          try {
-            Await.result(resultF, walletConfig.addressQueueTimeout)
-            ()
-          } catch {
-            case timeout: TimeoutException =>
-              logger.error(
-                s"Timeout for generating address account=$account chainType=$chainType!",
-                timeout)
-            //continue executing
-            case scala.util.control.NonFatal(exn) =>
-              logger.error(
-                s"Failed to generate address for $account $chainType",
-                exn)
-          }
-      }
-    }
   }
 }
