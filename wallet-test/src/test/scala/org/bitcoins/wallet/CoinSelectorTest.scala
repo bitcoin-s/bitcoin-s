@@ -1,13 +1,11 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.wallet.CoinSelector
-import org.bitcoins.core.api.wallet.db.{SegwitV0SpendingInfo, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.{CoinSelector, CoinSelectorUtxo}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
-import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{TransactionGenerators, WitnessGenerators}
 import org.scalatest.FutureOutcome
@@ -17,10 +15,12 @@ class CoinSelectorTest extends BitcoinSWalletTest {
   case class CoinSelectionFixture(
       output: TransactionOutput,
       feeRate: FeeUnit,
-      utxo1: SpendingInfoDb,
-      utxo2: SpendingInfoDb,
-      utxo3: SpendingInfoDb) {
-    val utxoSet: Vector[SpendingInfoDb] = Vector(utxo1, utxo2, utxo3)
+      utxo1: CoinSelectorUtxo,
+      utxo2: CoinSelectorUtxo,
+      utxo3: CoinSelectorUtxo) {
+
+    val utxoSet: Vector[CoinSelectorUtxo] = Vector(utxo1, utxo2, utxo3)
+
   }
 
   override type FixtureParam = CoinSelectionFixture
@@ -30,35 +30,26 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     val feeRate = SatoshisPerByte(CurrencyUnits.zero)
 
     val outpoint1 = TransactionGenerators.outPoint.sampleSome
-    val utxo1 = SegwitV0SpendingInfo(
-      state = TxoState.PendingConfirmationsReceived,
-      id = Some(1),
+    val utxo1 = CoinSelectorUtxo(
       outPoint = outpoint1,
-      output = TransactionOutput(10.sats, ScriptPubKey.empty),
-      privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
-      spendingTxIdOpt = None
+      prevOut = TransactionOutput(10.sats, ScriptPubKey.empty),
+      scriptWitnessOpt = Some(WitnessGenerators.scriptWitness.sampleSome),
+      redeemScriptOpt = None
     )
     val outPoint2 = TransactionGenerators.outPoint.sampleSome
-    val utxo2 = SegwitV0SpendingInfo(
-      state = TxoState.ConfirmedReceived,
-      id = Some(2),
+    val utxo2 = CoinSelectorUtxo(
       outPoint = outPoint2,
-      output = TransactionOutput(90.sats, ScriptPubKey.empty),
-      privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
-      spendingTxIdOpt = None
+      prevOut = TransactionOutput(90.sats, ScriptPubKey.empty),
+      scriptWitnessOpt = Some(WitnessGenerators.scriptWitness.sampleSome),
+      redeemScriptOpt = None
     )
 
     val outPoint3 = TransactionGenerators.outPoint.sampleSome
-    val utxo3 = SegwitV0SpendingInfo(
-      state = TxoState.ConfirmedReceived,
-      id = Some(3),
+    val utxo3 = CoinSelectorUtxo(
       outPoint = outPoint3,
-      output = TransactionOutput(20.sats, ScriptPubKey.empty),
-      privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
-      spendingTxIdOpt = None
+      prevOut = TransactionOutput(20.sats, ScriptPubKey.empty),
+      scriptWitnessOpt = Some(WitnessGenerators.scriptWitness.sampleSome),
+      redeemScriptOpt = None
     )
 
     test(CoinSelectionFixture(output, feeRate, utxo1, utxo2, utxo3))

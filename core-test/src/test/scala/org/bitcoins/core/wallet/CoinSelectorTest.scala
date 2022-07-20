@@ -1,6 +1,6 @@
 package org.bitcoins.core.wallet
 
-import org.bitcoins.core.api.wallet.CoinSelector
+import org.bitcoins.core.api.wallet.{CoinSelector, CoinSelectorUtxo}
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
@@ -16,9 +16,10 @@ class CoinSelectorTest extends BitcoinSUnitTest {
 
   behavior of "CoinSelector"
 
-  val utxos: Vector[SpendingInfoDb] =
+  val utxos: Vector[CoinSelectorUtxo] =
     createSpendingInfoDbs(Vector(Bitcoins(1), Bitcoins(2)))
-  val inAmt: CurrencyUnit = utxos.map(_.output.value).sum
+      .map(CoinSelectorUtxo.fromSpendingInfoDb)
+  val inAmt: CurrencyUnit = utxos.map(_.prevOut.value).sum
   val target: Bitcoins = Bitcoins(2)
   val changeCost: Satoshis = Satoshis.one
 
