@@ -8,7 +8,7 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
-import akka.stream.{KillSwitches, OverflowStrategy, SharedKillSwitch}
+import akka.stream.OverflowStrategy
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
@@ -61,10 +61,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
   implicit lazy val torConf: TorAppConfig = conf.torConf
   lazy val network = conf.walletConf.network
-
-  private val nodeCallbackKillSwitch: SharedKillSwitch = {
-    KillSwitches.shared("node-callback-killswitch")
-  }
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
