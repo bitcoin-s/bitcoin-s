@@ -2,6 +2,7 @@ package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
+import org.bitcoins.core.api.wallet.CoinSelectorUtxo
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{
   P2SHScriptPubKey,
@@ -194,6 +195,10 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       Vector(sign),
       hashType
     )
+  }
+
+  def toCoinSelectorUtxo: CoinSelectorUtxo = {
+    CoinSelectorUtxo.fromSpendingInfoDb(this)
   }
 }
 

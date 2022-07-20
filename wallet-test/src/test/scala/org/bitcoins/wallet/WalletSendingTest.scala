@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
+import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -464,7 +464,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
     for {
       account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
-      allUtxos <- wallet.listUtxos(account.hdAccount)
+      allUtxos <- wallet
+        .listUtxos(account.hdAccount)
+        .map(_.map(CoinSelectorUtxo.fromSpendingInfoDb))
+
       output = TransactionOutput(amountToSend, testAddress.scriptPubKey)
       expectedUtxos =
         CoinSelector.selectByAlgo(algo, allUtxos, Vector(output), feeRate)
