@@ -52,13 +52,16 @@ case class AccountDAO()(implicit
     findByPrimaryKeys(
       accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
 
-  def findByAccount(account: HDAccount): Future[Option[AccountDb]] = {
+  def findByAccountAction(account: HDAccount): DBIOAction[
+    Option[AccountDb],
+    NoStream,
+    Effect.Read] = {
     val q = table
       .filter(_.coinType === account.coin.coinType)
       .filter(_.purpose === account.purpose)
       .filter(_.index === account.index)
 
-    safeDatabase.run(q.result).map {
+    q.result.map {
       case h +: Vector() =>
         Some(h)
       case Vector() =>
@@ -68,6 +71,11 @@ case class AccountDAO()(implicit
         throw new RuntimeException(
           s"More than one account per account=${account}, got=${accounts}")
     }
+  }
+
+  def findByAccount(account: HDAccount): Future[Option[AccountDb]] = {
+    val action = findByAccountAction(account)
+    safeDatabase.run(action)
   }
 
   class AccountTable(tag: Tag)

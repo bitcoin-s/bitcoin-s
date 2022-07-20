@@ -45,7 +45,10 @@ case class AddressDAO()(implicit
       ts: Vector[AddressRecord]): Future[Vector[AddressRecord]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  def create(addressDb: AddressDb): Future[AddressDb] = {
+  def createAction(addressDb: AddressDb): DBIOAction[
+    AddressDb,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
     val spkFind =
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
     val actions = for {
@@ -71,15 +74,18 @@ case class AddressDAO()(implicit
           .headOption
     } yield (addr, spk)
 
+    actions.map {
+      case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
+      case _ =>
+        throw new SQLException(
+          s"Unexpected result: Cannot create either a address or a SPK record for $addressDb")
+    }
+  }
+
+  def create(addressDb: AddressDb): Future[AddressDb] = {
+    val actions = createAction(addressDb)
     safeDatabase
       .run(actions)
-      .map {
-        case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot create either a address or a SPK record for $addressDb")
-      }
-
   }
 
   def upsert(addressDb: AddressDb): Future[AddressDb] = {
@@ -137,16 +143,25 @@ case class AddressDAO()(implicit
       ts: Vector[AddressRecord]): Query[AddressTable, AddressRecord, Seq] =
     findByPrimaryKeys(ts.map(_.address))
 
-  def findAllAddresses(): Future[Vector[AddressDb]] = {
+  def findAllAddressesAction(): DBIOAction[
+    Vector[AddressDb],
+    NoStream,
+    Effect.Read] = {
     val query = table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
+    query.result.map { res =>
+      res.map { case (addrRec, spkRec) =>
+        addrRec.toAddressDb(spkRec.scriptPubKey)
+      }.toVector
+    }
+  }
+
+  def findAllAddresses(): Future[Vector[AddressDb]] = {
+    val action = findAllAddressesAction()
     safeDatabase
-      .runVec(query.result)
-      .map(res =>
-        res.map { case (addrRec, spkRec) =>
-          addrRec.toAddressDb(spkRec.scriptPubKey)
-        })
+      .runVec(action)
+
   }
 
   def findAddress(addr: BitcoinAddress): Future[Option[AddressDb]] = {
@@ -205,17 +220,22 @@ case class AddressDAO()(implicit
     query.result.map(_.toVector)
   }
 
+  def findMostRecentChangeAction(hdAccount: HDAccount): DBIOAction[
+    Option[AddressDb],
+    NoStream,
+    Effect.Read] = {
+    val action =
+      findMostRecentForChain(hdAccount, HDChainType.Change)
+    action.map(_.map { case (addrRec, spkRec) =>
+      addrRec.toAddressDb(spkRec.scriptPubKey)
+    })
+  }
+
   /** Finds the most recent change address in the wallet, if any
     */
   def findMostRecentChange(hdAccount: HDAccount): Future[Option[AddressDb]] = {
-    val query =
-      findMostRecentForChain(hdAccount, HDChainType.Change)
-
-    safeDatabase
-      .run(query)
-      .map(_.map { case (addrRec, spkRec) =>
-        addrRec.toAddressDb(spkRec.scriptPubKey)
-      })
+    val action = findMostRecentChangeAction(hdAccount)
+    safeDatabase.run(action)
   }
 
   /** Finds all public keys in the wallet */
@@ -303,7 +323,12 @@ case class AddressDAO()(implicit
         })
   }
 
-  private def findMostRecentForChain(account: HDAccount, chain: HDChainType) = {
+  private def findMostRecentForChain(
+      account: HDAccount,
+      chain: HDChainType): DBIOAction[
+    Option[(AddressRecord, ScriptPubKeyDb)],
+    NoStream,
+    Effect.Read] = {
     addressesForAccountQuery(account.index)
       .filter(_._1.purpose === account.purpose)
       .filter(_._1.accountCoin === account.coin.coinType)
@@ -314,17 +339,22 @@ case class AddressDAO()(implicit
       .headOption
   }
 
+  def findMostRecentExternalAction(hdAccount: HDAccount): DBIOAction[
+    Option[AddressDb],
+    NoStream,
+    Effect.Read] = {
+    val action = findMostRecentForChain(hdAccount, HDChainType.External)
+    action.map(_.map { case (addrRec, spkRec) =>
+      addrRec.toAddressDb(spkRec.scriptPubKey)
+    })
+  }
+
   /** Finds the most recent external address in the wallet, if any
     */
   def findMostRecentExternal(
       hdAccount: HDAccount): Future[Option[AddressDb]] = {
-    val query =
-      findMostRecentForChain(hdAccount, HDChainType.External)
-    safeDatabase
-      .run(query)
-      .map(_.map { case (addrRec, spkRec) =>
-        addrRec.toAddressDb(spkRec.scriptPubKey)
-      })
+    val action = findMostRecentExternalAction(hdAccount)
+    safeDatabase.run(action)
   }
 
   /** todo: this needs design rework.

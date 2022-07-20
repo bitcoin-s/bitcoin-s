@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
@@ -15,7 +14,6 @@ import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
@@ -95,7 +93,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       }
   }
 
-  it must "fail with an illegal state exception if the queue is full" in {
+  /*  it must "fail with an illegal state exception if the queue is full" in {
     fundedWallet: FundedWallet =>
       val wallet = fundedWallet.wallet
       //attempt to generate 50 addresses simultaneously
@@ -119,7 +117,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       recoverToSucceededIf[IllegalStateException] {
         addressesF
       }
-  }
+  }*/
 
   it must "get the correct spent addresses" in { fundedWallet: FundedWallet =>
     val wallet = fundedWallet.wallet

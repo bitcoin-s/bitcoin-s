@@ -16,7 +16,9 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.{Wallet, WalletLogger}
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
@@ -27,6 +29,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   /////////////////////
   // Public facing API
 
+  private lazy val safeDatabase: SafeDatabase = addressDAO.safeDatabase
   override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
   /** @inheritdoc */
@@ -334,55 +337,58 @@ private[wallet] trait RescanHandling extends WalletLogger {
     rescanStateF
   }
 
-  /** Use to generate a list of addresses to search when restoring our wallet
-    *  from our mneomnic seed
-    */
-  private def generateAddressesForRescan(
+  private def generateAddressesForRescanAction(
       account: HDAccount,
-      count: Int): Future[Vector[BitcoinAddress]] = {
-    val receiveAddressesF = 1
-      .to(count)
-      .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
-        (prevFuture, _) =>
-          for {
-            prev <- prevFuture
-            address <- getNewAddress(account)
-          } yield prev :+ address
+      count: Int): DBIOAction[
+    Vector[BitcoinAddress],
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    val receiveAddressesA: DBIOAction[
+      Vector[BitcoinAddress],
+      NoStream,
+      Effect.Read with Effect.Write with Effect.Transactional] = {
+      DBIOAction.sequence {
+        1.to(count)
+          .map(_ => getNewAddressAction(account))
       }
+    }.map(_.toVector)
 
-    val changeAddressesF = 1
-      .to(count)
-      .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
-        (prevFuture, _) =>
-          for {
-            prev <- prevFuture
-            address <- getNewChangeAddress(account)
-          } yield prev :+ address
+    val changeAddressesA: DBIOAction[
+      Vector[BitcoinAddress],
+      NoStream,
+      Effect.Read with Effect.Write with Effect.Transactional] = {
+      DBIOAction.sequence {
+        1.to(count)
+          .map(_ => getNewAddressAction(account))
       }
+    }.map(_.toVector)
+
     for {
-      receiveAddresses <- receiveAddressesF
-      changeAddresses <- changeAddressesF
+      receiveAddresses <- receiveAddressesA
+      changeAddresses <- changeAddressesA
     } yield receiveAddresses ++ changeAddresses
-
   }
 
-  private def generateScriptPubKeys(
+  private def generateScriptPubKeysAction(
       account: HDAccount,
-      count: Int): Future[Vector[ScriptPubKey]] = {
-    val addressCountF = addressDAO.count()
+      count: Int): DBIOAction[
+    Vector[ScriptPubKey],
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    val addressCountA = addressDAO.countAction
     for {
-      addressCount <- addressCountF
+      addressCount <- addressCountA
       addresses <- {
         if (addressCount == 0) {
-          generateAddressesForRescan(account, count)
+          generateAddressesForRescanAction(account, count)
         } else {
           //we don't want to continously generate addresses
           //if our wallet already has them, so just use what is in the
           //database already
-          addressDAO.findAllAddresses().map(_.map(_.address))
+          addressDAO.findAllAddressesAction().map(_.map(_.address))
         }
       }
-      spksDb <- scriptPubKeyDAO.findAll()
+      spksDb <- scriptPubKeyDAO.findAllAction()
     } yield {
       val addrSpks =
         addresses.map(_.scriptPubKey)
@@ -408,9 +414,17 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
+  private def generateScriptPubKeys(
+      account: HDAccount,
+      count: Int): Future[Vector[ScriptPubKey]] = {
+    val action = generateScriptPubKeysAction(account, count)
+    safeDatabase.run(action)
+  }
+
+
   /** Searches the given block filters against the given scriptPubKeys for matches.
-    * If there is a match, request the full block to search
-    */
+   * If there is a match, request the full block to search
+   */
   private def searchFiltersForMatches(
       scripts: Vector[ScriptPubKey],
       filtersResponse: Vector[ChainQueryApi.FilterResponse],

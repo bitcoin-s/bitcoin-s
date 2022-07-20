@@ -19,10 +19,12 @@ import org.bitcoins.core.wallet.utxo.{
   AddressTagType
 }
 import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet._
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, Future, Promise, TimeoutException}
+import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.{Failure, Success}
 
 /** Provides functionality related to addresses. This includes
@@ -30,6 +32,8 @@ import scala.util.{Failure, Success}
   */
 private[wallet] trait AddressHandling extends WalletLogger {
   self: Wallet =>
+
+  private lazy val safeDatabase: SafeDatabase = addressDAO.safeDatabase
 
   def contains(
       address: BitcoinAddress,
@@ -133,32 +137,19 @@ private[wallet] trait AddressHandling extends WalletLogger {
         (out, TransactionOutPoint(transaction.txId, UInt32(index)))
     }.toVector
 
-  /** Derives a new address in the wallet for the
-    * given account and chain type (change/external).
-    * After deriving the address it inserts it into our
-    * table of addresses.
-    *
-    * This method is called with the approriate params
-    * from the public facing methods `getNewChangeAddress`
-    * and `getNewAddress`.
-    *
-    * @param account Account to generate address from
-    * @param chainType What chain do we generate from? Internal change vs. external
-    */
-  private def getNewAddressDb(
+  private def getNewAddressDbAction(
       account: AccountDb,
-      chainType: HDChainType
-  ): Future[AddressDb] = {
+      chainType: HDChainType): DBIOAction[AddressDb, NoStream, Effect.Read] = {
     logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
 
-    val lastAddrOptF = chainType match {
+    val lastAddrOptA = chainType match {
       case HDChainType.External =>
-        addressDAO.findMostRecentExternal(account.hdAccount)
+        addressDAO.findMostRecentExternalAction(account.hdAccount)
       case HDChainType.Change =>
-        addressDAO.findMostRecentChange(account.hdAccount)
+        addressDAO.findMostRecentChangeAction(account.hdAccount)
     }
 
-    lastAddrOptF.map { lastAddrOpt =>
+    lastAddrOptA.map { lastAddrOpt =>
       val addrPath: HDPath = lastAddrOpt match {
         case Some(addr) =>
           val next = addr.path.next
@@ -204,6 +195,56 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** Derives a new address in the wallet for the
+    * given account and chain type (change/external).
+    * After deriving the address it inserts it into our
+    * table of addresses.
+    *
+    * This method is called with the approriate params
+    * from the public facing methods `getNewChangeAddress`
+    * and `getNewAddress`.
+    *
+    * @param account Account to generate address from
+    * @param chainType What chain do we generate from? Internal change vs. external
+    */
+  private def getNewAddressDb(
+      account: AccountDb,
+      chainType: HDChainType
+  ): Future[AddressDb] = {
+    val action = getNewAddressDbAction(account, chainType)
+    safeDatabase.run(action)
+  }
+
+  private def getNewAddressHelperAction(
+      account: AccountDb,
+      chainType: HDChainType): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    logger.debug(s"Processing $account $chainType in our address request queue")
+    val resultA: DBIOAction[
+      BitcoinAddress,
+      NoStream,
+      Effect.Read with Effect.Write with Effect.Transactional] = for {
+      addressDb <- getNewAddressDbAction(account, chainType)
+      writtenAddressDb <- addressDAO.createAction(addressDb)
+    } yield {
+      logger.info(
+        s"Generated new address=${addressDb.address} path=${addressDb.path} isChange=${addressDb.isChange}")
+      writtenAddressDb.address
+    }
+
+    val callbackExecuted = resultA.flatMap { address =>
+      val executedF =
+        walletCallbacks.executeOnNewAddressGenerated(logger, address)
+      DBIOAction
+        .from(executedF)
+        .map(_ => address)
+    }
+
+    callbackExecuted
+  }
+
   /** Queues a request to generate an address and returns a Future that will
     * be completed when the request is processed in the queue. If the queue
     * is full it throws an exception.
@@ -213,30 +254,28 @@ private[wallet] trait AddressHandling extends WalletLogger {
       account: AccountDb,
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
-    val p = Promise[AddressDb]()
-    val addressRequest = AddressRequest(account, chainType, p)
-    val result = addressRequestQueue.add(addressRequest)
-
-    if (!result) {
-      logger.error(
-        s"Failed to add address request to queue, request=$addressRequest")
-    }
-
-    for {
-      addressDb <- p.future
-      _ <-
-        walletCallbacks.executeOnNewAddressGenerated(logger, addressDb.address)
-    } yield {
-      logger.info(
-        s"Generated new address=${addressDb.address} path=${addressDb.path} isChange=${addressDb.isChange}")
-      addressDb.address
-    }
+    val action = getNewAddressHelperAction(account, chainType)
+    safeDatabase.run(action)
   }
 
   def getNextAvailableIndex(
       accountDb: AccountDb,
       chainType: HDChainType): Future[Int] = {
     getNewAddressDb(accountDb, chainType).map(_.path.path.last.index)
+  }
+
+  def getNewAddressAction(account: HDAccount): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    val accountDbOptA = findAccountAction(account)
+    accountDbOptA.flatMap {
+      case Some(accountDb) => getNewAddressAction(accountDb)
+      case None =>
+        DBIOAction.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"))
+    }
   }
 
   def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
@@ -250,8 +289,15 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  def getNewAddressAction(account: AccountDb): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    getNewAddressHelperAction(account, HDChainType.External)
+  }
+
   def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    getNewAddressHelper(account, HDChainType.External)
+    safeDatabase.run(getNewAddressAction(account))
   }
 
   /** @inheritdoc */
@@ -359,8 +405,15 @@ private[wallet] trait AddressHandling extends WalletLogger {
     } yield address
   }
 
+  def findAccountAction(account: HDAccount): DBIOAction[
+    Option[AccountDb],
+    NoStream,
+    Effect.Read] = {
+    accountDAO.findByAccountAction(account)
+  }
+
   override def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
-    accountDAO.findByAccount(account)
+    safeDatabase.run(findAccountAction(account))
   }
 
   /** @inheritdoc */
