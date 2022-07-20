@@ -1,5 +1,7 @@
 package org.bitcoins.wallet.internal
 
+import akka.actor.ActorSystem
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,
   InvalidBlockRange
@@ -10,7 +12,6 @@ import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -107,6 +108,27 @@ private[wallet] trait RescanHandling extends WalletLogger {
       .epochSecondToBlockHeight(creationTime.getEpochSecond)
       .map(BlockHeight)
 
+  private def buildFilterMatchFlow(
+      scripts: Vector[ScriptPubKey],
+      parallelism: Int,
+      batchSize: Int): Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] = {
+    val seed: Int => Vector[Int] = { case int => Vector(int) }
+    val aggregate: (Vector[Int], Int) => Vector[Int] = {
+      case (vec: Vector[Int], int: Int) => vec.appended(int)
+    }
+    val sink: Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] =
+      Flow[Int]
+        .batch[Vector[Int]](batchSize, seed)(aggregate)
+        .mapAsync(1) { case heightRange =>
+          fetchFiltersInRange(scripts, parallelism)(heightRange)(
+            ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+        }
+        .via(rescanKillSwitch.flow)
+        .toMat(Sink.seq)(Keep.right)
+
+    sink
+  }
+
   /** @inheritdoc */
   override def getMatchingBlocks(
       scripts: Vector[ScriptPubKey],
@@ -117,6 +139,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
+    implicit val system: ActorSystem = ActorSystem(
+      s"getMatchingBlocks-${System.currentTimeMillis()}")
     if (scripts.isEmpty) {
       Future.successful(Vector.empty)
     } else {
@@ -134,10 +158,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
         _ = logger.info(
           s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
         range = startHeight.to(endHeight)
-        matched <- FutureUtil.batchAndSyncExecute(
-          elements = range.toVector,
-          f = fetchFiltersInRange(scripts, parallelismLevel),
-          batchSize = batchSize)
+        sink = buildFilterMatchFlow(scripts, parallelismLevel, batchSize)
+        matched <- Source(range)
+          .runWith(sink)
+          .map(_.flatten.toVector)
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
         matched
@@ -308,7 +332,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
         startHeight = startHeight,
         endHeight = endHeight)
-      filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
+      filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
       _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
       logger.info(
