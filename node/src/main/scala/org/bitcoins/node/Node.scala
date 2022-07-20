@@ -180,10 +180,17 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
-      val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(
-        ServiceIdentifier.NODE_NETWORK)
-      peerMsgSenderF.flatMap(
-        _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
+      val syncPeerOpt = getDataMessageHandler.syncPeer
+      syncPeerOpt match {
+        case Some(peer) =>
+          peerManager
+            .peerData(peer)
+            .peerMessageSender
+            .sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*)
+        case None =>
+          throw new RuntimeException(
+            "IBD not started yet. Cannot query for blocks.")
+      }
     }
   }
 

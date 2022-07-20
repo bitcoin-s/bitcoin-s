@@ -25,7 +25,12 @@ import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
 import java.util.concurrent._
-import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.duration.{
+  Duration,
+  DurationInt,
+  DurationLong,
+  FiniteDuration
+}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
@@ -143,6 +148,14 @@ case class WalletAppConfig(
 
   lazy val feeProviderTargetOpt: Option[Int] =
     config.getIntOpt("bitcoin-s.fee-provider.target")
+
+  lazy val feeRatePollInterval: FiniteDuration = config
+    .getDuration("bitcoin-s.fee-provider.poll-interval")
+    .getSeconds
+    .seconds
+
+  lazy val feeRatePollDelay: FiniteDuration =
+    config.getDuration("bitcoin-s.fee-provider.poll-delay").getSeconds.seconds
 
   lazy val allowExternalDLCAddresses: Boolean =
     config.getBoolean("bitcoin-s.wallet.allowExternalDLCAddresses")

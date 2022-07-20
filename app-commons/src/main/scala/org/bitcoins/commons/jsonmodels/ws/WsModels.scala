@@ -7,6 +7,7 @@ import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{Sha256Digest, StringFactory}
 
 /** The event type being sent over the websocket. An example is [[WalletWsType.BlockProcessed]] */
@@ -37,6 +38,7 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object DLCOfferAdd extends WalletWsType
   case object DLCOfferRemove extends WalletWsType
   case object RescanComplete extends WalletWsType
+  case object FeeRateChange extends WalletWsType
 
   private val all =
     Vector(TxProcessed,
@@ -46,7 +48,8 @@ object WalletWsType extends StringFactory[WalletWsType] {
            DLCStateChange,
            DLCOfferAdd,
            DLCOfferRemove,
-           RescanComplete)
+           RescanComplete,
+           FeeRateChange)
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -183,6 +186,15 @@ object WalletNotification {
 
     override val json: ujson.Value = {
       upickle.default.writeJs(this)(WsPicklers.rescanPickler)
+    }
+  }
+
+  case class FeeRateChange(payload: FeeUnit)
+      extends WalletNotification[FeeUnit] {
+    override val `type`: WalletWsType = WalletWsType.FeeRateChange
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.feeRatePickler)
     }
   }
 }

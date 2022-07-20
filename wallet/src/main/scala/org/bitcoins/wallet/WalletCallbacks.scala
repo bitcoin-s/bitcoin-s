@@ -7,6 +7,7 @@ import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee.FeeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,6 +33,8 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
   def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
   def onRescanComplete: CallbackHandler[String, OnRescanComplete]
+
+  def onFeeRateChanged: CallbackHandler[FeeUnit, OnFeeRateChanged]
 
   def +(other: WalletCallbacks): WalletCallbacks
 
@@ -92,6 +95,15 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
                      err))
   }
 
+  def executeOnFeeRateChanged(logger: Logger, feeRate: FeeUnit)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onFeeRateChanged.execute(
+      feeRate,
+      (err: Throwable) =>
+        logger.error(s"${onFeeRateChanged.name} Callback failed with error: ",
+                     err))
+  }
+
 }
 
 /** Callback for handling a processed transaction */
@@ -108,6 +120,8 @@ trait OnBlockProcessed extends Callback[Block]
 /** Triggered when a rescan is */
 trait OnRescanComplete extends Callback[String]
 
+trait OnFeeRateChanged extends Callback[FeeUnit]
+
 object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
 
   private case class WalletCallbacksImpl(
@@ -122,7 +136,8 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
         BitcoinAddress,
         OnNewAddressGenerated],
       onBlockProcessed: CallbackHandler[Block, OnBlockProcessed],
-      onRescanComplete: CallbackHandler[String, OnRescanComplete]
+      onRescanComplete: CallbackHandler[String, OnRescanComplete],
+      onFeeRateChanged: CallbackHandler[FeeUnit, OnFeeRateChanged]
   ) extends WalletCallbacks {
 
     override def +(other: WalletCallbacks): WalletCallbacks =
@@ -135,7 +150,8 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
         onNewAddressGenerated =
           onNewAddressGenerated ++ other.onNewAddressGenerated,
         onBlockProcessed = onBlockProcessed ++ other.onBlockProcessed,
-        onRescanComplete = onRescanComplete ++ other.onRescanComplete
+        onRescanComplete = onRescanComplete ++ other.onRescanComplete,
+        onFeeRateChanged = onFeeRateChanged ++ other.onFeeRateChanged
       )
   }
 
@@ -159,6 +175,10 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
     WalletCallbacks(onBlockProcessed = Vector(f))
   }
 
+  def onFeeRateChanged(f: OnFeeRateChanged): WalletCallbacks = {
+    WalletCallbacks(onFeeRateChanged = Vector(f))
+  }
+
   /** Empty callbacks that does nothing with the received data */
   override val empty: WalletCallbacks =
     apply(Vector.empty,
@@ -174,7 +194,8 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
       onReservedUtxos: Vector[OnReservedUtxos] = Vector.empty,
       onNewAddressGenerated: Vector[OnNewAddressGenerated] = Vector.empty,
       onBlockProcessed: Vector[OnBlockProcessed] = Vector.empty,
-      onRescanComplete: Vector[OnRescanComplete] = Vector.empty
+      onRescanComplete: Vector[OnRescanComplete] = Vector.empty,
+      onFeeRateChanged: Vector[OnFeeRateChanged] = Vector.empty
   ): WalletCallbacks = {
     WalletCallbacksImpl(
       onTransactionProcessed =
@@ -199,7 +220,10 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
       ),
       onRescanComplete =
         CallbackHandler[String, OnRescanComplete]("onRescanComplete",
-                                                  onRescanComplete)
+                                                  onRescanComplete),
+      onFeeRateChanged =
+        CallbackHandler[FeeUnit, OnFeeRateChanged]("onFeeRateChanged",
+                                                   onFeeRateChanged)
     )
   }
 }

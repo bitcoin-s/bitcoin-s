@@ -426,6 +426,30 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     }
   }
 
+  it must "receive updates when fee rate changes" in { serverWithBitcoind =>
+    val ServerWithBitcoind(_, server) = serverWithBitcoind
+
+    val req = buildReq(server.conf)
+    val tuple: (
+        Future[WebSocketUpgradeResponse],
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      Http()
+        .singleWebSocketRequest(req, websocketFlow)
+    }
+    val notificationsF = tuple._2._1
+    val promise = tuple._2._2
+    for {
+      _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+      _ = promise.success(None)
+      notifications <- notificationsF
+    } yield {
+      val feeRateNotifications =
+        notifications.filter(_.isInstanceOf[FeeRateChange])
+      assert(feeRateNotifications.nonEmpty)
+    }
+  }
+
+  /* TODO implement a real test for this case
   it must "not queue things on the websocket while there is no one connected" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
@@ -447,4 +471,5 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         notifications <- notificationsF
       } yield assert(notifications.isEmpty)
   }
+   */
 }

@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{
   BroadcastHub,
   Keep,
@@ -9,6 +8,7 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
+import akka.stream.{KillSwitches, OverflowStrategy, SharedKillSwitch}
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
@@ -61,6 +61,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
   implicit lazy val torConf: TorAppConfig = conf.torConf
   lazy val network = conf.walletConf.network
+
+  private val nodeCallbackKillSwitch: SharedKillSwitch = {
+    KillSwitches.shared("node-callback-killswitch")
+  }
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
@@ -227,10 +231,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- callbacksF
       node <- startedNodeF
       _ <- startedTorConfigF
-      (wallet, walletConfig, _) <- configuredWalletF
-      _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
-      _ <- restartRescanIfNeeded(wallet)
       _ <- node.sync()
+      (wallet, walletConfig, _) <- configuredWalletF
+      _ <- handleDuplicateSpendingInfoDb(wallet,walletConfig)
+      _ <- restartRescanIfNeeded(wallet)
     } yield {
       logger.info(
         s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
