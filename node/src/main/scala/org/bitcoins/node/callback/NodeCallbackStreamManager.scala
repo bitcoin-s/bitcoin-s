@@ -129,7 +129,8 @@ case class NodeCallbackStreamManager(callbacks: NodeCallbacks)(implicit
       blockQueue.complete()
       isStopped.set(true)
     } else {
-      logger.warn(s"Already stopped all queues associated with this NodeCallBackStreamManager")
+      logger.warn(
+        s"Already stopped all queues associated with this NodeCallBackStreamManager")
     }
 
     for {
