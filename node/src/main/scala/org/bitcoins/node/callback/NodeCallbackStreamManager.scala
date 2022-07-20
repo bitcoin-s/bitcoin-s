@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.BoundedSourceQueue
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.{Logger, Logging}
+import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -112,15 +113,24 @@ case class NodeCallbackStreamManager(callbacks: NodeCallbacks)(implicit
 
   override def start(): Future[Unit] = Future.unit
 
+  private val isStopped: AtomicBoolean = AtomicBoolean(false)
+
   /** Completes all streams and waits until they are fully drained */
   override def stop(): Future[Unit] = {
     val start = System.currentTimeMillis()
-    //complete all queues
-    filterQueue.complete()
-    txQueue.complete()
-    headerQueue.complete()
-    merkleBlockQueue.complete()
-    blockQueue.complete()
+
+    //can't complete a stream twice
+    if (!isStopped.get()) {
+      //complete all queues
+      filterQueue.complete()
+      txQueue.complete()
+      headerQueue.complete()
+      merkleBlockQueue.complete()
+      blockQueue.complete()
+      isStopped.set(true)
+    } else {
+      logger.warn(s"Already stopped all queues associated with this NodeCallBackStreamManager")
+    }
 
     for {
       _ <- filterSinkCompleteF
