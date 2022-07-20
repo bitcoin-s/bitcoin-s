@@ -5,23 +5,13 @@ import akka.stream.SharedKillSwitch
 import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
-import org.bitcoins.core.api.node.{ExternalImplementationNodeType, NodeType}
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
-import org.bitcoins.node._
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.wallet.WalletNotInitialized
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.node.{
-  NodeCallbacks,
-  OnBlockHeadersReceived,
-  OnBlockReceived,
-  OnCompactFiltersReceived,
-  OnTxReceived
-}
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.node._
+import org.bitcoins.wallet.WalletNotInitialized
 
 import scala.concurrent.Future
 

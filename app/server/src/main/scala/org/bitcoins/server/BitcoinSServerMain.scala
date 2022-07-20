@@ -233,7 +233,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startedTorConfigF
       _ <- node.sync()
       (wallet, walletConfig, _) <- configuredWalletF
-      _ <- handleDuplicateSpendingInfoDb(wallet,walletConfig)
+      _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
       _ <- restartRescanIfNeeded(wallet)
     } yield {
       logger.info(
