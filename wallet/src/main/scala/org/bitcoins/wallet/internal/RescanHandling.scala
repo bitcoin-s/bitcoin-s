@@ -60,7 +60,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       rescanState <-
         if (doRescan) {
           logger.info(
-            s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
+            s"Starting rescanning the wallet=${walletConfig.walletName} from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
           val startTime = System.currentTimeMillis()
           val res = for {
             start <- (startOpt, useCreationTime) match {
@@ -81,14 +81,16 @@ private[wallet] trait RescanHandling extends WalletLogger {
               logger,
               walletConfig.walletName)
           } yield {
-            logger.info(s"Finished rescanning the wallet. It took ${System
-              .currentTimeMillis() - startTime}ms")
+            logger.info(
+              s"Finished rescanning the wallet=${walletConfig.walletName}. It took ${System
+                .currentTimeMillis() - startTime}ms")
 
             RescanState.RescanDone
           }
 
           res.recoverWith { case err: Throwable =>
-            logger.error(s"Failed to rescan wallet", err)
+            logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
+                         err)
             stateDescriptorDAO
               .updateRescanning(false)
               .flatMap(_ => Future.failed(err))
@@ -97,7 +99,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           res
         } else {
           logger.warn(
-            s"Rescan already started, ignoring request to start another one")
+            s"Rescan already started for wallet=${walletConfig.walletName}, ignoring request to start another one")
           Future.successful(RescanState.RescanInProgress)
         }
 

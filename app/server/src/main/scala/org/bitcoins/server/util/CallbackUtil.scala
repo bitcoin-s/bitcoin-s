@@ -3,6 +3,7 @@ package org.bitcoins.server.util
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
@@ -10,14 +11,14 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
 import org.bitcoins.node.callback.NodeCallbackStreamManager
-import org.bitcoins.wallet.{Wallet, WalletNotInitialized}
+import org.bitcoins.wallet.WalletNotInitialized
 
 import scala.concurrent.Future
 
 object CallbackUtil extends Logging {
 
-
-  def createNeutrinoNodeCallbacksForWallet(wallet: WalletApi with NeutrinoWalletApi)(implicit
+  def createNeutrinoNodeCallbacksForWallet(
+      wallet: WalletApi with NeutrinoWalletApi)(implicit
       system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
@@ -94,7 +95,7 @@ object CallbackUtil extends Logging {
     Future.successful(streamManager)
   }
 
-  def createBitcoindNodeCallbacksForWallet(wallet: Wallet)(implicit
+  def createBitcoindNodeCallbacksForWallet(wallet: AnyDLCHDWalletApi)(implicit
       system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>

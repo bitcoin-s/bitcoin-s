@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
@@ -7,6 +8,8 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.node.NodeCallbacks
+import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.node.models.NodeStateDescriptorDAO
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.util.CallbackUtil
@@ -21,6 +24,8 @@ import scala.concurrent.{ExecutionContext, Future}
 sealed trait DLCWalletLoaderApi extends Logging {
 
   protected def conf: BitcoinSAppConfig
+
+  implicit protected def system: ActorSystem
 
   def load(
       walletNameOpt: Option[String],
@@ -38,10 +43,17 @@ sealed trait DLCWalletLoaderApi extends Logging {
     (AnyDLCHDWalletApi, WalletAppConfig, DLCAppConfig)] = {
     logger.info(
       s"Loading wallet with bitcoind backend, walletName=${walletNameOpt.getOrElse("DEFAULT")}")
+    val stoppedCallbacksF = conf.nodeConf.callBacks match {
+      case manager: NodeCallbackStreamManager =>
+        manager.stop()
+      case _: NodeCallbacks =>
+        Future.unit
+    }
     val walletName =
       walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
 
     for {
+      _ <- stoppedCallbacksF
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletName,
                                                        Some(aesPasswordOpt))
         .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
@@ -99,23 +111,17 @@ case class DLCWalletNeutrinoBackendLoader(
     nodeApi: NodeApi,
     feeRateApi: FeeRateApi)(implicit
     override val conf: BitcoinSAppConfig,
-    ec: ExecutionContext)
+    override val system: ActorSystem)
     extends DLCWalletLoaderApi {
+  import system.dispatcher
   implicit private val nodeConf = conf.nodeConf
 
   override def load(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]): Future[
     (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-    val nodeCallbacksF =
-      CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
-    val replacedNodeCallbacks = for {
-      nodeCallbacks <- nodeCallbacksF
-      _ = nodeConf.replaceCallbacks(nodeCallbacks)
-    } yield ()
 
     for {
-      _ <- replacedNodeCallbacks
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         walletHolder = walletHolder,
         chainQueryApi = chainQueryApi,
@@ -125,6 +131,9 @@ case class DLCWalletNeutrinoBackendLoader(
         aesPasswordOpt = aesPasswordOpt
       )
       _ <- walletHolder.replaceWallet(dlcWallet)
+      nodeCallbacks <-
+        CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
+      _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
     } yield (walletHolder, walletConfig, dlcConfig)
   }
@@ -136,8 +145,9 @@ case class DLCWalletBitcoindBackendLoader(
     nodeApi: NodeApi,
     feeProvider: FeeRateApi)(implicit
     override val conf: BitcoinSAppConfig,
-    ec: ExecutionContext)
+    override val system: ActorSystem)
     extends DLCWalletLoaderApi {
+  import system.dispatcher
   implicit private val nodeConf = conf.nodeConf
 
   override def load(
