@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import akka.stream.KillSwitches
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -36,9 +35,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
           .sampleSome
       }
 
-      val killSwitch = KillSwitches.shared("callbackutil-test-killswitch")
       val callbacksF =
-        CallbackUtil.createBitcoindNodeCallbacksForWallet(wallet, killSwitch)
+        CallbackUtil.createBitcoindNodeCallbacksForWallet(wallet)
       for {
         tx1 <- tx1F
         tx2 <- tx2F
@@ -47,9 +45,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         _ <- AsyncUtil.nonBlockingSleep(1000.millis)
         initBalance <- initBalanceF
         balance2 <- wallet.getBalance()
-        _ = killSwitch.shutdown()
+        _ <- callbacks.stop()
         _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx2)
-        _ <- AsyncUtil.nonBlockingSleep(1000.millis)
         balance3 <- wallet.getBalance()
       } yield {
         assert(balance2 > initBalance)
@@ -73,9 +70,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
           .sampleSome
       }
 
-      val killSwitch = KillSwitches.shared("callbackutil-test2-killswitch")
       val callbacksF =
-        CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet, killSwitch)
+        CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
       for {
         tx1 <- tx1F
         tx2 <- tx2F
@@ -84,9 +80,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         _ <- AsyncUtil.nonBlockingSleep(1000.millis)
         initBalance <- initBalanceF
         balance2 <- wallet.getBalance()
-        _ = killSwitch.shutdown()
+        _ <- callbacks.stop()
         _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx2)
-        _ <- AsyncUtil.nonBlockingSleep(1000.millis)
         balance3 <- wallet.getBalance()
       } yield {
         assert(balance2 > initBalance)
