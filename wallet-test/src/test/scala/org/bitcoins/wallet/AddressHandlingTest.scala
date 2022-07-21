@@ -93,31 +93,6 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       }
   }
 
-  /*  it must "fail with an illegal state exception if the queue is full" in {
-    fundedWallet: FundedWallet =>
-      val wallet = fundedWallet.wallet
-      //attempt to generate 50 addresses simultaneously
-      //this should overwhelm our buffer size of 10
-      val numAddress = 50
-      val generatedF = Vector.fill(numAddress)(wallet.getNewAddress())
-
-      //some hacking here so we don't get an ugly stack trace
-      //when the thread gets killed while processing things in the queue
-      //we want to make sure everything                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              is done processing before we assert
-      //we failed
-      val allCompletedF =
-        AsyncUtil.retryUntilSatisfied(generatedF.forall(_.isCompleted),
-                                      250.millis)
-      val addressesF = allCompletedF.flatMap { _ =>
-        Future.sequence {
-          generatedF
-        }
-      }
-
-      recoverToSucceededIf[IllegalStateException] {
-        addressesF
-      }
-  }*/
 
   it must "get the correct spent addresses" in { fundedWallet: FundedWallet =>
     val wallet = fundedWallet.wallet
