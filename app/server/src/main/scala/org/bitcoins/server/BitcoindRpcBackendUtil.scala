@@ -90,7 +90,7 @@ object BitcoindRpcBackendUtil extends Logging {
       .map(_ => true)
       .recover { case _: Throwable => false }
 
-    val numParallelism = Runtime.getRuntime.availableProcessors()
+    val numParallelism = getParallelism
     //feeding blockchain hashes into this sync
     //will sync our wallet with those blockchain hashes
     val syncWalletSinkF: Future[Sink[DoubleSha256Digest, Future[Wallet]]] = {
@@ -216,7 +216,7 @@ object BitcoindRpcBackendUtil extends Logging {
       system: ActorSystem): Sink[DoubleSha256Digest, Future[Wallet]] = {
     import system.dispatcher
 
-    val numParallelism = Runtime.getRuntime.availableProcessors()
+    val numParallelism = getParallelism
     val sink: Sink[DoubleSha256Digest, Future[Wallet]] =
       Flow[DoubleSha256Digest]
         .mapAsync(parallelism = numParallelism) { hash =>
@@ -247,7 +247,7 @@ object BitcoindRpcBackendUtil extends Logging {
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
-        val numParallelism = Runtime.getRuntime.availableProcessors()
+        val numParallelism = getParallelism
         walletF
           .flatMap { wallet =>
             val runStream: Future[Done] = Source(blockHashes)
@@ -312,7 +312,7 @@ object BitcoindRpcBackendUtil extends Logging {
     for {
       walletSyncState <- wallet.getSyncState()
     } yield {
-      val numParallelism = Runtime.getRuntime.availableProcessors()
+      val numParallelism = getParallelism
       val atomicPrevCount: AtomicInteger = new AtomicInteger(
         walletSyncState.height)
       val processingBitcoindBlocks = new AtomicBoolean(false)
@@ -481,5 +481,17 @@ object BitcoindRpcBackendUtil extends Logging {
         ()
       }
     }
+  }
+
+  /** Helper method to retrieve paralleism for streams
+    * This is needed on machines with any cores which can trigger
+    * open request exceptions with akka default limit of 32 open requests at a time
+    * So now we set the maximum parallelism to 8
+    */
+  private def getParallelism: Int = {
+    //max open requests is 32 in akka, so 1/8 of possible requests
+    //can be used to query the mempool, else just limit it be number of processors
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
+    Math.min(Runtime.getRuntime.availableProcessors(), 8).toInt
   }
 }
