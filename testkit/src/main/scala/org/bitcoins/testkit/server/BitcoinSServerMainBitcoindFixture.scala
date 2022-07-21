@@ -32,7 +32,9 @@ trait BitcoinSServerMainBitcoindFixture
         server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
         _ <- server.start()
         //need to create account 2 to use FundWalletUtil.fundWalletWithBitcoind
-        wallet <- server.walletConf.createHDWallet(bitcoind, bitcoind, bitcoind)
+        wallet <- server.conf.walletConf.createHDWallet(bitcoind,
+                                                        bitcoind,
+                                                        bitcoind)
         _ <- wallet.start()
         account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
 

@@ -3,7 +3,7 @@ package org.bitcoins.server
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.scalatest.FutureOutcome
@@ -14,10 +14,10 @@ class CallBackUtilTest extends BitcoinSWalletTest {
 
   behavior of "CallBackUtil"
 
-  override type FixtureParam = FundedWallet
+  override type FixtureParam = FundedDLCWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedWallet(test, getBIP39PasswordOpt())(getFreshWalletAppConfig)
+    withFundedDLCWallet(test, getBIP39PasswordOpt())(getFreshConfig)
 
   it must "have the kill switch kill messages to the createBitcoindNodeCallbacksForWallet callback" in {
     fundedWallet =>

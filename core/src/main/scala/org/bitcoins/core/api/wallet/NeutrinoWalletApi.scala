@@ -15,16 +15,16 @@ trait NeutrinoWalletApi { self: WalletApi =>
   /** Processes the give block, updating our DB state if it's relevant to us.
     * @param block The block we're processing
     */
-  def processBlock(block: Block): Future[WalletApi]
+  def processBlock(block: Block): Future[WalletApi with NeutrinoWalletApi]
 
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[WalletApi] =
+      blockFilter: GolombFilter): Future[WalletApi with NeutrinoWalletApi] =
     processCompactFilters(Vector((blockHash, blockFilter)))
 
   def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi]
+    WalletApi with NeutrinoWalletApi]
 
   /** Iterates over the block filters in order to find filters that match to the given addresses
     *

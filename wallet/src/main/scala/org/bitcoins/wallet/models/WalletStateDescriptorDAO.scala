@@ -1,7 +1,10 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.commons.jsonmodels.wallet.WalletStateDescriptorType._
-import org.bitcoins.commons.jsonmodels.wallet.{
+import org.bitcoins.core.api.wallet.WalletStateDescriptorType.{
+  Rescan,
+  SyncHeight
+}
+import org.bitcoins.core.api.wallet.{
   RescanDescriptor,
   SyncHeightDescriptor,
   WalletStateDescriptor,

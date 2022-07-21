@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
-import org.bitcoins.commons.jsonmodels.wallet.{
+import org.bitcoins.core.api.node.{NodeStateDescriptor, NodeStateDescriptorType}
+import org.bitcoins.core.api.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType
 }
@@ -530,4 +531,16 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val MilliSatoshisMapper: BaseColumnType[MilliSatoshis] =
     MappedColumnType.base[MilliSatoshis, Long](_.toLong, MilliSatoshis.apply(_))
+
+  implicit val nodeStateDescriptorTypeMapper: BaseColumnType[
+    NodeStateDescriptorType] =
+    MappedColumnType.base[NodeStateDescriptorType, String](
+      _.toString,
+      NodeStateDescriptorType.fromString)
+
+  implicit val nodeStateDescriptorMapper: BaseColumnType[NodeStateDescriptor] =
+    MappedColumnType.base[NodeStateDescriptor, String](
+      _.toString,
+      NodeStateDescriptor.fromString)
+
 }

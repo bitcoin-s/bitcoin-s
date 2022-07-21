@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -8,7 +7,9 @@ import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{
   AnyHDWalletApi,
   BlockSyncState,
-  CoinSelectionAlgo
+  CoinSelectionAlgo,
+  SyncHeightDescriptor,
+  WalletInfo
 }
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -917,6 +918,29 @@ abstract class Wallet
     accountDAO.create(newAccountDb).map { created =>
       logger.debug(s"Created new account ${created.hdAccount}")
       this
+    }
+  }
+
+  override def getWalletName(): Future[String] = {
+    Future.successful(walletConfig.walletName)
+  }
+
+  override def getInfo(): Future[WalletInfo] = {
+    for {
+      accountDb <- getDefaultAccount()
+      walletState <- getSyncState()
+      rescan <- isRescanning()
+    } yield {
+      WalletInfo(
+        walletName = walletConfig.walletName,
+        rootXpub = keyManager.getRootXPub,
+        xpub = accountDb.xpub,
+        hdAccount = accountDb.hdAccount,
+        height = walletState.height,
+        blockHash = walletState.blockHash,
+        rescan = rescan,
+        imported = keyManager.imported
+      )
     }
   }
 

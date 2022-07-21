@@ -45,8 +45,7 @@ trait HDWalletApi extends WalletApi {
   def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
   /** Generates a new change address */
-  protected[wallet] def getNewChangeAddress(
-      account: AccountDb): Future[BitcoinAddress]
+  def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
 
   override def getNewChangeAddress()(implicit
       ec: ExecutionContext): Future[BitcoinAddress] = {
@@ -64,8 +63,7 @@ trait HDWalletApi extends WalletApi {
   /** Fetches the default account for the given address/account kind
     * @param addressType
     */
-  protected[wallet] def getDefaultAccountForType(
-      addressType: AddressType): Future[AccountDb]
+  def getDefaultAccountForType(addressType: AddressType): Future[AccountDb]
 
   def sendWithAlgo(
       address: BitcoinAddress,
