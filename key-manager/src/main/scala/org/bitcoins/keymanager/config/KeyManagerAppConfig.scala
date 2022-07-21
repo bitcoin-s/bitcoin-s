@@ -18,7 +18,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class KeyManagerAppConfig(
     baseDatadir: Path,
-    configOverrides: Vector[Config])(implicit val ec: ExecutionContext)
+    configOverrides: Vector[Config],
+    walletNameOverride: Option[String] = None,
+    aesPasswordOverride: Option[Option[AesPassword]] = None,
+    bip39PasswordOverride: Option[Option[String]] = None)(implicit
+    val ec: ExecutionContext)
     extends AppConfig {
 
   override type ConfigType = KeyManagerAppConfig
@@ -31,7 +35,9 @@ case class KeyManagerAppConfig(
   lazy val networkParameters: NetworkParameters = chain.network
 
   lazy val walletName: String = {
-    val nameOpt = config.getStringOrNone(s"bitcoin-s.wallet.walletName")
+    val nameOpt =
+      walletNameOverride.orElse(
+        config.getStringOrNone(s"bitcoin-s.wallet.walletName"))
     require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
             s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
     nameOpt.getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME)
@@ -132,13 +138,18 @@ case class KeyManagerAppConfig(
 
   override def stop(): Future[Unit] = Future.unit
 
-  lazy val aesPasswordOpt: Option[AesPassword] = {
-    val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
-    passOpt.flatMap(AesPassword.fromStringOpt)
+  lazy val aesPasswordOpt: Option[AesPassword] = aesPasswordOverride match {
+    case None =>
+      val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
+      passOpt.flatMap(AesPassword.fromStringOpt)
+    case Some(passOpt) => passOpt
+
   }
 
-  lazy val bip39PasswordOpt: Option[String] = {
-    config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
+  lazy val bip39PasswordOpt: Option[String] = bip39PasswordOverride match {
+    case None =>
+      config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
+    case Some(passOpt) => passOpt
   }
 
   /** Checks if our key manager as a mnemonic seed associated with it */

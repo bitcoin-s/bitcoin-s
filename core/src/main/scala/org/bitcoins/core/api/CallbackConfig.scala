@@ -17,6 +17,11 @@ trait CallbackConfig[T <: ModuleCallbacks[T]] {
     }
   }
 
+  def replaceCallbacks(newCallbacks: T): T = {
+    atomicCallbacks.atomicSet(newCallbacks)
+    newCallbacks
+  }
+
   def callBacks: T = atomicCallbacks.atomicGet
 
   /** Clears all callbacks */

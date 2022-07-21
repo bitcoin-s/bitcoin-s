@@ -30,8 +30,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param directory The data directory of the wallet
   * @param conf Optional sequence of configuration overrides
   */
-case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
-    implicit override val ec: ExecutionContext)
+case class DLCAppConfig(
+    baseDatadir: Path,
+    configOverrides: Vector[Config],
+    walletConfigOpt: Option[WalletAppConfig] = None)(implicit
+    override val ec: ExecutionContext)
     extends DbAppConfig
     with DLCDbManagement
     with JdbcProfileComponent[DLCAppConfig] {
@@ -74,7 +77,7 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   lazy val walletConf: WalletAppConfig =
-    WalletAppConfig(baseDatadir, configOverrides)
+    walletConfigOpt.getOrElse(WalletAppConfig(baseDatadir, configOverrides))
 
   lazy val walletName: String = walletConf.walletName
 

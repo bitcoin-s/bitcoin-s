@@ -37,8 +37,11 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * @param directory The data directory of the wallet
   * @param conf Optional sequence of configuration overrides
   */
-case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
-    implicit override val ec: ExecutionContext)
+case class WalletAppConfig(
+    baseDatadir: Path,
+    configOverrides: Vector[Config],
+    kmConfOpt: Option[KeyManagerAppConfig] = None)(implicit
+    override val ec: ExecutionContext)
     extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig]
@@ -77,7 +80,7 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
 
   lazy val kmConf: KeyManagerAppConfig =
-    KeyManagerAppConfig(baseDatadir, configOverrides)
+    kmConfOpt.getOrElse(KeyManagerAppConfig(baseDatadir, configOverrides))
 
   lazy val defaultAccountKind: HDPurpose =
     config.getString("bitcoin-s.wallet.defaultAccountType") match {
@@ -347,6 +350,9 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 object WalletAppConfig
     extends AppConfigFactory[WalletAppConfig]
     with WalletLogger {
+
+  final val DEFAULT_WALLET_NAME: String =
+    KeyManagerAppConfig.DEFAULT_WALLET_NAME
 
   val moduleName: String = "wallet"
 

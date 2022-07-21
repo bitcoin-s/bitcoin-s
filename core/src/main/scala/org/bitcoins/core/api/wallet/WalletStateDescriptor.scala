@@ -1,4 +1,4 @@
-package org.bitcoins.commons.jsonmodels.wallet
+package org.bitcoins.core.api.wallet
 
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 

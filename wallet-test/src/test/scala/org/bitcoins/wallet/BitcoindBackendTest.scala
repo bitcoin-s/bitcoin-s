@@ -2,7 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.{ChainCallbacks, OnSyncFlagChanged}
-import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
+import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.wallet.utxo.TxoState
