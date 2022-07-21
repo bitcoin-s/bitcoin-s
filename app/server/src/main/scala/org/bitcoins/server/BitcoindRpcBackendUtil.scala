@@ -1,8 +1,8 @@
 package org.bitcoins.server
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.core.api.node.NodeApi
@@ -34,46 +34,34 @@ object BitcoindRpcBackendUtil extends Logging {
       system: ActorSystem): Future[Unit] = {
     logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
-    val res = for {
+
+    val streamF: Future[RunnableGraph[Future[Wallet]]] = for {
       _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
+      walletBirthdayHeight = 0 // need to come back to this likely
       _ = logger.info(
-        s"bitcoindHeight=$bitcoindHeight walletStateOpt=$walletStateOpt")
-      _ <- walletStateOpt match {
-        case None =>
-          for {
-            txDbs <- wallet.listTransactions()
-            lastConfirmedOpt = txDbs.filter(_.blockHashOpt.isDefined).lastOption
-            _ <- lastConfirmedOpt match {
-              case None =>
-                for {
-                  _ <- doSync(walletHeight = bitcoindHeight - 1,
-                              bitcoindHeight = bitcoindHeight,
-                              bitcoind = bitcoind,
-                              wallet = wallet)
-                } yield ()
-              case Some(txDb) =>
-                for {
-                  heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
-                  _ <- heightOpt match {
-                    case Some(height) =>
-                      logger.info(
-                        s"Last tx occurred at block $height, syncing from there")
-                      doSync(height, bitcoindHeight, bitcoind, wallet)
-                    case None => Future.unit
-                  }
-                } yield ()
-            }
-          } yield ()
-        case Some(syncHeight) =>
-          doSync(syncHeight.height, bitcoindHeight, bitcoind, wallet)
+        s"Syncing from bitcoind with bitcoindHeight=$bitcoindHeight walletHeight=${walletStateOpt
+          .getOrElse(walletBirthdayHeight)}")
+      heightRange = {
+        walletStateOpt match {
+          case None =>
+            walletBirthdayHeight.to(bitcoindHeight).tail
+          case Some(walletState) =>
+            walletState.height.to(bitcoindHeight).tail
+        }
       }
-    } yield ()
+      syncFlow <- buildBitcoindSyncSink(bitcoind, wallet)
+      stream = Source(heightRange).toMat(syncFlow)(Keep.right)
+    } yield stream
+
+    //run the stream
+    val res = streamF.flatMap(_.run())
     res.onComplete { case _ =>
       setSyncingFlag(false, bitcoind, chainCallbacksOpt)
     }
-    res
+
+    res.map(_ => ())
   }
 
   private def setSyncingFlag(
@@ -87,54 +75,50 @@ object BitcoindRpcBackendUtil extends Logging {
     ()
   }
 
-  /** Helper method to sync the wallet until the bitcoind height */
-  private def doSync(
-      walletHeight: Int,
-      bitcoindHeight: Int,
+  /** Helper method to sync the wallet until the bitcoind height.
+    * This method returns a Sink that you can give block heights too and
+    * the sink will synchronize our bitcoin-s wallet against bitcoind
+    */
+  private def buildBitcoindSyncSink(
       bitcoind: BitcoindRpcClient,
       wallet: WalletApi with NeutrinoWalletApi)(implicit
-      system: ActorSystem): Future[WalletApi with NeutrinoWalletApi] = {
-    if (walletHeight > bitcoindHeight) {
-      val msg = s"Bitcoind and wallet are in incompatible states, " +
-        s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"
-      logger.error(msg)
-      Future.failed(new RuntimeException(msg))
-    } else {
-      logger.info(s"Syncing from $walletHeight to $bitcoindHeight")
+      system: ActorSystem): Future[Sink[Int, Future[Wallet]]] = {
+    import system.dispatcher
 
-      import system.dispatcher
+    val hasFiltersF = bitcoind
+      .getFilter(wallet.walletConfig.chain.genesisHashBE)
+      .map(_ => true)
+      .recover { case _: Throwable => false }
 
-      val genesisHashBEF = bitcoind.getBlockHash(0)
-      val hasFiltersF: Future[Boolean] = for {
-        genesisHash <- genesisHashBEF
-        bool <- bitcoind
-          .getFilter(genesisHash)
-          .map(_ => true)
-          .recover { case _: Throwable => false }
-      } yield bool
+    val numParallelism = Runtime.getRuntime.availableProcessors()
+    //feeding blockchain hashes into this sync
+    //will sync our wallet with those blockchain hashes
+    val syncWalletSinkF: Future[Sink[DoubleSha256Digest, Future[Wallet]]] = {
 
-      val blockRange = walletHeight.to(bitcoindHeight).tail
-      val numParallelism = Runtime.getRuntime.availableProcessors()
-      logger.info(s"Syncing ${blockRange.size} blocks")
-      logger.info(s"Fetching block hashes")
-      val hashFs = Source(blockRange)
-        .mapAsync(numParallelism) {
-          bitcoind
-            .getBlockHash(_)
-            .map(_.flip)
-        }
-        .toMat(Sink.seq)(Keep.right)
-        .run()
       for {
-        hashes <- hashFs.map(_.toVector)
         hasFilters <- hasFiltersF
-        _ <- {
-          if (hasFilters) {
-            filterSync(hashes, bitcoind.asInstanceOf[V19BlockFilterRpc], wallet)
-          } else wallet.nodeApi.downloadBlocks(hashes)
+      } yield {
+        if (hasFilters) {
+          filterSyncSink(bitcoind.asInstanceOf[V19BlockFilterRpc], wallet)
+        } else {
+          Flow[DoubleSha256Digest]
+            .batch(100, hash => Vector(hash))(_ :+ _)
+            .mapAsync(1)(wallet.nodeApi.downloadBlocks(_).map(_ => wallet))
+            .toMat(Sink.last)(Keep.right)
         }
-      } yield wallet
+      }
+
     }
+    val fetchBlockHashesFlow: Flow[Int, DoubleSha256Digest, NotUsed] = Flow[Int]
+      .mapAsync[DoubleSha256Digest](numParallelism) { case height =>
+        bitcoind
+          .getBlockHash(height)
+          .map(_.flip)
+      }
+    for {
+      syncWalletSink <- syncWalletSinkF
+    } yield fetchBlockHashesFlow.toMat(syncWalletSink)(Keep.right)
+
   }
 
   def createWalletWithBitcoindCallbacks(
@@ -226,33 +210,27 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
-  private def filterSync(
-      blockHashes: Vector[DoubleSha256Digest],
+  private def filterSyncSink(
       bitcoindRpcClient: V19BlockFilterRpc,
-      wallet: WalletApi with NeutrinoWalletApi)(implicit
-      system: ActorSystem): Future[Unit] = {
+    wallet: WalletApi with NeutrinoWalletApi)(implicit
+      system: ActorSystem): Sink[DoubleSha256Digest, Future[Wallet]] = {
     import system.dispatcher
 
-    logger.info("Starting filter sync")
-    val start = System.currentTimeMillis()
-
     val numParallelism = Runtime.getRuntime.availableProcessors()
-    val runStream: Future[Done] = Source(blockHashes)
-      .mapAsync(parallelism = numParallelism) { hash =>
-        bitcoindRpcClient.getBlockFilter(hash.flip, FilterType.Basic).map {
-          res => (hash, res.filter)
+    val sink: Sink[DoubleSha256Digest, Future[Wallet]] =
+      Flow[DoubleSha256Digest]
+        .mapAsync(parallelism = numParallelism) { hash =>
+          bitcoindRpcClient.getBlockFilter(hash.flip, FilterType.Basic).map {
+            res => (hash, res.filter)
+          }
         }
-      }
-      .batch(1000, filter => Vector(filter))(_ :+ _)
-      .foldAsync(wallet) { case (wallet, filterRes) =>
-        wallet.processCompactFilters(filterRes)
-      }
-      .run()
-    runStream.map { _ =>
-      logger.info(s"Synced ${blockHashes.size} filters, it took ${System
-        .currentTimeMillis() - start}ms")
-      logger.info("We are synced!")
-    }
+        .batch(1000, filter => Vector(filter))(_ :+ _)
+        .foldAsync(wallet) { case (wallet, filterRes) =>
+          wallet.processCompactFilters(filterRes)
+        }
+        .toMat(Sink.last)(Keep.right)
+
+    sink
   }
 
   /** Creates an anonymous [[NodeApi]] that downloads blocks using
