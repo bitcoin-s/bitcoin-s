@@ -188,16 +188,6 @@ trait WalletRpc { self: Client =>
 
   /** @return
     */
-  /**  def getWalletInfo: Future[GetWalletInfoResult] = {
-    *    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
-    *  }
-    *
-    *  def getWalletInfo(walletName: String): Future[GetWalletInfoResult] = {
-    *    bitcoindCall[GetWalletInfoResult]("getwalletinfo",
-    *                                      uriExtensionOpt =
-    *                                        Some(walletExtension(walletName)))
-    *  }
-    */
   def keyPoolRefill(
       keyPoolSize: Int = 100,
       walletNameOpt: Option[String] = None): Future[Unit] = {

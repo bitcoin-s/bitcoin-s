@@ -5,14 +5,14 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetNodeAddressesResultPostV22
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.rpc.client.common.Client
+import org.bitcoins.rpc.client.common.{Client, WalletRpc}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20AssortedRpc
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
 
-trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
+trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
   self: Client =>
 
   def listDescriptors(): Future[listDescriptorsResult] = {
@@ -20,15 +20,6 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
       "listdescriptors"
     )
   }
-
-  /**  def listDescriptors(Private: Option[Boolean],
-    *                      walletName: Option[String] = None): Future[Vector[listDescriptorsResult]] = {
-    *    bitcoindCall[Vector[listDescriptorsResult]](
-    *      "listdescriptors", List(Json.toJson(Private)),
-    *      uriExtensionOpt = walletName.map(walletExtension)
-    *    )
-    *  }
-    */
 
   def listDescriptors(
       Private: Option[Boolean],
@@ -78,16 +69,5 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
   override def getNodeAddresses(): Future[
     Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(None)
-
-  /**  def testMempoolAccept(
-    *      transaction: Transaction,
-    *      allowHighFees: Boolean = false): Future[
-    *    TestMempoolAcceptResultPostV22] = {
-    *    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
-    *      "testmempoolaccept",
-    *      List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
-    *      .map(_.head)
-    *  }
-    */
 
 }

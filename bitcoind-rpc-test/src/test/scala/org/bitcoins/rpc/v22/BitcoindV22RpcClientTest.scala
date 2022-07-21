@@ -2,17 +2,25 @@ package org.bitcoins.rpc.v22
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
+import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.transaction.{
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
+import org.bitcoins.rpc.util.NodePair
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV22,
   BitcoindRpcTestUtil
 }
 import org.scalatest.Assertion
-//import org.bitcoins.rpc.client.v22.TestMempoolAcceptRpc
+
 import java.time.ZonedDateTime
 import scala.concurrent.Future
 
@@ -199,24 +207,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       }
   }
 
-  /**  it should "output wallet name from listdescriptors" in {
-    *    nodePair: FixtureParam =>
-    *      val client = nodePair.node1
-    *      val descriptorWallet: Future[CreateWalletResult] =
-    *        client.createWallet("descriptorWallet", descriptors = true)
-    *      Await.ready(descriptorWallet, 10.seconds)
-    *      val resultWalletF: Future[listDescriptorsResult] = {
-    *        client.listDescriptors(walletName = "descriptorWallet")
-    *      }
-    *      descriptorWallet.flatMap { _ =>
-    *        resultWalletF.map { resultWallet =>
-    *          assert(resultWallet.wallet_name == "descriptorWallet")
-    *        }
-    *        succeed
-    *      }
-    *
-    *  }
-    */
   it should "output descriptors from listdescriptors" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
@@ -240,84 +230,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         succeed
       }
   }
-
-  /**  it should "output descriptors from listdescriptors" in {
-    *    nodePair: FixtureParam =>
-    *      val client = nodePair.node1
-    *      val descriptorWallet: Future[CreateWalletResult] =
-    *        client.createWallet("descriptorWalletTwo", descriptors = true)
-    *      Await.ready(descriptorWallet, 10.seconds)
-    *      val resultWalletF: Future[listDescriptorsResult] = {
-    *        client.listDescriptors(walletName = "descriptorWalletTwo")
-    *      }
-    *      descriptorWallet.flatMap { _ =>
-    *        resultWalletF.map { resultWallet =>
-    *          resultWallet.descriptors.map { d =>
-    *            assert(
-    *              d.desc.isInstanceOf[String] && d.timestamp
-    *                .isInstanceOf[ZonedDateTime]
-    *                && d.active.isInstanceOf[Boolean] && d.internal
-    *                  .isInstanceOf[Option[Boolean]]
-    *                && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
-    *                  .isInstanceOf[Option[Int]])
-    *          }
-    *          succeed
-    *        }
-    *      }
-    *  }
-    */
-
-  /** Future.sequence(walletsU.map {
-    *          case wallet @ "descriptorWallet" =>
-    *            client.unloadWallet(wallet)
-    *          case wallet @ "descriptorWalletTwo" =>
-    *            client.unloadWallet(wallet)
-    *          case _ => null
-    *        })
-    *      walletsUI
-    *    }.flatten
-    *    Await.ready(walletsUnload, 5.seconds)
-    */
-
-  /**  it should "be able to decode a reedem script" in { nodePair: FixtureParam =>
-    *    val client = nodePair.node1
-    *    //val walletsUF: Future[Vector[String]] = client.listWallets
-    *    //val walletsUnload: Future[Vector[Unit]] = walletsUF.map { walletsU =>
-    *    //val walletsUI: Future[Vector[Unit]] =
-    *    //Future.sequence(walletsU.map { wallet =>
-    *    //client.unloadWallet(wallet)
-    *    // })
-    *    //walletsUI
-    *    //}.flatten
-    *    //Await.ready(walletsUnload, 5.seconds)
-    *    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
-    *    val pubKey1 = ecPrivKey1.publicKey
-    *    //val walletDecode: Future[CreateWalletResult] =
-    *    //client.createWallet("decodeRWallet")
-    *    //Await.ready(walletDecode, 10.seconds)
-    *    for {
-    *      _ <- client.unloadWallet("")
-    *      _ <- client.createWallet("decodeRWallet")
-    *      address <- client.getNewAddress(addressType = AddressType.Legacy)
-    *      multisig <-
-    *        client
-    *          .addMultiSigAddress(
-    *            2,
-    *            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
-    *      decoded <- client.decodeScript(multisig.redeemScript)
-    *    } yield {
-    *      decoded match {
-    *        case decodedPreV22: DecodeScriptResultPreV22 =>
-    *          assert(decodedPreV22.reqSigs.contains(2))
-    *          assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
-    *          assert(decodedPreV22.addresses.get.contains(address))
-    *        case decodedV22: DecodeScriptResultV22 =>
-    *          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
-    *      }
-    *
-    *    }
-    *  }
-    */
 
   it should "be able to decode a reedem script" in { nodePair: FixtureParam =>
     val client = nodePair.node1
@@ -348,54 +260,68 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     }
   }
 
-  /**  it should "output more than one txid" in { nodePair: FixtureParam =>
-    *    val NodePair(client, otherClient) = nodePair
-    *    val tx1F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
-    *      .createRawCoinbaseTransaction(client, otherClient)
-    *      .map { tx1 =>
-    *        tx1.txIdBE
-    *        val tx2F: Future[DoubleSha256DigestBE] = BitcoindRpcTestUtil
-    *          .createRawCoinbaseTransaction(client, otherClient)
-    *          .map { tx2 =>
-    *            tx2.txIdBE
-    *          }
-    *        Await.ready(tx1F, 5.seconds)
-    *        Await.ready(tx2F, 5.seconds)
-    *        val transactionAcceptT: Future[Assertion] =
-    *          client.testMempoolAccept(Vector[tx1F, tx2F]).map {
-    *            testMempoolResult =>
-    *              assert(testMempoolResult.txid.length > 1)
-    *          }
-    *        transactionAcceptT
-    *      }
-    *  }
-    *  it should "output more than one txid" in { nodePair: FixtureParam =>
-    *    val NodePair(client, otherClient) = nodePair
-    *    for {
-    *      transaction1 <- BitcoindRpcTestUtil
-    *        .createRawCoinbaseTransaction(client, otherClient)
-    *      transaction2 <- BitcoindRpcTestUtil
-    *        .createRawCoinbaseTransaction(client, otherClient)
-    *      mempoolAccept <- client.testMempoolAccept(
-    *        Array[(transaction1, transaction2)])
-    *    } yield {
-    *      assert(mempoolAccept.txid.length > 1)
-    *    }
-    *  }
-    */
+  it should "output more than one txid" in { nodePair: FixtureParam =>
+    val NodePair(client, otherClient) = nodePair
+    for {
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      firstBlock <- client.getBlock(blocks(0))
+      transaction0 <- client.getTransaction(firstBlock.tx(0))
+      secondBlock <- client.getBlock(blocks(1))
+      transaction1 <- client.getTransaction(secondBlock.tx(0))
 
-  it should "print the wallets" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val walletsUF: Future[Assertion] = client.listWallets.map { wallets =>
-      println(s"wallets=$wallets")
-      val convertToAs: String = wallets.foldLeft("")((_, _) => "succeed")
-      convertToAs match {
-        case "succeed" =>
-          succeed
-        case _ => succeed
+      address <- otherClient.getNewAddress
+
+      input0 = TransactionOutPoint(transaction0.txid.flip,
+                                   UInt32(transaction0.blockindex.get))
+      input1 = TransactionOutPoint(transaction1.txid.flip,
+                                   UInt32(transaction1.blockindex.get))
+
+      transactionFirst <- {
+        val sig: ScriptSignature = ScriptSignature.empty
+        val inputs = Vector(TransactionInput(input0, sig, UInt32(1)),
+                            TransactionInput(input1, sig, UInt32(2)))
+        val outputs = Map(address -> Bitcoins(1))
+        client.createRawTransaction(inputs, outputs)
       }
-    }
-    walletsUF
-  }
+      fundedTransactionOne <- client.fundRawTransaction(transactionFirst)
+      signedTransactionOne <- BitcoindRpcTestUtil.signRawTransaction(
+        client,
+        fundedTransactionOne.hex)
 
+      blocksTwo <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      firstBlockTwo <- client.getBlock(blocksTwo(0))
+      transaction2 <- client.getTransaction(firstBlockTwo.tx(0))
+      secondBlockTwo <- client.getBlock(blocksTwo(1))
+      transaction3 <- client.getTransaction(secondBlockTwo.tx(0))
+
+      input2 = TransactionOutPoint(transaction2.txid.flip,
+                                   UInt32(transaction2.blockindex.get))
+      input3 = TransactionOutPoint(transaction3.txid.flip,
+                                   UInt32(transaction3.blockindex.get))
+
+      transactionSecond <- {
+        val sig: ScriptSignature = ScriptSignature.empty
+        val inputs = Vector(TransactionInput(input2, sig, UInt32(1)),
+                            TransactionInput(input3, sig, UInt32(2)))
+        val outputs = Map(address -> Bitcoins(1))
+        client.createRawTransaction(inputs, outputs)
+      }
+      fundedTransactionTwo <- client.fundRawTransaction(transactionSecond)
+      signedTransactionTwo <- BitcoindRpcTestUtil.signRawTransaction(
+        client,
+        fundedTransactionTwo.hex)
+
+      _ <- client.getNewAddress.flatMap(
+        client.generateToAddress(100, _)
+      ) // Can't spend until depth 100
+
+      mempoolAccept <- client.testMempoolAccept(
+        Vector(signedTransactionOne.hex, signedTransactionTwo.hex))
+      _ = println(mempoolAccept)
+    } yield {
+      val mempooltxid: Int = mempoolAccept.length
+      println(s"mempoolAcceptTxid=$mempooltxid")
+      assert(mempooltxid > 1)
+    }
+  }
 }

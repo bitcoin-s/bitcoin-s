@@ -7,7 +7,7 @@ import org.bitcoins.commons.serializers.JsonSerializers.{
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.client.common.Client
-import play.api.libs.json.{JsArray, JsBoolean, Json}
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 
@@ -47,12 +47,22 @@ trait TestMempoolAcceptRpc { self: Client =>
 
   def testMempoolAccept(
       transaction: Vector[Transaction],
-      allowHighFees: Boolean = false): Future[
-    TestMempoolAcceptResultPostV22] = {
+      maxFeeRate: Double = 0.10): Future[
+    Vector[TestMempoolAcceptResultPostV22]] = {
     bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
       "testmempoolaccept",
-      List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
-      .map(_.head)
+      List(Json.toJson(transaction), Json.toJson(maxFeeRate)))
   }
+
+  /**  def testMempoolAccept(
+    *                         transaction: Vector[Transaction],
+    *                         allowHighFees: Boolean = false): Future[
+    *    Vector[TestMempoolAcceptResultPostV22]] = {
+    *    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
+    *      "testmempoolaccept",
+    *    List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
+    *    .map(_.head)
+    *  }
+    */
 
 }

@@ -660,40 +660,6 @@ object JsonReaders {
       } yield TestMempoolAcceptResult(txid, allowed, rejectReason)
   }
 
-  /**  implicit object TestMempoolAcceptResultReadsPreV22
-    *          extends Reads[TestMempoolAcceptResultPreV22] {
-    *
-    *        override def reads(json: JsValue): JsResult[TestMempoolAcceptResultPreV22] =
-    *          for {
-    *            txid <- (json \ "txid").validate[DoubleSha256DigestBE]
-    *            allowed <- (json \ "allowed").validate[Boolean]
-    *            rejectReason <- (json \ "reject-reason").validateOpt[String]
-    *          } yield TestMempoolAcceptResultPreV22(txid, allowed, rejectReason)
-    *      }
-    */
-
-  implicit object TestMempoolAcceptResultReadsPostV22
-      extends Reads[TestMempoolAcceptResultPostV22] {
-
-    override def reads(
-        json: JsValue): JsResult[TestMempoolAcceptResultPostV22] =
-      for {
-        txid <- (json \ "txid").validate[DoubleSha256DigestBE]
-        wtxid <- (json \ "wtxid").validate[DoubleSha256DigestBE]
-        packageError <- (json \ "package-error").validate[String]
-        allowed <- (json \ "allowed").validate[Boolean]
-        vsize <- (json \ "vsize").validateOpt[Int]
-        fees <- (json \ "fees").validateOpt[FeeInfo]
-        rejectReason <- (json \ "reject-reason").validateOpt[String]
-      } yield TestMempoolAcceptResultPostV22(txid,
-                                             wtxid,
-                                             packageError,
-                                             allowed,
-                                             vsize,
-                                             fees,
-                                             rejectReason)
-  }
-
   // Currently takes in BTC/kB
   implicit object BitcoinFeeUnitReads extends Reads[BitcoinFeeUnit] {
 

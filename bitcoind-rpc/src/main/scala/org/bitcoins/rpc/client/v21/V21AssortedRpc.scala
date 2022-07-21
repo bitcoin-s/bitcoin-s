@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.v21
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetWalletInfoResultPostV22
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers.getWalletInfoResultReadsPostV22
 import org.bitcoins.rpc.client.common.{Client, WalletRpc}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20AssortedRpc

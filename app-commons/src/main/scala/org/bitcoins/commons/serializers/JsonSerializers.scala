@@ -6,10 +6,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.wallet._
-import org.bitcoins.commons.serializers.JsonReaders.{
-  TestMempoolAcceptResultReadsPostV22,
-  _
-}
+import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -419,11 +416,11 @@ object JsonSerializers {
       (__ \ "details").read[Vector[TransactionDetails]] and
       (__ \ "hex").read[Transaction])(GetTransactionResult)
 
-  implicit val getWalletInfoResultReadsPreV21: Reads[
+  implicit val getWalletInfoResultReadsPreV22: Reads[
     GetWalletInfoResultPreV22] =
     Json.reads[GetWalletInfoResultPreV22]
 
-  implicit val getWalletInfoResultReadsPostV21: Reads[
+  implicit val getWalletInfoResultReadsPostV22: Reads[
     GetWalletInfoResultPostV22] =
     Json.reads[GetWalletInfoResultPostV22]
 
@@ -684,14 +681,10 @@ object JsonSerializers {
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads
 
-  /**  implicit val testMempoolAcceptResultReadsPreV22: Reads[
-    *        TestMempoolAcceptResultPreV22] =
-    *        TestMempoolAcceptResultReadsPreV22
-    */
+  implicit val FeeInfoTwoReads: Reads[FeeInfoTwo] = Json.reads[FeeInfoTwo]
 
   implicit val testMempoolAcceptResultReadsPostV22: Reads[
-    TestMempoolAcceptResultPostV22] =
-    TestMempoolAcceptResultReadsPostV22
+    TestMempoolAcceptResultPostV22] = Json.reads[TestMempoolAcceptResultPostV22]
 
   implicit val indexInfoResultReads: Reads[IndexInfoResult] =
     Json.reads[IndexInfoResult]

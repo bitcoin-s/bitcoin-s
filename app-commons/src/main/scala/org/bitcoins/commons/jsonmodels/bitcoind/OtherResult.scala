@@ -174,13 +174,17 @@ case class TestMempoolAcceptResult(
   * ) extends TestMempoolAcceptResult
   */
 
+case class FeeInfoTwo(
+    base: BitcoinFeeUnit
+)
+
 case class TestMempoolAcceptResultPostV22(
     txid: DoubleSha256DigestBE,
     wtxid: DoubleSha256DigestBE,
-    packageError: String,
+    packageError: Option[String],
     allowed: Boolean,
     vsize: Option[Int],
-    fees: Option[FeeInfo],
+    fees: Option[FeeInfoTwo],
     rejectReason: Option[String]
 )
 
