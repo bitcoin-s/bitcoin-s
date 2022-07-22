@@ -44,7 +44,7 @@ import scodec.bits.ByteVector
 import slick.dbio.{DBIO, DBIOAction}
 
 import java.net.InetSocketAddress
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /** A [[Wallet]] with full DLC Functionality */
 abstract class DLCWallet
