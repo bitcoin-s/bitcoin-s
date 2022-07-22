@@ -25,6 +25,8 @@ object RescanState {
       blocksMatchedF: Future[Vector[BlockMatchingResponse]])
       extends RescanState {
 
+    def isStopped: Boolean = doneF.isCompleted
+
     def doneF: Future[Vector[BlockMatchingResponse]] = blocksMatchedF
 
     /** Completes the stream that the rescan in progress uses.
