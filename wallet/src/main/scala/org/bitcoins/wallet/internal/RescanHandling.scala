@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.internal
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi.{
@@ -18,6 +17,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 private[wallet] trait RescanHandling extends WalletLogger {
   self: Wallet =>
@@ -77,14 +77,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 Future.successful(None)
             }
             _ <- clearUtxos(account)
-            _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
+            state <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
             _ <- stateDescriptorDAO.updateRescanning(false)
             _ <- walletCallbacks.executeOnRescanComplete(logger)
           } yield {
             logger.info(s"Finished rescanning the wallet. It took ${System
               .currentTimeMillis() - startTime}ms")
 
-            RescanState.RescanDone
+            state
           }
 
           res.recoverWith { case err: Throwable =>
@@ -110,25 +110,57 @@ private[wallet] trait RescanHandling extends WalletLogger {
       .map(BlockHeight)
 
   private def buildFilterMatchFlow(
-      source: Source[Int, Promise[Option[Int]]],
+      range: Range,
       scripts: Vector[ScriptPubKey],
       parallelism: Int,
-      batchSize: Int)(implicit system: ActorSystem): Promise[Option[Int]] = {
-    val seed: Int => Vector[Int] = { case int => Vector(int) }
+      batchSize: Int)(implicit
+      system: ActorSystem): RescanState.RescanStarted = {
+    val maybe = Source.maybe[Int]
+    val combine: Source[Int, Promise[Option[Int]]] = {
+      Source.combineMat(maybe, Source(range))(Merge(_))(Keep.left)
+    }
+    val seed: Int => Vector[Int] = { case int =>
+      Vector(int)
+    }
     val aggregate: (Vector[Int], Int) => Vector[Int] = {
       case (vec: Vector[Int], int: Int) => vec.appended(int)
     }
-    val sink: Sink[Int, NotUsed] =
+
+    //this promise is completed after we scan the last filter
+    //in the rescanSink
+    val rescanCompletePromise: Promise[Unit] = Promise()
+
+    //fetches filters, matches filters against our wallet, and then request blocks
+    //for the wallet to process
+    val rescanSink: Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] = {
       Flow[Int]
         .batch[Vector[Int]](batchSize, seed)(aggregate)
         .mapAsync(1) { case heightRange =>
-          logger.info(s"heightRange=$heightRange")
-          fetchFiltersInRange(scripts, parallelism)(heightRange)(
+          val f = fetchFiltersInRange(scripts, parallelism)(heightRange)(
             ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
-        }
-        .to(Sink.seq)
 
-    source.to(sink).run()
+          f.onComplete {
+            case Success(_) =>
+              if (heightRange.lastOption == range.lastOption) {
+                //complete the stream if we processes the last filter
+                rescanCompletePromise.success(())
+              }
+            case Failure(_) => //do nothing
+          }
+          f
+        }
+        .toMat(Sink.seq)(Keep.right)
+    }
+
+    //the materialized values of the two streams
+    //compleRescanEarly allows us to safely ecomplete the rescan early
+    //matchingBlocksF is materialized when the stream is complete. This is all blocks our wallet matched
+    val (completeRescanEarlyP, matchingBlocksF) =
+      combine.toMat(rescanSink)(Keep.both).run()
+
+    rescanCompletePromise.future.map(_ => completeRescanEarlyP.success(None))
+    val flatten = matchingBlocksF.map(_.flatten.toVector)
+    RescanState.RescanStarted(completeRescanEarlyP, flatten)
   }
 
   /** Iterates over the block filters in order to find filters that match to the given addresses
@@ -174,14 +206,13 @@ private[wallet] trait RescanHandling extends WalletLogger {
         _ = logger.info(
           s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
         range = startHeight.to(endHeight)
-        maybe = Source.maybe[Int]
-        combine = Source.combineMat(maybe, Source(range))(Merge(_))(Keep.left)
-        promise = buildFilterMatchFlow(combine,
-                                       scripts,
-                                       parallelismLevel,
-                                       batchSize)
+
+        rescanStarted = buildFilterMatchFlow(range,
+                                             scripts,
+                                             parallelismLevel,
+                                             batchSize)
       } yield {
-        RescanState.RescanStarted(promise)
+        rescanStarted
       }
     }
   }
@@ -345,6 +376,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     val startHeight = heightRange.head
     val endHeight = heightRange.last
+    logger.info(s"Searching filters from start=$startHeight to end=$endHeight")
     for {
       filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
         startHeight = startHeight,

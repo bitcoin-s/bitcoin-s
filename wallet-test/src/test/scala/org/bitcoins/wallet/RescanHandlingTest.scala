@@ -87,7 +87,9 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ =
           assert(initBalance > CurrencyUnits.zero,
                  s"Cannot run rescan test if our init wallet balance is zero!")
-        _ <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
+        _ <- rescanState.asInstanceOf[RescanState.RescanStarted].future
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == initBalance)
@@ -137,12 +139,18 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- newTxWallet.clearAllUtxos()
         zeroBalance <- newTxWallet.getBalance()
         _ = assert(zeroBalance == Satoshis.zero)
-        _ <- newTxWallet.rescanNeutrinoWallet(startOpt = txInBlockHeightOpt,
-                                              endOpt = None,
-                                              addressBatchSize =
-                                                DEFAULT_ADDR_BATCH_SIZE,
-                                              useCreationTime = false,
-                                              force = false)
+        rescanState <- newTxWallet.rescanNeutrinoWallet(
+          startOpt = txInBlockHeightOpt,
+          endOpt = None,
+          addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
+          useCreationTime = false,
+          force = false)
+        _ <- {
+          rescanState match {
+            case started: RescanState.RescanStarted => started.future
+            case _: RescanState                     => Future.unit
+          }
+        }
         balance <- newTxWallet.getBalance()
         unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
@@ -246,12 +254,18 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       for {
         newTxWallet <- newTxWalletF
-        _ <- newTxWallet.rescanNeutrinoWallet(startOpt = None,
-                                              endOpt = None,
-                                              addressBatchSize =
-                                                DEFAULT_ADDR_BATCH_SIZE,
-                                              useCreationTime = true,
-                                              force = false)
+        rescanState <- newTxWallet.rescanNeutrinoWallet(
+          startOpt = None,
+          endOpt = None,
+          addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
+          useCreationTime = true,
+          force = false)
+        _ <- {
+          rescanState match {
+            case started: RescanState.RescanStarted => started.future
+            case _: RescanState                     => Future.unit
+          }
+        }
         balance <- newTxWallet.getBalance()
         unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
@@ -286,12 +300,19 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                  s"Cannot run rescan test if our init wallet balance is zero!")
         oldestUtxoHeight <- oldestHeightF
         end = Some(BlockStamp.BlockHeight(oldestUtxoHeight - 1))
-        _ <- wallet.rescanNeutrinoWallet(startOpt = BlockStamp.height0Opt,
-                                         endOpt = end,
-                                         addressBatchSize =
-                                           DEFAULT_ADDR_BATCH_SIZE,
-                                         useCreationTime = false,
-                                         force = false)
+        rescanState <- wallet.rescanNeutrinoWallet(startOpt =
+                                                     BlockStamp.height0Opt,
+                                                   endOpt = end,
+                                                   addressBatchSize =
+                                                     DEFAULT_ADDR_BATCH_SIZE,
+                                                   useCreationTime = false,
+                                                   force = false)
+        _ <- {
+          rescanState match {
+            case started: RescanState.RescanStarted => started.future
+            case _: RescanState                     => Future.unit
+          }
+        }
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == CurrencyUnits.zero)
@@ -323,7 +344,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         }
       for {
         start <- startF
-        _ = assert(start == RescanState.RescanDone)
+        _ = assert(start.isInstanceOf[RescanState.RescanStarted])
         //try another one
         alreadyStarted <- alreadyStartedF
       } yield {
