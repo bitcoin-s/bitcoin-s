@@ -1,8 +1,9 @@
 package org.bitcoins.wallet.config
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
+import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -41,12 +42,14 @@ case class WalletAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config],
     kmConfOpt: Option[KeyManagerAppConfig] = None)(implicit
-    override val ec: ExecutionContext)
+    val system: ActorSystem)
     extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig]
     with DBMasterXPubApi
     with CallbackConfig[WalletCallbacks] {
+
+  implicit override val ec: ExecutionContext = system.dispatcher
 
   override protected[bitcoins] def moduleName: String =
     WalletAppConfig.moduleName
@@ -294,10 +297,10 @@ case class WalletAppConfig(
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit ec: ExecutionContext): Future[Wallet] = {
+      feeRateApi: FeeRateApi)(implicit system: ActorSystem): Future[Wallet] = {
     WalletAppConfig.createHDWallet(nodeApi = nodeApi,
                                    chainQueryApi = chainQueryApi,
-                                   feeRateApi = feeRateApi)(this, ec)
+                                   feeRateApi = feeRateApi)(this, system)
   }
 
   private[this] var rebroadcastTransactionsCancelOpt: Option[
@@ -348,7 +351,7 @@ case class WalletAppConfig(
 }
 
 object WalletAppConfig
-    extends AppConfigFactory[WalletAppConfig]
+    extends AppConfigFactoryBase[WalletAppConfig, ActorSystem]
     with WalletLogger {
 
   final val DEFAULT_WALLET_NAME: String =
@@ -360,7 +363,7 @@ object WalletAppConfig
     * data directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): WalletAppConfig =
+      system: ActorSystem): WalletAppConfig =
     WalletAppConfig(datadir, confs)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
@@ -369,7 +372,8 @@ object WalletAppConfig
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi)(implicit
       walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[Wallet] = {
+      system: ActorSystem): Future[Wallet] = {
+    import system.dispatcher
     walletConf.hasWallet().flatMap { walletExists =>
       val bip39PasswordOpt = walletConf.bip39PasswordOpt
 

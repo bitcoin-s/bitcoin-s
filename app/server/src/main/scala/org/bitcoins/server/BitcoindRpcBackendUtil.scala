@@ -153,7 +153,7 @@ object BitcoindRpcBackendUtil extends Logging {
                                                     chainCallbacksOpt),
       chainQueryApi = bitcoind,
       feeRateApi = wallet.feeRateApi
-    )(wallet.walletConfig, wallet.ec)
+    )(wallet.walletConfig)
 
     walletCallbackP.success(pairedWallet)
 
@@ -217,7 +217,7 @@ object BitcoindRpcBackendUtil extends Logging {
                                                     chainCallbacksOpt),
       chainQueryApi = bitcoind,
       feeRateApi = wallet.feeRateApi
-    )(wallet.walletConfig, wallet.dlcConfig, wallet.ec)
+    )(wallet.walletConfig, wallet.dlcConfig)
 
     walletCallbackP.success(pairedWallet)
 

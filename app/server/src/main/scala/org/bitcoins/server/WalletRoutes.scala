@@ -77,7 +77,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     }
   }
 
-  def handleCommand: PartialFunction[ServerCommand, Route] = {
+  override def handleCommand: PartialFunction[ServerCommand, Route] = {
 
     case ServerCommand("isempty", _) =>
       complete {

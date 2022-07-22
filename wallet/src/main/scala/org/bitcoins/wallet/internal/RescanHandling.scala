@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.internal
 
-import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,
@@ -113,8 +112,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       range: Range,
       scripts: Vector[ScriptPubKey],
       parallelism: Int,
-      batchSize: Int)(implicit
-      system: ActorSystem): RescanState.RescanStarted = {
+      batchSize: Int): RescanState.RescanStarted = {
     val maybe = Source.maybe[Int]
     val combine: Source[Int, Promise[Option[Int]]] = {
       Source.combineMat(maybe, Source(range))(Merge(_))(Keep.left)
@@ -193,8 +191,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
       ec: ExecutionContext): Future[RescanState] = {
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
-    implicit val system: ActorSystem = ActorSystem(
-      s"getMatchingBlocks-${System.currentTimeMillis()}")
     if (scripts.isEmpty) {
       Future.successful(RescanState.RescanDone)
     } else {

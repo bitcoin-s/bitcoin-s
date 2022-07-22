@@ -1967,8 +1967,7 @@ object DLCWallet extends WalletLogger {
       feeRateApi: FeeRateApi
   )(implicit
       val walletConfig: WalletAppConfig,
-      val dlcConfig: DLCAppConfig,
-      val ec: ExecutionContext
+      val dlcConfig: DLCAppConfig
   ) extends DLCWallet
 
   def apply(
@@ -1976,8 +1975,7 @@ object DLCWallet extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi)(implicit
       config: WalletAppConfig,
-      dlcConfig: DLCAppConfig,
-      ec: ExecutionContext): DLCWallet = {
+      dlcConfig: DLCAppConfig): DLCWallet = {
     DLCWalletImpl(nodeApi, chainQueryApi, feeRateApi)
   }
 
