@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import akka.stream.{KillSwitches, SharedKillSwitch}
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -96,9 +95,6 @@ abstract class Wallet
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
-  lazy val rescanKillSwitch: SharedKillSwitch =
-    KillSwitches.shared(s"rescan-killswitch-${System.currentTimeMillis()}")
-
   private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
     for {
       utxos <- spendingInfoDAO.findAllSpendingInfos()
@@ -164,7 +160,6 @@ abstract class Wallet
   }
 
   override def stop(): Future[Wallet] = {
-    rescanKillSwitch.shutdown()
     Future.successful(this)
   }
 
