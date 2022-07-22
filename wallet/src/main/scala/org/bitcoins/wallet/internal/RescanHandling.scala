@@ -142,10 +142,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
           f.onComplete {
             case Success(_) =>
               if (heightRange.lastOption == range.lastOption) {
-                //complete the stream if we processes the last filter
+                //complete the stream if we processed the last filter
                 rescanCompletePromise.success(())
               }
-            case Failure(_) => //do nothing
+            case Failure(_) => //do nothing, the stream will fail on its own
           }
           f
         }
@@ -153,13 +153,18 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
 
     //the materialized values of the two streams
-    //compleRescanEarly allows us to safely ecomplete the rescan early
+    //completeRescanEarly allows us to safely complete the rescan early
     //matchingBlocksF is materialized when the stream is complete. This is all blocks our wallet matched
     val (completeRescanEarlyP, matchingBlocksF) =
       combine.toMat(rescanSink)(Keep.both).run()
 
+    //if we have seen the last filter, complete the rescanEarlyP so we are consistent
     rescanCompletePromise.future.map(_ => completeRescanEarlyP.success(None))
+
     val flatten = matchingBlocksF.map(_.flatten.toVector)
+
+    //return RescanStarted with access to the ability to complete the rescan early
+    //via the completeRescanEarlyP promise.
     RescanState.RescanStarted(completeRescanEarlyP, flatten)
   }
 
