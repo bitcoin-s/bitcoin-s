@@ -39,7 +39,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     with Logging {
   import system.dispatcher
 
-  implicit val kmConf: KeyManagerAppConfig = walletConf.kmConf
+  implicit private val kmConf: KeyManagerAppConfig = walletConf.kmConf
 
   private def spendingInfoDbToJson(spendingInfoDb: SpendingInfoDb): Value = {
     Obj(
