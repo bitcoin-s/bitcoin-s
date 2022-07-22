@@ -123,7 +123,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       Vector(int)
     }
     val aggregate: (Vector[Int], Int) => Vector[Int] = {
-      case (vec: Vector[Int], int: Int) => vec.appended(int)
+      case (vec: Vector[Int], int: Int) => vec.+:(int)
     }
 
     //this promise is completed after we scan the last filter
