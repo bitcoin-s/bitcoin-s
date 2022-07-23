@@ -33,7 +33,9 @@ object RescanState {
       * This aborts the rescan early.
       */
     def stop(): Future[Vector[BlockMatchingResponse]] = {
-      completeRescanEarlyP.success(None)
+      if (!completeRescanEarlyP.isCompleted) {
+        completeRescanEarlyP.success(None)
+      }
       blocksMatchedF
     }
   }

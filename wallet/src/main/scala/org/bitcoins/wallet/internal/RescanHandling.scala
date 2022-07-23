@@ -1,6 +1,8 @@
 package org.bitcoins.wallet.internal
 
+import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
+import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,
   InvalidBlockRange
@@ -11,6 +13,7 @@ import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -133,9 +136,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val rescanSink: Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] = {
       Flow[Int]
         .batch[Vector[Int]](batchSize, seed)(aggregate)
-        .mapAsync(1) { case heightRange =>
-          val f = fetchFiltersInRange(scripts, parallelism)(heightRange)(
+        .via(fetchFiltersFlow)
+        .mapAsync(1) { case filterResponse =>
+          val f = searchFiltersForMatches(scripts, filterResponse, parallelism)(
             ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+
+          val heightRange = filterResponse.map(_.blockHeight)
 
           f.onComplete {
             case Success(_) =>
@@ -371,17 +377,33 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  private def fetchFiltersInRange(
+  /** Given a range of filter heights, we fetch the filters associated with those heights and emit them downstream */
+  private val fetchFiltersFlow: Flow[
+    Vector[Int],
+    Vector[ChainQueryApi.FilterResponse],
+    NotUsed] = {
+    Flow[Vector[Int]].mapAsync(FutureUtil.getParallelism) {
+      case range: Vector[Int] =>
+        val startHeight = range.head
+        val endHeight = range.last
+        logger.info(
+          s"Searching filters from start=$startHeight to end=$endHeight")
+        chainQueryApi.getFiltersBetweenHeights(startHeight = startHeight,
+                                               endHeight = endHeight)
+    }
+  }
+
+  /** Searches the given block filters against the given scriptPubKeys for matches.
+    * If there is a match, request the full block to search
+    */
+  private def searchFiltersForMatches(
       scripts: Vector[ScriptPubKey],
-      parallelismLevel: Int)(heightRange: Vector[Int])(implicit
+      filtersResponse: Vector[ChainQueryApi.FilterResponse],
+      parallelismLevel: Int)(implicit
       ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
-    val startHeight = heightRange.head
-    val endHeight = heightRange.last
-    logger.info(s"Searching filters from start=$startHeight to end=$endHeight")
+    val startHeight = filtersResponse.head.blockHeight
+    val endHeight = filtersResponse.last.blockHeight
     for {
-      filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
-        startHeight = startHeight,
-        endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
       _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {

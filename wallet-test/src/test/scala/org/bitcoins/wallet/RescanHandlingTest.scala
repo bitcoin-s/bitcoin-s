@@ -334,7 +334,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       //slight delay to make sure other rescan is started
       val alreadyStartedF =
-        AsyncUtil.nonBlockingSleep(50.millis).flatMap { _ =>
+        AsyncUtil.nonBlockingSleep(10.millis).flatMap { _ =>
           wallet.rescanNeutrinoWallet(startOpt = None,
                                       endOpt = None,
                                       addressBatchSize =
@@ -347,6 +347,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ = assert(start.isInstanceOf[RescanState.RescanStarted])
         //try another one
         alreadyStarted <- alreadyStartedF
+        _ <- start.asInstanceOf[RescanState.RescanStarted].stop()
       } yield {
         assert(alreadyStarted == RescanState.RescanAlreadyStarted)
       }

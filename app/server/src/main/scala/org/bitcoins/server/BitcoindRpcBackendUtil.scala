@@ -10,6 +10,7 @@ import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -446,13 +447,7 @@ object BitcoindRpcBackendUtil extends Logging {
     def pollMempool(): Future[Unit] = {
       if (processingMempool.compareAndSet(false, true)) {
         logger.debug("Polling bitcoind for mempool")
-        val numParallelism = {
-          val processors = Runtime.getRuntime.availableProcessors()
-          //max open requests is 32 in akka, so 1/8 of possible requests
-          //can be used to query the mempool, else just limit it be number of processors
-          //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
-          Math.min(4, processors)
-        }
+        val numParallelism = FutureUtil.getParallelism
 
         //don't want to execute these in parallel
         val processTxFlow = Sink.foreachAsync[Option[Transaction]](1) {
