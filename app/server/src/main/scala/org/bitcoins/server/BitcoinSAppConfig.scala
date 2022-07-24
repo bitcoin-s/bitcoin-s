@@ -56,16 +56,16 @@ case class BitcoinSAppConfig(
   lazy val dlcNodeConf: DLCNodeAppConfig =
     DLCNodeAppConfig(baseDatadir, configOverrides)
 
-  def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
-    val configs = newConfs ++ configOverrides
-    BitcoinSAppConfig(baseDatadir, configs)
-  }
-
   lazy val kmConf: KeyManagerAppConfig =
     KeyManagerAppConfig(baseDatadir, configOverrides)
 
   lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(baseDatadir, configOverrides)
+
+  def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
+    val configs = newConfs ++ configOverrides
+    BitcoinSAppConfig(baseDatadir, configs)
+  }
 
   lazy val network: NetworkParameters = chainConf.network
 
@@ -77,7 +77,8 @@ case class BitcoinSAppConfig(
     val nonTorConfigs = Vector(kmConf, chainConf, walletConf)
 
     val torConfig = torConf.start()
-    val torDependentConfigs = Vector(nodeConf, bitcoindRpcConf, dlcConf)
+    val torDependentConfigs =
+      Vector(nodeConf, bitcoindRpcConf, dlcConf, dlcNodeConf)
 
     val startedTorDependentConfigsF = for {
       _ <- torConfig
