@@ -47,7 +47,7 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     with TestDbManagement
     with JdbcProfileComponent[TestAppConfig] {
 
-  override protected[bitcoins] def moduleName: String = "test"
+  override protected[bitcoins] def moduleName: String = TestAppConfig.moduleName
 
   override protected[bitcoins] type ConfigType = TestAppConfig
 
@@ -67,6 +67,10 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       _ <- createTable(TestDAO()(ec, this).table)
     } yield ()
   }
+}
+
+object TestAppConfig {
+  val moduleName: String = "test"
 }
 
 case class TestDb(pk: String, data: ByteVector)
