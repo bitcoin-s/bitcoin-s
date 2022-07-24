@@ -98,7 +98,10 @@ case class BitcoinSAppConfig(
   override def stop(): Future[StoppedBitcoinSAppConfig.type] = {
     for {
       _ <- nodeConf.stop()
+      _ <- dlcNodeConf.stop()
+      _ <- dlcConf.stop()
       _ <- walletConf.stop()
+      _ <- kmConf.stop()
       _ <- chainConf.stop()
       _ <- bitcoindRpcConf.stop()
       _ <- torConf.stop()
