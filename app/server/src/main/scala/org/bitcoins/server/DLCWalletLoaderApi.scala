@@ -72,7 +72,7 @@ sealed trait DLCWalletLoaderApi extends Logging {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi,
         feeRateApi = feeProviderApi
-      )(walletConfig, ec)
+      )(walletConfig)
     } yield (dlcWallet, walletConfig, dlcConfig)
   }
 

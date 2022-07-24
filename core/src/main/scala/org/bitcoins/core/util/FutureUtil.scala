@@ -141,4 +141,12 @@ object FutureUtil {
 
     batchAndParallelExecute(elements, f, batchSize)
   }
+
+  def getParallelism: Int = {
+    val processors = Runtime.getRuntime.availableProcessors()
+    //max open requests is 32 in akka, so 1/8 of possible requests
+    //can be used to open http requests in akka, else just limit it be number of processors
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
+    Math.min(4, processors)
+  }
 }

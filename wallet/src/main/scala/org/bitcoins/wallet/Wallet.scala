@@ -1,5 +1,7 @@
 package org.bitcoins.wallet
 
+import akka.actor.ActorSystem
+import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -8,7 +10,6 @@ import org.bitcoins.core.api.wallet.{
   AnyHDWalletApi,
   BlockSyncState,
   CoinSelectionAlgo,
-  SyncHeightDescriptor,
   WalletInfo
 }
 import org.bitcoins.core.config.BitcoinNetwork
@@ -59,10 +60,11 @@ abstract class Wallet
   override def keyManager: BIP39KeyManager = {
     walletConfig.kmConf.toBip39KeyManager
   }
-
-  implicit val ec: ExecutionContext
-
   implicit val walletConfig: WalletAppConfig
+
+  implicit val system: ActorSystem = walletConfig.system
+
+  implicit val ec: ExecutionContext = system.dispatcher
 
   private[wallet] lazy val scheduler = walletConfig.scheduler
 
@@ -159,7 +161,9 @@ abstract class Wallet
     }
   }
 
-  override def stop(): Future[Wallet] = Future.successful(this)
+  override def stop(): Future[Wallet] = {
+    Future.successful(this)
+  }
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncHeight()
@@ -978,16 +982,13 @@ object Wallet extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi
   )(implicit
-      val walletConfig: WalletAppConfig,
-      val ec: ExecutionContext
+      val walletConfig: WalletAppConfig
   ) extends Wallet
 
   def apply(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit
-      config: WalletAppConfig,
-      ec: ExecutionContext): Wallet = {
+      feeRateApi: FeeRateApi)(implicit config: WalletAppConfig): Wallet = {
     WalletImpl(nodeApi, chainQueryApi, feeRateApi)
   }
 
@@ -995,8 +996,8 @@ object Wallet extends WalletLogger {
     * @throws RuntimeException if a different master xpub key exists in the database
     */
   private def createMasterXPub(keyManager: BIP39KeyManager)(implicit
-      walletAppConfig: WalletAppConfig,
-      ec: ExecutionContext): Future[ExtPublicKey] = {
+      walletAppConfig: WalletAppConfig): Future[ExtPublicKey] = {
+    import walletAppConfig.ec
     val masterXPubDAO = MasterXPubDAO()
     val countF = masterXPubDAO.count()
     //make sure we don't have a xpub in the db
@@ -1061,9 +1062,11 @@ object Wallet extends WalletLogger {
       }
   }
 
-  def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
-      ec: ExecutionContext): Future[Wallet] = {
+  def initialize(
+      wallet: Wallet,
+      bip39PasswordOpt: Option[String]): Future[Wallet] = {
     implicit val walletAppConfig = wallet.walletConfig
+    import walletAppConfig.ec
     val passwordOpt = walletAppConfig.aesPasswordOpt
 
     val createMasterXpubF = createMasterXPub(wallet.keyManager)

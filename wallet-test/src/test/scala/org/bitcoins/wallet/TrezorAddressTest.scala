@@ -20,7 +20,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.compatible.Assertion
 import play.api.libs.json._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.io.Source
 
 class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
@@ -145,9 +145,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     ConfigFactory.parseString(confStr)
   }
 
-  private def getWallet(config: WalletAppConfig)(implicit
-      ec: ExecutionContext): Future[Wallet] = {
-    import system.dispatcher
+  private def getWallet(config: WalletAppConfig): Future[Wallet] = {
     val bip39PasswordOpt = None
     val startedF = config.start()
     for {
@@ -155,7 +153,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       wallet =
         Wallet(MockNodeApi,
                MockChainQueryApi,
-               ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config, ec)
+               ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config)
       init <- Wallet.initialize(wallet = wallet,
                                 bip39PasswordOpt = bip39PasswordOpt)
     } yield init

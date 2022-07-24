@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.wallet
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
+import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -34,10 +35,11 @@ case class DLCAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config],
     walletConfigOpt: Option[WalletAppConfig] = None)(implicit
-    override val ec: ExecutionContext)
+    val system: ActorSystem)
     extends DbAppConfig
     with DLCDbManagement
     with JdbcProfileComponent[DLCAppConfig] {
+  implicit override val ec: ExecutionContext = system.dispatcher
   override protected[bitcoins] def moduleName: String = "dlc"
   override protected[bitcoins] type ConfigType = DLCAppConfig
 
@@ -111,11 +113,10 @@ case class DLCAppConfig(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi)(implicit
-      walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[DLCWallet] = {
+      walletConf: WalletAppConfig): Future[DLCWallet] = {
     DLCAppConfig.createDLCWallet(nodeApi = nodeApi,
                                  chainQueryApi = chainQueryApi,
-                                 feeRateApi = feeRateApi)(walletConf, this, ec)
+                                 feeRateApi = feeRateApi)(walletConf, this)
   }
 
   private val callbacks = new Mutable(DLCWalletCallbacks.empty)
@@ -207,7 +208,9 @@ case class DLCAppConfig(
   }
 }
 
-object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
+object DLCAppConfig
+    extends AppConfigFactoryBase[DLCAppConfig, ActorSystem]
+    with WalletLogger {
 
   override val moduleName: String = "dlc"
 
@@ -215,7 +218,7 @@ object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
     * data directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): DLCAppConfig =
+      system: ActorSystem): DLCAppConfig =
     DLCAppConfig(datadir, confs)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
@@ -224,8 +227,8 @@ object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi)(implicit
       walletConf: WalletAppConfig,
-      dlcConf: DLCAppConfig,
-      ec: ExecutionContext): Future[DLCWallet] = {
+      dlcConf: DLCAppConfig): Future[DLCWallet] = {
+    import dlcConf.ec
     val bip39PasswordOpt = walletConf.bip39PasswordOpt
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {

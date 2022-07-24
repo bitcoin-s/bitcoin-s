@@ -13,6 +13,8 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.rescan.RescanState
+import org.bitcoins.core.wallet.rescan.RescanState.RescanDone
 import org.bitcoins.core.wallet.utxo.{
   AddressLabelTagName,
   AddressLabelTagType,
@@ -39,7 +41,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     with Logging {
   import system.dispatcher
 
-  implicit val kmConf: KeyManagerAppConfig = walletConf.kmConf
+  implicit private val kmConf: KeyManagerAppConfig = walletConf.kmConf
+
+  private var rescanStateOpt: Option[RescanState] = None
 
   private def spendingInfoDbToJson(spendingInfoDb: SpendingInfoDb): Value = {
     Obj(
@@ -77,7 +81,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     }
   }
 
-  def handleCommand: PartialFunction[ServerCommand, Route] = {
+  override def handleCommand: PartialFunction[ServerCommand, Route] = {
 
     case ServerCommand("isempty", _) =>
       complete {
@@ -716,36 +720,11 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       }
 
     case ServerCommand("rescan", arr) =>
-      withValidServerCommand(Rescan.fromJsArr(arr)) {
-        case Rescan(batchSize,
-                    startBlock,
-                    endBlock,
-                    force,
-                    ignoreCreationTime) =>
-          complete {
-            val res = for {
-              empty <- wallet.isEmpty()
-              msg <-
-                if (force || empty) {
-                  wallet
-                    .rescanNeutrinoWallet(
-                      startOpt = startBlock,
-                      endOpt = endBlock,
-                      addressBatchSize =
-                        batchSize.getOrElse(wallet.discoveryBatchSize()),
-                      useCreationTime = !ignoreCreationTime,
-                      force = false)
-                  Future.successful("Rescan started.")
-                } else {
-                  Future.successful(
-                    "DANGER! The wallet is not empty, however the rescan " +
-                      "process destroys all existing records and creates new ones. " +
-                      "Use force option if you really want to proceed. " +
-                      "Don't forget to backup the wallet database.")
-                }
-            } yield msg
-            res.map(msg => Server.httpSuccess(msg))
-          }
+      withValidServerCommand(Rescan.fromJsArr(arr)) { case r: Rescan =>
+        complete {
+          val msgF = handleRescan(r)
+          msgF.map(msg => Server.httpSuccess(msg))
+        }
       }
 
     case ServerCommand("getutxos", _) =>
@@ -1063,5 +1042,77 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       case scala.util.control.NonFatal(_) =>
         Future.successful(SatoshisPerVirtualByte.negativeOne)
     }
+  }
+
+  private def handleRescan(rescan: Rescan): Future[String] = {
+    val res = for {
+      empty <- wallet.isEmpty()
+      rescanState <- {
+        if (empty) {
+          //if wallet is empty, just return Done immediately
+          Future.successful(RescanState.RescanDone)
+        } else {
+          rescanStateOpt match {
+            case Some(rescanState) =>
+              val stateF: Future[RescanState] = rescanState match {
+                case started: RescanState.RescanStarted =>
+                  if (started.isStopped) {
+                    //means rescan is done, reset the variable
+                    rescanStateOpt = Some(RescanDone)
+                    Future.successful(RescanDone)
+                  } else {
+                    //do nothing, we don't want to reset/stop a rescan that is running
+                    Future.successful(started)
+                  }
+                case RescanState.RescanDone =>
+                  //if the previous rescan is done, start another rescan
+                  startRescan(rescan)
+                case RescanState.RescanAlreadyStarted =>
+                  Future.successful(RescanState.RescanAlreadyStarted)
+              }
+
+              stateF
+            case None =>
+              startRescan(rescan)
+          }
+        }
+      }
+      msg <- {
+        rescanState match {
+          case RescanState.RescanAlreadyStarted |
+              _: RescanState.RescanStarted =>
+            Future.successful("Rescan started.")
+          case RescanState.RescanDone =>
+            Future.successful("Rescan done.")
+        }
+      }
+    } yield msg
+
+    res
+  }
+
+  /** Only call this if we know we are in a state */
+  private def startRescan(rescan: Rescan): Future[RescanState] = {
+    val stateF = wallet
+      .rescanNeutrinoWallet(
+        startOpt = rescan.startBlock,
+        endOpt = rescan.endBlock,
+        addressBatchSize =
+          rescan.batchSize.getOrElse(wallet.discoveryBatchSize()),
+        useCreationTime = !rescan.ignoreCreationTime,
+        force = false
+      )
+
+    stateF.map {
+      case started: RescanState.RescanStarted =>
+        started.doneF.map { _ =>
+          logger.info(s"Rescan finished, setting state to RescanDone")
+          rescanStateOpt = Some(RescanState.RescanDone)
+        }
+      case RescanState.RescanAlreadyStarted | RescanState.RescanDone =>
+      //do nothing in these cases, no state needs to be reset
+    }
+
+    stateF
   }
 }

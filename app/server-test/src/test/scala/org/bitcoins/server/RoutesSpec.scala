@@ -48,7 +48,7 @@ import java.net.InetSocketAddress
 import java.time.{ZoneId, ZonedDateTime}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
@@ -1704,7 +1704,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                               _: Boolean,
                               _: Boolean)(_: ExecutionContext))
         .expects(None, None, 100, false, false, executor)
-        .returning(Future.successful(RescanState.RescanDone))
+        .returning(Future.successful(RescanState
+          .RescanStarted(Promise(), Future.successful(Vector.empty))))
 
       val route1 =
         walletRoutes.handleCommand(
@@ -1733,7 +1734,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           false,
           false,
           executor)
-        .returning(Future.successful(RescanState.RescanDone))
+        .returning(Future.successful(RescanState
+          .RescanStarted(Promise(), Future.successful(Vector.empty))))
 
       val route2 =
         walletRoutes.handleCommand(
@@ -1742,9 +1744,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true, true)))
 
       Post() ~> route2 ~> check {
-        assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":"Rescan started.","error":null}""")
+        assert(contentType == `application/json`)
+
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
@@ -1762,7 +1765,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                  false,
                  false,
                  executor)
-        .returning(Future.successful(RescanState.RescanDone))
+        .returning(Future.successful(RescanState
+          .RescanStarted(Promise(), Future.successful(Vector.empty))))
 
       val route3 =
         walletRoutes.handleCommand(
@@ -1801,7 +1805,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route4 ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":"Rescan started.","error":null}""")
+          responseAs[String] == """{"result":"Rescan done.","error":null}""")
       }
 
       // negative cases
@@ -1862,7 +1866,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route8 ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":"Rescan started.","error":null}""")
+          responseAs[String] == """{"result":"Rescan done.","error":null}""")
       }
     }
 

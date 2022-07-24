@@ -658,7 +658,9 @@ object Deps {
       Compile.newMicroJson,
       Compile.logback,
       Compile.slf4j,
-      Compile.grizzledSlf4j
+      Compile.grizzledSlf4j,
+      Compile.akkaActor,
+      Compile.akkaStream
     )
 
   val walletTest = List(
