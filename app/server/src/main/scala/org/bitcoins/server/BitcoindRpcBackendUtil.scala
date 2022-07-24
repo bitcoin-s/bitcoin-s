@@ -147,11 +147,12 @@ object BitcoindRpcBackendUtil extends Logging {
     // so we don't lose the internal state of the wallet
     val walletCallbackP = Promise[Wallet]()
 
+    val nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
+      bitcoind,
+      walletCallbackP.future,
+      chainCallbacksOpt)
     val pairedWallet = Wallet(
-      nodeApi =
-        BitcoindRpcBackendUtil.buildBitcoindNodeApi(bitcoind,
-                                                    walletCallbackP.future,
-                                                    chainCallbacksOpt),
+      nodeApi = nodeApi,
       chainQueryApi = bitcoind,
       feeRateApi = wallet.feeRateApi
     )(wallet.walletConfig)
