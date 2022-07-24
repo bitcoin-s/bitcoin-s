@@ -93,7 +93,6 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       }
   }
 
-
   it must "get the correct spent addresses" in { fundedWallet: FundedWallet =>
     val wallet = fundedWallet.wallet
 

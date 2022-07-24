@@ -421,10 +421,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
     safeDatabase.run(action)
   }
 
-
   /** Searches the given block filters against the given scriptPubKeys for matches.
-   * If there is a match, request the full block to search
-   */
+    * If there is a match, request the full block to search
+    */
   private def searchFiltersForMatches(
       scripts: Vector[ScriptPubKey],
       filtersResponse: Vector[ChainQueryApi.FilterResponse],
