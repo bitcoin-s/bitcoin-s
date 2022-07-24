@@ -153,6 +153,7 @@ object BitcoinSTestAppConfig {
     case object Oracle extends ProjectType
     case object DLC extends ProjectType
     case object Test extends ProjectType
+    case class Unknown(projectName: String) extends ProjectType
 
     val all = List(Wallet, Node, Chain, Oracle, DLC, Test)
   }
@@ -177,12 +178,13 @@ object BitcoinSTestAppConfig {
       val endOfPortStr = str.indexOf('/')
       val (port, _) = str.splitAt(endOfPortStr)
       val projectString = project match {
-        case ProjectType.Wallet => "wallet"
-        case ProjectType.Chain  => "chain"
-        case ProjectType.Node   => "node"
-        case ProjectType.Oracle => "oracle"
-        case ProjectType.DLC    => "dlc"
-        case ProjectType.Test   => "test"
+        case ProjectType.Wallet               => "wallet"
+        case ProjectType.Chain                => "chain"
+        case ProjectType.Node                 => "node"
+        case ProjectType.Oracle               => "oracle"
+        case ProjectType.DLC                  => "dlc"
+        case ProjectType.Test                 => "test"
+        case ProjectType.Unknown(projectName) => projectName
       }
 
       val poolName =
