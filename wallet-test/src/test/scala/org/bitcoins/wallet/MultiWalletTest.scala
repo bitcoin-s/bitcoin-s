@@ -2,10 +2,11 @@ package org.bitcoins.wallet
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil.bip39PasswordOpt
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest._
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest.Assertion
 

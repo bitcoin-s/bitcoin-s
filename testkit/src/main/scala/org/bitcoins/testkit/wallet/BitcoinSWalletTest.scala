@@ -5,15 +5,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -24,6 +19,7 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.wallet.FundWalletUtil.{
   FundedDLCWallet,
   FundedWallet
@@ -260,48 +256,6 @@ object BitcoinSWalletTest extends WalletLogger {
     account1Amt.fold(CurrencyUnits.zero)(_ + _)
 
   lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
-
-  object MockNodeApi extends NodeApi {
-
-    override def broadcastTransactions(
-        transactions: Vector[Transaction]): Future[Unit] =
-      Future.unit
-
-    override def downloadBlocks(
-        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.unit
-
-  }
-
-  object MockChainQueryApi extends ChainQueryApi {
-
-    override def getBlockHeight(
-        blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-      FutureUtil.none
-
-    override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
-      Future.successful(DoubleSha256DigestBE.empty)
-
-    override def getNumberOfConfirmations(
-        blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
-      FutureUtil.none
-
-    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-      Future.successful(0)
-
-    override def getFilterCount(): Future[Int] = Future.successful(0)
-
-    override def getFiltersBetweenHeights(
-        startHeight: Int,
-        endHeight: Int): Future[Vector[FilterResponse]] =
-      Future.successful(Vector.empty)
-
-    override def epochSecondToBlockHeight(time: Long): Future[Int] =
-      Future.successful(0)
-
-    /** calculates the median time passed */
-    override def getMedianTimePast(): Future[Long] =
-      Future.successful(0L)
-  }
 
   private[bitcoins] class RandomFeeProvider extends FeeRateApi {
     // Useful for tests

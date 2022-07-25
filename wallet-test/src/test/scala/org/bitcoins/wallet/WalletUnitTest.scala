@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import org.scalatest.FutureOutcome
@@ -140,8 +141,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
       )
     } yield {
       assert(
-        Vector(BlockMatchingResponse(blockHash = testBlockHash,
-                                     blockHeight = 1)) == matched)
+        Vector(
+          BlockMatchingResponse(blockHash = MockChainQueryApi.testBlockHash,
+                                blockHeight = 1)) == matched)
     }
   }
 
