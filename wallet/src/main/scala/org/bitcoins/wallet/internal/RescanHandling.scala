@@ -83,9 +83,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
             _ <- stateDescriptorDAO.updateRescanning(false)
             _ <- walletCallbacks.executeOnRescanComplete(logger)
           } yield {
-            logger.info(s"Finished rescanning the wallet. It took ${System
-              .currentTimeMillis() - startTime}ms")
-
             state
           }
 
@@ -94,6 +91,15 @@ private[wallet] trait RescanHandling extends WalletLogger {
             stateDescriptorDAO
               .updateRescanning(false)
               .flatMap(_ => Future.failed(err))
+          }
+
+          res.map {
+            case r: RescanState.RescanStarted =>
+              r.doneF.map(_ =>
+                logger.info(s"Finished rescanning the wallet. It took ${System
+                  .currentTimeMillis() - startTime}ms"))
+            case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+            //nothing to log
           }
 
           res

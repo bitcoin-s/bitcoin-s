@@ -367,47 +367,56 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       } yield dlcNode
     }
 
-    for {
-      bitcoind <- bitcoindF
-      bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
-      _ = require(
-        bitcoindNetwork == network,
-        s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")
-      _ <- loadWalletApiF
-      _ <- startHttpServer(
-        nodeApiF = Future.successful(bitcoind),
-        chainApi = bitcoind,
-        walletF = walletF.map(_._1),
-        dlcNodeF = dlcNodeF,
-        torConfStarted = startedTorConfigF,
-        serverCmdLineArgs = serverArgParser,
-        wsSource = wsSource
-      )
-      walletName <- walletNameF
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue, walletName)
-      chainCallbacks <- chainCallbacksF
-      (wallet, walletConfig, dlcConfig) <- walletF
-      _ = walletConfig.addCallbacks(walletCallbacks)
+    //intentionally Future[Future[]], the inner Future[BitcoindPollingCancellable]
+    //is blocked on syncing the wallet from bitcoind. This can take hours
+    //so don't block the rest of the appllication on that
+    val pollingCancellableNestedF: Future[Future[BitcoindPollingCancellabe]] =
+      for {
+        bitcoind <- bitcoindF
+        bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
+        _ = require(
+          bitcoindNetwork == network,
+          s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")
+        _ <- loadWalletApiF
+        _ <- startHttpServer(
+          nodeApiF = Future.successful(bitcoind),
+          chainApi = bitcoind,
+          walletF = walletF.map(_._1),
+          dlcNodeF = dlcNodeF,
+          torConfStarted = startedTorConfigF,
+          serverCmdLineArgs = serverArgParser,
+          wsSource = wsSource
+        )
+        walletName <- walletNameF
+        walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue,
+                                                             walletName)
+        chainCallbacks <- chainCallbacksF
+        (wallet, walletConfig, dlcConfig) <- walletF
+        _ = walletConfig.addCallbacks(walletCallbacks)
 
-      //intentionally doesn't map on this otherwise we
-      //wait until we are done syncing the entire wallet
-      //which could take 1 hour
-      mempoolPollingCancellable <- syncWalletWithBitcoindAndStartPolling(
-        bitcoind,
-        wallet,
-        Some(chainCallbacks))
-      _ = {
-        mempoolPollingCancellableOpt = Some(mempoolPollingCancellable)
+        //intentionally doesn't map on this otherwise we
+        //wait until we are done syncing the entire wallet
+        //which could take 1 hour
+        mempoolPollingCancellable = syncWalletWithBitcoindAndStartPolling(
+          bitcoind,
+          wallet,
+          Some(chainCallbacks))
+        dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
+        _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
+        _ <- startedTorConfigF
+        _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
+        _ <- restartRescanIfNeeded(wallet)
+      } yield {
+        logger.info(s"Done starting Main!")
+        mempoolPollingCancellable
       }
-      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
-      _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
-      _ <- startedTorConfigF
-      _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
-      _ <- restartRescanIfNeeded(wallet)
-    } yield {
-      logger.info(s"Done starting Main!")
-      ()
-    }
+
+    //set the polling cancellable after the wallet is done syncing against bitcoind
+    pollingCancellableNestedF.map(
+      _.map(c => mempoolPollingCancellableOpt = Some(c)))
+
+    //don't return the Future that represents the full syncing of the wallet with bitcoind
+    pollingCancellableNestedF.map(_ => ())
   }
 
   private var serverBindingsOpt: Option[ServerBindings] = None
