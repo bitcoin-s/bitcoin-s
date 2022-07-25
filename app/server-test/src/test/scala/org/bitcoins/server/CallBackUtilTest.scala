@@ -88,4 +88,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         assert(balance3 == balance2)
       }
   }
+
+  override def afterAll(): Unit = {
+    super[BitcoinSWalletTest].afterAll()
+  }
 }

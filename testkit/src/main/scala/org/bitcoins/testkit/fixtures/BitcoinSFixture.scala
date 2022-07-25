@@ -136,6 +136,9 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       }
     }
 
+  override def afterAll(): Unit = {
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
 }
 
 object BitcoinSFixture {
