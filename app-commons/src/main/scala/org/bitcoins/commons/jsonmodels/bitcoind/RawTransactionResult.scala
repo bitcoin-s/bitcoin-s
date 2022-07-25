@@ -48,7 +48,7 @@ case class RpcTransactionV22(
     hex: Option[Transaction])
     extends RpcTransaction
 
-sealed abstract trait RpcTransactionOutput extends RawTransactionResult {
+sealed trait RpcTransactionOutput extends RawTransactionResult {
   def value: Bitcoins
   def n: Int
   def scriptPubKey: RpcScriptPubKey
@@ -66,7 +66,7 @@ case class RpcTransactionOutputV22(
     scriptPubKey: RpcScriptPubKeyV22)
     extends RpcTransactionOutput
 
-sealed abstract trait RpcScriptPubKey extends RawTransactionResult {
+sealed trait RpcScriptPubKey extends RawTransactionResult {
   def asm: String
   def hex: String
   def scriptType: ScriptType
@@ -83,7 +83,7 @@ case class RpcScriptPubKeyPreV22(
 case class RpcScriptPubKeyV22(asm: String, hex: String, scriptType: ScriptType)
     extends RpcScriptPubKey
 
-sealed abstract trait DecodeScriptResult extends RawTransactionResult {
+sealed trait DecodeScriptResult extends RawTransactionResult {
   def asm: String
   def typeOfScript: Option[ScriptType]
   def p2sh: P2SHAddress
@@ -114,7 +114,7 @@ case class SignRawTransactionWithWalletResult(
     complete: Boolean
 )
 
-sealed abstract trait GetRawTransactionResult extends RawTransactionResult {
+sealed trait GetRawTransactionResult extends RawTransactionResult {
   def in_active_blockchain: Option[Boolean]
   def hex: Transaction
   def txid: DoubleSha256DigestBE

@@ -317,10 +317,8 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
 
       mempoolAccept <- client.testMempoolAccept(
         Vector(signedTransactionOne.hex, signedTransactionTwo.hex))
-      _ = println(mempoolAccept)
     } yield {
       val mempooltxid: Int = mempoolAccept.length
-      println(s"mempoolAcceptTxid=$mempooltxid")
       assert(mempooltxid > 1)
     }
   }

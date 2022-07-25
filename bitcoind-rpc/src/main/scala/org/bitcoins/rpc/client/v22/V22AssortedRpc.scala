@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.v22
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{
-  listDescriptorsResult,
+  ListDescriptorsResult,
   GetNodeAddressesResultPostV22
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
@@ -15,16 +15,16 @@ import scala.concurrent.Future
 trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
   self: Client =>
 
-  def listDescriptors(): Future[listDescriptorsResult] = {
-    bitcoindCall[listDescriptorsResult](
+  def listDescriptors(): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
       "listdescriptors"
     )
   }
 
   def listDescriptors(
       Private: Option[Boolean],
-      walletName: String): Future[listDescriptorsResult] = {
-    bitcoindCall[listDescriptorsResult](
+      walletName: String): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
       "listdescriptors",
       List(Json.toJson(Private)),
       uriExtensionOpt = Some(walletExtension(walletName))
@@ -32,15 +32,15 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
   }
 
   def listDescriptors(
-      Private: Option[Boolean]): Future[listDescriptorsResult] = {
-    bitcoindCall[listDescriptorsResult](
+      Private: Option[Boolean]): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
       "listdescriptors",
       List(Json.toJson(Private))
     )
   }
 
-  def listDescriptors(walletName: String): Future[listDescriptorsResult] = {
-    bitcoindCall[listDescriptorsResult](
+  def listDescriptors(walletName: String): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
       "listdescriptors",
       uriExtensionOpt = Some(walletExtension(walletName))
     )

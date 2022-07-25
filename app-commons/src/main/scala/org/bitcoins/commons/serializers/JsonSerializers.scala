@@ -500,11 +500,11 @@ object JsonSerializers {
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "abandoned").readNullable[Boolean])(ListTransactionsResult)
 
-  implicit val descriptorsClassReads: Reads[descriptorsClass] =
-    Json.reads[descriptorsClass]
+  implicit val descriptorsResultReads: Reads[descriptorsResult] =
+    Json.reads[descriptorsResult]
 
-  implicit val listDescriptorsReads: Reads[listDescriptorsResult] =
-    Json.reads[listDescriptorsResult]
+  implicit val listDescriptorsReads: Reads[ListDescriptorsResult] =
+    Json.reads[ListDescriptorsResult]
 
   implicit val unspentOutputReads: Reads[UnspentOutput] =
     Json.reads[UnspentOutput]

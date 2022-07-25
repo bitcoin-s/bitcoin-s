@@ -470,12 +470,12 @@ object AddressInfoResultPostV21 {
   }
 }
 
-case class listDescriptorsResult(
+case class ListDescriptorsResult(
     wallet_name: String,
-    descriptors: Vector[descriptorsClass]
+    descriptors: Vector[descriptorsResult]
 ) extends WalletResult
 
-case class descriptorsClass(
+case class descriptorsResult(
     desc: String,
     timestamp: ZonedDateTime,
     active: Boolean,
