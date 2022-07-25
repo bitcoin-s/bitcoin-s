@@ -10,10 +10,6 @@ import org.bitcoins.core.api.wallet.{
   WalletStateDescriptor,
   WalletStateDescriptorType
 }
-import org.bitcoins.core.api.wallet.WalletStateDescriptorType.{
-  Rescan,
-  SyncHeight
-}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config.WalletAppConfig

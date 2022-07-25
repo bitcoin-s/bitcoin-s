@@ -16,7 +16,6 @@ import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletNotInitialized}
 import org.bitcoins.zmq.ZMQSubscriber
 
@@ -32,8 +31,7 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       wallet: WalletApi with NeutrinoWalletApi,
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
-      system: ActorSystem,
-      walletConfig: WalletAppConfig): Future[Unit] = {
+      system: ActorSystem): Future[Unit] = {
     logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
     val res = for {

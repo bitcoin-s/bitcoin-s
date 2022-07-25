@@ -16,7 +16,6 @@ import scala.concurrent.Future
 class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
   it must "correctly catch up to bitcoind" in { walletAppConfigWithBitcoind =>
-    implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
     val bitcoind = walletAppConfigWithBitcoind.bitcoind
     val amountToSend = Bitcoins.one
     @volatile var syncingValues = Vector.empty[Boolean]
@@ -75,8 +74,6 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
   }
 
   it must "confirm a utxo" in { walletAppConfigWithBitcoind =>
-    implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
-
     val bitcoind = walletAppConfigWithBitcoind.bitcoind
 
     val amountToSend = Bitcoins.one
@@ -153,7 +150,6 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
   it must "sync a filter and update utxos to confirmed" in {
     walletAppConfigWithBitcoind =>
-      implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
       val bitcoind =
         walletAppConfigWithBitcoind.bitcoind.asInstanceOf[BitcoindV21RpcClient]
 
