@@ -59,6 +59,7 @@ trait BitcoinSWalletTest
     Await.result(getFreshConfig.walletConf.stop(), 1.minute)
     Await.result(getFreshConfig.dlcConf.stop(), 1.minute)
     super[EmbeddedPg].afterAll()
+    super[BitcoinSFixture].afterAll()
   }
 
   def nodeApi: NodeApi = MockNodeApi
