@@ -19,12 +19,14 @@ The resolved configuration gets parsed by
 projects. Here's some examples of how to construct a wallet configuration:
 
 ```scala mdoc:compile-only
+import akka.actor.ActorSystem
 import org.bitcoins.wallet.config.WalletAppConfig
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Paths
 import scala.util.Properties
 import scala.concurrent.ExecutionContext.Implicits.global
 
+implicit val system: ActorSystem = ActorSystem("configuration-example")
 // reads $HOME/.bitcoin-s/
 val defaultConfig = WalletAppConfig.fromDefaultDatadir()
 

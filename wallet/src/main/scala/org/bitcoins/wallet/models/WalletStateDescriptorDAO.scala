@@ -1,5 +1,9 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.api.wallet.WalletStateDescriptorType.{
+  Rescan,
+  SyncHeight
+}
 import org.bitcoins.core.api.wallet.{
   RescanDescriptor,
   SyncHeightDescriptor,

@@ -183,8 +183,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         _ <- startedF
       } yield {
         Wallet(wallet.nodeApi, wallet.chainQueryApi, wallet.feeRateApi)(
-          uniqueEntropyWalletConfig,
-          wallet.ec)
+          uniqueEntropyWalletConfig)
       }
 
       recoverToSucceededIf[IllegalArgumentException] {

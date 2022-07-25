@@ -140,4 +140,7 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     table.delete
   }
 
+  def countAction(): DBIOAction[Int, NoStream, Effect.Read] =
+    table.length.result
+
 }

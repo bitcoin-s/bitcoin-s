@@ -1,10 +1,8 @@
 package org.bitcoins.core.api.wallet
 
-import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
@@ -25,30 +23,6 @@ trait NeutrinoWalletApi { self: WalletApi =>
   def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
     WalletApi with NeutrinoWalletApi]
-
-  /** Iterates over the block filters in order to find filters that match to the given addresses
-    *
-    * I queries the filter database for [[batchSize]] filters a time
-    * and tries to run [[GolombFilter.matchesAny]] for each filter.
-    *
-    * It tries to match the filters in parallel using [[parallelismLevel]] threads.
-    * For best results use it with a separate execution context.
-    *
-    * @param scripts list of [[ScriptPubKey]]'s to watch
-    * @param startOpt start point (if empty it starts with the genesis block)
-    * @param endOpt end point (if empty it ends with the best tip)
-    * @param batchSize number of filters that can be matched in one batch
-    * @param parallelismLevel max number of threads required to perform matching
-    *                         (default [[Runtime.getRuntime.availableProcessors()]])
-    * @return a list of matching block hashes
-    */
-  def getMatchingBlocks(
-      scripts: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None,
-      batchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
-      ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
 
   /** Recreates the account using BIP-157 approach
     *

@@ -131,7 +131,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     safeDatabase.run(findAllAction())
 
   /** Returns number of rows in the table */
-  def count(): Future[Int] = safeDatabase.run(table.length.result)
+  def count(): Future[Int] = safeDatabase.run(countAction())
 }
 
 case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])

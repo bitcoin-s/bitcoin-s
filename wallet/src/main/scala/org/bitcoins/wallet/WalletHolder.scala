@@ -112,15 +112,6 @@ class WalletHolder(implicit ec: ExecutionContext)
     WalletApi with NeutrinoWalletApi] = delegate(
     _.processCompactFilters(blockFilters))
 
-  override def getMatchingBlocks(
-      scripts: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      batchSize: Int,
-      parallelismLevel: Int)(implicit ec: ExecutionContext): Future[
-    Vector[NeutrinoWalletApi.BlockMatchingResponse]] = delegate(
-    _.getMatchingBlocks(scripts, startOpt, endOpt, batchSize, parallelismLevel))
-
   override def rescanNeutrinoWallet(
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],

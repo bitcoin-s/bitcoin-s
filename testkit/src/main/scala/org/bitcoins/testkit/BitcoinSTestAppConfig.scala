@@ -2,13 +2,18 @@ package org.bitcoins.testkit
 
 import akka.actor.ActorSystem
 import com.typesafe.config._
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
+import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.db.TestAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.util.TorUtil.torEnabled
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
+import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
@@ -153,6 +158,7 @@ object BitcoinSTestAppConfig {
     case object Oracle extends ProjectType
     case object DLC extends ProjectType
     case object Test extends ProjectType
+    case class Unknown(projectName: String) extends ProjectType
 
     val all = List(Wallet, Node, Chain, Oracle, DLC, Test)
   }
@@ -167,7 +173,6 @@ object BitcoinSTestAppConfig {
       pgUrl: () => Option[String]): Config = {
 
     def pgConfigForProject(project: ProjectType): String = {
-      val name = project.toString.toLowerCase()
       val url = pgUrl().getOrElse(
         throw new RuntimeException(s"Cannot get db url for $project"))
       val parts = url.split(":")
@@ -177,19 +182,20 @@ object BitcoinSTestAppConfig {
       val endOfPortStr = str.indexOf('/')
       val (port, _) = str.splitAt(endOfPortStr)
       val projectString = project match {
-        case ProjectType.Wallet => "wallet"
-        case ProjectType.Chain  => "chain"
-        case ProjectType.Node   => "node"
-        case ProjectType.Oracle => "oracle"
-        case ProjectType.DLC    => "dlc"
-        case ProjectType.Test   => "test"
+        case ProjectType.Wallet               => WalletAppConfig.moduleName
+        case ProjectType.Chain                => ChainAppConfig.moduleName
+        case ProjectType.Node                 => NodeAppConfig.moduleName
+        case ProjectType.Oracle               => DLCOracleAppConfig.moduleName
+        case ProjectType.DLC                  => DLCAppConfig.moduleName
+        case ProjectType.Test                 => TestAppConfig.moduleName
+        case ProjectType.Unknown(projectName) => projectName
       }
 
       val poolName =
         s"bitcoin-s-$projectString-pool-${System.currentTimeMillis()}"
 
-      s""" $name.profile = "slick.jdbc.PostgresProfile$$"
-         | $name.db {
+      s""" $projectString.profile = "slick.jdbc.PostgresProfile$$"
+         | $projectString.db {
          |   driverName = postgres
          |   name = postgres
          |   url = "$url"
