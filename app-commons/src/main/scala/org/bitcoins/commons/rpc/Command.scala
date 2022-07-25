@@ -2,8 +2,6 @@ package org.bitcoins.commons.rpc
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
-import org.bitcoins.commons.rpc.OpReturnCommit.nullToOpt
-import org.bitcoins.commons.rpc.SendWithAlgo.jsToBitcoinAddress
 import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -12,17 +10,17 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.dlc.models.ContractDescriptor
-import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, ContractInfoV0TLV, DLCAcceptTLV, DLCOfferTLV, DLCSignTLV, LnMessage, LnMessageFactory, OracleAnnouncementTLV, OracleAnnouncementV0TLV, OracleAttestmentTLV}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE, ECPublicKey, SchnorrDigitalSignature, Sha256Digest}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
-import ujson.{Arr, Bool, False, Null, Num, Obj, Str, True, Value}
+import ujson._
 
 import java.net.{InetSocketAddress, URI}
 import scala.util.{Failure, Success, Try}
