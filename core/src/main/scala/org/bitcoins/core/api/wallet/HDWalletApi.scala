@@ -44,6 +44,8 @@ trait HDWalletApi extends WalletApi {
 
   def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
+  def getNewAddress(account: HDAccount): Future[BitcoinAddress]
+
   /** Generates a new change address */
   def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
 

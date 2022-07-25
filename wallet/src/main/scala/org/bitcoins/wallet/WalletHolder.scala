@@ -229,6 +229,10 @@ class WalletHolder(implicit ec: ExecutionContext)
   override def getNewAddress(addressType: AddressType): Future[BitcoinAddress] =
     delegate(_.getNewAddress(addressType))
 
+  override def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
+    delegate(_.getNewAddress(account))
+  }
+
   override def getNewAddress(): Future[BitcoinAddress] = delegate(
     _.getNewAddress())
 
