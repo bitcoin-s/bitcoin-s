@@ -1,7 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand._
-import org.bitcoins.commons.rpc.{AcceptDLC, AcceptDLCOffer}
+import org.bitcoins.commons.rpc.{AcceptDLC, AcceptDLCCliCommand, AcceptDLCOffer}
 import org.bitcoins.core.config.DLC
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._

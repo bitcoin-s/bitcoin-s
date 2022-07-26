@@ -1,7 +1,7 @@
 package org.bitcoins.gui
 
-import org.bitcoins.cli.CliCommand.{AddDLCSigsAndBroadcastCliCommand, SignDLCCliCommand}
-import org.bitcoins.commons.rpc.{AcceptDLCOffer, CreateDLCOffer}
+import org.bitcoins.cli.CliCommand.AddDLCSigsAndBroadcastCliCommand
+import org.bitcoins.commons.rpc.{AcceptDLCOffer, CreateDLCOffer, SignDLCCliCommand}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.contract.GlobalContractData
