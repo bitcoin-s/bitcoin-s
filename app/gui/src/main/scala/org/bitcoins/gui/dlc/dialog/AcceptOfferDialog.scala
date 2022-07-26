@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.commons.rpc.{AcceptDLC, AcceptDLCCliCommand, AcceptDLCOffer}
+import org.bitcoins.cli.CliCommand._
+import org.bitcoins.commons.rpc.{AcceptDLC, AcceptDLCOffer}
 import org.bitcoins.core.config.DLC
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
@@ -31,12 +32,12 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     }
   }
 
-  private var dialogOpt: Option[Dialog[Option[AcceptDLC]]] = None
+  private var dialogOpt: Option[Dialog[Option[AcceptDLCCliCommand]]] = None
 
   def showAndWait(
       parentWindow: Window,
-      hex: String = ""): Option[AcceptDLC] = {
-    val dialog = new Dialog[Option[AcceptDLC]]() {
+      hex: String = ""): Option[AcceptDLCCliCommand] = {
+    val dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
       initOwner(parentWindow)
       title = "Accept DLC Offer"
       headerText = "Enter DLC Offer to accept"
@@ -60,7 +61,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val result = dialogOpt.map(_.showAndWait())
 
     result match {
-      case Some(Some(Some(cmd: AcceptDLC))) =>
+      case Some(Some(Some(cmd: AcceptDLCCliCommand))) =>
         Some(cmd)
       case Some(_) | None => None
     }
