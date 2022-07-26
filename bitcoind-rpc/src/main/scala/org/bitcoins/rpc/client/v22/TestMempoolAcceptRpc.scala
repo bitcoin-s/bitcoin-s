@@ -13,7 +13,6 @@ import scala.concurrent.Future
 
 trait TestMempoolAcceptRpc { self: Client =>
 
-
   def testMempoolAccept(
       transaction: Vector[Transaction],
       maxFeeRate: Double = 0.10): Future[
@@ -22,6 +21,5 @@ trait TestMempoolAcceptRpc { self: Client =>
       "testmempoolaccept",
       List(Json.toJson(transaction), Json.toJson(maxFeeRate)))
   }
-
 
 }

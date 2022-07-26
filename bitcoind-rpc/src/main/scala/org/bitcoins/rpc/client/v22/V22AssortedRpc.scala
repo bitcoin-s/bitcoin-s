@@ -1,8 +1,8 @@
 package org.bitcoins.rpc.client.v22
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{
-  ListDescriptorsResult,
-  GetNodeAddressesResultPostV22
+  GetNodeAddressesResultPostV22,
+  ListDescriptorsResult
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.rpc.client.common.{Client, WalletRpc}
