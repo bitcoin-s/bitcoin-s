@@ -33,7 +33,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "process a block" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       startingUtxos <- wallet.listUtxos()
@@ -66,7 +67,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "process coinbase txs" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
     for {
       startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       startingBalance <- wallet.getBalance()
@@ -91,7 +93,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "process coinbase txs using filters" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
@@ -119,7 +122,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "receive and spend funds in the same block" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
     val recvAmount = Bitcoins.one
     val sendAmount = Bitcoins(0.5)
 

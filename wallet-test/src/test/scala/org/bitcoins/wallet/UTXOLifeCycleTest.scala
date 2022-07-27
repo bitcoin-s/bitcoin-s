@@ -45,7 +45,7 @@ class UTXOLifeCycleTest
       .fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
   it should "track a utxo state change to broadcast spent" in { param =>
-    val WalletWithBitcoindRpc(wallet, _) = param
+    val wallet = param.wallet
 
     for {
       oldTransactions <- wallet.listTransactions()
@@ -62,8 +62,8 @@ class UTXOLifeCycleTest
   }
 
   it should "track a utxo state change to confirmed spent" in { param =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = param
-
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
     for {
       oldTransactions <- wallet.listTransactions()
       tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
@@ -96,7 +96,7 @@ class UTXOLifeCycleTest
   }
 
   it should "handle an RBF transaction on unconfirmed coins" in { param =>
-    val WalletWithBitcoindRpc(wallet, _) = param
+    val wallet = param.wallet
 
     for {
       tx <- wallet.sendToAddress(testAddr,
@@ -117,7 +117,7 @@ class UTXOLifeCycleTest
   }
 
   it should "handle attempting to spend an immature coinbase" in { param =>
-    val WalletWithBitcoindRpc(wallet, _) = param
+    val wallet = param.wallet
 
     for {
       tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
@@ -141,7 +141,8 @@ class UTXOLifeCycleTest
   }
 
   it should "handle processing a new spending tx for a spent utxo" in { param =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       oldTransactions <- wallet.listTransactions()
@@ -187,7 +188,8 @@ class UTXOLifeCycleTest
   }
 
   it should "track a utxo state change to broadcast received" in { param =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       oldTransactions <- wallet.listTransactions()
@@ -213,7 +215,8 @@ class UTXOLifeCycleTest
   }
 
   it should "track a utxo state change to pending received" in { param =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       oldTransactions <- wallet.listTransactions()
@@ -249,7 +252,8 @@ class UTXOLifeCycleTest
   }
 
   it should "track a utxo state change to confirmed received" in { param =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       oldTransactions <- wallet.listTransactions()
@@ -287,7 +291,7 @@ class UTXOLifeCycleTest
   }
 
   it should "track a utxo state change to reserved" in { param =>
-    val WalletWithBitcoindRpc(wallet, _) = param
+    val wallet = param.wallet
 
     val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
@@ -314,7 +318,7 @@ class UTXOLifeCycleTest
 
   it should "track a utxo state change to reserved and then to unreserved" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, _) = param
+      val wallet = param.wallet
 
       val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
@@ -345,7 +349,7 @@ class UTXOLifeCycleTest
 
   it should "track a utxo state change to reserved and then to unreserved using the transaction the utxo was included in" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, _) = param
+      val wallet = param.wallet
 
       val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
@@ -375,7 +379,7 @@ class UTXOLifeCycleTest
 
   it should "track a utxo state change to reserved and then to unreserved using a block" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val wallet = param.wallet
 
       val dummyOutput =
         TransactionOutput(Satoshis(100000),
@@ -421,7 +425,8 @@ class UTXOLifeCycleTest
 
   it should "handle a utxo being spent from a tx outside the wallet" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val wallet = param.wallet
+      val bitcoind = param.bitcoind
 
       for {
         utxo <- wallet.listUtxos().map(_.head)
@@ -466,7 +471,7 @@ class UTXOLifeCycleTest
 
   it must "fail to mark utxos as reserved if one of the utxos is already reserved" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, _) = param
+      val wallet = param.wallet
       val utxosF = wallet.listUtxos()
 
       val reservedUtxoF: Future[SpendingInfoDb] = for {
@@ -499,7 +504,8 @@ class UTXOLifeCycleTest
 
   it must "mark a utxo as reserved that is still receiving confirmations and not unreserve the utxo" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val wallet = param.wallet
+      val bitcoind = param.bitcoind
       val addressF = wallet.getNewAddress()
       val txIdF =
         addressF.flatMap(addr => bitcoind.sendToAddress(addr, Bitcoins.one))
@@ -542,7 +548,8 @@ class UTXOLifeCycleTest
 
   it must "transition a reserved utxo to spent when we are offline" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val wallet = param.wallet
+      val bitcoind = param.bitcoind
       val bitcoindAddrF = bitcoind.getNewAddress
       val amt = Satoshis(100000)
       val utxoCountF = wallet.listUtxos()
@@ -589,7 +596,8 @@ class UTXOLifeCycleTest
 
   it should "track a utxo state change to broadcast spent and then to pending confirmations received (the spend transaction gets confirmed together with the receive transaction))" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val wallet = param.wallet
+      val bitcoind = param.bitcoind
 
       val receiveValue = Bitcoins(8)
       val sendValue = Bitcoins(4)
@@ -643,7 +651,8 @@ class UTXOLifeCycleTest
 
   it should "track a utxo state change to broadcast spent and then to pending confirmations received (the spend transaction gets confirmed after the receive transaction))" in {
     param =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val wallet = param.wallet
+      val bitcoind = param.bitcoind
 
       val receiveValue = Bitcoins(8)
       val sendValue = Bitcoins(4)

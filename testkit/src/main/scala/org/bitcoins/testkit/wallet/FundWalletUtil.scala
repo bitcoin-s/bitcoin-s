@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.HDWalletApi
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -33,7 +34,7 @@ trait FundWalletUtil extends Logging {
       pair: T)(implicit ec: ExecutionContext): Future[T] = {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
 
-    val defaultAccount = wallet.walletConfig.defaultAccount
+    val defaultAccount = pair.walletConfig.defaultAccount
     val fundedDefaultAccountWalletF =
       FundWalletUtil.fundAccountForWalletWithBitcoind(
         amts = defaultAcctAmts,
@@ -42,7 +43,7 @@ trait FundWalletUtil extends Logging {
         bitcoind = bitcoind
       )
 
-    val hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+    val hdAccount1 = WalletTestUtil.getHdAccount1(pair.walletConfig)
     val fundedAccount1WalletF = for {
       fundedDefaultAcct <- fundedDefaultAccountWalletF
 
@@ -89,9 +90,9 @@ trait FundWalletUtil extends Logging {
   def fundAccountForWalletWithBitcoind(
       amts: Vector[CurrencyUnit],
       account: HDAccount,
-      wallet: Wallet,
+      wallet: HDWalletApi,
       bitcoind: BitcoindRpcClient)(implicit
-      ec: ExecutionContext): Future[Wallet] = {
+      ec: ExecutionContext): Future[HDWalletApi] = {
 
     val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
       Vector.fill(3)(wallet.getNewAddress(account))

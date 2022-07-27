@@ -179,8 +179,10 @@ trait BitcoinSWalletTestCachedBitcoinV19
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
           bitcoind = bitcoind)
-        walletWithBitcoindV19 = WalletWithBitcoindV19(walletWithBitcoind.wallet,
-                                                      bitcoind)
+        walletWithBitcoindV19 = WalletWithBitcoindV19(
+          walletWithBitcoind.wallet,
+          bitcoind,
+          walletWithBitcoind.walletConfig)
         fundedWallet <- FundWalletUtil
           .fundWalletWithBitcoind(walletWithBitcoindV19)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,

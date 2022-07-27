@@ -63,14 +63,14 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def processTransaction(
       transaction: Transaction,
-      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi]
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[WalletApi]
 
   def processTransactions(
       transactions: Vector[Transaction],
-      blockHash: Option[DoubleSha256DigestBE])(implicit
+      blockHashOpt: Option[DoubleSha256DigestBE])(implicit
       ec: ExecutionContext): Future[WalletApi] = {
     transactions.foldLeft(Future.successful(this)) { case (wallet, tx) =>
-      wallet.flatMap(_.processTransaction(tx, blockHash))
+      wallet.flatMap(_.processTransaction(tx, blockHashOpt))
     }
   }
 

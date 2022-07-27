@@ -24,7 +24,7 @@ object CallbackUtil extends Logging {
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
       wallet
-        .processTransaction(tx, blockHash = None)
+        .processTransaction(tx, blockHashOpt = None)
         .map(_ => ())
     }
 
@@ -101,7 +101,7 @@ object CallbackUtil extends Logging {
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
       wallet
-        .processTransaction(tx, blockHash = None)
+        .processTransaction(tx, blockHashOpt = None)
         .map(_ => ())
     }
     val onTx: OnTxReceived = { tx =>

@@ -7,6 +7,7 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
@@ -202,7 +203,9 @@ trait BitcoinSWalletTest
                                            bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield {
-        WalletWithBitcoindV19(fundedWallet.wallet, bitcoind)
+        WalletWithBitcoindV19(fundedWallet.wallet,
+                              bitcoind,
+                              wallet.walletConfig)
       }
     }
 
@@ -377,7 +380,9 @@ object BitcoinSWalletTest extends WalletLogger {
       //complete the walletCallbackP so we can handle the callbacks when they are
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)
-    } yield WalletWithBitcoindRpc(walletWithCallback, bitcoind)
+    } yield WalletWithBitcoindRpc(walletWithCallback,
+                                  bitcoind,
+                                  wallet.walletConfig)
 
     walletWithBitcoindF.failed.foreach(err => walletCallbackP.failure(err))
 
@@ -422,7 +427,9 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet: Wallet
   )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
-    bitcoindF.map(WalletWithBitcoindRpc(wallet, _))(system.dispatcher)
+    bitcoindF.map(bitcoind =>
+      WalletWithBitcoindRpc(wallet, bitcoind, wallet.walletConfig))(
+      system.dispatcher)
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
@@ -432,7 +439,8 @@ object BitcoinSWalletTest extends WalletLogger {
   )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
-    bitcoindF.map(WalletWithBitcoindRpc(wallet, _))
+    bitcoindF.map(bitcoind =>
+      WalletWithBitcoindRpc(wallet, bitcoind, wallet.walletConfig))
   }
 
   def createWalletWithBitcoind(bitcoind: BitcoindRpcClient)(implicit
@@ -461,14 +469,16 @@ object BitcoinSWalletTest extends WalletLogger {
       created <- createdF
     } yield WalletWithBitcoindV19(
       created.wallet,
-      created.bitcoind.asInstanceOf[BitcoindV19RpcClient])
+      created.bitcoind.asInstanceOf[BitcoindV19RpcClient],
+      wallet.walletConfig)
   }
 
   def createWalletWithBitcoind(
       wallet: Wallet,
       bitcoindRpcClient: BitcoindRpcClient
   ): Future[WalletWithBitcoindRpc] = {
-    Future.successful(WalletWithBitcoindRpc(wallet, bitcoindRpcClient))
+    Future.successful(
+      WalletWithBitcoindRpc(wallet, bitcoindRpcClient, wallet.walletConfig))
   }
 
   /** Gives us a funded bitcoin-s wallet and the bitcoind instance that funded that wallet */
@@ -532,11 +542,11 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyWallet(wallet: Wallet): Future[Unit] = {
-    import wallet.ec
+  def destroyWallet(wallet: WalletApi)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    //do i need to shutdown walletAppConfig somewhere else?
     for {
       _ <- wallet.stop()
-      _ <- destroyWalletAppConfig(wallet.walletConfig)
     } yield ()
   }
 

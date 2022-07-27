@@ -11,6 +11,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.core.api.node
 import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -178,14 +179,19 @@ abstract class SyncUtil extends Logging {
   /** Syncs a wallet against bitcoind by retrieving full blocks and then calling
     * [[Wallet.processBlock()]]
     */
-  def syncWalletFullBlocks(wallet: Wallet, bitcoind: BitcoindRpcClient)(implicit
-      ec: ExecutionContext): Future[Wallet] = {
-    WalletSync.syncFullBlocks(
-      wallet = wallet,
-      getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind),
-      getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind),
-      getBlockFunc = SyncUtil.getBlockFunc(bitcoind)
-    )
+  def syncWalletFullBlocks(wallet: WalletApi, bitcoind: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): Future[WalletApi] = {
+    val genesisBlockHashF = bitcoind.getBlockHash(0)
+    for {
+      genesisBlockHash <- genesisBlockHashF
+      syncedWalletApi <- WalletSync.syncFullBlocks(
+        wallet = wallet,
+        getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind),
+        getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind),
+        getBlockFunc = SyncUtil.getBlockFunc(bitcoind),
+        genesisBlockHashBE = genesisBlockHash
+      )
+    } yield syncedWalletApi
   }
 
   /** Syncs the given chain handler to the given bitcoind node.

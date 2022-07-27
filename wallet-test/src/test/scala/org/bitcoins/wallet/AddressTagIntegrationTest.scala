@@ -28,7 +28,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   val exampleTag: InternalAddressTag = StorageLocationTag.HotStorage
 
   it should "correctly keep tagged utxos separated" in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+    val WalletWithBitcoindRpc(wallet, bitcoind, _) = walletWithBitcoind
     // the amount we're receiving from bitcoind
     val valueFromBitcoind = Bitcoins.one
 
@@ -119,7 +119,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   it must "process a tagged tx correctly when we broadcast it and receive it in a block" in {
     walletWithBitcoind =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
-      val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+      val WalletWithBitcoindRpc(wallet, bitcoind, _) = walletWithBitcoind
 
       val bitcoindAddrF = bitcoind.getNewAddress
       val walletAddr1F = wallet.getNewAddress()
