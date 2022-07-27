@@ -3,7 +3,6 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InternalAddressTag, StorageLocationTag}
 import org.bitcoins.server.BitcoindRpcBackendUtil
@@ -79,7 +78,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
       account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
-      (txBuilder, utxoInfos) <- bitcoind.getNewAddress.flatMap { addr =>
+      rawTxHelper <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
           .fundRawTransactionInternal(destinations = Vector(output),
@@ -88,8 +87,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
                                       fromTagOpt = Some(exampleTag),
                                       markAsReserved = true)
       }
-      utx = txBuilder.buildTx()
-      signedTx = RawTxSigner.sign(utx, utxoInfos, feeRate)
+      signedTx = rawTxHelper.signedTx
       _ <- wallet.processTransaction(signedTx, None)
 
       utxos <- wallet.listUtxos()
@@ -108,7 +106,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       // change UTXO should be smaller than what we had, but still have money in it
       assert(tagBalancePostSend > 0.sats)
       assert(tagBalancePostSend < valueFromBitcoind)
-
+      val utxoInfos = rawTxHelper.scriptSigParams
       val feePaid =
         utxoInfos.map(_.output.value).sum - signedTx.outputs.map(_.value).sum
       assert(

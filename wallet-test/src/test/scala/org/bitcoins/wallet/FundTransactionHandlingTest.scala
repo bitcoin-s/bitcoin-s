@@ -2,7 +2,6 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.wallet.{
@@ -40,12 +39,13 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
-        fundedTx <- wallet.fundRawTransaction(destinations =
-                                                Vector(destination),
-                                              feeRate = feeRate,
-                                              fromTagOpt = None,
-                                              markAsReserved = false)
+        fundRawTxHelper <- wallet.fundRawTransaction(destinations =
+                                                       Vector(destination),
+                                                     feeRate = feeRate,
+                                                     fromTagOpt = None,
+                                                     markAsReserved = false)
       } yield {
+        val fundedTx = fundRawTxHelper.unsignedTx
         assert(fundedTx.inputs.length == 1,
                s"We should only need one input to fund this tx")
         assert(fundedTx.outputs.contains(destination))
@@ -61,12 +61,13 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
-        fundedTx <- wallet.fundRawTransaction(destinations =
-                                                Vector(newDestination),
-                                              feeRate = feeRate,
-                                              fromTagOpt = None,
-                                              markAsReserved = false)
+        fundRawTxHelper <- wallet.fundRawTransaction(destinations =
+                                                       Vector(newDestination),
+                                                     feeRate = feeRate,
+                                                     fromTagOpt = None,
+                                                     markAsReserved = false)
       } yield {
+        val fundedTx = fundRawTxHelper.unsignedTx
         assert(fundedTx.inputs.length == 3,
                s"We should need 3 inputs to fund this tx")
         assert(fundedTx.outputs.contains(newDestination))
@@ -82,11 +83,13 @@ class FundTransactionHandlingTest
 
       for {
         feeRate <- wallet.getFeeRate()
-        fundedTx <- wallet.fundRawTransaction(destinations = destinations,
-                                              feeRate = feeRate,
-                                              fromTagOpt = None,
-                                              markAsReserved = false)
+        fundRawTxHelper <- wallet.fundRawTransaction(destinations =
+                                                       destinations,
+                                                     feeRate = feeRate,
+                                                     fromTagOpt = None,
+                                                     markAsReserved = false)
       } yield {
+        val fundedTx = fundRawTxHelper.unsignedTx
         // Can be different depending on waste calculation
         assert(fundedTx.inputs.length == 1 || fundedTx.inputs.length == 2,
                s"We should only need one or two inputs to fund this tx")
@@ -152,10 +155,11 @@ class FundTransactionHandlingTest
       for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
-                                              feeRate,
-                                              account1DbOpt.get)
+        fundRawTxHelper <- wallet.fundRawTransaction(Vector(newDestination),
+                                                     feeRate,
+                                                     account1DbOpt.get)
       } yield {
+        val fundedTx = fundRawTxHelper.unsignedTx
         assert(fundedTx.inputs.nonEmpty)
         assert(fundedTx.outputs.contains(newDestination))
         assert(fundedTx.outputs.length == 2)
@@ -216,13 +220,14 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
-        fundedTx <- wallet.fundRawTransaction(destinations =
-                                                Vector(destination),
-                                              feeRate = feeRate,
-                                              fromTagOpt = None,
-                                              markAsReserved = true)
+        fundRawTxHelper <- wallet.fundRawTransaction(destinations =
+                                                       Vector(destination),
+                                                     feeRate = feeRate,
+                                                     fromTagOpt = None,
+                                                     markAsReserved = true)
 
-        spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(fundedTx)
+        spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(
+          fundRawTxHelper.unsignedTx)
         reserved <- wallet.spendingInfoDAO.findByTxoState(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
@@ -243,7 +248,7 @@ class FundTransactionHandlingTest
       _ = assert(taggedBalance == destination.value * 2)
 
       expectedUtxos <- wallet.listUtxos(account.hdAccount, tag)
-      (txBuilder, utxoInfos) <-
+      fundRawTxHelper <-
         wallet
           .fundRawTransactionInternal(
             destinations = Vector(destination),
@@ -253,8 +258,7 @@ class FundTransactionHandlingTest
             markAsReserved = true
           )
     } yield {
-      val utx = txBuilder.buildTx()
-      val tx = RawTxSigner.sign(utx, utxoInfos, feeRate)
+      val tx = fundRawTxHelper.signedTx
 
       assert(tx.inputs.forall(input =>
         expectedUtxos.exists(_.outPoint == input.previousOutput)))

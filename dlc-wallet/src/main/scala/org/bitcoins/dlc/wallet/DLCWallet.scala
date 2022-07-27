@@ -22,7 +22,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.builder.{
-  RawTxBuilderWithFinalizer,
+  FundRawTxHelper,
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -352,7 +352,7 @@ abstract class DLCWallet
       nextIndex <- getNextAvailableIndex(account, chainType)
       _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
 
-      (txBuilder, spendingInfos) <- fundRawTransactionInternal(
+      fundRawTxHelper <- fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = feeRate,
         fromAccount = account,
@@ -360,6 +360,7 @@ abstract class DLCWallet
         markAsReserved = true
       )
 
+      spendingInfos = fundRawTxHelper.scriptSigParams
       serialIds = DLCMessage.genSerialIds(spendingInfos.size)
       utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
         DLCFundingInput.fromInputSigningInfo(
@@ -377,6 +378,7 @@ abstract class DLCWallet
                             used = false)
       }
 
+      txBuilder = fundRawTxHelper.txBuilderWithFinalizer
       changeAddr = externalChangeAddressOpt.getOrElse {
         val changeSPK = txBuilder.finalizer.changeSPK
         BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
@@ -487,8 +489,7 @@ abstract class DLCWallet
   private def initDLCForAccept(
       offer: DLCOffer,
       account: AccountDb,
-      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
+      fundRawTxHelper: FundRawTxHelper[ShufflingNonInteractiveFinalizer],
       collateral: CurrencyUnit,
       peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
@@ -544,8 +545,7 @@ abstract class DLCWallet
             keyIndex = nextIndex,
             chainType = chainType,
             offer = offer,
-            txBuilder = txBuilder,
-            spendingInfos = spendingInfos,
+            fundRawTxHelper = fundRawTxHelper,
             account = account,
             fundingPrivKey = getFundingPrivKey(account, nextIndex),
             collateral = collateral,
@@ -574,7 +574,7 @@ abstract class DLCWallet
                                                    dlcAcceptWithoutSigs,
                                                  dlcPubKeys = dlcPubKeys,
                                                  collateral = collateral)
-          acceptInputs = spendingInfos
+          acceptInputs = fundRawTxHelper.scriptSigParams
             .zip(dlcAcceptWithoutSigs.fundingInputs)
             .zipWithIndex
             .map { case ((utxo, fundingInput), idx) =>
@@ -722,14 +722,12 @@ abstract class DLCWallet
   private def fundDLCAcceptMsg(
       offer: DLCOffer,
       collateral: CurrencyUnit,
-      account: AccountDb): Future[(
-      RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-      Vector[ScriptSignatureParams[InputInfo]])] = {
-    val txBuilderAndSpendingInfosF: Future[(
-        RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-        Vector[ScriptSignatureParams[InputInfo]])] = {
+      account: AccountDb): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    val txBuilderAndSpendingInfosF: Future[
+      FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
       for {
-        (txBuilder, spendingInfos) <- fundRawTransactionInternal(
+        fundRawTxHelper <- fundRawTransactionInternal(
           destinations =
             Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
           feeRate = offer.feeRate,
@@ -737,7 +735,7 @@ abstract class DLCWallet
           fromTagOpt = None,
           markAsReserved = true
         )
-      } yield (txBuilder, spendingInfos)
+      } yield fundRawTxHelper
     }
     txBuilderAndSpendingInfosF
   }
@@ -764,16 +762,15 @@ abstract class DLCWallet
         s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
       val result = for {
         account <- getDefaultAccountForType(AddressType.SegWit)
-        (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
-                                                       collateral = collateral,
-                                                       account = account)
+        fundRawTxHelper <- fundDLCAcceptMsg(offer = offer,
+                                            collateral = collateral,
+                                            account = account)
 
         initializedAccept <-
           initDLCForAccept(
             offer = offer,
             account = account,
-            txBuilder = txBuilder,
-            spendingInfos = spendingInfos,
+            fundRawTxHelper = fundRawTxHelper,
             collateral = collateral,
             externalPayoutAddressOpt = externalPayoutAddressOpt,
             externalChangeAddressOpt = externalChangeAddressOpt,
@@ -795,12 +792,13 @@ abstract class DLCWallet
 
         contractId = builder.calcContractId
 
-        signer = DLCTxSigner(builder = builder,
-                             isInitiator = false,
-                             fundingKey = fundingPrivKey,
-                             finalAddress =
-                               initializedAccept.pubKeys.payoutAddress,
-                             fundingUtxos = spendingInfos)
+        signer = DLCTxSigner(
+          builder = builder,
+          isInitiator = false,
+          fundingKey = fundingPrivKey,
+          finalAddress = initializedAccept.pubKeys.payoutAddress,
+          fundingUtxos = fundRawTxHelper.scriptSigParams
+        )
 
         spkDb = ScriptPubKeyDb(builder.fundingSPK)
         // only update spk db if we don't have it

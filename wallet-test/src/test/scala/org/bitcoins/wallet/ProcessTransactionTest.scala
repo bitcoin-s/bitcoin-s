@@ -180,14 +180,14 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         wallet <- processedFundingTxF
         destinations = Vector(
           TransactionOutput(amount, receivingAddress.scriptPubKey))
-        spendingTx <- wallet.fundRawTransaction(
+        rawTxHelper <- wallet.fundRawTransaction(
           destinations = destinations,
           feeRate = SatoshisPerByte.one,
           fromTagOpt = None,
           markAsReserved = true
         )
         processedSpendingTx <- wallet.processTransaction(transaction =
-                                                           spendingTx,
+                                                           rawTxHelper.signedTx,
                                                          blockHash = None)
         balance <- processedSpendingTx.getBalance()
       } yield assert(balance == amount)
