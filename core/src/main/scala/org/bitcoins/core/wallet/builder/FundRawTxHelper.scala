@@ -13,7 +13,7 @@ case class FundRawTxHelper[T <: RawTxFinalizer](
   def unsignedTx: Transaction = txBuilderWithFinalizer.buildTx()
 
   /** Produces a signed bitcoin transaction with the given fee rate */
-  def signedTx: Transaction = {
+  lazy val signedTx: Transaction = {
     RawTxSigner.sign(unsignedTx, scriptSigParams, feeRate)
   }
 }
