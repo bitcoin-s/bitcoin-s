@@ -23,6 +23,7 @@ import scodec.bits.ByteVector
 import ujson._
 
 import java.net.{InetSocketAddress, URI}
+import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
 sealed trait CommandRpc
@@ -43,20 +44,18 @@ trait Broadcastable extends CliCommand {
   override def defaultPort: Int = 9999
 }
 trait SignDLCCliCommand extends AppServerCliCommand{
-  override def defaultPort: Int = 9999
+
 }
 
 trait AddDLCSigsCliCommand extends AppServerCliCommand{
-  override def defaultPort: Int = 9999
 }
 
 trait AcceptDLCCliCommand extends AppServerCliCommand{
-  override def defaultPort: Int = 9999
 }
 
 trait SendCliCommand extends AppServerCliCommand{
-  override def defaultPort: Int = 9999
 }
+
 
 trait OracleServerCliCommand extends CliCommand {
   override def defaultPort: Int = 9998
@@ -75,8 +74,8 @@ case class GetNewAddress(labelOpt: Option[AddressLabelTag])
 
 object GetNewAddress
   extends CliCommand
-  with AppServerCliCommand
-  with ServerJsonModels {
+    with AppServerCliCommand
+    with ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetNewAddress] = {
     if (jsArr.value.length == 1) {
@@ -794,10 +793,11 @@ case class SendToAddress(
                           amount: Bitcoins,
                           satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
                           noBroadcast: Boolean)
-  extends CliCommand with Broadcastable
+  extends CliCommand with Broadcastable with SendCliCommand
 
 object SendToAddress extends CliCommand
   with Broadcastable
+  with SendCliCommand
   with ServerJsonModels {
 
   /// TODO do this in a more coherent fashion
@@ -1161,12 +1161,14 @@ object AcceptDLC extends CliCommand
   }
 }
 
+case class SignDLCFromFile(path: Path, destination: Option[Path])
+  extends CliCommand with SignDLCCliCommand
 
 case class SignDLC(accept: LnMessage[DLCAcceptTLV]) extends CliCommand
-  with SendCliCommand
+  with SignDLCCliCommand
 
 object SignDLC extends CliCommand
-  with SendCliCommand
+  with SignDLCCliCommand
   with ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {

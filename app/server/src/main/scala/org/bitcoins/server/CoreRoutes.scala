@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.script.{
   P2SHScriptPubKey,
   P2WSHWitnessSPKV0
 }
+import org.bitcoins.commons.rpc._
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}

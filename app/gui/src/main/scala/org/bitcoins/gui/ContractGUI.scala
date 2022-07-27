@@ -1,44 +1,17 @@
 package org.bitcoins.gui
 
-import org.bitcoins.cli.CliCommand.{
-  AcceptDLCCliCommand,
-  AddDLCSigsAndBroadcastCliCommand,
-  CreateDLCOffer,
-  SignDLCCliCommand
-}
+import org.bitcoins.cli.CliCommand.{AddDLCSigsAndBroadcastCliCommand, SignDLCCliCommand}
+import org.bitcoins.commons.rpc.{AcceptDLCOffer, CreateDLCOffer}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
-import org.bitcoins.core.protocol.tlv.{
-  ContractInfoV0TLV,
-  DLCAcceptTLV,
-  DLCOfferTLV,
-  DLCSignTLV,
-  LnMessageFactory,
-  OracleAnnouncementV0TLV
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.contract.GlobalContractData
 import org.bitcoins.gui.dlc.DLCPaneModel
-import org.bitcoins.gui.dlc.dialog.{
-  AcceptOfferDialog,
-  BroadcastDLCDialog,
-  CreateDLCOfferDialog,
-  DLCDialogContainer,
-  SignDLCDialog,
-  ViewDLCDialog
-}
+import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry._
 import scalafx.scene.Parent
-import scalafx.scene.control.{
-  ContextMenu,
-  Hyperlink,
-  Label,
-  MenuItem,
-  TableColumn,
-  TableView,
-  TextArea,
-  TextField
-}
+import scalafx.scene.control._
 import scalafx.scene.layout._
 
 import java.io.File
@@ -288,7 +261,7 @@ class ContractGUI(glassPane: VBox) {
     val dialog = new AcceptOfferDialog()
     val container =
       // AcceptDLCOffer -> AcceptDLCCliCommand
-      new DLCDialogContainer[AcceptDLCCliCommand]("Accept Offer",
+      new DLCDialogContainer[AcceptDLCOffer]("Accept Offer",
                                                   dialog.buildView(hex),
                                                   dialog,
                                                   model.taskRunner,

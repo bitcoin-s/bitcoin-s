@@ -3,7 +3,7 @@ package org.bitcoins.cli
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.rpc.{AppServerCliCommand, ContactAdd, ContactRemove, ContactsList, CreateContractInfo, OracleServerCliCommand, ServerlessCliCommand, _}
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
@@ -1283,8 +1283,8 @@ object ConsoleCli {
             .required()
             .action((ann, conf) =>
               conf.copy(command = conf.command match {
-                case CreateContractInfo: CreateContractInfo =>
-                  CreateContractInfo.copy(announcementTLV = ann)
+                case createContractInfo: CreateContractInfo =>
+                  createContractInfo.copy(announcementTLV = ann)
                 case other => other
               })),
           arg[Satoshis]("totalCollateral")
@@ -1894,6 +1894,12 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = command match {
+      case ExecuteDLC =>
+        RequestParam("executedlc")
+      case ExecuteDLCRefund =>
+        RequestParam("executedlcrefund")
+      case SendToAddress =>
+        RequestParam("sendtoaddress")
       case GetInfo =>
         RequestParam("getinfo")
       case GetMedianTimePast =>
@@ -2245,7 +2251,7 @@ object ConsoleCli {
         val args = Seq(up.writeJs(offerHash))
         RequestParam("offer-remove", args)
 
-      case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
+      case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand | _:Broadcastable|
           _: OracleServerCliCommand) =>
         sys.error(s"Command $cmd unsupported")
       case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
@@ -2356,10 +2362,14 @@ object Config {
 }
 
 object CliCommand {
-
+/**
   trait Broadcastable {
     def noBroadcast: Boolean
   }
+*/
+/**
+case object Broadcastable
+*/
 
   case object GetVersion extends ServerlessCliCommand
 
@@ -2381,9 +2391,6 @@ object CliCommand {
 
   sealed trait SignDLCCliCommand extends AppServerCliCommand
 
-
-  case class SignDLCFromFile(path: Path, destination: Option[Path])
-      extends SignDLCCliCommand
 
   sealed trait AddDLCSigsCliCommand extends AppServerCliCommand
 
@@ -2424,10 +2431,11 @@ object CliCommand {
       extends AppServerCliCommand
 
   case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
-
+/**
   sealed trait SendCliCommand extends AppServerCliCommand {
     def destination: BitcoinAddress
   }
+  */
 
   // Wallet
 
@@ -2438,11 +2446,6 @@ object CliCommand {
 
 
   case object GetAddressLabels extends AppServerCliCommand
-
-
-
-
-
   case object GetUtxos extends AppServerCliCommand
   case object ListReservedUtxos extends AppServerCliCommand
   case object GetAddresses extends AppServerCliCommand

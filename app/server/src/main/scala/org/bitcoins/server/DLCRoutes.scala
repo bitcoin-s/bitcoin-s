@@ -7,15 +7,8 @@ import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
-import org.bitcoins.core.protocol.dlc.models.{
-  EnumSingleOracleInfo,
-  NumericSingleOracleInfo,
-  SingleContractInfo
-}
-import org.bitcoins.core.protocol.tlv.{
-  EnumEventDescriptorV0TLV,
-  NumericEventDescriptorTLV
-}
+import org.bitcoins.core.protocol.dlc.models.{SingleContractInfo, EnumSingleOracleInfo, NumericSingleOracleInfo}
+import org.bitcoins.core.protocol.tlv.{EnumEventDescriptorV0TLV, NumericEventDescriptorTLV}
 import org.bitcoins.server.routes._
 import ujson._
 import upickle.default._
@@ -62,7 +55,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
                   EnumSingleOracleInfo(create.announcementTLV)
               }
             val contractInfo = SingleContractInfo(create.totalCollateral,
-                                                  create.contractDescriptor,
+                                                  create.ContractDescriptorTLV,
                                                   oracleInfo)
             Server.httpSuccess(contractInfo.hex)
           }

@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand._
+import org.bitcoins.commons.rpc.{AcceptDLC, AcceptDLCCliCommand, AcceptDLCOffer}
 import org.bitcoins.core.config.DLC
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
@@ -25,19 +25,18 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val text = peerAddressTF.text.value.trim
     if (text.nonEmpty) {
       val peer = NetworkUtil.parseInetSocketAddress(text, DLC.DefaultPort)
-
-      AcceptDLC(offer, peer)
+      AcceptDLC(offer = offer, peerAddr= peer, None, None)
     } else {
-      AcceptDLCOffer(offer)
+      AcceptDLCOffer(offer= offer, None, None, None)
     }
   }
 
-  private var dialogOpt: Option[Dialog[Option[AcceptDLCCliCommand]]] = None
+  private var dialogOpt: Option[Dialog[Option[AcceptDLC]]] = None
 
   def showAndWait(
       parentWindow: Window,
-      hex: String = ""): Option[AcceptDLCCliCommand] = {
-    val dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
+      hex: String = ""): Option[AcceptDLC] = {
+    val dialog = new Dialog[Option[AcceptDLC]]() {
       initOwner(parentWindow)
       title = "Accept DLC Offer"
       headerText = "Enter DLC Offer to accept"
@@ -61,7 +60,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val result = dialogOpt.map(_.showAndWait())
 
     result match {
-      case Some(Some(Some(cmd: AcceptDLCCliCommand))) =>
+      case Some(Some(Some(cmd: AcceptDLC))) =>
         Some(cmd)
       case Some(_) | None => None
     }
