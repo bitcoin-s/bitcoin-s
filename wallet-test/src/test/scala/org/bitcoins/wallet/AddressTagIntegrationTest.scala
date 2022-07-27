@@ -78,7 +78,6 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .getUnconfirmedBalance(exampleTag)
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
-      account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
       rawTxHelper <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)

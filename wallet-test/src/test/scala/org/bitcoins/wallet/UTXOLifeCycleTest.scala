@@ -244,7 +244,7 @@ class UTXOLifeCycleTest
       _ <- wallet.processTransaction(tx, Some(hash))
 
       pendingCoins <-
-        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+        wallet.findByScriptPubKey(addr.scriptPubKey)
     } yield {
       assert(
         pendingCoins.forall(_.state == TxoState.PendingConfirmationsReceived))
@@ -275,7 +275,7 @@ class UTXOLifeCycleTest
       )
 
       updatedCoin <-
-        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+        wallet.findByScriptPubKey(addr.scriptPubKey)
       newTransactions <- wallet.listTransactions()
       _ = assert(updatedCoin.forall(_.state == PendingConfirmationsReceived))
       _ = assert(!oldTransactions.map(_.transaction).contains(tx))
@@ -287,7 +287,7 @@ class UTXOLifeCycleTest
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <-
-        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+        wallet.findByScriptPubKey(addr.scriptPubKey)
     } yield assert(confirmedCoins.forall(_.state == ConfirmedReceived))
   }
 

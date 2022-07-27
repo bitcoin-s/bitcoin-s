@@ -968,6 +968,11 @@ abstract class Wallet
     }
   }
 
+  override def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByScriptPubKey(scriptPubKey)
+  }
+
   def startFeeRateCallbackScheduler(): Unit = {
     val feeRateChangedRunnable = new Runnable {
       override def run(): Unit = {

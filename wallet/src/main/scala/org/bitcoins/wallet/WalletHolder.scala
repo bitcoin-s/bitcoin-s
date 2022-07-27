@@ -976,4 +976,9 @@ class WalletHolder(implicit ec: ExecutionContext)
   override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
     delegate(_.getNewAddress(account))
   }
+
+  override def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.findByScriptPubKey(scriptPubKey))
+  }
 }
