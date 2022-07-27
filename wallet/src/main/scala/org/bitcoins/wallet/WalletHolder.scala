@@ -103,8 +103,7 @@ class WalletHolder(implicit ec: ExecutionContext)
     Future(wallet).flatMap[T](_)
   }
 
-  override def processBlock(
-      block: Block): Future[WalletApi with NeutrinoWalletApi] =
+  override def processBlock(block: Block): Future[WalletApi] =
     delegate(_.processBlock(block))
 
   override def processCompactFilters(
