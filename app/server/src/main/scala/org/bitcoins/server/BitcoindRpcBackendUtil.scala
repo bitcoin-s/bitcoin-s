@@ -260,7 +260,7 @@ object BitcoindRpcBackendUtil extends Logging {
     */
   def buildBitcoindNodeApi(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[WalletApi with NeutrinoWalletApi],
+      walletF: Future[WalletApi],
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
       system: ActorSystem): NodeApi = {
     import system.dispatcher
@@ -283,7 +283,7 @@ object BitcoindRpcBackendUtil extends Logging {
               }
               .foldAsync(wallet) { case (wallet, (block, blockHeaderResult)) =>
                 val blockProcessedF = wallet.processBlock(block)
-                val executeCallbackF: Future[WalletApi with NeutrinoWalletApi] =
+                val executeCallbackF: Future[WalletApi] =
                   blockProcessedF.flatMap { wallet =>
                     chainCallbacksOpt match {
                       case None           => Future.successful(wallet)

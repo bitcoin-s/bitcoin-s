@@ -10,6 +10,7 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDAccount}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -68,6 +69,12 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       wallet.flatMap(_.processTransaction(tx, blockHash))
     }
   }
+
+  /** Processes the give block, updating our DB state if it's relevant to us.
+    *
+    * @param block The block we're processing
+    */
+  def processBlock(block: Block): Future[WalletApi]
 
   def findTransaction(txId: DoubleSha256DigestBE): Future[Option[TransactionDb]]
 
