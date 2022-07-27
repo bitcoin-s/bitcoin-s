@@ -74,6 +74,18 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     }
   }
 
+  /** Processes TXs originating from our wallet.
+    * This is called right after we've signed a TX,
+    * updating our UTXO state.
+    */
+  def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult]
+
   /** Processes the give block, updating our DB state if it's relevant to us.
     *
     * @param block The block we're processing

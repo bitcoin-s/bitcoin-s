@@ -982,4 +982,20 @@ class WalletHolder(implicit ec: ExecutionContext)
       scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
     delegate(_.findByScriptPubKey(scriptPubKey))
   }
+
+  override def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
+    delegate(
+      _.processOurTransaction(transaction = transaction,
+                              feeRate = feeRate,
+                              inputAmount = inputAmount,
+                              sentAmount = sentAmount,
+                              blockHashOpt = blockHashOpt,
+                              newTags = newTags))
+  }
 }

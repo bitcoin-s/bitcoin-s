@@ -257,10 +257,9 @@ class FundTransactionHandlingTest
       expectedUtxos <- wallet.listUtxos(account.hdAccount, tag)
       fundRawTxHelper <-
         wallet
-          .fundRawTransactionInternal(
+          .fundRawTransaction(
             destinations = Vector(destination),
             feeRate = feeRate,
-            fromAccount = account,
             fromTagOpt = Some(tag),
             markAsReserved = true
           )

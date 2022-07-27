@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.ProcessTxResult
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
@@ -199,10 +200,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   override def listTransactions(): Future[Vector[TransactionDb]] =
     transactionDAO.findAll()
 
-  private[wallet] case class ProcessTxResult(
-      updatedIncoming: Vector[SpendingInfoDb],
-      updatedOutgoing: Vector[SpendingInfoDb])
-
   /////////////////////
   // Internal wallet API
 
@@ -235,7 +232,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     * This is called right after we've signed a TX,
     * updating our UTXO state.
     */
-  private[wallet] def processOurTransaction(
+  override def processOurTransaction(
       transaction: Transaction,
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,

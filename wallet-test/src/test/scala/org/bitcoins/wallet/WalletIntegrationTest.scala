@@ -165,8 +165,6 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
   it should "correctly bump fees with RBF" in { walletWithBitcoind =>
     val wallet = walletWithBitcoind.wallet
     val bitcoind = walletWithBitcoind.bitcoind
-    val walletConfig = walletWithBitcoind.walletConfig
-
     for {
       // Fund wallet
       addr <- wallet.getNewAddress()
