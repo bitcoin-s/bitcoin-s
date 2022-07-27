@@ -385,17 +385,16 @@ abstract class Wallet
     * finalizing and signing the transaction, then correctly processing and logging it
     */
   private def finishSend[F <: RawTxFinalizer](
-      txBuilder: RawTxBuilderWithFinalizer[F],
-      utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
+      rawTxHelper: FundRawTxHelper[F],
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit,
       newTags: Vector[AddressTag]): Future[Transaction] = {
-    val utx = txBuilder.buildTx()
-    val signed = RawTxSigner.sign(utx, utxoInfos, feeRate)
+    val signed = rawTxHelper.signedTx
 
     val processedTxF = for {
       ourOuts <- findOurOuts(signed)
-      creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
+      creditingAmount = rawTxHelper.scriptSigParams.foldLeft(
+        CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
                                  feeRate = feeRate,
                                  inputAmount = creditingAmount,
@@ -466,9 +465,8 @@ abstract class Wallet
       _ = require(
         tmp.outputs.size == 1,
         s"Created tx is not as expected, does not have 1 output, got $tmp")
-
-      tx <- finishSend(withFinalizer,
-                       utxos,
+      rawTxHelper = FundRawTxHelper(withFinalizer, utxos, feeRate)
+      tx <- finishSend(rawTxHelper,
                        tmp.outputs.head.value,
                        feeRate,
                        Vector.empty)
@@ -515,8 +513,8 @@ abstract class Wallet
         utxos,
         feeRate,
         changeAddr.scriptPubKey)
-
-      tx <- finishSend(txBuilder, utxos, amount, feeRate, newTags)
+      rawTxHelper = FundRawTxHelper(txBuilder, utxos, feeRate)
+      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
     } yield tx
   }
 
@@ -616,8 +614,9 @@ abstract class Wallet
                                                                 sequence)
 
       amount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      rawTxHelper = FundRawTxHelper(txBuilder, spendingInfos, newFeeRate)
       tx <-
-        finishSend(txBuilder, spendingInfos, amount, newFeeRate, Vector.empty)
+        finishSend(rawTxHelper, amount, newFeeRate, Vector.empty)
     } yield tx
   }
 
@@ -636,15 +635,14 @@ abstract class Wallet
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
-      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
-        destinations = Vector(destination),
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        coinSelectionAlgo = algo,
-        fromTagOpt = None,
-        markAsReserved = true)
-
-      tx <- finishSend(txBuilder, utxoInfos, amount, feeRate, newTags)
+      rawTxHelper <- fundRawTransactionInternal(destinations =
+                                                  Vector(destination),
+                                                feeRate = feeRate,
+                                                fromAccount = fromAccount,
+                                                coinSelectionAlgo = algo,
+                                                fromTagOpt = None,
+                                                markAsReserved = true)
+      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
     } yield tx
   }
 
@@ -718,7 +716,7 @@ abstract class Wallet
     val output = TransactionOutput(0.satoshis, scriptPubKey)
 
     for {
-      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
+      fundRawTxHelper <- fundRawTransactionInternal(
         destinations = Vector(output),
         feeRate = feeRate,
         fromAccount = fromAccount,
@@ -726,8 +724,7 @@ abstract class Wallet
         fromTagOpt = None,
         markAsReserved = true
       )
-      tx <- finishSend(txBuilder,
-                       utxoInfos,
+      tx <- finishSend(fundRawTxHelper,
                        CurrencyUnits.zero,
                        feeRate,
                        Vector.empty)
@@ -741,14 +738,13 @@ abstract class Wallet
       newTags: Vector[AddressTag])(implicit
       ec: ExecutionContext): Future[Transaction] = {
     for {
-      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
-        destinations = outputs,
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        fromTagOpt = None,
-        markAsReserved = true)
+      fundRawTxHelper <- fundRawTransactionInternal(destinations = outputs,
+                                                    feeRate = feeRate,
+                                                    fromAccount = fromAccount,
+                                                    fromTagOpt = None,
+                                                    markAsReserved = true)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
+      tx <- finishSend(fundRawTxHelper, sentAmount, feeRate, newTags)
     } yield tx
   }
 

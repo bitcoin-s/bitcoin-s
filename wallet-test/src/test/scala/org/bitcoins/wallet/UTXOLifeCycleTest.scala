@@ -296,11 +296,12 @@ class UTXOLifeCycleTest
     for {
       oldTransactions <- wallet.listTransactions()
       feeRate <- wallet.getFeeRate()
-      tx <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                      feeRate,
-                                      fromTagOpt = None,
-                                      markAsReserved = true)
+      rawTxHelper <- wallet.fundRawTransaction(Vector(dummyOutput),
+                                               feeRate,
+                                               fromTagOpt = None,
+                                               markAsReserved = true)
 
+      tx = rawTxHelper.unsignedTx
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       reserved <- wallet.listUtxos(TxoState.Reserved)
       newTransactions <- wallet.listTransactions()
@@ -322,11 +323,12 @@ class UTXOLifeCycleTest
       for {
         oldTransactions <- wallet.listTransactions()
         feeRate <- wallet.getFeeRate()
-        tx <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                        feeRate,
-                                        fromTagOpt = None,
-                                        markAsReserved = true)
+        rawTxHelper <- wallet.fundRawTransaction(Vector(dummyOutput),
+                                                 feeRate,
+                                                 fromTagOpt = None,
+                                                 markAsReserved = true)
 
+        tx = rawTxHelper.unsignedTx
         reservedUtxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
         allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(reservedUtxos.forall(_.state == TxoState.Reserved))
@@ -352,10 +354,12 @@ class UTXOLifeCycleTest
       for {
         oldTransactions <- wallet.listTransactions()
         feeRate <- wallet.getFeeRate()
-        tx <- wallet.fundRawTransaction(Vector(dummyOutput),
-                                        feeRate,
-                                        fromTagOpt = None,
-                                        markAsReserved = true)
+        rawTxHelper <- wallet.fundRawTransaction(Vector(dummyOutput),
+                                                 feeRate,
+                                                 fromTagOpt = None,
+                                                 markAsReserved = true)
+
+        tx = rawTxHelper.unsignedTx
         allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(
           tx.inputs
@@ -382,16 +386,17 @@ class UTXOLifeCycleTest
       for {
         oldTransactions <- wallet.listTransactions()
         account <- accountF
-        (txBuilder, params) <- wallet.fundRawTransactionInternal(
+        rawTxHelper <- wallet.fundRawTransactionInternal(
           destinations = Vector(dummyOutput),
           feeRate = SatoshisPerVirtualByte.one,
           fromAccount = account,
           fromTagOpt = None,
           markAsReserved = true
         )
-        builderResult = txBuilder.builder.result()
-        unsignedTx = txBuilder.finalizer.buildTx(builderResult)
-        tx = RawTxSigner.sign(unsignedTx, params)
+        builderResult = rawTxHelper.txBuilderWithFinalizer.builder.result()
+        unsignedTx = rawTxHelper.txBuilderWithFinalizer.finalizer.buildTx(
+          builderResult)
+        tx = RawTxSigner.sign(unsignedTx, rawTxHelper.scriptSigParams)
         allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(
           tx.inputs

@@ -18,7 +18,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[Transaction] = {
+      markAsReserved: Boolean): Future[FundRawTxHelper[_]] = {
     for {
       account <- getDefaultAccount()
       funded <- fundRawTransaction(destinations = destinations,
@@ -34,13 +34,12 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       fromTagOpt: Option[AddressTag] = None,
-      markAsReserved: Boolean = false): Future[Transaction] = {
+      markAsReserved: Boolean = false): Future[FundRawTxHelper[_]] = {
     fundRawTransactionInternal(destinations = destinations,
                                feeRate = feeRate,
                                fromAccount = fromAccount,
                                fromTagOpt = fromTagOpt,
                                markAsReserved = markAsReserved)
-      .map(_._1.buildTx())
   }
 
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
@@ -54,9 +53,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[(
-      RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-      Vector[ScriptSignatureParams[InputInfo]])] = {
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     val amts = destinations.map(_.value)
     //need to allow 0 for OP_RETURN outputs
     require(amts.forall(_.satoshis.toBigInt >= 0),
@@ -133,7 +131,9 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                                        feeRate,
                                                        change.scriptPubKey)
 
-      (txBuilder, utxoSpendingInfos)
+      FundRawTxHelper(txBuilderWithFinalizer = txBuilder,
+                      scriptSigParams = utxoSpendingInfos,
+                      feeRate)
     }
 
     resultF.recoverWith { case NonFatal(error) =>
