@@ -458,6 +458,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   /** Finds all the outputs in our wallet being spent in the given transaction */
   def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]]
+
 }
 
 case class WalletInfo(

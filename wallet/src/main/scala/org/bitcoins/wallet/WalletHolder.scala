@@ -166,6 +166,15 @@ class WalletHolder(implicit ec: ExecutionContext)
     FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
     _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved))
 
+  override def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      markAsReserved: Boolean): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    delegate(
+      _.fundRawTransaction(destinations, feeRate, fromAccount, markAsReserved))
+  }
+
   override def listTransactions(): Future[Vector[TransactionDb]] = delegate(
     _.listTransactions())
 

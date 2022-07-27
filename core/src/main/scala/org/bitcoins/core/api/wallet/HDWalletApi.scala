@@ -5,12 +5,9 @@ import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.builder.{FundRawTxHelper, ShufflingNonInteractiveFinalizer}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
@@ -503,4 +500,10 @@ trait HDWalletApi extends WalletApi {
       keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
   def findAccount(account: HDAccount): Future[Option[AccountDb]]
+
+  def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      markAsReserved: Boolean): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
 }

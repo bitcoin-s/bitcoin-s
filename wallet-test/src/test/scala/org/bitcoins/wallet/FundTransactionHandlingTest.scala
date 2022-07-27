@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.wallet.HDWalletApi
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
@@ -156,7 +157,8 @@ class FundTransactionHandlingTest
         account1DbOpt <- account1DbF
         fundRawTxHelper <- wallet.fundRawTransaction(Vector(newDestination),
                                                      feeRate,
-                                                     account1DbOpt.get)
+                                                     account1DbOpt.get,
+  markAsReserved = true)
       } yield {
         val fundedTx = fundRawTxHelper.unsignedTx
         assert(fundedTx.inputs.nonEmpty)
@@ -177,9 +179,11 @@ class FundTransactionHandlingTest
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
-                                              feeRate,
-                                              account1DbOpt.get)
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(newDestination),
+                                              feeRate = feeRate,
+                                              fromAccount = account1DbOpt.get,
+                                              markAsReserved = true)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
@@ -207,7 +211,10 @@ class FundTransactionHandlingTest
         _ = assert(utxos.size == 1)
 
         fundedTx <-
-          wallet.fundRawTransaction(Vector(destination), feeRate, account2)
+          wallet.fundRawTransaction(destinations = Vector(destination),
+                                    feeRate = feeRate,
+                                    fromAccount = account2,
+                                    markAsReserved = true)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
@@ -235,7 +242,7 @@ class FundTransactionHandlingTest
   }
 
   def testAddressTagFunding(
-      wallet: Wallet,
+      wallet: HDWalletApi,
       tag: AddressTag): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()

@@ -29,16 +29,16 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         accountDb <- wallet.getDefaultAccount()
         account = accountDb.hdAccount
-        utxos <- wallet.spendingInfoDAO.findAllForAccount(account)
+        utxos <- wallet.listUtxos(account)
         _ = assert(utxos.nonEmpty)
 
-        addresses <- wallet.addressDAO.findAllForAccount(account)
+        addresses <- wallet.listAddresses(account)
         _ = assert(addresses.nonEmpty)
 
         _ <- wallet.clearUtxos(account)
 
-        clearedUtxos <- wallet.spendingInfoDAO.findAllForAccount(account)
-        clearedAddresses <- wallet.addressDAO.findAllForAccount(account)
+        clearedUtxos <- wallet.listUtxos(account)
+        clearedAddresses <- wallet.listAddresses(account)
       } yield {
         assert(clearedUtxos.isEmpty)
         assert(clearedAddresses.nonEmpty)
@@ -161,6 +161,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val amt = Bitcoins.one
       val numBlocks = 1
 
+      val defaultAccountF = wallet.getDefaultAccount()
       //send funds to a fresh wallet address
       val addrF = wallet.getNewAddress()
       val bitcoindAddrF = bitcoind.getNewAddress
@@ -187,13 +188,13 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         newTxWallet <- newTxWalletF
 
-        account <- newTxWallet.getDefaultAccount()
+        account <- defaultAccountF
         txIds <-
-          newTxWallet.spendingInfoDAO
-            .findAllForAccount(account.hdAccount)
+          wallet
+            .listUtxos(account.hdAccount)
             .map(_.map(_.txid))
-        _ <- newTxWallet.transactionDAO
-          .findByTxIdBEs(txIds)
+        _ <- newTxWallet
+          .findByTxIds(txIds)
           .map(_.flatMap(_.blockHashOpt))
 
         _ <- newTxWallet.clearAllUtxos()
@@ -203,8 +204,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
             (prevFuture, _) =>
               for {
                 prev <- prevFuture
-                address <- newTxWallet.getNewAddress(account)
-                changeAddress <- newTxWallet.getNewChangeAddress(account)
+                address <- wallet.getNewAddress(account)
+                changeAddress <- wallet.getNewChangeAddress(account)
               } yield prev :+ address.scriptPubKey :+ changeAddress.scriptPubKey
           }
         _ <- newTxWallet.getMatchingBlocks(scriptPubKeys,
