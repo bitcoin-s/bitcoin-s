@@ -54,6 +54,7 @@ trait AcceptDLCCliCommand extends AppServerCliCommand{
 }
 
 trait SendCliCommand extends AppServerCliCommand{
+  def destination:BitcoinAddress
 }
 
 
@@ -797,7 +798,6 @@ case class SendToAddress(
 
 object SendToAddress extends CliCommand
   with Broadcastable
-  with SendCliCommand
   with ServerJsonModels {
 
   /// TODO do this in a more coherent fashion
@@ -1325,7 +1325,7 @@ case class SendFromOutPoints(
                               feeRateOpt: Option[SatoshisPerVirtualByte]) extends CliCommand
   with SendCliCommand
 
-object SendFromOutPoints extends CliCommand with SendCliCommand with ServerJsonModels {
+object SendFromOutPoints extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SendFromOutPoints] = {
     jsArr.arr.toList match {
@@ -1362,9 +1362,7 @@ case class SweepWallet(
   with SendCliCommand
   with ServerJsonModels
 
-object SweepWallet extends CliCommand
-  with SendCliCommand
-  with ServerJsonModels {
+object SweepWallet extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SweepWallet] = {
     jsArr.arr.toList match {
@@ -1403,9 +1401,7 @@ case class SendWithAlgo(
   with SendCliCommand
   with ServerJsonModels
 
-object SendWithAlgo extends CliCommand
-  with SendCliCommand
-  with ServerJsonModels {
+object SendWithAlgo extends ServerJsonModels {
 
 
   def fromJsArr(jsArr: ujson.Arr): Try[SendWithAlgo] = {
