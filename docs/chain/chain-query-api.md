@@ -18,7 +18,8 @@ import org.bitcoins.node._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+org.bitcoins.testkit.chain.MockChainQueryApi
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -78,7 +79,7 @@ implicit val walletConf: WalletAppConfig =
 // and a ChainApi
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
 val bitcoind = BitcoindV19RpcClient(instance)
-val nodeApi = BitcoinSWalletTest.MockNodeApi
+val nodeApi = MockNodeApi.mock
 
 // This function can be used to create a callback for when our chain api receives a transaction, block, or
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks

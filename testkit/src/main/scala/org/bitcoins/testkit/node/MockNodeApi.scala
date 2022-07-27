@@ -7,6 +7,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import scala.concurrent.Future
 
 object MockNodeApi extends NodeApi {
+  val mock: NodeApi = this
 
   override def broadcastTransactions(
       transactions: Vector[Transaction]): Future[Unit] =

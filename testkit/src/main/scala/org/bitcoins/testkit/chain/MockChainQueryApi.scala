@@ -12,6 +12,8 @@ import scala.concurrent.Future
 
 object MockChainQueryApi extends ChainQueryApi {
 
+  val mock: ChainQueryApi = this
+
   // This is a random block on testnet
   val testBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE.fromHex(
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
