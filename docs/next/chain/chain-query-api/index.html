@@ -106,7 +106,7 @@ want.</p>
 <span class="hljs-comment">// and a ChainApi</span>
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindInstanceLocal</span>.fromConfigFile(<span class="hljs-type">BitcoindConfig</span>.<span class="hljs-type">DEFAULT_CONF_FILE</span>)
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(instance)
-<span class="hljs-keyword">val</span> nodeApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockNodeApi</span>
+<span class="hljs-keyword">val</span> nodeApi = <span class="hljs-type">MockNodeApi</span>.mock
 
 <span class="hljs-comment">// This function can be used to create a callback for when our chain api receives a transaction, block, or</span>
 <span class="hljs-comment">// a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks</span>

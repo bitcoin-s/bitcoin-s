@@ -29,7 +29,7 @@ implementation of your choosing. This allows you to use the bitcoin-s wallet in 
 <span class="hljs-comment">// and a ChainApi</span>
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindInstanceLocal</span>.fromConfigFile(<span class="hljs-type">BitcoindConfig</span>.<span class="hljs-type">DEFAULT_CONF_FILE</span>)
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(instance)
-<span class="hljs-keyword">val</span> chainApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockChainQueryApi</span>
+<span class="hljs-keyword">val</span> chainApi = <span class="hljs-type">MockChainQueryApi</span>.mock
 <span class="hljs-keyword">val</span> aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>))
 
 <span class="hljs-comment">// This function can be used to create a callback for when our node api calls downloadBlocks,</span>
