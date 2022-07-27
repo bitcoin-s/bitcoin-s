@@ -2,7 +2,12 @@ package org.bitcoins.server
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest, WebSocketUpgradeResponse}
+import akka.http.scaladsl.model.ws.{
+  Message,
+  TextMessage,
+  WebSocketRequest,
+  WebSocketUpgradeResponse
+}
 import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.ConsoleCli.exec
@@ -18,7 +23,14 @@ import org.bitcoins.commons.jsonmodels.ws.{
   WalletWsType,
   WsNotification
 }
-import org.bitcoins.commons.rpc.{GetBlockHeader, GetNewAddress, GetTransaction, LockUnspent, Rescan, SendToAddress}
+import org.bitcoins.commons.rpc.{
+  GetBlockHeader,
+  GetNewAddress,
+  GetTransaction,
+  LockUnspent,
+  Rescan,
+  SendToAddress
+}
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -26,7 +38,10 @@ import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
-import org.bitcoins.testkit.server.{BitcoinSServerMainBitcoindFixture, ServerWithBitcoind}
+import org.bitcoins.testkit.server.{
+  BitcoinSServerMainBitcoindFixture,
+  ServerWithBitcoind
+}
 import org.bitcoins.testkit.util.AkkaUtil
 
 import scala.concurrent.duration.DurationInt
@@ -114,8 +129,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         notificationsF._2._1
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
-      val expectedAddressStr = exec(GetNewAddress(labelOpt = None), cliConfig)
-        .get
+      val expectedAddressStr =
+        exec(GetNewAddress(labelOpt = None), cliConfig).get
       val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
 
       for {
@@ -150,10 +165,10 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       for {
         address <- addressF
         cmd = SendToAddress(destination = address,
-                                       amount = Bitcoins.one,
-                                       satoshisPerVirtualByte =
-                                         Some(SatoshisPerVirtualByte.one),
-                                       noBroadcast = false)
+                            amount = Bitcoins.one,
+                            satoshisPerVirtualByte =
+                              Some(SatoshisPerVirtualByte.one),
+                            noBroadcast = false)
         txIdStr = ConsoleCli.exec(cmd, cliConfig)
         expectedTxId = DoubleSha256DigestBE.fromHex(txIdStr.get)
         getTxCmd = GetTransaction(expectedTxId)
@@ -189,10 +204,10 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       for {
         address <- addressF
         cmd = SendToAddress(destination = address,
-                                       amount = Bitcoins.one,
-                                       satoshisPerVirtualByte =
-                                         Some(SatoshisPerVirtualByte.one),
-                                       noBroadcast = false)
+                            amount = Bitcoins.one,
+                            satoshisPerVirtualByte =
+                              Some(SatoshisPerVirtualByte.one),
+                            noBroadcast = false)
         txIdStr = ConsoleCli.exec(cmd, cliConfig)
         expectedTxId = DoubleSha256DigestBE.fromHex(txIdStr.get)
         getTxCmd = GetTransaction(expectedTxId)
@@ -380,10 +395,10 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
     val cmd = Rescan(batchSize = None,
-                                startBlock = None,
-                                endBlock = None,
-                                force = true,
-                                ignoreCreationTime = false)
+                     startBlock = None,
+                     endBlock = None,
+                     force = true,
+                     ignoreCreationTime = false)
     val _ = ConsoleCli.exec(cmd, cliConfig)
     for {
       _ <- AkkaUtil.nonBlockingSleep(5000.millis)

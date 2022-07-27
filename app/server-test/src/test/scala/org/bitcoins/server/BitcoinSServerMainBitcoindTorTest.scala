@@ -29,10 +29,8 @@ class BitcoinSServerMainBitcoindTorTest
         _ <- server.start()
 
         info = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-        balance = exec(GetBalance(isSats = true),
-                                  cliConfig)
-        addr = exec(GetNewAddress(labelOpt = None),
-                               cliConfig)
+        balance = exec(GetBalance(isSats = true), cliConfig)
+        addr = exec(GetNewAddress(labelOpt = None), cliConfig)
         blockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
         _ <- AsyncUtil.nonBlockingSleep(1.second)
         _ <- server.stop() //stop to free all resources

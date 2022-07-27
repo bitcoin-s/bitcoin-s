@@ -20,70 +20,10 @@ import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import scala.util._
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
-trait Broadcastable {
-  def noBroadcast: Boolean
-}
-*/
-
-
-
+/** trait Broadcastable {
+  *  def noBroadcast: Boolean
+  * }
+  */
 
 case class DecodeAccept(accept: DLCAcceptTLV)
 
@@ -145,8 +85,6 @@ object DecodeSign extends ServerJsonModels {
   }
 }
 
-
-
 case class DecodeAttestations(announcement: OracleAttestmentV0TLV)
 
 object DecodeAttestations extends ServerJsonModels {
@@ -168,14 +106,6 @@ object DecodeAttestations extends ServerJsonModels {
     }
   }
 }
-
-
-
-
-
-
-
-
 
 case class DLCDataFromFile(
     path: Path,

@@ -1389,10 +1389,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
+      println("worked 2")
 
       val route = walletRoutes.handleCommand(
         ServerCommand("sendfromoutpoints",
                       Arr(Arr(), Str(testAddressStr), Num(100), Num(4))))
+      println("worked 3")
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)

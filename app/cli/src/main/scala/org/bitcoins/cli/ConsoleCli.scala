@@ -13,7 +13,11 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  Transaction,
+  TransactionOutPoint
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.EnvUtil
@@ -896,8 +900,11 @@ object ConsoleCli {
             command = CreateDLCOffer(ContractInfoV0TLV.dummy,
                                      Satoshis.zero,
                                      None,
-              None,
-              UInt32.zero, None ,None, None)))
+                                     None,
+                                     UInt32.zero,
+                                     None,
+                                     None,
+                                     None)))
         .text("Creates a DLC offer that another party can accept")
         .children(
           arg[ContractInfoV0TLV]("contractInfo")
@@ -942,8 +949,7 @@ object ConsoleCli {
             .action((locktime, conf) =>
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
-                  offer.copy(locktimeOpt =
-                    Some(locktime))
+                  offer.copy(locktimeOpt = Some(locktime))
                 case other => other
               }))
         ),
@@ -951,7 +957,9 @@ object ConsoleCli {
         .action((_, conf) =>
           conf.copy(command =
             AcceptDLC(null,
-                      InetSocketAddress.createUnresolved("localhost", 0), None, None )))
+                      InetSocketAddress.createUnresolved("localhost", 0),
+                      None,
+                      None)))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[LnMessage[DLCOfferTLV]]("offer")
@@ -974,7 +982,8 @@ object ConsoleCli {
               }))
         ),
       cmd("acceptdlcoffer")
-        .action((_, conf) => conf.copy(command = AcceptDLCOffer(null, None, None, None )))
+        .action((_, conf) =>
+          conf.copy(command = AcceptDLCOffer(null, None, None, None)))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[LnMessage[DLCOfferTLV]]("offer")
@@ -1951,11 +1960,12 @@ object ConsoleCli {
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
       case CreateDLCOffer(contractInfoTLV,
                           collateral,
-                          feeRateOpt, locktimeOpt, refundLocktime,
-      externalPayoutAddressOpt,
-      externalChangeAddressOpt,
-      peerAddressOpt
-      ) =>
+                          feeRateOpt,
+                          locktimeOpt,
+                          refundLocktime,
+                          externalPayoutAddressOpt,
+                          externalChangeAddressOpt,
+                          peerAddressOpt) =>
         RequestParam(
           "createdlcoffer",
           Seq(
@@ -1965,17 +1975,28 @@ object ConsoleCli {
             up.writeJs(locktimeOpt),
             up.writeJs(refundLocktime),
             up.writeJs(externalPayoutAddressOpt),
-          up.writeJs(externalChangeAddressOpt),
+            up.writeJs(externalChangeAddressOpt),
             up.writeJs(peerAddressOpt)
           )
         )
-      case AcceptDLC(offer, peerAddr, externalPayoutAddressOpt, externalChangeAddressOpt) =>
-        RequestParam("acceptdlc", Seq(up.writeJs(offer), up.writeJs(peerAddr),
-          up.writeJs(externalPayoutAddressOpt), up.writeJs(externalChangeAddressOpt)))
-      case AcceptDLCOffer(offer,peerAddr, externalPayoutAddressOpt, externalChangeAddressOpt) =>
-        RequestParam("acceptdlcoffer", Seq(up.writeJs(offer),
-          up.writeJs(peerAddr), up.writeJs(externalPayoutAddressOpt),
-          up.writeJs(externalChangeAddressOpt)))
+      case AcceptDLC(offer,
+                     peerAddr,
+                     externalPayoutAddressOpt,
+                     externalChangeAddressOpt) =>
+        RequestParam("acceptdlc",
+                     Seq(up.writeJs(offer),
+                         up.writeJs(peerAddr),
+                         up.writeJs(externalPayoutAddressOpt),
+                         up.writeJs(externalChangeAddressOpt)))
+      case AcceptDLCOffer(offer,
+                          peerAddr,
+                          externalPayoutAddressOpt,
+                          externalChangeAddressOpt) =>
+        RequestParam("acceptdlcoffer",
+                     Seq(up.writeJs(offer),
+                         up.writeJs(peerAddr),
+                         up.writeJs(externalPayoutAddressOpt),
+                         up.writeJs(externalChangeAddressOpt)))
       case AcceptDLCOfferFromFile(path, dest) =>
         RequestParam("acceptdlcofferfromfile",
                      Seq(up.writeJs(path), up.writeJs(dest)))
@@ -2251,8 +2272,8 @@ object ConsoleCli {
         val args = Seq(up.writeJs(offerHash))
         RequestParam("offer-remove", args)
 
-      case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand | _:Broadcastable|
-          _: OracleServerCliCommand) =>
+      case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
+          _: Broadcastable | _: OracleServerCliCommand) =>
         sys.error(s"Command $cmd unsupported")
       case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
     }
@@ -2362,14 +2383,13 @@ object Config {
 }
 
 object CliCommand {
-/**
-  trait Broadcastable {
-    def noBroadcast: Boolean
-  }
-*/
-/**
-case object Broadcastable
-*/
+
+  /**  trait Broadcastable {
+    *    def noBroadcast: Boolean
+    *  }
+    */
+  /** case object Broadcastable
+    */
 
   case object GetVersion extends ServerlessCliCommand
 
@@ -2378,22 +2398,17 @@ case object Broadcastable
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
 
-
   case class DecodeAttestments(sigs: OracleAttestmentV0TLV)
       extends AppServerCliCommand
 
-
   sealed trait AcceptDLCCliCommand extends AppServerCliCommand
-
 
   case class AcceptDLCOfferFromFile(path: Path, destination: Option[Path])
       extends AcceptDLCCliCommand
 
   sealed trait SignDLCCliCommand extends AppServerCliCommand
 
-
   sealed trait AddDLCSigsCliCommand extends AppServerCliCommand
-
 
   case class AddDLCSigsFromFile(path: Path) extends AddDLCSigsCliCommand
 
@@ -2405,25 +2420,23 @@ case object Broadcastable
   case class AddDLCSigsAndBroadcastFromFile(path: Path)
       extends AddDLCSigsAndBroadcastCliCommand
 
-
   case class CancelDLC(dlcId: Sha256Digest) extends AppServerCliCommand
 
-/**
-  case class CreateContractInfo(
-      announcementTLV: OracleAnnouncementTLV,
-      totalCollateral: Satoshis,
-      contractDescriptor: ujson.Value)
-      extends AppServerCliCommand
-
-  object CreateContractInfo {
-
-    lazy val empty: CreateContractInfo = {
-      CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
-                         totalCollateral = Satoshis.zero,
-                         contractDescriptor = ujson.Null)
-    }
-  }
-*/
+  /**  case class CreateContractInfo(
+    *      announcementTLV: OracleAnnouncementTLV,
+    *      totalCollateral: Satoshis,
+    *      contractDescriptor: ujson.Value)
+    *      extends AppServerCliCommand
+    *
+    *  object CreateContractInfo {
+    *
+    *    lazy val empty: CreateContractInfo = {
+    *      CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
+    *                         totalCollateral = Satoshis.zero,
+    *                         contractDescriptor = ujson.Null)
+    *    }
+    *  }
+    */
   case class AddDLCOffer(
       offer: LnMessage[DLCOfferTLV],
       peer: String,
@@ -2431,19 +2444,13 @@ case object Broadcastable
       extends AppServerCliCommand
 
   case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
-/**
-  sealed trait SendCliCommand extends AppServerCliCommand {
-    def destination: BitcoinAddress
-  }
-  */
+
+  /**  sealed trait SendCliCommand extends AppServerCliCommand {
+    *    def destination: BitcoinAddress
+    *  }
+    */
 
   // Wallet
-
-
-
-
-
-
 
   case object GetAddressLabels extends AppServerCliCommand
   case object GetUtxos extends AppServerCliCommand
@@ -2457,26 +2464,13 @@ case object Broadcastable
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
 
-
-
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
 
   case object GetDLCWalletAccounting extends AppServerCliCommand
 
-
-
-
-
-
-
-
-
-
-
   // Node
   case object GetPeers extends AppServerCliCommand
   case object Stop extends AppServerCliCommand
-
 
   // Chain
   case object GetBestBlockHash extends AppServerCliCommand
@@ -2484,18 +2478,11 @@ case object Broadcastable
   case object GetFilterCount extends AppServerCliCommand
   case object GetFilterHeaderCount extends AppServerCliCommand
 
-
-
   case object GetMedianTimePast extends AppServerCliCommand
-
-
 
   // PSBT
 
-
-
   // Util
-
 
   case class ZipDataDir(path: Path) extends AppServerCliCommand
 
