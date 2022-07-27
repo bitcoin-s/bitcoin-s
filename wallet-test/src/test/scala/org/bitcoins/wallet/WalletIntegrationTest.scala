@@ -13,7 +13,6 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletTestUtil,
-  WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
 import org.scalatest.{FutureOutcome, Outcome}
@@ -22,7 +21,7 @@ import scala.concurrent.Future
 
 class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
-  override type FixtureParam = WalletWithBitcoind
+  override type FixtureParam = WalletWithBitcoindRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {

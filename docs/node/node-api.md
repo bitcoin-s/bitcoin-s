@@ -18,6 +18,7 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.testkit.chain.MockChainQueryApi
 
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -55,7 +56,7 @@ implicit val walletConf: WalletAppConfig =
 // and a ChainApi
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
 val bitcoind = BitcoindV19RpcClient(instance)
-val chainApi = BitcoinSWalletTest.MockChainQueryApi
+val chainApi = MockChainQueryApi.mock
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
 // This function can be used to create a callback for when our node api calls downloadBlocks,

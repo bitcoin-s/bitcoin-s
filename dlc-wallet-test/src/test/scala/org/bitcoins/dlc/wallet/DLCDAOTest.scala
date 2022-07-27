@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256Digest}
 import org.bitcoins.db.CRUD
 import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
 import org.scalatest.Assertion
@@ -78,7 +79,8 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       isInitiator = true,
       index = 0,
       inputSerialId = UInt64.zero,
-      outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
+      outPoint =
+        TransactionOutPoint(MockChainQueryApi.testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
       nSequence = TransactionConstants.enableRBFSequence,
       maxWitnessLength = 107,
@@ -100,7 +102,8 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           isInitiator = true,
           index = 0,
           inputSerialId = UInt64.zero,
-          outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
+          outPoint =
+            TransactionOutPoint(MockChainQueryApi.testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           nSequence = TransactionConstants.enableRBFSequence,
           maxWitnessLength = 107,
@@ -112,7 +115,8 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           isInitiator = false,
           index = 0,
           inputSerialId = UInt64.one,
-          outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
+          outPoint =
+            TransactionOutPoint(MockChainQueryApi.testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           nSequence = TransactionConstants.enableRBFSequence,
           maxWitnessLength = 107,
@@ -124,7 +128,8 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
           isInitiator = true,
           index = 1,
           inputSerialId = UInt64(2),
-          outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
+          outPoint =
+            TransactionOutPoint(MockChainQueryApi.testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
           nSequence = TransactionConstants.enableRBFSequence,
           maxWitnessLength = 107,

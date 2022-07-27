@@ -16,7 +16,6 @@ import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
-  WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
 import org.scalatest.{FutureOutcome, Outcome}
@@ -29,7 +28,7 @@ class UTXOLifeCycleTest
 
   behavior of "Wallet Txo States"
 
-  override type FixtureParam = WalletWithBitcoind
+  override type FixtureParam = WalletWithBitcoindRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {

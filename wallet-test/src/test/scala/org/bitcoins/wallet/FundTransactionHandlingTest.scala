@@ -8,7 +8,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletTestUtil,
-  WalletWithBitcoind
+  WalletWithBitcoindRpc
 }
 import org.bitcoins.testkitcore.util.TestUtil
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
@@ -18,7 +18,7 @@ import scala.concurrent.Future
 class FundTransactionHandlingTest
     extends BitcoinSWalletTestCachedBitcoindNewest {
 
-  override type FixtureParam = WalletWithBitcoind
+  override type FixtureParam = WalletWithBitcoindRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
@@ -36,7 +36,7 @@ class FundTransactionHandlingTest
     TransactionOutput(Bitcoins(0.5), TestUtil.p2pkhScriptPubKey)
 
   it must "fund a simple raw transaction that requires one utxo" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
@@ -55,7 +55,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fund a transaction that requires all utxos in our wallet" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val amt = Bitcoins(5.5)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
@@ -76,7 +76,7 @@ class FundTransactionHandlingTest
   }
 
   it must "not care about the number of destinations" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val destinations = Vector.fill(5)(destination)
       val wallet = fundedWallet.wallet
 
@@ -99,7 +99,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fail to fund a raw transaction if we don't have enough money in our wallet" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       //our wallet should only have 6 bitcoin in it
       val tooMuchMoney = Bitcoins(10)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
@@ -120,7 +120,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fail to fund a raw transaction if we have the _exact_ amount of money in the wallet because of the fee" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       //our wallet should only have 6 bitcoin in it
       val tooMuchMoney = Bitcoins(6)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
@@ -141,7 +141,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fund from a specific account" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       //we want to fund from account 1, not hte default account
       //account 1 has 1 btc in it
       val amt = Bitcoins(0.1)
@@ -163,7 +163,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fail to fund from an account that does not have the funds" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       //account 1 should only have 1 btc in it
       val amt = Bitcoins(1.1)
       val newDestination = destination.copy(value = amt)
@@ -184,7 +184,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fail to fund from an account with only immature coinbases" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val wallet = fundedWallet.wallet
       val bitcoind = fundedWallet.bitcoind
       val fundedTxF = for {
@@ -212,7 +212,7 @@ class FundTransactionHandlingTest
   }
 
   it must "mark utxos as reserved after building a transaction" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
@@ -262,7 +262,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fund a transaction with only utxos with an unknown address tag" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val wallet = fundedWallet.wallet
       val exampleTag: UnknownAddressTag =
         UnknownAddressTag("Example", "ExampleTagType")
@@ -271,7 +271,7 @@ class FundTransactionHandlingTest
   }
 
   it must "fund a transaction with only utxos with an internal address tag" in {
-    fundedWallet: WalletWithBitcoind =>
+    fundedWallet: WalletWithBitcoindRpc =>
       val wallet = fundedWallet.wallet
 
       testAddressTagFunding(wallet, HotStorage)

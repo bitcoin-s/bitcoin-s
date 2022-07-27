@@ -5,15 +5,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -24,6 +19,7 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.wallet.FundWalletUtil.{
   FundedDLCWallet,
   FundedWallet
@@ -102,10 +98,11 @@ trait BitcoinSWalletTest
       walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () =>
-        FundWalletUtil.createFundedWallet(nodeApi,
-                                          chainQueryApi,
-                                          bip39PasswordOpt,
-                                          Some(segwitWalletConf)),
+        FundWalletUtil.createFundedWallet(
+          nodeApi,
+          chainQueryApi,
+          bip39PasswordOpt,
+          Some(BaseWalletTest.segwitWalletConf)),
       destroy = { funded: FundedWallet =>
         destroyWallet(funded.wallet)
       }
@@ -135,12 +132,12 @@ trait BitcoinSWalletTest
 
   /** Fixture for an initialized wallet which produce legacy addresses */
   def withLegacyWallet(test: OneArgAsyncTest): FutureOutcome = {
-    withNewConfiguredWallet(legacyWalletConf)(test)
+    withNewConfiguredWallet(BaseWalletTest.legacyWalletConf)(test)
   }
 
   /** Fixture for an initialized wallet which produce segwit addresses */
   def withSegwitWallet(test: OneArgAsyncTest): FutureOutcome = {
-    withNewConfiguredWallet(segwitWalletConf)(test)
+    withNewConfiguredWallet(BaseWalletTest.segwitWalletConf)(test)
   }
 
   /** Fixture for a wallet with default configuration with no funds in it */
@@ -165,39 +162,46 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest))
-      },
-      dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
-        createWalletWithBitcoind(bitcoind)
-      },
-      wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
-        walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoindRpc] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest))
+        },
+        dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
+          createWalletWithBitcoind(bitcoind)
+        },
+        wrap =
+          (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindRpc) =>
+            walletWithBitcoind
+      )
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture(
+      builder,
+      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindRpc))(test)
   }
 
   def withNewWalletAndBitcoindV19(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String])(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        BitcoinSFixture
-          .createBitcoindWithFunds(Some(BitcoindVersion.V19))
-          .map(_.asInstanceOf[BitcoindV19RpcClient])
-      },
-      dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
-        createWalletWithBitcoindV19(bitcoind, bip39PasswordOpt)
-      },
-      wrap =
-        (_: BitcoindV19RpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
-          walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoindV19] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          BitcoinSFixture
+            .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+            .map(_.asInstanceOf[BitcoindV19RpcClient])
+        },
+        dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
+          createWalletWithBitcoindV19(bitcoind, bip39PasswordOpt)
+        },
+        wrap = (
+            _: BitcoindV19RpcClient,
+            walletWithBitcoind: WalletWithBitcoindV19) => walletWithBitcoind
+      )
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture(
+      builder,
+      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindV19))(test)
   }
 
   def withFundedWalletAndBitcoindV19(
@@ -220,7 +224,9 @@ trait BitcoinSWalletTest
       }
     }
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture(
+      builder,
+      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindV19))(test)
   }
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
@@ -260,48 +266,6 @@ object BitcoinSWalletTest extends WalletLogger {
     account1Amt.fold(CurrencyUnits.zero)(_ + _)
 
   lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
-
-  object MockNodeApi extends NodeApi {
-
-    override def broadcastTransactions(
-        transactions: Vector[Transaction]): Future[Unit] =
-      Future.unit
-
-    override def downloadBlocks(
-        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.unit
-
-  }
-
-  object MockChainQueryApi extends ChainQueryApi {
-
-    override def getBlockHeight(
-        blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-      FutureUtil.none
-
-    override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
-      Future.successful(DoubleSha256DigestBE.empty)
-
-    override def getNumberOfConfirmations(
-        blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
-      FutureUtil.none
-
-    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-      Future.successful(0)
-
-    override def getFilterCount(): Future[Int] = Future.successful(0)
-
-    override def getFiltersBetweenHeights(
-        startHeight: Int,
-        endHeight: Int): Future[Vector[FilterResponse]] =
-      Future.successful(Vector.empty)
-
-    override def epochSecondToBlockHeight(time: Long): Future[Int] =
-      Future.successful(0)
-
-    /** calculates the median time passed */
-    override def getMedianTimePast(): Future[Long] =
-      Future.successful(0L)
-  }
 
   private[bitcoins] class RandomFeeProvider extends FeeRateApi {
     // Useful for tests
@@ -463,7 +427,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
       config: WalletAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     //we need to create a promise so we can inject the wallet with the callback
     //after we have created it into SyncUtil.getNodeApiWalletCallback
@@ -537,7 +501,7 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
       wallet: Wallet
-  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+  )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))(system.dispatcher)
   }
@@ -546,7 +510,7 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletWithBitcoind(
       wallet: Wallet,
       versionOpt: Option[BitcoindVersion]
-  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+  )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))
@@ -554,7 +518,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def createWalletWithBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
-      config: WalletAppConfig): Future[WalletWithBitcoind] = {
+      config: WalletAppConfig): Future[WalletWithBitcoindRpc] = {
     createWalletWithBitcoindCallbacks(bitcoind, None)
   }
 
@@ -595,7 +559,7 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletWithBitcoind(
       wallet: Wallet,
       bitcoindRpcClient: BitcoindRpcClient
-  ): Future[WalletWithBitcoind] = {
+  ): Future[WalletWithBitcoindRpc] = {
     Future.successful(WalletWithBitcoindRpc(wallet, bitcoindRpcClient))
   }
 
@@ -607,7 +571,7 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     config.walletConf.addCallbacks(walletCallbacks)
     for {
@@ -620,7 +584,7 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
-  /** Funds a wallet with bitcoind, this method adds [[BitcoinSWalletTest.createNodeCallbacksForWallet()]]
+  /** Funds a wallet with bitcoind, this method adds [[CallbackUtil.createNeutrinoNodeCallbacksForWallet()]]
     * which processes filters/blocks that can be used to fund the wallet.
     *
     * It's important to note that this does NOT synchronize the wallet with a chain state.
@@ -634,7 +598,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bip39PasswordOpt: Option[String],
       walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     config.walletConf.addCallbacks(walletCallbacks)
     for {
@@ -651,7 +615,8 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
-  def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit
+  def destroyWalletWithBitcoind[T <: BitcoindRpcClient](
+      walletWithBitcoind: WalletWithBitcoind[T])(implicit
       ec: ExecutionContext): Future[Unit] = {
     val (wallet, bitcoind) =
       (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
@@ -697,7 +662,7 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Makes sure our wallet is fully funded with the default amounts specified in
     * [[BitcoinSWalletTest]]. This will future won't be completed until balances satisfy [[isSameWalletBalances()]]
     */
-  def awaitWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+  def awaitWalletBalances(fundedWallet: WalletWithBitcoind[_])(implicit
       config: WalletAppConfig,
       system: ActorSystem): Future[Unit] = {
     AsyncUtil.retryUntilSatisfiedF(conditionF =
@@ -706,7 +671,7 @@ object BitcoinSWalletTest extends WalletLogger {
                                    maxTries = 100)(system.dispatcher)
   }
 
-  private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+  private def isSameWalletBalances(fundedWallet: WalletWithBitcoind[_])(implicit
       config: WalletAppConfig,
       system: ActorSystem): Future[Boolean] = {
     import system.dispatcher

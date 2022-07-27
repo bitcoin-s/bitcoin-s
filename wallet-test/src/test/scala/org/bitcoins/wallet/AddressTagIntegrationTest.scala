@@ -11,7 +11,6 @@ import org.bitcoins.testkit.util.AkkaUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletTestUtil,
-  WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
 import org.scalatest.FutureOutcome
@@ -20,7 +19,7 @@ import scala.concurrent.duration.DurationInt
 
 class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
-  override type FixtureParam = WalletWithBitcoind
+  override type FixtureParam = WalletWithBitcoindRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNewWalletAndBitcoind(test)(getFreshWalletAppConfig)

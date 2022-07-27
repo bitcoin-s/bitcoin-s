@@ -10,12 +10,10 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.fixtures.EmptyFixture
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
-  MockChainQueryApi,
-  MockNodeApi
-}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.compatible.Assertion
 import play.api.libs.json._

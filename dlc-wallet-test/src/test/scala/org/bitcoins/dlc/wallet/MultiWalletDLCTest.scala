@@ -6,7 +6,9 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil.bip39PasswordOpt
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
