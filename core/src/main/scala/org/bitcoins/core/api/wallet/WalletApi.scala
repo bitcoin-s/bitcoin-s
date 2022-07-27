@@ -18,7 +18,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
-import org.bitcoins.core.wallet.builder.FundRawTxHelper
+import org.bitcoins.core.wallet.builder.{
+  FundRawTxHelper,
+  ShufflingNonInteractiveFinalizer
+}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
@@ -86,7 +89,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[FundRawTxHelper[_]]
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
 
   def listTransactions(): Future[Vector[TransactionDb]]
 

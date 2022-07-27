@@ -18,7 +18,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[FundRawTxHelper[_]] = {
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     for {
       account <- getDefaultAccount()
       funded <- fundRawTransaction(destinations = destinations,
@@ -34,7 +35,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       fromTagOpt: Option[AddressTag] = None,
-      markAsReserved: Boolean = false): Future[FundRawTxHelper[_]] = {
+      markAsReserved: Boolean = false): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     fundRawTransactionInternal(destinations = destinations,
                                feeRate = feeRate,
                                fromAccount = fromAccount,

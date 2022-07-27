@@ -35,7 +35,10 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.wallet.builder.FundRawTxHelper
+import org.bitcoins.core.wallet.builder.{
+  FundRawTxHelper,
+  ShufflingNonInteractiveFinalizer
+}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.rescan.RescanState
@@ -159,7 +162,8 @@ class WalletHolder(implicit ec: ExecutionContext)
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[FundRawTxHelper[_]] = delegate(
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
     _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved))
 
   override def listTransactions(): Future[Vector[TransactionDb]] = delegate(
