@@ -631,23 +631,23 @@ case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(implicit
             }
           }
       }
-    /**    case ServerCommand("sendfromoutpoints", arr) =>
-      *      withValidServerCommand(SendFromOutpoints.fromJsArr(arr)) {
-      *        case SendFromOutpoints(outPoints,
-      *                               address,
-      *                               bitcoins,
-      *                               satoshisPerVirtualByteOpt) =>
-      *          complete {
-      *            for {
-      *              tx <- wallet.sendFromOutPoints(outPoints,
-      *                                             address,
-      *                                             bitcoins,
-      *                                             satoshisPerVirtualByteOpt)
-      *              _ <- wallet.broadcastTransaction(tx)
-      *            } yield Server.httpSuccess(tx.txIdBE)
-      *          }
-      *      }
-      */
+    case ServerCommand("sendfromoutpoints", arr) =>
+      withValidServerCommand(SendFromOutPoints.fromJsArr(arr)) {
+        case SendFromOutPoints(outPoints,
+                               address,
+                               bitcoins,
+                               satoshisPerVirtualByteOpt) =>
+          complete {
+            for {
+              tx <- wallet.sendFromOutPoints(outPoints,
+                                             address,
+                                             bitcoins,
+                                             satoshisPerVirtualByteOpt)
+              _ <- wallet.broadcastTransaction(tx)
+            } yield Server.httpSuccess(tx.txIdBE)
+          }
+      }
+
     case ServerCommand("sweepwallet", arr) =>
       withValidServerCommand(SweepWallet.fromJsArr(arr)) {
         case SweepWallet(address, feeRateOpt) =>
