@@ -162,7 +162,7 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] =
+    val builder: () => Future[WalletWithBitcoindRpc] =
       BitcoinSFixture.composeBuildersAndWrap(
         builder = { () =>
           BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest))
@@ -170,18 +170,21 @@ trait BitcoinSWalletTest
         dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
           createWalletWithBitcoind(bitcoind)
         },
-        wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
-          walletWithBitcoind
+        wrap =
+          (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindRpc) =>
+            walletWithBitcoind
       )
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture(
+      builder,
+      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindRpc))(test)
   }
 
   def withNewWalletAndBitcoindV19(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String])(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] =
+    val builder: () => Future[WalletWithBitcoindV19] =
       BitcoinSFixture.composeBuildersAndWrap(
         builder = { () =>
           BitcoinSFixture
@@ -196,7 +199,9 @@ trait BitcoinSWalletTest
             walletWithBitcoind: WalletWithBitcoindV19) => walletWithBitcoind
       )
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture(
+      builder,
+      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindV19))(test)
   }
 
   def withFundedWalletAndBitcoindV19(
@@ -219,7 +224,9 @@ trait BitcoinSWalletTest
       }
     }
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture(
+      builder,
+      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindV19))(test)
   }
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
@@ -420,7 +427,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
       config: WalletAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     //we need to create a promise so we can inject the wallet with the callback
     //after we have created it into SyncUtil.getNodeApiWalletCallback
@@ -494,7 +501,7 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
       wallet: Wallet
-  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+  )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))(system.dispatcher)
   }
@@ -503,7 +510,7 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletWithBitcoind(
       wallet: Wallet,
       versionOpt: Option[BitcoindVersion]
-  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+  )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))
@@ -511,7 +518,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def createWalletWithBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
-      config: WalletAppConfig): Future[WalletWithBitcoind] = {
+      config: WalletAppConfig): Future[WalletWithBitcoindRpc] = {
     createWalletWithBitcoindCallbacks(bitcoind, None)
   }
 
@@ -552,7 +559,7 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletWithBitcoind(
       wallet: Wallet,
       bitcoindRpcClient: BitcoindRpcClient
-  ): Future[WalletWithBitcoind] = {
+  ): Future[WalletWithBitcoindRpc] = {
     Future.successful(WalletWithBitcoindRpc(wallet, bitcoindRpcClient))
   }
 
@@ -564,7 +571,7 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     config.walletConf.addCallbacks(walletCallbacks)
     for {
@@ -591,7 +598,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bip39PasswordOpt: Option[String],
       walletCallbacks: WalletCallbacks)(implicit
       config: BitcoinSAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     config.walletConf.addCallbacks(walletCallbacks)
     for {
@@ -608,7 +615,8 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
-  def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit
+  def destroyWalletWithBitcoind[T <: BitcoindRpcClient](
+      walletWithBitcoind: WalletWithBitcoind[T])(implicit
       ec: ExecutionContext): Future[Unit] = {
     val (wallet, bitcoind) =
       (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
@@ -654,7 +662,7 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Makes sure our wallet is fully funded with the default amounts specified in
     * [[BitcoinSWalletTest]]. This will future won't be completed until balances satisfy [[isSameWalletBalances()]]
     */
-  def awaitWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+  def awaitWalletBalances(fundedWallet: WalletWithBitcoind[_])(implicit
       config: WalletAppConfig,
       system: ActorSystem): Future[Unit] = {
     AsyncUtil.retryUntilSatisfiedF(conditionF =
@@ -663,7 +671,7 @@ object BitcoinSWalletTest extends WalletLogger {
                                    maxTries = 100)(system.dispatcher)
   }
 
-  private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
+  private def isSameWalletBalances(fundedWallet: WalletWithBitcoind[_])(implicit
       config: WalletAppConfig,
       system: ActorSystem): Future[Boolean] = {
     import system.dispatcher

@@ -44,7 +44,7 @@ trait BitcoinSWalletTestCachedBitcoind
       bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = { () =>
+    val builder: () => Future[WalletWithBitcoind[_]] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
           bitcoind = bitcoind,
@@ -57,9 +57,9 @@ trait BitcoinSWalletTestCachedBitcoind
       } yield fundedWallet
     }
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      { case walletWithBitcoind: WalletWithBitcoind =>
+      { case walletWithBitcoind: WalletWithBitcoind[_] =>
         destroyWallet(walletWithBitcoind.wallet)
       })(test)
   }
@@ -69,7 +69,7 @@ trait BitcoinSWalletTestCachedBitcoind
       bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] =
+    val builder: () => Future[WalletWithBitcoind[_]] =
       BitcoinSFixture.composeBuildersAndWrap(
         builder = { () =>
           Future.successful(bitcoind)
@@ -77,13 +77,14 @@ trait BitcoinSWalletTestCachedBitcoind
         dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
           createWalletWithBitcoind(bitcoind, bip39PasswordOpt)
         },
-        wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
-          walletWithBitcoind
+        wrap =
+          (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind[_]) =>
+            walletWithBitcoind
       )
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      { case walletWithBitcoind: WalletWithBitcoind =>
+      { case walletWithBitcoind: WalletWithBitcoind[_] =>
         destroyWallet(walletWithBitcoind.wallet)
       })(test)
   }
@@ -184,16 +185,16 @@ trait BitcoinSWalletTestCachedBitcoinV19
         walletWithBitcoindV19 = WalletWithBitcoindV19(walletWithBitcoind.wallet,
                                                       bitcoind)
         fundedWallet <- FundWalletUtil
-          .fundWalletWithBitcoind[WalletWithBitcoindV19](walletWithBitcoindV19)
+          .fundWalletWithBitcoind(walletWithBitcoindV19)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
                                            bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield fundedWallet
     }
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      destroy = { case walletWithBitcoind: WalletWithBitcoind =>
+      destroy = { case walletWithBitcoind: WalletWithBitcoind[_] =>
         destroyWallet(walletWithBitcoind.wallet)
       })(test)
   }
@@ -203,7 +204,7 @@ trait BitcoinSWalletTestCachedBitcoinV19
       bip39PasswordOpt: Option[String],
       bitcoind: BitcoindV19RpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] =
+    val builder: () => Future[WalletWithBitcoind[_]] =
       BitcoinSFixture.composeBuildersAndWrap(
         builder = { () =>
           Future.successful(bitcoind)
@@ -217,9 +218,9 @@ trait BitcoinSWalletTestCachedBitcoinV19
             walletWithBitcoind
       )
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      { case walletWithBitcoind: WalletWithBitcoind =>
+      { case walletWithBitcoind: WalletWithBitcoind[_] =>
         destroyWallet(walletWithBitcoind.wallet)
       })(test)
   }

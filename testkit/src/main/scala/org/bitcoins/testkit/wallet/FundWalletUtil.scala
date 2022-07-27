@@ -30,8 +30,8 @@ import scala.concurrent.{ExecutionContext, Future}
 trait FundWalletUtil extends Logging {
 
   /** Funds the given wallet with money from the given bitcoind */
-  def fundWalletWithBitcoind[T <: WalletWithBitcoind](pair: T)(implicit
-      ec: ExecutionContext): Future[T] = {
+  def fundWalletWithBitcoind[T <: WalletWithBitcoind[_ <: BitcoindRpcClient]](
+      pair: T)(implicit ec: ExecutionContext): Future[T] = {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
 
     val defaultAccount = wallet.walletConfig.defaultAccount
