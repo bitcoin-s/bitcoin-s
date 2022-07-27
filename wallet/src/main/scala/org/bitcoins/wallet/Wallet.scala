@@ -286,12 +286,8 @@ abstract class Wallet
     val aggregatedActions: DBIOAction[
       Unit,
       NoStream,
-      Effect.Write with Effect.Transactional] = for {
-
-      _ <- spendingInfoDAO.deleteAllAction()
-    } yield {
-      ()
-    }
+      Effect.Write with Effect.Transactional] =
+      spendingInfoDAO.deleteAllAction().map(_ => ())
 
     val resultedF = safeDatabase.run(aggregatedActions)
     resultedF.failed.foreach(err =>
@@ -300,6 +296,15 @@ abstract class Wallet
         err))
 
     resultedF.map(_ => this)
+  }
+
+  override def clearAllAddresses(): Future[Wallet] = {
+    val action = addressDAO
+      .deleteAllAction()
+      .map(_ => ())
+    safeDatabase
+      .run(action)
+      .map(_ => this)
   }
 
   /** Sums up the value of all unspent
@@ -386,9 +391,9 @@ abstract class Wallet
     spendingInfoDAO.findByOutPoints(outPoints)
   }
 
-  override def findByTxId(
-      txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]] = {
-    transactionDAO.findByTxId(txIdBE)
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]] = {
+    transactionDAO.findByTxIds(txIds)
   }
 
   override def findOutputsBeingSpent(

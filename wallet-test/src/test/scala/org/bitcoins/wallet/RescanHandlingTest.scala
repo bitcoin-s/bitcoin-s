@@ -52,16 +52,16 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         balance <- wallet.getBalance()
         _ = assert(balance != Satoshis.zero)
-        utxos <- wallet.spendingInfoDAO.findAll()
+        utxos <- wallet.listUtxos()
         _ = assert(utxos.nonEmpty)
 
-        addresses <- wallet.addressDAO.findAll()
+        addresses <- wallet.listAddresses()
         _ = assert(addresses.nonEmpty)
 
         _ <- wallet.clearAllUtxos()
 
-        clearedUtxos <- wallet.spendingInfoDAO.findAll()
-        clearedAddresses <- wallet.addressDAO.findAll()
+        clearedUtxos <- wallet.listUtxos()
+        clearedAddresses <- wallet.listAddresses()
       } yield {
         assert(clearedUtxos.isEmpty)
         assert(clearedAddresses.nonEmpty)
@@ -197,7 +197,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .map(_.flatMap(_.blockHashOpt))
 
         _ <- newTxWallet.clearAllUtxos()
-        _ <- newTxWallet.addressDAO.deleteAll()
+        _ <- newTxWallet.clearAllAddresses()
         scriptPubKeys <-
           1.to(10).foldLeft(Future.successful(Vector.empty[ScriptPubKey])) {
             (prevFuture, _) =>
@@ -280,8 +280,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val utxosF = wallet.listUtxos()
       val oldestHeightF = for {
         utxos <- utxosF
-        blockhashes <- wallet.transactionDAO
-          .findByTxIdBEs(utxos.map(_.txid))
+        blockhashes <- wallet
+          .findByTxIds(utxos.map(_.txid))
           .map(_.flatMap(_.blockHashOpt))
         heights <- FutureUtil.sequentially(blockhashes) { hash =>
           wallet.chainQueryApi.getBlockHeight(hash)

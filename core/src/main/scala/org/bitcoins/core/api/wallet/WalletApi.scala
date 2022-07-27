@@ -174,6 +174,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def clearAllUtxos(): Future[WalletApi]
 
+  def clearAllAddresses(): Future[WalletApi]
+
   /** Gets a new external address with the specified
     * type.
     *  @param addressType
@@ -441,9 +443,16 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     findByOutPoints(Vector(outPoint)).map(_.headOption)
   }
 
-  def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]]
+  def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]]
 
-  def findByTxId(txId: DoubleSha256Digest): Future[Option[TransactionDb]] = {
+  def findByTxId(txId: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[Option[TransactionDb]] = {
+    findByTxIds(Vector(txId)).map(_.headOption)
+  }
+
+  def findByTxId(txId: DoubleSha256Digest)(implicit
+      ec: ExecutionContext): Future[Option[TransactionDb]] = {
     findByTxId(txId.flip)
   }
 

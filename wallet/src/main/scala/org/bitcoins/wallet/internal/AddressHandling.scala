@@ -359,7 +359,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     } yield address
   }
 
-  def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
+  override def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
     accountDAO.findByAccount(account)
   }
 

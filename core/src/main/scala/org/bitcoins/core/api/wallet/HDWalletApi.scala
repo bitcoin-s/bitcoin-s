@@ -46,6 +46,8 @@ trait HDWalletApi extends WalletApi {
 
   def getNewAddress(account: HDAccount): Future[BitcoinAddress]
 
+  def getNewAddress(account: AccountDb): Future[BitcoinAddress]
+
   /** Generates a new change address */
   def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
 
@@ -500,4 +502,5 @@ trait HDWalletApi extends WalletApi {
       hdAccount: HDAccount,
       keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
+  def findAccount(account: HDAccount): Future[Option[AccountDb]]
 }

@@ -580,6 +580,10 @@ class WalletHolder(implicit ec: ExecutionContext)
   override def clearUtxos(account: HDAccount): Future[HDWalletApi] = delegate(
     _.clearUtxos(account))
 
+  override def clearAllAddresses(): Future[WalletApi] = {
+    delegate(_.clearAllAddresses())
+  }
+
   override def getAddress(
       account: AccountDb,
       chainType: HDChainType,
@@ -946,13 +950,21 @@ class WalletHolder(implicit ec: ExecutionContext)
     delegate(_.findByOutPoints(outPoints))
   }
 
-  override def findByTxId(
-      txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]] = {
-    delegate(_.findByTxId(txIdBE))
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]] = {
+    delegate(_.findByTxIds(txIds))
   }
 
   override def findOutputsBeingSpent(
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     delegate(_.findOutputsBeingSpent(tx))
+  }
+
+  override def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
+    delegate(_.findAccount(account))
+  }
+
+  override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
+    delegate(_.getNewAddress(account))
   }
 }

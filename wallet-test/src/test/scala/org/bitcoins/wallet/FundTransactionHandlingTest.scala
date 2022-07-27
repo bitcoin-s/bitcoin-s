@@ -148,8 +148,9 @@ class FundTransactionHandlingTest
       val amt = Bitcoins(0.1)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
-      val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      val account1DbF = wallet.accountDAO.findByAccount(account1)
+      val walletConfig = fundedWallet.walletConfig
+      val account1 = WalletTestUtil.getHdAccount1(walletConfig)
+      val account1DbF = wallet.findAccount(account1)
       for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
@@ -170,8 +171,9 @@ class FundTransactionHandlingTest
       val amt = Bitcoins(1.1)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
-      val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      val account1DbF = wallet.accountDAO.findByAccount(account1)
+      val walletConfig = fundedWallet.walletConfig
+      val account1 = WalletTestUtil.getHdAccount1(walletConfig)
+      val account1DbF = wallet.findAccount(account1)
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
@@ -192,7 +194,7 @@ class FundTransactionHandlingTest
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         _ <- wallet.createNewAccount(wallet.keyManager.kmParams)
-        accounts <- wallet.accountDAO.findAll()
+        accounts <- wallet.listAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
         addr <- wallet.getNewAddress(account2)
@@ -224,9 +226,8 @@ class FundTransactionHandlingTest
                                                      fromTagOpt = None,
                                                      markAsReserved = true)
 
-        spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(
-          fundRawTxHelper.unsignedTx)
-        reserved <- wallet.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        spendingInfos <- wallet.findOutputsBeingSpent(fundRawTxHelper.unsignedTx)
+        reserved <- wallet.listUtxos(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
         assert(reserved.size == spendingInfos.size)

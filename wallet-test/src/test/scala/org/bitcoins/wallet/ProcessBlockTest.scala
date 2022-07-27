@@ -14,6 +14,7 @@ import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoinV19,
   WalletWithBitcoindV19
 }
+import org.bitcoins.wallet.models.AccountDAO
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -127,6 +128,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
     val recvAmount = Bitcoins.one
     val sendAmount = Bitcoins(0.5)
 
+    val accountDAO: AccountDAO =
+      AccountDAO()(system.dispatcher, param.walletConfig)
     for {
       startBal <- wallet.getBalance()
       recvAddr <- wallet.getNewAddress()
@@ -163,7 +166,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       addrDb <- wallet.getAddressInfo(recvAddr).map(_.get)
       path = addrDb.path
       coin = path.coin
-      accountDb <- wallet.accountDAO
+      accountDb <- accountDAO
         .read((coin, path.accountIdx))
         .map(_.get)
 
@@ -175,7 +178,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       psbt = PSBT
         .fromUnsignedTx(unsignedTx)
         .addUTXOToInput(recvTx, 0)
-        .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubKey, 0)
+        .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubkey, 0)
 
       signed <- wallet.signPSBT(psbt)
       tx <- Future.fromTry(
