@@ -7,14 +7,14 @@ import org.bitcoins.core.util.{EnvUtil, StartStopAsync}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
+trait BitcoinSRunner[T] extends StartStopAsync[T] with Logging {
 
   implicit def system: ActorSystem
 
   implicit lazy val ec: ExecutionContext = system.dispatcher
 
   // start everything!
-  final def run(): Future[Unit] = {
+  final def run(): Future[T] = {
 
     //We need to set the system property before any logger instances
     //are in instantiated. If we don't do this, we will not log to
@@ -26,7 +26,7 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
       s"version=${EnvUtil.getVersion} jdkVersion=${EnvUtil.getJdkVersion}")
 
     //logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
-    val runner: Future[Unit] = start()
+    val runner: Future[T] = start()
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)
     }(scala.concurrent.ExecutionContext.Implicits.global)
@@ -35,6 +35,6 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
   }
 }
 
-trait BitcoinSServerRunner extends BitcoinSRunner {
+trait BitcoinSServerRunner[T] extends BitcoinSRunner[T] {
   protected def serverArgParser: ServerArgParser
 }

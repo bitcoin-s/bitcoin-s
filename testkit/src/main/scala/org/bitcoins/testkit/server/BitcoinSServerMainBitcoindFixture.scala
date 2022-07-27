@@ -30,20 +30,16 @@ trait BitcoinSServerMainBitcoindFixture
         bitcoind <- cachedBitcoindWithFundsF
         config = BitcoinSServerMainUtil.buildBitcoindBitcoinSAppConfig(bitcoind)
         server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
-        _ <- server.start()
-        //need to create account 2 to use FundWalletUtil.fundWalletWithBitcoind
-        wallet <- server.conf.walletConf.createHDWallet(bitcoind,
-                                                        bitcoind,
-                                                        bitcoind)
-        _ <- wallet.start()
-        account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+        walletHolder <- server.start()
+        account1 = WalletTestUtil.getHdAccount1(config.walletConf)
 
         //needed for fundWalletWithBitcoind
-        _ <- wallet.createNewAccount(hdAccount = account1,
-                                     kmParams = wallet.keyManager.kmParams)
+        _ <- walletHolder.createNewAccount(hdAccount = account1,
+                                           keyManagerParams =
+                                             walletHolder.keyManager.kmParams)
 
         _ <- FundWalletUtil.fundWalletWithBitcoind(
-          WalletWithBitcoindRpc(wallet, bitcoind))
+          WalletWithBitcoindRpc(walletHolder, bitcoind))
       } yield {
         ServerWithBitcoind(bitcoind, server)
       }
