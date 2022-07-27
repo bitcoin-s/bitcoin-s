@@ -940,4 +940,19 @@ class WalletHolder(implicit ec: ExecutionContext)
       contractId: ByteVector,
       oracleSig: OracleSignatures): Future[Option[Transaction]] =
     delegate(_.executeDLC(contractId, oracleSig))
+
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    delegate(_.findByOutPoints(outPoints))
+  }
+
+  override def findByTxId(
+      txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]] = {
+    delegate(_.findByTxId(txIdBE))
+  }
+
+  override def findOutputsBeingSpent(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.findOutputsBeingSpent(tx))
+  }
 }

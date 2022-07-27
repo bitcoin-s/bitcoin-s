@@ -65,9 +65,11 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         wallet
           .getUnconfirmedBalance()
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind * 2))
-      incomingTx <- wallet.incomingTxDAO.findByTxId(tx.txIdBE)
+      incomingTx <- wallet.findByTxId(tx.txIdBE)
       _ = assert(incomingTx.isDefined)
-      _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind * 2)
+      addrOutputOpt = incomingTx.get.transaction.outputs
+        .find(_.scriptPubKey == taggedAddr.scriptPubKey)
+      _ = assert(addrOutputOpt.get.value == valueFromBitcoind * 2)
 
       taggedUtxosPostAdd <- wallet.listUtxos(exampleTag)
       _ = assert(taggedUtxosPostAdd.length == 1)
@@ -81,11 +83,10 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       rawTxHelper <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
-          .fundRawTransactionInternal(destinations = Vector(output),
-                                      feeRate = feeRate,
-                                      fromAccount = account,
-                                      fromTagOpt = Some(exampleTag),
-                                      markAsReserved = true)
+          .fundRawTransaction(destinations = Vector(output),
+                              feeRate = feeRate,
+                              fromTagOpt = Some(exampleTag),
+                              markAsReserved = true)
       }
       signedTx = rawTxHelper.signedTx
       _ <- wallet.processTransaction(signedTx, None)

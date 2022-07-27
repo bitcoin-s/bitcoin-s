@@ -29,7 +29,7 @@ import org.bitcoins.core.wallet.utxo.{
   AddressTagType,
   TxoState
 }
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -432,6 +432,23 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def getWalletName(): Future[String]
 
   def getInfo(): Future[WalletInfo]
+
+  def findByOutPoints(
+      outPoints: Vector[TransactionOutPoint]): Future[Vector[SpendingInfoDb]]
+
+  def findByOutPoint(outPoint: TransactionOutPoint)(implicit
+      ec: ExecutionContext): Future[Option[SpendingInfoDb]] = {
+    findByOutPoints(Vector(outPoint)).map(_.headOption)
+  }
+
+  def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]]
+
+  def findByTxId(txId: DoubleSha256Digest): Future[Option[TransactionDb]] = {
+    findByTxId(txId.flip)
+  }
+
+  /** Finds all the outputs in our wallet being spent in the given transaction */
+  def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]]
 }
 
 case class WalletInfo(

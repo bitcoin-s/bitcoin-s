@@ -53,7 +53,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
-      txDbOpt <- wallet.transactionDAO.findByTxId(txId)
+      txDbOpt <- wallet.findByTxId(txId)
     } yield {
       assert(txDbOpt.isDefined)
       assert(txDbOpt.get.blockHashOpt.contains(hash))
@@ -160,16 +160,17 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
                                    Vector(output0, output1),
                                    UInt32.zero)
 
-      addrDb <- wallet.addressDAO.read(recvAddr).map(_.get)
-      coin = HDCoin(addrDb.purpose, addrDb.accountCoin)
+      addrDb <- wallet.getAddressInfo(recvAddr).map(_.get)
+      path = addrDb.path
+      coin = path.coin
       accountDb <- wallet.accountDAO
-        .read((coin, addrDb.accountIndex))
+        .read((coin, path.accountIdx))
         .map(_.get)
 
-      bip32Path = LegacyHDPath(addrDb.accountCoin,
-                               addrDb.accountIndex,
-                               addrDb.accountChain,
-                               addrDb.addressIndex)
+      bip32Path = LegacyHDPath(path.coinType,
+                               path.accountIdx,
+                               path.chainType,
+                               path.address.index)
 
       psbt = PSBT
         .fromUnsignedTx(unsignedTx)

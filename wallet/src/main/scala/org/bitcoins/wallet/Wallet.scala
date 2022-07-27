@@ -5,7 +5,11 @@ import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.db.{
+  AccountDb,
+  SpendingInfoDb,
+  TransactionDb
+}
 import org.bitcoins.core.api.wallet.{
   AnyHDWalletApi,
   BlockSyncState,
@@ -375,6 +379,21 @@ abstract class Wallet
         TxoState.pendingReceivedStates.contains(utxo.state))
       confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
+  }
+
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByOutPoints(outPoints)
+  }
+
+  override def findByTxId(
+      txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]] = {
+    transactionDAO.findByTxId(txIdBE)
+  }
+
+  override def findOutputsBeingSpent(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findOutputsBeingSpent(tx)
   }
 
   /** Enumerates all the TX outpoints in the wallet */
