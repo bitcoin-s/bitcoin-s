@@ -42,7 +42,7 @@ class MiningRpcTest extends BitcoindRpcTest {
     } yield assert(info.chain == "regtest")
   }
 
-  /* it should "be able to generate blocks to an address" in {
+  it should "be able to generate blocks to an address" in {
     for {
       (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress
@@ -60,7 +60,7 @@ class MiningRpcTest extends BitcoindRpcTest {
       }
       succeed
     }
-  } */
+  }
 
   it should "be able to generate blocks and then get their serialized headers" in {
     for {

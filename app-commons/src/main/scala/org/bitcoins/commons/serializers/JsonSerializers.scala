@@ -128,10 +128,13 @@ object JsonSerializers {
       (__ \ "addresses")
         .readNullable[Vector[BitcoinAddress]])(RpcScriptPubKeyPreV22)
 
-  implicit val rpcScriptPubKeyV22Reads: Reads[RpcScriptPubKeyV22] =
+  implicit val rpcScriptPubKeyPostV22Reads: Reads[RpcScriptPubKeyPostV22] =
     ((__ \ "asm").read[String] and
       (__ \ "hex").read[String] and
-      (__ \ "type").read[ScriptType])(RpcScriptPubKeyV22)
+      (__ \ "type").read[ScriptType] and
+      (__ \ "addresses")
+        .readNullable[Vector[BitcoinAddress]] and
+      (__ \ "address").readNullable[BitcoinAddress])(RpcScriptPubKeyPostV22)
 
   implicit val rpcTransactionOutputPreV22Reads: Reads[
     RpcTransactionOutputPreV22] =

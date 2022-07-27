@@ -444,7 +444,7 @@ case class GetTxOutResultV22(
     bestblock: DoubleSha256DigestBE,
     confirmations: Int,
     value: Bitcoins,
-    scriptPubKey: RpcScriptPubKeyV22,
+    scriptPubKey: RpcScriptPubKeyPostV22,
     coinbase: Boolean)
     extends GetTxOutResult
 
