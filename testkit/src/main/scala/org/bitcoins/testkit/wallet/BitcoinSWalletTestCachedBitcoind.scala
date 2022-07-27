@@ -69,16 +69,17 @@ trait BitcoinSWalletTestCachedBitcoind
       bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        Future.successful(bitcoind)
-      },
-      dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
-        createWalletWithBitcoind(bitcoind, bip39PasswordOpt)
-      },
-      wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
-        walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoind] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          Future.successful(bitcoind)
+        },
+        dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
+          createWalletWithBitcoind(bitcoind, bip39PasswordOpt)
+        },
+        wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
+          walletWithBitcoind
+      )
 
     makeDependentFixture[WalletWithBitcoind](
       builder,
@@ -202,18 +203,19 @@ trait BitcoinSWalletTestCachedBitcoinV19
       bip39PasswordOpt: Option[String],
       bitcoind: BitcoindV19RpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        Future.successful(bitcoind)
-      },
-      dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
-        BitcoinSWalletTest.createWalletWithBitcoindV19(bitcoind,
-                                                       bip39PasswordOpt)
-      },
-      wrap =
-        (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
-          walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoind] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          Future.successful(bitcoind)
+        },
+        dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
+          BitcoinSWalletTest.createWalletWithBitcoindV19(bitcoind,
+                                                         bip39PasswordOpt)
+        },
+        wrap =
+          (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
+            walletWithBitcoind
+      )
 
     makeDependentFixture[WalletWithBitcoind](
       builder,

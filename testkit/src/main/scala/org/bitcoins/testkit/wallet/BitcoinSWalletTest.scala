@@ -162,16 +162,17 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest))
-      },
-      dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
-        createWalletWithBitcoind(bitcoind)
-      },
-      wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
-        walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoind] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest))
+        },
+        dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
+          createWalletWithBitcoind(bitcoind)
+        },
+        wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
+          walletWithBitcoind
+      )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
@@ -180,19 +181,20 @@ trait BitcoinSWalletTest
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String])(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        BitcoinSFixture
-          .createBitcoindWithFunds(Some(BitcoindVersion.V19))
-          .map(_.asInstanceOf[BitcoindV19RpcClient])
-      },
-      dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
-        createWalletWithBitcoindV19(bitcoind, bip39PasswordOpt)
-      },
-      wrap =
-        (_: BitcoindV19RpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
-          walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoind] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          BitcoinSFixture
+            .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+            .map(_.asInstanceOf[BitcoindV19RpcClient])
+        },
+        dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
+          createWalletWithBitcoindV19(bitcoind, bip39PasswordOpt)
+        },
+        wrap = (
+            _: BitcoindV19RpcClient,
+            walletWithBitcoind: WalletWithBitcoindV19) => walletWithBitcoind
+      )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
@@ -575,7 +577,7 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
-  /** Funds a wallet with bitcoind, this method adds [[BitcoinSWalletTest.createNodeCallbacksForWallet()]]
+  /** Funds a wallet with bitcoind, this method adds [[CallbackUtil.createNeutrinoNodeCallbacksForWallet()]]
     * which processes filters/blocks that can be used to fund the wallet.
     *
     * It's important to note that this does NOT synchronize the wallet with a chain state.
