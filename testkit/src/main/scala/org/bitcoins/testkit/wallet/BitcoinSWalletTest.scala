@@ -98,10 +98,11 @@ trait BitcoinSWalletTest
       walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () =>
-        FundWalletUtil.createFundedWallet(nodeApi,
-                                          chainQueryApi,
-                                          bip39PasswordOpt,
-                                          Some(segwitWalletConf)),
+        FundWalletUtil.createFundedWallet(
+          nodeApi,
+          chainQueryApi,
+          bip39PasswordOpt,
+          Some(BaseWalletTest.segwitWalletConf)),
       destroy = { funded: FundedWallet =>
         destroyWallet(funded.wallet)
       }
@@ -131,12 +132,12 @@ trait BitcoinSWalletTest
 
   /** Fixture for an initialized wallet which produce legacy addresses */
   def withLegacyWallet(test: OneArgAsyncTest): FutureOutcome = {
-    withNewConfiguredWallet(legacyWalletConf)(test)
+    withNewConfiguredWallet(BaseWalletTest.legacyWalletConf)(test)
   }
 
   /** Fixture for an initialized wallet which produce segwit addresses */
   def withSegwitWallet(test: OneArgAsyncTest): FutureOutcome = {
-    withNewConfiguredWallet(segwitWalletConf)(test)
+    withNewConfiguredWallet(BaseWalletTest.segwitWalletConf)(test)
   }
 
   /** Fixture for a wallet with default configuration with no funds in it */

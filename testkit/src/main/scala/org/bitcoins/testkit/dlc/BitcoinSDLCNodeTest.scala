@@ -38,12 +38,12 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
               nodeApi,
               chainQueryApi,
               getBIP39PasswordOpt(),
-              Some(segwitWalletConf))(configA, system)
+              Some(BaseWalletTest.segwitWalletConf))(configA, system)
           walletB <- FundWalletUtil.createFundedDLCWallet(
             nodeApi,
             chainQueryApi,
             getBIP39PasswordOpt(),
-            Some(segwitWalletConf))(configB, system)
+            Some(BaseWalletTest.segwitWalletConf))(configB, system)
 
           nodeA = configA.dlcNodeConf.createDLCNode(walletA.wallet)
           nodeB = configB.dlcNodeConf.createDLCNode(walletB.wallet)

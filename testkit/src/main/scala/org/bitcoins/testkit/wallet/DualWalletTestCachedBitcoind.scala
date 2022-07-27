@@ -50,11 +50,11 @@ trait DualWalletTestCachedBitcoind
             FundWalletUtil.createFundedDLCWalletWithBitcoind(
               bitcoind,
               getBIP39PasswordOpt(),
-              Some(segwitWalletConf))
+              Some(BaseWalletTest.segwitWalletConf))
           walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind,
             getBIP39PasswordOpt(),
-            Some(segwitWalletConf))(config2, system)
+            Some(BaseWalletTest.segwitWalletConf))(config2, system)
         } yield (walletA, walletB, bitcoind),
       destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet, _) =>
         for {
@@ -77,7 +77,7 @@ trait DualWalletTestCachedBitcoind
           FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind,
             getBIP39PasswordOpt(),
-            Some(segwitWalletConf))
+            Some(BaseWalletTest.segwitWalletConf))
         }
         val walletBF = for {
           bitcoind <- bitcoindF
@@ -88,7 +88,7 @@ trait DualWalletTestCachedBitcoind
           walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind,
             getBIP39PasswordOpt(),
-            Some(segwitWalletConf))(config2, system)
+            Some(BaseWalletTest.segwitWalletConf))(config2, system)
         } yield { walletB }
 
         for {

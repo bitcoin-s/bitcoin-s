@@ -24,12 +24,6 @@ trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
     super[EmbeddedPg].afterAll()
   }
 
-  val legacyWalletConf: Config =
-    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
-
-  val segwitWalletConf: Config =
-    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
-
   /** Wallet config with data directory set to user temp directory */
   protected def getFreshConfig: BitcoinSAppConfig =
     BaseWalletTest.getFreshConfig(pgUrl, Vector.empty)
@@ -57,5 +51,11 @@ object BaseWalletTest {
       config: Vector[Config])(implicit system: ActorSystem): WalletAppConfig = {
     getFreshConfig(pgUrl, config).walletConf
   }
+
+  val legacyWalletConf: Config =
+    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
+
+  val segwitWalletConf: Config =
+    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
 
 }
