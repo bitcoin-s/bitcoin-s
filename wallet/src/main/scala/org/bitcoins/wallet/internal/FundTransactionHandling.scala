@@ -49,7 +49,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean): Future[Transaction] = {
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     fundRawTransaction(destinations = destinations,
                        feeRate = feeRate,
                        fromAccount = fromAccount,

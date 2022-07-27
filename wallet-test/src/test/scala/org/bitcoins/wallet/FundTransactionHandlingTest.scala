@@ -158,7 +158,7 @@ class FundTransactionHandlingTest
         fundRawTxHelper <- wallet.fundRawTransaction(Vector(newDestination),
                                                      feeRate,
                                                      account1DbOpt.get,
-  markAsReserved = true)
+                                                     markAsReserved = true)
       } yield {
         val fundedTx = fundRawTxHelper.unsignedTx
         assert(fundedTx.inputs.nonEmpty)
@@ -233,7 +233,8 @@ class FundTransactionHandlingTest
                                                      fromTagOpt = None,
                                                      markAsReserved = true)
 
-        spendingInfos <- wallet.findOutputsBeingSpent(fundRawTxHelper.unsignedTx)
+        spendingInfos <- wallet.findOutputsBeingSpent(
+          fundRawTxHelper.unsignedTx)
         reserved <- wallet.listUtxos(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))

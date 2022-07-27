@@ -207,7 +207,7 @@ class UTXOLifeCycleTest
                                         newTags = Vector.empty)
 
       updatedCoin <-
-        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+        wallet.findByScriptPubKey(addr.scriptPubKey)
       newTransactions <- wallet.listTransactions()
     } yield {
       assert(updatedCoin.forall(_.state == TxoState.BroadcastReceived))
@@ -234,7 +234,7 @@ class UTXOLifeCycleTest
                                         newTags = Vector.empty)
 
       updatedCoin <-
-        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+        wallet.findByScriptPubKey(addr.scriptPubKey)
       newTransactions <- wallet.listTransactions()
       _ = assert(updatedCoin.forall(_.state == TxoState.BroadcastReceived))
 
@@ -389,11 +389,10 @@ class UTXOLifeCycleTest
       for {
         oldTransactions <- wallet.listTransactions()
         account <- accountF
-        rawTxHelper <- wallet.fundRawTransactionInternal(
+        rawTxHelper <- wallet.fundRawTransaction(
           destinations = Vector(dummyOutput),
           feeRate = SatoshisPerVirtualByte.one,
           fromAccount = account,
-          fromTagOpt = None,
           markAsReserved = true
         )
         builderResult = rawTxHelper.txBuilderWithFinalizer.builder.result()

@@ -170,7 +170,8 @@ class WalletHolder(implicit ec: ExecutionContext)
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     delegate(
       _.fundRawTransaction(destinations, feeRate, fromAccount, markAsReserved))
   }
