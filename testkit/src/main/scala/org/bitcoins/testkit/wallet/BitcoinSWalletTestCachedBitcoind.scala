@@ -59,7 +59,7 @@ trait BitcoinSWalletTestCachedBitcoind
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind.wallet)
+        destroyWallet(walletWithBitcoind)
       })(test)
   }
 
@@ -83,7 +83,7 @@ trait BitcoinSWalletTestCachedBitcoind
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind.wallet)
+        destroyWallet(walletWithBitcoind)
       })(test)
   }
 
@@ -194,7 +194,7 @@ trait BitcoinSWalletTestCachedBitcoinV19
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       destroy = { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind.wallet)
+        destroyWallet(walletWithBitcoind)
       })(test)
   }
 
@@ -218,7 +218,7 @@ trait BitcoinSWalletTestCachedBitcoinV19
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind.wallet)
+        destroyWallet(walletWithBitcoind)
       })(test)
   }
 
