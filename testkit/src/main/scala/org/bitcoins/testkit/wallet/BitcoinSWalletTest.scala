@@ -63,14 +63,17 @@ trait BitcoinSWalletTest
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      implicit val newWalletConf =
-        getFreshWalletAppConfig.withOverrides(walletConfig)
       val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
+      val bip39PasswordConfig: Config =
+        BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
+
+      val mergedConfig = bip39PasswordConfig.withFallback(walletConfig)
+      implicit val newWalletConf =
+        getFreshWalletAppConfig.withOverrides(mergedConfig)
+
       makeDependentFixture(
-        build = createNewWallet(bip39PasswordOpt = bip39PasswordOpt,
-                                extraConfig = Some(walletConfig),
-                                nodeApi = nodeApi,
-                                chainQueryApi = chainQueryApi),
+        build =
+          createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
         destroy = destroyWallet
       )
   }
@@ -321,36 +324,18 @@ object BitcoinSWalletTest extends WalletLogger {
     * example use this to override the default data directory, network
     * or account type.
     */
-  private def createNewWallet(
-      bip39PasswordOpt: Option[String],
-      extraConfig: Option[Config],
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(implicit
-      config: WalletAppConfig,
-      ec: ExecutionContext): () => Future[Wallet] = { () =>
+  private def createNewWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+      implicit walletConfig: WalletAppConfig): () => Future[Wallet] = { () =>
     {
-      val walletConfig = extraConfig match {
-        case None    => config
-        case Some(c) => config.withOverrides(c)
-      }
-
-      val walletConfigWithBip39Pw = bip39PasswordOpt match {
-        case Some(pw) =>
-          val str = s"""bitcoin-s.keymanager.bip39password="$pw""""
-          val bip39Config = ConfigFactory.parseString(str)
-          walletConfig.withOverrides(bip39Config)
-        case None => walletConfig
-      }
-
+      import walletConfig.ec
       // we want to check we're not overwriting
       // any user data
       AppConfig.throwIfDefaultDatadir(walletConfig)
 
-      walletConfigWithBip39Pw.start().flatMap { _ =>
+      walletConfig.start().flatMap { _ =>
         val wallet =
-          Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(
-            walletConfigWithBip39Pw)
-        Wallet.initialize(wallet, bip39PasswordOpt)
+          Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(walletConfig)
+        Wallet.initialize(wallet, walletConfig.bip39PasswordOpt)
       }
     }
   }
@@ -403,19 +388,16 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
-      config: WalletAppConfig,
-      ec: ExecutionContext): Future[Wallet] = {
-    val newWalletConf = extraConfig match {
-      case None =>
-        config
-      case Some(walletConf) =>
-        config.withOverrides(walletConf)
-    }
-    createNewWallet(bip39PasswordOpt = bip39PasswordOpt,
-                    extraConfig = extraConfig,
-                    nodeApi = nodeApi,
-                    chainQueryApi = chainQueryApi)(newWalletConf,
-                                                   ec
+      config: WalletAppConfig): Future[Wallet] = {
+    val bip39PasswordConfig =
+      BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
+
+    val merged = bip39PasswordConfig.withFallback(
+      extraConfig.getOrElse(ConfigFactory.empty))
+
+    val newWalletConf = config.withOverrides(merged)
+    createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi)(
+      newWalletConf
     )() // get the standard config
   }
 
@@ -690,4 +672,13 @@ object BitcoinSWalletTest extends WalletLogger {
     }
   }
 
+  def buildBip39PasswordConfig(bip39PasswordOpt: Option[String]): Config = {
+    bip39PasswordOpt match {
+      case Some(bip39Password) =>
+        val str = s"""bitcoin-s.keymanager.bip39password=$bip39Password"""
+        ConfigFactory.parseString(str)
+      case None =>
+        ConfigFactory.empty
+    }
+  }
 }
