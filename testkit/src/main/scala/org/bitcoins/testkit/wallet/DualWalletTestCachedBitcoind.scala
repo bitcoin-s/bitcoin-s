@@ -17,9 +17,6 @@ trait DualWalletTestCachedBitcoind
     extends BitcoinSWalletTestCachedBitcoindNewest {
   import BitcoinSWalletTest._
 
-  override def getFreshConfig: BitcoinSAppConfig = {
-    BitcoinSWalletTest.getSegwitWalletConfigWithBip39PasswordOpt(pgUrl())
-  }
   implicit protected def config2: BitcoinSAppConfig = getFreshConfig
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {

@@ -19,10 +19,7 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
         s"""bitcoin-s.dlcnode.listen = "127.0.0.1:${RpcUtil.randomPort}" """)
       .withFallback(BaseWalletTest.segwitWalletConf)
 
-    val extraConfig = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
-      bip39PasswordOpt = getBIP39PasswordOpt(),
-      extraConfig = Some(dlcListenWithSegwitWallet))
-    BaseWalletTest.getFreshConfig(pgUrl, Vector(extraConfig))
+    BaseWalletTest.getFreshConfig(pgUrl, Vector(dlcListenWithSegwitWallet))
   }
 
   /** Creates two DLC nodes with wallets that are funded with some bitcoin,

@@ -8,8 +8,6 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoindRpc
@@ -19,10 +17,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
-
-  /** Wallet config with data directory set to user temp directory */
-  override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = WalletWithBitcoindRpc
 
