@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.wallet
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
@@ -26,8 +27,13 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     BitcoinSWalletTest.getSegwitWalletConfigWithBip39PasswordOpt(pgUrl())
   }
 
-  implicit protected def config2: BitcoinSAppConfig =
-    getFreshConfig
+  /** Enables external payout addresses which is needed for some unit tests */
+  implicit protected def config2: BitcoinSAppConfig = {
+    val externalPayoutConfig =
+      "bitcoin-s.wallet.allowExternalDLCAddresses = true"
+    val extraConfig = ConfigFactory.parseString(externalPayoutConfig)
+    getFreshConfig.withOverrides(Vector(extraConfig))
+  }
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {
     config2.walletConf
