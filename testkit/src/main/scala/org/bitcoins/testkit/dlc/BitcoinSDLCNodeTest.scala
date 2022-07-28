@@ -14,9 +14,15 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig = {
-    val dlcListen = ConfigFactory.parseString(
-      s"""bitcoin-s.dlcnode.listen = "127.0.0.1:${RpcUtil.randomPort}" """)
-    BaseWalletTest.getFreshConfig(pgUrl, Vector(dlcListen))
+    val dlcListenWithSegwitWallet = ConfigFactory
+      .parseString(
+        s"""bitcoin-s.dlcnode.listen = "127.0.0.1:${RpcUtil.randomPort}" """)
+      .withFallback(BaseWalletTest.segwitWalletConf)
+
+    val extraConfig = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
+      bip39PasswordOpt = getBIP39PasswordOpt(),
+      extraConfig = Some(dlcListenWithSegwitWallet))
+    BaseWalletTest.getFreshConfig(pgUrl, Vector(extraConfig))
   }
 
   /** Creates two DLC nodes with wallets that are funded with some bitcoin,
@@ -34,16 +40,12 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
 
         for {
           walletA <-
-            FundWalletUtil.createFundedDLCWallet(
-              nodeApi,
-              chainQueryApi,
-              getBIP39PasswordOpt(),
-              Some(BaseWalletTest.segwitWalletConf))(configA, system)
+            FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)(
+              configA,
+              system)
           walletB <- FundWalletUtil.createFundedDLCWallet(
             nodeApi,
-            chainQueryApi,
-            getBIP39PasswordOpt(),
-            Some(BaseWalletTest.segwitWalletConf))(configB, system)
+            chainQueryApi)(configB, system)
 
           nodeA = configA.dlcNodeConf.createDLCNode(walletA.wallet)
           nodeB = configB.dlcNodeConf.createDLCNode(walletB.wallet)

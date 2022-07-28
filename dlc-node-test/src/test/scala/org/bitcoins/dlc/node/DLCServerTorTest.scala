@@ -32,7 +32,7 @@ class DLCServerTorTest
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     if (TorUtil.torEnabled) {
-      withFundedDLCWallet(test, getBIP39PasswordOpt())
+      withFundedDLCWallet(test)
     } else FutureOutcome.succeeded
   }
 

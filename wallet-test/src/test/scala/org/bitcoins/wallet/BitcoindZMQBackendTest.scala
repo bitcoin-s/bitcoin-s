@@ -44,7 +44,7 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
     for {
       // Setup wallet
       tmpWallet <-
-        BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind, None)
+        BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind)
       wallet =
         BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
           bitcoind = bitcoind,

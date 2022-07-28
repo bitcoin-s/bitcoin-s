@@ -4,12 +4,13 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.models.ContractOraclePair
+import org.bitcoins.core.protocol.dlc.models.{
+  ContractOraclePair,
+  SingleContractInfo
+}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.core.protocol.dlc.models.SingleContractInfo
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -20,8 +21,13 @@ import scala.concurrent.Future
 trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   import BitcoinSWalletTest._
 
+  /** Wallet config with data directory set to user temp directory */
+  override protected def getFreshConfig: BitcoinSAppConfig = {
+    BitcoinSWalletTest.getSegwitWalletConfigWithBip39PasswordOpt(pgUrl())
+  }
+
   implicit protected def config2: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig()
+    getFreshConfig
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {
     config2.walletConf
@@ -48,16 +54,10 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       build = () =>
         for {
           walletA <-
-            FundWalletUtil.createFundedDLCWallet(
-              nodeApi,
-              chainQueryApi,
-              getBIP39PasswordOpt(),
-              Some(BaseWalletTest.segwitWalletConf))
+            FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)
           walletB <- FundWalletUtil.createFundedDLCWallet(
             nodeApi,
-            chainQueryApi,
-            getBIP39PasswordOpt(),
-            Some(BaseWalletTest.segwitWalletConf))(config2, system)
+            chainQueryApi)(config2, system)
         } yield (walletA, walletB),
       destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet) =>
         for {
@@ -87,16 +87,12 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi): Future[
     (FundedDLCWallet, FundedDLCWallet)] = {
-    val walletAF = FundWalletUtil.createFundedDLCWallet(
-      nodeApi = nodeApi,
-      chainQueryApi = chainQueryApi,
-      bip39PasswordOpt = getBIP39PasswordOpt(),
-      extraConfig = Some(BaseWalletTest.segwitWalletConf))
-    val walletBF = FundWalletUtil.createFundedDLCWallet(
-      nodeApi,
-      chainQueryApi,
-      getBIP39PasswordOpt(),
-      Some(BaseWalletTest.segwitWalletConf))(config2, system)
+    val walletAF = FundWalletUtil.createFundedDLCWallet(nodeApi = nodeApi,
+                                                        chainQueryApi =
+                                                          chainQueryApi)
+    val walletBF = FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)(
+      config2,
+      system)
     for {
       walletA <- walletAF
       walletB <- walletBF
@@ -152,14 +148,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       bitcoind: BitcoindRpcClient): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     for {
-      walletA <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
-        bitcoind,
-        getBIP39PasswordOpt(),
-        Some(BaseWalletTest.segwitWalletConf))
+      walletA <- FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
       walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
-        bitcoind = bitcoind,
-        bip39PasswordOpt = getBIP39PasswordOpt(),
-        extraConfig = Some(BaseWalletTest.segwitWalletConf))(config2, system)
+        bitcoind = bitcoind)(config2, system)
       amt = expectedDefaultAmt / Satoshis(2)
       contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
       (dlcWalletA, dlcWalletB) <-
@@ -173,16 +164,12 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       chainQueryApi: ChainQueryApi): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     for {
-      walletA <- FundWalletUtil.createFundedDLCWallet(
-        nodeApi = nodeApi,
-        chainQueryApi = chainQueryApi,
-        bip39PasswordOpt = getBIP39PasswordOpt(),
-        extraConfig = Some(BaseWalletTest.segwitWalletConf))
+      walletA <- FundWalletUtil.createFundedDLCWallet(nodeApi = nodeApi,
+                                                      chainQueryApi =
+                                                        chainQueryApi)
       walletB <- FundWalletUtil.createFundedDLCWallet(
         nodeApi = nodeApi,
-        chainQueryApi = chainQueryApi,
-        bip39PasswordOpt = getBIP39PasswordOpt(),
-        extraConfig = Some(BaseWalletTest.segwitWalletConf))(config2, system)
+        chainQueryApi = chainQueryApi)(config2, system)
       amt = expectedDefaultAmt / Satoshis(2)
       contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
       (dlcWalletA, dlcWalletB) <-

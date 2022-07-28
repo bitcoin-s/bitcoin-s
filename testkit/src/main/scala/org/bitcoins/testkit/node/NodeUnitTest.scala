@@ -141,19 +141,22 @@ trait NodeUnitTest extends BaseNodeTest {
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],
+      appConfig: BitcoinSAppConfig,
       versionOpt: Option[BitcoindVersion] = None,
       walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
-      system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
+      system: ActorSystem): FutureOutcome = {
+    val bip39PwConfig =
+      BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
+    implicit val appConfigBip39Pw =
+      appConfig.withOverrides(Vector(bip39PwConfig))
     makeDependentFixture(
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletBitcoind(
-            bip39PasswordOpt = bip39PasswordOpt,
             versionOpt = versionOpt,
-            walletCallbacks = walletCallbacks)(system, appConfig),
+            walletCallbacks = walletCallbacks)(system, appConfigBip39Pw),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
-        _: NodeFundedWalletBitcoind)(system, appConfig)
+        _: NodeFundedWalletBitcoind)(system, appConfigBip39Pw)
     )(test)
   }
 }
@@ -289,7 +292,6 @@ object NodeUnitTest extends P2PLogger {
 
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   def createNeutrinoNodeFundedWalletBitcoind(
-      bip39PasswordOpt: Option[String],
       versionOpt: Option[BitcoindVersion],
       walletCallbacks: WalletCallbacks)(implicit
       system: ActorSystem,
@@ -306,7 +308,6 @@ object NodeUnitTest extends P2PLogger {
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
         chainQueryApi = node,
-        bip39PasswordOpt = bip39PasswordOpt,
         walletCallbacks = walletCallbacks)
       startedNode <- node.start()
       syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
@@ -318,13 +319,11 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
                                        wallet = fundedWallet.wallet,
-                                       bitcoindRpc = fundedWallet.bitcoind,
-                                       bip39PasswordOpt = bip39PasswordOpt)
+                                       bitcoindRpc = fundedWallet.bitcoind)
     }
   }
 
   def createNeutrinoNodeFundedWalletFromBitcoind(
-      bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient,
       walletCallbacks: WalletCallbacks)(implicit
       system: ActorSystem,
@@ -342,7 +341,6 @@ object NodeUnitTest extends P2PLogger {
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
         chainQueryApi = bitcoind,
-        bip39PasswordOpt = bip39PasswordOpt,
         walletCallbacks = walletCallbacks)
 
       startedNode <- node.start()
@@ -355,8 +353,7 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
                                        wallet = fundedWallet.wallet,
-                                       bitcoindRpc = fundedWallet.bitcoind,
-                                       bip39PasswordOpt = bip39PasswordOpt)
+                                       bitcoindRpc = fundedWallet.bitcoind)
     }
   }
 

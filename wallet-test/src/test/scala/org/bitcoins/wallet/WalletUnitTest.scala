@@ -19,12 +19,11 @@ import java.nio.file.Files
 import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
-  private val bip39PasswordOpt: Option[String] = getBIP39PasswordOpt()
 
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWallet(test, bip39PasswordOpt)(getFreshWalletAppConfig)
+    withNewWallet(test)(getFreshWalletAppConfig)
 
   behavior of "Wallet - unit test"
 
@@ -149,6 +148,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
     wallet: Wallet =>
+      val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       val twiceF = Wallet
         .initialize(wallet, bip39PasswordOpt)
         .flatMap { _ =>
@@ -161,6 +161,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to detect an incompatible key manager with a wallet" in {
     wallet: Wallet =>
+      val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       recoverToSucceededIf[RuntimeException] {
         Wallet
           .initialize(wallet, bip39PasswordOpt)
@@ -190,7 +191,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       recoverToSucceededIf[IllegalArgumentException] {
         walletDiffKeyManagerF.flatMap { walletDiffKeyManager =>
-          Wallet.initialize(walletDiffKeyManager, bip39PasswordOpt)
+          Wallet.initialize(walletDiffKeyManager, None)
         }
       }
   }

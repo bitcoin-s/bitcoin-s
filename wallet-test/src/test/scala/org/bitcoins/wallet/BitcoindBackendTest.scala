@@ -205,10 +205,9 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
     implicit val walletAppConfig: WalletAppConfig = params.walletAppConfig
 
     for {
-      tmpWallet <- BitcoinSWalletTest.createDefaultWallet(
-        nodeApi = bitcoind,
-        chainQueryApi = bitcoind,
-        bip39PasswordOpt = walletAppConfig.bip39PasswordOpt)
+      tmpWallet <- BitcoinSWalletTest.createDefaultWallet(nodeApi = bitcoind,
+                                                          chainQueryApi =
+                                                            bitcoind)
     } yield {
       BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
                                                                tmpWallet,
