@@ -336,17 +336,21 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       //and any relevant outputs that match scripts in our wallet
       //we can just return now
       Future.successful(Vector.empty)
-    } else if (spendingInfoDbs.isEmpty) {
-      processNewReceivedTx(transaction,
-                           blockHashOpt,
-                           newTags,
-                           relevantReceivedOutputs)
-        .map(_.toVector)
     } else {
-      val processedVec = spendingInfoDbs.map { txo =>
-        processExistingReceivedTxo(transaction, blockHashOpt, txo)
+      val newOutputs = relevantReceivedOutputs.filterNot { output =>
+        val outPoint =
+          TransactionOutPoint(transaction.txId, UInt32(output.index))
+        spendingInfoDbs.exists(_.outPoint == outPoint)
       }
-      Future.sequence(processedVec)
+      if (newOutputs.nonEmpty) {
+        processNewReceivedTx(transaction, blockHashOpt, newTags, newOutputs)
+          .map(_.toVector)
+      } else {
+        val processedVec = spendingInfoDbs.map { txo =>
+          processExistingReceivedTxo(transaction, blockHashOpt, txo)
+        }
+        Future.sequence(processedVec)
+      }
     }
   }
 
