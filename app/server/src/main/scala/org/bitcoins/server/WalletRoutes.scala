@@ -35,8 +35,8 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(implicit
-                                                        system: ActorSystem,
-                                                        walletConf: WalletAppConfig)
+    system: ActorSystem,
+    walletConf: WalletAppConfig)
     extends ServerRoute
     with Logging {
   import system.dispatcher

@@ -604,8 +604,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def handleDuplicateSpendingInfoDb(
-                                             wallet: DLCNeutrinoHDWalletApi,
-                                             walletConfig: WalletAppConfig): Future[Unit] = {
+      wallet: DLCNeutrinoHDWalletApi,
+      walletConfig: WalletAppConfig): Future[Unit] = {
     val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
     for {
       rescanNeeded <- spendingInfoDAO.hasDuplicates()

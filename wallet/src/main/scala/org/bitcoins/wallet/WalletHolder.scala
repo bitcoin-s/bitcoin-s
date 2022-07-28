@@ -79,7 +79,8 @@ class WalletHolder(implicit ec: ExecutionContext)
     walletOpt.isDefined
   }
 
-  def replaceWallet(newWallet: DLCNeutrinoHDWalletApi): Future[DLCNeutrinoHDWalletApi] =
+  def replaceWallet(
+      newWallet: DLCNeutrinoHDWalletApi): Future[DLCNeutrinoHDWalletApi] =
     synchronized {
       val oldWalletOpt = walletOpt
       walletOpt = None
@@ -103,7 +104,8 @@ class WalletHolder(implicit ec: ExecutionContext)
       res
     }
 
-  private def delegate[T]: (DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
+  private def delegate[T]: (
+      DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
     Future(wallet).flatMap[T](_)
   }
 

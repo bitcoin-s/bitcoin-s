@@ -95,8 +95,8 @@ object CallbackUtil extends Logging {
     Future.successful(streamManager)
   }
 
-  def createBitcoindNodeCallbacksForWallet(wallet: DLCNeutrinoHDWalletApi)(implicit
-                                                                           system: ActorSystem): Future[NodeCallbackStreamManager] = {
+  def createBitcoindNodeCallbacksForWallet(wallet: DLCNeutrinoHDWalletApi)(
+      implicit system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
