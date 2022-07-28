@@ -1903,12 +1903,6 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = command match {
-      case ExecuteDLC =>
-        RequestParam("executedlc")
-      case ExecuteDLCRefund =>
-        RequestParam("executedlcrefund")
-      case SendToAddress =>
-        RequestParam("sendtoaddress")
       case GetInfo =>
         RequestParam("getinfo")
       case GetMedianTimePast =>
@@ -2437,6 +2431,8 @@ object CliCommand {
     *    }
     *  }
     */
+
+
   case class AddDLCOffer(
       offer: LnMessage[DLCOfferTLV],
       peer: String,

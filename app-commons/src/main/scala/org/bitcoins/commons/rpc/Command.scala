@@ -43,11 +43,11 @@ trait AppServerCliCommand extends CliCommand {
 trait Broadcastable extends CliCommand {
   override def defaultPort: Int = 9999
 }
-trait SignDLCCliCommand extends AppServerCliCommand {}
+trait SignDLCCliCommand extends AppServerCliCommand
 
-trait AddDLCSigsCliCommand extends AppServerCliCommand {}
+trait AddDLCSigsCliCommand extends AppServerCliCommand
 
-trait AcceptDLCCliCommand extends AppServerCliCommand {}
+trait AcceptDLCCliCommand extends AppServerCliCommand
 
 trait SendCliCommand extends AppServerCliCommand {
   def destination: BitcoinAddress
@@ -69,9 +69,7 @@ case class GetNewAddress(labelOpt: Option[AddressLabelTag])
     with AppServerCliCommand
 
 object GetNewAddress
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetNewAddress] = {
     if (jsArr.value.length == 1) {
@@ -98,9 +96,7 @@ case class LockUnspent(
     with AppServerCliCommand
 
 object LockUnspent
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[LockUnspent] = {
     jsArr.arr.toList match {
@@ -124,9 +120,7 @@ case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
     with AppServerCliCommand
 
 object LabelAddress
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[LabelAddress] = {
     jsArr.arr.toList match {
@@ -150,9 +144,7 @@ case class GetAddressTags(address: BitcoinAddress)
     with AppServerCliCommand
 
 object GetAddressTags
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetAddressTags] = {
     jsArr.arr.toList match {
@@ -175,9 +167,7 @@ case class GetAddressLabel(address: BitcoinAddress)
     with AppServerCliCommand
 
 object GetAddressLabel
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetAddressLabel] = {
     jsArr.arr.toList match {
@@ -200,9 +190,7 @@ case class DropAddressLabel(address: BitcoinAddress, label: String)
     with AppServerCliCommand
 
 object DropAddressLabel
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsonArr: ujson.Arr): Try[DropAddressLabel] = {
     jsonArr.arr.toList match {
@@ -224,9 +212,7 @@ case class DropAddressLabels(address: BitcoinAddress)
     with AppServerCliCommand
 
 object DropAddressLabels
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabels] = {
     jsArr.arr.toList match {
@@ -249,9 +235,7 @@ case class GetBalance(isSats: Boolean)
     with AppServerCliCommand
 
 object GetBalance
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetBalance] = {
     require(jsArr.arr.size == 1,
@@ -266,9 +250,7 @@ case class GetConfirmedBalance(isSats: Boolean)
     with AppServerCliCommand
 
 object GetConfirmedBalance
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetConfirmedBalance] = {
     require(jsArr.arr.size == 1,
@@ -283,9 +265,7 @@ case class GetUnconfirmedBalance(isSats: Boolean)
     with AppServerCliCommand
 
 object GetUnconfirmedBalance
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetUnconfirmedBalance] = {
     require(jsArr.arr.size == 1,
@@ -300,9 +280,7 @@ case class GetAddressInfo(address: BitcoinAddress)
     with AppServerCliCommand
 
 object GetAddressInfo
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetAddressInfo] = {
     require(jsArr.arr.size == 1,
@@ -319,9 +297,7 @@ case class SendRawTransaction(tx: Transaction)
     with AppServerCliCommand
 
 object SendRawTransaction
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SendRawTransaction] = {
     require(jsArr.arr.size == 1,
@@ -338,9 +314,7 @@ case class KeyManagerPassphraseChange(
     with AppServerCliCommand
 
 object KeyManagerPassphraseChange
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[KeyManagerPassphraseChange] = {
     jsArr.arr.toList match {
@@ -368,9 +342,7 @@ case class KeyManagerPassphraseSet(password: AesPassword)
     with AppServerCliCommand
 
 object KeyManagerPassphraseSet
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[KeyManagerPassphraseSet] = {
     jsArr.arr.toList match {
@@ -397,9 +369,7 @@ case class ExportSeed(
     with AppServerCliCommand
 
 object ExportSeed
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExportSeed] = Try {
     val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
@@ -414,9 +384,7 @@ case class MarkSeedAsBackedUp(
     with AppServerCliCommand
 
 object MarkSeedAsBackedUp
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[MarkSeedAsBackedUp] = Try {
     val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
@@ -431,9 +399,7 @@ case class GetSeedBackupTime(
     with AppServerCliCommand
 
 object GetSeedBackupTime
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetSeedBackupTime] = Try {
     val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
@@ -449,9 +415,7 @@ case class ImportSeed(
     with AppServerCliCommand
 
 object ImportSeed
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ImportSeed] = {
     jsArr.arr.toList match {
@@ -490,9 +454,7 @@ case class ImportXprv(
     with AppServerCliCommand
 
 object ImportXprv
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ImportXprv] = {
     jsArr.arr.toList match {
@@ -531,9 +493,7 @@ case class CreateMultisig(
     with AppServerCliCommand
 
 object CreateMultisig
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[CreateMultisig] = {
     jsArr.arr.toList match {
@@ -571,9 +531,7 @@ case class CombinePSBTs(psbts: Seq[PSBT])
     with AppServerCliCommand
 
 object CombinePSBTs
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[CombinePSBTs] = {
     require(jsArr.arr.size == 1,
@@ -588,9 +546,7 @@ case class JoinPSBTs(psbts: Seq[PSBT])
     with AppServerCliCommand
 
 object JoinPSBTs
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[JoinPSBTs] = {
     CombinePSBTs
@@ -602,9 +558,7 @@ object JoinPSBTs
 case class FinalizePSBT(psbt: PSBT) extends CliCommand with AppServerCliCommand
 
 object FinalizePSBT
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[FinalizePSBT] = {
     require(jsArr.arr.size == 1,
@@ -619,9 +573,7 @@ case class ExtractFromPSBT(psbt: PSBT)
     with AppServerCliCommand
 
 object ExtractFromPSBT
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExtractFromPSBT] = {
     require(jsArr.arr.size == 1,
@@ -636,9 +588,7 @@ case class ConvertToPSBT(tx: Transaction)
     with AppServerCliCommand
 
 object ConvertToPSBT
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ConvertToPSBT] = {
     require(jsArr.arr.size == 1,
@@ -653,9 +603,7 @@ case class GetBlockHeader(hash: DoubleSha256DigestBE)
     with AppServerCliCommand
 
 object GetBlockHeader
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetBlockHeader] =
     Try {
@@ -671,9 +619,7 @@ case class DecodeRawTransaction(tx: Transaction)
     with AppServerCliCommand
 
 object DecodeRawTransaction
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DecodeRawTransaction] = {
     jsArr.arr.toList match {
@@ -692,9 +638,7 @@ object DecodeRawTransaction
 case class DecodePSBT(psbt: PSBT) extends CliCommand with AppServerCliCommand
 
 object DecodePSBT
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DecodePSBT] = {
     jsArr.arr.toList match {
@@ -714,9 +658,7 @@ object DecodePSBT
 case class AnalyzePSBT(psbt: PSBT) extends CliCommand with AppServerCliCommand
 
 object AnalyzePSBT
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AnalyzePSBT] = {
     jsArr.arr.toList match {
@@ -742,9 +684,7 @@ case class Rescan(
     with AppServerCliCommand
 
 object Rescan
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[Rescan] = {
 
@@ -805,9 +745,7 @@ case class GetTransaction(txId: DoubleSha256DigestBE)
     with AppServerCliCommand
 
 object GetTransaction
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetTransaction] = {
     require(jsArr.arr.size == 1,
@@ -827,9 +765,7 @@ case class SendToAddress(
     with SendCliCommand
 
 object SendToAddress
-    extends CliCommand
-    with Broadcastable
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   /// TODO do this in a more coherent fashion
   // custom akka-http directive?
@@ -863,10 +799,8 @@ case class GetDLCs(contactId: Option[InetSocketAddress])
     extends CliCommand
     with AppServerCliCommand
 
-object GetDLCs
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+case object GetDLCs
+    extends CliCommand with AppServerCliCommand with ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetDLCs] = {
     jsArr.arr.toList match {
@@ -890,9 +824,7 @@ case class GetDLC(dlcId: Sha256Digest)
     with AppServerCliCommand
 
 object GetDLC
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetDLC] = {
     jsArr.arr.toList match {
@@ -924,9 +856,7 @@ case class CreateDLCOffer(
     with AppServerCliCommand
 
 object CreateDLCOffer
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
@@ -1014,9 +944,7 @@ case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
     with AppServerCliCommand
 
 object DecodeContractInfo
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DecodeContractInfo] = {
     jsArr.arr.toList match {
@@ -1041,9 +969,7 @@ case class DecodeOffer(offer: DLCOfferTLV)
     with AppServerCliCommand
 
 object DecodeOffer
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DecodeOffer] = {
     jsArr.arr.toList match {
@@ -1076,9 +1002,7 @@ case class DecodeAnnouncement(announcement: OracleAnnouncementTLV)
     with AppServerCliCommand
 
 object DecodeAnnouncement
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DecodeAnnouncement] = {
     jsArr.arr.toList match {
@@ -1107,9 +1031,7 @@ case class AcceptDLCOffer(
     with AcceptDLCCliCommand
 
 object AcceptDLCOffer
-    extends CliCommand
-    with AcceptDLCCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
     def parseParameters(
@@ -1161,9 +1083,7 @@ case class AcceptDLC(
     with AcceptDLCCliCommand
 
 object AcceptDLC
-    extends CliCommand
-    with AcceptDLCCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLC] = {
     def parseParameters(
@@ -1216,7 +1136,7 @@ case class SignDLC(accept: LnMessage[DLCAcceptTLV])
     extends CliCommand
     with SignDLCCliCommand
 
-object SignDLC extends CliCommand with SignDLCCliCommand with ServerJsonModels {
+object SignDLC extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {
     jsArr.arr.toList match {
@@ -1240,9 +1160,7 @@ case class AddDLCSigs(sigs: LnMessage[DLCSignTLV])
     with AddDLCSigsCliCommand
 
 object AddDLCSigs
-    extends CliCommand
-    with AddDLCSigsCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AddDLCSigs] = {
     jsArr.arr.toList match {
@@ -1266,9 +1184,7 @@ case class GetDLCFundingTx(contractId: ByteVector)
     with AppServerCliCommand
 
 object GetDLCFundingTx
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetDLCFundingTx] = {
     jsArr.arr.toList match {
@@ -1292,9 +1208,7 @@ case class BroadcastDLCFundingTx(contractId: ByteVector)
     with AppServerCliCommand
 
 object BroadcastDLCFundingTx
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[BroadcastDLCFundingTx] = {
     jsArr.arr.toList match {
@@ -1320,7 +1234,7 @@ case class ExecuteDLC(
     extends CliCommand
     with Broadcastable
 
-object ExecuteDLC extends CliCommand with Broadcastable with ServerJsonModels {
+object ExecuteDLC extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLC] = {
     jsArr.arr.toList match {
@@ -1349,9 +1263,7 @@ case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
     with Broadcastable
 
 object ExecuteDLCRefund
-    extends CliCommand
-    with Broadcastable
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRefund] = {
     jsArr.arr.toList match {
@@ -1491,9 +1403,7 @@ case class SignPSBT(psbt: PSBT)
     with ServerJsonModels
 
 object SignPSBT
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[SignPSBT] = {
     require(jsArr.arr.size == 1,
@@ -1512,9 +1422,7 @@ case class OpReturnCommit(
     with ServerJsonModels
 
 object OpReturnCommit
-    extends CliCommand
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[OpReturnCommit] = {
     jsArr.arr.toList match {
@@ -1552,9 +1460,7 @@ case class BumpFeeRBF(
     extends AppServerCliCommand
 
 object BumpFee
-    extends CommandRpc
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[BumpFee] = {
     jsArr.arr.toList match {
@@ -1590,9 +1496,7 @@ case class CreateContractInfo(
 }
 
 object CreateContractInfo
-    extends CommandRpc
-    with AppServerCliCommand
-    with ServerJsonModels {
+    extends ServerJsonModels {
 
   lazy val empty: CreateContractInfo = {
     CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
@@ -1623,15 +1527,6 @@ object CreateContractInfo
   }
 }
 
-/** object CreateContractInfo {
-  *
-  *  lazy val empty: CreateContractInfo = {
-  *    CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
-  *      totalCollateral = Satoshis.zero,
-  *      contractDescriptorTLV = ContractDescriptorTLV)
-  *  }
-  * }
-  */
 
 case class ContactAdd(alias: String, address: InetSocketAddress, memo: String)
     extends CommandRpc
