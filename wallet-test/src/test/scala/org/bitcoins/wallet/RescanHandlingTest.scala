@@ -74,7 +74,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       }
   }
 
-  val DEFAULT_ADDR_BATCH_SIZE = 10
+  val DEFAULT_ADDR_BATCH_SIZE = 1
   it must "be able to discover funds that belong to the wallet using WalletApi.rescanNeutrinoWallet" in {
     fixture: WalletWithBitcoindRpc =>
       val WalletWithBitcoindRpc(wallet, _) = fixture

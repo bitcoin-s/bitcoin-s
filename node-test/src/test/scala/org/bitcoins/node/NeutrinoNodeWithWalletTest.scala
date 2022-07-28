@@ -9,12 +9,9 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.{
-  NeutrinoNodeFundedWalletBitcoind,
-  NodeTestUtil,
-  NodeTestWithCachedBitcoindNewest
-}
+import org.bitcoins.testkit.node.{NeutrinoNodeFundedWalletBitcoind, NodeTestUtil, NodeTestWithCachedBitcoindNewest}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.models.{AddressDAO, ScriptPubKeyDAO}
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -159,21 +156,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   it must "rescan information about received payments" in { param =>
     val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
-    def condition(): Future[Boolean] = {
-      for {
-        rescan <- wallet.isRescanning()
-        balance <- wallet.getBalance()
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listDefaultAccountUtxos()
-        spks = utxos
-          .map(_.output.scriptPubKey)
-      } yield {
-        !rescan &&
-        balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
-        utxos.size == 4 &&
-        spks.forall(spk => addresses.exists(_.scriptPubKey == spk))
-      }
-    }
+    implicit val wc = wallet.walletConfig
 
     for {
       addresses <- wallet.listAddresses()
@@ -196,17 +179,100 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
+      preRescanAddresses <- wallet.listAddresses().map(_.toSet)
+      preRescanUtxos <- wallet.listDefaultAccountUtxos().map(_.toSet)
+
+      // rescan a non empty wallet
       _ <- wallet.clearAllUtxos()
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()
+      spkDao = ScriptPubKeyDAO()
+      spkDbs <- spkDao.findAll()
+      _ = assert(spkDbs.nonEmpty)
       _ = assert(addresses.nonEmpty)
       _ = assert(utxos.isEmpty)
 
       rescan <- wallet.isRescanning()
       _ = assert(!rescan)
-      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
+      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 10)
 
-      _ <- AsyncUtil.awaitConditionF(condition)
+      _ <- AsyncUtil.awaitConditionF(() => wallet.isRescanning().map(!_))
+      balance <- wallet.getBalance()
+      addresses <- wallet.listAddresses()
+      utxos <- wallet.listDefaultAccountUtxos()
+      spks = utxos.map(_.output.scriptPubKey)
+      _ = assert(
+        addresses.map(_.address.toString).sorted == preRescanAddresses.toVector
+          .map(_.address.toString)
+          .sorted)
+      _ = assert(
+        utxos.map(_.outPoint.toString).sorted == preRescanUtxos.toVector
+          .map(_.outPoint.toString)
+          .sorted)
+      _ = assert(balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount)
+      _ = assert(addresses.size == 7)
+      _ = assert(utxos.size == 4)
+      _ = assert(spks.forall(spk => addresses.exists(_.scriptPubKey == spk)))
+
+      // rescan an empty wallet with the batch size > than number of addresses
+      _ <- wallet.clearAllUtxos()
+      addressDao = AddressDAO()
+      addresses <- wallet.listAddresses()
+      _ <- Future.sequence(addresses.map(addressDao.delete))
+      utxos <- wallet.listDefaultAccountUtxos()
+      addresses <- wallet.listAddresses()
+      spkDbs <- spkDao.findAll()
+      _ = assert(spkDbs.isEmpty)
+      _ = assert(addresses.isEmpty)
+      _ = assert(utxos.isEmpty)
+
+      rescan <- wallet.isRescanning()
+      _ = assert(!rescan)
+      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 10)
+
+      _ <- AsyncUtil.awaitConditionF(() => wallet.isRescanning().map(!_))
+      balance <- wallet.getBalance()
+      addresses <- wallet.listAddresses()
+      utxos <- wallet.listDefaultAccountUtxos()
+      spks = utxos.map(_.output.scriptPubKey)
+      _ = assert(
+        utxos.map(_.outPoint.toString).sorted == preRescanUtxos.toVector
+          .map(_.outPoint.toString)
+          .sorted)
+      _ = assert(balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount)
+      _ = assert(addresses.size == 220)
+      _ = assert(utxos.size == 4)
+      _ = assert(spks.forall(spk => addresses.exists(_.scriptPubKey == spk)))
+
+      // rescan an empty wallet with the batch size < than number of addresses
+      _ <- wallet.clearAllUtxos()
+      addresses <- wallet.listAddresses()
+      _ <- Future.sequence(addresses.map(addressDao.delete))
+      utxos <- wallet.listDefaultAccountUtxos()
+      addresses <- wallet.listAddresses()
+      spkDbs <- spkDao.findAll()
+      _ = assert(spkDbs.isEmpty)
+      _ = assert(addresses.isEmpty)
+      _ = assert(utxos.isEmpty)
+
+      rescan <- wallet.isRescanning()
+      _ = assert(!rescan)
+      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 1)
+
+      _ <- AsyncUtil.awaitConditionF(() => wallet.isRescanning().map(!_))
+      balance <- wallet.getBalance()
+      addresses <- wallet.listAddresses()
+      utxos <- wallet.listDefaultAccountUtxos()
+      spks = utxos.map(_.output.scriptPubKey)
+      _ = assert(
+        utxos.map(_.outPoint.toString).sorted == preRescanUtxos.toVector
+          .map(_.outPoint.toString)
+          .sorted)
+      _ = assert(utxos.size == 4)
+      _ = assert(addresses.size == 208)
+      _ = assert(balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount)
+      _ = assert(spks.forall(spk => addresses.exists(_.scriptPubKey == spk)))
+
     } yield succeed
   }
 

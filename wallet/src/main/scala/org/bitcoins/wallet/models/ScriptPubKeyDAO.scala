@@ -22,6 +22,9 @@ case class ScriptPubKeyDAO()(implicit
   override val table: profile.api.TableQuery[ScriptPubKeyTable] =
     TableQuery[ScriptPubKeyTable]
 
+  private val addressTable: profile.api.TableQuery[AddressDAO#AddressTable] =
+    AddressDAO().table
+
   /** Creates a new row in the database only if the given SPK (not ID) does not exists. */
   def createIfNotExists(spkDb: ScriptPubKeyDb): Future[ScriptPubKeyDb] = {
     val spkFind = table.filter(_.scriptPubKey === spkDb.scriptPubKey).result
@@ -59,6 +62,11 @@ case class ScriptPubKeyDAO()(implicit
       groupedHashes.map(hashes => table.filter(_.hash.inSet(hashes)).result)
     val sequenced = DBIOAction.sequence(actions).map(_.flatten)
     safeDatabase.runVec(sequenced)
+  }
+
+  def findOtherScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] = {
+    val q = table.filterNot(_.id.in(addressTable.map(_.scriptPubKeyId))).result
+    safeDatabase.runVec(q)
   }
 
   case class ScriptPubKeyTable(tag: Tag)

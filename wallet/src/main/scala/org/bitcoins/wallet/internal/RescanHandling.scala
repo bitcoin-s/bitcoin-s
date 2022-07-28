@@ -79,7 +79,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 Future.successful(None)
             }
             _ <- clearUtxos(account)
-            state <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
+            preloadedAddressCount <- addressDAO.count()
+            otherScriptPubKeyDbs <- scriptPubKeyDAO.findOtherScriptPubKeys()
+            state <- doNeutrinoRescan(account,
+                                  start,
+                                  endOpt,
+                                  addressBatchSize,
+                                  preloadedAddressCount,
+                                  otherScriptPubKeyDbs.map(_.scriptPubKey))
             _ <- stateDescriptorDAO.updateRescanning(false)
             _ <- walletCallbacks.executeOnRescanComplete(logger)
           } yield {
@@ -237,35 +244,47 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[RescanState] = {
+      addressBatchSize: Int,
+      preloadedAddressCount: Int,
+      extraScriptPubKeys: Vector[ScriptPubKey]): Future[RescanState] = {
     for {
-      scriptPubKeys <- generateScriptPubKeys(account, addressBatchSize)
-      addressCount <- addressDAO.count()
-      inProgress <- matchBlocks(scriptPubKeys = scriptPubKeys,
-                                endOpt = endOpt,
-                                startOpt = startOpt)
+      scriptPubKeys <- generateScriptPubKeys(account,
+                                             addressBatchSize,
+                                             preloadedAddressCount)
+      _ = logger.info(s"scriptPubKeys.size=${scriptPubKeys.size}")
+      state <- matchBlocks(scriptPubKeys =
+                         if (extraScriptPubKeys.isEmpty) scriptPubKeys
+                         else (scriptPubKeys ++ extraScriptPubKeys).distinct,
+                       endOpt = endOpt,
+                       startOpt = startOpt)
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
-      _ <- {
-        logger.info(s"addressCount=$addressCount externalGap=$externalGap")
-        if (addressCount != 0) {
+      res <- {
+        logger.info(
+          s"preloadedAddressCount=$preloadedAddressCount externalGap=$externalGap")
+        if (preloadedAddressCount != 0) {
           logger.info(
             s"We have a small number of addresses preloaded into the wallet")
-          Future.unit
+          Future.successful(state)
         } else if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
           logger.info(
             s"Did not find any funds within the last ${walletConfig.addressGapLimit} addresses. Stopping our rescan.")
-          Future.unit
+          Future.successful(state)
         } else {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
               s"match within our address gap limit of ${walletConfig.addressGapLimit}")
-          doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
+          doNeutrinoRescan(account,
+                           startOpt,
+                           endOpt,
+                           addressBatchSize,
+                           preloadedAddressCount = 0,
+                           extraScriptPubKeys = Vector.empty)
         }
       }
-    } yield inProgress
+    } yield res
   }
 
   private def calcAddressGap(
@@ -359,12 +378,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def generateScriptPubKeys(
       account: HDAccount,
-      count: Int): Future[Vector[ScriptPubKey]] = {
-    val addressCountF = addressDAO.count()
+      count: Int,
+      preloadedAddressCount: Int): Future[Vector[ScriptPubKey]] = {
     for {
-      addressCount <- addressCountF
       addresses <- {
-        if (addressCount == 0) {
+        if (preloadedAddressCount == 0) {
           generateAddressesForRescan(account, count)
         } else {
           //we don't want to continously generate addresses
@@ -373,13 +391,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
           addressDAO.findAllAddresses().map(_.map(_.address))
         }
       }
-      spksDb <- scriptPubKeyDAO.findAll()
     } yield {
-      val addrSpks =
-        addresses.map(_.scriptPubKey)
-      val otherSpks = spksDb.map(_.scriptPubKey)
-
-      (addrSpks ++ otherSpks).distinct
+      addresses.map(_.scriptPubKey)
     }
   }
 
