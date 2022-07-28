@@ -12,6 +12,7 @@ import org.bitcoins.testkit.wallet.{
   WalletTestUtil,
   WalletWithBitcoindRpc
 }
+import org.bitcoins.wallet.models.IncomingTransactionDAO
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
@@ -28,13 +29,16 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   val exampleTag: InternalAddressTag = StorageLocationTag.HotStorage
 
   it should "correctly keep tagged utxos separated" in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind, _) = walletWithBitcoind
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
+    val walletConfig = walletWithBitcoind.walletConfig
     // the amount we're receiving from bitcoind
     val valueFromBitcoind = Bitcoins.one
 
     // the amount we're sending to bitcoind
     val valueToBitcoind = Bitcoins(0.5)
-
+    val incomingTxDAO =
+      IncomingTransactionDAO()(system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
       taggedAddr <- wallet.getNewAddress(Vector(exampleTag))
@@ -65,11 +69,9 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         wallet
           .getUnconfirmedBalance()
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind * 2))
-      incomingTx <- wallet.findByTxId(tx.txIdBE)
+      incomingTx <- incomingTxDAO.findByTxId(tx.txIdBE)
       _ = assert(incomingTx.isDefined)
-      addrOutputOpt = incomingTx.get.transaction.outputs
-        .find(_.scriptPubKey == taggedAddr.scriptPubKey)
-      _ = assert(addrOutputOpt.get.value == valueFromBitcoind * 2)
+      _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind * 2)
 
       taggedUtxosPostAdd <- wallet.listUtxos(exampleTag)
       _ = assert(taggedUtxosPostAdd.length == 1)
