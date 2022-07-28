@@ -3,7 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.crypto.AesPassword
@@ -40,7 +40,7 @@ sealed trait DLCWalletLoaderApi extends Logging {
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword])(implicit
       ec: ExecutionContext): Future[
-    (AnyDLCHDWalletApi, WalletAppConfig, DLCAppConfig)] = {
+    (DLCNeutrinoHDWalletApi, WalletAppConfig, DLCAppConfig)] = {
     logger.info(
       s"Loading wallet with bitcoind backend, walletName=${walletNameOpt.getOrElse("DEFAULT")}")
     val stoppedCallbacksF = conf.nodeConf.callBacks match {

@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -49,7 +49,7 @@ import scala.concurrent.Future
 /** A [[Wallet]] with full DLC Functionality */
 abstract class DLCWallet
     extends Wallet
-    with AnyDLCHDWalletApi
+    with DLCNeutrinoHDWalletApi
     with DLCTransactionProcessing
     with IncomingDLCOffersHandling {
 

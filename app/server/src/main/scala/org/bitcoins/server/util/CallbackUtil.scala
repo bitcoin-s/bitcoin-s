@@ -3,7 +3,7 @@ package org.bitcoins.server.util
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import grizzled.slf4j.Logging
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
@@ -95,8 +95,8 @@ object CallbackUtil extends Logging {
     Future.successful(streamManager)
   }
 
-  def createBitcoindNodeCallbacksForWallet(wallet: AnyDLCHDWalletApi)(implicit
-      system: ActorSystem): Future[NodeCallbackStreamManager] = {
+  def createBitcoindNodeCallbacksForWallet(wallet: DLCNeutrinoHDWalletApi)(implicit
+                                                                           system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")

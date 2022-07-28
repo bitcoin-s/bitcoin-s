@@ -19,7 +19,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.node.{
   InternalImplementationNodeType,
   NodeApi,
@@ -604,8 +604,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def handleDuplicateSpendingInfoDb(
-      wallet: AnyDLCHDWalletApi,
-      walletConfig: WalletAppConfig): Future[Unit] = {
+                                             wallet: DLCNeutrinoHDWalletApi,
+                                             walletConfig: WalletAppConfig): Future[Unit] = {
     val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
     for {
       rescanNeeded <- spendingInfoDAO.hasDuplicates()
@@ -632,7 +632,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def restartRescanIfNeeded(
-      wallet: AnyDLCHDWalletApi): Future[RescanState] = {
+      wallet: DLCNeutrinoHDWalletApi): Future[RescanState] = {
     for {
       isRescanning <- wallet.isRescanning()
       res <-

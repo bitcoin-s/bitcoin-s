@@ -2,7 +2,7 @@ package org.bitcoins.wallet
 
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.{
   DLCContactDb,
   DLCDb,
@@ -62,12 +62,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class WalletNotInitialized extends Exception("The wallet is not initialized")
 
 class WalletHolder(implicit ec: ExecutionContext)
-    extends AnyDLCHDWalletApi
+    extends DLCNeutrinoHDWalletApi
     with Logging {
 
-  @volatile private var walletOpt: Option[AnyDLCHDWalletApi] = None
+  @volatile private var walletOpt: Option[DLCNeutrinoHDWalletApi] = None
 
-  private def wallet: AnyDLCHDWalletApi = synchronized {
+  private def wallet: DLCNeutrinoHDWalletApi = synchronized {
     walletOpt match {
       case Some(wallet) => wallet
       case None =>
@@ -79,7 +79,7 @@ class WalletHolder(implicit ec: ExecutionContext)
     walletOpt.isDefined
   }
 
-  def replaceWallet(newWallet: AnyDLCHDWalletApi): Future[AnyDLCHDWalletApi] =
+  def replaceWallet(newWallet: DLCNeutrinoHDWalletApi): Future[DLCNeutrinoHDWalletApi] =
     synchronized {
       val oldWalletOpt = walletOpt
       walletOpt = None
@@ -103,7 +103,7 @@ class WalletHolder(implicit ec: ExecutionContext)
       res
     }
 
-  private def delegate[T]: (AnyDLCHDWalletApi => Future[T]) => Future[T] = {
+  private def delegate[T]: (DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
     Future(wallet).flatMap[T](_)
   }
 
