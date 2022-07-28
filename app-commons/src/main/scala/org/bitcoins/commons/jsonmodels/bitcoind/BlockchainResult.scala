@@ -47,7 +47,28 @@ case class GetBlockResult(
     nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult
 
-case class GetBlockWithTransactionsResult(
+abstract trait GetBlockWithTransactionsResult extends BlockchainResult {
+  def hash: DoubleSha256DigestBE
+  def confirmations: Int
+  def strippedsize: Int
+  def size: Int
+  def weight: Int
+  def height: Int
+  def version: Int
+  def versionHex: Int32
+  def merkleroot: DoubleSha256DigestBE
+  def tx: Vector[RpcTransaction]
+  def time: UInt32
+  def mediantime: UInt32
+  def nonce: UInt32
+  def bits: UInt32
+  def difficulty: BigDecimal
+  def chainwork: String
+  def previousblockhash: Option[DoubleSha256DigestBE]
+  def nextblockhash: Option[DoubleSha256DigestBE]
+}
+
+case class GetBlockWithTransactionsResultPreV22(
     hash: DoubleSha256DigestBE,
     confirmations: Int,
     strippedsize: Int,
@@ -57,7 +78,7 @@ case class GetBlockWithTransactionsResult(
     version: Int,
     versionHex: Int32,
     merkleroot: DoubleSha256DigestBE,
-    tx: Vector[RpcTransaction],
+    tx: Vector[RpcTransactionPreV22],
     time: UInt32,
     mediantime: UInt32,
     nonce: UInt32,
@@ -66,7 +87,28 @@ case class GetBlockWithTransactionsResult(
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE])
-    extends BlockchainResult
+    extends GetBlockWithTransactionsResult
+
+case class GetBlockWithTransactionsResultV22(
+    hash: DoubleSha256DigestBE,
+    confirmations: Int,
+    strippedsize: Int,
+    size: Int,
+    weight: Int,
+    height: Int,
+    version: Int,
+    versionHex: Int32,
+    merkleroot: DoubleSha256DigestBE,
+    tx: Vector[RpcTransactionV22],
+    time: UInt32,
+    mediantime: UInt32,
+    nonce: UInt32,
+    bits: UInt32,
+    difficulty: BigDecimal,
+    chainwork: String,
+    previousblockhash: Option[DoubleSha256DigestBE],
+    nextblockhash: Option[DoubleSha256DigestBE])
+    extends GetBlockWithTransactionsResult
 
 sealed trait GetBlockChainInfoResult extends BlockchainResult {
   def chain: NetworkParameters
@@ -382,13 +424,29 @@ case class GetMemPoolInfoResult(
     minrelaytxfee: Bitcoins)
     extends BlockchainResult
 
-case class GetTxOutResult(
+sealed abstract trait GetTxOutResult extends BlockchainResult {
+  def bestblock: DoubleSha256DigestBE
+  def confirmations: Int
+  def value: Bitcoins
+  def scriptPubKey: RpcScriptPubKey
+  def coinbase: Boolean
+}
+
+case class GetTxOutResultPreV22(
     bestblock: DoubleSha256DigestBE,
     confirmations: Int,
     value: Bitcoins,
-    scriptPubKey: RpcScriptPubKey,
+    scriptPubKey: RpcScriptPubKeyPreV22,
     coinbase: Boolean)
-    extends BlockchainResult
+    extends GetTxOutResult
+
+case class GetTxOutResultV22(
+    bestblock: DoubleSha256DigestBE,
+    confirmations: Int,
+    value: Bitcoins,
+    scriptPubKey: RpcScriptPubKeyPostV22,
+    coinbase: Boolean)
+    extends GetTxOutResult
 
 case class GetTxOutSetInfoResult(
     height: Int,

@@ -3,6 +3,8 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AnalyzePsbtResult,
   DecodePsbtResult,
+  DecodePsbtResultPreV22,
+  DecodePsbtResultV22,
   FinalizePsbtResult
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
@@ -11,6 +13,18 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.rpc.client.common.BitcoindVersion.{
+  Experimental,
+  Unknown,
+  V16,
+  V17,
+  V18,
+  V19,
+  V20,
+  V21,
+  V22,
+  V23
+}
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -81,7 +95,15 @@ trait PsbtRpc {
       List(JsString(psbt.base64), JsBoolean(extract)))
   }
 
-  def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] =
-    bitcoindCall[DecodePsbtResult]("decodepsbt", List(Json.toJson(psbt)))
+  def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] = {
+    self.version.flatMap {
+      case V22 | V23 | Unknown =>
+        bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
+      case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
+        bitcoindCall[DecodePsbtResultPreV22]("decodepsbt",
+                                             List(Json.toJson(psbt)))
+    }
+
+  }
 
 }

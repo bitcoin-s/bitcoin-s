@@ -161,16 +161,33 @@ trait WalletRpc { self: Client =>
       walletName: String): Future[BitcoinAddress] =
     getRawChangeAddressInternal(Some(addressType), Some(walletName))
 
+  private def getWalletInfo(
+      walletName: Option[String]): Future[GetWalletInfoResult] = {
+    self.version.flatMap {
+      case BitcoindVersion.V22 | BitcoindVersion.V23 |
+          BitcoindVersion.Unknown =>
+        bitcoindCall[GetWalletInfoResultPostV22](
+          "getwalletinfo",
+          uriExtensionOpt = walletName.map(walletExtension))
+      case BitcoindVersion.V16 | BitcoindVersion.V17 | BitcoindVersion.V18 |
+          BitcoindVersion.V19 | BitcoindVersion.V20 | BitcoindVersion.V21 |
+          BitcoindVersion.Experimental =>
+        bitcoindCall[GetWalletInfoResultPreV22](
+          "getwalletinfo",
+          uriExtensionOpt = walletName.map(walletExtension))
+    }
+  }
+
   def getWalletInfo: Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
+    getWalletInfo(None)
   }
 
   def getWalletInfo(walletName: String): Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResult]("getwalletinfo",
-                                      uriExtensionOpt =
-                                        Some(walletExtension(walletName)))
+    getWalletInfo(Some(walletName))
   }
 
+  /** @return
+    */
   def keyPoolRefill(
       keyPoolSize: Int = 100,
       walletNameOpt: Option[String] = None): Future[Unit] = {
@@ -401,7 +418,7 @@ trait WalletRpc { self: Client =>
       avoidReuse: Boolean = false,
       descriptors: Boolean = false): Future[CreateWalletResult] =
     self.version.flatMap {
-      case V23 =>
+      case V23 | V22 =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(JsString(walletName),
@@ -411,12 +428,15 @@ trait WalletRpc { self: Client =>
                JsBoolean(avoidReuse),
                JsBoolean(descriptors))
         )
-      case V23 | V22 | V21 | V20 | V19 | Experimental | Unknown =>
-        bitcoindCall[CreateWalletResult]("createwallet",
-                                         List(JsString(walletName),
-                                              JsBoolean(disablePrivateKeys),
-                                              JsBoolean(blank),
-                                              JsString(passphrase)))
+      case V21 | V20 | V19 | Unknown | Experimental =>
+        bitcoindCall[CreateWalletResult](
+          "createwallet",
+          List(JsString(walletName),
+               JsBoolean(disablePrivateKeys),
+               JsBoolean(blank),
+               JsString(passphrase),
+               JsBoolean(avoidReuse))
+        )
       case V16 | V17 | V18 =>
         require(passphrase.isEmpty,
                 "passphrase should not be set for versions before v19")

@@ -6,6 +6,18 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{
+  Experimental,
+  Unknown,
+  V16,
+  V17,
+  V18,
+  V19,
+  V20,
+  V21,
+  V22,
+  V23
+}
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -79,9 +91,17 @@ trait TransactionRpc { self: Client =>
       txid: DoubleSha256DigestBE,
       vout: Int,
       includeMemPool: Boolean = true): Future[GetTxOutResult] = {
-    bitcoindCall[GetTxOutResult](
-      "gettxout",
-      List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+    self.version.flatMap {
+      case V22 | V23 | Unknown =>
+        bitcoindCall[GetTxOutResultV22](
+          "gettxout",
+          List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+
+      case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
+        bitcoindCall[GetTxOutResultPreV22](
+          "gettxout",
+          List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+    }
   }
 
   private def getTxOutProof(

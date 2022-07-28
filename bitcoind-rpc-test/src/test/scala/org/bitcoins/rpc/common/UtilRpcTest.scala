@@ -1,5 +1,9 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  DecodeScriptResultPreV22,
+  DecodeScriptResultV22
+}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.script.ScriptType
@@ -38,9 +42,15 @@ class UtilRpcTest extends BitcoindRpcTest {
             Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
       decoded <- client.decodeScript(multisig.redeemScript)
     } yield {
-      assert(decoded.reqSigs.contains(2))
-      assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
-      assert(decoded.addresses.get.contains(address))
+      decoded match {
+        case decodedPreV22: DecodeScriptResultPreV22 =>
+          assert(decodedPreV22.reqSigs.contains(2))
+          assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
+          assert(decodedPreV22.addresses.get.contains(address))
+        case decodedV22: DecodeScriptResultV22 =>
+          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
+      }
+
     }
   }
 }
