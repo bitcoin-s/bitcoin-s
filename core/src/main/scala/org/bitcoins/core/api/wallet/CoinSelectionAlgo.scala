@@ -30,12 +30,15 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
   /** Tries all coin selection algos and uses the one with the least waste */
   case object LeastWaste extends CoinSelectionAlgo
 
+  case object BranchAndBound extends CoinSelectionAlgo
+
   case class SelectedUtxos(outPoints: Set[(DoubleSha256Digest, Int)])
       extends CoinSelectionAlgo
 
   /** Coin selection algos that don't call other ones */
   val independentAlgos: Vector[CoinSelectionAlgo] =
     Vector(RandomSelection,
+           BranchAndBound,
            AccumulateLargest,
            AccumulateSmallestViable,
            StandardAccumulate)

@@ -469,8 +469,13 @@ class WalletSendingTest extends BitcoinSWalletTest {
         .map(_.map(CoinSelectorUtxo.fromSpendingInfoDb))
 
       output = TransactionOutput(amountToSend, testAddress.scriptPubKey)
+      changeCost = wallet.changeCost(feeRate)
       expectedUtxos =
-        CoinSelector.selectByAlgo(algo, allUtxos, Vector(output), feeRate)
+        CoinSelector.selectByAlgo(coinSelectionAlgo = algo,
+                                  walletUtxos = allUtxos,
+                                  outputs = Vector(output),
+                                  feeRate = feeRate,
+                                  changeCostOpt = Some(changeCost))
       tx <- wallet.sendWithAlgo(testAddress, amountToSend, feeRate, algo)
     } yield {
       val diff =

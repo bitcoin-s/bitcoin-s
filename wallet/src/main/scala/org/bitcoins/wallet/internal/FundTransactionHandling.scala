@@ -2,6 +2,8 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet._
+import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder._
@@ -13,6 +15,14 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 trait FundTransactionHandling extends WalletLogger { self: Wallet =>
+
+  def changeCost(feeUnit: FeeUnit): CurrencyUnit = {
+    walletConfig.defaultAddressType match {
+      case AddressType.SegWit       => feeUnit * 31
+      case AddressType.NestedSegWit => feeUnit * 43
+      case AddressType.Legacy       => feeUnit * 34
+    }
+  }
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
@@ -100,6 +110,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           walletUtxos = selectableUtxos,
           outputs = destinations,
           feeRate = feeRate,
+          changeCostOpt = Some(changeCost(feeRate)),
           longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
         )
         filtered = walletUtxos.filter(utxo =>
