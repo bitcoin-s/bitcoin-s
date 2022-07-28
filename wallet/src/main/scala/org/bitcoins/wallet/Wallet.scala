@@ -1,7 +1,13 @@
 package org.bitcoins.wallet
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.wallet.SyncHeightDescriptor
+import org.bitcoins.core.api.wallet.{
+  BlockSyncState,
+  CoinSelectionAlgo,
+  NeutrinoHDWalletApi,
+  SyncHeightDescriptor,
+  WalletInfo
+}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -9,12 +15,6 @@ import org.bitcoins.core.api.wallet.db.{
   AccountDb,
   SpendingInfoDb,
   TransactionDb
-}
-import org.bitcoins.core.api.wallet.{
-  AnyHDWalletApi,
-  BlockSyncState,
-  CoinSelectionAlgo,
-  WalletInfo
 }
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -52,7 +52,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 abstract class Wallet
-    extends AnyHDWalletApi
+    extends NeutrinoHDWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling

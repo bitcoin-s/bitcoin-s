@@ -178,7 +178,4 @@ trait DLCWalletApi { self: WalletApi =>
 }
 
 /** An HDWallet that supports DLCs and Neutrino method of syncing */
-trait AnyDLCHDWalletApi
-    extends HDWalletApi
-    with DLCWalletApi
-    with NeutrinoWalletApi
+trait AnyDLCHDWalletApi extends NeutrinoHDWalletApi with DLCWalletApi

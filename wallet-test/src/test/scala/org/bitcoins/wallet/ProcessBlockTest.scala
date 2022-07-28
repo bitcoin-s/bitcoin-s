@@ -3,7 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.hd.{HDCoin, LegacyHDPath}
+import org.bitcoins.core.hd.LegacyHDPath
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction._

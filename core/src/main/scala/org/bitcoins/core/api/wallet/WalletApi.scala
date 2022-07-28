@@ -487,6 +487,3 @@ case class WalletInfo(
 
 /** An HDWallet that uses Neutrino to sync */
 trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
-
-/** An HDWallet that supports Neutrino method of syncing */
-trait AnyHDWalletApi extends HDWalletApi with NeutrinoWalletApi
