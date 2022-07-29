@@ -134,7 +134,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int,
       range: Range,
       parallelism: Int,
-      batchSize: Int): RescanState.RescanStarted = {
+      filterBatchSize: Int): RescanState.RescanStarted = {
     val scriptsF = generateScriptPubKeys(account, addressBatchSize)
     val maybe = Source.maybe[Int]
     val combine: Source[Int, Promise[Option[Int]]] = {
@@ -155,7 +155,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     //for the wallet to process
     val rescanSink: Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] = {
       Flow[Int]
-        .batch[Vector[Int]](batchSize, seed)(aggregate)
+        .batch[Vector[Int]](filterBatchSize, seed)(aggregate)
         .via(fetchFiltersFlow)
         .mapAsync(1) { case filterResponse =>
           val f =
@@ -238,7 +238,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
                                            addressBatchSize = addressBatchSize,
                                            range = range,
                                            parallelism = parallelismLevel,
-                                           batchSize = addressBatchSize)
+                                           filterBatchSize = addressBatchSize)
     } yield {
       rescanStarted
     }
