@@ -61,8 +61,8 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
 
     taskRunner.run(
       caption = "Get New Address",
-      op = {exec(GetNewAddress(None),
-                        GlobalData.consoleCliConfig) match {
+      op = {
+        exec(GetNewAddress(None), GlobalData.consoleCliConfig) match {
           case Success(commandReturn) => addressP.success(commandReturn)
           case Failure(err) =>
             addressP.failure(err)

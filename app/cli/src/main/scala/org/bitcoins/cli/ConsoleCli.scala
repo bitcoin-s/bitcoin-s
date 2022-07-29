@@ -2432,7 +2432,6 @@ object CliCommand {
     *  }
     */
 
-
   case class AddDLCOffer(
       offer: LnMessage[DLCOfferTLV],
       peer: String,

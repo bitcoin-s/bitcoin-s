@@ -1,6 +1,5 @@
 package org.bitcoins.gui.dialog
 
-
 import org.bitcoins.commons.rpc.{SendCliCommand, SendToAddress, SweepWallet}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress

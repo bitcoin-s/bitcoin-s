@@ -25,9 +25,9 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val text = peerAddressTF.text.value.trim
     if (text.nonEmpty) {
       val peer = NetworkUtil.parseInetSocketAddress(text, DLC.DefaultPort)
-      AcceptDLC(offer = offer, peerAddr= peer, None, None)
+      AcceptDLC(offer = offer, peerAddr = peer, None, None)
     } else {
-      AcceptDLCOffer(offer= offer, None, None, None)
+      AcceptDLCOffer(offer = offer, None, None, None)
     }
   }
 
