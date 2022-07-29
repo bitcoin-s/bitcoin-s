@@ -414,4 +414,31 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       }
   }
 
+  it must "set the rescan flag when a rescan starts and then unset it when the rescan is done" in {
+    fixture: WalletWithBitcoindRpc =>
+      val wallet = fixture.wallet
+
+      for {
+        isRescanning1 <- wallet.isRescanning()
+        _ = assert(!isRescanning1,
+                   "Cannot be rescanning before we started the test")
+        //start the rescan
+        state <- wallet.rescanNeutrinoWallet(startOpt = None,
+                                             endOpt = None,
+                                             addressBatchSize = 10,
+                                             useCreationTime = true,
+                                             force = false)
+        isRescanning2 <- wallet.isRescanning()
+        _ = assert(isRescanning2,
+                   s"Rescan flag must be set after starting a rescan")
+        _ <- RescanState.awaitRescanDone(state)
+        _ <- AsyncUtil.nonBlockingSleep(
+          1.second
+        ) //extra buffer to avoid race condition
+        isRescanning3 <- wallet.isRescanning()
+      } yield {
+        assert(!isRescanning3)
+      }
+  }
+
 }
