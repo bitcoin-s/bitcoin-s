@@ -80,8 +80,17 @@ private[wallet] trait RescanHandling extends WalletLogger {
             }
             _ <- clearUtxos(account)
             state <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
-            _ <- stateDescriptorDAO.updateRescanning(false)
-            _ <- walletCallbacks.executeOnRescanComplete(logger)
+            //purposefully don't map on this Future as it won't be completed until
+            //the rescan is completely done.
+            _ = RescanState.awaitRescanDone(state).map { _ =>
+              val f = for {
+                _ <- stateDescriptorDAO.updateRescanning(false)
+                _ <- walletCallbacks.executeOnRescanComplete(logger)
+              } yield ()
+
+              f.failed.foreach(err =>
+                logger.error(s"Failed to reset rescan state", err))
+            }
           } yield {
             state
           }
