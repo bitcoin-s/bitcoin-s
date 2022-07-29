@@ -140,23 +140,18 @@ trait NodeUnitTest extends BaseNodeTest {
 
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
-      appConfig: BitcoinSAppConfig,
       versionOpt: Option[BitcoindVersion] = None,
       walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
-      system: ActorSystem): FutureOutcome = {
-    val bip39PwConfig =
-      BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
-    implicit val appConfigBip39Pw =
-      appConfig.withOverrides(Vector(bip39PwConfig))
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletBitcoind(
             versionOpt = versionOpt,
-            walletCallbacks = walletCallbacks)(system, appConfigBip39Pw),
+            walletCallbacks = walletCallbacks)(system, appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
-        _: NodeFundedWalletBitcoind)(system, appConfigBip39Pw)
+        _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
   }
 }
