@@ -62,7 +62,7 @@ case class LndRpcTestClient(
           // Wait for it to be ready
           _ <- AsyncUtil.awaitConditionF(() => lnd.isStarted,
                                          interval = 500.milliseconds,
-                                         maxTries = 100)
+                                         maxTries = 300)
         } yield {
           clientOpt = Some(lnd)
           lnd
