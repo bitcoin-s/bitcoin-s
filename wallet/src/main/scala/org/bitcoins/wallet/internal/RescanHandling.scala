@@ -129,17 +129,26 @@ private[wallet] trait RescanHandling extends WalletLogger {
       .epochSecondToBlockHeight(creationTime.getEpochSecond)
       .map(BlockHeight)
 
-  private def buildFilterMatchFlow(
+  private def buildRescanFlow(
       account: HDAccount,
       addressBatchSize: Int,
       range: Range,
       parallelism: Int,
       filterBatchSize: Int): RescanState.RescanStarted = {
     val scriptsF = generateScriptPubKeys(account, addressBatchSize)
+
+    //by completing the promise returned by this sink
+    //we will be able to arbitrarily terminate the stream
+    //see: https://doc.akka.io/docs/akka/current/stream/operators/Source/maybe.html
     val maybe = Source.maybe[Int]
+
+    //combine the Source.maybe with the Source providing filter heights
+    //this is needed so we can arbitrarily kill the stream with
+    //the promise returned by Source.maybe
     val combine: Source[Int, Promise[Option[Int]]] = {
       Source.combineMat(maybe, Source(range))(Merge(_))(Keep.left)
     }
+
     val seed: Int => Vector[Int] = { case int =>
       Vector(int)
     }
@@ -152,7 +161,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val rescanCompletePromise: Promise[Unit] = Promise()
 
     //fetches filters, matches filters against our wallet, and then request blocks
-    //for the wallet to process
+    //for the wallet to process. This sink takes as input filter heights
+    //to fetch for rescanning.
     val rescanSink: Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] = {
       Flow[Int]
         .batch[Vector[Int]](filterBatchSize, seed)(aggregate)
@@ -234,7 +244,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         s"Beginning to search for matches between ${startHeight}:${endHeight}")
       range = startHeight.to(endHeight)
 
-      rescanStarted = buildFilterMatchFlow(account = account,
+      rescanStarted = buildRescanFlow(account = account,
                                            addressBatchSize = addressBatchSize,
                                            range = range,
                                            parallelism = parallelismLevel,
