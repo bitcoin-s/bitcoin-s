@@ -82,11 +82,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
             preloadedAddressCount <- addressDAO.count()
             otherScriptPubKeyDbs <- scriptPubKeyDAO.findOtherScriptPubKeys()
             state <- doNeutrinoRescan(account,
-                                  start,
-                                  endOpt,
-                                  addressBatchSize,
-                                  preloadedAddressCount,
-                                  otherScriptPubKeyDbs.map(_.scriptPubKey))
+                                      start,
+                                      endOpt,
+                                      addressBatchSize,
+                                      preloadedAddressCount,
+                                      otherScriptPubKeyDbs.map(_.scriptPubKey))
             _ <- stateDescriptorDAO.updateRescanning(false)
             _ <- walletCallbacks.executeOnRescanComplete(logger)
           } yield {
@@ -253,10 +253,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
                                              preloadedAddressCount)
       _ = logger.info(s"scriptPubKeys.size=${scriptPubKeys.size}")
       state <- matchBlocks(scriptPubKeys =
-                         if (extraScriptPubKeys.isEmpty) scriptPubKeys
-                         else (scriptPubKeys ++ extraScriptPubKeys).distinct,
-                       endOpt = endOpt,
-                       startOpt = startOpt)
+                             if (extraScriptPubKeys.isEmpty) scriptPubKeys
+                             else
+                               (scriptPubKeys ++ extraScriptPubKeys).distinct,
+                           endOpt = endOpt,
+                           startOpt = startOpt)
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       res <- {

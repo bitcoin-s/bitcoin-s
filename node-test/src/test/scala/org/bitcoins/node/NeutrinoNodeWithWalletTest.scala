@@ -9,7 +9,11 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.{NeutrinoNodeFundedWalletBitcoind, NodeTestUtil, NodeTestWithCachedBitcoindNewest}
+import org.bitcoins.testkit.node.{
+  NeutrinoNodeFundedWalletBitcoind,
+  NodeTestUtil,
+  NodeTestWithCachedBitcoindNewest
+}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.models.{AddressDAO, ScriptPubKeyDAO}
 import org.scalatest.{FutureOutcome, Outcome}
