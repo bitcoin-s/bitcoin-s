@@ -2,6 +2,8 @@ package org.bitcoins.db
 
 import org.bitcoins.testkit.db.TestSQLiteDAOFixture
 
+import java.sql.SQLException
+
 class CRUDTestSQLite extends TestSQLiteDAOFixture {
 
   it must "successfully create a db row and read it back" in { testDAO =>
@@ -37,5 +39,12 @@ class CRUDTestSQLite extends TestSQLiteDAOFixture {
   it must "successfully update multiple db rows and read them back" in {
     testDAO =>
       testUpdateAll(testDAO).map(result => assert(result))
+  }
+
+  it must "throw a SQLException when the database config is stopped" in {
+    testDAO =>
+      testUpsertAll(testDAO).map(result => assert(result))
+      testDAO.appConfig.stop()
+      recoverToSucceededIf[SQLException](testUpsertAll(testDAO))
   }
 }

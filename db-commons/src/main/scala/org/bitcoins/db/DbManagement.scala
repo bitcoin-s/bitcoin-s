@@ -105,15 +105,18 @@ trait DbManagement extends Logging {
     logger.debug(s"Creating table $tableName with DB config: $appConfig")
 
     val query = createTableQuery(table, createIfNotExists)
-    database.run(query).map(_ => logger.debug(s"Created table $tableName"))
+    if (!appConfig.isStopRequested) {
+      database.run(query).map(_ => logger.debug(s"Created table $tableName"))
+    } else Future.unit
   }
 
   def dropTable(
       table: TableQuery[Table[_]]
   ): Future[Unit] = {
     val query = table.schema.dropIfExists
-    val result = database.run(query)
-    result
+    if (!appConfig.isStopRequested) {
+      database.run(query)
+    } else Future.unit
   }
 
   def dropTable(tableName: String)(implicit
@@ -121,11 +124,13 @@ trait DbManagement extends Logging {
     val fullTableName =
       appConfig.schemaName.map(_ + ".").getOrElse("") + tableName
     val sql = sqlu"""DROP TABLE IF EXISTS #$fullTableName"""
-    val result = database.run(sql)
-    result.failed.foreach { ex =>
-      ex.printStackTrace()
-    }
-    result
+    if (!appConfig.isStopRequested) {
+      val result = database.run(sql)
+      result.failed.foreach { ex =>
+        ex.printStackTrace()
+      }
+      result
+    } else Future.successful(0)
   }
 
   def createSchema(createIfNotExists: Boolean = true)(implicit

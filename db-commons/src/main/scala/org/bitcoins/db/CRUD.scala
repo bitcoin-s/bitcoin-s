@@ -137,7 +137,6 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
     extends Logging {
 
-  import jdbcProfile.database
   import jdbcProfile.profile.api.{
     actionBasedSQLInterpolation,
     jdbcActionExtensionMethods
@@ -165,8 +164,16 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   def run[R](action: DBIOAction[R, NoStream, _])(implicit
       ec: ExecutionContext): Future[R] = {
     val result = scala.concurrent.blocking {
-      if (sqlite) database.run[R](foreignKeysPragma >> action.transactionally)
-      else database.run[R](action.transactionally)
+      if (jdbcProfile.appConfig.isStopRequested) {
+        Future.failed(
+          new SQLException(
+            s"Database `${jdbcProfile.appConfig.dbName}` is disconnected"))
+      } else {
+        if (sqlite)
+          jdbcProfile.database.run[R](
+            foreignKeysPragma >> action.transactionally)
+        else jdbcProfile.database.run[R](action.transactionally)
+      }
     }
     result.recoverWith {
       logAndThrowError(action)
@@ -179,9 +186,16 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(implicit
       ec: ExecutionContext): Future[Vector[R]] = {
     val result = scala.concurrent.blocking {
-      if (sqlite)
-        database.run[Seq[R]](foreignKeysPragma >> action.transactionally)
-      else database.run[Seq[R]](action.transactionally)
+      if (jdbcProfile.appConfig.isStopRequested) {
+        Future.failed(
+          new SQLException(
+            s"Database `${jdbcProfile.appConfig.dbName}` is disconnected"))
+      } else {
+        if (sqlite)
+          jdbcProfile.database.run[Seq[R]](
+            foreignKeysPragma >> action.transactionally)
+        else jdbcProfile.database.run[Seq[R]](action.transactionally)
+      }
     }
     result.map(_.toVector).recoverWith {
       logAndThrowError(action)

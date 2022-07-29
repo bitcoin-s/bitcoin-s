@@ -8,16 +8,22 @@ import slick.jdbc.JdbcProfile
 
 import java.nio.file.{Path, Paths}
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
 abstract class DbAppConfig extends AppConfig {
 
+  private val stopRequested = new AtomicBoolean(false)
+
   /** Releases the thread pool associated with this AppConfig's DB */
   override def stop(): Future[Unit] = {
+    stopRequested.set(true)
     Future.successful(slickDbConfig.db.close())
   }
+
+  def isStopRequested: Boolean = stopRequested.get()
 
   lazy val driver: DatabaseDriver = {
     val driverStr =
