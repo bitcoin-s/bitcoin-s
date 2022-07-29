@@ -3,7 +3,6 @@ package org.bitcoins.wallet
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
@@ -176,8 +175,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
         newTxWallet <- wallet.processTransaction(transaction = tx,
-          blockHashOpt =
-            blockHashes.headOption)
+                                                 blockHashOpt =
+                                                   blockHashes.headOption)
         balance <- newTxWallet.getBalance()
         unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
@@ -212,7 +211,6 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         assert(balanceAfterPayment1 == balanceAfterRescan)
       }
   }
-
 
   it must "be able to discover funds that occurred from the wallet creation time" in {
     fixture: WalletWithBitcoindRpc =>
