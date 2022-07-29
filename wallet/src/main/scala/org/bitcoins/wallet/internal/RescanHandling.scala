@@ -130,10 +130,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
       .map(BlockHeight)
 
   private def buildFilterMatchFlow(
+      account: HDAccount,
+      addressBatchSize: Int,
       range: Range,
-      scripts: Vector[ScriptPubKey],
       parallelism: Int,
       batchSize: Int): RescanState.RescanStarted = {
+    val scriptsF = generateScriptPubKeys(account, addressBatchSize)
     val maybe = Source.maybe[Int]
     val combine: Source[Int, Promise[Option[Int]]] = {
       Source.combineMat(maybe, Source(range))(Merge(_))(Keep.left)
@@ -156,8 +158,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
         .batch[Vector[Int]](batchSize, seed)(aggregate)
         .via(fetchFiltersFlow)
         .mapAsync(1) { case filterResponse =>
-          val f = searchFiltersForMatches(scripts, filterResponse, parallelism)(
-            ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+          val f =
+            scriptsF.flatMap { scripts =>
+              searchFiltersForMatches(scripts, filterResponse, parallelism)(
+                ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+            }
 
           val heightRange = filterResponse.map(_.blockHeight)
 
@@ -207,38 +212,35 @@ private[wallet] trait RescanHandling extends WalletLogger {
     * @return a list of matching block hashes
     */
   def getMatchingBlocks(
-      scripts: Vector[ScriptPubKey],
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None,
-      batchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
+      addressBatchSize: Int = 100,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors(),
+      account: HDAccount)(implicit
       ec: ExecutionContext): Future[RescanState] = {
-    require(batchSize > 0, "batch size must be greater than zero")
+    require(addressBatchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
-    if (scripts.isEmpty) {
-      Future.successful(RescanState.RescanDone)
-    } else {
-      for {
-        startHeight <- startOpt.fold(Future.successful(0))(
-          chainQueryApi.getHeightByBlockStamp)
-        _ = if (startHeight < 0)
-          throw InvalidBlockRange(s"Start position cannot negative")
-        endHeight <- endOpt.fold(chainQueryApi.getFilterCount())(
-          chainQueryApi.getHeightByBlockStamp)
-        _ = if (startHeight > endHeight)
-          throw InvalidBlockRange(
-            s"End position cannot precede start: $startHeight:$endHeight")
-        _ = logger.info(
-          s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
-        range = startHeight.to(endHeight)
+    for {
+      startHeight <- startOpt.fold(Future.successful(0))(
+        chainQueryApi.getHeightByBlockStamp)
+      _ = if (startHeight < 0)
+        throw InvalidBlockRange(s"Start position cannot negative")
+      endHeight <- endOpt.fold(chainQueryApi.getFilterCount())(
+        chainQueryApi.getHeightByBlockStamp)
+      _ = if (startHeight > endHeight)
+        throw InvalidBlockRange(
+          s"End position cannot precede start: $startHeight:$endHeight")
+      _ = logger.info(
+        s"Beginning to search for matches between ${startHeight}:${endHeight}")
+      range = startHeight.to(endHeight)
 
-        rescanStarted = buildFilterMatchFlow(range,
-                                             scripts,
-                                             parallelismLevel,
-                                             batchSize)
-      } yield {
-        rescanStarted
-      }
+      rescanStarted = buildFilterMatchFlow(account = account,
+                                           addressBatchSize = addressBatchSize,
+                                           range = range,
+                                           parallelism = parallelismLevel,
+                                           batchSize = addressBatchSize)
+    } yield {
+      rescanStarted
     }
   }
 
@@ -251,11 +253,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[RescanState] = {
     for {
-      scriptPubKeys <- generateScriptPubKeys(account, addressBatchSize)
       addressCount <- addressDAO.count()
-      inProgress <- matchBlocks(scriptPubKeys = scriptPubKeys,
-                                endOpt = endOpt,
-                                startOpt = startOpt)
+      inProgress <- matchBlocks(endOpt = endOpt,
+                                startOpt = startOpt,
+                                account = account)
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
@@ -321,14 +322,13 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   private def matchBlocks(
-      scriptPubKeys: Vector[ScriptPubKey],
       endOpt: Option[BlockStamp],
-      startOpt: Option[BlockStamp]): Future[RescanState] = {
-
+      startOpt: Option[BlockStamp],
+      account: HDAccount): Future[RescanState] = {
     val rescanStateF = for {
-      rescanState <- getMatchingBlocks(scripts = scriptPubKeys,
-                                       startOpt = startOpt,
-                                       endOpt = endOpt)(
+      rescanState <- getMatchingBlocks(startOpt = startOpt,
+                                       endOpt = endOpt,
+                                       account = account)(
         ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
     } yield {
       rescanState
