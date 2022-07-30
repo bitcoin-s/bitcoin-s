@@ -28,9 +28,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withNewWalletAndBitcoindCached(
         test = test,
-        bip39PasswordOpt = getBIP39PasswordOpt(),
-        bitcoind = bitcoind,
-        walletAppConfig = getFreshWalletAppConfig)
+        bitcoind = bitcoind)(getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
