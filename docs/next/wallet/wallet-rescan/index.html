@@ -94,11 +94,10 @@ You can download this with bitcoin-s by doing <code>sbt downloadBitcoind</code><
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> appConfig: <span class="hljs-type">BitcoinSAppConfig</span> = <span class="hljs-type">BitcoinSTestAppConfig</span>.getNeutrinoTestConfig()
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> walletAppConfig: <span class="hljs-type">WalletAppConfig</span> = appConfig.walletConf
 
-<span class="hljs-keyword">val</span> bip39PasswordOpt = <span class="hljs-type">None</span>
 <span class="hljs-comment">//ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it</span>
 <span class="hljs-keyword">val</span> walletWithBitcoindF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- <span class="hljs-type">BitcoinSFixture</span>.createBitcoindWithFunds()
-  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
+  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind)
 } <span class="hljs-keyword">yield</span> walletWithBitcoind
 
 <span class="hljs-keyword">val</span> walletF = walletWithBitcoindF.map(_.wallet)
