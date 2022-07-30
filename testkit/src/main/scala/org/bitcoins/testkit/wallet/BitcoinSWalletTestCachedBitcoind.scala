@@ -65,15 +65,8 @@ trait BitcoinSWalletTestCachedBitcoind
 
   def withNewWalletAndBitcoindCached(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
-      bitcoind: BitcoindRpcClient,
+      bitcoind: BitcoindRpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val bip39PasswordConfig: Config =
-      BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
-
-    implicit val newWalletConf =
-      walletAppConfig.withOverrides(bip39PasswordConfig)
-
     val builder: () => Future[WalletWithBitcoind[_]] =
       BitcoinSFixture.composeBuildersAndWrap(
         builder = { () =>

@@ -554,7 +554,7 @@ object BitcoinSWalletTest extends WalletLogger {
       _ <- walletAppConfig.dropTable("flyway_schema_history")
       _ <- walletAppConfig.dropAll()
       _ <- walletAppConfig.stop()
-    } yield ()
+    } yield {}
   }
 
   /** Constructs callbacks for the wallet from the node to process blocks and compact filters */
