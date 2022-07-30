@@ -15,7 +15,7 @@ import org.bitcoins.testkit.rpc.{
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
-  destroyWallet
+  destroyOnlyWalletWithBitcoindCached
 }
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{FutureOutcome, Outcome}
@@ -59,7 +59,7 @@ trait BitcoinSWalletTestCachedBitcoind
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind)
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
@@ -83,7 +83,7 @@ trait BitcoinSWalletTestCachedBitcoind
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind)
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
@@ -194,7 +194,7 @@ trait BitcoinSWalletTestCachedBitcoinV19
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       destroy = { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind)
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
@@ -218,7 +218,7 @@ trait BitcoinSWalletTestCachedBitcoinV19
     makeDependentFixture[WalletWithBitcoind[_]](
       builder,
       { case walletWithBitcoind: WalletWithBitcoind[_] =>
-        destroyWallet(walletWithBitcoind)
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 

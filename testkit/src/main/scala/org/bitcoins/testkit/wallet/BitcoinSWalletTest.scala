@@ -72,7 +72,7 @@ trait BitcoinSWalletTest
       implicit val newWalletConf =
         getFreshWalletAppConfig.withOverrides(mergedConfig)
 
-      makeDependentFixture(
+      makeDependentFixture[Wallet](
         build =
           createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
         destroy = { wallet =>
@@ -466,7 +466,7 @@ object BitcoinSWalletTest extends WalletLogger {
     import system.dispatcher
     val resultF = createWalletWithBitcoindCallbacks(bitcoind)
     resultF.map { result =>
-      WalletWithBitcoindV19(result.wallet, bitcoind)
+      WalletWithBitcoindV19(result.wallet, bitcoind, config)
     }
 
   }
@@ -545,7 +545,7 @@ object BitcoinSWalletTest extends WalletLogger {
       ec: ExecutionContext): Future[Unit] = {
     val bitcoind = walletWithBitcoind.bitcoind
     val stopF = bitcoind.stop()
-    val destroyWalletF = destroyWallet(walletWithBitcoind)
+    val destroyWalletF = destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
     for {
       _ <- stopF
       _ <- destroyWalletF
@@ -555,7 +555,8 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Destorys the [[WalletApi]] and [[WalletAppConfig]] inside of [[WalletWithBitcoind]].
     * This method does not touch the bitcoind instance so it can be re-used in [[CachedBitcoind]] tests
     */
-  def destroyWallet(walletWithBitcoind: WalletWithBitcoind[_])(implicit
+  def destroyOnlyWalletWithBitcoindCached(
+      walletWithBitcoind: WalletWithBitcoind[_])(implicit
       ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- destroyWallet(walletWithBitcoind.wallet)
