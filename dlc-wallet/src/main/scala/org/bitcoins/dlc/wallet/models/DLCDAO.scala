@@ -124,9 +124,13 @@ case class DLCDAO()(implicit
   }
 
   def findByContactId(contactId: String): Future[Vector[DLCDb]] = {
+    safeDatabase.run(findByContactIdAction(contactId))
+  }
+
+  def findByContactIdAction(
+      contactId: String): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
     val peer: Option[String] = Some(contactId)
-    val action = table.filter(_.peerOpt === peer).result
-    safeDatabase.runVec(action)
+    table.filter(_.peerOpt === peer).result.map(_.toVector)
   }
 
   def updateDLCContactMapping(

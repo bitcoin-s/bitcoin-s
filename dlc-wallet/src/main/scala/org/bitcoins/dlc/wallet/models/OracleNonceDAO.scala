@@ -89,9 +89,14 @@ case class OracleNonceDAO()(implicit
 
   def findByAnnouncementIds(
       ids: Vector[Long]): Future[Vector[OracleNonceDb]] = {
-    val query = table.filter(_.announcementId.inSet(ids))
+    safeDatabase.run(findByAnnouncementIdsAction(ids))
+  }
 
-    safeDatabase.runVec(query.result)
+  def findByAnnouncementIdsAction(ids: Vector[Long]): DBIOAction[
+    Vector[OracleNonceDb],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.announcementId.inSet(ids)).result.map(_.toVector)
   }
 
   class OracleNoncesTable(tag: Tag)

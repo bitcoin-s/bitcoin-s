@@ -70,20 +70,27 @@ trait TxDAO[DbEntryType <: TxDB]
     safeDatabase.runVec(q.result)
   }
 
-  def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {
-    val q = table
+  def findByTxIdAction(txIdBE: DoubleSha256DigestBE): DBIOAction[
+    Option[DbEntryType],
+    NoStream,
+    Effect.Read] = {
+    table
       .filter(_.txIdBE === txIdBE)
+      .result
+      .map {
+        case h +: Vector() =>
+          Some(h)
+        case Vector() =>
+          None
+        case txs: Vector[DbEntryType] =>
+          // yikes, we should not have more the one transaction per id
+          throw new RuntimeException(
+            s"More than one transaction per id=${txIdBE.hex}, got=$txs")
+      }
+  }
 
-    safeDatabase.run(q.result).map {
-      case h +: Vector() =>
-        Some(h)
-      case Vector() =>
-        None
-      case txs: Vector[DbEntryType] =>
-        // yikes, we should not have more the one transaction per id
-        throw new RuntimeException(
-          s"More than one transaction per id=${txIdBE.hex}, got=$txs")
-    }
+  def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {
+    safeDatabase.run(findByTxIdAction(txIdBE))
   }
 
   def findByTxId(txId: DoubleSha256Digest): Future[Option[DbEntryType]] =
