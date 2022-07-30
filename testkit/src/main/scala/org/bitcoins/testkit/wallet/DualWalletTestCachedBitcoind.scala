@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.dlc.models.{
 }
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -17,7 +18,12 @@ trait DualWalletTestCachedBitcoind
     extends BitcoinSWalletTestCachedBitcoindNewest {
   import BitcoinSWalletTest._
 
-  implicit protected def config2: BitcoinSAppConfig = getFreshConfig
+  implicit protected def config2: BitcoinSAppConfig = {
+    val config = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
+      getBIP39PasswordOpt(),
+      Some(BaseWalletTest.segwitWalletConf))
+    BitcoinSTestAppConfig.getNeutrinoTestConfig(config)
+  }
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {
     config2.walletConf

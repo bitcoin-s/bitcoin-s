@@ -38,7 +38,6 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
     pg.map(_.getJdbcUrl(userName = "postgres", dbName = "postgres"))
 
   override def afterAll(): Unit = {
-    println(s"EmbeddedPg.afterAll()")
     super.afterAll()
 
     val _ = pg.foreach { p =>
