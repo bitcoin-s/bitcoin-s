@@ -18,7 +18,6 @@ trait NodeFundedWalletBitcoind {
   def node: Node
   def wallet: Wallet
   def bitcoindRpc: BitcoindRpcClient
-  def bip39PasswordOpt: Option[String]
 
   /** Helper method to convert from this to a [[NodeConnectedWithBitcoind]] */
   def toNodeConnectedWithBitcoind: NodeConnectedWithBitcoind
@@ -27,8 +26,7 @@ trait NodeFundedWalletBitcoind {
 case class NeutrinoNodeFundedWalletBitcoind(
     node: NeutrinoNode,
     wallet: Wallet,
-    bitcoindRpc: BitcoindRpcClient,
-    bip39PasswordOpt: Option[String])
+    bitcoindRpc: BitcoindRpcClient)
     extends NodeFundedWalletBitcoind {
 
   override def toNodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind = {

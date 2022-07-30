@@ -32,7 +32,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeFundedWalletBitcoind(
         test = test,
-        bip39PasswordOpt = getBIP39PasswordOpt(),
         bitcoind = bitcoind
       )(system, getFreshConfig)
       f <- outcome.toFuture
@@ -46,7 +45,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   val TestFees: Satoshis = 2220.sats
 
   it must "receive information about received payments" in { param =>
-    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
 
     def condition(
         expectedBalance: CurrencyUnit,
@@ -121,7 +120,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "watch an arbitrary SPK" in { param =>
-    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
 
     def generateBlock() =
       for {
@@ -157,7 +156,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "rescan information about received payments" in { param =>
-    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
 
     def condition(): Future[Boolean] = {
       for {
@@ -212,7 +211,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   it must "receive funds while the node is offline when we restart" in {
     param =>
-      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
 
       val initBalanceF = wallet.getBalance()
       val receivedAddrF = wallet.getNewAddress()
@@ -249,7 +248,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   it must "recognize funds were spent while we were offline" in { param =>
     //useful test for the case where we are in a DLC
     //and the counterparty broadcasts the funding tx or a CET
-    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
     val initBalanceF = wallet.getBalance()
     val bitcoindAddrF = bitcoind.getNewAddress
     val sendAmt = Bitcoins.one

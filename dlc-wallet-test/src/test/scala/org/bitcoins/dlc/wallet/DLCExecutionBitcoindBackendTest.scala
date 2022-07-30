@@ -95,4 +95,9 @@ class DLCExecutionBitcoindBackendTest
       }
       executedF
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[BitcoinSDualWalletTest].afterAll()
+  }
 }

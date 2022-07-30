@@ -27,9 +27,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withNewWalletAndBitcoindCached(
-        test,
-        getBIP39PasswordOpt(),
-        bitcoind)(getFreshWalletAppConfig)
+        test = test,
+        bitcoind = bitcoind)(getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)

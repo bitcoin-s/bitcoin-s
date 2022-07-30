@@ -25,8 +25,12 @@ trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
   }
 
   /** Wallet config with data directory set to user temp directory */
-  protected def getFreshConfig: BitcoinSAppConfig =
-    BaseWalletTest.getFreshConfig(pgUrl, Vector.empty)
+  protected def getFreshConfig: BitcoinSAppConfig = {
+    val bipPasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
+    val bip39Config =
+      BitcoinSWalletTest.buildBip39PasswordConfig(bipPasswordOpt)
+    BaseWalletTest.getFreshConfig(pgUrl, Vector(bip39Config))
+  }
 
   protected def getFreshWalletAppConfig: WalletAppConfig = {
     getFreshConfig.walletConf

@@ -59,11 +59,10 @@ implicit val ec: ExecutionContext = system.dispatcher
 implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
 implicit val walletAppConfig: WalletAppConfig = appConfig.walletConf
 
-val bip39PasswordOpt = None
 //ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it
 val walletWithBitcoindF = for {
   bitcoind <- BitcoinSFixture.createBitcoindWithFunds()
-  walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
+  walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind)
 } yield walletWithBitcoind
 
 val walletF = walletWithBitcoindF.map(_.wallet)

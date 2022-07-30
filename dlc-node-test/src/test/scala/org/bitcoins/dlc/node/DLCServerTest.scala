@@ -20,7 +20,7 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
   override type FixtureParam = FundedDLCWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedDLCWallet(test, getBIP39PasswordOpt())(getFreshConfig)
+    withFundedDLCWallet(test)(getFreshConfig)
   }
 
   it must "send/receive Ping and Pong TLVs over clearnet" in { dlcWalletApi =>

@@ -17,7 +17,7 @@ class CallBackUtilTest extends BitcoinSWalletTest {
   override type FixtureParam = FundedDLCWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedDLCWallet(test, getBIP39PasswordOpt())(getFreshConfig)
+    withFundedDLCWallet(test)(getFreshConfig)
 
   it must "have the kill switch kill messages to the createBitcoindNodeCallbacksForWallet callback" in {
     fundedWallet =>

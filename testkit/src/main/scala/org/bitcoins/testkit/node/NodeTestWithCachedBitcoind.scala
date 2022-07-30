@@ -154,7 +154,6 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient,
       walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
       system: ActorSystem,
@@ -163,7 +162,6 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletFromBitcoind(
-            bip39PasswordOpt = bip39PasswordOpt,
             bitcoind,
             walletCallbacks = walletCallbacks)(system, appConfig),
       { x: NeutrinoNodeFundedWalletBitcoind =>

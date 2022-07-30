@@ -33,10 +33,8 @@ class UTXOLifeCycleTest
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withFundedWalletAndBitcoindCached(
-        test,
-        getBIP39PasswordOpt(),
-        bitcoind)(getFreshWalletAppConfig)
+      futOutcome = withFundedWalletAndBitcoindCached(test, bitcoind)(
+        getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
