@@ -582,6 +582,7 @@ object BitcoinSWalletTest extends WalletLogger {
     import wallet.ec
     for {
       _ <- destroyWallet(wallet)
+      _ <- destroyWalletAppConfig(wallet.walletConfig)
       _ <- wallet.dlcConfig.stop()
     } yield ()
   }
