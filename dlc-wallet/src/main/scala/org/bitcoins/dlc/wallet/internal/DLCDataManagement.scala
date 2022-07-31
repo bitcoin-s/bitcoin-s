@@ -22,7 +22,7 @@ import org.bitcoins.dlc.wallet.util.DLCActionBuilder
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.models.TransactionDAO
 import scodec.bits._
-import slick.dbio.{DBIOAction, Effect, NoStream}
+import slick.dbio._
 
 import scala.concurrent._
 import scala.util.Try
@@ -55,27 +55,40 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     dataF.map(data => data.map(_.offer))
   }
 
-  private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
-      Vector[DLCAnnouncementDb],
-      Vector[OracleAnnouncementDataDb],
-      Vector[OracleNonceDb])] = {
-    val announcementsF = dlcAnnouncementDAO.findByDLCId(dlcId)
-    val announcementIdsF: Future[Vector[Long]] = for {
-      announcements <- announcementsF
-      announcementIds = announcements.map(_.announcementId)
-    } yield announcementIds
-    val announcementDataF =
-      announcementIdsF.flatMap(ids => announcementDAO.findByIds(ids))
-    val noncesDbF =
-      announcementIdsF.flatMap(ids => oracleNonceDAO.findByAnnouncementIds(ids))
+  private[wallet] def getDLCAnnouncementDbsAction(
+      dlcId: Sha256Digest): DBIOAction[
+    (
+        Vector[DLCAnnouncementDb],
+        Vector[OracleAnnouncementDataDb],
+        Vector[OracleNonceDb]
+    ),
+    NoStream,
+    Effect.Read] = {
+    val announcementsA = dlcAnnouncementDAO
+      .findByDLCIdAction(dlcId)
+    val announcementIdsA = announcementsA
+      .map(_.map(_.announcementId))
+    val announcementDataA =
+      announcementIdsA.flatMap(ids => announcementDAO.findByIdsAction(ids))
+    val noncesDbA =
+      announcementIdsA.flatMap(ids =>
+        oracleNonceDAO.findByAnnouncementIdsAction(ids))
 
     for {
-      announcements <- announcementsF
-      announcementData <- announcementDataF
-      nonceDbs <- noncesDbF
+      announcements <- announcementsA
+      announcementData <- announcementDataA
+      nonceDbs <- noncesDbA
     } yield {
       (announcements, announcementData, nonceDbs)
     }
+  }
+
+  private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[(
+      Vector[DLCAnnouncementDb],
+      Vector[OracleAnnouncementDataDb],
+      Vector[OracleNonceDb])] = {
+    safeDatabase.run(getDLCAnnouncementDbsAction(dlcId))
   }
 
   /** Fetches the oracle announcements of the oracles

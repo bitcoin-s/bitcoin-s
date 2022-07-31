@@ -165,12 +165,18 @@ case class AddressDAO()(implicit
   }
 
   def findAddress(addr: BitcoinAddress): Future[Option[AddressDb]] = {
-    val query = table
+    safeDatabase.run(findAddressAction(addr))
+  }
+
+  def findAddressAction(addr: BitcoinAddress): DBIOAction[
+    Option[AddressDb],
+    NoStream,
+    Effect.Read] = {
+    table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
       .filter(_._1.address === addr)
-    safeDatabase
-      .run(query.result)
+      .result
       .map(_.headOption)
       .map(res =>
         res.map { case (addrRec, spkRec) =>
