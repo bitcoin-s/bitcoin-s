@@ -188,7 +188,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         )
         processedSpendingTx <- wallet.processTransaction(transaction =
                                                            rawTxHelper.signedTx,
-                                                         blockHash = None)
+                                                         blockHashOpt = None)
         balance <- processedSpendingTx.getBalance()
       } yield assert(balance == amount)
 

@@ -29,7 +29,7 @@ import org.bitcoins.core.wallet.utxo.{
   AddressTagType,
   TxoState
 }
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,16 +63,28 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def processTransaction(
       transaction: Transaction,
-      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi]
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[WalletApi]
 
   def processTransactions(
       transactions: Vector[Transaction],
-      blockHash: Option[DoubleSha256DigestBE])(implicit
+      blockHashOpt: Option[DoubleSha256DigestBE])(implicit
       ec: ExecutionContext): Future[WalletApi] = {
     transactions.foldLeft(Future.successful(this)) { case (wallet, tx) =>
-      wallet.flatMap(_.processTransaction(tx, blockHash))
+      wallet.flatMap(_.processTransaction(tx, blockHashOpt))
     }
   }
+
+  /** Processes TXs originating from our wallet.
+    * This is called right after we've signed a TX,
+    * updating our UTXO state.
+    */
+  def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult]
 
   /** Processes the give block, updating our DB state if it's relevant to us.
     *
@@ -173,6 +185,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     * your wallet
     */
   def clearAllUtxos(): Future[WalletApi]
+
+  def clearAllAddresses(): Future[WalletApi]
 
   /** Gets a new external address with the specified
     * type.
@@ -432,6 +446,33 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def getWalletName(): Future[String]
 
   def getInfo(): Future[WalletInfo]
+
+  def findByOutPoints(
+      outPoints: Vector[TransactionOutPoint]): Future[Vector[SpendingInfoDb]]
+
+  def findByOutPoint(outPoint: TransactionOutPoint)(implicit
+      ec: ExecutionContext): Future[Option[SpendingInfoDb]] = {
+    findByOutPoints(Vector(outPoint)).map(_.headOption)
+  }
+
+  def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]]
+
+  def findByTxId(txId: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[Option[TransactionDb]] = {
+    findByTxIds(Vector(txId)).map(_.headOption)
+  }
+
+  def findByTxId(txId: DoubleSha256Digest)(implicit
+      ec: ExecutionContext): Future[Option[TransactionDb]] = {
+    findByTxId(txId.flip)
+  }
+
+  /** Finds all the outputs in our wallet being spent in the given transaction */
+  def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]]
+
+  def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]]
 }
 
 case class WalletInfo(
@@ -446,6 +487,3 @@ case class WalletInfo(
 
 /** An HDWallet that uses Neutrino to sync */
 trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
-
-/** An HDWallet that supports Neutrino method of syncing */
-trait AnyHDWalletApi extends HDWalletApi with NeutrinoWalletApi

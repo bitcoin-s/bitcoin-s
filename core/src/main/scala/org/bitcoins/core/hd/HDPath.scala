@@ -47,9 +47,13 @@ trait HDPath extends BIP32Path {
 
   def coin: HDCoin = address.coin
 
+  def coinType: HDCoinType = coin.coinType
   def chain: HDChain = address.chain
 
+  def chainType: HDChainType = chain.chainType
   def address: HDAddress
+
+  def accountIdx: Int = address.account.index
 
   override val path: Vector[BIP32Node] = address.path
 }

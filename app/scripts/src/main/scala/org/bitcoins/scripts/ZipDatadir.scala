@@ -14,7 +14,7 @@ import scala.concurrent.Future
 class ZipDatadir(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     conf: BitcoinSAppConfig)
-    extends BitcoinSServerRunner {
+    extends BitcoinSServerRunner[Unit] {
 
   override def start(): Future[Unit] = {
 

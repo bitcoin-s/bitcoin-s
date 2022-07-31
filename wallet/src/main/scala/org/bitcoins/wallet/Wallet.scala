@@ -1,16 +1,20 @@
 package org.bitcoins.wallet
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.wallet.SyncHeightDescriptor
+import org.bitcoins.core.api.wallet.{
+  BlockSyncState,
+  CoinSelectionAlgo,
+  NeutrinoHDWalletApi,
+  SyncHeightDescriptor,
+  WalletInfo
+}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{
-  AnyHDWalletApi,
-  BlockSyncState,
-  CoinSelectionAlgo,
-  WalletInfo
+import org.bitcoins.core.api.wallet.db.{
+  AccountDb,
+  SpendingInfoDb,
+  TransactionDb
 }
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -48,7 +52,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 abstract class Wallet
-    extends AnyHDWalletApi
+    extends NeutrinoHDWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling
@@ -282,12 +286,8 @@ abstract class Wallet
     val aggregatedActions: DBIOAction[
       Unit,
       NoStream,
-      Effect.Write with Effect.Transactional] = for {
-
-      _ <- spendingInfoDAO.deleteAllAction()
-    } yield {
-      ()
-    }
+      Effect.Write with Effect.Transactional] =
+      spendingInfoDAO.deleteAllAction().map(_ => ())
 
     val resultedF = safeDatabase.run(aggregatedActions)
     resultedF.failed.foreach(err =>
@@ -296,6 +296,15 @@ abstract class Wallet
         err))
 
     resultedF.map(_ => this)
+  }
+
+  override def clearAllAddresses(): Future[Wallet] = {
+    val action = addressDAO
+      .deleteAllAction()
+      .map(_ => ())
+    safeDatabase
+      .run(action)
+      .map(_ => this)
   }
 
   /** Sums up the value of all unspent
@@ -375,6 +384,21 @@ abstract class Wallet
         TxoState.pendingReceivedStates.contains(utxo.state))
       confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
+  }
+
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByOutPoints(outPoints)
+  }
+
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]] = {
+    transactionDAO.findByTxIds(txIds)
+  }
+
+  override def findOutputsBeingSpent(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findOutputsBeingSpent(tx)
   }
 
   /** Enumerates all the TX outpoints in the wallet */
@@ -942,6 +966,11 @@ abstract class Wallet
         imported = keyManager.imported
       )
     }
+  }
+
+  override def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByScriptPubKey(scriptPubKey)
   }
 
   def startFeeRateCallbackScheduler(): Unit = {

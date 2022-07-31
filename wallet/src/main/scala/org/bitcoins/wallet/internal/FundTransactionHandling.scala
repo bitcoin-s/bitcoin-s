@@ -44,6 +44,20 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                markAsReserved = markAsReserved)
   }
 
+  /** Funds an unsigned transaction from the specified account */
+  def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    fundRawTransaction(destinations = destinations,
+                       feeRate = feeRate,
+                       fromAccount = fromAccount,
+                       fromTagOpt = None,
+                       markAsReserved = markAsReserved)
+  }
+
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
     * which can be signed with the returned [[ScriptSignatureParams]].
     *

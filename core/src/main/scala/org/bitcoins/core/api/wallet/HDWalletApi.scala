@@ -11,6 +11,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.builder.{
+  FundRawTxHelper,
+  ShufflingNonInteractiveFinalizer
+}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
@@ -45,6 +49,8 @@ trait HDWalletApi extends WalletApi {
   def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
   def getNewAddress(account: HDAccount): Future[BitcoinAddress]
+
+  def getNewAddress(account: AccountDb): Future[BitcoinAddress]
 
   /** Generates a new change address */
   def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
@@ -500,4 +506,12 @@ trait HDWalletApi extends WalletApi {
       hdAccount: HDAccount,
       keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
+  def findAccount(account: HDAccount): Future[Option[AccountDb]]
+
+  def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
 }

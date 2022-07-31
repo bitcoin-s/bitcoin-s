@@ -12,6 +12,7 @@ import org.bitcoins.testkit.wallet.{
   WalletTestUtil,
   WalletWithBitcoindRpc
 }
+import org.bitcoins.wallet.models.IncomingTransactionDAO
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
@@ -28,13 +29,16 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   val exampleTag: InternalAddressTag = StorageLocationTag.HotStorage
 
   it should "correctly keep tagged utxos separated" in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
+    val walletConfig = walletWithBitcoind.walletConfig
     // the amount we're receiving from bitcoind
     val valueFromBitcoind = Bitcoins.one
 
     // the amount we're sending to bitcoind
     val valueToBitcoind = Bitcoins(0.5)
-
+    val incomingTxDAO =
+      IncomingTransactionDAO()(system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
       taggedAddr <- wallet.getNewAddress(Vector(exampleTag))
@@ -65,7 +69,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         wallet
           .getUnconfirmedBalance()
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind * 2))
-      incomingTx <- wallet.incomingTxDAO.findByTxId(tx.txIdBE)
+      incomingTx <- incomingTxDAO.findByTxId(tx.txIdBE)
       _ = assert(incomingTx.isDefined)
       _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind * 2)
 
@@ -76,16 +80,14 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .getUnconfirmedBalance(exampleTag)
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
-      account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
       rawTxHelper <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
-          .fundRawTransactionInternal(destinations = Vector(output),
-                                      feeRate = feeRate,
-                                      fromAccount = account,
-                                      fromTagOpt = Some(exampleTag),
-                                      markAsReserved = true)
+          .fundRawTransaction(destinations = Vector(output),
+                              feeRate = feeRate,
+                              fromTagOpt = Some(exampleTag),
+                              markAsReserved = true)
       }
       signedTx = rawTxHelper.signedTx
       _ <- wallet.processTransaction(signedTx, None)
@@ -119,7 +121,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   it must "process a tagged tx correctly when we broadcast it and receive it in a block" in {
     walletWithBitcoind =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
-      val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+      val WalletWithBitcoindRpc(wallet, bitcoind, _) = walletWithBitcoind
 
       val bitcoindAddrF = bitcoind.getNewAddress
       val walletAddr1F = wallet.getNewAddress()

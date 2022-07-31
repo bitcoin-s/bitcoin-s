@@ -15,6 +15,10 @@ import org.bitcoins.testkit.wallet.{
   WalletTestUtil,
   WalletWithBitcoindRpc
 }
+import org.bitcoins.wallet.models.{
+  IncomingTransactionDAO,
+  OutgoingTransactionDAO
+}
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -45,8 +49,12 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
     + " broadcast and confirmed by bitcoind") in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
+    val walletConfig = walletWithBitcoind.walletConfig
 
+    val incomingDAO = IncomingTransactionDAO()(system.dispatcher, walletConfig)
+    val outgoingDAO = OutgoingTransactionDAO()(system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
@@ -75,7 +83,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         wallet
           .getUnconfirmedBalance()
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
-      incomingTx <- wallet.incomingTxDAO.findByTxId(tx.txIdBE)
+      incomingTx <- incomingDAO.findByTxId(tx.txIdBE)
       _ = assert(incomingTx.isDefined)
       _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind)
 
@@ -124,7 +132,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         case other => fail(s"Found ${other.length} utxos!")
       }
 
-      outgoingTx <- wallet.outgoingTxDAO.findByTxId(txid)
+      outgoingTx <- outgoingDAO.findByTxId(txid)
       _ = assert(outgoingTx.isDefined)
       _ = assert(outgoingTx.get.inputAmount == valueFromBitcoind)
       _ = assert(outgoingTx.get.sentAmount == valueToBitcoind)
@@ -155,8 +163,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
   }
 
   it should "correctly bump fees with RBF" in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
-
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
     for {
       // Fund wallet
       addr <- wallet.getNewAddress()
@@ -207,7 +215,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       replacementInfo <- bitcoind.getRawTransaction(replacementTx.txIdBE)
 
-      utxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(replacementTx)
+      utxos <- wallet.findOutputsBeingSpent(replacementTx)
     } yield {
       assert(utxos.forall(_.spendingTxIdOpt.contains(replacementTx.txIdBE)))
       // Check correct one was confirmed
@@ -216,7 +224,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
   }
 
   it should "fail to RBF a confirmed transaction" in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
 
     for {
       // Fund wallet
@@ -250,7 +259,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
   }
 
   it should "correctly bump fees with CPFP" in { walletWithBitcoind =>
-    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
 
     for {
       // Fund wallet
@@ -291,7 +301,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   it should "correctly handle spending coinbase utxos" in {
     walletWithBitcoind =>
-      val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+      val wallet = walletWithBitcoind.wallet
+      val bitcoind = walletWithBitcoind.bitcoind
 
       // Makes fee rate for tx ~5 sat/vbyte
       val amountToSend = Bitcoins(49.99999000)
@@ -310,7 +321,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.processBlock(block)
 
         // Verify we funded the wallet
-        allUtxos <- wallet.spendingInfoDAO.findAllSpendingInfos()
+        allUtxos <- wallet.listUtxos()
         _ = assert(allUtxos.size == 1)
         utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
         _ = assert(utxos.size == 1)

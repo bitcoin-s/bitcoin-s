@@ -3,7 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.hd.{HDCoin, LegacyHDPath}
+import org.bitcoins.core.hd.LegacyHDPath
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction._
@@ -14,6 +14,7 @@ import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoinV19,
   WalletWithBitcoindV19
 }
+import org.bitcoins.wallet.models.AccountDAO
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -33,7 +34,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "process a block" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       startingUtxos <- wallet.listUtxos()
@@ -52,7 +54,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
-      txDbOpt <- wallet.transactionDAO.findByTxId(txId)
+      txDbOpt <- wallet.findByTxId(txId)
     } yield {
       assert(txDbOpt.isDefined)
       assert(txDbOpt.get.blockHashOpt.contains(hash))
@@ -66,7 +68,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "process coinbase txs" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
     for {
       startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       startingBalance <- wallet.getBalance()
@@ -91,7 +94,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "process coinbase txs using filters" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
 
     for {
       startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
@@ -119,10 +123,13 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   }
 
   it must "receive and spend funds in the same block" in { param =>
-    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
     val recvAmount = Bitcoins.one
     val sendAmount = Bitcoins(0.5)
 
+    val accountDAO: AccountDAO =
+      AccountDAO()(system.dispatcher, param.walletConfig)
     for {
       startBal <- wallet.getBalance()
       recvAddr <- wallet.getNewAddress()
@@ -156,21 +163,22 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
                                    Vector(output0, output1),
                                    UInt32.zero)
 
-      addrDb <- wallet.addressDAO.read(recvAddr).map(_.get)
-      coin = HDCoin(addrDb.purpose, addrDb.accountCoin)
-      accountDb <- wallet.accountDAO
-        .read((coin, addrDb.accountIndex))
+      addrDb <- wallet.getAddressInfo(recvAddr).map(_.get)
+      path = addrDb.path
+      coin = path.coin
+      accountDb <- accountDAO
+        .read((coin, path.accountIdx))
         .map(_.get)
 
-      bip32Path = LegacyHDPath(addrDb.accountCoin,
-                               addrDb.accountIndex,
-                               addrDb.accountChain,
-                               addrDb.addressIndex)
+      bip32Path = LegacyHDPath(path.coinType,
+                               path.accountIdx,
+                               path.chainType,
+                               path.address.index)
 
       psbt = PSBT
         .fromUnsignedTx(unsignedTx)
         .addUTXOToInput(recvTx, 0)
-        .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubKey, 0)
+        .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubkey, 0)
 
       signed <- wallet.signPSBT(psbt)
       tx <- Future.fromTry(

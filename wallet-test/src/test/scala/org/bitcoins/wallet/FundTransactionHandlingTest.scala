@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.wallet.HDWalletApi
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
@@ -148,14 +149,16 @@ class FundTransactionHandlingTest
       val amt = Bitcoins(0.1)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
-      val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      val account1DbF = wallet.accountDAO.findByAccount(account1)
+      val walletConfig = fundedWallet.walletConfig
+      val account1 = WalletTestUtil.getHdAccount1(walletConfig)
+      val account1DbF = wallet.findAccount(account1)
       for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
         fundRawTxHelper <- wallet.fundRawTransaction(Vector(newDestination),
                                                      feeRate,
-                                                     account1DbOpt.get)
+                                                     account1DbOpt.get,
+                                                     markAsReserved = true)
       } yield {
         val fundedTx = fundRawTxHelper.unsignedTx
         assert(fundedTx.inputs.nonEmpty)
@@ -170,14 +173,17 @@ class FundTransactionHandlingTest
       val amt = Bitcoins(1.1)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
-      val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      val account1DbF = wallet.accountDAO.findByAccount(account1)
+      val walletConfig = fundedWallet.walletConfig
+      val account1 = WalletTestUtil.getHdAccount1(walletConfig)
+      val account1DbF = wallet.findAccount(account1)
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
-                                              feeRate,
-                                              account1DbOpt.get)
+        fundedTx <- wallet.fundRawTransaction(destinations =
+                                                Vector(newDestination),
+                                              feeRate = feeRate,
+                                              fromAccount = account1DbOpt.get,
+                                              markAsReserved = true)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
@@ -192,7 +198,7 @@ class FundTransactionHandlingTest
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         _ <- wallet.createNewAccount(wallet.keyManager.kmParams)
-        accounts <- wallet.accountDAO.findAll()
+        accounts <- wallet.listAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
         addr <- wallet.getNewAddress(account2)
@@ -205,7 +211,10 @@ class FundTransactionHandlingTest
         _ = assert(utxos.size == 1)
 
         fundedTx <-
-          wallet.fundRawTransaction(Vector(destination), feeRate, account2)
+          wallet.fundRawTransaction(destinations = Vector(destination),
+                                    feeRate = feeRate,
+                                    fromAccount = account2,
+                                    markAsReserved = true)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
@@ -224,9 +233,9 @@ class FundTransactionHandlingTest
                                                      fromTagOpt = None,
                                                      markAsReserved = true)
 
-        spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(
+        spendingInfos <- wallet.findOutputsBeingSpent(
           fundRawTxHelper.unsignedTx)
-        reserved <- wallet.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        reserved <- wallet.listUtxos(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
         assert(reserved.size == spendingInfos.size)
@@ -234,7 +243,7 @@ class FundTransactionHandlingTest
   }
 
   def testAddressTagFunding(
-      wallet: Wallet,
+      wallet: HDWalletApi,
       tag: AddressTag): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()
@@ -248,10 +257,9 @@ class FundTransactionHandlingTest
       expectedUtxos <- wallet.listUtxos(account.hdAccount, tag)
       fundRawTxHelper <-
         wallet
-          .fundRawTransactionInternal(
+          .fundRawTransaction(
             destinations = Vector(destination),
             feeRate = feeRate,
-            fromAccount = account,
             fromTagOpt = Some(tag),
             markAsReserved = true
           )

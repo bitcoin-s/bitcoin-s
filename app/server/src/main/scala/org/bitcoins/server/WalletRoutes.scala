@@ -7,7 +7,7 @@ import akka.http.scaladsl.server._
 import akka.stream.Materializer
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
@@ -34,7 +34,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
+case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute

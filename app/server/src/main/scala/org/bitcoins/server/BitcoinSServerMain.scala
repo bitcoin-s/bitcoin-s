@@ -19,7 +19,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.node.{
   InternalImplementationNodeType,
   NodeApi,
@@ -53,7 +53,7 @@ import scala.concurrent.{Await, Future, Promise}
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     val conf: BitcoinSAppConfig)
-    extends BitcoinSServerRunner {
+    extends BitcoinSServerRunner[WalletHolder] {
 
   implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
   implicit lazy val chainConf: ChainAppConfig = conf.chainConf
@@ -62,7 +62,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val torConf: TorAppConfig = conf.torConf
   lazy val network = conf.walletConf.network
 
-  override def start(): Future[Unit] = {
+  override def start(): Future[WalletHolder] = {
     logger.info("Starting appServer")
     val startTime = TimeUtil.currentEpochMs
     val startedConfigF = conf.start()
@@ -95,7 +95,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-  override def stop(): Future[Unit] = {
+  override def stop(): Future[WalletHolder] = {
     logger.error(s"Exiting process")
     mempoolPollingCancellableOpt.foreach(_.cancel())
     for {
@@ -106,7 +106,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
     } yield {
-      ()
+      //return empty wallet holder
+      new WalletHolder()
     }
   }
 
@@ -114,7 +115,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     * @param startedTorConfigF a future that is completed when tor is fully started
     * @return
     */
-  def startBitcoinSBackend(startedTorConfigF: Future[Unit]): Future[Unit] = {
+  def startBitcoinSBackend(
+      startedTorConfigF: Future[Unit]): Future[WalletHolder] = {
     logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
 
@@ -207,7 +209,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     //start our http server now that we are synced
-    for {
+    val startedF = for {
       _ <- neutrinoWalletLoaderF
       _ <- startHttpServer(
         nodeApiF = startedNodeF,
@@ -236,6 +238,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
       ()
     }
+
+    for {
+      _ <- startedF
+      walletHolder <- configuredWalletF.map(_._1)
+    } yield walletHolder
   }
 
   private def buildNeutrinoCallbacks(
@@ -288,7 +295,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     * @param startedTorConfigF a future that is completed when tor is fully started
     * @return
     */
-  def startBitcoindBackend(startedTorConfigF: Future[Unit]): Future[Unit] = {
+  def startBitcoindBackend(
+      startedTorConfigF: Future[Unit]): Future[WalletHolder] = {
     logger.info(s"startBitcoindBackend()")
     val bitcoindF = for {
       client <- bitcoindRpcConf.clientF
@@ -416,7 +424,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _.map(c => mempoolPollingCancellableOpt = Some(c)))
 
     //don't return the Future that represents the full syncing of the wallet with bitcoind
-    pollingCancellableNestedF.map(_ => ())
+    for {
+      _ <- pollingCancellableNestedF //drop nested Future here
+      walletHolder <- walletF.map(_._1)
+    } yield walletHolder
   }
 
   private var serverBindingsOpt: Option[ServerBindings] = None
@@ -593,7 +604,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def handleDuplicateSpendingInfoDb(
-      wallet: AnyDLCHDWalletApi,
+      wallet: DLCNeutrinoHDWalletApi,
       walletConfig: WalletAppConfig): Future[Unit] = {
     val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
     for {
@@ -621,7 +632,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def restartRescanIfNeeded(
-      wallet: AnyDLCHDWalletApi): Future[RescanState] = {
+      wallet: DLCNeutrinoHDWalletApi): Future[RescanState] = {
     for {
       isRescanning <- wallet.isRescanning()
       res <-
@@ -676,5 +687,6 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
     logger.info(
       s"@@@@@@@@@@@@@@@@@@@@@ Shutting down ${getClass.getSimpleName} @@@@@@@@@@@@@@@@@@@@@")
     Await.result(m.stop(), 10.seconds)
+    ()
   }
 }
