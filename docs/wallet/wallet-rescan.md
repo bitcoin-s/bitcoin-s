@@ -68,7 +68,6 @@ val walletWithBitcoindF = for {
   walletWithBitcoind <- BitcoinSWalletTest.fundedWalletAndBitcoind(
   Some(BitcoindVersion.newest),
   MockNodeApi,
-  None,
   MockChainQueryApi,
   WalletCallbacks.empty)
 } yield walletWithBitcoind
