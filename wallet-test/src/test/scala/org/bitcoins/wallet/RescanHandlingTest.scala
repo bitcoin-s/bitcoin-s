@@ -188,10 +188,10 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       }
 
       for {
-        initBalance <- initBalanceF
+        _ <- initBalanceF
         balanceAfterPayment1 <- balanceAfterPayment1F
 
-        account <- wallet.getDefaultAccount()
+        account <- defaultAccountF
         txIds <-
           wallet
             .listUtxos(account.hdAccount)
@@ -201,11 +201,13 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .map(_.flatMap(_.blockHashOpt))
 
         _ <- wallet.clearAllUtxos()
-        _ <- wallet.clearUtxos()
+        _ <- wallet.clearAllAddresses()
+        balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
+        assert(balanceAfterClear == CurrencyUnits.zero)
         assert(balanceAfterPayment1 == balanceAfterRescan)
       }
   }
