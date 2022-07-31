@@ -50,31 +50,7 @@ object BitcoindRpcBackendUtil extends Logging {
       heightRange <- {
         walletStateOpt match {
           case None =>
-            for {
-              txDbs <- wallet.listTransactions()
-              lastConfirmedOpt = txDbs
-                .filter(_.blockHashOpt.isDefined)
-                .lastOption
-              range <- lastConfirmedOpt match {
-                case None =>
-                  val range = (bitcoindHeight - 1).to(bitcoindHeight)
-                  Future.successful(range)
-                case Some(txDb) =>
-                  for {
-                    heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
-                    range <- heightOpt match {
-                      case Some(height) =>
-                        logger.info(
-                          s"Last tx occurred at block $height, syncing from there")
-                        val range = height.to(bitcoindHeight)
-                        Future.successful(range)
-                      case None =>
-                        val range = (bitcoindHeight - 1).to(bitcoindHeight)
-                        Future.successful(range)
-                    }
-                  } yield range
-              }
-            } yield range
+            getHeightRangeNoWalletState(wallet, bitcoind, bitcoindHeight)
           case Some(walletState) =>
             val range = walletState.height.to(bitcoindHeight).tail
             Future.successful(range)
@@ -91,6 +67,41 @@ object BitcoindRpcBackendUtil extends Logging {
     }
 
     res.map(_ => ())
+  }
+
+  /** Gets the height range for syncing against bitcoind when we don't have a [[org.bitcoins.core.api.wallet.WalletStateDescriptor]]
+    * to read the sync height from.
+    */
+  private def getHeightRangeNoWalletState(
+      wallet: NeutrinoHDWalletApi,
+      bitcoind: BitcoindRpcClient,
+      bitcoindHeight: Int)(implicit
+      ex: ExecutionContext): Future[Range.Inclusive] = {
+    for {
+      txDbs <- wallet.listTransactions()
+      lastConfirmedOpt = txDbs
+        .filter(_.blockHashOpt.isDefined)
+        .lastOption
+      range <- lastConfirmedOpt match {
+        case None =>
+          val range = (bitcoindHeight - 1).to(bitcoindHeight)
+          Future.successful(range)
+        case Some(txDb) =>
+          for {
+            heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
+            range <- heightOpt match {
+              case Some(height) =>
+                logger.info(
+                  s"Last tx occurred at block $height, syncing from there")
+                val range = height.to(bitcoindHeight)
+                Future.successful(range)
+              case None =>
+                val range = (bitcoindHeight - 1).to(bitcoindHeight)
+                Future.successful(range)
+            }
+          } yield range
+      }
+    } yield range
   }
 
   private def setSyncingFlag(
