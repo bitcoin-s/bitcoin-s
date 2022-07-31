@@ -206,8 +206,6 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- RescanState.awaitRescanDone(rescanState)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
-        println(
-          s"initBalance=$initBalance balanceAfterPayment1=$balanceAfterPayment1 balanceAfterRescan=$balanceAfterRescan")
         assert(balanceAfterPayment1 == balanceAfterRescan)
       }
   }

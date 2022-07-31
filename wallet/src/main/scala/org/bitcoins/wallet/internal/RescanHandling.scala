@@ -245,10 +245,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       range = startHeight.to(endHeight)
 
       rescanStarted = buildRescanFlow(account = account,
-                                           addressBatchSize = addressBatchSize,
-                                           range = range,
-                                           parallelism = parallelismLevel,
-                                           filterBatchSize = addressBatchSize)
+                                      addressBatchSize = addressBatchSize,
+                                      range = range,
+                                      parallelism = parallelismLevel,
+                                      filterBatchSize = addressBatchSize)
     } yield {
       rescanStarted
     }
