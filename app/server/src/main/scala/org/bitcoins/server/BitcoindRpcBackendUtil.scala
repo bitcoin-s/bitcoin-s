@@ -6,7 +6,11 @@ import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
+import org.bitcoins.core.api.wallet.{
+  NeutrinoHDWalletApi,
+  NeutrinoWalletApi,
+  WalletApi
+}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -29,14 +33,13 @@ object BitcoindRpcBackendUtil extends Logging {
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(
       bitcoind: BitcoindRpcClient,
-      wallet: WalletApi with NeutrinoWalletApi,
+      wallet: NeutrinoHDWalletApi,
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
       system: ActorSystem): Future[Unit] = {
     logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
 
-    val streamF: Future[
-      RunnableGraph[Future[WalletApi with NeutrinoWalletApi]]] = for {
+    val streamF: Future[RunnableGraph[Future[NeutrinoHDWalletApi]]] = for {
       _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
@@ -82,9 +85,8 @@ object BitcoindRpcBackendUtil extends Logging {
     */
   private def buildBitcoindSyncSink(
       bitcoind: BitcoindRpcClient,
-      wallet: WalletApi with NeutrinoWalletApi)(implicit
-      system: ActorSystem): Future[
-    Sink[Int, Future[WalletApi with NeutrinoWalletApi]]] = {
+      wallet: NeutrinoHDWalletApi)(implicit
+      system: ActorSystem): Future[Sink[Int, Future[NeutrinoHDWalletApi]]] = {
     import system.dispatcher
 
     val hasFiltersF = bitcoind
@@ -97,7 +99,7 @@ object BitcoindRpcBackendUtil extends Logging {
     //feeding blockchain hashes into this sync
     //will sync our wallet with those blockchain hashes
     val syncWalletSinkF: Future[
-      Sink[DoubleSha256Digest, Future[WalletApi with NeutrinoWalletApi]]] = {
+      Sink[DoubleSha256Digest, Future[NeutrinoHDWalletApi]]] = {
 
       for {
         hasFilters <- hasFiltersF
@@ -216,16 +218,13 @@ object BitcoindRpcBackendUtil extends Logging {
 
   private def filterSyncSink(
       bitcoindRpcClient: V19BlockFilterRpc,
-      wallet: WalletApi with NeutrinoWalletApi)(implicit
-      system: ActorSystem): Sink[
+      wallet: NeutrinoHDWalletApi)(implicit system: ActorSystem): Sink[
     DoubleSha256Digest,
-    Future[WalletApi with NeutrinoWalletApi]] = {
+    Future[NeutrinoHDWalletApi]] = {
     import system.dispatcher
 
     val numParallelism = getParallelism
-    val sink: Sink[
-      DoubleSha256Digest,
-      Future[WalletApi with NeutrinoWalletApi]] =
+    val sink: Sink[DoubleSha256Digest, Future[NeutrinoHDWalletApi]] =
       Flow[DoubleSha256Digest]
         .mapAsync(parallelism = numParallelism) { hash =>
           bitcoindRpcClient.getBlockFilter(hash.flip, FilterType.Basic).map {
