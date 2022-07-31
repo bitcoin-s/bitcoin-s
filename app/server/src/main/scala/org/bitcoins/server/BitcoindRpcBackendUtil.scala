@@ -47,12 +47,37 @@ object BitcoindRpcBackendUtil extends Logging {
       _ = logger.info(
         s"Syncing from bitcoind with bitcoindHeight=$bitcoindHeight walletHeight=${walletStateOpt
           .getOrElse(walletBirthdayHeight)}")
-      heightRange = {
+      heightRange <- {
         walletStateOpt match {
           case None =>
-            walletBirthdayHeight.to(bitcoindHeight).tail
+            for {
+              txDbs <- wallet.listTransactions()
+              lastConfirmedOpt = txDbs
+                .filter(_.blockHashOpt.isDefined)
+                .lastOption
+              range <- lastConfirmedOpt match {
+                case None =>
+                  val range = (bitcoindHeight - 1).to(bitcoindHeight)
+                  Future.successful(range)
+                case Some(txDb) =>
+                  for {
+                    heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
+                    range <- heightOpt match {
+                      case Some(height) =>
+                        logger.info(
+                          s"Last tx occurred at block $height, syncing from there")
+                        val range = height.to(bitcoindHeight)
+                        Future.successful(range)
+                      case None =>
+                        val range = (bitcoindHeight - 1).to(bitcoindHeight)
+                        Future.successful(range)
+                    }
+                  } yield range
+              }
+            } yield range
           case Some(walletState) =>
-            walletState.height.to(bitcoindHeight).tail
+            val range = walletState.height.to(bitcoindHeight).tail
+            Future.successful(range)
         }
       }
       syncFlow <- buildBitcoindSyncSink(bitcoind, wallet)
