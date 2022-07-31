@@ -42,7 +42,6 @@ trait BitcoinSServerMainBitcoindFixture
                                                    config.walletConf)
         _ <- FundWalletUtil.fundWalletWithBitcoind(walletWithBitcoind)
       } yield {
-        logger.info(s"Done setting up fixture")
         ServerWithBitcoind(bitcoind, server)
       }
     }
@@ -54,7 +53,6 @@ trait BitcoinSServerMainBitcoindFixture
         _ <- BitcoinSServerMainUtil
           .destroyBitcoinSAppConfig(serverWithBitcoind.server.conf)
       } yield {
-        logger.info(s"Done tearing down fixture")
         ()
       }
     }

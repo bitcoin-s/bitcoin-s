@@ -153,7 +153,6 @@ case class DLCWalletNeutrinoBackendLoader(
       _ <- stopOldWalletAppConfig(walletConfig)
       _ <- stopOldDLCAppConfig(dlcConfig)
       _ <- walletHolder.replaceWallet(dlcWallet)
-      _ <- walletHolder.start()
       nodeCallbacks <-
         CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
