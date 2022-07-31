@@ -25,7 +25,8 @@ import org.bitcoins.core.api.node.{
   NodeApi,
   NodeType
 }
-import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
+import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
+
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.dlc.node.DLCNode
@@ -525,7 +526,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     */
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
-      wallet: WalletApi with NeutrinoWalletApi,
+      wallet: NeutrinoHDWalletApi,
       chainCallbacksOpt: Option[ChainCallbacks]): Future[
     BitcoindPollingCancellabe] = {
     val f = for {

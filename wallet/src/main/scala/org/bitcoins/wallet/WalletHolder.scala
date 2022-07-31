@@ -114,8 +114,9 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi with NeutrinoWalletApi] = delegate(
-    _.processCompactFilters(blockFilters))
+    NeutrinoHDWalletApi] = {
+    delegate(_.processCompactFilters(blockFilters))
+  }
 
   override def rescanNeutrinoWallet(
       startOpt: Option[BlockStamp],
@@ -709,7 +710,7 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   override def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[WalletApi with NeutrinoWalletApi] =
+      blockFilter: GolombFilter): Future[NeutrinoHDWalletApi] =
     delegate(_.processCompactFilter(blockHash, blockFilter))
 
   override def fullRescanNeutrinoWallet(addressBatchSize: Int, force: Boolean)(

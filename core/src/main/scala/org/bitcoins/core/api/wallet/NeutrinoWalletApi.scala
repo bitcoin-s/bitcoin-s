@@ -11,12 +11,12 @@ trait NeutrinoWalletApi { self: WalletApi =>
 
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[WalletApi with NeutrinoWalletApi] =
+      blockFilter: GolombFilter): Future[NeutrinoHDWalletApi] =
     processCompactFilters(Vector((blockHash, blockFilter)))
 
   def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi with NeutrinoWalletApi]
+    NeutrinoHDWalletApi]
 
   /** Recreates the account using BIP-157 approach
     *
