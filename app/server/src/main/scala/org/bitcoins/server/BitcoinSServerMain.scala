@@ -101,6 +101,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     mempoolPollingCancellableOpt.foreach(_.cancel())
     for {
       _ <- conf.stop()
+      _ <- walletLoaderApiOpt match {
+        case Some(l) => l.stop()
+        case None    => Future.unit
+      }
       _ <- serverBindingsOpt match {
         case Some(bindings) => bindings.stop()
         case None           => Future.unit
@@ -143,10 +147,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       for {
         node <- nodeF
       } yield {
-        DLCWalletNeutrinoBackendLoader(walletHolder,
-                                       chainApi,
-                                       nodeApi = node,
-                                       feeRateApi = feeProvider)
+        val l = DLCWalletNeutrinoBackendLoader(walletHolder,
+                                               chainApi,
+                                               nodeApi = node,
+                                               feeRateApi = feeProvider)
+        walletLoaderApiOpt = Some(l)
+        l
       }
     }
 
@@ -292,6 +298,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private var mempoolPollingCancellableOpt: Option[BitcoindPollingCancellabe] =
     None
 
+  /** The wallet loader that is being used for our wallet. */
+  private[this] var walletLoaderApiOpt: Option[DLCWalletLoaderApi] = None
+
   /** Start the bitcoin-s wallet server with a bitcoind backend
     * @param startedTorConfigF a future that is completed when tor is fully started
     * @return
@@ -352,10 +361,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         bitcoind <- bitcoindF
         nodeApi <- nodeApiF
         feeProvider <- feeProviderF
-      } yield DLCWalletBitcoindBackendLoader(walletHolder,
-                                             bitcoind,
-                                             nodeApi,
-                                             feeProvider)
+      } yield {
+        val l = DLCWalletBitcoindBackendLoader(walletHolder,
+                                               bitcoind,
+                                               nodeApi,
+                                               feeProvider)
+
+        walletLoaderApiOpt = Some(l)
+        l
+      }
     }
 
     val walletF: Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
