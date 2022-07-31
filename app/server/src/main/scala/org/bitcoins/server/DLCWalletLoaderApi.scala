@@ -248,7 +248,6 @@ case class DLCWalletBitcoindBackendLoader(
         walletHolder)
       _ = nodeConf.addCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
-      _ <- walletHolder.start()
     } yield (walletHolder, walletConfig, dlcConfig)
   }
 
