@@ -144,10 +144,15 @@ trait BitcoinSWalletTest
   /** Fixture for a wallet with default configuration with no funds in it */
   def withNewWallet(test: OneArgAsyncTest)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    makeDependentFixture(build = { () =>
+    makeDependentFixture[Wallet](build = { () =>
                            createDefaultWallet(nodeApi, chainQueryApi)
                          },
-                         destroy = destroyWallet)(test)
+                         destroy = { wallet =>
+                           for {
+                             _ <- destroyWallet(wallet)
+                             _ <- destroyWalletAppConfig(walletAppConfig)
+                           } yield ()
+                         })(test)
   }
 
   def withNewWallet2Accounts(test: OneArgAsyncTest)(implicit
