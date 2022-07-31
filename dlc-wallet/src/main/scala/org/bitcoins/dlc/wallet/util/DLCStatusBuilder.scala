@@ -11,6 +11,11 @@ import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 
+/** Creates a case class that represents all DLC data from dlcdb.sqlite
+  * Unfortunately we have to read some data from walletdb.sqlite to build a
+  * full [[DLCStatus]]
+  * @see https://github.com/bitcoin-s/bitcoin-s/pull/4555#issuecomment-1200113188
+  */
 case class IntermediaryDLCStatus(
     dlcDb: DLCDb,
     contractInfo: ContractInfo,
