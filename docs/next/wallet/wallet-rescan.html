@@ -96,8 +96,11 @@ You can download this with bitcoin-s by doing <code>sbt downloadBitcoind</code><
 
 <span class="hljs-comment">//ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it</span>
 <span class="hljs-keyword">val</span> walletWithBitcoindF = <span class="hljs-keyword">for</span> {
-  bitcoind &lt;- <span class="hljs-type">BitcoinSFixture</span>.createBitcoindWithFunds()
-  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.createWalletWithBitcoindCallbacks(bitcoind)
+  walletWithBitcoind &lt;- <span class="hljs-type">BitcoinSWalletTest</span>.fundedWalletAndBitcoind(
+  <span class="hljs-type">Some</span>(<span class="hljs-type">BitcoindVersion</span>.newest),
+  <span class="hljs-type">MockNodeApi</span>,
+  <span class="hljs-type">MockChainQueryApi</span>,
+  <span class="hljs-type">WalletCallbacks</span>.empty)
 } <span class="hljs-keyword">yield</span> walletWithBitcoind
 
 <span class="hljs-keyword">val</span> walletF = walletWithBitcoindF.map(_.wallet)
@@ -134,7 +137,8 @@ You can download this with bitcoin-s by doing <code>sbt downloadBitcoind</code><
 <span class="hljs-keyword">val</span> addrBatchSize = <span class="hljs-number">100</span>
 <span class="hljs-comment">//ok now that we have a cleared wallet, we need to rescan and find our fudns again!</span>
 <span class="hljs-keyword">val</span> rescannedBalanceF = <span class="hljs-keyword">for</span> {
-  w &lt;- clearedWalletF
+  _ &lt;- clearedWalletF
+  w &lt;- walletF
   _ &lt;- w.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan &lt;- w.getBalance()
 } <span class="hljs-keyword">yield</span> {
