@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
@@ -15,7 +14,6 @@ import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
@@ -92,32 +90,6 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         assert(addresses.distinct.length == addresses.length,
                s"We receive an identical address!")
 
-      }
-  }
-
-  it must "fail with an illegal state exception if the queue is full" in {
-    fundedWallet: FundedWallet =>
-      val wallet = fundedWallet.wallet
-      //attempt to generate 50 addresses simultaneously
-      //this should overwhelm our buffer size of 10
-      val numAddress = 50
-      val generatedF = Vector.fill(numAddress)(wallet.getNewAddress())
-
-      //some hacking here so we don't get an ugly stack trace
-      //when the thread gets killed while processing things in the queue
-      //we want to make sure everything                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              is done processing before we assert
-      //we failed
-      val allCompletedF =
-        AsyncUtil.retryUntilSatisfied(generatedF.forall(_.isCompleted),
-                                      250.millis)
-      val addressesF = allCompletedF.flatMap { _ =>
-        Future.sequence {
-          generatedF
-        }
-      }
-
-      recoverToSucceededIf[IllegalStateException] {
-        addressesF
       }
   }
 
