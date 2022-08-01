@@ -88,7 +88,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
             _ = RescanState.awaitRescanDone(state).map { _ =>
               val f = for {
                 _ <- stateDescriptorDAO.updateRescanning(false)
-                _ <- walletCallbacks.executeOnRescanComplete(logger,walletConfig.walletName)
+                _ <- walletCallbacks
+                  .executeOnRescanComplete(logger, walletConfig.walletName)
               } yield ()
 
               f.failed.foreach(err =>
