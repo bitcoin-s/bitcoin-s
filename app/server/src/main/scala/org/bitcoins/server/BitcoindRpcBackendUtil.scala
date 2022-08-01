@@ -44,10 +44,7 @@ object BitcoindRpcBackendUtil extends Logging {
       _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
-      walletBirthdayHeight = 0 // need to come back to this likely
-      _ = logger.info(
-        s"Syncing from bitcoind with bitcoindHeight=$bitcoindHeight walletHeight=${walletStateOpt
-          .getOrElse(walletBirthdayHeight)}")
+
       heightRange <- {
         walletStateOpt match {
           case None =>
@@ -57,6 +54,8 @@ object BitcoindRpcBackendUtil extends Logging {
             Future.successful(range)
         }
       }
+      _ = logger.info(
+        s"Syncing from bitcoind with bitcoindHeight=$bitcoindHeight walletHeight=${heightRange.start}")
       syncFlow <- buildBitcoindSyncSink(bitcoind, wallet)
       stream = Source(heightRange).toMat(syncFlow)(Keep.right)
     } yield stream
@@ -352,8 +351,8 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks],
       interval: FiniteDuration = 10.seconds)(implicit
-      system: ActorSystem,
-      ec: ExecutionContext): Cancellable = {
+      system: ActorSystem): Cancellable = {
+    import system.dispatcher
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         val f = for {

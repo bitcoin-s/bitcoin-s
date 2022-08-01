@@ -26,7 +26,6 @@ import org.bitcoins.core.api.node.{
   NodeType
 }
 import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
-
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.dlc.node.DLCNode
@@ -39,6 +38,7 @@ import org.bitcoins.node.models.NodeStateDescriptorDAO
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
+import org.bitcoins.server.bitcoind.BitcoindSyncState
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util._
 import org.bitcoins.tor.config.TorAppConfig
@@ -98,8 +98,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
   override def stop(): Future[WalletHolder] = {
     logger.error(s"Exiting process")
-    mempoolPollingCancellableOpt.foreach(_.cancel())
     for {
+      _ <- {
+        bitcoindSyncStateOpt match {
+          case Some(bitcoindSyncState) =>
+            bitcoindSyncState.stop()
+          case None => Future.unit
+        }
+      }
       _ <- conf.stop()
       _ <- walletLoaderApiOpt match {
         case Some(l) => l.stop()
@@ -294,12 +300,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield info
   }
 
-  /** Variable to hold the cancellable to stop polling bitcoind for blocks/txs */
-  private var mempoolPollingCancellableOpt: Option[BitcoindPollingCancellabe] =
-    None
-
   /** The wallet loader that is being used for our wallet. */
   private[this] var walletLoaderApiOpt: Option[DLCWalletLoaderApi] = None
+
+  private[this] var bitcoindSyncStateOpt: Option[BitcoindSyncState] = None
 
   /** Start the bitcoin-s wallet server with a bitcoind backend
     * @param startedTorConfigF a future that is completed when tor is fully started
@@ -390,10 +394,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       } yield dlcNode
     }
 
-    //intentionally Future[Future[]], the inner Future[BitcoindPollingCancellable]
-    //is blocked on syncing the wallet from bitcoind. This can take hours
-    //so don't block the rest of the appllication on that
-    val pollingCancellableNestedF: Future[Future[BitcoindPollingCancellabe]] =
+    val bitcoindSyncStateF: Future[BitcoindSyncState] = {
       for {
         bitcoind <- bitcoindF
         bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
@@ -417,13 +418,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         (wallet, walletConfig, dlcConfig) <- walletF
         _ = walletConfig.addCallbacks(walletCallbacks)
 
-        //intentionally doesn't map on this otherwise we
-        //wait until we are done syncing the entire wallet
-        //which could take 1 hour
-        mempoolPollingCancellable = syncWalletWithBitcoindAndStartPolling(
+        bitcoindSyncState <- syncWalletWithBitcoindAndStartPolling(
           bitcoind,
           wallet,
           Some(chainCallbacks))
+        _ = {
+          bitcoindSyncStateOpt = Some(bitcoindSyncState)
+        }
         dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
         _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
         _ <- startedTorConfigF
@@ -431,16 +432,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         _ <- restartRescanIfNeeded(wallet)
       } yield {
         logger.info(s"Done starting Main!")
-        mempoolPollingCancellable
+        bitcoindSyncState
       }
-
-    //set the polling cancellable after the wallet is done syncing against bitcoind
-    pollingCancellableNestedF.map(
-      _.map(c => mempoolPollingCancellableOpt = Some(c)))
+    }
 
     //don't return the Future that represents the full syncing of the wallet with bitcoind
     for {
-      _ <- pollingCancellableNestedF //drop nested Future here
+      _ <- bitcoindSyncStateF //drop nested Future here
       walletHolder <- walletF.map(_._1)
     } yield walletHolder
   }
@@ -541,8 +539,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
       wallet: NeutrinoHDWalletApi,
-      chainCallbacksOpt: Option[ChainCallbacks]): Future[
-    BitcoindPollingCancellabe] = {
+      chainCallbacksOpt: Option[ChainCallbacks]): Future[BitcoindSyncState] = {
     val f = for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = { () =>
@@ -556,11 +553,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         interval = 1.second,
         maxTries = 12
       )
-      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(
+      syncF = BitcoindRpcBackendUtil.syncWalletToBitcoind(
         bitcoind,
         wallet,
         chainCallbacksOpt)(system)
-      _ <- wallet.updateUtxoPendingStates()
+      _ = syncF.map(_ => wallet.updateUtxoPendingStates())
       pollingCancellable <-
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           val blockingPollingCancellable = BitcoindRpcBackendUtil
@@ -584,7 +581,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             BitcoindPollingCancellabe.none
           }
         }
-    } yield pollingCancellable
+    } yield BitcoindSyncState(syncF, pollingCancellable)
 
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
