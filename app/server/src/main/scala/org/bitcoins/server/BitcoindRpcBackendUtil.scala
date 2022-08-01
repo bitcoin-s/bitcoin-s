@@ -108,7 +108,7 @@ object BitcoindRpcBackendUtil extends Logging {
       syncing: Boolean,
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
-      ec: ExecutionContext) = for {
+      ec: ExecutionContext): Future[Unit] = for {
     _ <- bitcoind.setSyncing(false)
   } yield {
     chainCallbacksOpt.map(_.executeOnSyncFlagChanged(logger, syncing))
@@ -337,6 +337,8 @@ object BitcoindRpcBackendUtil extends Logging {
     }
   }
 
+  private val processingBitcoindBlocks = new AtomicBoolean(false)
+
   /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
     * if it has changed, it will then request those blocks to process them
     *
@@ -355,84 +357,16 @@ object BitcoindRpcBackendUtil extends Logging {
     for {
       walletSyncState <- wallet.getSyncState()
     } yield {
-      val numParallelism = getParallelism
-      val atomicPrevCount: AtomicInteger = new AtomicInteger(
-        walletSyncState.height)
-      val processingBitcoindBlocks = new AtomicBoolean(false)
-
-      def pollBitcoind(): Future[Unit] = {
-        if (processingBitcoindBlocks.compareAndSet(false, true)) {
-          logger.trace("Polling bitcoind for block count")
-
-          bitcoind.setSyncing(true)
-          val res: Future[Unit] = for {
-            _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
-            count <- bitcoind.getBlockCount
-            retval <- {
-              val prevCount = atomicPrevCount.get()
-              if (prevCount < count) {
-                logger.info(
-                  s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
-
-                // use .tail so we don't process the previous block that we already did
-                val range = prevCount.to(count).tail
-                val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
-                  .mapAsync(parallelism = numParallelism) { height =>
-                    bitcoind.getBlockHash(height).map(_.flip)
-                  }
-                  .map { hash =>
-                    val _ = atomicPrevCount.incrementAndGet()
-                    hash
-                  }
-                  .toMat(Sink.seq)(Keep.right)
-                  .run()
-
-                val requestsBlocksF = for {
-                  hashes <- hashFs
-                  _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-                } yield logger.debug(
-                  "Successfully polled bitcoind for new blocks")
-
-                requestsBlocksF.failed.foreach { case err =>
-                  val failedCount = atomicPrevCount.get
-                  atomicPrevCount.set(prevCount)
-                  logger.error(
-                    s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
-                    err)
-                }
-
-                requestsBlocksF
-              } else if (prevCount > count) {
-                Future.failed(new RuntimeException(
-                  s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-              } else {
-                logger.debug(s"In sync $prevCount count=$count")
-                Future.unit
-              }
-            }
-          } yield {
-            retval
-          }
-
-          res.onComplete { _ =>
-            processingBitcoindBlocks.set(false)
-            setSyncingFlag(false, bitcoind, chainCallbacksOpt)
-          }
-          res
-        } else {
-          logger.info(
-            s"Skipping scanning the blockchain since a previously scheduled task is still running")
-          Future.unit
-        }
-      }
-
       system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
         {
           val f = for {
             rescanning <- wallet.isRescanning()
             res <-
               if (!rescanning) {
-                pollBitcoind()
+                pollBitcoind(wallet = wallet,
+                             bitcoind = bitcoind,
+                             chainCallbacksOpt = chainCallbacksOpt,
+                             prevCount = walletSyncState.height)
               } else {
                 logger.info(
                   s"Skipping scanning the blockchain during wallet rescan")
@@ -443,6 +377,80 @@ object BitcoindRpcBackendUtil extends Logging {
           f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
         }
       }
+    }
+  }
+
+  private def pollBitcoind(
+      wallet: WalletApi,
+      bitcoind: BitcoindRpcClient,
+      chainCallbacksOpt: Option[ChainCallbacks],
+      prevCount: Int)(implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    val atomicPrevCount = new AtomicInteger(prevCount)
+    if (processingBitcoindBlocks.compareAndSet(false, true)) {
+      logger.trace("Polling bitcoind for block count")
+
+      val numParallelism = getParallelism
+      val res: Future[Unit] = for {
+        _ <- bitcoind.setSyncing(true)
+        _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
+        count <- bitcoind.getBlockCount
+        retval <- {
+          if (prevCount < count) {
+            logger.info(
+              s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
+
+            // use .tail so we don't process the previous block that we already did
+            val range = prevCount.to(count).tail
+            val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
+              .mapAsync(parallelism = numParallelism) { height =>
+                bitcoind.getBlockHash(height).map(_.flip)
+              }
+              .map { hash =>
+                val _ = atomicPrevCount.incrementAndGet()
+                hash
+              }
+              .toMat(Sink.seq)(Keep.right)
+              .run()
+
+            val requestsBlocksF = for {
+              hashes <- hashFs
+              _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+            } yield {
+              logger.debug("Successfully polled bitcoind for new blocks")
+              ()
+            }
+
+            requestsBlocksF.failed.foreach { case err =>
+              val failedCount = atomicPrevCount.get
+              atomicPrevCount.set(prevCount)
+              logger.error(
+                s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+                err)
+            }
+
+            requestsBlocksF
+          } else if (prevCount > count) {
+            Future.failed(new RuntimeException(
+              s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+          } else {
+            logger.debug(s"In sync $prevCount count=$count")
+            Future.unit
+          }
+        }
+      } yield {
+        retval
+      }
+
+      res.onComplete { _ =>
+        processingBitcoindBlocks.set(false)
+        setSyncingFlag(false, bitcoind, chainCallbacksOpt)
+      }
+      res
+    } else {
+      logger.info(
+        s"Skipping scanning the blockchain since a previously scheduled task is still running")
+      Future.unit
     }
   }
 
