@@ -6,7 +6,7 @@ import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.server.BitcoindRpcBackendUtil
 import org.bitcoins.testkit.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -115,7 +115,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
   it must "sync a filter" in { walletAppConfigWithBitcoind =>
     val bitcoind =
-      walletAppConfigWithBitcoind.bitcoind.asInstanceOf[BitcoindV21RpcClient]
+      walletAppConfigWithBitcoind.bitcoind.asInstanceOf[BitcoindV22RpcClient]
 
     val amountToSend = Bitcoins.one
     for {
@@ -151,7 +151,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
   it must "sync a filter and update utxos to confirmed" in {
     walletAppConfigWithBitcoind =>
       val bitcoind =
-        walletAppConfigWithBitcoind.bitcoind.asInstanceOf[BitcoindV21RpcClient]
+        walletAppConfigWithBitcoind.bitcoind.asInstanceOf[BitcoindV22RpcClient]
 
       val amountToSend = Bitcoins.one
       for {
@@ -205,10 +205,9 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
     implicit val walletAppConfig: WalletAppConfig = params.walletAppConfig
 
     for {
-      tmpWallet <- BitcoinSWalletTest.createDefaultWallet(
-        nodeApi = bitcoind,
-        chainQueryApi = bitcoind,
-        bip39PasswordOpt = walletAppConfig.bip39PasswordOpt)
+      tmpWallet <- BitcoinSWalletTest.createDefaultWallet(nodeApi = bitcoind,
+                                                          chainQueryApi =
+                                                            bitcoind)
     } yield {
       BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
                                                                tmpWallet,

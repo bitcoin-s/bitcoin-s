@@ -41,11 +41,15 @@ To run this example you need to make sure you have access to a bitcoind binary.
 You can download this with bitcoin-s by doing `sbt downloadBitcoind`
 
 ```scala mdoc:invisible
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures._
 import org.bitcoins.testkit.wallet._
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.WalletCallbacks
+import org.bitcoins.testkit.node.MockNodeApi
 import akka.actor.ActorSystem
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
@@ -59,11 +63,13 @@ implicit val ec: ExecutionContext = system.dispatcher
 implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
 implicit val walletAppConfig: WalletAppConfig = appConfig.walletConf
 
-val bip39PasswordOpt = None
 //ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it
 val walletWithBitcoindF = for {
-  bitcoind <- BitcoinSFixture.createBitcoindWithFunds()
-  walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
+  walletWithBitcoind <- BitcoinSWalletTest.fundedWalletAndBitcoind(
+  Some(BitcoindVersion.newest),
+  MockNodeApi,
+  MockChainQueryApi,
+  WalletCallbacks.empty)
 } yield walletWithBitcoind
 
 val walletF = walletWithBitcoindF.map(_.wallet)
@@ -100,7 +106,8 @@ val clearedWalletF = for {
 val addrBatchSize = 100
 //ok now that we have a cleared wallet, we need to rescan and find our fudns again!
 val rescannedBalanceF = for {
-  w <- clearedWalletF
+  _ <- clearedWalletF
+  w <- walletF
   _ <- w.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan <- w.getBalance()
 } yield {

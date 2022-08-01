@@ -1,7 +1,14 @@
 package org.bitcoins.rpc.client.v22
 
 import akka.actor.ActorSystem
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  DescriptorRpc,
+  PsbtRpc
+}
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
+import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 
@@ -12,10 +19,19 @@ import scala.util.Try
   */
 class BitcoindV22RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
-    extends BitcoindV21RpcClient(instance) {
+    extends BitcoindV21RpcClient(instance)
+    with DescriptorRpc
+    with PsbtRpc
+    with V19BlockFilterRpc
+    with V20MultisigRpc
+    with TestMempoolAcceptRpc
+    with V22AssortedRpc {
 
-  override lazy val version: Future[BitcoindVersion] =
+  override lazy val version: Future[BitcoindVersion] = {
     Future.successful(BitcoindVersion.V22)
+
+  }
+
 }
 
 object BitcoindV22RpcClient {

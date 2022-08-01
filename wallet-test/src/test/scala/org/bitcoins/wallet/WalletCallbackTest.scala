@@ -17,7 +17,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWallet(test, getBIP39PasswordOpt())(getFreshWalletAppConfig)
+    withFundedWallet(test)(getFreshWalletAppConfig)
   }
 
   behavior of "WalletCallbacks"

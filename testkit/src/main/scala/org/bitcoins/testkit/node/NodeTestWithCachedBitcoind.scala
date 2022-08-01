@@ -52,7 +52,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoind =>
-        NodeUnitTest.destroyNode(x.node)
+        NodeUnitTest.destroyNode(x.node, appConfig)
       })(test)
   }
 
@@ -75,7 +75,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoind =>
-        tearDownNode(x.node)
+        tearDownNode(x.node, appConfig)
       })(test)
   }
 
@@ -100,7 +100,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoinds =>
-        tearDownNode(x.node)
+        tearDownNode(x.node, appConfig)
       })(test)
   }
 
@@ -124,7 +124,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoinds =>
-        tearDownNode(x.node)
+        tearDownNode(x.node, appConfig)
       })(test)
   }
 
@@ -148,13 +148,12 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoind =>
-        tearDownNode(x.node)
+        tearDownNode(x.node, appConfig)
       })(test)
   }
 
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient,
       walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
       system: ActorSystem,
@@ -163,11 +162,10 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletFromBitcoind(
-            bip39PasswordOpt = bip39PasswordOpt,
             bitcoind,
             walletCallbacks = walletCallbacks)(system, appConfig),
       { x: NeutrinoNodeFundedWalletBitcoind =>
-        tearDownNodeWithBitcoind(x)
+        tearDownNodeWithBitcoind(x, appConfig)
       }
     )(test)
   }
@@ -182,9 +180,10 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
   }
 
   private def tearDownNodeWithBitcoind(
-      nodeWithBitcoind: NodeFundedWalletBitcoind): Future[Unit] = {
+      nodeWithBitcoind: NodeFundedWalletBitcoind,
+      appConfig: BitcoinSAppConfig): Future[Unit] = {
     val node = nodeWithBitcoind.node
-    val destroyNodeF = tearDownNode(node)
+    val destroyNodeF = tearDownNode(node, appConfig)
     val destroyWalletF =
       BitcoinSWalletTest.destroyWallet(nodeWithBitcoind.wallet)
     for {
@@ -193,8 +192,10 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     } yield ()
   }
 
-  private def tearDownNode(node: Node): Future[Unit] = {
-    val destroyNodeF = NodeUnitTest.destroyNode(node)
+  private def tearDownNode(
+      node: Node,
+      appConfig: BitcoinSAppConfig): Future[Unit] = {
+    val destroyNodeF = NodeUnitTest.destroyNode(node, appConfig)
     for {
       _ <- destroyNodeF
       //need to stop chainAppConfig too since this is a test

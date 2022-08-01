@@ -18,10 +18,9 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.transaction.TransactionConstants
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.builder.{
-  RawTxBuilderWithFinalizer,
+  FundRawTxHelper,
   ShufflingNonInteractiveFinalizer
 }
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.{AdaptorSign, Sha256Digest}
 import org.bitcoins.dlc.wallet.models.{
   DLCAcceptDb,
@@ -40,8 +39,7 @@ object DLCAcceptUtil extends Logging {
       keyIndex: Int,
       chainType: HDChainType,
       offer: DLCOffer,
-      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
+      fundRawTxHelper: FundRawTxHelper[ShufflingNonInteractiveFinalizer],
       account: AccountDb,
       fundingPrivKey: AdaptorSign,
       collateral: CurrencyUnit,
@@ -50,6 +48,8 @@ object DLCAcceptUtil extends Logging {
       externalChangeAddressOpt: Option[BitcoinAddress]): (
       DLCAcceptWithoutSigs,
       DLCPublicKeys) = {
+    val spendingInfos = fundRawTxHelper.scriptSigParams
+    val txBuilder = fundRawTxHelper.txBuilderWithFinalizer
     val serialIds = DLCMessage.genSerialIds(
       spendingInfos.size,
       offer.fundingInputs.map(_.inputSerialId))

@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.wallet
 
+import com.typesafe.config.Config
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.EmbeddedPg
@@ -14,7 +15,7 @@ import org.bitcoins.testkit.rpc.{
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
-  destroyWallet
+  destroyOnlyWalletWithBitcoindCached
 }
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{FutureOutcome, Outcome}
@@ -41,14 +42,12 @@ trait BitcoinSWalletTestCachedBitcoind
     */
   def withFundedWalletAndBitcoindCached(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = { () =>
+    val builder: () => Future[WalletWithBitcoind[_]] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
-          bitcoind = bitcoind,
-          bip39PasswordOpt = bip39PasswordOpt)
+          bitcoind = bitcoind)
         fundedWallet <- FundWalletUtil.fundWalletWithBitcoind(
           walletWithBitcoind)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
@@ -57,39 +56,38 @@ trait BitcoinSWalletTestCachedBitcoind
       } yield fundedWallet
     }
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      { case walletWithBitcoind: WalletWithBitcoind =>
-        destroyWallet(walletWithBitcoind.wallet)
+      { case walletWithBitcoind: WalletWithBitcoind[_] =>
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
   def withNewWalletAndBitcoindCached(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
       bitcoind: BitcoindRpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        Future.successful(bitcoind)
-      },
-      dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
-        createWalletWithBitcoind(bitcoind, bip39PasswordOpt)
-      },
-      wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
-        walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoind[_]] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          Future.successful(bitcoind)
+        },
+        dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
+          createWalletWithBitcoind(bitcoind)
+        },
+        wrap =
+          (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind[_]) =>
+            walletWithBitcoind
+      )
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      { case walletWithBitcoind: WalletWithBitcoind =>
-        destroyWallet(walletWithBitcoind.wallet)
+      { case walletWithBitcoind: WalletWithBitcoind[_] =>
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
-  def withFundedWalletAndBitcoind(
-      test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String])(implicit
+  def withFundedWalletAndBitcoind(test: OneArgAsyncTest)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
     val bitcoindF = BitcoinSFixture
       .createBitcoindWithFunds(None)
@@ -98,9 +96,8 @@ trait BitcoinSWalletTestCachedBitcoind
     //so we can re-use code in withFundedWalletBitcoindCached
     val resultF = for {
       bitcoind <- bitcoindF
-      outcome = withFundedWalletAndBitcoindCached(test,
-                                                  bip39PasswordOpt,
-                                                  bitcoind)
+      outcome = withFundedWalletAndBitcoindCached(test = test,
+                                                  bitcoind = bitcoind)
       f <- outcome.toFuture
     } yield f
 
@@ -140,10 +137,8 @@ trait BitcoinSWalletTestCachedBitcoindNewest
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withFundedWalletAndBitcoindCached(
-        test,
-        getBIP39PasswordOpt(),
-        bitcoind)(getFreshWalletAppConfig)
+      futOutcome = withFundedWalletAndBitcoindCached(test, bitcoind)(
+        getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
@@ -173,62 +168,67 @@ trait BitcoinSWalletTestCachedBitcoinV19
   def withFundedWalletAndBitcoindCachedV19(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],
-      bitcoind: BitcoindV19RpcClient)(implicit
+      bitcoind: BitcoindV19RpcClient,
       walletAppConfig: WalletAppConfig): FutureOutcome = {
+    val bip39PasswordConfig: Config =
+      BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
+
+    implicit val newWalletConf =
+      walletAppConfig.withOverrides(bip39PasswordConfig)
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
-          bitcoind = bitcoind,
-          bip39PasswordOpt = bip39PasswordOpt)
-        walletWithBitcoindV19 = WalletWithBitcoindV19(walletWithBitcoind.wallet,
-                                                      bitcoind)
+          bitcoind = bitcoind)
+        walletWithBitcoindV19 = WalletWithBitcoindV19(
+          walletWithBitcoind.wallet,
+          bitcoind,
+          walletWithBitcoind.walletConfig)
         fundedWallet <- FundWalletUtil
-          .fundWalletWithBitcoind[WalletWithBitcoindV19](walletWithBitcoindV19)
+          .fundWalletWithBitcoind(walletWithBitcoindV19)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
                                            bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield fundedWallet
     }
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      destroy = { case walletWithBitcoind: WalletWithBitcoind =>
-        destroyWallet(walletWithBitcoind.wallet)
+      destroy = { case walletWithBitcoind: WalletWithBitcoind[_] =>
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
   def withNewWalletAndBitcoindCachedV19(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String],
       bitcoind: BitcoindV19RpcClient)(implicit
       walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = { () =>
-        Future.successful(bitcoind)
-      },
-      dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
-        BitcoinSWalletTest.createWalletWithBitcoindV19(bitcoind,
-                                                       bip39PasswordOpt)
-      },
-      wrap =
-        (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
-          walletWithBitcoind
-    )
+    val builder: () => Future[WalletWithBitcoind[_]] =
+      BitcoinSFixture.composeBuildersAndWrap(
+        builder = { () =>
+          Future.successful(bitcoind)
+        },
+        dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
+          BitcoinSWalletTest.createWalletWithBitcoindV19(bitcoind)
+        },
+        wrap =
+          (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
+            walletWithBitcoind
+      )
 
-    makeDependentFixture[WalletWithBitcoind](
+    makeDependentFixture[WalletWithBitcoind[_]](
       builder,
-      { case walletWithBitcoind: WalletWithBitcoind =>
-        destroyWallet(walletWithBitcoind.wallet)
+      { case walletWithBitcoind: WalletWithBitcoind[_] =>
+        destroyOnlyWalletWithBitcoindCached(walletWithBitcoind)
       })(test)
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withFundedWalletAndBitcoindCachedV19(
-        test,
-        getBIP39PasswordOpt(),
-        bitcoind)(getFreshWalletAppConfig)
+      futOutcome = withFundedWalletAndBitcoindCachedV19(test,
+                                                        getBIP39PasswordOpt(),
+                                                        bitcoind,
+                                                        getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)

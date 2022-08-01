@@ -1,10 +1,10 @@
 package org.bitcoins.wallet.sync
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -17,11 +17,12 @@ trait WalletSync extends Logging {
     * as fetching full blocks will use a lot of bandwidth on live networks
     */
   def syncFullBlocks(
-      wallet: Wallet,
+      wallet: WalletApi,
       getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
       getBestBlockHashFunc: () => Future[DoubleSha256DigestBE],
-      getBlockFunc: DoubleSha256DigestBE => Future[Block])(implicit
-      ec: ExecutionContext): Future[Wallet] = {
+      getBlockFunc: DoubleSha256DigestBE => Future[Block],
+      genesisBlockHashBE: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[WalletApi] = {
     val bestBlockHashF = getBestBlockHashFunc()
     val bestBlockHeaderF = for {
       bestBlockHash <- bestBlockHashF
@@ -33,7 +34,8 @@ trait WalletSync extends Logging {
       blocksToSync <- getBlocksToSync(wallet = wallet,
                                       currentTipBlockHashBE = bestHeader.hashBE,
                                       accum = Vector.empty,
-                                      getBlock = getBlockFunc)
+                                      getBlock = getBlockFunc,
+                                      genesisBlockHashBE = genesisBlockHashBE)
     } yield blocksToSync
 
     val syncedWalletF = for {
@@ -49,18 +51,18 @@ trait WalletSync extends Logging {
 
   /** Syncs the wallet by walking backwards from the currentTip until we reach our wallet's best blockHash */
   private def getBlocksToSync(
-      wallet: Wallet,
+      wallet: WalletApi,
       currentTipBlockHashBE: DoubleSha256DigestBE,
       accum: Vector[Block],
-      getBlock: DoubleSha256DigestBE => Future[Block])(implicit
+      getBlock: DoubleSha256DigestBE => Future[Block],
+      genesisBlockHashBE: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Vector[Block]] = {
     val initSyncDescriptorOptF = wallet.getSyncDescriptorOpt()
-    val genesisBlockHashBE = wallet.walletConfig.chain.genesisHashBE
     for {
       syncDescriptorOpt <- initSyncDescriptorOptF
       walletBestHash = syncDescriptorOpt match {
         case Some(descriptor) => descriptor.bestHash
-        case None             => wallet.chainParams.genesisHashBE
+        case None             => genesisBlockHashBE
       }
       currentBlockOpt <- {
         if (
@@ -76,11 +78,14 @@ trait WalletSync extends Logging {
         currentBlockOpt match {
           case Some(currentBlock) =>
             //loop again as we need to keep syncing
-            getBlocksToSync(wallet = wallet,
-                            currentTipBlockHashBE =
-                              currentBlock.blockHeader.previousBlockHashBE,
-                            accum = currentBlock +: accum,
-                            getBlock = getBlock)
+            getBlocksToSync(
+              wallet = wallet,
+              currentTipBlockHashBE =
+                currentBlock.blockHeader.previousBlockHashBE,
+              accum = currentBlock +: accum,
+              getBlock = getBlock,
+              genesisBlockHashBE = genesisBlockHashBE
+            )
           case None =>
             //yay! Done syncing, return all blocks our wallet needs to be synced with
             Future.successful(accum)

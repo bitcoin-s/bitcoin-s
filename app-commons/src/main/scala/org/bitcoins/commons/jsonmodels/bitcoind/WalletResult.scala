@@ -89,7 +89,23 @@ case class TransactionDetails(
     abandoned: Option[Boolean])
     extends WalletResult
 
-case class GetWalletInfoResult(
+sealed trait GetWalletInfoResult extends WalletResult {
+  def walletname: String
+  def walletversion: Int
+  def balance: Bitcoins
+  def unconfirmed_balance: Bitcoins
+  def immature_balance: Bitcoins
+  def txcount: Int
+  def keypoololdest: Option[UInt32]
+  def keypoolsize: Int
+  def keypoolsize_hd_internal: Int
+  def paytxfee: BitcoinFeeUnit
+  def hdmasterkeyid: Option[Sha256Hash160Digest]
+  def unlocked_until: Option[Int]
+
+}
+
+case class GetWalletInfoResultPreV22(
     walletname: String,
     walletversion: Int,
     balance: Bitcoins,
@@ -102,7 +118,24 @@ case class GetWalletInfoResult(
     paytxfee: BitcoinFeeUnit,
     hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int])
-    extends WalletResult
+    extends GetWalletInfoResult
+
+case class GetWalletInfoResultPostV22(
+    walletname: String,
+    walletversion: Int,
+    balance: Bitcoins,
+    unconfirmed_balance: Bitcoins,
+    immature_balance: Bitcoins,
+    txcount: Int,
+    keypoololdest: Option[UInt32],
+    keypoolsize: Int,
+    keypoolsize_hd_internal: Int,
+    paytxfee: BitcoinFeeUnit,
+    hdmasterkeyid: Option[Sha256Hash160Digest],
+    unlocked_until: Option[Int],
+    private_keys_enabled: Boolean,
+    descriptors: Boolean)
+    extends GetWalletInfoResult
 
 case class ImportMultiResult(success: Boolean, error: Option[ImportMultiError])
     extends WalletResult
@@ -436,6 +469,20 @@ object AddressInfoResultPostV21 {
     )
   }
 }
+
+case class ListDescriptorsResult(
+    wallet_name: String,
+    descriptors: Vector[descriptorsResult]
+) extends WalletResult
+
+case class descriptorsResult(
+    desc: String,
+    timestamp: ZonedDateTime,
+    active: Boolean,
+    internal: Option[Boolean],
+    range: Option[Vector[Int]],
+    next: Option[Int]
+) extends WalletResult
 
 case class EmbeddedResult(
     isscript: Boolean,

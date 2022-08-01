@@ -37,9 +37,14 @@ case class OracleAnnouncementDataDAO()(implicit
   }
 
   def findByIds(ids: Vector[Long]): Future[Vector[OracleAnnouncementDataDb]] = {
-    val query = table.filter(_.id.inSet(ids))
+    safeDatabase.run(findByIdsAction(ids))
+  }
 
-    safeDatabase.runVec(query.result)
+  def findByIdsAction(ids: Vector[Long]): DBIOAction[
+    Vector[OracleAnnouncementDataDb],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.id.inSet(ids)).result.map(_.toVector)
   }
 
   def findById(id: Long): Future[Option[OracleAnnouncementDataDb]] = {

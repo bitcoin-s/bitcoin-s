@@ -1,16 +1,20 @@
 package org.bitcoins.wallet
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.wallet.SyncHeightDescriptor
+import org.bitcoins.core.api.wallet.{
+  BlockSyncState,
+  CoinSelectionAlgo,
+  NeutrinoHDWalletApi,
+  SyncHeightDescriptor,
+  WalletInfo
+}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{
-  AnyHDWalletApi,
-  BlockSyncState,
-  CoinSelectionAlgo,
-  WalletInfo
+import org.bitcoins.core.api.wallet.db.{
+  AccountDb,
+  SpendingInfoDb,
+  TransactionDb
 }
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -48,7 +52,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 abstract class Wallet
-    extends AnyHDWalletApi
+    extends NeutrinoHDWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling
@@ -284,12 +288,8 @@ abstract class Wallet
     val aggregatedActions: DBIOAction[
       Unit,
       NoStream,
-      Effect.Write with Effect.Transactional] = for {
-
-      _ <- spendingInfoDAO.deleteAllAction()
-    } yield {
-      ()
-    }
+      Effect.Write with Effect.Transactional] =
+      spendingInfoDAO.deleteAllAction().map(_ => ())
 
     val resultedF = safeDatabase.run(aggregatedActions)
     resultedF.failed.foreach(err =>
@@ -298,6 +298,15 @@ abstract class Wallet
         err))
 
     resultedF.map(_ => this)
+  }
+
+  override def clearAllAddresses(): Future[Wallet] = {
+    val action = addressDAO
+      .deleteAllAction()
+      .map(_ => ())
+    safeDatabase
+      .run(action)
+      .map(_ => this)
   }
 
   /** Sums up the value of all unspent
@@ -379,6 +388,21 @@ abstract class Wallet
     }
   }
 
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByOutPoints(outPoints)
+  }
+
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]] = {
+    transactionDAO.findByTxIds(txIds)
+  }
+
+  override def findOutputsBeingSpent(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findOutputsBeingSpent(tx)
+  }
+
   /** Enumerates all the TX outpoints in the wallet */
   protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
     spendingInfoDAO.findAllOutpoints()
@@ -387,17 +411,16 @@ abstract class Wallet
     * finalizing and signing the transaction, then correctly processing and logging it
     */
   private def finishSend[F <: RawTxFinalizer](
-      txBuilder: RawTxBuilderWithFinalizer[F],
-      utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
+      rawTxHelper: FundRawTxHelper[F],
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit,
       newTags: Vector[AddressTag]): Future[Transaction] = {
-    val utx = txBuilder.buildTx()
-    val signed = RawTxSigner.sign(utx, utxoInfos, feeRate)
+    val signed = rawTxHelper.signedTx
 
     val processedTxF = for {
       ourOuts <- findOurOuts(signed)
-      creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
+      creditingAmount = rawTxHelper.scriptSigParams.foldLeft(
+        CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
                                  feeRate = feeRate,
                                  inputAmount = creditingAmount,
@@ -468,9 +491,8 @@ abstract class Wallet
       _ = require(
         tmp.outputs.size == 1,
         s"Created tx is not as expected, does not have 1 output, got $tmp")
-
-      tx <- finishSend(withFinalizer,
-                       utxos,
+      rawTxHelper = FundRawTxHelper(withFinalizer, utxos, feeRate)
+      tx <- finishSend(rawTxHelper,
                        tmp.outputs.head.value,
                        feeRate,
                        Vector.empty)
@@ -517,8 +539,8 @@ abstract class Wallet
         utxos,
         feeRate,
         changeAddr.scriptPubKey)
-
-      tx <- finishSend(txBuilder, utxos, amount, feeRate, newTags)
+      rawTxHelper = FundRawTxHelper(txBuilder, utxos, feeRate)
+      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
     } yield tx
   }
 
@@ -618,8 +640,9 @@ abstract class Wallet
                                                                 sequence)
 
       amount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      rawTxHelper = FundRawTxHelper(txBuilder, spendingInfos, newFeeRate)
       tx <-
-        finishSend(txBuilder, spendingInfos, amount, newFeeRate, Vector.empty)
+        finishSend(rawTxHelper, amount, newFeeRate, Vector.empty)
     } yield tx
   }
 
@@ -638,15 +661,14 @@ abstract class Wallet
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
-      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
-        destinations = Vector(destination),
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        coinSelectionAlgo = algo,
-        fromTagOpt = None,
-        markAsReserved = true)
-
-      tx <- finishSend(txBuilder, utxoInfos, amount, feeRate, newTags)
+      rawTxHelper <- fundRawTransactionInternal(destinations =
+                                                  Vector(destination),
+                                                feeRate = feeRate,
+                                                fromAccount = fromAccount,
+                                                coinSelectionAlgo = algo,
+                                                fromTagOpt = None,
+                                                markAsReserved = true)
+      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
     } yield tx
   }
 
@@ -720,7 +742,7 @@ abstract class Wallet
     val output = TransactionOutput(0.satoshis, scriptPubKey)
 
     for {
-      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
+      fundRawTxHelper <- fundRawTransactionInternal(
         destinations = Vector(output),
         feeRate = feeRate,
         fromAccount = fromAccount,
@@ -728,8 +750,7 @@ abstract class Wallet
         fromTagOpt = None,
         markAsReserved = true
       )
-      tx <- finishSend(txBuilder,
-                       utxoInfos,
+      tx <- finishSend(fundRawTxHelper,
                        CurrencyUnits.zero,
                        feeRate,
                        Vector.empty)
@@ -743,14 +764,13 @@ abstract class Wallet
       newTags: Vector[AddressTag])(implicit
       ec: ExecutionContext): Future[Transaction] = {
     for {
-      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
-        destinations = outputs,
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        fromTagOpt = None,
-        markAsReserved = true)
+      fundRawTxHelper <- fundRawTransactionInternal(destinations = outputs,
+                                                    feeRate = feeRate,
+                                                    fromAccount = fromAccount,
+                                                    fromTagOpt = None,
+                                                    markAsReserved = true)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
+      tx <- finishSend(fundRawTxHelper, sentAmount, feeRate, newTags)
     } yield tx
   }
 
@@ -948,6 +968,11 @@ abstract class Wallet
         imported = keyManager.imported
       )
     }
+  }
+
+  override def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByScriptPubKey(scriptPubKey)
   }
 
   def startFeeRateCallbackScheduler(): Unit = {

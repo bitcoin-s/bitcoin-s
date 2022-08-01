@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
@@ -22,7 +23,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNewWallet(test, getBIP39PasswordOpt())(getFreshWalletAppConfig)
+    withNewWallet(test)(getFreshWalletAppConfig)
   }
 
   behavior of "Wallet.processTransaction"
@@ -71,14 +72,15 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           wallet.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(tx, Some(testBlockHash))
+        _ <- wallet.processTransaction(tx,
+                                       Some(MockChainQueryApi.testBlockHash))
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, Some(testBlockHash))
+          wallet.processTransaction(tx, Some(MockChainQueryApi.testBlockHash))
         }
       } yield {
         val ourOutputs =
@@ -178,15 +180,15 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         wallet <- processedFundingTxF
         destinations = Vector(
           TransactionOutput(amount, receivingAddress.scriptPubKey))
-        spendingTx <- wallet.fundRawTransaction(
+        rawTxHelper <- wallet.fundRawTransaction(
           destinations = destinations,
           feeRate = SatoshisPerByte.one,
           fromTagOpt = None,
           markAsReserved = true
         )
         processedSpendingTx <- wallet.processTransaction(transaction =
-                                                           spendingTx,
-                                                         blockHash = None)
+                                                           rawTxHelper.signedTx,
+                                                         blockHashOpt = None)
         balance <- processedSpendingTx.getBalance()
       } yield assert(balance == amount)
 

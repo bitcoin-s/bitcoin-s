@@ -205,4 +205,5 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
         hashes <- client.generateToDescriptor(numBlocks, descriptor)
       } yield assert(hashes.size == numBlocks)
   }
+
 }

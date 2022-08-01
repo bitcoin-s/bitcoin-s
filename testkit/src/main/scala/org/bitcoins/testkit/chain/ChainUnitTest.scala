@@ -144,7 +144,7 @@ trait ChainUnitTest
       itVerbString: ItVerbString): SugaryItVerbString =
     new SugaryItVerbString(itVerbString)
 
-  /** Fixture that creates a [[org.bitcoins.chain.models.BlockHeaderTable]]
+  /** Fixture that creates a block header table
     * with one row inserted into it, the [[org.bitcoins.core.protocol.blockchain.RegTestNetChainParams]]
     * genesis block
     */
@@ -285,9 +285,10 @@ trait ChainUnitTest
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind(),
-                           createChainHandlerWithBitcoindZmq,
-                           BitcoindChainHandlerViaZmq.apply)()
+    BitcoinSFixture.composeBuildersAndWrap(
+      () => BitcoinSFixture.createBitcoind(),
+      createChainHandlerWithBitcoindZmq,
+      BitcoindChainHandlerViaZmq.apply)(executionContext)()
   }
 
   def destroyBitcoindChainHandlerViaZmq(
@@ -314,7 +315,7 @@ trait ChainUnitTest
       system: ActorSystem,
       chainAppConfig: ChainAppConfig): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
-      composeBuildersAndWrap(
+      BitcoinSFixture.composeBuildersAndWrap(
         builder = () => BitcoinSFixture.createBitcoind(),
         dependentBuilder = { rpc: BitcoindRpcClient =>
           createChainHandlerWithBitcoindZmq(rpc)(chainAppConfig)
@@ -643,7 +644,6 @@ object ChainUnitTest extends ChainVerificationLogger {
       _ <- appConfig.dropAll()
     } yield ()
 
-  /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(implicit
       ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[

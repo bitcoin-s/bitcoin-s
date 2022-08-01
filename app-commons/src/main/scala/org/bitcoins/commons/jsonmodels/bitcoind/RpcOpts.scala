@@ -18,6 +18,7 @@ import scala.collection.mutable
 object RpcOpts {
 
   case class WalletCreateFundedPsbtOptions(
+      include_unsafe: Boolean = false,
       changeAddress: Option[BitcoinAddress] = None,
       changePosition: Option[Int] = None,
       changeType: Option[AddressType] = None,
@@ -31,6 +32,7 @@ object RpcOpts {
   )
 
   case class FundRawTransactionOptions(
+      include_unsafe: Boolean = false,
       changeAddress: Option[BitcoinAddress] = None,
       changePosition: Option[Int] = None,
       includeWatching: Boolean = false,

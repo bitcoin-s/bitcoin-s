@@ -167,6 +167,27 @@ case class PeerPostV21(
   override val addnode: Boolean = connection_type == "manual"
 }
 
+case class PeerV22(
+    id: Int,
+    networkInfo: PeerNetworkInfoPostV21,
+    version: Int,
+    subver: String,
+    inbound: Boolean,
+    connection_type: String,
+    startingheight: Int,
+    synced_headers: Int,
+    synced_blocks: Int,
+    inflight: Vector[Int],
+    bytessent_per_msg: Map[String, Int],
+    bytesrecv_per_msg: Map[String, Int],
+    minfeefilter: Option[SatoshisPerKiloByte],
+    bip152_hb_to: Boolean,
+    bip152_hb_from: Boolean,
+    permissions: Vector[String])
+    extends Peer {
+  override val addnode: Boolean = connection_type == "manual"
+}
+
 trait PeerNetworkInfo extends NetworkResult {
   def addr: URI
   def addrbind: URI
@@ -244,9 +265,32 @@ case class NodeBanPostV20(
     ban_created: UInt32)
     extends NodeBan
 
-final case class GetNodeAddressesResult(
+case class NodeBanPostV22(
+    address: URI,
+    ban_created: UInt32,
+    banned_until: UInt32,
+    ban_duration: UInt32,
+    time_remaining: UInt32
+) extends NodeBan
+
+sealed trait GetNodeAddressesResult extends NetworkResult {
+  def time: FiniteDuration
+  def services: Int
+  def address: java.net.URI
+  def port: Int
+}
+
+case class GetNodeAddressesResultPreV22(
     time: FiniteDuration,
     services: Int,
     address: java.net.URI,
     port: Int
-) extends NetworkResult
+) extends GetNodeAddressesResult
+
+case class GetNodeAddressesResultPostV22(
+    time: FiniteDuration,
+    services: Int,
+    address: java.net.URI,
+    port: Int,
+    network: String
+) extends GetNodeAddressesResult

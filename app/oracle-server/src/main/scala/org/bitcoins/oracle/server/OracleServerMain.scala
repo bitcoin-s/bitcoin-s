@@ -14,7 +14,7 @@ import scala.concurrent.{Await, Future}
 class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     conf: DLCOracleAppConfig)
-    extends BitcoinSServerRunner {
+    extends BitcoinSServerRunner[Unit] {
 
   override def start(): Future[Unit] = {
 

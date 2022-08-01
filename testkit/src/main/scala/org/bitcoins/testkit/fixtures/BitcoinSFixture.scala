@@ -6,7 +6,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest._
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
 object UsesExperimentalBitcoind extends Tag("UsesExperimentalBitcoind")
@@ -78,64 +78,6 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
     new FutureOutcome(outcomeAfterDestroyF)
   }
 
-  /** Given two fixture building methods (one dependent on the other), returns a single
-    * fixture building method where the fixture is the pair of the two.
-    *
-    * Example:
-    * {{{
-    *   composeBuilders(createBlockHeaderDAO, createChainHandlerFromBlockHeaderDAO)
-    * }}}
-    */
-  def composeBuilders[T, U](
-      builder: () => Future[T],
-      dependentBuilder: T => Future[U]): () => Future[(T, U)] =
-    () => {
-      builder().flatMap { first =>
-        dependentBuilder(first).map { second =>
-          (first, second)
-        }
-      }
-    }
-
-  /** Given two fixture building methods (one dependent on the other) and a wrapper
-    * for their pair type, returns a single fixture building method where the fixture is wrapper.
-    *
-    * Example:
-    * {{{
-    *   composeBuildersAndWrap(
-    *       createBitcoind,
-    *       createChainHandlerWithBitcoindZmq,
-    *       BitcoindChainHandler.apply)
-    * }}}
-    */
-  def composeBuildersAndWrap[T, U, C](
-      builder: () => Future[T],
-      dependentBuilder: T => Future[U],
-      wrap: (T, U) => C): () => Future[C] =
-    () => {
-      composeBuilders(builder, dependentBuilder)().map { case (first, second) =>
-        wrap(first, second)
-      }
-    }
-
-  /** Given two fixture building methods (one dependent on the other) and
-    * a function that processes the result of the builders returning a Future,
-    * returns a single fixture building method where the fixture is wrapper.
-    *
-    * This method is identical to `composeBuildersAndWrap`, except that
-    * the wrapping function returns a `Future[C]` instead of a `C`
-    */
-  def composeBuildersAndWrapFuture[T, U, C](
-      builder: () => Future[T],
-      dependentBuilder: T => Future[U],
-      processResult: (T, U) => Future[C]
-  ): () => Future[C] =
-    () => {
-      composeBuilders(builder, dependentBuilder)().flatMap {
-        case (first, second) => processResult(first, second)
-      }
-    }
-
   override def afterAll(): Unit = {
     super[BitcoinSAsyncFixtureTest].afterAll()
   }
@@ -164,4 +106,65 @@ object BitcoinSFixture {
     }
     BitcoindRpcTestUtil.startServers(Vector(bitcoind)).map(_ => bitcoind)
   }
+
+  /** Given two fixture building methods (one dependent on the other), returns a single
+    * fixture building method where the fixture is the pair of the two.
+    *
+    * Example:
+    * {{{
+    *   composeBuilders(createBlockHeaderDAO, createChainHandlerFromBlockHeaderDAO)
+    * }}}
+    */
+  def composeBuilders[T, U](
+      builder: () => Future[T],
+      dependentBuilder: T => Future[U])(implicit
+      ec: ExecutionContext): () => Future[(T, U)] =
+    () => {
+      builder().flatMap { first =>
+        dependentBuilder(first).map { second =>
+          (first, second)
+        }
+      }
+    }
+
+  /** Given two fixture building methods (one dependent on the other) and a wrapper
+    * for their pair type, returns a single fixture building method where the fixture is wrapper.
+    *
+    * Example:
+    * {{{
+    *   composeBuildersAndWrap(
+    *       createBitcoind,
+    *       createChainHandlerWithBitcoindZmq,
+    *       BitcoindChainHandler.apply)
+    * }}}
+    */
+  def composeBuildersAndWrap[T, U, C](
+      builder: () => Future[T],
+      dependentBuilder: T => Future[U],
+      wrap: (T, U) => C)(implicit ec: ExecutionContext): () => Future[C] =
+    () => {
+      composeBuilders(builder, dependentBuilder)(ec)().map {
+        case (first, second) =>
+          wrap(first, second)
+      }
+    }
+
+  /** Given two fixture building methods (one dependent on the other) and
+    * a function that processes the result of the builders returning a Future,
+    * returns a single fixture building method where the fixture is wrapper.
+    *
+    * This method is identical to `composeBuildersAndWrap`, except that
+    * the wrapping function returns a `Future[C]` instead of a `C`
+    */
+  def composeBuildersAndWrapFuture[T, U, C](
+      builder: () => Future[T],
+      dependentBuilder: T => Future[U],
+      processResult: (T, U) => Future[C]
+  )(implicit ec: ExecutionContext): () => Future[C] =
+    () => {
+      composeBuilders(builder, dependentBuilder)(ec)().flatMap {
+        case (first, second) => processResult(first, second)
+      }
+    }
+
 }

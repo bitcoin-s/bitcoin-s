@@ -1,12 +1,12 @@
 package org.bitcoins.testkit.node
 
+import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
 import org.bitcoins.node.{NeutrinoNode, Node}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NodeConnectedWithBitcoind
 }
-import org.bitcoins.wallet.Wallet
 
 /** Creates
   * 1. a funded bitcoind wallet
@@ -16,9 +16,8 @@ import org.bitcoins.wallet.Wallet
   */
 trait NodeFundedWalletBitcoind {
   def node: Node
-  def wallet: Wallet
+  def wallet: NeutrinoHDWalletApi
   def bitcoindRpc: BitcoindRpcClient
-  def bip39PasswordOpt: Option[String]
 
   /** Helper method to convert from this to a [[NodeConnectedWithBitcoind]] */
   def toNodeConnectedWithBitcoind: NodeConnectedWithBitcoind
@@ -26,9 +25,8 @@ trait NodeFundedWalletBitcoind {
 
 case class NeutrinoNodeFundedWalletBitcoind(
     node: NeutrinoNode,
-    wallet: Wallet,
-    bitcoindRpc: BitcoindRpcClient,
-    bip39PasswordOpt: Option[String])
+    wallet: NeutrinoHDWalletApi,
+    bitcoindRpc: BitcoindRpcClient)
     extends NodeFundedWalletBitcoind {
 
   override def toNodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind = {

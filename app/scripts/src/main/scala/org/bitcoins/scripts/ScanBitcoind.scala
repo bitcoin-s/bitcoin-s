@@ -23,7 +23,7 @@ import scala.concurrent.Future
 class ScanBitcoind()(implicit
     override val system: ActorSystem,
     rpcAppConfig: BitcoindRpcAppConfig)
-    extends BitcoinSRunner {
+    extends BitcoinSRunner[Unit] {
 
   override def start(): Future[Unit] = {
 

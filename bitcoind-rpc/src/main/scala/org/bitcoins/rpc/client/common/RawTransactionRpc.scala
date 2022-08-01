@@ -3,8 +3,12 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   FundRawTransactionResult,
   GetRawTransactionResult,
+  GetRawTransactionResultPreV22,
+  GetRawTransactionResultV22,
   RpcOpts,
-  RpcTransaction
+  RpcTransaction,
+  RpcTransactionPreV22,
+  RpcTransactionV22
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
@@ -37,8 +41,17 @@ trait RawTransactionRpc { self: Client =>
   }
 
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
-    bitcoindCall[RpcTransaction]("decoderawtransaction",
-                                 List(JsString(transaction.hex)))
+
+    self.version.flatMap {
+      case V22 | V23 | Unknown =>
+        bitcoindCall[RpcTransactionV22]("decoderawtransaction",
+                                        List(JsString(transaction.hex)))
+
+      case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
+        bitcoindCall[RpcTransactionPreV22]("decoderawtransaction",
+                                           List(JsString(transaction.hex)))
+    }
+
   }
 
   def fundRawTransaction(
@@ -88,8 +101,13 @@ trait RawTransactionRpc { self: Client =>
       case None       => Nil
     }
     val params = List(JsString(txid.hex), JsBoolean(true)) ++ lastParam
+    self.version.flatMap {
+      case V22 | V23 | Unknown =>
+        bitcoindCall[GetRawTransactionResultV22]("getrawtransaction", params)
+      case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
+        bitcoindCall[GetRawTransactionResultPreV22]("getrawtransaction", params)
+    }
 
-    bitcoindCall[GetRawTransactionResult]("getrawtransaction", params)
   }
 
   def getRawTransactionRaw(

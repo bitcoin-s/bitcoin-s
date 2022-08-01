@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '18'
+          java-version: '17'
           cache: 'sbt'
       - name: Cache
         uses: actions/cache@v2

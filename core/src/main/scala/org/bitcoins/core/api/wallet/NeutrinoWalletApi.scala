@@ -2,7 +2,6 @@ package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
@@ -10,19 +9,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait NeutrinoWalletApi { self: WalletApi =>
 
-  /** Processes the give block, updating our DB state if it's relevant to us.
-    * @param block The block we're processing
-    */
-  def processBlock(block: Block): Future[WalletApi with NeutrinoWalletApi]
-
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[WalletApi with NeutrinoWalletApi] =
+      blockFilter: GolombFilter): Future[NeutrinoHDWalletApi] =
     processCompactFilters(Vector((blockHash, blockFilter)))
 
   def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi with NeutrinoWalletApi]
+    NeutrinoHDWalletApi]
 
   /** Recreates the account using BIP-157 approach
     *

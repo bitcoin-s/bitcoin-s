@@ -88,7 +88,10 @@ trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
       val stoppedF = for {
         cachedBitcoind <- cachedBitcoindWithFundsF
         _ <- BitcoindRpcTestUtil.stopServer(cachedBitcoind)
-      } yield ()
+      } yield {
+        isBitcoindUsed.set(false)
+        ()
+      }
 
       Await.result(stoppedF, duration)
     } else {

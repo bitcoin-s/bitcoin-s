@@ -2,7 +2,7 @@ package org.bitcoins.wallet
 
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.{
   DLCContactDb,
   DLCDb,
@@ -35,6 +35,10 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.builder.{
+  FundRawTxHelper,
+  ShufflingNonInteractiveFinalizer
+}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.rescan.RescanState
@@ -58,12 +62,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class WalletNotInitialized extends Exception("The wallet is not initialized")
 
 class WalletHolder(implicit ec: ExecutionContext)
-    extends AnyDLCHDWalletApi
+    extends DLCNeutrinoHDWalletApi
     with Logging {
 
-  @volatile private var walletOpt: Option[AnyDLCHDWalletApi] = None
+  @volatile private var walletOpt: Option[DLCNeutrinoHDWalletApi] = None
 
-  private def wallet: AnyDLCHDWalletApi = synchronized {
+  private def wallet: DLCNeutrinoHDWalletApi = synchronized {
     walletOpt match {
       case Some(wallet) => wallet
       case None =>
@@ -75,7 +79,8 @@ class WalletHolder(implicit ec: ExecutionContext)
     walletOpt.isDefined
   }
 
-  def replaceWallet(newWallet: AnyDLCHDWalletApi): Future[AnyDLCHDWalletApi] =
+  def replaceWallet(
+      newWallet: DLCNeutrinoHDWalletApi): Future[DLCNeutrinoHDWalletApi] =
     synchronized {
       val oldWalletOpt = walletOpt
       walletOpt = None
@@ -99,18 +104,19 @@ class WalletHolder(implicit ec: ExecutionContext)
       res
     }
 
-  private def delegate[T]: (AnyDLCHDWalletApi => Future[T]) => Future[T] = {
+  private def delegate[T]: (
+      DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
     Future(wallet).flatMap[T](_)
   }
 
-  override def processBlock(
-      block: Block): Future[WalletApi with NeutrinoWalletApi] =
+  override def processBlock(block: Block): Future[WalletApi] =
     delegate(_.processBlock(block))
 
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    WalletApi with NeutrinoWalletApi] = delegate(
-    _.processCompactFilters(blockFilters))
+    NeutrinoHDWalletApi] = {
+    delegate(_.processCompactFilters(blockFilters))
+  }
 
   override def rescanNeutrinoWallet(
       startOpt: Option[BlockStamp],
@@ -159,8 +165,19 @@ class WalletHolder(implicit ec: ExecutionContext)
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[Transaction] = delegate(
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
     _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved))
+
+  override def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      markAsReserved: Boolean): Future[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    delegate(
+      _.fundRawTransaction(destinations, feeRate, fromAccount, markAsReserved))
+  }
 
   override def listTransactions(): Future[Vector[TransactionDb]] = delegate(
     _.listTransactions())
@@ -228,6 +245,10 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   override def getNewAddress(addressType: AddressType): Future[BitcoinAddress] =
     delegate(_.getNewAddress(addressType))
+
+  override def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
+    delegate(_.getNewAddress(account))
+  }
 
   override def getNewAddress(): Future[BitcoinAddress] = delegate(
     _.getNewAddress())
@@ -572,6 +593,10 @@ class WalletHolder(implicit ec: ExecutionContext)
   override def clearUtxos(account: HDAccount): Future[HDWalletApi] = delegate(
     _.clearUtxos(account))
 
+  override def clearAllAddresses(): Future[WalletApi] = {
+    delegate(_.clearAllAddresses())
+  }
+
   override def getAddress(
       account: AccountDb,
       chainType: HDChainType,
@@ -685,7 +710,7 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   override def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[WalletApi with NeutrinoWalletApi] =
+      blockFilter: GolombFilter): Future[NeutrinoHDWalletApi] =
     delegate(_.processCompactFilter(blockHash, blockFilter))
 
   override def fullRescanNeutrinoWallet(addressBatchSize: Int, force: Boolean)(
@@ -932,4 +957,48 @@ class WalletHolder(implicit ec: ExecutionContext)
       contractId: ByteVector,
       oracleSig: OracleSignatures): Future[Option[Transaction]] =
     delegate(_.executeDLC(contractId, oracleSig))
+
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    delegate(_.findByOutPoints(outPoints))
+  }
+
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]] = {
+    delegate(_.findByTxIds(txIds))
+  }
+
+  override def findOutputsBeingSpent(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.findOutputsBeingSpent(tx))
+  }
+
+  override def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
+    delegate(_.findAccount(account))
+  }
+
+  override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
+    delegate(_.getNewAddress(account))
+  }
+
+  override def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.findByScriptPubKey(scriptPubKey))
+  }
+
+  override def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
+    delegate(
+      _.processOurTransaction(transaction = transaction,
+                              feeRate = feeRate,
+                              inputAmount = inputAmount,
+                              sentAmount = sentAmount,
+                              blockHashOpt = blockHashOpt,
+                              newTags = newTags))
+  }
 }

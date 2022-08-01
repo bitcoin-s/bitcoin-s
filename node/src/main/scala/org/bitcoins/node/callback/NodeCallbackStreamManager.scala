@@ -30,7 +30,7 @@ case class NodeCallbackStreamManager(callbacks: NodeCallbacks)(implicit
     with StartStopAsync[Unit]
     with Logging {
   import system.dispatcher
-  private val maxBufferSize: Int = 25
+  private val maxBufferSize: Int = 1000
 
   private val filterQueueSource: Source[
     Vector[(DoubleSha256Digest, GolombFilter)],

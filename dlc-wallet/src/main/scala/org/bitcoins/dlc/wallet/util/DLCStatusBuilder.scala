@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
@@ -9,6 +10,63 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
+
+/** Creates a case class that represents all DLC data from dlcdb.sqlite
+  * Unfortunately we have to read some data from walletdb.sqlite to build a
+  * full [[DLCStatus]]
+  * @see https://github.com/bitcoin-s/bitcoin-s/pull/4555#issuecomment-1200113188
+  */
+case class IntermediaryDLCStatus(
+    dlcDb: DLCDb,
+    contractInfo: ContractInfo,
+    contractData: DLCContractDataDb,
+    offerDb: DLCOfferDb,
+    acceptDbOpt: Option[DLCAcceptDb],
+    nonceDbs: Vector[OracleNonceDb],
+    announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+    announcementIds: Vector[DLCAnnouncementDb]
+) {
+
+  def complete(
+      payoutAddressOpt: Option[PayoutAddress],
+      closingTxOpt: Option[TransactionDb]): DLCStatus = {
+    val dlcId = dlcDb.dlcId
+    dlcDb.state match {
+      case _: DLCState.InProgressState =>
+        DLCStatusBuilder.buildInProgressDLCStatus(dlcDb = dlcDb,
+                                                  contractInfo = contractInfo,
+                                                  contractData = contractData,
+                                                  offerDb = offerDb,
+                                                  payoutAddress =
+                                                    payoutAddressOpt)
+      case _: DLCState.ClosedState =>
+        (acceptDbOpt, closingTxOpt) match {
+          case (Some(acceptDb), Some(closingTx)) =>
+            DLCStatusBuilder.buildClosedDLCStatus(
+              dlcDb = dlcDb,
+              contractInfo = contractInfo,
+              contractData = contractData,
+              announcementsWithId = announcementsWithId,
+              announcementIds = announcementIds,
+              nonceDbs = nonceDbs,
+              offerDb = offerDb,
+              acceptDb = acceptDb,
+              closingTx = closingTx.transaction,
+              payoutAddress = payoutAddressOpt
+            )
+          case (None, None) =>
+            throw new RuntimeException(
+              s"Could not find acceptDb or closingTx for closing state=${dlcDb.state} dlcId=$dlcId")
+          case (Some(_), None) =>
+            throw new RuntimeException(
+              s"Could not find closingTx for state=${dlcDb.state} dlcId=$dlcId")
+          case (None, Some(_)) =>
+            throw new RuntimeException(
+              s"Cannot find acceptDb for dlcId=$dlcId. This likely means we have data corruption")
+        }
+    }
+  }
+}
 
 object DLCStatusBuilder {
 
@@ -21,7 +79,7 @@ object DLCStatusBuilder {
       payoutAddress: Option[PayoutAddress]): DLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.InProgressState],
-      s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
+      s"Cannot have divergent states between dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
     )
     val dlcId = dlcDb.dlcId
 

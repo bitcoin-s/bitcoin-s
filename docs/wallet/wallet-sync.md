@@ -112,6 +112,8 @@ val getBlockHeaderFunc = { hash: DoubleSha256DigestBE => bitcoind.getBlockHeader
 
 val getBlockFunc = {hash: DoubleSha256DigestBE => bitcoind.getBlockRaw(hash) }
 
+val genesisHashBEF = bitcoind.getBlockHash(0)
+
 //yay! We are now all setup. Using our 3 functions above and a wallet, we can now sync
 //a fresh wallet
 implicit val walletAppConfig = WalletAppConfig.fromDefaultDatadir()
@@ -120,8 +122,11 @@ val feeRateProvider: FeeRateApi = MempoolSpaceProvider.fromBlockTarget(6, proxyP
 val wallet = Wallet(bitcoind, bitcoind, feeRateProvider)
 
 //yay! we have a synced wallet
-val syncedWalletF = WalletSync.syncFullBlocks(wallet,
-                                                  getBlockHeaderFunc,
-                                                  getBestBlockHashFunc,
-                                                  getBlockFunc)
+val syncedWalletF = genesisHashBEF.flatMap { genesisHash => 
+  WalletSync.syncFullBlocks(wallet,
+      getBlockHeaderFunc,
+      getBestBlockHashFunc,
+      getBlockFunc, 
+      genesisHash)
+}
 ```

@@ -2,7 +2,7 @@ package org.bitcoins.core.wallet.rescan
 
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 sealed trait RescanState
 
@@ -37,6 +37,17 @@ object RescanState {
         completeRescanEarlyP.success(None)
       }
       blocksMatchedF
+    }
+  }
+
+  /** Returns a Future for all rescan states that will be complete when the rescan is done */
+  def awaitRescanDone(rescanState: RescanState)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    rescanState match {
+      case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+        Future.unit
+      case started: RescanState.RescanStarted =>
+        started.doneF.map(_ => ())
     }
   }
 
