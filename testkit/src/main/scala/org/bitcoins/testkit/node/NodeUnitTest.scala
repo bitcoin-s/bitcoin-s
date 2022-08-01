@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -29,6 +30,7 @@ import org.scalatest.FutureOutcome
 
 import java.net.InetSocketAddress
 import java.time.Instant
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 trait NodeUnitTest extends BaseNodeTest {
@@ -234,13 +236,15 @@ object NodeUnitTest extends P2PLogger {
 
   }
 
-  def destroyNode(node: Node)(implicit ec: ExecutionContext): Future[Unit] = {
+  def destroyNode(node: Node, appConfig: BitcoinSAppConfig)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+
     for {
       _ <- node.stop()
       _ <- node.nodeAppConfig.stop()
       _ <- node.chainAppConfig.stop()
     } yield {
-      ()
+      cleanTables(appConfig)
     }
   }
 
@@ -253,9 +257,8 @@ object NodeUnitTest extends P2PLogger {
     val node = nodeConnectedWithBitcoind.node
     val bitcoind = nodeConnectedWithBitcoind.bitcoind
     val resultF = for {
-      _ <- destroyNode(node)
+      _ <- destroyNode(node, appConfig)
       _ <- ChainUnitTest.destroyBitcoind(bitcoind)
-      _ = cleanTables(appConfig)
       _ <- appConfig.stop()
     } yield {
       logger.debug(s"Done with teardown of node connected with bitcoind!")
@@ -274,8 +277,7 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     val node = nodeConnectedWithBitcoind.node
     val resultF = for {
-      _ <- destroyNode(node)
-      _ = cleanTables(appConfig)
+      _ <- destroyNode(node, appConfig)
       _ <- appConfig.stop()
     } yield {
       logger.debug(s"Done with teardown of node connected with bitcoind!")
@@ -513,9 +515,13 @@ object NodeUnitTest extends P2PLogger {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
-      _ = assert(!syncing)
-
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        () => {
+          val syncingF = node.chainApiFromDb().flatMap(_.isSyncing())
+          syncingF.map(!_)
+        },
+        interval = 1.second,
+        maxTries = 5)
     } yield node
   }
 
@@ -527,7 +533,7 @@ object NodeUnitTest extends P2PLogger {
     */
   private def cleanTables(appConfig: BitcoinSAppConfig): Unit = {
     appConfig.nodeConf.clean()
-    //appConfig.walletConf.clean()
+    appConfig.walletConf.clean()
     appConfig.chainConf.clean()
     ()
   }
