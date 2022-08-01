@@ -352,11 +352,11 @@ object BitcoindRpcBackendUtil extends Logging {
       system: ActorSystem): Cancellable = {
     import system.dispatcher
 
-    val isPolling = new AtomicBoolean(false)
+    val processingBitcoindBlocks = new AtomicBoolean(false)
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        if (isPolling.compareAndSet(false, true)) {
+        if (processingBitcoindBlocks.compareAndSet(false, true)) {
           val f = for {
             walletSyncState <- wallet.getSyncState()
             rescanning <- wallet.isRescanning()
@@ -380,7 +380,7 @@ object BitcoindRpcBackendUtil extends Logging {
           } yield res
 
           f.onComplete { _ =>
-            isPolling.set(false)
+            processingBitcoindBlocks.set(false)
             BitcoindRpcBackendUtil.setSyncingFlag(false,
                                                   bitcoind,
                                                   chainCallbacksOpt)
