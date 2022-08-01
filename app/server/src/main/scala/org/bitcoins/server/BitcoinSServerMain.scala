@@ -563,18 +563,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- wallet.updateUtxoPendingStates()
       pollingCancellable <-
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
-          BitcoindRpcBackendUtil
+          val blockingPollingCancellable = BitcoindRpcBackendUtil
             .startBitcoindBlockPolling(wallet, bitcoind, chainCallbacksOpt)
-            .map { blockingPollingCancellable =>
-              val mempoolCancellable = BitcoindRpcBackendUtil
-                .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
-                  nodeConf.callBacks
-                    .executeOnTxReceivedCallbacks(logger, tx)
-                }
 
-              BitcoindPollingCancellabe(blockingPollingCancellable,
-                                        mempoolCancellable)
+          val mempoolCancellable = BitcoindRpcBackendUtil
+            .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
+              nodeConf.callBacks
+                .executeOnTxReceivedCallbacks(logger, tx)
             }
+          val combinedCancellable = BitcoindPollingCancellabe(
+            blockingPollingCancellable,
+            mempoolCancellable)
+
+          Future.successful(combinedCancellable)
         } else {
           Future {
             BitcoindRpcBackendUtil.startZMQWalletCallbacks(

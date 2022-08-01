@@ -352,30 +352,26 @@ object BitcoindRpcBackendUtil extends Logging {
       chainCallbacksOpt: Option[ChainCallbacks],
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
-      ec: ExecutionContext): Future[Cancellable] = {
+      ec: ExecutionContext): Cancellable = {
+    system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+      {
+        val f = for {
+          walletSyncState <- wallet.getSyncState()
+          rescanning <- wallet.isRescanning()
+          res <-
+            if (!rescanning) {
+              pollBitcoind(wallet = wallet,
+                           bitcoind = bitcoind,
+                           chainCallbacksOpt = chainCallbacksOpt,
+                           prevCount = walletSyncState.height)
+            } else {
+              logger.info(
+                s"Skipping scanning the blockchain during wallet rescan")
+              Future.unit
+            }
+        } yield res
 
-    for {
-      walletSyncState <- wallet.getSyncState()
-    } yield {
-      system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
-        {
-          val f = for {
-            rescanning <- wallet.isRescanning()
-            res <-
-              if (!rescanning) {
-                pollBitcoind(wallet = wallet,
-                             bitcoind = bitcoind,
-                             chainCallbacksOpt = chainCallbacksOpt,
-                             prevCount = walletSyncState.height)
-              } else {
-                logger.info(
-                  s"Skipping scanning the blockchain during wallet rescan")
-                Future.unit
-              }
-          } yield res
-
-          f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
-        }
+        f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
       }
     }
   }
