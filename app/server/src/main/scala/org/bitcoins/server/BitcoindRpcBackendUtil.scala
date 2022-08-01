@@ -108,11 +108,14 @@ object BitcoindRpcBackendUtil extends Logging {
       syncing: Boolean,
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
-      ec: ExecutionContext): Future[Unit] = for {
-    _ <- bitcoind.setSyncing(false)
-  } yield {
-    chainCallbacksOpt.map(_.executeOnSyncFlagChanged(logger, syncing))
-    ()
+      ec: ExecutionContext): Future[Unit] = {
+    logger.debug(s"Setting bitcoind syncing flag to $syncing")
+    for {
+      _ <- bitcoind.setSyncing(syncing)
+    } yield {
+      chainCallbacksOpt.map(_.executeOnSyncFlagChanged(logger, syncing))
+      ()
+    }
   }
 
   /** Helper method to sync the wallet until the bitcoind height.
@@ -431,7 +434,7 @@ object BitcoindRpcBackendUtil extends Logging {
       .batch(100, seed = hash => Vector(hash))(_ :+ _)
       .toMat(processBlockSink)(Keep.both)
       .run()
-    logger.trace("Polling bitcoind for block count")
+    logger.debug("Polling bitcoind for block count")
 
     val resF: Future[Unit] = for {
       _ <- bitcoind.setSyncing(true)
@@ -446,7 +449,6 @@ object BitcoindRpcBackendUtil extends Logging {
           val range = prevCount.to(count).tail
 
           range.foreach(r => queue.offer(r))
-          queue.complete() //complete the stream after offering al heights we need ot sync
           Future.unit
         } else if (prevCount > count) {
           Future.failed(new RuntimeException(
@@ -457,6 +459,7 @@ object BitcoindRpcBackendUtil extends Logging {
         }
       }
     } yield {
+      queue.complete() //complete the stream after offering al heights we need ot sync
       retval
     }
     resF.map(_ => Some(doneF))
