@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.BoundedSourceQueue
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
@@ -131,7 +132,7 @@ object BitcoindRpcBackendUtil extends Logging {
       .map(_ => true)
       .recover { case _: Throwable => false }
 
-    val numParallelism = getParallelism
+    val numParallelism = FutureUtil.getParallelism
     //feeding blockchain hashes into this sync
     //will sync our wallet with those blockchain hashes
     val syncWalletSinkF: Future[
@@ -259,7 +260,7 @@ object BitcoindRpcBackendUtil extends Logging {
     Future[NeutrinoHDWalletApi]] = {
     import system.dispatcher
 
-    val numParallelism = getParallelism
+    val numParallelism = FutureUtil.getParallelism
     val sink: Sink[DoubleSha256Digest, Future[NeutrinoHDWalletApi]] =
       Flow[DoubleSha256Digest]
         .mapAsync(parallelism = numParallelism) { hash =>
@@ -290,7 +291,7 @@ object BitcoindRpcBackendUtil extends Logging {
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
-        val numParallelism = getParallelism
+        val numParallelism = FutureUtil.getParallelism
         walletF
           .flatMap { wallet =>
             val runStream: Future[Done] = Source(blockHashes)
@@ -360,10 +361,15 @@ object BitcoindRpcBackendUtil extends Logging {
           rescanning <- wallet.isRescanning()
           res <-
             if (!rescanning) {
-              pollBitcoind(wallet = wallet,
-                           bitcoind = bitcoind,
-                           chainCallbacksOpt = chainCallbacksOpt,
-                           prevCount = walletSyncState.height)
+              val pollFOpt = pollBitcoind(wallet = wallet,
+                                          bitcoind = bitcoind,
+                                          chainCallbacksOpt = chainCallbacksOpt,
+                                          prevCount = walletSyncState.height)
+
+              pollFOpt match {
+                case Some(pollF) => pollF
+                case None        => Future.unit
+              }
             } else {
               logger.info(
                 s"Skipping scanning the blockchain during wallet rescan")
@@ -376,17 +382,47 @@ object BitcoindRpcBackendUtil extends Logging {
     }
   }
 
+  /** Polls bitcoind for syncing the blockchain
+    * @return None if there was nothing to sync, else the Future[Done] that is completed when the sync is finished.
+    */
   private def pollBitcoind(
       wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks],
-      prevCount: Int)(implicit system: ActorSystem): Future[Unit] = {
+      prevCount: Int)(implicit system: ActorSystem): Option[Future[Done]] = {
     import system.dispatcher
     val atomicPrevCount = new AtomicInteger(prevCount)
+    val queueSource: Source[Int, BoundedSourceQueue[Int]] = Source.queue(100)
+    val numParallelism = FutureUtil.getParallelism
+    val processBlockSink = Sink.foreachAsync[Vector[DoubleSha256Digest]](1) {
+      case hashes: Vector[DoubleSha256Digest] =>
+        val requestsBlocksF = wallet.nodeApi.downloadBlocks(hashes)
+
+        requestsBlocksF.failed.foreach { case err =>
+          val failedCount = atomicPrevCount.get
+          atomicPrevCount.set(prevCount)
+          logger.error(
+            s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+            err)
+        }
+
+        requestsBlocksF
+    }
+    val (queue, doneF) = queueSource
+      .mapAsync(parallelism = numParallelism) { height: Int =>
+        bitcoind.getBlockHash(height).map(_.flip)
+      }
+      .map { hash =>
+        val _ = atomicPrevCount.incrementAndGet()
+        hash
+      }
+      .batch(100, seed = hash => Vector(hash))(_ :+ _)
+      .toMat(processBlockSink)(Keep.both)
+      .run()
+
     if (processingBitcoindBlocks.compareAndSet(false, true)) {
       logger.trace("Polling bitcoind for block count")
 
-      val numParallelism = getParallelism
       val res: Future[Unit] = for {
         _ <- bitcoind.setSyncing(true)
         _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
@@ -398,34 +434,10 @@ object BitcoindRpcBackendUtil extends Logging {
 
             // use .tail so we don't process the previous block that we already did
             val range = prevCount.to(count).tail
-            val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
-              .mapAsync(parallelism = numParallelism) { height =>
-                bitcoind.getBlockHash(height).map(_.flip)
-              }
-              .map { hash =>
-                val _ = atomicPrevCount.incrementAndGet()
-                hash
-              }
-              .toMat(Sink.seq)(Keep.right)
-              .run()
 
-            val requestsBlocksF = for {
-              hashes <- hashFs
-              _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-            } yield {
-              logger.debug("Successfully polled bitcoind for new blocks")
-              ()
-            }
-
-            requestsBlocksF.failed.foreach { case err =>
-              val failedCount = atomicPrevCount.get
-              atomicPrevCount.set(prevCount)
-              logger.error(
-                s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
-                err)
-            }
-
-            requestsBlocksF
+            range.foreach(r => queue.offer(r))
+            queue.complete() //complete the stream after offering al heights we need ot sync
+            Future.unit
           } else if (prevCount > count) {
             Future.failed(new RuntimeException(
               s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
@@ -442,11 +454,11 @@ object BitcoindRpcBackendUtil extends Logging {
         processingBitcoindBlocks.set(false)
         setSyncingFlag(false, bitcoind, chainCallbacksOpt)
       }
-      res
+      Some(doneF)
     } else {
       logger.info(
         s"Skipping scanning the blockchain since a previously scheduled task is still running")
-      Future.unit
+      None
     }
   }
 
@@ -530,15 +542,4 @@ object BitcoindRpcBackendUtil extends Logging {
     }
   }
 
-  /** Helper method to retrieve paralleism for streams
-    * This is needed on machines with any cores which can trigger
-    * open request exceptions with akka default limit of 32 open requests at a time
-    * So now we set the maximum parallelism to 8
-    */
-  private def getParallelism: Int = {
-    //max open requests is 32 in akka, so 1/8 of possible requests
-    //can be used to query the mempool, else just limit it be number of processors
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
-    Math.min(Runtime.getRuntime.availableProcessors(), 8).toInt
-  }
 }
