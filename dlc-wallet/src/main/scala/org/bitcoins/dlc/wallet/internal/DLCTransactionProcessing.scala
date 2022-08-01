@@ -243,6 +243,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       newTags: Vector[AddressTag],
       relevantReceivedOutputs: Vector[OutputWithIndex]): Future[
     Vector[SpendingInfoDb]] = {
+    val dlcDbsF = dlcDAO.findByFundingTxId(tx.txIdBE)
     super
       .processReceivedUtxos(tx,
                             blockHashOpt,
@@ -251,7 +252,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                             relevantReceivedOutputs)
       .flatMap { res =>
         for {
-          dlcDbs <- dlcDAO.findByFundingTxId(tx.txIdBE)
+          dlcDbs <- dlcDbsF
           _ <-
             if (dlcDbs.nonEmpty) {
               logger.info(
@@ -314,13 +315,13 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       outputsBeingSpent: Vector[SpendingInfoDb],
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Vector[SpendingInfoDb]] = {
+    val outPoints = transaction.inputs.map(_.previousOutput).toVector
+    val dlcDbsF = dlcDAO.findByFundingOutPoints(outPoints)
     super
       .processSpentUtxos(transaction, outputsBeingSpent, blockHashOpt)
       .flatMap { res =>
-        val outPoints = transaction.inputs.map(_.previousOutput).toVector
-
         for {
-          dlcDbs <- dlcDAO.findByFundingOutPoints(outPoints)
+          dlcDbs <- dlcDbsF
           _ <-
             if (dlcDbs.nonEmpty) {
               logger.info(
