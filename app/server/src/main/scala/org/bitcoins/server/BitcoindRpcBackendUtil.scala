@@ -337,8 +337,6 @@ object BitcoindRpcBackendUtil extends Logging {
     }
   }
 
-  private val processingBitcoindBlocks = new AtomicBoolean(false)
-
   /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
     * if it has changed, it will then request those blocks to process them
     *
@@ -353,30 +351,44 @@ object BitcoindRpcBackendUtil extends Logging {
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem): Cancellable = {
     import system.dispatcher
+
+    val isPolling = new AtomicBoolean(false)
+
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        val f = for {
-          walletSyncState <- wallet.getSyncState()
-          rescanning <- wallet.isRescanning()
-          res <-
-            if (!rescanning) {
-              val pollFOpt = pollBitcoind(wallet = wallet,
-                                          bitcoind = bitcoind,
-                                          chainCallbacksOpt = chainCallbacksOpt,
-                                          prevCount = walletSyncState.height)
+        if (isPolling.compareAndSet(false, true)) {
+          val f = for {
+            walletSyncState <- wallet.getSyncState()
+            rescanning <- wallet.isRescanning()
+            res <-
+              if (!rescanning) {
+                val pollFOptF = pollBitcoind(wallet = wallet,
+                                             bitcoind = bitcoind,
+                                             chainCallbacksOpt =
+                                               chainCallbacksOpt,
+                                             prevCount = walletSyncState.height)
 
-              pollFOpt match {
-                case Some(pollF) => pollF
-                case None        => Future.unit
+                pollFOptF.flatMap {
+                  case Some(pollF) => pollF
+                  case None        => Future.unit
+                }
+              } else {
+                logger.info(
+                  s"Skipping scanning the blockchain during wallet rescan")
+                Future.unit
               }
-            } else {
-              logger.info(
-                s"Skipping scanning the blockchain during wallet rescan")
-              Future.unit
-            }
-        } yield res
+          } yield res
 
-        f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
+          f.onComplete { _ =>
+            isPolling.set(false)
+            BitcoindRpcBackendUtil.setSyncingFlag(false,
+                                                  bitcoind,
+                                                  chainCallbacksOpt)
+          } //reset polling variable
+          f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
+        } else {
+          logger.info(s"Previous bitcoind polling still running")
+        }
       }
     }
   }
@@ -388,7 +400,8 @@ object BitcoindRpcBackendUtil extends Logging {
       wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks],
-      prevCount: Int)(implicit system: ActorSystem): Option[Future[Done]] = {
+      prevCount: Int)(implicit
+      system: ActorSystem): Future[Option[Future[Done]]] = {
     import system.dispatcher
     val atomicPrevCount = new AtomicInteger(prevCount)
     val queueSource: Source[Int, BoundedSourceQueue[Int]] = Source.queue(100)
@@ -418,47 +431,35 @@ object BitcoindRpcBackendUtil extends Logging {
       .batch(100, seed = hash => Vector(hash))(_ :+ _)
       .toMat(processBlockSink)(Keep.both)
       .run()
+    logger.trace("Polling bitcoind for block count")
 
-    if (processingBitcoindBlocks.compareAndSet(false, true)) {
-      logger.trace("Polling bitcoind for block count")
+    val resF: Future[Unit] = for {
+      _ <- bitcoind.setSyncing(true)
+      _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
+      count <- bitcoind.getBlockCount
+      retval <- {
+        if (prevCount < count) {
+          logger.info(
+            s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
 
-      val res: Future[Unit] = for {
-        _ <- bitcoind.setSyncing(true)
-        _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
-        count <- bitcoind.getBlockCount
-        retval <- {
-          if (prevCount < count) {
-            logger.info(
-              s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
+          // use .tail so we don't process the previous block that we already did
+          val range = prevCount.to(count).tail
 
-            // use .tail so we don't process the previous block that we already did
-            val range = prevCount.to(count).tail
-
-            range.foreach(r => queue.offer(r))
-            queue.complete() //complete the stream after offering al heights we need ot sync
-            Future.unit
-          } else if (prevCount > count) {
-            Future.failed(new RuntimeException(
-              s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-          } else {
-            logger.debug(s"In sync $prevCount count=$count")
-            Future.unit
-          }
+          range.foreach(r => queue.offer(r))
+          queue.complete() //complete the stream after offering al heights we need ot sync
+          Future.unit
+        } else if (prevCount > count) {
+          Future.failed(new RuntimeException(
+            s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+        } else {
+          logger.debug(s"In sync $prevCount count=$count")
+          Future.unit
         }
-      } yield {
-        retval
       }
-
-      res.onComplete { _ =>
-        processingBitcoindBlocks.set(false)
-        setSyncingFlag(false, bitcoind, chainCallbacksOpt)
-      }
-      Some(doneF)
-    } else {
-      logger.info(
-        s"Skipping scanning the blockchain since a previously scheduled task is still running")
-      None
+    } yield {
+      retval
     }
+    resF.map(_ => Some(doneF))
   }
 
   def startBitcoindMempoolPolling(
