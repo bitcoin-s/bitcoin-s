@@ -106,13 +106,6 @@ abstract class DLCWallet
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
   private lazy val walletDatabase: SafeDatabase = addressDAO.safeDatabase
 
-  override def stop(): Future[Wallet] = {
-    for {
-      _ <- dlcConfig.stop()
-      _ <- super.stop()
-    } yield this
-  }
-
   /** Updates the contract Id in the wallet database for the given offer and accept */
   private def updateDLCContractIds(
       offer: DLCOffer,

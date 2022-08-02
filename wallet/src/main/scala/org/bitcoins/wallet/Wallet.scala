@@ -166,9 +166,7 @@ abstract class Wallet
   }
 
   override def stop(): Future[Wallet] = {
-    for {
-      _ <- walletConfig.stop()
-    } yield this
+    Future.successful(this)
   }
 
   override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
