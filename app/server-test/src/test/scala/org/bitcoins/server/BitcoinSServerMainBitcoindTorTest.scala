@@ -1,9 +1,12 @@
 package org.bitcoins.server
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.testkit.fixtures.BitcoinSAppConfigBitcoinFixtureNotStarted
 import org.bitcoins.testkit.tor.CachedTor
+
+import scala.concurrent.duration.DurationInt
 
 /** Test starting bitcoin-s with bitcoind as the backend for app */
 class BitcoinSServerMainBitcoindTorTest
@@ -29,6 +32,8 @@ class BitcoinSServerMainBitcoindTorTest
         addr = ConsoleCli.exec(CliCommand.GetNewAddress(labelOpt = None),
                                cliConfig)
         blockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
+        _ <- AsyncUtil.nonBlockingSleep(1.second)
+        _ <- server.stop() //stop to free all resources
       } yield {
         assert(info.isSuccess)
         assert(balance.isSuccess)

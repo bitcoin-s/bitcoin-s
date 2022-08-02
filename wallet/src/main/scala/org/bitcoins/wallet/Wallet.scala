@@ -978,8 +978,8 @@ abstract class Wallet
       override def run(): Unit = {
         getFeeRate()
           .map(feeRate => Some(feeRate))
-          .recover { case NonFatal(ex) =>
-            logger.error("Cannot get fee rate ", ex)
+          .recover { case NonFatal(_) =>
+            //logger.error("Cannot get fee rate ", ex)
             None
           }
           .foreach { feeRateOpt =>

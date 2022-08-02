@@ -87,8 +87,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       result.feerate match {
         case Some(feeRate) => Future.successful(feeRate)
         case None =>
-          Future.failed(
-            new RuntimeException("Unexpected error when getting fee rate"))
+          Future.failed(new RuntimeException(
+            s"Unexpected error when getting fee rate, errors=${result.errors}"))
       }
     }
   // Chain Api

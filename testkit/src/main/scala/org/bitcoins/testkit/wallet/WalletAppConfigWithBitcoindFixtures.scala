@@ -18,6 +18,7 @@ trait WalletAppConfigWithBitcoindFixtures
     with EmbeddedPg { _: CachedBitcoind[_] =>
 
   override def afterAll(): Unit = {
+    super[EmbeddedPg].afterAll()
     super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
