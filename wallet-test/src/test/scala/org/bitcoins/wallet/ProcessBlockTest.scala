@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
@@ -108,6 +109,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
         bitcoind.getBlockFilter(_, FilterType.Basic))
       filtersWithBlockHash = hashes.map(_.flip).zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
+      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+        wallet.getConfirmedBalance().map(_ == Bitcoins(100)))
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       balance <- wallet.getConfirmedBalance()
 
