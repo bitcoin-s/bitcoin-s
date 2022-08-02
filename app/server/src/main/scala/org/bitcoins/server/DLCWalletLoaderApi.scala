@@ -7,6 +7,7 @@ import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.StartStopAsync
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.node.NodeCallbacks
@@ -16,6 +17,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -104,6 +106,36 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       NodeStateDescriptorDAO()(ec, conf.nodeConf)
     nodeStateDAO.updateWalletName(walletNameOpt)
   }
+
+  protected def handleDuplicateSpendingInfoDb(
+      wallet: DLCNeutrinoHDWalletApi,
+      walletConfig: WalletAppConfig)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
+    for {
+      rescanNeeded <- spendingInfoDAO.hasDuplicates()
+      _ <-
+        if (rescanNeeded) {
+          logger.warn("Found duplicate UTXOs. Rescanning...")
+          wallet
+            .rescanNeutrinoWallet(startOpt = None,
+                                  endOpt = None,
+                                  addressBatchSize =
+                                    wallet.discoveryBatchSize(),
+                                  useCreationTime = true,
+                                  force = true)
+            .recover { case scala.util.control.NonFatal(exn) =>
+              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
+                           exn)
+              RescanState.RescanDone
+            }
+        } else {
+          Future.successful(RescanState.RescanDone)
+        }
+      _ <- spendingInfoDAO.createOutPointsIndexIfNeeded()
+    } yield ()
+  }
+
 }
 
 case class DLCWalletNeutrinoBackendLoader(
@@ -157,6 +189,7 @@ case class DLCWalletNeutrinoBackendLoader(
         CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
+      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
     } yield (walletHolder, walletConfig, dlcConfig)
   }
 
@@ -196,6 +229,7 @@ case class DLCWalletNeutrinoBackendLoader(
         }
     }
   }
+
 }
 
 case class DLCWalletBitcoindBackendLoader(
@@ -248,7 +282,11 @@ case class DLCWalletBitcoindBackendLoader(
         walletHolder)
       _ = nodeConf.addCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
-    } yield (walletHolder, walletConfig, dlcConfig)
+      //do something with possible rescan?
+      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
+    } yield {
+      (walletHolder, walletConfig, dlcConfig)
+    }
   }
 
   private def stopOldWalletAppConfig(

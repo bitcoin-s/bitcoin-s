@@ -44,7 +44,6 @@ import org.bitcoins.server.util._
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import java.sql.SQLException
 import java.time.Instant
@@ -244,7 +243,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startedTorConfigF
       _ <- node.sync()
       (wallet, walletConfig, _) <- configuredWalletF
-      _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
       _ <- restartRescanIfNeeded(wallet)
     } yield {
       logger.info(
@@ -428,7 +426,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
         _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
         _ <- startedTorConfigF
-        _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
         _ <- restartRescanIfNeeded(wallet)
       } yield {
         logger.info(s"Done starting Main!")
@@ -617,34 +614,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
     tuple
-  }
-
-  private def handleDuplicateSpendingInfoDb(
-      wallet: DLCNeutrinoHDWalletApi,
-      walletConfig: WalletAppConfig): Future[Unit] = {
-    val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
-    for {
-      rescanNeeded <- spendingInfoDAO.hasDuplicates()
-      _ <-
-        if (rescanNeeded) {
-          logger.warn("Found duplicate UTXOs. Rescanning...")
-          wallet
-            .rescanNeutrinoWallet(startOpt = None,
-                                  endOpt = None,
-                                  addressBatchSize =
-                                    wallet.discoveryBatchSize(),
-                                  useCreationTime = true,
-                                  force = true)
-            .recover { case scala.util.control.NonFatal(exn) =>
-              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
-                           exn)
-              RescanState.RescanDone
-            }
-        } else {
-          Future.successful(RescanState.RescanDone)
-        }
-      _ <- spendingInfoDAO.createOutPointsIndexIfNeeded()
-    } yield ()
   }
 
   private def restartRescanIfNeeded(
