@@ -18,6 +18,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
@@ -205,7 +206,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(!rescan)
       _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
-      _ <- AsyncUtil.awaitConditionF(condition)
+      _ <- AsyncUtil.awaitConditionF(condition,
+                                     maxTries = 200,
+                                     interval = 200.millis)
     } yield succeed
   }
 
