@@ -16,6 +16,7 @@ import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
+import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -92,9 +93,13 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   override def stop(): Future[Unit] = {
-    clearCallbacks()
+    val stopCallbacksF = callBacks match {
+      case stream: NodeCallbackStreamManager => stream.stop()
+      case _: NodeCallbacks =>
+        Future.unit
+    }
     val _ = stopHikariLogger()
-    super.stop()
+    stopCallbacksF.flatMap(_ => super.stop())
   }
 
   lazy val nodeType: NodeType =
