@@ -989,6 +989,7 @@ case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(
     case ServerCommand("loadwallet", arr) =>
       withValidServerCommand(LoadWallet.fromJsArr(arr)) {
         case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>
+          logger.info(s"aesPasswordOpt=$aesPasswordOpt")
           complete {
             loadWalletApi.load(walletNameOpt, aesPasswordOpt).map { _ =>
               val walletName =

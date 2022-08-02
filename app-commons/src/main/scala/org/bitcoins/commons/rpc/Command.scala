@@ -1,5 +1,6 @@
 package org.bitcoins.commons.rpc
 
+import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
 import org.bitcoins.commons.serializers.JsonReaders
@@ -1597,19 +1598,19 @@ case class LoadWallet(
     extends CommandRpc
     with AppServerCliCommand
 
-object LoadWallet extends ServerJsonModels {
+object LoadWallet extends ServerJsonModels with Logging {
 
   def fromJsArr(arr: ujson.Arr): Try[LoadWallet] = Try {
     arr.arr.toList match {
       case _ :: _ :: bip39PasswordJs :: Nil =>
         val (walletNameOpt, passwordOpt) =
-          jsToWalletNameAndPassword(arr.arr.slice(0, 1))
+          jsToWalletNameAndPassword(arr.arr.slice(0, 2))
         LoadWallet(walletNameOpt,
                    passwordOpt,
                    nullToOpt(bip39PasswordJs).map(_.str))
       case _ :: _ :: Nil =>
         val (walletNameOpt, passwordOpt) =
-          jsToWalletNameAndPassword(arr.arr.slice(0, 1))
+          jsToWalletNameAndPassword(arr.arr.slice(0, 2))
         LoadWallet(walletNameOpt, passwordOpt, None)
       case walletNameJs :: Nil =>
         LoadWallet(jsToStringOpt(walletNameJs), None, None)
