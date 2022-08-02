@@ -180,7 +180,8 @@ object BitcoindRpcBackendUtil extends Logging {
     val pairedWallet = Wallet(
       nodeApi = nodeApi,
       chainQueryApi = bitcoind,
-      feeRateApi = wallet.feeRateApi
+      feeRateApi = wallet.feeRateApi,
+      rescanExecutionContextOpt = None
     )(wallet.walletConfig)
 
     walletCallbackP.success(pairedWallet)
@@ -231,7 +232,8 @@ object BitcoindRpcBackendUtil extends Logging {
   def createDLCWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       wallet: DLCWallet,
-      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      chainCallbacksOpt: Option[ChainCallbacks],
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
       system: ActorSystem): DLCWallet = {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
@@ -244,7 +246,8 @@ object BitcoindRpcBackendUtil extends Logging {
                                                     walletCallbackP.future,
                                                     chainCallbacksOpt),
       chainQueryApi = bitcoind,
-      feeRateApi = wallet.feeRateApi
+      feeRateApi = wallet.feeRateApi,
+      rescanExecutionContextOpt = rescanExecutionContextOpt
     )(wallet.walletConfig, wallet.dlcConfig)
 
     walletCallbackP.success(pairedWallet)

@@ -185,7 +185,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       val walletDiffKeyManagerF: Future[Wallet] = for {
         _ <- startedF
       } yield {
-        Wallet(wallet.nodeApi, wallet.chainQueryApi, wallet.feeRateApi)(
+        Wallet(wallet.nodeApi, wallet.chainQueryApi, wallet.feeRateApi, None)(
           uniqueEntropyWalletConfig)
       }
 

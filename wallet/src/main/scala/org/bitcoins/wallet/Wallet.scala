@@ -1,13 +1,6 @@
 package org.bitcoins.wallet
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.wallet.{
-  BlockSyncState,
-  CoinSelectionAlgo,
-  NeutrinoHDWalletApi,
-  SyncHeightDescriptor,
-  WalletInfo
-}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -16,6 +9,7 @@ import org.bitcoins.core.api.wallet.db.{
   SpendingInfoDb,
   TransactionDb
 }
+import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
@@ -69,6 +63,8 @@ abstract class Wallet
   implicit val system: ActorSystem = walletConfig.system
 
   implicit val ec: ExecutionContext = system.dispatcher
+
+  val rescanExecutionContextOpt: Option[ExecutionContext]
 
   private[wallet] lazy val scheduler = walletConfig.scheduler
 
@@ -1005,7 +1001,8 @@ object Wallet extends WalletLogger {
   private case class WalletImpl(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext]
   )(implicit
       val walletConfig: WalletAppConfig
   ) extends Wallet
@@ -1013,8 +1010,10 @@ object Wallet extends WalletLogger {
   def apply(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit config: WalletAppConfig): Wallet = {
-    WalletImpl(nodeApi, chainQueryApi, feeRateApi)
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
+      config: WalletAppConfig): Wallet = {
+    WalletImpl(nodeApi, chainQueryApi, feeRateApi, rescanExecutionContextOpt)
   }
 
   /** Creates the master xpub for the key manager in the database

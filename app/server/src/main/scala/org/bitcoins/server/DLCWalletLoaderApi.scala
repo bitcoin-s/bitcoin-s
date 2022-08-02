@@ -29,6 +29,8 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
 
   implicit protected def system: ActorSystem
 
+  protected val rescanExecutionContextOpt: Option[ExecutionContext]
+
   def load(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]): Future[
@@ -72,7 +74,8 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       dlcWallet <- dlcConfig.createDLCWallet(
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi,
-        feeRateApi = feeProviderApi
+        feeRateApi = feeProviderApi,
+        rescanExecutionContextOpt = rescanExecutionContextOpt
       )(walletConfig)
     } yield (dlcWallet, walletConfig, dlcConfig)
   }
@@ -110,7 +113,8 @@ case class DLCWalletNeutrinoBackendLoader(
     walletHolder: WalletHolder,
     chainQueryApi: ChainQueryApi,
     nodeApi: NodeApi,
-    feeRateApi: FeeRateApi)(implicit
+    feeRateApi: FeeRateApi,
+    rescanExecutionContextOpt: Option[ExecutionContext])(implicit
     override val conf: BitcoinSAppConfig,
     override val system: ActorSystem)
     extends DLCWalletLoaderApi {
@@ -202,7 +206,8 @@ case class DLCWalletBitcoindBackendLoader(
     walletHolder: WalletHolder,
     bitcoind: BitcoindRpcClient,
     nodeApi: NodeApi,
-    feeProvider: FeeRateApi)(implicit
+    feeProvider: FeeRateApi,
+    rescanExecutionContextOpt: Option[ExecutionContext])(implicit
     override val conf: BitcoinSAppConfig,
     override val system: ActorSystem)
     extends DLCWalletLoaderApi {

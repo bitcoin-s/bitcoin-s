@@ -72,13 +72,26 @@ case class WalletAppConfig(
         s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"))
   }
 
-  private lazy val rescanThreadFactory: ThreadFactory =
-    AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
+  lazy val rescanThreadPoolType: String =
+    config.getString("bitcoin-s.wallet.rescanThreadPoolType")
 
-  /** Threads for rescanning the wallet */
-  private[wallet] lazy val rescanThreadPool: ExecutorService =
-    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors(),
-                                 rescanThreadFactory)
+  def createRescanExecutionContext(): Option[ExecutionContext] = {
+    if (rescanThreadPoolType == "system") {
+      None
+    } else {
+      val rescanThreadPool = rescanThreadPoolType match {
+        case "fixed" =>
+          val rescanThreadFactory: ThreadFactory =
+            AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
+          Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors(),
+                                       rescanThreadFactory)
+        case "work_stealing" => Executors.newWorkStealingPool()
+        case err @ _ =>
+          throw new RuntimeException(s"Unknown rescan thread pool type: `$err`")
+      }
+      Some(ExecutionContext.fromExecutor(rescanThreadPool))
+    }
+  }
 
   override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
 
@@ -235,7 +248,6 @@ case class WalletAppConfig(
     //in the future, we should actually cancel all things that are scheduled
     //manually, and then shutdown the scheduler
     scheduler.shutdownNow()
-    rescanThreadPool.shutdownNow()
     super.stop()
   }
 
@@ -297,10 +309,14 @@ case class WalletAppConfig(
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit system: ActorSystem): Future[Wallet] = {
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
+      system: ActorSystem): Future[Wallet] = {
     WalletAppConfig.createHDWallet(nodeApi = nodeApi,
                                    chainQueryApi = chainQueryApi,
-                                   feeRateApi = feeRateApi)(this, system)
+                                   feeRateApi = feeRateApi,
+                                   rescanExecutionContextOpt =
+                                     rescanExecutionContextOpt)(this, system)
   }
 
   private[this] var rebroadcastTransactionsCancelOpt: Option[
@@ -370,7 +386,8 @@ object WalletAppConfig
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
       walletConf: WalletAppConfig,
       system: ActorSystem): Future[Wallet] = {
     import system.dispatcher
@@ -380,12 +397,12 @@ object WalletAppConfig
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         val wallet =
-          Wallet(nodeApi, chainQueryApi, feeRateApi)
+          Wallet(nodeApi, chainQueryApi, feeRateApi, rescanExecutionContextOpt)
         Future.successful(wallet)
       } else {
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          Wallet(nodeApi, chainQueryApi, feeRateApi)
+          Wallet(nodeApi, chainQueryApi, feeRateApi, rescanExecutionContextOpt)
 
         Wallet.initialize(wallet = unInitializedWallet,
                           bip39PasswordOpt = bip39PasswordOpt)

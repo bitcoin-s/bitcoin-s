@@ -26,7 +26,6 @@ import org.bitcoins.core.api.node.{
   NodeType
 }
 import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
-
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.dlc.node.DLCNode
@@ -49,7 +48,7 @@ import org.bitcoins.wallet.models.SpendingInfoDAO
 import java.sql.SQLException
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -141,6 +140,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       conf.walletConf.feeProviderTargetOpt,
       torConf.socks5ProxyParams,
       network)
+
+    val rescanExecutionContextOpt: Option[ExecutionContext] =
+      conf.walletConf.createRescanExecutionContext()
     //get our wallet
     val walletHolder = new WalletHolder()
     val neutrinoWalletLoaderF = {
@@ -150,7 +152,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         val l = DLCWalletNeutrinoBackendLoader(walletHolder,
                                                chainApi,
                                                nodeApi = node,
-                                               feeRateApi = feeProvider)
+                                               feeRateApi = feeProvider,
+                                               rescanExecutionContextOpt =
+                                                 rescanExecutionContextOpt)
         walletLoaderApiOpt = Some(l)
         l
       }
@@ -356,6 +360,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       )
     }
 
+    val rescanExecutionContextOpt: Option[ExecutionContext] =
+      conf.walletConf.createRescanExecutionContext()
+
     val loadWalletApiF = {
       for {
         bitcoind <- bitcoindF
@@ -365,7 +372,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         val l = DLCWalletBitcoindBackendLoader(walletHolder,
                                                bitcoind,
                                                nodeApi,
-                                               feeProvider)
+                                               feeProvider,
+                                               rescanExecutionContextOpt =
+                                                 rescanExecutionContextOpt)
 
         walletLoaderApiOpt = Some(l)
         l

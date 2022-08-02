@@ -45,7 +45,7 @@ import scodec.bits.ByteVector
 import slick.dbio._
 
 import java.net.InetSocketAddress
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /** A [[Wallet]] with full DLC Functionality */
 abstract class DLCWallet
@@ -1964,7 +1964,8 @@ object DLCWallet extends WalletLogger {
   private case class DLCWalletImpl(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext]
   )(implicit
       val walletConfig: WalletAppConfig,
       val dlcConfig: DLCAppConfig
@@ -1973,10 +1974,11 @@ object DLCWallet extends WalletLogger {
   def apply(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
       config: WalletAppConfig,
       dlcConfig: DLCAppConfig): DLCWallet = {
-    DLCWalletImpl(nodeApi, chainQueryApi, feeRateApi)
+    DLCWalletImpl(nodeApi, chainQueryApi, feeRateApi, rescanExecutionContextOpt)
   }
 
   private object AcceptingOffersLatch {

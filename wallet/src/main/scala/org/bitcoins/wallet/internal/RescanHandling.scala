@@ -30,6 +30,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
   // Public facing API
 
   private lazy val safeDatabase: SafeDatabase = addressDAO.safeDatabase
+
+  private lazy val rescanExecutionContext: ExecutionContext =
+    rescanExecutionContextOpt.getOrElse(ec)
+
   override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
   /** @inheritdoc */
@@ -157,7 +161,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         .via(fetchFiltersFlow)
         .mapAsync(1) { case filterResponse =>
           val f = searchFiltersForMatches(scripts, filterResponse, parallelism)(
-            ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+            rescanExecutionContext)
 
           val heightRange = filterResponse.map(_.blockHeight)
 
@@ -328,8 +332,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val rescanStateF = for {
       rescanState <- getMatchingBlocks(scripts = scriptPubKeys,
                                        startOpt = startOpt,
-                                       endOpt = endOpt)(
-        ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+                                       endOpt = endOpt)(rescanExecutionContext)
     } yield {
       rescanState
     }

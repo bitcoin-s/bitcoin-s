@@ -220,6 +220,7 @@ object FundWalletUtil extends FundWalletUtil {
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
         tmp,
+        None,
         None)(system)
       funded1 <- fundAccountForWalletWithBitcoind(
         BitcoinSWalletTest.defaultAcctAmts,

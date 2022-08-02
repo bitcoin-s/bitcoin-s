@@ -112,11 +112,14 @@ case class DLCAppConfig(
   def createDLCWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
       walletConf: WalletAppConfig): Future[DLCWallet] = {
     DLCAppConfig.createDLCWallet(nodeApi = nodeApi,
                                  chainQueryApi = chainQueryApi,
-                                 feeRateApi = feeRateApi)(walletConf, this)
+                                 feeRateApi = feeRateApi,
+                                 rescanExecutionContextOpt =
+                                   rescanExecutionContextOpt)(walletConf, this)
   }
 
   private val callbacks = new Mutable(DLCWalletCallbacks.empty)
@@ -225,7 +228,8 @@ object DLCAppConfig
   def createDLCWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit
+      feeRateApi: FeeRateApi,
+      rescanExecutionContextOpt: Option[ExecutionContext])(implicit
       walletConf: WalletAppConfig,
       dlcConf: DLCAppConfig): Future[DLCWallet] = {
     import dlcConf.ec
@@ -234,12 +238,18 @@ object DLCAppConfig
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         val wallet =
-          DLCWallet(nodeApi, chainQueryApi, feeRateApi)
+          DLCWallet(nodeApi,
+                    chainQueryApi,
+                    feeRateApi,
+                    rescanExecutionContextOpt)
         Future.successful(wallet)
       } else {
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          DLCWallet(nodeApi, chainQueryApi, feeRateApi)
+          DLCWallet(nodeApi,
+                    chainQueryApi,
+                    feeRateApi,
+                    rescanExecutionContextOpt)
 
         Wallet
           .initialize(wallet = unInitializedWallet,
