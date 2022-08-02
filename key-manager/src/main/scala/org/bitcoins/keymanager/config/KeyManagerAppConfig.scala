@@ -20,8 +20,8 @@ case class KeyManagerAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config],
     walletNameOverride: Option[String] = None,
-    aesPasswordOverride: Option[Option[AesPassword]] = None,
-    bip39PasswordOverride: Option[Option[String]] = None)(implicit
+    aesPasswordOverride: Option[AesPassword] = None,
+    bip39PasswordOverride: Option[String] = None)(implicit
     val ec: ExecutionContext)
     extends AppConfig {
 
@@ -142,14 +142,14 @@ case class KeyManagerAppConfig(
     case None =>
       val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
       passOpt.flatMap(AesPassword.fromStringOpt)
-    case Some(passOpt) => passOpt
+    case Some(pass) => Some(pass)
 
   }
 
   lazy val bip39PasswordOpt: Option[String] = bip39PasswordOverride match {
     case None =>
       config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
-    case Some(passOpt) => passOpt
+    case Some(pass) => Some(pass)
   }
 
   /** Checks if our key manager as a mnemonic seed associated with it */
