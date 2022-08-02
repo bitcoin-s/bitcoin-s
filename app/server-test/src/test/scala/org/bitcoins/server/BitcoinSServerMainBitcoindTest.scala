@@ -1,8 +1,14 @@
 package org.bitcoins.server
 
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.cli.CliCommand.GetBestBlockHash
 import org.bitcoins.cli.ConsoleCli.exec
-import org.bitcoins.commons.rpc.{GetBalance, GetNewAddress}
+import org.bitcoins.commons.rpc.{
+  GetBalance,
+  GetNewAddress,
+  ImportSeed,
+  LoadWallet
+}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.crypto.MnemonicCode
@@ -58,26 +64,26 @@ class BitcoinSServerMainBitcoindTest
       val info = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
       assert(info.get.contains("\"walletName\": \"\""))
       val balance =
-        ConsoleCli.exec(CliCommand.GetBalance(isSats = true), cliConfig)
+        ConsoleCli.exec(GetBalance(isSats = true), cliConfig)
       assert(balance.get == "0")
       val aliceAddr =
-        ConsoleCli.exec(CliCommand.GetNewAddress(labelOpt = None), cliConfig)
+        ConsoleCli.exec(GetNewAddress(labelOpt = None), cliConfig)
       assert(aliceAddr.isSuccess)
       val aliceBlockHash =
-        ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
+        ConsoleCli.exec(GetBestBlockHash, cliConfig)
       assert(aliceBlockHash.isSuccess)
 
       // switch to bob
       val imported =
-        ConsoleCli.exec(CliCommand.ImportSeed(bob, mnemonic, None), cliConfig)
+        ConsoleCli.exec(ImportSeed(bob, mnemonic, None), cliConfig)
       assert(imported.isSuccess)
       val bobLoaded =
-        ConsoleCli.exec(CliCommand.LoadWallet(bob, None, None), cliConfig)
+        ConsoleCli.exec(LoadWallet(bob, None, None), cliConfig)
       assert(bobLoaded.get == "bob")
       val bobInfo = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
       assert(bobInfo.get.contains("\"walletName\": \"bob\""))
       val bobAddr =
-        ConsoleCli.exec(CliCommand.GetNewAddress(labelOpt = None), cliConfig)
+        ConsoleCli.exec(GetNewAddress(labelOpt = None), cliConfig)
       assert(bobAddr.isSuccess)
       val bobBlockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
       assert(bobBlockHash.isSuccess)
@@ -87,7 +93,7 @@ class BitcoinSServerMainBitcoindTest
 
       // switch back to alice
       val aliceLoaded =
-        ConsoleCli.exec(CliCommand.LoadWallet(alice, None, None), cliConfig)
+        ConsoleCli.exec(LoadWallet(alice, None, None), cliConfig)
       assert(aliceLoaded.get == "")
       val aliceInfo = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
       assert(aliceInfo.get.contains("\"walletName\": \"\""))
@@ -99,10 +105,10 @@ class BitcoinSServerMainBitcoindTest
 
       // again switch to bob
       val imported2 =
-        ConsoleCli.exec(CliCommand.ImportSeed(bob, mnemonic, None), cliConfig)
+        ConsoleCli.exec(ImportSeed(bob, mnemonic, None), cliConfig)
       assert(imported2.isFailure)
       val bobLoaded2 =
-        ConsoleCli.exec(CliCommand.LoadWallet(bob, None, None), cliConfig)
+        ConsoleCli.exec(LoadWallet(bob, None, None), cliConfig)
       assert(bobLoaded2.get == "bob")
       val bobInfo2 = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
       assert(bobInfo2.get.contains("\"walletName\": \"bob\""))

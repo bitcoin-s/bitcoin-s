@@ -2478,12 +2478,6 @@ object CliCommand {
 
   case object GetDLCWalletAccounting extends AppServerCliCommand
 
-  case class LoadWallet(
-      walletNameOpt: Option[String],
-      passwordOpt: Option[AesPassword],
-      bip39PasswordOpt: Option[String])
-      extends AppServerCliCommand
-
   // Node
   case object GetPeers extends AppServerCliCommand
   case object Stop extends AppServerCliCommand
