@@ -3,14 +3,7 @@ package org.bitcoins.cli
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.rpc.{
-  AppServerCliCommand,
-  ContactAdd,
-  ContactRemove,
-  ContactsList,
-  OracleServerCliCommand,
-  ServerlessCliCommand
-}
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
@@ -112,14 +105,14 @@ object ConsoleCli {
             .action((tx, conf) =>
               conf.copy(command = conf.command match {
                 case decode: DecodeRawTransaction =>
-                  decode.copy(transaction = tx)
+                  decode.copy(tx = tx)
                 case other => other
               }))),
       note(sys.props("line.separator") + "=== Wallet ==="),
       cmd("rescan")
         .action((_, conf) =>
           conf.copy(
-            command = Rescan(addressBatchSize = Option.empty,
+            command = Rescan(batchSize = Option.empty,
                              startBlock = Option.empty,
                              endBlock = Option.empty,
                              force = false,
@@ -141,7 +134,7 @@ object ConsoleCli {
             .action((batchSize, conf) =>
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
-                  rescan.copy(addressBatchSize = Option(batchSize))
+                  rescan.copy(batchSize = Option(batchSize))
                 case other => other
               })),
           opt[BlockStamp]("start")
@@ -666,10 +659,10 @@ object ConsoleCli {
           arg[Vector[LockUnspentOutputParameter]]("transactions")
             .text("The transaction outpoints to unlock/lock, empty to apply to all utxos")
             .optional()
-            .action((outPoints, conf) =>
+            .action((outputParam, conf) =>
               conf.copy(command = conf.command match {
                 case lockUnspent: LockUnspent =>
-                  lockUnspent.copy(outPoints = outPoints)
+                  lockUnspent.copy(outputParam = outputParam)
                 case other => other
               }))
         ),
@@ -863,7 +856,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = DecodeOffer(null)))
         .text("Decodes an offer message into json")
         .children(
-          arg[LnMessage[DLCOfferTLV]]("offer")
+          arg[DLCOfferTLV]("offer")
             .text("Hex encoded dlc offer message")
             .required()
             .action((offer, conf) =>
@@ -907,7 +900,10 @@ object ConsoleCli {
             command = CreateDLCOffer(ContractInfoV0TLV.dummy,
                                      Satoshis.zero,
                                      None,
+                                     None,
                                      UInt32.zero,
+                                     None,
+                                     None,
                                      None)))
         .text("Creates a DLC offer that another party can accept")
         .children(
@@ -917,7 +913,7 @@ object ConsoleCli {
             .action((info, conf) =>
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
-                  offer.copy(contractInfo = info)
+                  offer.copy(contractInfoTLV = info)
                 case other => other
               })),
           arg[Satoshis]("collateral")
@@ -941,10 +937,10 @@ object ConsoleCli {
           arg[UInt32]("refundlocktime")
             .text("Locktime of the refund transaction")
             .required()
-            .action((refundLT, conf) =>
+            .action((refundLocktime, conf) =>
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
-                  offer.copy(refundLT = refundLT)
+                  offer.copy(refundLocktime = refundLocktime)
                 case other => other
               })),
           opt[UInt32]("cetlocktime")
@@ -953,7 +949,7 @@ object ConsoleCli {
             .action((locktime, conf) =>
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
-                  offer.copy(cetLocktimeOpt = Some(locktime))
+                  offer.copy(locktimeOpt = Some(locktime))
                 case other => other
               }))
         ),
@@ -961,7 +957,9 @@ object ConsoleCli {
         .action((_, conf) =>
           conf.copy(command =
             AcceptDLC(null,
-                      InetSocketAddress.createUnresolved("localhost", 0))))
+                      InetSocketAddress.createUnresolved("localhost", 0),
+                      None,
+                      None)))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[LnMessage[DLCOfferTLV]]("offer")
@@ -984,7 +982,8 @@ object ConsoleCli {
               }))
         ),
       cmd("acceptdlcoffer")
-        .action((_, conf) => conf.copy(command = AcceptDLCOffer(null)))
+        .action((_, conf) =>
+          conf.copy(command = AcceptDLCOffer(null, None, None, None)))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[LnMessage[DLCOfferTLV]]("offer")
@@ -1293,8 +1292,8 @@ object ConsoleCli {
             .required()
             .action((ann, conf) =>
               conf.copy(command = conf.command match {
-                case create: CreateContractInfo =>
-                  create.copy(announcementTLV = ann)
+                case createContractInfo: CreateContractInfo =>
+                  createContractInfo.copy(announcementTLV = ann)
                 case other => other
               })),
           arg[Satoshis]("totalCollateral")
@@ -1306,7 +1305,7 @@ object ConsoleCli {
                   create.copy(totalCollateral = totalCollateral)
                 case other => other
               })),
-          arg[ujson.Value]("contractDescriptor")
+          arg[ContractDescriptorTLV]("contractDescriptor")
             .text("The contract descriptor in the DLC. This is expected to be of format [[outcome1, payout1], [outcome2, payout2], ...]")
             .required()
             .action((contractDescriptor, conf) =>
@@ -1479,7 +1478,7 @@ object ConsoleCli {
             .action((tx, conf) =>
               conf.copy(command = conf.command match {
                 case convertToPSBT: ConvertToPSBT =>
-                  convertToPSBT.copy(transaction = tx)
+                  convertToPSBT.copy(tx = tx)
                 case other => other
               }))
         ),
@@ -1953,25 +1952,45 @@ object ConsoleCli {
       case GetDLCs => RequestParam("getdlcs")
       case GetDLC(dlcId) =>
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
-      case CreateDLCOffer(contractInfo,
+      case CreateDLCOffer(contractInfoTLV,
                           collateral,
                           feeRateOpt,
-                          refundLT,
-                          cetLocktimeOpt) =>
+                          locktimeOpt,
+                          refundLocktime,
+                          externalPayoutAddressOpt,
+                          externalChangeAddressOpt,
+                          peerAddressOpt) =>
         RequestParam(
           "createdlcoffer",
           Seq(
-            up.writeJs(contractInfo),
+            up.writeJs(contractInfoTLV),
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
-            up.writeJs(cetLocktimeOpt),
-            up.writeJs(refundLT)
+            up.writeJs(locktimeOpt),
+            up.writeJs(refundLocktime),
+            up.writeJs(externalPayoutAddressOpt),
+            up.writeJs(externalChangeAddressOpt),
+            up.writeJs(peerAddressOpt)
           )
         )
-      case AcceptDLC(offer, address) =>
-        RequestParam("acceptdlc", Seq(up.writeJs(offer), up.writeJs(address)))
-      case AcceptDLCOffer(offer) =>
-        RequestParam("acceptdlcoffer", Seq(up.writeJs(offer)))
+      case AcceptDLC(offer,
+                     peerAddr,
+                     externalPayoutAddressOpt,
+                     externalChangeAddressOpt) =>
+        RequestParam("acceptdlc",
+                     Seq(up.writeJs(offer),
+                         up.writeJs(peerAddr),
+                         up.writeJs(externalPayoutAddressOpt),
+                         up.writeJs(externalChangeAddressOpt)))
+      case AcceptDLCOffer(offer,
+                          peerAddr,
+                          externalPayoutAddressOpt,
+                          externalChangeAddressOpt) =>
+        RequestParam("acceptdlcoffer",
+                     Seq(up.writeJs(offer),
+                         up.writeJs(peerAddr),
+                         up.writeJs(externalPayoutAddressOpt),
+                         up.writeJs(externalChangeAddressOpt)))
       case AcceptDLCOfferFromFile(path, dest) =>
         RequestParam("acceptdlcofferfromfile",
                      Seq(up.writeJs(path), up.writeJs(dest)))
@@ -2248,7 +2267,7 @@ object ConsoleCli {
         RequestParam("offer-remove", args)
 
       case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
-          _: OracleServerCliCommand) =>
+          _: Broadcastable | _: OracleServerCliCommand) =>
         sys.error(s"Command $cmd unsupported")
       case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
     }
@@ -2359,10 +2378,6 @@ object Config {
 
 object CliCommand {
 
-  trait Broadcastable {
-    def noBroadcast: Boolean
-  }
-
   case object GetVersion extends ServerlessCliCommand
 
   case object GetInfo extends AppServerCliCommand
@@ -2370,50 +2385,17 @@ object CliCommand {
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
 
-  case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
-      extends AppServerCliCommand
-
-  case class DecodeOffer(offer: LnMessage[DLCOfferTLV])
-      extends AppServerCliCommand
-
-  case class DecodeAnnouncement(announcement: OracleAnnouncementV0TLV)
-      extends AppServerCliCommand
-
   case class DecodeAttestments(sigs: OracleAttestmentV0TLV)
       extends AppServerCliCommand
 
-  case class CreateDLCOffer(
-      contractInfo: ContractInfoV0TLV,
-      collateral: Satoshis,
-      feeRateOpt: Option[SatoshisPerVirtualByte],
-      refundLT: UInt32,
-      cetLocktimeOpt: Option[UInt32])
-      extends AppServerCliCommand
-
   sealed trait AcceptDLCCliCommand extends AppServerCliCommand
-
-  case class AcceptDLC(
-      offer: LnMessage[DLCOfferTLV],
-      peerAddr: InetSocketAddress)
-      extends AcceptDLCCliCommand
-
-  case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
-      extends AcceptDLCCliCommand
 
   case class AcceptDLCOfferFromFile(path: Path, destination: Option[Path])
       extends AcceptDLCCliCommand
 
   sealed trait SignDLCCliCommand extends AppServerCliCommand
 
-  case class SignDLC(accept: LnMessage[DLCAcceptTLV]) extends SignDLCCliCommand
-
-  case class SignDLCFromFile(path: Path, destination: Option[Path])
-      extends SignDLCCliCommand
-
   sealed trait AddDLCSigsCliCommand extends AppServerCliCommand
-
-  case class AddDLCSigs(sigs: LnMessage[DLCSignTLV])
-      extends AddDLCSigsCliCommand
 
   case class AddDLCSigsFromFile(path: Path) extends AddDLCSigsCliCommand
 
@@ -2425,41 +2407,7 @@ object CliCommand {
   case class AddDLCSigsAndBroadcastFromFile(path: Path)
       extends AddDLCSigsAndBroadcastCliCommand
 
-  case class GetDLCFundingTx(contractId: ByteVector) extends AppServerCliCommand
-
-  case class BroadcastDLCFundingTx(contractId: ByteVector)
-      extends AppServerCliCommand
-
-  case class ExecuteDLC(
-      contractId: ByteVector,
-      oracleSigs: Vector[OracleAttestmentTLV],
-      noBroadcast: Boolean)
-      extends AppServerCliCommand
-      with Broadcastable
-
-  case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
-      extends AppServerCliCommand
-      with Broadcastable
-
   case class CancelDLC(dlcId: Sha256Digest) extends AppServerCliCommand
-
-  case object GetDLCs extends AppServerCliCommand
-  case class GetDLC(dlcId: Sha256Digest) extends AppServerCliCommand
-
-  case class CreateContractInfo(
-      announcementTLV: OracleAnnouncementTLV,
-      totalCollateral: Satoshis,
-      contractDescriptor: ujson.Value)
-      extends AppServerCliCommand
-
-  object CreateContractInfo {
-
-    lazy val empty: CreateContractInfo = {
-      CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
-                         totalCollateral = Satoshis.zero,
-                         contractDescriptor = ujson.Null)
-    }
-  }
 
   case class AddDLCOffer(
       offer: LnMessage[DLCOfferTLV],
@@ -2469,79 +2417,9 @@ object CliCommand {
 
   case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
 
-  sealed trait SendCliCommand extends AppServerCliCommand {
-    def destination: BitcoinAddress
-  }
-
   // Wallet
-  case class SendToAddress(
-      destination: BitcoinAddress,
-      amount: Bitcoins,
-      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
-      noBroadcast: Boolean)
-      extends SendCliCommand
-      with Broadcastable
-
-  case class SendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      destination: BitcoinAddress,
-      amount: Bitcoins,
-      feeRateOpt: Option[SatoshisPerVirtualByte])
-      extends SendCliCommand
-
-  case class SweepWallet(
-      destination: BitcoinAddress,
-      feeRateOpt: Option[SatoshisPerVirtualByte])
-      extends SendCliCommand
-
-  case class SendWithAlgo(
-      destination: BitcoinAddress,
-      amount: Bitcoins,
-      feeRateOpt: Option[SatoshisPerVirtualByte],
-      algo: CoinSelectionAlgo)
-      extends SendCliCommand
-
-  case class OpReturnCommit(
-      message: String,
-      hashMessage: Boolean,
-      feeRateOpt: Option[SatoshisPerVirtualByte])
-      extends AppServerCliCommand
-
-  case class BumpFeeCPFP(
-      txId: DoubleSha256DigestBE,
-      feeRate: SatoshisPerVirtualByte)
-      extends AppServerCliCommand
-
-  case class BumpFeeRBF(
-      txId: DoubleSha256DigestBE,
-      feeRate: SatoshisPerVirtualByte)
-      extends AppServerCliCommand
-
-  case class SignPSBT(psbt: PSBT) extends AppServerCliCommand
-
-  case class LockUnspent(
-      unlock: Boolean,
-      outPoints: Vector[LockUnspentOutputParameter])
-      extends AppServerCliCommand
-
-  case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
-      extends AppServerCliCommand
-
-  case class GetAddressTags(address: BitcoinAddress) extends AppServerCliCommand
-
-  case class GetAddressLabel(address: BitcoinAddress)
-      extends AppServerCliCommand
 
   case object GetAddressLabels extends AppServerCliCommand
-
-  case class DropAddressLabel(address: BitcoinAddress, label: String)
-      extends AppServerCliCommand
-
-  case class DropAddressLabels(address: BitcoinAddress)
-      extends AppServerCliCommand
-
-  case class GetNewAddress(labelOpt: Option[AddressLabelTag])
-      extends AppServerCliCommand
   case object GetUtxos extends AppServerCliCommand
   case object ListReservedUtxos extends AppServerCliCommand
   case object GetAddresses extends AppServerCliCommand
@@ -2552,55 +2430,14 @@ object CliCommand {
   case object CreateNewAccount extends AppServerCliCommand
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
-  case class GetBalance(isSats: Boolean) extends AppServerCliCommand
-  case class GetConfirmedBalance(isSats: Boolean) extends AppServerCliCommand
-  case class GetUnconfirmedBalance(isSats: Boolean) extends AppServerCliCommand
+
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
-  case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
+
   case object GetDLCWalletAccounting extends AppServerCliCommand
-
-  case class GetTransaction(txId: DoubleSha256DigestBE)
-      extends AppServerCliCommand
-
-  case class KeyManagerPassphraseChange(
-      oldPassword: AesPassword,
-      newPassword: AesPassword)
-      extends AppServerCliCommand
-
-  case class KeyManagerPassphraseSet(password: AesPassword)
-      extends AppServerCliCommand
-
-  case class ImportSeed(
-      walletNameOpt: Option[String],
-      mnemonic: MnemonicCode,
-      passwordOpt: Option[AesPassword])
-      extends AppServerCliCommand
-
-  case class ExportSeed(
-      walletNameOpt: Option[String],
-      passwordOpt: Option[AesPassword])
-      extends AppServerCliCommand
-
-  case class MarkSeedAsBackedUp(
-      walletNameOpt: Option[String],
-      passwordOpt: Option[AesPassword])
-      extends AppServerCliCommand
-
-  case class GetSeedBackupTime(
-      walletNameOpt: Option[String],
-      passwordOpt: Option[AesPassword])
-      extends AppServerCliCommand
-
-  case class ImportXprv(
-      walletNameOpt: Option[String],
-      xprv: ExtPrivateKey,
-      passwordOpt: Option[AesPassword])
-      extends AppServerCliCommand
 
   // Node
   case object GetPeers extends AppServerCliCommand
   case object Stop extends AppServerCliCommand
-  case class SendRawTransaction(tx: Transaction) extends AppServerCliCommand
 
   // Chain
   case object GetBestBlockHash extends AppServerCliCommand
@@ -2608,37 +2445,11 @@ object CliCommand {
   case object GetFilterCount extends AppServerCliCommand
   case object GetFilterHeaderCount extends AppServerCliCommand
 
-  case class GetBlockHeader(hash: DoubleSha256DigestBE)
-      extends AppServerCliCommand
-
   case object GetMedianTimePast extends AppServerCliCommand
 
-  case class DecodeRawTransaction(transaction: Transaction)
-      extends AppServerCliCommand
-
-  case class Rescan(
-      addressBatchSize: Option[Int],
-      startBlock: Option[BlockStamp],
-      endBlock: Option[BlockStamp],
-      force: Boolean,
-      ignoreCreationTime: Boolean)
-      extends AppServerCliCommand
-
   // PSBT
-  case class DecodePSBT(psbt: PSBT) extends AppServerCliCommand
-  case class CombinePSBTs(psbts: Seq[PSBT]) extends AppServerCliCommand
-  case class JoinPSBTs(psbts: Seq[PSBT]) extends AppServerCliCommand
-  case class FinalizePSBT(psbt: PSBT) extends AppServerCliCommand
-  case class ExtractFromPSBT(psbt: PSBT) extends AppServerCliCommand
-  case class ConvertToPSBT(transaction: Transaction) extends AppServerCliCommand
-  case class AnalyzePSBT(psbt: PSBT) extends AppServerCliCommand
 
   // Util
-  case class CreateMultisig(
-      requiredKeys: Int,
-      keys: Vector[ECPublicKey],
-      addressType: AddressType)
-      extends AppServerCliCommand
 
   case class ZipDataDir(path: Path) extends AppServerCliCommand
 

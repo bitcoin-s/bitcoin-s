@@ -1,8 +1,8 @@
 package org.bitcoins.gui.dialog
 
 import grizzled.slf4j.Logging
-import org.bitcoins.cli.CliCommand.{LockUnspent, Rescan}
 import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.commons.rpc.{LockUnspent, Rescan}
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.Includes._
 import scalafx.geometry.Pos
@@ -56,7 +56,7 @@ object DebugDialog extends Logging {
     unreserveAllUTXOsButton.onAction = _ => {
       taskRunner.run(
         "Unreserve All UTXOs", {
-          ConsoleCli.exec(LockUnspent(true, Vector.empty),
+          ConsoleCli.exec(LockUnspent(unlock = true, Vector.empty),
                           GlobalData.consoleCliConfig) match {
             case Success(_) => ()
             case Failure(err) =>
@@ -107,7 +107,7 @@ object DebugDialog extends Logging {
 
   private def setRescanAction(taskRunner: TaskRunner, button: Button): Unit = {
     val rescanCmd = {
-      Rescan(addressBatchSize = Some(200),
+      Rescan(batchSize = Some(200),
              startBlock = None,
              endBlock = None,
              force = true,

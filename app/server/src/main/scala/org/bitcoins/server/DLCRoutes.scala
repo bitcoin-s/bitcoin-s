@@ -62,7 +62,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
                   EnumSingleOracleInfo(create.announcementTLV)
               }
             val contractInfo = SingleContractInfo(create.totalCollateral,
-                                                  create.contractDescriptor,
+                                                  create.ContractDescriptorTLV,
                                                   oracleInfo)
             Server.httpSuccess(contractInfo.hex)
           }

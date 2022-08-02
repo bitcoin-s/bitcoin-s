@@ -4,6 +4,8 @@ import akka.actor.{ActorSystem, Cancellable}
 import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.cli.ConsoleCli.exec
+import org.bitcoins.commons.rpc.GetNewAddress
 import org.bitcoins.core.config.DLC
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.serializers.PicklerKeys
@@ -60,8 +62,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
     taskRunner.run(
       caption = "Get New Address",
       op = {
-        ConsoleCli.exec(GetNewAddress(None),
-                        GlobalData.consoleCliConfig) match {
+        exec(GetNewAddress(None), GlobalData.consoleCliConfig) match {
           case Success(commandReturn) => addressP.success(commandReturn)
           case Failure(err) =>
             addressP.failure(err)

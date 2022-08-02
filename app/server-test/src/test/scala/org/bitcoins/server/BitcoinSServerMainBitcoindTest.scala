@@ -1,6 +1,8 @@
 package org.bitcoins.server
 
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.cli.ConsoleCli.exec
+import org.bitcoins.commons.rpc.{GetBalance, GetNewAddress}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.testkit.fixtures.BitcoinSAppConfigBitcoinFixtureNotStarted
@@ -24,10 +26,8 @@ class BitcoinSServerMainBitcoindTest
         _ <- server.start()
 
         info = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-        balance = ConsoleCli.exec(CliCommand.GetBalance(isSats = true),
-                                  cliConfig)
-        addr = ConsoleCli.exec(CliCommand.GetNewAddress(labelOpt = None),
-                               cliConfig)
+        balance = exec(GetBalance(isSats = true), cliConfig)
+        addr = exec(GetNewAddress(labelOpt = None), cliConfig)
         blockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
         _ <- AsyncUtil.nonBlockingSleep(1.second)
         _ <- server.stop() //stop to free all resources
