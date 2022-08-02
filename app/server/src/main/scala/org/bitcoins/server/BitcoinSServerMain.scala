@@ -19,7 +19,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.node.{
   InternalImplementationNodeType,
   NodeApi,
@@ -27,7 +26,6 @@ import org.bitcoins.core.api.node.{
 }
 import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
@@ -242,8 +240,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       node <- startedNodeF
       _ <- startedTorConfigF
       _ <- node.sync()
-      (wallet, walletConfig, _) <- configuredWalletF
-      _ <- restartRescanIfNeeded(wallet)
     } yield {
       logger.info(
         s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
@@ -426,7 +422,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
         _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
         _ <- startedTorConfigF
-        _ <- restartRescanIfNeeded(wallet)
       } yield {
         logger.info(s"Done starting Main!")
         bitcoindSyncState
@@ -614,22 +609,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
     tuple
-  }
-
-  private def restartRescanIfNeeded(
-      wallet: DLCNeutrinoHDWalletApi): Future[RescanState] = {
-    for {
-      isRescanning <- wallet.isRescanning()
-      res <-
-        if (isRescanning)
-          wallet.rescanNeutrinoWallet(startOpt = None,
-                                      endOpt = None,
-                                      addressBatchSize =
-                                        wallet.discoveryBatchSize(),
-                                      useCreationTime = true,
-                                      force = true)
-        else Future.successful(RescanState.RescanDone)
-    } yield res
   }
 
   private lazy val nodeStateDAO: NodeStateDescriptorDAO =

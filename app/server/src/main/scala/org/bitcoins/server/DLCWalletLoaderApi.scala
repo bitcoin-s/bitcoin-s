@@ -136,6 +136,22 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     } yield ()
   }
 
+  protected def restartRescanIfNeeded(wallet: DLCNeutrinoHDWalletApi)(implicit
+      ec: ExecutionContext): Future[RescanState] = {
+    for {
+      isRescanning <- wallet.isRescanning()
+      res <-
+        if (isRescanning)
+          wallet.rescanNeutrinoWallet(startOpt = None,
+                                      endOpt = None,
+                                      addressBatchSize =
+                                        wallet.discoveryBatchSize(),
+                                      useCreationTime = true,
+                                      force = true)
+        else Future.successful(RescanState.RescanDone)
+    } yield res
+  }
+
 }
 
 case class DLCWalletNeutrinoBackendLoader(
@@ -190,6 +206,7 @@ case class DLCWalletNeutrinoBackendLoader(
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
       _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
+      _ <- restartRescanIfNeeded(walletHolder)
     } yield (walletHolder, walletConfig, dlcConfig)
   }
 
@@ -284,6 +301,7 @@ case class DLCWalletBitcoindBackendLoader(
       _ <- walletHolder.replaceWallet(dlcWallet)
       //do something with possible rescan?
       _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
+      _ <- restartRescanIfNeeded(walletHolder)
     } yield {
       (walletHolder, walletConfig, dlcConfig)
     }
