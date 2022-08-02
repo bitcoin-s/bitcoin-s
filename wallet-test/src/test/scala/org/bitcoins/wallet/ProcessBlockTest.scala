@@ -80,7 +80,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       blocks <- FutureUtil.sequentially(hashes)(bitcoind.getBlockRaw)
       _ <- FutureUtil.sequentially(blocks)(wallet.processBlock)
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-      balance <- wallet.getBalance()
+      balance <- wallet.getConfirmedBalance()
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
@@ -109,14 +109,14 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       filtersWithBlockHash = hashes.map(_.flip).zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
       utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-      balance <- wallet.getBalance()
+      balance <- wallet.getConfirmedBalance()
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(utxos.size == 100)
-      assert(balance == Bitcoins(50))
+      assert(balance == Bitcoins(100))
 
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }

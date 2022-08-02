@@ -416,7 +416,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       )
       _ = if (incoming.nonEmpty) {
         logger.info(
-          s"Finished processing ${incoming.length} received outputs, it took=${TimeUtil.currentEpochMs - receivedStart}ms")
+          s"Finished processing ${incoming.length} received outputs, balance=${incoming
+            .map(_.output.value)
+            .sum} it took=${TimeUtil.currentEpochMs - receivedStart}ms")
       }
 
       spentSpendingInfoDbs <- spentSpendingInfoDbsF
