@@ -2,14 +2,17 @@ package org.bitcoins.server
 
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessageFactory}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.feeprovider.ConstantFeeRateProvider
+import org.bitcoins.node.Node
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.wallet.MockWalletApi
+import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -22,10 +25,24 @@ class WalletRoutesSpec
 
   implicit val conf: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig()
-  val mockWalletApi = mock[MockWalletApi]
+
+  val mockChainApi: ChainApi = mock[ChainApi]
+
+  val mockNode: Node = mock[Node]
+  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+
+  val walletHolder = new WalletHolder(Some(mockWalletApi))
+
+  val feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
+
+  val walletLoader: DLCWalletNeutrinoBackendLoader =
+    DLCWalletNeutrinoBackendLoader(walletHolder,
+                                   mockChainApi,
+                                   mockNode,
+                                   feeRateApi)
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(mockWalletApi)(system, conf.walletConf)
+    WalletRoutes(walletLoader)(system, conf.walletConf)
   "WalletRoutes" should {
     "estimatefee" in {
 

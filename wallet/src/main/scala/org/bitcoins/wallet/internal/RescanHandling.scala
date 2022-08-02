@@ -13,7 +13,6 @@ import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.db.SafeDatabase
@@ -415,14 +414,16 @@ private[wallet] trait RescanHandling extends WalletLogger {
     Vector[Int],
     Vector[ChainQueryApi.FilterResponse],
     NotUsed] = {
-    Flow[Vector[Int]].mapAsync(FutureUtil.getParallelism) {
-      case range: Vector[Int] =>
-        val startHeight = range.head
-        val endHeight = range.last
-        logger.info(
-          s"Searching filters from start=$startHeight to end=$endHeight")
-        chainQueryApi.getFiltersBetweenHeights(startHeight = startHeight,
-                                               endHeight = endHeight)
+    //parallelism as 1 here because `getFiltersBetweenHeights`
+    //fetches filters in parallel. We can run into our max open requests
+    //allowed by akka if we have parallelism more than 1 here
+    Flow[Vector[Int]].mapAsync(1) { case range: Vector[Int] =>
+      val startHeight = range.head
+      val endHeight = range.last
+      logger.info(
+        s"Searching filters from start=$startHeight to end=$endHeight")
+      chainQueryApi.getFiltersBetweenHeights(startHeight = startHeight,
+                                             endHeight = endHeight)
     }
   }
 
