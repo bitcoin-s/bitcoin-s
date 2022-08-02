@@ -37,6 +37,8 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
   def setRescanState(rescanState: RescanState): Unit
   def clearRescanState(): Unit
 
+  def isRescanStateEmpty: Boolean
+
   def load(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]): Future[
@@ -290,7 +292,7 @@ case class DLCWalletNeutrinoBackendLoader(
         }
     }
   }
-
+  override def isRescanStateEmpty: Boolean = rescanStateOpt.isEmpty
   override def clearRescanState(): Unit = {
     rescanStateOpt = None
     ()
@@ -435,4 +437,6 @@ case class DLCWalletBitcoindBackendLoader(
     rescanStateOpt = None
     ()
   }
+
+  override def isRescanStateEmpty: Boolean = rescanStateOpt.isEmpty
 }
