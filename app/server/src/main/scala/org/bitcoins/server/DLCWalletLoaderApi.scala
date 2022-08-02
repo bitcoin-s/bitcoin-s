@@ -57,7 +57,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     for {
       _ <- stoppedCallbacksF
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletName,
-                                                       Some(aesPasswordOpt))
+                                                       aesPasswordOpt)
       _ <- {
         if (walletHolder.isInitialized) {
           walletHolder
@@ -79,7 +79,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
 
   protected def updateWalletConfigs(
       walletName: String,
-      aesPasswordOpt: Option[Option[AesPassword]])(implicit
+      aesPasswordOpt: Option[AesPassword])(implicit
       ec: ExecutionContext): Future[(WalletAppConfig, DLCAppConfig)] = {
     val kmConfigF = Future.successful(
       conf.walletConf.kmConf.copy(walletNameOverride = Some(walletName),
