@@ -140,8 +140,14 @@ case class DLCWalletNeutrinoBackendLoader(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]): Future[
     (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-
+    val stopCallbackF = nodeConf.callBacks match {
+      case stream: NodeCallbackStreamManager =>
+        stream.stop()
+      case _: NodeCallbacks =>
+        Future.unit
+    }
     for {
+      _ <- stopCallbackF
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         walletHolder = walletHolder,
         chainQueryApi = chainQueryApi,
@@ -233,7 +239,14 @@ case class DLCWalletBitcoindBackendLoader(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]): Future[
     (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
+    val stopCallbackF = nodeConf.callBacks match {
+      case stream: NodeCallbackStreamManager =>
+        stream.stop()
+      case _: NodeCallbacks =>
+        Future.unit
+    }
     for {
+      _ <- stopCallbackF
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         walletHolder = walletHolder,
         chainQueryApi = bitcoind,
@@ -246,7 +259,7 @@ case class DLCWalletBitcoindBackendLoader(
       _ <- stopOldDLCAppConfig(dlcConfig)
       nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(
         walletHolder)
-      _ = nodeConf.addCallbacks(nodeCallbacks)
+      _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
     } yield (walletHolder, walletConfig, dlcConfig)
   }
