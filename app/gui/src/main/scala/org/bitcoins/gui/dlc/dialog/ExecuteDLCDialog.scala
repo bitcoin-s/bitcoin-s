@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand.ExecuteDLC
+import org.bitcoins.commons.rpc.ExecuteDLC
 import org.bitcoins.core.protocol.tlv.OracleAttestmentTLV
 import scalafx.scene.Node
 import scalafx.scene.control.TextField

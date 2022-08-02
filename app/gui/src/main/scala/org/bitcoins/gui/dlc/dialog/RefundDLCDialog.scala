@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand.ExecuteDLCRefund
+import org.bitcoins.commons.rpc.ExecuteDLCRefund
 import scalafx.scene.Node
 import scalafx.scene.control.TextField
 import scodec.bits.ByteVector

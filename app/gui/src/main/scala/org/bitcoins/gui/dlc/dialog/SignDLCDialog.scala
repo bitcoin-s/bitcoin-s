@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import grizzled.slf4j.Logging
-import org.bitcoins.cli.CliCommand._
+import org.bitcoins.commons.rpc.{SignDLC, SignDLCCliCommand, SignDLCFromFile}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.GlobalData

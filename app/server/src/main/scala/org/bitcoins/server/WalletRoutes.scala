@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
 import grizzled.slf4j.Logging
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
@@ -631,10 +632,9 @@ case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(
             }
           }
       }
-
     case ServerCommand("sendfromoutpoints", arr) =>
-      withValidServerCommand(SendFromOutpoints.fromJsArr(arr)) {
-        case SendFromOutpoints(outPoints,
+      withValidServerCommand(SendFromOutPoints.fromJsArr(arr)) {
+        case SendFromOutPoints(outPoints,
                                address,
                                bitcoins,
                                satoshisPerVirtualByteOpt) =>

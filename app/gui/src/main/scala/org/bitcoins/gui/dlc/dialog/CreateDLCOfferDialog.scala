@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import grizzled.slf4j.Logging
-import org.bitcoins.cli.CliCommand.CreateDLCOffer
+import org.bitcoins.commons.rpc.CreateDLCOffer
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models._
@@ -573,7 +573,7 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
       } else None
     }
 
-    val contractInfo = oracleInfo match {
+    val contractInfoTLV = oracleInfo match {
       case oracleInfo: EnumOracleInfo =>
         val missingOutcomes = fields.values.filter(_._2.text.value.isEmpty)
         if (missingOutcomes.nonEmpty) {
@@ -606,11 +606,14 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
     }
 
     CreateDLCOffer(
-      contractInfo = contractInfo,
+      contractInfoTLV = contractInfoTLV,
       collateral = collateral,
       feeRateOpt = feeRateOpt,
-      refundLT = refundLocktime,
-      cetLocktimeOpt = None
+      refundLocktime = refundLocktime,
+      locktimeOpt = None,
+      externalPayoutAddressOpt = None,
+      externalChangeAddressOpt = None,
+      peerAddressOpt = None
     )
   }
 }
