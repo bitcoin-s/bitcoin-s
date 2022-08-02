@@ -307,38 +307,8 @@ abstract class Wallet
       .map(_ => this)
   }
 
-  /** Sums up the value of all unspent
-    * TXOs in the wallet, filtered by the given predicate
-    */
-  private def filterThenSum(
-      predicate: SpendingInfoDb => Boolean): Future[CurrencyUnit] = {
-    for (
-      utxos <-
-        spendingInfoDAO.findAllUnspentForAccount(walletConfig.defaultAccount)
-    )
-      yield {
-        val filtered = utxos
-          .filter(predicate)
-          .map { txo =>
-            txo.state match {
-              case TxoState.PendingConfirmationsReceived |
-                  TxoState.ConfirmedReceived | TxoState.BroadcastReceived =>
-                txo.output.value
-              case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-                  TxoState.ConfirmedSpent | TxoState.BroadcastSpent |
-                  TxoState.ImmatureCoinbase =>
-                CurrencyUnits.zero
-            }
-          }
-
-        filtered.fold(0.sats)(_ + _)
-      }
-  }
-
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
-    filterThenSum(_.state == ConfirmedReceived).map { balance =>
-      balance
-    }
+    getConfirmedBalance(walletConfig.defaultAccount)
   }
 
   override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
@@ -362,7 +332,7 @@ abstract class Wallet
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    filterThenSum(utxo => TxoState.pendingReceivedStates.contains(utxo.state))
+    getUnconfirmedBalance(walletConfig.defaultAccount)
   }
 
   override def getUnconfirmedBalance(

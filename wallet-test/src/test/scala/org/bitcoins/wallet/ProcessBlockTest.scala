@@ -56,14 +56,13 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
       txDbOpt <- wallet.findByTxId(txId)
     } yield {
+      assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
       assert(txDbOpt.isDefined)
       assert(txDbOpt.get.blockHashOpt.contains(hash))
       assert(utxos.size == 1)
       assert(utxos.head.output.scriptPubKey == addr.scriptPubKey)
       assert(utxos.head.output.value == 1.bitcoin)
       assert(utxos.head.txid == txId)
-
-      assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }
   }
 
@@ -79,17 +78,22 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
       hashes <- bitcoind.generateToAddress(101, addr)
       blocks <- FutureUtil.sequentially(hashes)(bitcoind.getBlockRaw)
       _ <- FutureUtil.sequentially(blocks)(wallet.processBlock)
-      utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-      balance <- wallet.getBalance()
+      coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
+      balance <- wallet.getConfirmedBalance()
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
-      assert(utxos.size == 100)
-      assert(balance == Bitcoins(50))
-
+      assert(syncHeightOpt.isDefined)
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
+
+      // note: 100 because the very first coinbase utxo is now confirmed
+      assert(coinbaseUtxos.size == 100)
+      //block reward is still 50 bitcoin per block
+      assert(balance == Bitcoins(50))
+      assert(confirmedUtxos.length == 1)
     }
   }
 
@@ -108,17 +112,26 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
         bitcoind.getBlockFilter(_, FilterType.Basic))
       filtersWithBlockHash = hashes.map(_.flip).zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
-      utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-      balance <- wallet.getBalance()
+      coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
+      balance <- wallet.getConfirmedBalance()
 
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
-      assert(utxos.size == 100)
-      assert(balance == Bitcoins(50))
 
+      assert(syncHeightOpt.isDefined)
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
+
+      // note: 100 because the very first coinbase utxo is now confirmed
+      assert(coinbaseUtxos.size == 100)
+
+      //note: This is 50 bitcoins because the block reward on regtest
+      //is now 25 bitcoin per block due to blocks being mined
+      //in prior test cases in this test suite.
+      assert(balance == Bitcoins(50))
+      assert(confirmedUtxos.length == 2)
     }
   }
 
