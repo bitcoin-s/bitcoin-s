@@ -20,11 +20,6 @@ import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import scala.util._
 
-/** trait Broadcastable {
-  *  def noBroadcast: Boolean
-  * }
-  */
-
 case class DecodeAccept(accept: DLCAcceptTLV)
 
 object DecodeAccept extends ServerJsonModels {

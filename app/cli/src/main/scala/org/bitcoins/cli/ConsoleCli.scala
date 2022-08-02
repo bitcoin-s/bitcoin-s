@@ -2378,13 +2378,6 @@ object Config {
 
 object CliCommand {
 
-  /**  trait Broadcastable {
-    *    def noBroadcast: Boolean
-    *  }
-    */
-  /** case object Broadcastable
-    */
-
   case object GetVersion extends ServerlessCliCommand
 
   case object GetInfo extends AppServerCliCommand
@@ -2416,22 +2409,6 @@ object CliCommand {
 
   case class CancelDLC(dlcId: Sha256Digest) extends AppServerCliCommand
 
-  /**  case class CreateContractInfo(
-    *      announcementTLV: OracleAnnouncementTLV,
-    *      totalCollateral: Satoshis,
-    *      contractDescriptor: ujson.Value)
-    *      extends AppServerCliCommand
-    *
-    *  object CreateContractInfo {
-    *
-    *    lazy val empty: CreateContractInfo = {
-    *      CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
-    *                         totalCollateral = Satoshis.zero,
-    *                         contractDescriptor = ujson.Null)
-    *    }
-    *  }
-    */
-
   case class AddDLCOffer(
       offer: LnMessage[DLCOfferTLV],
       peer: String,
@@ -2439,11 +2416,6 @@ object CliCommand {
       extends AppServerCliCommand
 
   case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
-
-  /**  sealed trait SendCliCommand extends AppServerCliCommand {
-    *    def destination: BitcoinAddress
-    *  }
-    */
 
   // Wallet
 
