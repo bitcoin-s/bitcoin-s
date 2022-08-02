@@ -13,7 +13,6 @@ jobs:
     env:
       PG_ENABLED: "1"
       TESTCONTAINERS_HOST_OVERRIDE: "localhost"
-      TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX: "dockerhub.otenv.com/"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
