@@ -1734,6 +1734,10 @@ trait ServerJsonModels {
 
   def jsToWalletName(js: Value): Option[String] = {
     val walletNameOpt = jsToStringOpt(js)
+    if (!walletNameOpt.forall(_.length <= WalletNames.walletNameMaxLen)) {
+      throw new IllegalArgumentException(
+        s"Invalid wallet name length: ${walletNameOpt.map(_.length).getOrElse(0)}. Max length is ${WalletNames.walletNameMaxLen}.")
+    }
     if (!walletNameOpt.forall(WalletNames.validateWalletName)) {
       throw new IllegalArgumentException(
         s"Invalid wallet name `${walletNameOpt.getOrElse("")}`.")

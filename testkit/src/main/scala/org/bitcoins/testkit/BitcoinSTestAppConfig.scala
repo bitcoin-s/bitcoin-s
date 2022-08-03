@@ -26,7 +26,7 @@ object BitcoinSTestAppConfig {
 
   def genWalletNameConf: Config = {
     val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
-      Some(UUID.randomUUID().toString)
+      Some(UUID.randomUUID().toString.replace("-", ""))
     } else None
 
     walletNameOpt match {
