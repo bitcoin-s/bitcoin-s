@@ -19,6 +19,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
+import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
@@ -99,11 +100,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
             state
           }
 
-          res.recoverWith { case err: Throwable =>
-            logger.error(s"Failed to rescan wallet", err)
-            stateDescriptorDAO
-              .updateRescanning(false)
-              .flatMap(_ => Future.failed(err))
+          res.recoverWith {
+            case _: RejectedExecutionException =>
+              Future.unit //don't do anything if its from the threadpool shutting down
+            case err: Throwable =>
+              logger.error(s"Failed to rescan wallet", err)
+              stateDescriptorDAO
+                .updateRescanning(false)
+                .flatMap(_ => Future.failed(err))
           }
 
           res.map {
