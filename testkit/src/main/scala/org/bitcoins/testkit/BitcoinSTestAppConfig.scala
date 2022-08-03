@@ -12,10 +12,11 @@ import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.util.TorUtil.torEnabled
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
-import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.nio.file._
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 object BitcoinSTestAppConfig {
@@ -25,7 +26,7 @@ object BitcoinSTestAppConfig {
 
   def genWalletNameConf: Config = {
     val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
-      Some(StringGenerators.genNonEmptyString.sampleSome)
+      Some(UUID.randomUUID().toString)
     } else None
 
     walletNameOpt match {

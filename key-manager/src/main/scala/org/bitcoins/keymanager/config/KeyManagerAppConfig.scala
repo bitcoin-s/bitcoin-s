@@ -2,6 +2,7 @@ package org.bitcoins.keymanager.config
 
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
+import org.bitcoins.commons.util.WalletNames
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd.{HDPurpose, HDPurposes}
@@ -236,9 +237,6 @@ object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {
       ec: ExecutionContext): KeyManagerAppConfig =
     KeyManagerAppConfig(datadir, confs)
 
-  def validateWalletName(walletName: String): Boolean = {
-    walletName.forall { char =>
-      char.isLetterOrDigit || char == '-' || char == '_'
-    }
-  }
+  def validateWalletName(walletName: String): Boolean =
+    WalletNames.validateWalletName(walletName)
 }
