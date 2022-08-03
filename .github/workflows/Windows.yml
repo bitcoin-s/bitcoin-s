@@ -9,6 +9,8 @@ jobs:
   test:
     runs-on: windows-latest
     timeout-minutes: 60
+    env:
+      TESTCONTAINERS_HOST_OVERRIDE: "localhost"
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     steps:
       - name: Configure git
