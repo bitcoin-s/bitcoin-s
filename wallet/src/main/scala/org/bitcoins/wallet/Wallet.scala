@@ -38,6 +38,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
@@ -1064,6 +1065,9 @@ object Wallet extends WalletLogger {
     import walletAppConfig.ec
     val passwordOpt = walletAppConfig.aesPasswordOpt
 
+    if (!WalletStorage.seedExists(wallet.walletConfig.datadir)) {
+      WalletStorage
+    }
     val createMasterXpubF = createMasterXPub(wallet.keyManager)
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later

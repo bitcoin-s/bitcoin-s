@@ -27,9 +27,12 @@ import scala.concurrent.{ExecutionContext, Future}
 sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
 
   override def start(): Future[Unit] = Future.unit
-  protected def conf: BitcoinSAppConfig
+  def conf: BitcoinSAppConfig
 
   implicit protected def system: ActorSystem
+
+  /** Determine if a wallet has been loaded */
+  def isWalletLoaded: Boolean
 
   /** Sets rescan state in the loader, we need this to be able to
     * cleanly shutdown a wallet in the middle of a rescan
@@ -38,6 +41,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
   def clearRescanState(): Unit
 
   def isRescanStateEmpty: Boolean
+  def isRescanStateDefined: Boolean = !isRescanStateEmpty
 
   def load(
       walletNameOpt: Option[String],
@@ -176,6 +180,8 @@ case class DLCWalletNeutrinoBackendLoader(
   private[this] var currentWalletAppConfigOpt: Option[WalletAppConfig] = None
   private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
 
+  override def isWalletLoaded: Boolean = walletHolder.isInitialized
+
   override def stop(): Future[Unit] = {
     val rescanStopF = rescanStateOpt match {
       case Some(rescanState) => rescanState.stop()
@@ -230,7 +236,10 @@ case class DLCWalletNeutrinoBackendLoader(
       _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
       rescanState <- restartRescanIfNeeded(walletHolder)
       _ = setRescanState(rescanState)
-    } yield (walletHolder, walletConfig, dlcConfig)
+    } yield {
+      logger.info(s"Done loading wallet=$walletNameOpt")
+      (walletHolder, walletConfig, dlcConfig)
+    }
   }
 
   private def stopOldWalletAppConfig(
@@ -273,7 +282,8 @@ case class DLCWalletNeutrinoBackendLoader(
   /** Store a rescan state for the wallet that is currently loaded
     * This is needed because we don't save rescan state anywhere else.
     */
-  private[this] var rescanStateOpt: Option[RescanState.RescanStarted] = None
+  @volatile private[this] var rescanStateOpt: Option[
+    RescanState.RescanStarted] = None
 
   override def setRescanState(rescanState: RescanState): Unit = {
     rescanState match {
@@ -285,6 +295,12 @@ case class DLCWalletNeutrinoBackendLoader(
         rescanStateOpt = None
       case started: RescanState.RescanStarted =>
         if (rescanStateOpt.isEmpty) {
+          //add callback to reset state when the rescan is done
+          val resetStateCallbackF = started.doneF.map { _ =>
+            rescanStateOpt = None
+          }
+          resetStateCallbackF.failed.foreach(err =>
+            logger.error(s"Failed to reset rescanState", err))
           rescanStateOpt = Some(started)
         } else {
           sys.error(
@@ -314,6 +330,7 @@ case class DLCWalletBitcoindBackendLoader(
   private[this] var currentWalletAppConfigOpt: Option[WalletAppConfig] = None
 
   private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
+  override def isWalletLoaded: Boolean = walletHolder.isInitialized
 
   override def stop(): Future[Unit] = {
     val rescanStopF = rescanStateOpt match {
@@ -370,6 +387,7 @@ case class DLCWalletBitcoindBackendLoader(
       rescanState <- restartRescanIfNeeded(walletHolder)
       _ = setRescanState(rescanState)
     } yield {
+      logger.info(s"Done loading wallet=$walletNameOpt")
       (walletHolder, walletConfig, dlcConfig)
     }
   }
@@ -426,6 +444,12 @@ case class DLCWalletBitcoindBackendLoader(
         rescanStateOpt = None
       case started: RescanState.RescanStarted =>
         if (rescanStateOpt.isEmpty) {
+          //add callback to reset state when the rescan is done
+          val resetStateCallbackF = started.doneF.map { _ =>
+            rescanStateOpt = None
+          }
+          resetStateCallbackF.failed.foreach(err =>
+            logger.error(s"Failed to reset rescanState", err))
           rescanStateOpt = Some(started)
         } else {
           sys.error(
