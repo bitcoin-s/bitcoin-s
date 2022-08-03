@@ -32,6 +32,8 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
   implicit protected def system: ActorSystem
   implicit private def ec: ExecutionContext = system.dispatcher
 
+  def walletHolder: WalletHolder
+
   /** Determine if a wallet has been loaded */
   def isWalletLoaded: Boolean
 
@@ -51,17 +53,10 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     (DLCNeutrinoHDWalletApi, WalletAppConfig, DLCAppConfig)] = {
     logger.info(
       s"Loading wallet with bitcoind backend, walletName=${walletNameOpt.getOrElse("DEFAULT")}")
-    val stoppedCallbacksF = conf.nodeConf.callBacks match {
-      case manager: NodeCallbackStreamManager =>
-        manager.stop()
-      case _: NodeCallbacks =>
-        Future.unit
-    }
     val walletName =
       walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
 
     for {
-      _ <- stoppedCallbacksF
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletName,
                                                        aesPasswordOpt)
       _ <- {
@@ -202,49 +197,12 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     ()
   }
 
-  override def load(
-      walletNameOpt: Option[String],
-      aesPasswordOpt: Option[AesPassword]): Future[
-    (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-    val stopCallbackF = nodeConf.callBacks match {
-      case stream: NodeCallbackStreamManager =>
-        stream.stop()
-      case _: NodeCallbacks =>
-        Future.unit
-    }
-    val stopRescanFOpt = rescanStateOpt match {
-      case Some(state) => state.stop() //stop the rescan
-      case None => Future.unit
-    }
-    for {
-      _ <- stopCallbackF
-      _ <- stopRescanFOpt
-      (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
-        walletHolder = walletHolder,
-        chainQueryApi = chainQueryApi,
-        nodeApi = nodeApi,
-        feeProviderApi = feeRateApi,
-        walletNameOpt = walletNameOpt,
-        aesPasswordOpt = aesPasswordOpt
-      )
-      _ <- stopOldWalletAppConfig(walletConfig)
-      _ <- stopOldDLCAppConfig(dlcConfig)
-      _ <- walletHolder.replaceWallet(dlcWallet)
-      nodeCallbacks <-
-        CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
-      _ = nodeConf.replaceCallbacks(nodeCallbacks)
-      _ <- updateWalletName(walletNameOpt)
-      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
-      rescanState <- restartRescanIfNeeded(walletHolder)
-      _ = setRescanState(rescanState)
-    } yield (walletHolder, walletConfig, dlcConfig)
-  }
-
   protected def setDlcAppConfig(dlcAppConfig: DLCAppConfig): Unit = {
     currentDLCAppConfigOpt = Some(dlcAppConfig)
     ()
   }
 
+  private var currentWalletAppConfigOpt: Option[WalletAppConfig] = None
   private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
 
   protected def stopOldWalletAppConfig(
@@ -338,6 +296,7 @@ case class DLCWalletNeutrinoBackendLoader(
     val stopRescanF = stopRescan()
 
     for {
+      _ <- stopCallbackF
       _ <- stopRescanF
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         walletHolder = walletHolder,

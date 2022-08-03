@@ -723,7 +723,12 @@ case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(
     case ServerCommand("rescan", arr) =>
       withValidServerCommand(Rescan.fromJsArr(arr)) { case r: Rescan =>
         complete {
-          val msgF = handleRescan(r)
+          val msgF: Future[String] = if (loadWalletApi.isRescanStateEmpty) {
+            handleRescan(r)
+          } else {
+            val msg = getRescanMsg(RescanState.RescanAlreadyStarted)
+            Future.successful(msg)
+          }
           msgF.map(msg => Server.httpSuccess(msg))
         }
       }
@@ -1074,50 +1079,50 @@ case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(
   }
 
   private def handleRescan(rescan: Rescan): Future[String] = {
-    val res = for {
-      empty <- wallet.isEmpty()
-      rescanState <- {
-        if (empty) {
-          //if wallet is empty, just return Done immediately
-          Future.successful(RescanState.RescanDone)
-        } else {
-          rescanStateOpt match {
-            case Some(rescanState) =>
-              val stateF: Future[RescanState] = rescanState match {
-                case started: RescanState.RescanStarted =>
-                  if (started.isStopped) {
-                    //means rescan is done, reset the variable
-                    rescanStateOpt = Some(RescanDone)
-                    Future.successful(RescanDone)
-                  } else {
-                    //do nothing, we don't want to reset/stop a rescan that is running
-                    Future.successful(started)
-                  }
-                case RescanState.RescanDone =>
-                  //if the previous rescan is done, start another rescan
-                  startRescan(rescan)
-                case RescanState.RescanAlreadyStarted =>
-                  Future.successful(RescanState.RescanAlreadyStarted)
-              }
+    if (loadWalletApi.isRescanStateEmpty) {
+      val res = for {
+        empty <- wallet.isEmpty()
+        rescanState <- {
+          if (empty) {
+            //if wallet is empty, just return Done immediately
+            Future.successful(RescanState.RescanDone)
+          } else {
+            rescanStateOpt match {
+              case Some(rescanState) =>
+                val stateF: Future[RescanState] = rescanState match {
+                  case started: RescanState.RescanStarted =>
+                    if (started.isStopped) {
+                      //means rescan is done, reset the variable
+                      rescanStateOpt = Some(RescanDone)
+                      Future.successful(RescanDone)
+                    } else {
+                      //do nothing, we don't want to reset/stop a rescan that is running
+                      Future.successful(started)
+                    }
+                  case RescanState.RescanDone =>
+                    //if the previous rescan is done, start another rescan
+                    startRescan(rescan)
+                  case RescanState.RescanAlreadyStarted =>
+                    Future.successful(RescanState.RescanAlreadyStarted)
+                }
 
-              stateF
-            case None =>
-              startRescan(rescan)
+                stateF
+              case None =>
+                startRescan(rescan)
+            }
           }
         }
-      }
-      msg <- {
-        rescanState match {
-          case RescanState.RescanAlreadyStarted |
-              _: RescanState.RescanStarted =>
-            Future.successful("Rescan started.")
-          case RescanState.RescanDone =>
-            Future.successful("Rescan done.")
-        }
-      }
-    } yield msg
+        _ = loadWalletApi.setRescanState(rescanState)
+        msg = getRescanMsg(rescanState)
+      } yield msg
 
-    res
+      res
+    } else {
+      Future.failed(
+        new IllegalArgumentException(
+          s"Cannot rescan when a rescan is already ongoing for wallet"))
+    }
+
   }
 
   /** Only call this if we know we are in a state */
@@ -1143,5 +1148,14 @@ case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(
     }
 
     stateF
+  }
+
+  private def getRescanMsg(rescanState: RescanState): String = {
+    rescanState match {
+      case RescanState.RescanAlreadyStarted | _: RescanState.RescanStarted =>
+        "Rescan started."
+      case RescanState.RescanDone =>
+        "Rescan done."
+    }
   }
 }
