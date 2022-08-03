@@ -63,17 +63,7 @@ trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
       build = () => {
-        for {
-          _ <- config.schemaName match {
-            case Some(schemaName) =>
-              import config.dbConfig.profile.api._
-              config.database
-                .run(sqlu"""DROP SCHEMA IF EXISTS #$schemaName CASCADE""")
-                .map(_ => ())
-            case None => Future.unit
-          }
-          _ = config.migrate()
-        } yield daos
+        Future(config.migrate()).map(_ => daos)
       },
       destroy = () => dropAll()
     )(test)
@@ -82,6 +72,7 @@ trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
   private def dropAll(): Future[Unit] = {
     val res = for {
       _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
+      _ = config.clean()
     } yield ()
     res.failed.foreach(_.printStackTrace())
     res
