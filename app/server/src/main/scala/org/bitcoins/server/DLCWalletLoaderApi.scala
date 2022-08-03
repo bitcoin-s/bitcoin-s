@@ -293,6 +293,7 @@ case class DLCWalletNeutrinoBackendLoader(
     }
   }
   override def isRescanStateEmpty: Boolean = rescanStateOpt.isEmpty
+
   override def clearRescanState(): Unit = {
     rescanStateOpt = None
     ()
