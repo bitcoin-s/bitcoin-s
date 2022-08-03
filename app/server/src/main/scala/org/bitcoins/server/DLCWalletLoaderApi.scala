@@ -7,6 +7,7 @@ import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.StartStopAsync
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.node.NodeCallbacks
@@ -16,6 +17,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,6 +30,14 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
   protected def conf: BitcoinSAppConfig
 
   implicit protected def system: ActorSystem
+
+  /** Sets rescan state in the loader, we need this to be able to
+    * cleanly shutdown a wallet in the middle of a rescan
+    */
+  def setRescanState(rescanState: RescanState): Unit
+  def clearRescanState(): Unit
+
+  def isRescanStateEmpty: Boolean
 
   def load(
       walletNameOpt: Option[String],
@@ -57,7 +67,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     for {
       _ <- stoppedCallbacksF
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletName,
-                                                       Some(aesPasswordOpt))
+                                                       aesPasswordOpt)
       _ <- {
         if (walletHolder.isInitialized) {
           walletHolder
@@ -79,7 +89,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
 
   protected def updateWalletConfigs(
       walletName: String,
-      aesPasswordOpt: Option[Option[AesPassword]])(implicit
+      aesPasswordOpt: Option[AesPassword])(implicit
       ec: ExecutionContext): Future[(WalletAppConfig, DLCAppConfig)] = {
     val kmConfigF = Future.successful(
       conf.walletConf.kmConf.copy(walletNameOverride = Some(walletName),
@@ -104,6 +114,52 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       NodeStateDescriptorDAO()(ec, conf.nodeConf)
     nodeStateDAO.updateWalletName(walletNameOpt)
   }
+
+  protected def handleDuplicateSpendingInfoDb(
+      wallet: DLCNeutrinoHDWalletApi,
+      walletConfig: WalletAppConfig)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
+    for {
+      rescanNeeded <- spendingInfoDAO.hasDuplicates()
+      _ <-
+        if (rescanNeeded) {
+          logger.warn("Found duplicate UTXOs. Rescanning...")
+          wallet
+            .rescanNeutrinoWallet(startOpt = None,
+                                  endOpt = None,
+                                  addressBatchSize =
+                                    wallet.discoveryBatchSize(),
+                                  useCreationTime = true,
+                                  force = true)
+            .recover { case scala.util.control.NonFatal(exn) =>
+              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
+                           exn)
+              RescanState.RescanDone
+            }
+        } else {
+          Future.successful(RescanState.RescanDone)
+        }
+      _ <- spendingInfoDAO.createOutPointsIndexIfNeeded()
+    } yield ()
+  }
+
+  protected def restartRescanIfNeeded(wallet: DLCNeutrinoHDWalletApi)(implicit
+      ec: ExecutionContext): Future[RescanState] = {
+    for {
+      isRescanning <- wallet.isRescanning()
+      res <-
+        if (isRescanning)
+          wallet.rescanNeutrinoWallet(startOpt = None,
+                                      endOpt = None,
+                                      addressBatchSize =
+                                        wallet.discoveryBatchSize(),
+                                      useCreationTime = true,
+                                      force = true)
+        else Future.successful(RescanState.RescanDone)
+    } yield res
+  }
+
 }
 
 case class DLCWalletNeutrinoBackendLoader(
@@ -121,16 +177,26 @@ case class DLCWalletNeutrinoBackendLoader(
   private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
 
   override def stop(): Future[Unit] = {
-    val walletStopF = currentWalletAppConfigOpt match {
-      case Some(w) => w.stop()
-      case None    => Future.unit
+    val rescanStopF = rescanStateOpt match {
+      case Some(rescanState) => rescanState.stop()
+      case None              => Future.unit
     }
-    val dlcStopF = currentDLCAppConfigOpt match {
-      case Some(d) => d.stop()
-      case None    => Future.unit
+
+    val walletStopF = rescanStopF.flatMap { _ =>
+      currentWalletAppConfigOpt match {
+        case Some(w) => w.stop()
+        case None    => Future.unit
+      }
+    }
+    val dlcStopF = rescanStopF.flatMap { _ =>
+      currentDLCAppConfigOpt match {
+        case Some(d) => d.stop()
+        case None    => Future.unit
+      }
     }
 
     for {
+      _ <- rescanStopF
       _ <- walletStopF
       _ <- dlcStopF
     } yield ()
@@ -146,8 +212,13 @@ case class DLCWalletNeutrinoBackendLoader(
       case _: NodeCallbacks =>
         Future.unit
     }
+    val stopRescanFOpt = rescanStateOpt match {
+      case Some(state) => state.stop() //stop the rescan
+      case None => Future.unit
+    }
     for {
       _ <- stopCallbackF
+      _ <- stopRescanFOpt
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         walletHolder = walletHolder,
         chainQueryApi = chainQueryApi,
@@ -163,6 +234,9 @@ case class DLCWalletNeutrinoBackendLoader(
         CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
+      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
+      rescanState <- restartRescanIfNeeded(walletHolder)
+      _ = setRescanState(rescanState)
     } yield (walletHolder, walletConfig, dlcConfig)
   }
 
@@ -201,6 +275,35 @@ case class DLCWalletNeutrinoBackendLoader(
           currentDLCAppConfigOpt = Some(newDlcConfig)
         }
     }
+  }
+
+  /** Store a rescan state for the wallet that is currently loaded
+    * This is needed because we don't save rescan state anywhere else.
+    */
+  private[this] var rescanStateOpt: Option[RescanState.RescanStarted] = None
+
+  override def setRescanState(rescanState: RescanState): Unit = {
+    rescanState match {
+      case RescanState.RescanAlreadyStarted =>
+      //do nothing in this case, we don't need to keep these states around
+      //don't overwrite the existing reference to RescanStarted
+      case RescanState.RescanDone =>
+        //rescan is done, reset state
+        rescanStateOpt = None
+      case started: RescanState.RescanStarted =>
+        if (rescanStateOpt.isEmpty) {
+          rescanStateOpt = Some(started)
+        } else {
+          sys.error(
+            s"Cannot run multiple rescans at the same time, got=$started have=$rescanStateOpt")
+        }
+    }
+  }
+  override def isRescanStateEmpty: Boolean = rescanStateOpt.isEmpty
+
+  override def clearRescanState(): Unit = {
+    rescanStateOpt = None
+    ()
   }
 }
 
@@ -220,16 +323,26 @@ case class DLCWalletBitcoindBackendLoader(
   private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
 
   override def stop(): Future[Unit] = {
-    val walletStopF = currentWalletAppConfigOpt match {
-      case Some(w) => w.stop()
-      case None    => Future.unit
+    val rescanStopF = rescanStateOpt match {
+      case Some(rescanState) => rescanState.stop()
+      case None              => Future.unit
     }
-    val dlcStopF = currentDLCAppConfigOpt match {
-      case Some(d) => d.stop()
-      case None    => Future.unit
+
+    val walletStopF = rescanStopF.flatMap { _ =>
+      currentWalletAppConfigOpt match {
+        case Some(w) => w.stop()
+        case None    => Future.unit
+      }
+    }
+    val dlcStopF = rescanStopF.flatMap { _ =>
+      currentDLCAppConfigOpt match {
+        case Some(d) => d.stop()
+        case None    => Future.unit
+      }
     }
 
     for {
+      _ <- rescanStopF
       _ <- walletStopF
       _ <- dlcStopF
     } yield ()
@@ -245,8 +358,13 @@ case class DLCWalletBitcoindBackendLoader(
       case _: NodeCallbacks =>
         Future.unit
     }
+    val stopRescanFOpt = rescanStateOpt match {
+      case Some(state) => state.stop() //stop the rescan
+      case None        => Future.unit
+    }
     for {
       _ <- stopCallbackF
+      _ <- stopRescanFOpt
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         walletHolder = walletHolder,
         chainQueryApi = bitcoind,
@@ -261,7 +379,13 @@ case class DLCWalletBitcoindBackendLoader(
         walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
-    } yield (walletHolder, walletConfig, dlcConfig)
+      //do something with possible rescan?
+      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
+      rescanState <- restartRescanIfNeeded(walletHolder)
+      _ = setRescanState(rescanState)
+    } yield {
+      (walletHolder, walletConfig, dlcConfig)
+    }
   }
 
   private def stopOldWalletAppConfig(
@@ -300,4 +424,34 @@ case class DLCWalletBitcoindBackendLoader(
         }
     }
   }
+
+  /** Store a rescan state for the wallet that is currently loaded
+    * This is needed because we don't save rescan state anywhere else.
+    */
+  private[this] var rescanStateOpt: Option[RescanState.RescanStarted] = None
+
+  override def setRescanState(rescanState: RescanState): Unit = {
+    rescanState match {
+      case RescanState.RescanAlreadyStarted =>
+      //do nothing in this case, we don't need to keep these states around
+      //don't overwrite the existing reference to RescanStarted
+      case RescanState.RescanDone =>
+        //rescan is done, reset state
+        rescanStateOpt = None
+      case started: RescanState.RescanStarted =>
+        if (rescanStateOpt.isEmpty) {
+          rescanStateOpt = Some(started)
+        } else {
+          sys.error(
+            s"Cannot run multiple rescans at the same time, got=$started have=$rescanStateOpt")
+        }
+    }
+  }
+
+  override def clearRescanState(): Unit = {
+    rescanStateOpt = None
+    ()
+  }
+
+  override def isRescanStateEmpty: Boolean = rescanStateOpt.isEmpty
 }
