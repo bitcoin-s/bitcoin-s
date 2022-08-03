@@ -3,7 +3,6 @@ package org.bitcoins.wallet
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
@@ -161,13 +160,15 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       val amt = Bitcoins.one
       val numBlocks = 1
+      val initBalanceF = wallet.getBalance()
 
       val defaultAccountF = wallet.getDefaultAccount()
       //send funds to a fresh wallet address
       val addrF = wallet.getNewAddress()
       val bitcoindAddrF = bitcoind.getNewAddress
-      val newTxWalletF = for {
+      val balanceAfterPayment1F = for {
         addr <- addrF
+        _ <- initBalanceF
         txid <- bitcoind.sendToAddress(addr, amt)
         tx <- bitcoind.getRawTransactionRaw(txid)
         bitcoindAddr <- bitcoindAddrF
@@ -183,40 +184,31 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         //wallet before hand.
         assert(balance >= amt)
         assert(amt == unconfirmedBalance)
-        newTxWallet
+        balance
       }
 
       for {
-        newTxWallet <- newTxWalletF
+        _ <- initBalanceF
+        balanceAfterPayment1 <- balanceAfterPayment1F
 
         account <- defaultAccountF
         txIds <-
           wallet
             .listUtxos(account.hdAccount)
             .map(_.map(_.txid))
-        _ <- newTxWallet
+        _ <- wallet
           .findByTxIds(txIds)
           .map(_.flatMap(_.blockHashOpt))
 
-        _ <- newTxWallet.clearAllUtxos()
-        _ <- newTxWallet.clearAllAddresses()
-        _ <-
-          1.to(10).foldLeft(Future.successful(Vector.empty[ScriptPubKey])) {
-            (prevFuture, _) =>
-              for {
-                prev <- prevFuture
-                address <- wallet.getNewAddress(account)
-                changeAddress <- wallet.getNewChangeAddress(account)
-              } yield prev :+ address.scriptPubKey :+ changeAddress.scriptPubKey
-          }
-        _ <- wallet.rescanNeutrinoWallet(startOpt = None,
-                                         endOpt = None,
-                                         addressBatchSize = 1,
-                                         useCreationTime = false,
-                                         force = true)
+        _ <- wallet.clearAllUtxos()
+        _ <- wallet.clearAllAddresses()
+        balanceAfterClear <- wallet.getBalance()
+        rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
+        _ <- RescanState.awaitRescanDone(rescanState)
+        balanceAfterRescan <- wallet.getBalance()
       } yield {
-
-        succeed
+        assert(balanceAfterClear == CurrencyUnits.zero)
+        assert(balanceAfterPayment1 == balanceAfterRescan)
       }
   }
 
