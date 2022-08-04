@@ -35,7 +35,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
+case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute
@@ -43,7 +43,7 @@ case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
   import system.dispatcher
 
   /** The loaded wallet that requests should be directed against */
-  private[this] val wallet: WalletHolder = loader.walletHolder
+  private[this] val wallet: WalletHolder = loadWalletApi.walletHolder
 
   implicit private val kmConf: KeyManagerAppConfig = walletConf.kmConf
 

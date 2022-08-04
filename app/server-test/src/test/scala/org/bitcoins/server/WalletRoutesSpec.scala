@@ -41,19 +41,6 @@ class WalletRoutesSpec
                                    mockNode,
                                    feeRateApi)
 
-  val mockChainApi = mock[ChainApi]
-
-  val mockNode = mock[Node]
-
-  val dummyLoadWalletFn: DLCWalletLoaderApi = {
-    val holder = new WalletHolder()
-    DLCWalletNeutrinoBackendLoader(
-      holder,
-      mockChainApi,
-      mockNode,
-      feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
-  }
-
   val walletRoutes: WalletRoutes =
     WalletRoutes(walletLoader)(system, conf.walletConf)
   "WalletRoutes" should {

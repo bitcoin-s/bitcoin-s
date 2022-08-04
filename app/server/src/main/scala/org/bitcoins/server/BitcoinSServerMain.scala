@@ -220,7 +220,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     //start our http server now that we are synced
     val startedF = for {
-      neutrinoWalletLoader <- neutrinoWalletLoaderF
       _ <- startHttpServer(
         nodeApiF = startedNodeF,
         chainApi = chainApi,
@@ -228,8 +227,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         dlcNodeF = startedDLCNodeF,
         torConfStarted = startedTorConfigF,
         serverCmdLineArgs = serverArgParser,
-        wsSource = wsSource,
-        neutrinoWalletLoader
+        wsSource = wsSource
       )
       _ = {
         logger.info(
@@ -396,7 +394,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         _ = require(
           bitcoindNetwork == network,
           s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")
-        loadWalletApi <- loadWalletApiF
         _ <- startHttpServer(
           nodeApiF = Future.successful(bitcoind),
           chainApi = bitcoind,
@@ -404,8 +401,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           dlcNodeF = dlcNodeF,
           torConfStarted = startedTorConfigF,
           serverCmdLineArgs = serverArgParser,
-          wsSource = wsSource,
-          loadWalletApi
+          wsSource = wsSource
         )
         walletName <- walletNameF
         walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue,
@@ -446,8 +442,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNodeF: Future[DLCNode],
       torConfStarted: Future[Unit],
       serverCmdLineArgs: ServerArgParser,
-      wsSource: Source[WsNotification[_], NotUsed],
-      loadWalletApi: DLCWalletLoaderApi)(implicit
+      wsSource: Source[WsNotification[_], NotUsed])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
