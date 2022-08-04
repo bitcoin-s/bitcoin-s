@@ -1,10 +1,10 @@
 package org.bitcoins.testkit.lnd
 
 import akka.actor.ActorSystem
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.lnd.rpc._
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.util.{
   RpcBinaryUtil,
   SbtBinaryFactory,
@@ -52,20 +52,31 @@ case class LndRpcTestClient(
     clientOpt match {
       case Some(client) => Future.successful(client)
       case None =>
-        for {
-          lnd <- lndRpcClientF
+        def attemptStart(): Future[LndRpcClient] = {
+          for {
+            lnd <- lndRpcClientF
 
-          _ <- lnd.start()
-          // Sleep to make sure lnd is ready for RPC requests
-          _ <- AsyncUtil.nonBlockingSleep(1.second)
+            _ <- lnd.start()
+            // Sleep to make sure lnd is ready for RPC requests
+            _ <- TestAsyncUtil.nonBlockingSleep(1.second)
 
-          // Wait for it to be ready
-          _ <- AsyncUtil.awaitConditionF(() => lnd.isStarted,
-                                         interval = 500.milliseconds,
-                                         maxTries = 100)
-        } yield {
-          clientOpt = Some(lnd)
-          lnd
+            // Wait for it to be ready
+            _ <- TestAsyncUtil.awaitConditionF(() => lnd.isStarted,
+                                               interval = 500.milliseconds,
+                                               maxTries = 100)
+          } yield {
+            clientOpt = Some(lnd)
+            lnd
+          }
+        }
+
+        attemptStart().recoverWith { case e: Throwable =>
+          logger.error(s"Failed to start lnd rpc client, retrying...", e)
+          for {
+            lnd <- lndRpcClientF
+            _ <- lnd.stop()
+            started <- attemptStart()
+          } yield started
         }
     }
   }
