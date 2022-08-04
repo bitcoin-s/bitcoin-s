@@ -97,6 +97,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 logger.error(s"Failed to reset rescan state", err))
             }
           } yield {
+            logger.info(s"7")
             state
           }
 
@@ -127,7 +128,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
           Future.successful(RescanState.RescanAlreadyStarted)
         }
 
-    } yield rescanState
+    } yield {
+      logger.info("8")
+      rescanState
+    }
   }
 
   lazy val walletCreationBlockHeight: Future[BlockHeight] =
@@ -141,8 +145,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       range: Range,
       parallelism: Int,
       filterBatchSize: Int): RescanState.RescanStarted = {
+    logger.info(s"1")
     val scriptsF = generateScriptPubKeys(account, addressBatchSize)
-
+    logger.info(s"2")
     //by completing the promise returned by this sink
     //we will be able to arbitrarily terminate the stream
     //see: https://doc.akka.io/docs/akka/current/stream/operators/Source/maybe.html
@@ -208,6 +213,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
     //return RescanStarted with access to the ability to complete the rescan early
     //via the completeRescanEarlyP promise.
+    logger.info(s"3")
     RescanState.RescanStarted(completeRescanEarlyP, flatten)
   }
 
@@ -256,6 +262,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
                                       parallelism = parallelismLevel,
                                       filterBatchSize = addressBatchSize)
     } yield {
+      logger.info(s"4")
       rescanStarted
     }
   }
@@ -273,6 +280,34 @@ private[wallet] trait RescanHandling extends WalletLogger {
       inProgress <- matchBlocks(endOpt = endOpt,
                                 startOpt = startOpt,
                                 account = account)
+      _ <- recursiveRescan(prevState = inProgress,
+                           startOpt = startOpt,
+                           endOpt = endOpt,
+                           addressBatchSize = addressBatchSize,
+                           addressCount = addressCount,
+                           account = account)
+    } yield {
+      logger.info(s"6")
+      inProgress
+    }
+  }
+
+  private def recursiveRescan(
+      prevState: RescanState,
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int,
+      addressCount: Int,
+      account: HDAccount): Future[Unit] = {
+    val awaitPreviousRescanF = prevState match {
+      case r @ (_: RescanState.RescanStarted | RescanState.RescanDone) =>
+        RescanState.awaitRescanComplete(r)
+      case RescanState.RescanAlreadyStarted =>
+        //don't continue rescanning if previous rescan was not started
+        Future.unit
+    }
+    for {
+      _ <- awaitPreviousRescanF
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
@@ -294,7 +329,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
         }
       }
-    } yield inProgress
+    } yield ()
   }
 
   private def calcAddressGap(
