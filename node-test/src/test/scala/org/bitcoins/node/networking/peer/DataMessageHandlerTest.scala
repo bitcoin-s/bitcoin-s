@@ -34,7 +34,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
       val NeutrinoNodeConnectedWithBitcoindV22(node, _) = param
       val peer = node.peerManager.peers.head
 
-      val sender = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSenders(0)
       for {
         chainApi <- node.chainApiFromDb()
         dataMessageHandler = DataMessageHandler(chainApi,
@@ -52,6 +52,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ <- recoverToSucceededIf[RuntimeException](
           chainApi.processHeaders(invalidPayload.headers))
 
+        sender <- senderF
         // Verify we handle the payload correctly
         _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, peer)
       } yield succeed
@@ -70,7 +71,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           ()
         }
       }
-      val sender = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSenders(0)
 
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
@@ -86,6 +87,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node.executionContext,
             node.nodeAppConfig,
             node.chainConfig)
+        sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == block)
@@ -107,7 +109,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         }
       }
 
-      val sender = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSenders(0)
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
@@ -122,7 +124,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node.executionContext,
             node.nodeAppConfig,
             node.chainConfig)
-
+        sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == Vector(header))
@@ -142,7 +144,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             ()
           }
       }
-      val sender = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSenders(0)
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
@@ -157,7 +159,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node.executionContext,
             node.nodeAppConfig,
             node.chainConfig)
-
+        sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
@@ -176,7 +178,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           ()
         }
       }
-      val sender = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSenders(0)
 
       for {
 
@@ -193,6 +195,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node.executionContext,
             node.nodeAppConfig,
             node.chainConfig)
+        sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == tx)

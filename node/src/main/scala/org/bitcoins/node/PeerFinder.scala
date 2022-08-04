@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.{ActorRef, ActorSystem, Cancellable}
+import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
@@ -12,12 +13,13 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.Random
+import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
     paramPeers: Vector[Peer],
     node: NeutrinoNode,
-    skipPeers: () => Vector[Peer])(implicit
+    skipPeers: () => Vector[Peer],
+    supervisor: ActorRef)(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
@@ -116,12 +118,17 @@ case class PeerFinder(
     else nodeAppConfig.tryNextPeersInterval
   }
 
+  private val isConnectionSchedulerRunning = AtomicBoolean(false)
+
   private lazy val peerConnectionScheduler: Cancellable =
     system.scheduler.scheduleWithFixedDelay(
       initialDelay = initialDelay,
-      delay = nodeAppConfig.tryNextPeersInterval) {
-      new Runnable() {
-        override def run(): Unit = {
+      delay = nodeAppConfig.tryNextPeersInterval) { () =>
+      {
+        if (
+          isConnectionSchedulerRunning.compareAndSet(expect = false,
+                                                     update = true)
+        ) {
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
           if (_peersToTry.size < 32)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -130,7 +137,17 @@ case class PeerFinder(
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
-          peers.foreach(tryPeer)
+          val peersF = Future.sequence(peers.map(tryPeer))
+          peersF.onComplete {
+            case Success(_) =>
+              isConnectionSchedulerRunning.set(false)
+            case Failure(err) =>
+              isConnectionSchedulerRunning.set(false)
+              logger.error(s"Failed to connect to peers", err)
+          }
+        } else {
+          logger.warn(
+            s"Previous connection scheduler is still running, skipping this run, it will run again in ${nodeAppConfig.tryNextPeersInterval}")
         }
       }
     }
@@ -138,9 +155,10 @@ case class PeerFinder(
   override def start(): Future[PeerFinder] = {
     logger.debug(s"Starting PeerFinder")
 
-    (getPeersFromParam ++ getPeersFromConfig).distinct.foreach(tryPeer)
+    val initPeerF = Future.sequence(
+      (getPeersFromParam ++ getPeersFromConfig).distinct.map(tryPeer))
 
-    if (nodeAppConfig.enablePeerDiscovery) {
+    val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
         (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
@@ -158,6 +176,8 @@ case class PeerFinder(
       logger.info("Peer discovery disabled.")
       Future.successful(this)
     }
+
+    initPeerF.flatMap(_ => peerDiscoveryF)
   }
 
   override def stop(): Future[PeerFinder] = {
@@ -166,19 +186,22 @@ case class PeerFinder(
     //delete try queue
     _peersToTry.clear()
 
-    _peerData.foreach(_._2.client.close())
+    val closeFs = _peerData.map(_._2.client.map(_.close()))
+    val closeF = Future.sequence(closeFs)
 
-    AsyncUtil
+    val waitStopF = AsyncUtil
       .retryUntilSatisfied(_peerData.isEmpty,
                            interval = 1.seconds,
-                           maxTries = 10)
+                           maxTries = 30)
       .map(_ => this)
+
+    closeF.flatMap(_ => waitStopF)
   }
 
   /** creates and initialises a new test peer */
-  def tryPeer(peer: Peer): Unit = {
-    _peerData.put(peer, PeerData(peer, node))
-    _peerData(peer).peerMessageSender.connect()
+  def tryPeer(peer: Peer): Future[Unit] = {
+    _peerData.put(peer, PeerData(peer, node, supervisor))
+    _peerData(peer).peerMessageSender.map(_.connect())
   }
 
   def removePeer(peer: Peer): Unit = {

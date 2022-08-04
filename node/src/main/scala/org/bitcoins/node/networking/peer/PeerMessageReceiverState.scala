@@ -101,7 +101,7 @@ object PeerMessageReceiverState {
         versionMsgP = versionMsgP,
         verackMsgP = verackMsgP,
         waitingSince = System.currentTimeMillis(),
-        timeout = timeout
+        initializationTimeoutCancellable = timeout
       )
     }
   }
@@ -117,7 +117,7 @@ object PeerMessageReceiverState {
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type],
       waitingSince: Long,
-      timeout: Cancellable
+      initializationTimeoutCancellable: Cancellable
   ) extends PeerMessageReceiverState {
     require(
       isConnected,
@@ -134,7 +134,7 @@ object PeerMessageReceiverState {
         versionMsgP = versionMsgP.success(versionMsg),
         verackMsgP = verackMsgP,
         waitingSince = waitingSince,
-        timeout = timeout
+        initializationTimeoutCancellable = initializationTimeoutCancellable
       )
     }
 
@@ -142,7 +142,7 @@ object PeerMessageReceiverState {
       * our [[org.bitcoins.node.networking.peer.PeerMessageReceiverState PeerMessageReceiverState]] to [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Normal PeerMessageReceiverState.Normal]]
       */
     def toNormal(verAckMessage: VerAckMessage.type): Normal = {
-      timeout.cancel()
+      initializationTimeoutCancellable.cancel()
       Normal(
         clientConnectP = clientConnectP,
         clientDisconnectP = clientDisconnectP,
@@ -189,6 +189,9 @@ object PeerMessageReceiverState {
     override def toString: String = "InitializedDisconnect"
   }
 
+  /** State when waiting for response to a message of type [[org.bitcoins.core.p2p.ExpectsResponse]]. Other messages
+    * are still processed and receiver will continue waiting until timeout.
+    */
   case class Waiting(
       clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
@@ -196,7 +199,7 @@ object PeerMessageReceiverState {
       verackMsgP: Promise[VerAckMessage.type],
       responseFor: NetworkPayload,
       waitingSince: Long,
-      timeout: Cancellable)
+      expectedResponseCancellable: Cancellable)
       extends PeerMessageReceiverState {
     override def toString: String = "Waiting"
   }
