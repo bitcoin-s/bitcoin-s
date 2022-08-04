@@ -9,6 +9,9 @@ sealed trait RescanState
 
 object RescanState {
 
+  case object RescanTerminatedEarly
+      extends RuntimeException(s"Rescan terminated early")
+
   /** Finished a rescan */
   case object RescanDone extends RescanState
 
@@ -30,9 +33,12 @@ object RescanState {
     private val _isCompletedEarly: AtomicBoolean = new AtomicBoolean(false)
     //the promise returned by Source.maybe completes with None
     //if the stream terminated because the rescan was complete.
-    completeRescanEarlyP.future.map {
-      case None    => //do nothing, this means the stream terminated normally
-      case Some(_) => _isCompletedEarly.set(true)
+    completeRescanEarlyP.future.map { _ =>
+      _isCompletedEarly.set(false)
+    }
+
+    completeRescanEarlyP.future.failed.foreach { case RescanTerminatedEarly =>
+      _isCompletedEarly.set(true)
     }
 
     /** Useful for determining if the rescan was completed
@@ -50,9 +56,16 @@ object RescanState {
       */
     def stop(): Future[Vector[BlockMatchingResponse]] = {
       if (!completeRescanEarlyP.isCompleted) {
-        completeRescanEarlyP.success(None)
+        completeRescanEarlyP.failure(RescanTerminatedEarly)
       }
-      blocksMatchedF
+      blocksMatchedF.recoverWith {
+        case RescanTerminatedEarly =>
+          //this means this was purposefully terminated early
+          //don't propagate the exception
+          Future.successful(Vector.empty)
+        case err =>
+          throw err
+      }
     }
   }
 

@@ -3,6 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -89,9 +90,16 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       walletName: String,
       aesPasswordOpt: Option[AesPassword])(implicit
       ec: ExecutionContext): Future[(WalletAppConfig, DLCAppConfig)] = {
+    val walletNameArgOpt = ArgumentSource.RpcArgument(walletName)
+    val aesPasswordArgOpt = aesPasswordOpt match {
+      case None =>
+        Some(ArgumentSource.NoArgument)
+      case Some(pw) =>
+        Some(ArgumentSource.RpcArgument(pw))
+    }
     val kmConfigF = Future.successful(
-      conf.walletConf.kmConf.copy(walletNameOverride = Some(walletName),
-                                  aesPasswordOverride = aesPasswordOpt))
+      conf.walletConf.kmConf.copy(walletNameOverride = Some(walletNameArgOpt),
+                                  aesPasswordOverride = aesPasswordArgOpt))
 
     (for {
       kmConfig <- kmConfigF
@@ -178,8 +186,12 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
           val resetStateCallbackF = started.doneF.map { _ =>
             rescanStateOpt = None
           }
-          resetStateCallbackF.failed.foreach(err =>
-            logger.error(s"Failed to reset rescanState", err))
+          resetStateCallbackF.failed.foreach {
+            case RescanState.RescanTerminatedEarly =>
+              rescanStateOpt = None
+            case scala.util.control.NonFatal(exn) =>
+              logger.error(s"Failed to reset rescanState in wallet loader", exn)
+          }
           rescanStateOpt = Some(started)
         } else {
           sys.error(

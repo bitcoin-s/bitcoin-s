@@ -102,7 +102,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
           res.recoverWith {
             case _: RejectedExecutionException =>
-              println(s"Caught rejected execution exception")
               Future.unit //don't do anything if its from the threadpool shutting down
             case err: Throwable =>
               logger.error(s"Failed to rescan wallet", err)
