@@ -10,7 +10,7 @@ import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import java.net.{InetAddress, UnknownHostException}
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.Random
 
@@ -132,7 +132,8 @@ case class PeerFinder(
 
           logger.debug(s"Trying next set of peers $peers")
           val peersF = Future.sequence(peers.map(tryPeer))
-          Await.result(peersF, 10.seconds)
+          peersF.failed.foreach(err =>
+            logger.error(s"Failed to connect to peers", err))
           ()
         }
       }
@@ -172,7 +173,8 @@ case class PeerFinder(
     //delete try queue
     _peersToTry.clear()
 
-    val closeF = Future.sequence(_peerData.map(_._2.client.map(_.close())))
+    val closeFs = _peerData.map(_._2.client.map(_.close()))
+    val closeF = Future.sequence(closeFs)
 
     val waitStopF = AsyncUtil
       .retryUntilSatisfied(_peerData.isEmpty,

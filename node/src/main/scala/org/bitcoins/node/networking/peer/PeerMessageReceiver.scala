@@ -45,11 +45,12 @@ class PeerMessageReceiver(
       case Preconnection =>
         logger.debug(s"Connection established with peer=${peer}")
 
-        val timeout =
+        val initializationTimeoutCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout)(
             Await.result(onInitTimeout(), 10.seconds))
 
-        val newState = Preconnection.toInitializing(client, timeout)
+        val newState =
+          Preconnection.toInitializing(client, initializationTimeoutCancellable)
 
         val peerMsgSender = PeerMessageSender(client)
 
@@ -140,11 +141,11 @@ class PeerMessageReceiver(
         val handleF: Future[Unit] = good match {
           case wait: Waiting =>
             onResponseTimeout(wait.responseFor).map { _ =>
-              wait.timeout.cancel()
+              wait.expectedResponseCancellable.cancel()
               ()
             }
           case wait: Initializing =>
-            wait.timeout.cancel()
+            wait.initializationTimeoutCancellable.cancel()
             Future.unit
           case _ => Future.unit
         }
@@ -197,7 +198,7 @@ class PeerMessageReceiver(
             val timeTaken = System.currentTimeMillis() - state.waitingSince
             logger.debug(
               s"Received expected response ${payload.commandName} in $timeTaken ms")
-            state.timeout.cancel()
+            state.expectedResponseCancellable.cancel()
             val newState = Normal(state.clientConnectP,
                                   state.clientDisconnectP,
                                   state.versionMsgP,
@@ -206,7 +207,7 @@ class PeerMessageReceiver(
           } else this
         case state: Initializing =>
           if (payload == VerAckMessage)
-            state.timeout.cancel()
+            state.initializationTimeoutCancellable.cancel()
           this
         case _ => this
       }
@@ -269,7 +270,7 @@ class PeerMessageReceiver(
 
     //isn't this redundant? No, on response timeout may be called when not cancel timeout
     state match {
-      case wait: Waiting => wait.timeout.cancel()
+      case wait: Waiting => wait.expectedResponseCancellable.cancel()
       case _             =>
     }
 
@@ -289,7 +290,7 @@ class PeerMessageReceiver(
     state match {
       case good: Normal =>
         logger.debug(s"Handling expected response for ${msg.commandName}")
-        val timeout =
+        val expectedResponseCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime)(
             Await.result(onResponseTimeout(msg), 10.seconds))
         val newState = Waiting(
@@ -299,7 +300,7 @@ class PeerMessageReceiver(
           verackMsgP = good.verackMsgP,
           responseFor = msg,
           waitingSince = System.currentTimeMillis(),
-          timeout = timeout
+          expectedResponseCancellable = expectedResponseCancellable
         )
         Future.successful(toState(newState))
       case state: Waiting =>

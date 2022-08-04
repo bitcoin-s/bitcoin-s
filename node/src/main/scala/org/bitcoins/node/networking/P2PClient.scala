@@ -144,6 +144,9 @@ case class P2PClientActor(
         reconnect()
     }
 
+  /** Behavior to ignore network messages. Used only when the peer is being disconnected by us as we would not want to
+    * process any messages from it in that state.
+    */
   private def ignoreNetworkMessages(
       peerConnectionOpt: Option[ActorRef],
       unalignedBytes: ByteVector): Receive = LoggingReceive {
@@ -305,9 +308,9 @@ case class P2PClientActor(
         state match {
           case wait: Waiting =>
             currentPeerMsgHandlerRecv.onResponseTimeout(wait.responseFor)
-            wait.timeout.cancel()
+            wait.expectedResponseCancellable.cancel()
           case init: Initializing =>
-            init.timeout.cancel()
+            init.initializationTimeoutCancellable.cancel()
           case _ =>
         }
 
@@ -505,7 +508,16 @@ case class P2PClientActor(
     }
   }
 
+  /** For any [[org.bitcoins.core.p2p.NetworkPayload]], if it a subtype of [[ExpectsResponse]], starts a
+    * cancellable timer and changes state to [[PeerMessageReceiverState.Waiting]]. Note that any messages, received
+    * while waiting for a particular message are still processed, they just won't cancel the scheduled query timeout.
+    * Can only wait for one query at a time, other messages that are [[ExpectsResponse]] and received while in
+    * [[PeerMessageReceiverState.Waiting]] are still sent, but no query timeout would be executed for those.
+    * Currently, such a situation is not meant to happen.
+    */
   def handleExpectResponse(msg: NetworkPayload): Future[Unit] = {
+    require(msg.isInstanceOf[ExpectsResponse],
+            "Tried to wait for response to message which is not a query.")
     logger.info(s"Expecting response for ${msg.commandName} for $peer")
     currentPeerMsgHandlerRecv.handleExpectResponse(msg).map { newReceiver =>
       currentPeerMsgHandlerRecv = newReceiver
