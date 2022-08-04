@@ -23,8 +23,10 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   lazy val pg: Option[EmbeddedPostgres] = {
 
     if (pgEnabled) {
+      val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "10").toInt
       val p = EmbeddedPostgres
         .builder()
+        .setPGStartupWait(java.time.Duration.ofSeconds(pgStartupWait))
         .setServerConfig("max_connections", "25")
         .setServerConfig("shared_buffers", "1MB")
         .start()
