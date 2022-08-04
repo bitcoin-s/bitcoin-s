@@ -13,13 +13,13 @@ import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
+import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
@@ -100,11 +100,15 @@ private[wallet] trait RescanHandling extends WalletLogger {
             state
           }
 
-          res.recoverWith { case err: Throwable =>
-            logger.error(s"Failed to rescan wallet", err)
-            stateDescriptorDAO
-              .updateRescanning(false)
-              .flatMap(_ => Future.failed(err))
+          res.recoverWith {
+            case _: RejectedExecutionException =>
+              println(s"Caught rejected execution exception")
+              Future.unit //don't do anything if its from the threadpool shutting down
+            case err: Throwable =>
+              logger.error(s"Failed to rescan wallet", err)
+              stateDescriptorDAO
+                .updateRescanning(false)
+                .flatMap(_ => Future.failed(err))
           }
 
           res.map {
@@ -123,7 +127,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
           Future.successful(RescanState.RescanAlreadyStarted)
         }
 
-    } yield rescanState
+    } yield {
+      rescanState
+    }
   }
 
   lazy val walletCreationBlockHeight: Future[BlockHeight] =
@@ -138,7 +144,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
       parallelism: Int,
       filterBatchSize: Int): RescanState.RescanStarted = {
     val scriptsF = generateScriptPubKeys(account, addressBatchSize)
-
     //by completing the promise returned by this sink
     //we will be able to arbitrarily terminate the stream
     //see: https://doc.akka.io/docs/akka/current/stream/operators/Source/maybe.html
@@ -269,6 +274,38 @@ private[wallet] trait RescanHandling extends WalletLogger {
       inProgress <- matchBlocks(endOpt = endOpt,
                                 startOpt = startOpt,
                                 account = account)
+      _ = recursiveRescan(prevState = inProgress,
+                          startOpt = startOpt,
+                          endOpt = endOpt,
+                          addressBatchSize = addressBatchSize,
+                          addressCount = addressCount,
+                          account = account)
+    } yield {
+      inProgress
+    }
+  }
+
+  /** Used to call a recursive rescan after the previous rescan is complete.
+    * The [[prevState]] parameter is what represents the previous rescan.
+    * We wait for this rescan to complete, and then check if we need to
+    * do another rescan
+    */
+  private def recursiveRescan(
+      prevState: RescanState,
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int,
+      addressCount: Int,
+      account: HDAccount): Future[Unit] = {
+    val awaitPreviousRescanF = prevState match {
+      case r @ (_: RescanState.RescanStarted | RescanState.RescanDone) =>
+        RescanState.awaitRescanComplete(r)
+      case RescanState.RescanAlreadyStarted =>
+        //don't continue rescanning if previous rescan was not started
+        Future.unit
+    }
+    for {
+      _ <- awaitPreviousRescanF
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
@@ -290,7 +327,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
         }
       }
-    } yield inProgress
+    } yield ()
   }
 
   private def calcAddressGap(
@@ -415,14 +452,16 @@ private[wallet] trait RescanHandling extends WalletLogger {
     Vector[Int],
     Vector[ChainQueryApi.FilterResponse],
     NotUsed] = {
-    Flow[Vector[Int]].mapAsync(FutureUtil.getParallelism) {
-      case range: Vector[Int] =>
-        val startHeight = range.head
-        val endHeight = range.last
-        logger.info(
-          s"Searching filters from start=$startHeight to end=$endHeight")
-        chainQueryApi.getFiltersBetweenHeights(startHeight = startHeight,
-                                               endHeight = endHeight)
+    //parallelism as 1 here because `getFiltersBetweenHeights`
+    //fetches filters in parallel. We can run into our max open requests
+    //allowed by akka if we have parallelism more than 1 here
+    Flow[Vector[Int]].mapAsync(1) { case range: Vector[Int] =>
+      val startHeight = range.head
+      val endHeight = range.last
+      logger.info(
+        s"Searching filters from start=$startHeight to end=$endHeight")
+      chainQueryApi.getFiltersBetweenHeights(startHeight = startHeight,
+                                             endHeight = endHeight)
     }
   }
 

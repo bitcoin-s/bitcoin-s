@@ -33,12 +33,13 @@ import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
+import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
 import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil
 import org.bitcoins.testkitcore.util.TransactionTestUtil
-import org.bitcoins.wallet.MockWalletApi
+import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
@@ -62,8 +63,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val testAddress: BitcoinAddress = BitcoinAddress.fromString(testAddressStr)
   val testLabel: AddressLabelTag = AddressLabelTag("test")
 
-  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
-
   val mockChainApi: ChainApi = mock[ChainApi]
 
   val mockNode: Node = mock[Node]
@@ -72,8 +71,21 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val nodeRoutes: NodeRoutes = NodeRoutes(mockNode)
 
+  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+
+  val walletHolder = new WalletHolder(Some(mockWalletApi))
+
+  val feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
+
+  val walletLoader: DLCWalletNeutrinoBackendLoader = {
+    DLCWalletNeutrinoBackendLoader(walletHolder,
+                                   mockChainApi,
+                                   mockNode,
+                                   feeRateApi)
+  }
+
   val walletRoutes: WalletRoutes =
-    WalletRoutes(mockWalletApi)(system, conf.walletConf)
+    WalletRoutes(walletLoader)(system, conf.walletConf)
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 

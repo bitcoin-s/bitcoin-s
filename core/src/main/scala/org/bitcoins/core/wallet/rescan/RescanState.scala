@@ -71,7 +71,7 @@ object RescanState {
     }
   }
 
-  /** Returns a Future that is compelted when a rescan is fully executed.
+  /** Returns a Future that is completed when a rescan is fully executed.
     * This means that the rescan was NOT terminated externally by completing
     * the akka stream that underlies the rescan logic.
     */

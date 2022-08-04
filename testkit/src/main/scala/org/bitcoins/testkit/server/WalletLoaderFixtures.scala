@@ -26,7 +26,7 @@ trait WalletLoaderFixtures
                                               chainQueryApi = bitcoind,
                                               feeRateApi = bitcoind)
 
-        walletHolder = new WalletHolder()
+        walletHolder = WalletHolder.empty
         loader = DLCWalletBitcoindBackendLoader(
           walletHolder = walletHolder,
           bitcoind = bitcoind,

@@ -34,7 +34,7 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
     val bitcoind = walletHolderWithLoader.bitcoind
     //need some blocks to make rescans last longer for the test case
     val blocksF = bitcoind.getNewAddress.flatMap(addr =>
-      bitcoind.generateToAddress(500, addr))
+      bitcoind.generateToAddress(250, addr))
 
     val loadedWalletF = loader.load(walletNameOpt = None, aesPasswordOpt = None)
 
@@ -42,6 +42,7 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
 
     //as a hack, set rescanning to true, so next time we load it starts a rescan
     val setRescanF = for {
+      _ <- blocksF
       walletConfig <- walletConfigF
       descriptorDAO = WalletStateDescriptorDAO()(system.dispatcher,
                                                  walletConfig)
@@ -51,7 +52,6 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
     //now that we have set rescanning, we should see a rescan next time we load wallet
     for {
       _ <- setRescanF
-      _ <- blocksF
       (loadWallet2, _, _) <- loader.load(
         walletNameOpt = None,
         aesPasswordOpt = None

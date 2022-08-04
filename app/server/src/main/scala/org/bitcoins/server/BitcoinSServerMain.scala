@@ -115,7 +115,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
     } yield {
       //return empty wallet holder
-      new WalletHolder()
+      WalletHolder.empty
     }
   }
 
@@ -145,7 +145,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       torConf.socks5ProxyParams,
       network)
     //get our wallet
-    val walletHolder = new WalletHolder()
+    val walletHolder = WalletHolder.empty
     val neutrinoWalletLoaderF = {
       for {
         node <- nodeF
@@ -224,7 +224,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startHttpServer(
         nodeApiF = startedNodeF,
         chainApi = chainApi,
-        walletF = configuredWalletF.map(_._1),
+        walletLoaderF = neutrinoWalletLoaderF,
         dlcNodeF = startedDLCNodeF,
         torConfStarted = startedTorConfigF,
         serverCmdLineArgs = serverArgParser,
@@ -330,7 +330,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         WalletAppConfig.DEFAULT_WALLET_NAME)
     } yield walletName
 
-    val walletHolder = new WalletHolder()
+    val walletHolder = WalletHolder.empty
     val chainCallbacksF = for {
       bitcoind <- bitcoindF
     } yield {
@@ -399,7 +399,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         _ <- startHttpServer(
           nodeApiF = Future.successful(bitcoind),
           chainApi = bitcoind,
-          walletF = walletF.map(_._1),
+          walletLoaderF = loadWalletApiF,
           dlcNodeF = dlcNodeF,
           torConfStarted = startedTorConfigF,
           serverCmdLineArgs = serverArgParser,
@@ -440,7 +440,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def startHttpServer(
       nodeApiF: Future[NodeApi],
       chainApi: ChainApi,
-      walletF: Future[WalletHolder],
+      walletLoaderF: Future[DLCWalletLoaderApi],
       dlcNodeF: Future[DLCNode],
       torConfStarted: Future[Unit],
       serverCmdLineArgs: ServerArgParser,
@@ -451,7 +451,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     implicit val walletConf: WalletAppConfig = conf.walletConf
 
     val walletRoutesF = {
-      walletF.map { w =>
+      walletLoaderF.map { w =>
         WalletRoutes(w)
       }
     }
