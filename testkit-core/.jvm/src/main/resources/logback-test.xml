@@ -62,6 +62,9 @@
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
 
+    <!-- See exceptions thrown in actor-->
+    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
+
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->

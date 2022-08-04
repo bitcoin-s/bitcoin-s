@@ -6,6 +6,8 @@ import org.bitcoins.testkit.server.WalletLoaderFixtures
 import org.bitcoins.wallet.models.WalletStateDescriptorDAO
 import org.scalatest.FutureOutcome
 
+import scala.concurrent.duration.DurationInt
+
 class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
 
   override type FixtureParam = WalletHolderWithBitcoindLoaderApi
@@ -60,9 +62,11 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
       _ = assert(isRescanning)
       _ = assert(loader.isRescanStateDefined)
       //wait until rescanning is done
-      _ <- AsyncUtil.retryUntilSatisfiedF { () =>
-        loadWallet2.isRescanning().map(isRescanning => isRescanning == false)
-      }
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        { () =>
+          loadWallet2.isRescanning().map(isRescanning => isRescanning == false)
+        },
+        250.millis)
     } yield {
       assert(loader.isRescanStateEmpty)
     }
