@@ -34,6 +34,7 @@ import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
+
 case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)

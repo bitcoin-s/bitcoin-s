@@ -19,7 +19,6 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
-import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
