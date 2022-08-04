@@ -175,6 +175,9 @@ object ConsoleCli {
       cmd("walletinfo")
         .action((_, conf) => conf.copy(command = WalletInfo))
         .text("Returns data about the current wallet being used"),
+      cmd("listwallets")
+        .action((_, conf) => conf.copy(command = ListWallets))
+        .text("Returns all the bitcoin-s wallets"),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -1960,6 +1963,8 @@ object ConsoleCli {
         RequestParam("isempty")
       case WalletInfo =>
         RequestParam("walletinfo")
+      case ListWallets =>
+        RequestParam("listwallets")
       // DLCs
       case ContactAdd(alias, address, memo) =>
         RequestParam(
@@ -2473,6 +2478,7 @@ object CliCommand {
   case object CreateNewAccount extends AppServerCliCommand
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
+  case object ListWallets extends AppServerCliCommand
 
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
 
