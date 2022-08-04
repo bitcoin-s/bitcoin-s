@@ -257,6 +257,21 @@ case class SpendingInfoDAO()(implicit
     findOutputsReceived(txs.map(_.txIdBE))
   }
 
+  /** Fetches all received txos in our db that are in the given txs */
+  def findTxsAction(txs: Vector[Transaction]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    findOutputsReceivedAction(txs.map(_.txIdBE))
+  }
+
+  def findTxAction(tx: Transaction): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    findTxsAction(Vector(tx))
+  }
+
   private def _findOutputsBeingSpentQuery(txs: Vector[Transaction]): Vector[
     Query[SpendingInfoTable, UTXORecord, Seq]] = {
     val outPoints: Vector[TransactionOutPoint] = txs
@@ -291,6 +306,14 @@ case class SpendingInfoDAO()(implicit
 
   def findOutputsBeingSpent(
       txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
+    val action = findOutputsBeingSpentAction(txs)
+    safeDatabase.run(action)
+  }
+
+  def findOutputsBeingSpentAction(txs: Vector[Transaction]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
     val queries = findOutputsBeingSpentQuery(txs)
     val actions: Vector[DBIOAction[
       Vector[(UTXORecord, ScriptPubKeyDb)],
@@ -301,17 +324,11 @@ case class SpendingInfoDAO()(implicit
     val action: DBIOAction[
       Vector[(UTXORecord, ScriptPubKeyDb)],
       NoStream,
-      Effect.Read] = DBIO.sequence(actions).map(_.flatten)
+      Effect.Read] = DBIO.sequence(actions).map(_.flatten.toVector)
 
-    val resultsF = safeDatabase.runVec(action)
-
-    for {
-      results <- resultsF
-    } yield {
-      results.map { case (utxo, spk) =>
-        utxo.toSpendingInfoDb(spk.scriptPubKey)
-      }
-    }
+    action.map(_.map { case (utxo, spk) =>
+      utxo.toSpendingInfoDb(spk.scriptPubKey)
+    })
   }
 
   /** Given a TXID, fetches all incoming TXOs and the address the TXO pays to
@@ -355,17 +372,28 @@ case class SpendingInfoDAO()(implicit
   /** Fetches all the incoming TXOs in our DB that are in
     * the transaction with the given TXID
     */
-  def findOutputsReceived(
-      txids: Vector[DoubleSha256DigestBE]): Future[Vector[SpendingInfoDb]] = {
-    val filtered = spkJoinQuery
+  def findOutputsReceivedAction(
+      txids: Vector[DoubleSha256DigestBE]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    spkJoinQuery
       .filter(_._1.state.inSet(TxoState.receivedStates))
       .filter(_._1.txid.inSet(txids))
-    safeDatabase
-      .runVec(filtered.result)
+      .result
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
         })
+      .map(_.toVector)
+  }
+
+  /** Fetches all the incoming TXOs in our DB that are in
+    * the transaction with the given TXID
+    */
+  def findOutputsReceived(
+      txids: Vector[DoubleSha256DigestBE]): Future[Vector[SpendingInfoDb]] = {
+    safeDatabase.run(findOutputsReceivedAction(txids))
   }
 
   def findByScriptPubKey(

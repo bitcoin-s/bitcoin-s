@@ -316,17 +316,21 @@ case class AddressDAO()(implicit
 
   def findByScriptPubKeys(
       spks: Vector[ScriptPubKey]): Future[Vector[AddressDb]] = {
-    val query = table
+    safeDatabase.run(findByScriptPubKeysAction(spks))
+  }
+
+  def findByScriptPubKeysAction(spks: Vector[ScriptPubKey]): DBIOAction[
+    Vector[AddressDb],
+    NoStream,
+    Effect.Read] = {
+    table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
       .filter(_._2.scriptPubKey.inSet(spks))
-
-    safeDatabase
-      .runVec(query.result)
-      .map(res =>
-        res.map { case (addrRec, spkRec) =>
-          addrRec.toAddressDb(spkRec.scriptPubKey)
-        })
+      .result
+      .map(_.map { case (addrRec, spkRec) =>
+        addrRec.toAddressDb(spkRec.scriptPubKey)
+      }.toVector)
   }
 
   private def findMostRecentForChain(

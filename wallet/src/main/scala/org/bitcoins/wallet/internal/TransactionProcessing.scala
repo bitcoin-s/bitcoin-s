@@ -17,6 +17,7 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet._
 
 import scala.concurrent.{Future, Promise}
@@ -30,6 +31,10 @@ import scala.util.{Failure, Success, Try}
 private[bitcoins] trait TransactionProcessing extends WalletLogger {
   self: Wallet =>
 
+  import walletConfig.profile.api._
+
+  private lazy val safeDatabase: SafeDatabase = transactionDAO.safeDatabase
+
   /////////////////////
   // Public facing API
 
@@ -38,9 +43,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]
   ): Future[Wallet] = {
-    val relevantReceivedOutputsF = getRelevantOutputs(transaction)
     for {
-      relevantReceivedOutputs <- relevantReceivedOutputsF
+      relevantReceivedOutputs <- getRelevantOutputs(transaction)
       result <- processTransactionImpl(
         transaction = transaction,
         blockHashOpt = blockHashOpt,
@@ -206,8 +210,17 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   protected def insertTransaction(
       tx: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[TransactionDb] = {
+    safeDatabase.run(insertTransactionAction(tx, blockHashOpt))
+  }
+
+  protected def insertTransactionAction(
+      tx: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]): DBIOAction[
+    TransactionDb,
+    NoStream,
+    Effect.Write with Effect.Read] = {
     val txDb = TransactionDbHelper.fromTransaction(tx, blockHashOpt)
-    transactionDAO.upsert(txDb)
+    transactionDAO.upsertAction(txDb)
   }
 
   private[wallet] def insertOutgoingTransaction(
@@ -351,9 +364,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           insertTransaction(transaction, blockHashOpt)
         else Future.unit
       }
-      toBeUpdated = outputsBeingSpent
-        .map(markAsSpent(_, transaction.txIdBE))
-        .flatten
+      toBeUpdated = outputsBeingSpent.flatMap(
+        markAsSpent(_, transaction.txIdBE))
       processed <- updateUtxoSpentConfirmedStates(toBeUpdated)
     } yield {
       processed
@@ -568,22 +580,18 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
     val spks = outputsWithIndex.map(_.output.scriptPubKey).toVector
 
-    val addressDbsF: Future[Vector[AddressDb]] = {
-      getAddressDbs(spks)
-    }
-
-    val addressDbWithOutputF = for {
-      addressDbs <- addressDbsF
+    val addressDbWithOutputA = for {
+      addressDbs <- addressDAO.findByScriptPubKeysAction(spks)
     } yield {
       if (addressDbs.isEmpty) {
         logger.warn(
-          s"Found zero addresses in the database to match an output we have a script for, txid=${transaction.txIdBE.hex} outputs=${outputsWithIndex}")
+          s"Found zero addresses in the database to match an output we have a script for, txid=${transaction.txIdBE.hex} outputs=$outputsWithIndex")
       }
       matchAddressDbWithOutputs(addressDbs, outputsWithIndex.toVector)
     }
 
     val nested = for {
-      addressDbWithOutput <- addressDbWithOutputF
+      addressDbWithOutput <- safeDatabase.run(addressDbWithOutputA)
     } yield {
       val outputsVec = addressDbWithOutput.map { case (addressDb, out) =>
         require(addressDb.scriptPubKey == out.output.scriptPubKey)
@@ -598,16 +606,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     }
 
     nested.flatten
-  }
-
-  /** Tries to convert the provided spk to an address, and then checks if we have
-    * it in our address table
-    */
-  private def getAddressDbs(
-      spks: Vector[ScriptPubKey]): Future[Vector[AddressDb]] = {
-    val addressDbF: Future[Vector[AddressDb]] =
-      addressDAO.findByScriptPubKeys(spks)
-    addressDbF
   }
 
   /** Matches address dbs with outputs, drops addressDb/outputs that do not have matches */
@@ -635,12 +633,14 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private[wallet] def insertIncomingTransaction(
       transaction: Transaction,
       incomingAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[
-    (TransactionDb, IncomingTransactionDb)] = {
+      blockHashOpt: Option[DoubleSha256DigestBE]): DBIOAction[
+    (TransactionDb, IncomingTransactionDb),
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val incomingDb = IncomingTransactionDb(transaction.txIdBE, incomingAmount)
     for {
-      txDb <- insertTransaction(transaction, blockHashOpt)
-      written <- incomingTxDAO.upsert(incomingDb)
+      txDb <- insertTransactionAction(transaction, blockHashOpt)
+      written <- incomingTxDAO.upsertAction(incomingDb)
     } yield (txDb, written)
   }
 
@@ -700,7 +700,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     } else {
       val filteredOutputs =
         transaction.outputs.zipWithIndex.filter(o =>
-          relevantReceivedOutputs.exists(_ == OutputWithIndex(o._1, o._2)))
+          relevantReceivedOutputs.contains(OutputWithIndex(o._1, o._2)))
 
       if (filteredOutputs.isEmpty) {
         //no relevant outputs in this tx, return early
@@ -714,35 +714,35 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         }
 
         val spks = relevantReceivedOutputsForTx.map(_.output.scriptPubKey)
-        val spksInDbF = addressDAO.findByScriptPubKeys(spks)
+        val spksInDbA = addressDAO.findByScriptPubKeysAction(spks)
 
-        val ourOutputsF = for {
-          spksInDb <- spksInDbF
+        val ourOutputsA = for {
+          spksInDb <- spksInDbA
         } yield {
           relevantReceivedOutputsForTx.collect {
             case OutputWithIndex(out, idx)
-                if spksInDb.map(_.scriptPubKey).exists(_ == out.scriptPubKey) =>
+                if spksInDb.map(_.scriptPubKey).contains(out.scriptPubKey) =>
               OutputWithIndex(out, idx)
           }
         }
 
-        val txDbF: Future[(TransactionDb, IncomingTransactionDb)] = for {
-          ourOutputs <- ourOutputsF
+        val txDbA = for {
+          ourOutputs <- ourOutputsA
           totalIncoming = ourOutputs.map(_.output.value).sum
           incomingTx <- insertIncomingTransaction(transaction,
                                                   totalIncoming,
                                                   blockHashOpt)
         } yield incomingTx
 
-        val prevTagsDbF = for {
-          (txDb, _) <- txDbF
+        val prevTagsDbA = for {
+          (txDb, _) <- txDbA
           prevTagDbs <-
-            addressTagDAO.findTx(txDb.transaction, networkParameters)
+            addressTagDAO.findTxAction(txDb.transaction, networkParameters)
         } yield prevTagDbs
 
-        val newTagsF = for {
-          ourOutputs <- ourOutputsF
-          prevTagDbs <- prevTagsDbF
+        val newTagsA = for {
+          ourOutputs <- ourOutputsA
+          prevTagDbs <- prevTagsDbA
           prevTags = prevTagDbs.map(_.addressTag)
           tagsToUse = prevTags
             .filterNot(tag => newTags.contains(tag)) ++ newTags
@@ -751,14 +751,18 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
-          created <- addressTagDAO.upsertAll(newTagDbs)
+          created <- addressTagDAO.upsertAllAction(newTagDbs)
         } yield created
 
+        val action = for {
+          (txDb, _) <- txDbA
+          ourOutputs <- ourOutputsA
+          _ <- newTagsA
+        } yield (ourOutputs, txDb)
+
         for {
-          (txDb, _) <- txDbF
-          ourOutputs <- ourOutputsF
+          (ourOutputs, txDb) <- safeDatabase.run(action)
           utxos <- addReceivedUTXOs(ourOutputs, txDb.transaction, blockHashOpt)
-          _ <- newTagsF
         } yield utxos
       }
     }
