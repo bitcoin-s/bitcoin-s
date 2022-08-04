@@ -114,7 +114,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      _ <- TestAsyncUtil.awaitConditionF(condition2)
+      _ <- TestAsyncUtil.awaitConditionF(condition2,
+                                         interval = 1.second,
+                                         maxTries = 30)
       // assert we got the full tx with witness data
       txs <- wallet.listTransactions()
     } yield assert(txs.exists(_.transaction == expectedTx))

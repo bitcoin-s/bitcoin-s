@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem, Props}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p.{
@@ -12,8 +12,9 @@ import org.bitcoins.core.p2p.{
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageSender
+import org.bitcoins.node.networking.{P2PClient, P2PClientSupervisor}
+import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -38,7 +39,13 @@ case class PeerManager(
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
-  val finder: PeerFinder = PeerFinder(paramPeers, node, skipPeers = () => peers)
+  val supervisor: ActorRef =
+    system.actorOf(Props[P2PClientSupervisor](),
+                   name =
+                     BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
+
+  val finder: PeerFinder =
+    PeerFinder(paramPeers, node, skipPeers = () => peers, supervisor)
 
   def connectedPeerCount: Int = _peerData.size
 
@@ -56,12 +63,13 @@ case class PeerManager(
 
   def peers: Vector[Peer] = _peerData.keys.toVector
 
-  def peerMsgSenders: Vector[PeerMessageSender] =
+  def peerMsgSenders: Vector[Future[PeerMessageSender]] =
     _peerData.values
       .map(_.peerMessageSender)
       .toVector
 
-  def clients: Vector[P2PClient] = _peerData.values.map(_.client).toVector
+  def clients: Vector[Future[P2PClient]] =
+    _peerData.values.map(_.client).toVector
 
   def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
     //wait when requested
@@ -88,7 +96,7 @@ case class PeerManager(
   def randomPeerMsgSenderWithService(
       services: ServiceIdentifier): Future[PeerMessageSender] = {
     val randomPeerF = randomPeerWithService(services)
-    randomPeerF.map(peer => peerData(peer).peerMessageSender)
+    randomPeerF.flatMap(peer => peerData(peer).peerMessageSender)
   }
 
   def createInDb(
@@ -145,7 +153,7 @@ case class PeerManager(
     addPeer(withPeer)
   }
 
-  def removePeer(peer: Peer): Unit = {
+  def removePeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Removing persistent peer $peer")
     val client = peerData(peer).client
     _peerData.remove(peer)
@@ -154,7 +162,7 @@ case class PeerManager(
     //leading to a memory leak may happen
     _waitingForDeletion.add(peer)
     //now send request to stop actor which will be completed some time in future
-    client.close()
+    client.map(_.close())
   }
 
   def isReconnection(peer: Peer): Boolean = {
@@ -177,14 +185,15 @@ case class PeerManager(
 
     val finderStopF = finder.stop()
 
-    peers.foreach(removePeer)
+    val removeF = Future.sequence(peers.map(removePeer))
 
     val managerStopF = AsyncUtil.retryUntilSatisfied(
       _peerData.isEmpty && waitingForDeletion.isEmpty,
       interval = 1.seconds,
-      maxTries = 10)
+      maxTries = 30)
 
     for {
+      _ <- removeF
       _ <- finderStopF
       _ <- managerStopF
     } yield {
@@ -196,30 +205,31 @@ case class PeerManager(
 
   def isConnected(peer: Peer): Future[Boolean] = {
     if (peerData.contains(peer))
-      peerData(peer).peerMessageSender.isConnected()
+      peerData(peer).peerMessageSender.flatMap(_.isConnected())
     else Future.successful(false)
   }
 
   def isInitialized(peer: Peer): Future[Boolean] = {
     if (peerData.contains(peer))
-      peerData(peer).peerMessageSender.isInitialized()
+      peerData(peer).peerMessageSender.flatMap(_.isInitialized())
     else Future.successful(false)
   }
 
-  def onInitializationTimeout(peer: Peer): Unit = {
+  def onInitializationTimeout(peer: Peer): Future[Unit] = {
     assert(!finder.hasPeer(peer) || !peerData.contains(peer),
            s"$peer cannot be both a test and a persistent peer")
 
     if (finder.hasPeer(peer)) {
       //one of the peers that we tried, failed to init within time, disconnect
-      finder.getData(peer).client.close()
+      finder.getData(peer).client.map(_.close())
     } else if (peerData.contains(peer)) {
       //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
       //a reconnection attempt, meaning it got connected but failed to initialize, disconnect
-      peerData(peer).client.close()
+      peerData(peer).client.map(_.close())
     } else {
       //this should never happen
       logger.warn(s"onInitializationTimeout called for unknown $peer")
+      Future.unit
     }
   }
 
@@ -238,7 +248,7 @@ case class PeerManager(
       logger.debug(s"Initialized peer $peer with $hasCf")
 
       def sendAddrReq: Future[Unit] =
-        finder.getData(peer).peerMessageSender.sendGetAddrMessage()
+        finder.getData(peer).peerMessageSender.flatMap(_.sendGetAddrMessage())
 
       def managePeerF(): Future[Unit] = {
         //if we have slots remaining, connect
@@ -257,10 +267,11 @@ case class PeerManager(
             //we do want to give it enough time to send addr messages
             AsyncUtil
               .nonBlockingSleep(duration = 10.seconds)
-              .map { _ =>
+              .flatMap { _ =>
                 //could have already been deleted in case of connection issues
                 if (finder.hasPeer(peer))
-                  finder.getData(peer).client.close()
+                  finder.getData(peer).client.map(_.close())
+                else Future.unit
               }
           }
         }

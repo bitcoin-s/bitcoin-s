@@ -83,7 +83,7 @@ case class NeutrinoNode(
       _ = logger.info(s"Syncing with $syncPeer")
       _ = updateDataMessageHandler(
         dataMessageHandler.copy(syncPeer = Some(syncPeer)))
-      peerMsgSender = peerManager.peerData(syncPeer).peerMessageSender
+      peerMsgSender <- peerManager.peerData(syncPeer).peerMessageSender
 
       bestHash <- chainApi.getBestBlockHash()
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash =
@@ -149,14 +149,13 @@ case class NeutrinoNode(
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
     val syncPeer = dataMessageHandler.syncPeer.getOrElse(
       throw new RuntimeException("Sync peer not set"))
-    val syncPeerMsgSender = peerManager.peerData(syncPeer).peerMessageSender
-    val sendCompactFilterHeaderMsgF = {
-      syncPeerMsgSender
-        .sendNextGetCompactFilterHeadersCommand(
-          chainApi = chainApi,
-          filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-          prevStopHash = bestFilterHeader.blockHashBE)
-    }
+    val syncPeerMsgSenderF = peerManager.peerData(syncPeer).peerMessageSender
+    val sendCompactFilterHeaderMsgF = syncPeerMsgSenderF.flatMap(
+      _.sendNextGetCompactFilterHeadersCommand(
+        chainApi = chainApi,
+        filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
+        prevStopHash = bestFilterHeader.blockHashBE)
+    )
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
       // If we have started syncing filters
       if (
@@ -166,12 +165,15 @@ case class NeutrinoNode(
       ) {
         //means we are not syncing filter headers, and our filters are NOT
         //in sync with our compact filter headers
-        syncPeerMsgSender
-          .sendNextGetCompactFilterCommand(
-            chainApi = chainApi,
-            filterBatchSize = chainConfig.filterBatchSize,
-            startHeight = bestFilterOpt.get.height)
-          .map(_ => ())
+        syncPeerMsgSenderF.flatMap { sender =>
+          sender
+            .sendNextGetCompactFilterCommand(chainApi = chainApi,
+                                             filterBatchSize =
+                                               chainConfig.filterBatchSize,
+                                             startHeight =
+                                               bestFilterOpt.get.height)
+            .map(_ => ())
+        }
       } else {
         Future.unit
       }

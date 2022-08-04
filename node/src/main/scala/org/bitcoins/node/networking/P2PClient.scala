@@ -1,12 +1,18 @@
 package org.bitcoins.node.networking
 
-import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props, Terminated}
 import akka.event.LoggingReceive
 import akka.io.Tcp.SO.KeepAlive
 import akka.io.{IO, Tcp}
+import akka.pattern.ask
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.p2p.{NetworkHeader, NetworkMessage, NetworkPayload}
+import org.bitcoins.core.p2p.{
+  ExpectsResponse,
+  NetworkHeader,
+  NetworkMessage,
+  NetworkPayload
+}
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
@@ -26,7 +32,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageReceiverState
 }
-import org.bitcoins.node.util.BitcoinSNodeUtil
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
 import scodec.bits.ByteVector
@@ -76,6 +81,8 @@ case class P2PClientActor(
     extends Actor
     with P2PLogger {
 
+  import context.dispatcher
+
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   private var reconnectHandlerOpt: Option[Peer => Future[Unit]] = None
@@ -109,6 +116,12 @@ case class P2PClientActor(
       unalignedBytes: ByteVector): Receive =
     LoggingReceive {
       case message: NetworkMessage =>
+        message match {
+          case _: ExpectsResponse =>
+            logger.debug(s"${message.payload.commandName} expects response")
+            Await.result(handleExpectResponse(message.payload), timeout)
+          case _ =>
+        }
         sendNetworkMessage(message, peerConnection)
       case payload: NetworkPayload =>
         val networkMsg = NetworkMessage(network, payload)
@@ -126,10 +139,32 @@ case class P2PClientActor(
       case metaMsg: P2PClient.MetaMsg =>
         sender() ! handleMetaMsg(metaMsg)
       case ExpectResponseCommand(msg) =>
-        handleExpectResponse(msg)
+        Await.result(handleExpectResponse(msg), timeout)
       case Terminated(actor) if actor == peerConnection =>
         reconnect()
     }
+
+  /** Behavior to ignore network messages. Used only when the peer is being disconnected by us as we would not want to
+    * process any messages from it in that state.
+    */
+  private def ignoreNetworkMessages(
+      peerConnectionOpt: Option[ActorRef],
+      unalignedBytes: ByteVector): Receive = LoggingReceive {
+    case _ @(_: NetworkMessage | _: NetworkPayload |
+        _: ExpectResponseCommand) =>
+    case message: Tcp.Event if peerConnectionOpt.isDefined =>
+      val newUnalignedBytes =
+        handleEvent(message, peerConnectionOpt.get, unalignedBytes)
+      context.become(
+        ignoreNetworkMessages(peerConnectionOpt, newUnalignedBytes))
+    case _ @(P2PClient.CloseCommand | P2PClient.CloseAnyStateCommand) =>
+    //ignore
+    case metaMsg: P2PClient.MetaMsg =>
+      sender() ! handleMetaMsg(metaMsg)
+    case Terminated(actor)
+        if peerConnectionOpt.isDefined && actor == peerConnectionOpt.get =>
+      reconnect()
+  }
 
   override def receive: Receive = LoggingReceive {
     case cmd: NodeCommand =>
@@ -141,8 +176,7 @@ case class P2PClientActor(
   override def postStop(): Unit = {
     super.postStop()
     logger.debug(s"Stopped client for $peer")
-    implicit def ec: ExecutionContext = context.dispatcher
-    onStop(peer).foreach(_ => ())
+    Await.result(onStop(peer), timeout)
   }
 
   def reconnecting: Receive = LoggingReceive {
@@ -158,7 +192,7 @@ case class P2PClientActor(
       handleNodeCommand(cmd = P2PClient.CloseAnyStateCommand,
                         peerConnectionOpt = None)
     case ExpectResponseCommand(msg) =>
-      handleExpectResponse(msg)
+      Await.result(handleExpectResponse(msg), timeout)
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsg(metaMsg)
   }
@@ -169,7 +203,7 @@ case class P2PClientActor(
         handleNodeCommand(cmd = P2PClient.CloseAnyStateCommand,
                           peerConnectionOpt = None)
       case ExpectResponseCommand(msg) =>
-        handleExpectResponse(msg)
+        Await.result(handleExpectResponse(msg), timeout)
       case Tcp.CommandFailed(c: Tcp.Connect) =>
         val peerOrProxyAddress = c.remoteAddress
         logger.debug(
@@ -274,7 +308,9 @@ case class P2PClientActor(
         state match {
           case wait: Waiting =>
             currentPeerMsgHandlerRecv.onResponseTimeout(wait.responseFor)
-            wait.timeout.cancel()
+            wait.expectedResponseCancellable.cancel()
+          case init: Initializing =>
+            init.initializationTimeoutCancellable.cancel()
           case _ =>
         }
 
@@ -334,13 +370,15 @@ case class P2PClientActor(
       case Tcp.ErrorClosed(cause) =>
         logger.debug(
           s"An error occurred in our connection with $peer, cause=$cause state=${currentPeerMsgHandlerRecv.state}")
-        currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
+        currentPeerMsgHandlerRecv =
+          Await.result(currentPeerMsgHandlerRecv.disconnect(), timeout)
         unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
         logger.debug(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
-        currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
+        currentPeerMsgHandlerRecv =
+          Await.result(currentPeerMsgHandlerRecv.disconnect(), timeout)
         unalignedBytes
 
       case Tcp.Received(byteString: ByteString) =>
@@ -443,6 +481,8 @@ case class P2PClientActor(
         peerConnectionOpt match {
           case Some(peerConnection) =>
             logger.debug(s"Disconnecting from peer $peer")
+            context become ignoreNetworkMessages(Some(peerConnection),
+                                                 ByteVector.empty)
             currentPeerMsgHandlerRecv =
               currentPeerMsgHandlerRecv.initializeDisconnect()
             peerConnection ! Tcp.Close
@@ -454,10 +494,13 @@ case class P2PClientActor(
         logger.debug(s"Received close any state for $peer")
         peerConnectionOpt match {
           case Some(peerConnection) =>
+            context become ignoreNetworkMessages(Some(peerConnection),
+                                                 ByteVector.empty)
             currentPeerMsgHandlerRecv =
               currentPeerMsgHandlerRecv.initializeDisconnect()
             peerConnection ! Tcp.Close
           case None =>
+            context become ignoreNetworkMessages(None, ByteVector.empty)
             currentPeerMsgHandlerRecv =
               currentPeerMsgHandlerRecv.stopReconnect()
             context.stop(self)
@@ -465,9 +508,21 @@ case class P2PClientActor(
     }
   }
 
-  def handleExpectResponse(msg: NetworkPayload): Unit = {
-    currentPeerMsgHandlerRecv =
-      currentPeerMsgHandlerRecv.handleExpectResponse(msg)
+  /** For any [[org.bitcoins.core.p2p.NetworkPayload]], if it a subtype of [[ExpectsResponse]], starts a
+    * cancellable timer and changes state to [[PeerMessageReceiverState.Waiting]]. Note that any messages, received
+    * while waiting for a particular message are still processed, they just won't cancel the scheduled query timeout.
+    * Can only wait for one query at a time, other messages that are [[ExpectsResponse]] and received while in
+    * [[PeerMessageReceiverState.Waiting]] are still sent, but no query timeout would be executed for those.
+    * Currently, such a situation is not meant to happen.
+    */
+  def handleExpectResponse(msg: NetworkPayload): Future[Unit] = {
+    require(
+      msg.isInstanceOf[ExpectsResponse],
+      s"Tried to wait for response to message which is not a query, got=$msg")
+    logger.info(s"Expecting response for ${msg.commandName} for $peer")
+    currentPeerMsgHandlerRecv.handleExpectResponse(msg).map { newReceiver =>
+      currentPeerMsgHandlerRecv = newReceiver
+    }
   }
 }
 
@@ -559,22 +614,28 @@ object P2PClient extends P2PLogger {
           config)
 
   def apply(
-      context: ActorRefFactory,
       peer: Peer,
       peerMessageReceiver: PeerMessageReceiver,
       onReconnect: Peer => Future[Unit],
       onStop: Peer => Future[Unit],
-      maxReconnectionTries: Int = 16)(implicit
-      config: NodeAppConfig): P2PClient = {
-    val actorRef = context.actorOf(props = props(peer,
-                                                 peerMessageReceiver,
-                                                 onReconnect,
-                                                 onStop,
-                                                 maxReconnectionTries),
-                                   name =
-                                     BitcoinSNodeUtil.createActorName(getClass))
+      maxReconnectionTries: Int = 16,
+      supervisor: ActorRef)(implicit
+      config: NodeAppConfig,
+      system: ActorSystem): Future[P2PClient] = {
 
-    P2PClient(actorRef, peer)
+    val clientProps = props(peer,
+                            peerMessageReceiver,
+                            onReconnect,
+                            onStop,
+                            maxReconnectionTries)
+
+    import system.dispatcher
+    implicit val timeout: Timeout = Timeout(10.second)
+    val actorRefF = supervisor ? clientProps
+
+    actorRefF.map { actorRef =>
+      P2PClient(actorRef.asInstanceOf[ActorRef], peer)
+    }
   }
 
   /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
