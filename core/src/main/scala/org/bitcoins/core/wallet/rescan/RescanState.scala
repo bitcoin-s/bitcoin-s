@@ -60,7 +60,6 @@ object RescanState {
       }
       blocksMatchedF.recoverWith {
         case RescanTerminatedEarly =>
-          println(s"Caught rescan terminated early")
           //this means this was purposefully terminated early
           //don't propagate the exception
           Future.successful(Vector.empty)
