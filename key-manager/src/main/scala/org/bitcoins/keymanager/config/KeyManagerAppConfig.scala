@@ -3,14 +3,15 @@ package org.bitcoins.keymanager.config
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.commons.util.WalletNames
+import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd.{HDPurpose, HDPurposes}
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.{AesPassword, CryptoUtil}
-import org.bitcoins.keymanager.{ReadMnemonicError, WalletStorage}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig.DEFAULT_WALLET_NAME
+import org.bitcoins.keymanager.{ReadMnemonicError, WalletStorage}
 import scodec.bits.BitVector
 
 import java.nio.file.{Files, Path}
@@ -20,8 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class KeyManagerAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config],
-    walletNameOverride: Option[String] = None,
-    aesPasswordOverride: Option[AesPassword] = None,
+    walletNameOverride: Option[ArgumentSource[String]] = None,
+    aesPasswordOverride: Option[ArgumentSource[AesPassword]] = None,
     bip39PasswordOverride: Option[String] = None)(implicit
     val ec: ExecutionContext)
     extends AppConfig {
@@ -36,9 +37,13 @@ case class KeyManagerAppConfig(
   lazy val networkParameters: NetworkParameters = chain.network
 
   lazy val walletName: String = {
-    val nameOpt =
-      walletNameOverride.orElse(
-        config.getStringOrNone(s"bitcoin-s.wallet.walletName"))
+    val configWalletName =
+      config.getStringOrNone(s"bitcoin-s.wallet.walletName")
+    val nameOpt: Option[String] =
+      walletNameOverride match {
+        case Some(ArgumentSource.RpcArgument(walletName)) => Some(walletName)
+        case Some(ArgumentSource.NoArgument) | None       => configWalletName
+      }
     require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
             s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
     nameOpt.getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME)
@@ -143,8 +148,13 @@ case class KeyManagerAppConfig(
     case None =>
       val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
       passOpt.flatMap(AesPassword.fromStringOpt)
-    case Some(pass) => Some(pass)
-
+    case Some(argument) =>
+      argument match {
+        case ArgumentSource.RpcArgument(arg) =>
+          Some(arg)
+        case ArgumentSource.NoArgument =>
+          None
+      }
   }
 
   lazy val bip39PasswordOpt: Option[String] = bip39PasswordOverride match {
