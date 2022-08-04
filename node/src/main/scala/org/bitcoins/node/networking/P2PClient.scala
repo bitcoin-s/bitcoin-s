@@ -516,8 +516,9 @@ case class P2PClientActor(
     * Currently, such a situation is not meant to happen.
     */
   def handleExpectResponse(msg: NetworkPayload): Future[Unit] = {
-    require(msg.isInstanceOf[ExpectsResponse],
-            "Tried to wait for response to message which is not a query.")
+    require(
+      msg.isInstanceOf[ExpectsResponse],
+      s"Tried to wait for response to message which is not a query, got=$msg")
     logger.info(s"Expecting response for ${msg.commandName} for $peer")
     currentPeerMsgHandlerRecv.handleExpectResponse(msg).map { newReceiver =>
       currentPeerMsgHandlerRecv = newReceiver

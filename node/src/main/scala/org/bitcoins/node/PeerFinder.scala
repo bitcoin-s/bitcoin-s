@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorRef, ActorSystem, Cancellable}
+import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
@@ -12,7 +13,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.Random
+import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
     paramPeers: Vector[Peer],
@@ -117,12 +118,17 @@ case class PeerFinder(
     else nodeAppConfig.tryNextPeersInterval
   }
 
+  private val isConnectionSchedulerRunning = AtomicBoolean(false)
+
   private lazy val peerConnectionScheduler: Cancellable =
     system.scheduler.scheduleWithFixedDelay(
       initialDelay = initialDelay,
-      delay = nodeAppConfig.tryNextPeersInterval) {
-      new Runnable() {
-        override def run(): Unit = {
+      delay = nodeAppConfig.tryNextPeersInterval) { () =>
+      {
+        if (
+          isConnectionSchedulerRunning.compareAndSet(expect = false,
+                                                     update = true)
+        ) {
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
           if (_peersToTry.size < 32)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -132,9 +138,16 @@ case class PeerFinder(
 
           logger.debug(s"Trying next set of peers $peers")
           val peersF = Future.sequence(peers.map(tryPeer))
-          peersF.failed.foreach(err =>
-            logger.error(s"Failed to connect to peers", err))
-          ()
+          peersF.onComplete {
+            case Success(_) =>
+              isConnectionSchedulerRunning.set(false)
+            case Failure(err) =>
+              isConnectionSchedulerRunning.set(false)
+              logger.error(s"Failed to connect to peers", err)
+          }
+        } else {
+          logger.warn(
+            s"Previous connection scheduler is still running, skipping this run, it will run again in ${nodeAppConfig.tryNextPeersInterval}")
         }
       }
     }
