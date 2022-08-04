@@ -217,11 +217,11 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
 
   it must "validate a wallet name" in {
     assert(KeyManagerAppConfig.validateWalletName(""))
-    assert(KeyManagerAppConfig.validateWalletName("old-wallet"))
+    assert(KeyManagerAppConfig.validateWalletName("old_wallet"))
 
     //weird whitespace
     assert(!KeyManagerAppConfig.validateWalletName("       "))
-    assert(!KeyManagerAppConfig.validateWalletName(" old-wallet"))
+    assert(!KeyManagerAppConfig.validateWalletName(" old_wallet"))
 
     //no non alpha-numeric
     assert(!KeyManagerAppConfig.validateWalletName("@@@"))

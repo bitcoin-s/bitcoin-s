@@ -31,6 +31,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 import org.scalatest._
 
+import java.util.UUID
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -300,7 +301,7 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[WalletAppConfig] = {
     val baseConf = BaseWalletTest.getFreshWalletAppConfig(pgUrl, configs)
     val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
-      Some(StringGenerators.genNonEmptyString.sampleSome)
+      Some(UUID.randomUUID().toString.replace("-", ""))
     } else None
 
     val walletConf = walletNameOpt match {

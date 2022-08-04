@@ -388,9 +388,22 @@ case class SpendingInfoDAO()(implicit
     * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]]
     */
   def _findAllUnspent(): Future[Vector[UTXORecord]] = {
-    val query = table.filter(_.state.inSet(TxoState.receivedStates))
+    safeDatabase.run(_findAllUnspentAction())
+  }
 
-    safeDatabase.run(query.result).map(_.toVector)
+  /** Enumerates all unspent TX outputs in the wallet with the state
+    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]]
+    */
+  def _findAllUnspentAction(): DBIOAction[
+    Vector[UTXORecord],
+    NoStream,
+    Effect.Read] = _findByStateAction(TxoState.receivedStates.toVector)
+
+  def _findByStateAction(states: Vector[TxoState]): DBIOAction[
+    Vector[UTXORecord],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.state.inSet(states)).result.map(_.toVector)
   }
 
   def utxoToInfoAction(utxos: Vector[UTXORecord]): DBIOAction[
@@ -420,6 +433,38 @@ case class SpendingInfoDAO()(implicit
       utxos <- _findAllUnspent()
       infos <- utxoToInfo(utxos)
     } yield infos
+  }
+
+  def getBalanceAction(accountOpt: Option[HDAccount] = None): DBIOAction[
+    CurrencyUnit,
+    NoStream,
+    Effect.Read] = {
+    val account = accountOpt.getOrElse(appConfig.defaultAccount)
+    for {
+      utxos <- _findAllUnspentAction()
+      infos <- utxoToInfoAction(utxos)
+      forAccount = filterUtxosByAccount(infos, account)
+    } yield forAccount.map(_.output.value).sum
+  }
+
+  def getConfirmedBalanceAction(accountOpt: Option[HDAccount] =
+    None): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
+    val account = accountOpt.getOrElse(appConfig.defaultAccount)
+    for {
+      utxos <- _findByStateAction(Vector(TxoState.ConfirmedReceived))
+      infos <- utxoToInfoAction(utxos)
+      forAccount = filterUtxosByAccount(infos, account)
+    } yield forAccount.map(_.output.value).sum
+  }
+
+  def getUnconfirmedBalanceAction(accountOpt: Option[HDAccount] =
+    None): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
+    val account = accountOpt.getOrElse(appConfig.defaultAccount)
+    for {
+      utxos <- _findByStateAction(TxoState.pendingReceivedStates.toVector)
+      infos <- utxoToInfoAction(utxos)
+      forAccount = filterUtxosByAccount(infos, account)
+    } yield forAccount.map(_.output.value).sum
   }
 
   private def filterUtxosByAccount(

@@ -8,7 +8,6 @@ import akka.stream.Materializer
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
@@ -25,6 +24,7 @@ import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
+import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
@@ -34,14 +34,15 @@ import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
-
-case class WalletRoutes(wallet: DLCNeutrinoHDWalletApi)(
-    loadWalletApi: DLCWalletLoaderApi)(implicit
+case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute
     with Logging {
   import system.dispatcher
+
+  /** The loaded wallet that requests should be directed against */
+  private[this] val wallet: WalletHolder = loader.walletHolder
 
   implicit private val kmConf: KeyManagerAppConfig = walletConf.kmConf
 

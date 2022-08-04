@@ -4,6 +4,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
 import org.bitcoins.commons.serializers.JsonReaders
+import org.bitcoins.commons.util.WalletNames
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
@@ -404,7 +405,7 @@ object ImportSeed extends ServerJsonModels {
     jsArr.arr.toList match {
       case walletNameJs :: mnemonicJs :: passJs :: Nil =>
         Try {
-          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val walletNameOpt = jsToWalletName(walletNameJs)
           val mnemonic = jsToMnemonics(mnemonicJs)
           val pass = jsToAESPassword(passJs)
 
@@ -412,7 +413,7 @@ object ImportSeed extends ServerJsonModels {
         }
       case walletNameJs :: mnemonicJs :: Nil =>
         Try {
-          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val walletNameOpt = jsToWalletName(walletNameJs)
           val mnemonic = jsToMnemonics(mnemonicJs)
 
           ImportSeed(walletNameOpt, mnemonic, None)
@@ -442,7 +443,7 @@ object ImportXprv extends ServerJsonModels {
     jsArr.arr.toList match {
       case walletNameJs :: xprvJs :: passJs :: Nil =>
         Try {
-          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val walletNameOpt = jsToWalletName(walletNameJs)
           val xprv = ExtPrivateKey.fromString(xprvJs.str)
           val pass = jsToAESPassword(passJs)
 
@@ -450,7 +451,7 @@ object ImportXprv extends ServerJsonModels {
         }
       case walletNameJs :: xprvJs :: Nil =>
         Try {
-          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val walletNameOpt = jsToWalletName(walletNameJs)
           val xprv = ExtPrivateKey.fromString(xprvJs.str)
 
           ImportXprv(walletNameOpt, xprv, None)
@@ -1764,15 +1765,28 @@ trait ServerJsonModels {
     }
   }
 
+  def jsToWalletName(js: Value): Option[String] = {
+    val walletNameOpt = jsToStringOpt(js)
+    if (!walletNameOpt.forall(_.length <= WalletNames.walletNameMaxLen)) {
+      throw new IllegalArgumentException(
+        s"Invalid wallet name length: ${walletNameOpt.map(_.length).getOrElse(0)}. Max length is ${WalletNames.walletNameMaxLen}.")
+    }
+    if (!walletNameOpt.forall(WalletNames.validateWalletName)) {
+      throw new IllegalArgumentException(
+        s"Invalid wallet name `${walletNameOpt.getOrElse("")}`.")
+    }
+    walletNameOpt
+  }
+
   def jsToWalletNameAndPassword(
       js: Value): (Option[String], Option[AesPassword]) = {
     js match {
       case Arr(arr) =>
         arr.toList match {
           case walletNameJs :: passJs :: Nil =>
-            (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
+            (jsToWalletName(walletNameJs), jsToAESPassword(passJs))
           case walletNameJs :: Nil =>
-            (jsToStringOpt(walletNameJs), None)
+            (jsToWalletName(walletNameJs), None)
           case Nil =>
             (None, None)
           case other =>

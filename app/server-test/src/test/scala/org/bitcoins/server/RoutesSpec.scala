@@ -63,8 +63,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val testAddress: BitcoinAddress = BitcoinAddress.fromString(testAddressStr)
   val testLabel: AddressLabelTag = AddressLabelTag("test")
 
-  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
-
   val mockChainApi: ChainApi = mock[ChainApi]
 
   val mockNode: Node = mock[Node]
@@ -73,17 +71,21 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val nodeRoutes: NodeRoutes = NodeRoutes(mockNode)
 
-  val dummyLoadWalletFn: DLCWalletLoaderApi = {
-    val holder = new WalletHolder()
-    DLCWalletNeutrinoBackendLoader(
-      holder,
-      mockChainApi,
-      mockNode,
-      feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
+  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+
+  val walletHolder = new WalletHolder(Some(mockWalletApi))
+
+  val feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
+
+  val walletLoader: DLCWalletNeutrinoBackendLoader = {
+    DLCWalletNeutrinoBackendLoader(walletHolder,
+                                   mockChainApi,
+                                   mockNode,
+                                   feeRateApi)
   }
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(mockWalletApi)(dummyLoadWalletFn)(system, conf.walletConf)
+    WalletRoutes(walletLoader)(system, conf.walletConf)
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 

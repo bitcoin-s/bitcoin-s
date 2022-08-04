@@ -25,7 +25,21 @@ class WalletRoutesSpec
 
   implicit val conf: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig()
-  val mockWalletApi = mock[MockWalletApi]
+
+  val mockChainApi: ChainApi = mock[ChainApi]
+
+  val mockNode: Node = mock[Node]
+  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+
+  val walletHolder = new WalletHolder(Some(mockWalletApi))
+
+  val feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
+
+  val walletLoader: DLCWalletNeutrinoBackendLoader =
+    DLCWalletNeutrinoBackendLoader(walletHolder,
+                                   mockChainApi,
+                                   mockNode,
+                                   feeRateApi)
 
   val mockChainApi = mock[ChainApi]
 
@@ -41,7 +55,7 @@ class WalletRoutesSpec
   }
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(mockWalletApi)(dummyLoadWalletFn)(system, conf.walletConf)
+    WalletRoutes(walletLoader)(system, conf.walletConf)
   "WalletRoutes" should {
     "estimatefee" in {
 

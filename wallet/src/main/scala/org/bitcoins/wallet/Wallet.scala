@@ -307,21 +307,17 @@ abstract class Wallet
       .map(_ => this)
   }
 
+  override def getBalance()(implicit
+      ec: ExecutionContext): Future[CurrencyUnit] = {
+    safeDatabase.run(spendingInfoDAO.getBalanceAction())
+  }
+
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
-    getConfirmedBalance(walletConfig.defaultAccount)
+    safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction())
   }
 
   override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
-    for {
-      allUnspent <- spendingInfoDAO.findAllUnspent()
-    } yield {
-      val confirmedUtxos = allUnspent.filter { utxo =>
-        HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.state == ConfirmedReceived
-      }
-
-      confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
-    }
+    safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction(Some(account)))
   }
 
   override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
@@ -332,20 +328,12 @@ abstract class Wallet
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    getUnconfirmedBalance(walletConfig.defaultAccount)
+    safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction())
   }
 
   override def getUnconfirmedBalance(
       account: HDAccount): Future[CurrencyUnit] = {
-    for {
-      allUnspent <- spendingInfoDAO.findAllUnspent()
-    } yield {
-      val unconfirmed = allUnspent.filter { utxo =>
-        HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        TxoState.pendingReceivedStates.contains(utxo.state)
-      }
-      unconfirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
-    }
+    safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction(Some(account)))
   }
 
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {

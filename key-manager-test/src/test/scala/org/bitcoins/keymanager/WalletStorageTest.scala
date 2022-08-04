@@ -8,13 +8,14 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.ReadMnemonicError._
 import org.bitcoins.keymanager.WalletStorage.AlreadyBackedUpException
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.testkitcore.Implicits._
-import org.bitcoins.testkitcore.gen.{CryptoGenerators, StringGenerators}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{BeforeAndAfterEach, FutureOutcome}
 
 import java.nio.file.{Files, Path}
+import java.util.UUID
 
 class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
@@ -669,9 +670,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       getAndWriteMnemonic(walletConfA)
       assert(walletConfA.kmConf.seedExists())
 
-      val otherWalletName = StringGenerators.genNonEmptyString
-        .suchThat(_ != walletConfA.walletName)
-        .sampleSome
+      val otherWalletName = UUID.randomUUID().toString.replace("-", "")
 
       val walletConfB = walletConfA.withOverrides(
         ConfigFactory.parseString(

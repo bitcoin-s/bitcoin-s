@@ -35,7 +35,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
   def walletHolder: WalletHolder
 
   /** Determine if a wallet has been loaded */
-  def isWalletLoaded: Boolean
+  def isWalletLoaded: Boolean = walletHolder.isInitialized
 
   def load(
       walletNameOpt: Option[String],
@@ -334,7 +334,6 @@ case class DLCWalletBitcoindBackendLoader(
     extends DLCWalletLoaderApi {
   import system.dispatcher
   implicit private val nodeConf = conf.nodeConf
-  override def isWalletLoaded: Boolean = walletHolder.isInitialized
 
   override def load(
       walletNameOpt: Option[String],

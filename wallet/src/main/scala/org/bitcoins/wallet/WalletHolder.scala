@@ -61,11 +61,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class WalletNotInitialized extends Exception("The wallet is not initialized")
 
-class WalletHolder(implicit ec: ExecutionContext)
+class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
+    ec: ExecutionContext)
     extends DLCNeutrinoHDWalletApi
     with Logging {
 
-  @volatile private var walletOpt: Option[DLCNeutrinoHDWalletApi] = None
+  @volatile private var walletOpt: Option[DLCNeutrinoHDWalletApi] =
+    initWalletOpt
 
   private def wallet: DLCNeutrinoHDWalletApi = synchronized {
     walletOpt match {
@@ -1001,4 +1003,10 @@ class WalletHolder(implicit ec: ExecutionContext)
                               blockHashOpt = blockHashOpt,
                               newTags = newTags))
   }
+}
+
+object WalletHolder {
+
+  def empty(implicit ec: ExecutionContext): WalletHolder = new WalletHolder(
+    None)
 }
