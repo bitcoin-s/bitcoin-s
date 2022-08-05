@@ -6,7 +6,6 @@ import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config.WalletAppConfig
-import slick.dbio.DBIOAction
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,7 +28,7 @@ case class ScriptPubKeyDAO()(implicit
       spkOpt <- spkFind.headOption
       spk <- spkOpt match {
         case Some(foundSpk) =>
-          DBIOAction.successful(foundSpk)
+          DBIO.successful(foundSpk)
         case None =>
           for {
             newSpkId <- (table returning table.map(_.id)) += spkDb
@@ -48,17 +47,24 @@ case class ScriptPubKeyDAO()(implicit
     foundVecF.map(_.headOption)
   }
 
-  /** Searches for the given set of spks and returns the ones that exist in the db */
-  def findScriptPubKeys(
-      spks: Vector[ScriptPubKey]): Future[Vector[ScriptPubKeyDb]] = {
+  def findScriptPubKeysAction(spks: Vector[ScriptPubKey]): DBIOAction[
+    Vector[ScriptPubKeyDb],
+    NoStream,
+    Effect.Read] = {
     val hashes = spks.map(ScriptPubKeyDb.hash)
     //group hashes to avoid https://github.com/bitcoin-s/bitcoin-s/issues/4220
     val groupedHashes: Vector[Vector[Sha256Digest]] =
       hashes.grouped(1000).toVector
     val actions =
       groupedHashes.map(hashes => table.filter(_.hash.inSet(hashes)).result)
-    val sequenced = DBIOAction.sequence(actions).map(_.flatten)
-    safeDatabase.runVec(sequenced)
+    DBIO.sequence(actions).map(_.flatten.toVector)
+  }
+
+  /** Searches for the given set of spks and returns the ones that exist in the db */
+  def findScriptPubKeys(
+      spks: Vector[ScriptPubKey]): Future[Vector[ScriptPubKeyDb]] = {
+    val action = findScriptPubKeysAction(spks)
+    safeDatabase.run(action)
   }
 
   case class ScriptPubKeyTable(tag: Tag)

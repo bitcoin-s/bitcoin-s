@@ -5,7 +5,6 @@ import org.bitcoins.core.api.wallet.db.AddressTagDb
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
   AddressTagName,
@@ -74,10 +73,15 @@ case class AddressTagDAO()(implicit
       ts: Vector[AddressTagDb]): Query[Table[_], AddressTagDb, Seq] =
     findByPrimaryKeys(ts.map(t => (t.address, t.tagType)))
 
-  def findByAddress(address: BitcoinAddress): Future[Vector[AddressTagDb]] = {
-    val query = table.filter(_.address === address)
+  def findByAddressAction(address: BitcoinAddress): DBIOAction[
+    Vector[AddressTagDb],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.address === address).result.map(_.toVector)
+  }
 
-    safeDatabase.run(query.result).map(_.toVector)
+  def findByAddress(address: BitcoinAddress): Future[Vector[AddressTagDb]] = {
+    safeDatabase.run(findByAddressAction(address))
   }
 
   def findByAddressAndTag(
@@ -135,44 +139,52 @@ case class AddressTagDAO()(implicit
     safeDatabase.run(query.delete)
   }
 
-  def findTx(
-      tx: Transaction,
-      network: NetworkParameters): Future[Vector[AddressTagDb]] = {
+  def findTxAction(tx: Transaction, network: NetworkParameters): DBIOAction[
+    Vector[AddressTagDb],
+    NoStream,
+    Effect.Read] = {
     val txIds = tx.inputs.map(_.previousOutput.txIdBE)
 
-    def findUtxos = {
-      val infoQuery = spendingInfoTable.filter(_.txid.inSet(txIds))
-      safeDatabase.runVec(infoQuery.result)
+    val findUtxosA = {
+      spendingInfoTable.filter(_.txid.inSet(txIds)).result.map(_.toVector)
     }
 
     def findSpks(ids: Vector[Long]) = {
-      val spkQuery = spkTable.filter(_.id.inSet(ids))
-      safeDatabase.runVec(spkQuery.result)
+      spkTable.filter(_.id.inSet(ids)).result.map(_.toVector)
     }
 
-    def spendingInfosF =
+    val spendingInfosA =
       for {
-        utxos <- findUtxos
+        utxos <- findUtxosA
         spks <-
-          if (utxos.isEmpty) Future.successful(Vector.empty)
+          if (utxos.isEmpty) DBIO.successful(Vector.empty)
           else findSpks(utxos.map(_.scriptPubKeyId))
       } yield {
         val spksMap = spks.map(spk => (spk.id.get, spk.scriptPubKey)).toMap
         utxos.map(utxo => utxo.toSpendingInfoDb(spksMap(utxo.scriptPubKeyId)))
       }
 
-    spendingInfosF.flatMap { spendingInfos =>
-      if (spendingInfos.isEmpty) {
-        Future.successful(Vector.empty)
-      } else {
-        val spks = spendingInfos.map(_.output.scriptPubKey)
-        val addresses =
-          spks.map(spk => BitcoinAddress.fromScriptPubKey(spk, network))
+    spendingInfosA
+      .flatMap { spendingInfos =>
+        if (spendingInfos.isEmpty) {
+          DBIO.successful(Vector.empty)
+        } else {
+          val spks = spendingInfos.map(_.output.scriptPubKey)
+          val addresses =
+            spks.map(spk => BitcoinAddress.fromScriptPubKey(spk, network))
 
-        val findByAddressFs = addresses.map(address => findByAddress(address))
-        FutureUtil.collect(findByAddressFs).map(_.flatten)
+          val findByAddressAs =
+            addresses.map(address => findByAddressAction(address))
+          DBIO.sequence(findByAddressAs).map(_.flatten)
+        }
       }
-    }
+      .map(_.toVector)
+  }
+
+  def findTx(
+      tx: Transaction,
+      network: NetworkParameters): Future[Vector[AddressTagDb]] = {
+    safeDatabase.run(findTxAction(tx, network))
   }
 
   def deleteByAddressesAction(addresses: Vector[BitcoinAddress]): DBIOAction[
