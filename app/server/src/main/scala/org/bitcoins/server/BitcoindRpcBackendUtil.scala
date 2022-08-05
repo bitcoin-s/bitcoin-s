@@ -22,8 +22,8 @@ import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.rpc.util.BitcoindStreamUtil
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.rpc.util.BitcoindStreamUtil
 import org.bitcoins.zmq.ZMQSubscriber
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -241,7 +241,7 @@ object BitcoindRpcBackendUtil extends Logging {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
-    val walletCallbackP = Promise[Wallet]()
+    val walletCallbackP = Promise[DLCWallet]()
 
     val pairedWallet = DLCWallet(
       nodeApi =
@@ -282,7 +282,7 @@ object BitcoindRpcBackendUtil extends Logging {
   }
 
   /** Creates an anonymous [[NodeApi]] that downloads blocks using
-    * akka streams from bitcoind, and then calls [[Wallet.processBlock]]
+    * akka streams from bitcoind, and then calls [[NeutrinoWalletApi.processBlock]]
     */
   def buildBitcoindNodeApi(
       bitcoindRpcClient: BitcoindRpcClient,

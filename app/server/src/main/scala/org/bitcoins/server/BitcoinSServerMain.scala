@@ -220,7 +220,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     //start our http server now that we are synced
     val startedF = for {
-      _ <- neutrinoWalletLoaderF
       _ <- startHttpServer(
         nodeApiF = startedNodeF,
         chainApi = chainApi,
@@ -395,7 +394,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         _ = require(
           bitcoindNetwork == network,
           s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")
-        _ <- loadWalletApiF
         _ <- startHttpServer(
           nodeApiF = Future.successful(bitcoind),
           chainApi = bitcoind,

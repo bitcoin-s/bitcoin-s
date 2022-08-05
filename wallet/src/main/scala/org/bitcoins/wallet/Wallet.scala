@@ -169,7 +169,7 @@ abstract class Wallet
     Future.successful(this)
   }
 
-  def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
+  override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncHeight()
   }
 

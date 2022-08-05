@@ -35,7 +35,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
+case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute
@@ -43,7 +43,7 @@ case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
   import system.dispatcher
 
   /** The loaded wallet that requests should be directed against */
-  private[this] val wallet: WalletHolder = loader.walletHolder
+  private[this] val wallet: WalletHolder = loadWalletApi.walletHolder
 
   implicit private val kmConf: KeyManagerAppConfig = walletConf.kmConf
 
@@ -725,7 +725,12 @@ case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
     case ServerCommand("rescan", arr) =>
       withValidServerCommand(Rescan.fromJsArr(arr)) { case r: Rescan =>
         complete {
-          val msgF = handleRescan(r)
+          val msgF: Future[String] = if (loadWalletApi.isRescanStateEmpty) {
+            handleRescan(r)
+          } else {
+            val msg = getRescanMsg(RescanState.RescanAlreadyStarted)
+            Future.successful(msg)
+          }
           msgF.map(msg => Server.httpSuccess(msg))
         }
       }
@@ -971,35 +976,63 @@ case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
           Server.httpSuccess(writeJs(accounting))
         }
       }
+
+    case ServerCommand("listwallets", _) =>
+      complete {
+        val list = kmConf.seedFolder.toFile
+          .list()
+          .toVector
+          .flatMap { fn =>
+            fn
+              .split(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+              .headOption
+              .flatMap(wn =>
+                if (wn.endsWith("-")) Some(wn.substring(0, wn.length - 1))
+                else None)
+          }
+        Server.httpSuccess(list)
+      }
+
+    case ServerCommand("loadwallet", arr) =>
+      withValidServerCommand(LoadWallet.fromJsArr(arr)) {
+        case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>
+          complete {
+            loadWalletApi.load(walletNameOpt, aesPasswordOpt).map { _ =>
+              val walletName =
+                walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
+              Server.httpSuccess(walletName)
+            }
+          }
+      }
+
   }
 
   private def getSeedPath(walletNameOpt: Option[String]): Path = {
+    val walletName = walletNameOpt
+      .map(_ + "-")
+      .getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
     kmConf.seedFolder.resolve(
-      walletNameOpt
-        .map(_ + "-")
-        .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+      walletName + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Returns information about the state of our wallet */
   def getInfo: Future[Obj] = {
     for {
-      accountDb <- wallet.getDefaultAccount()
-      walletState <- wallet.getSyncState()
-      rescan <- wallet.isRescanning()
+      info <- wallet.getInfo()
     } yield {
       Obj(
         WalletAppConfig.moduleName ->
           Obj(
             KeyManagerAppConfig.moduleName -> Obj(
-              "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString)
+              "rootXpub" -> Str(info.rootXpub.toString)
             ),
-            "walletName" -> Str(walletConf.walletName),
-            "xpub" -> Str(accountDb.xpub.toString),
-            "hdPath" -> Str(accountDb.hdAccount.toString),
-            "height" -> Num(walletState.height),
-            "blockHash" -> Str(walletState.blockHash.hex),
-            "rescan" -> rescan,
-            "imported" -> wallet.keyManager.imported
+            "walletName" -> Str(info.walletName),
+            "xpub" -> Str(info.xpub.toString),
+            "hdPath" -> Str(info.hdAccount.toString),
+            "height" -> Num(info.height),
+            "blockHash" -> Str(info.blockHash.hex),
+            "rescan" -> info.rescan,
+            "imported" -> info.imported
           )
       )
     }
@@ -1048,50 +1081,50 @@ case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
   }
 
   private def handleRescan(rescan: Rescan): Future[String] = {
-    val res = for {
-      empty <- wallet.isEmpty()
-      rescanState <- {
-        if (empty) {
-          //if wallet is empty, just return Done immediately
-          Future.successful(RescanState.RescanDone)
-        } else {
-          rescanStateOpt match {
-            case Some(rescanState) =>
-              val stateF: Future[RescanState] = rescanState match {
-                case started: RescanState.RescanStarted =>
-                  if (started.isStopped) {
-                    //means rescan is done, reset the variable
-                    rescanStateOpt = Some(RescanDone)
-                    Future.successful(RescanDone)
-                  } else {
-                    //do nothing, we don't want to reset/stop a rescan that is running
-                    Future.successful(started)
-                  }
-                case RescanState.RescanDone =>
-                  //if the previous rescan is done, start another rescan
-                  startRescan(rescan)
-                case RescanState.RescanAlreadyStarted =>
-                  Future.successful(RescanState.RescanAlreadyStarted)
-              }
+    if (loadWalletApi.isRescanStateEmpty) {
+      val res = for {
+        empty <- wallet.isEmpty()
+        rescanState <- {
+          if (empty) {
+            //if wallet is empty, just return Done immediately
+            Future.successful(RescanState.RescanDone)
+          } else {
+            rescanStateOpt match {
+              case Some(rescanState) =>
+                val stateF: Future[RescanState] = rescanState match {
+                  case started: RescanState.RescanStarted =>
+                    if (started.isStopped) {
+                      //means rescan is done, reset the variable
+                      rescanStateOpt = Some(RescanDone)
+                      Future.successful(RescanDone)
+                    } else {
+                      //do nothing, we don't want to reset/stop a rescan that is running
+                      Future.successful(started)
+                    }
+                  case RescanState.RescanDone =>
+                    //if the previous rescan is done, start another rescan
+                    startRescan(rescan)
+                  case RescanState.RescanAlreadyStarted =>
+                    Future.successful(RescanState.RescanAlreadyStarted)
+                }
 
-              stateF
-            case None =>
-              startRescan(rescan)
+                stateF
+              case None =>
+                startRescan(rescan)
+            }
           }
         }
-      }
-      msg <- {
-        rescanState match {
-          case RescanState.RescanAlreadyStarted |
-              _: RescanState.RescanStarted =>
-            Future.successful("Rescan started.")
-          case RescanState.RescanDone =>
-            Future.successful("Rescan done.")
-        }
-      }
-    } yield msg
+        _ = loadWalletApi.setRescanState(rescanState)
+        msg = getRescanMsg(rescanState)
+      } yield msg
 
-    res
+      res
+    } else {
+      Future.failed(
+        new IllegalArgumentException(
+          s"Cannot rescan when a rescan is already ongoing for wallet"))
+    }
+
   }
 
   /** Only call this if we know we are in a state */
@@ -1117,5 +1150,14 @@ case class WalletRoutes(loader: DLCWalletLoaderApi)(implicit
     }
 
     stateF
+  }
+
+  private def getRescanMsg(rescanState: RescanState): String = {
+    rescanState match {
+      case RescanState.RescanAlreadyStarted | _: RescanState.RescanStarted =>
+        "Rescan started."
+      case RescanState.RescanDone =>
+        "Rescan done."
+    }
   }
 }

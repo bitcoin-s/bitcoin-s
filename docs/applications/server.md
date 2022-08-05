@@ -245,6 +245,10 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `newpassphrase` - The new passphrase
  - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
+ - `loadwallet` `walletname` `passphrase` - Loads a wallet 
+    - `walletname` - Name to associate with this seed
+    - `passphrase` - Passphrase to decrypt this seed with
+ - `listwallets` - Returns a list of all wallets
 
 ### DLC
  - `createcontractinfo` `announcement` `totalCollateral` `payouts`

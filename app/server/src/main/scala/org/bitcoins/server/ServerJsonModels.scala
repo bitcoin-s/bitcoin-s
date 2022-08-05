@@ -387,17 +387,11 @@ trait ServerJsonModels {
       js: Value): (Option[String], Option[AesPassword]) = {
     js match {
       case Arr(arr) =>
-        arr.toList match {
-          case walletNameJs :: passJs :: Nil =>
-            (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
-          case walletNameJs :: Nil =>
-            (jsToStringOpt(walletNameJs), None)
-          case Nil =>
-            (None, None)
-          case other =>
-            throw new IllegalArgumentException(
-              s"Bad number of arguments: ${other.length}. Expected: 2")
-        }
+        if (arr.size >= 2) {
+          (jsToStringOpt(arr(0)), jsToAESPassword(arr(1)))
+        } else if (arr.size == 1) {
+          (jsToStringOpt(arr(0)), None)
+        } else { (None, None) }
       case _: Value =>
         throw new IllegalArgumentException(s"Expected json.Arr")
     }

@@ -175,6 +175,9 @@ object ConsoleCli {
       cmd("walletinfo")
         .action((_, conf) => conf.copy(command = WalletInfo))
         .text("Returns data about the current wallet being used"),
+      cmd("listwallets")
+        .action((_, conf) => conf.copy(command = ListWallets))
+        .text("Returns all the bitcoin-s wallets"),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -835,6 +838,39 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case wps: KeyManagerPassphraseSet =>
                   wps.copy(password = pass)
+                case other => other
+              }))
+        ),
+      cmd("loadwallet")
+        .action((_, conf) => conf.copy(command = LoadWallet(None, None, None)))
+        .text("Load a wallet")
+        .children(
+          opt[String]("walletname")
+            .text(
+              "Wallet's name (the default wallet will be loaded if omitted)")
+            .optional()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case lw: LoadWallet =>
+                  lw.copy(walletNameOpt = Some(walletName))
+                case other => other
+              })),
+          opt[AesPassword]("passphrase")
+            .text("Passphrase to decrypt the seed with")
+            .optional()
+            .action((password, conf) =>
+              conf.copy(command = conf.command match {
+                case lw: LoadWallet =>
+                  lw.copy(passwordOpt = Some(password))
+                case other => other
+              })),
+          opt[String]("bip39passphrase")
+            .text("BIP39 passphrase")
+            .optional()
+            .action((bip39Password, conf) =>
+              conf.copy(command = conf.command match {
+                case lw: LoadWallet =>
+                  lw.copy(bip39PasswordOpt = Some(bip39Password))
                 case other => other
               }))
         ),
@@ -1927,6 +1963,8 @@ object ConsoleCli {
         RequestParam("isempty")
       case WalletInfo =>
         RequestParam("walletinfo")
+      case ListWallets =>
+        RequestParam("listwallets")
       // DLCs
       case ContactAdd(alias, address, memo) =>
         RequestParam(
@@ -2134,6 +2172,16 @@ object ConsoleCli {
                      Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
                          up.writeJs(xprv),
                          passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
+
+      case LoadWallet(walletNameOpt, passwordOpt, bip39PasswordOpt) =>
+        RequestParam(
+          "loadwallet",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null),
+            bip39PasswordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
 
       case GetBlockHeader(hash) =>
         RequestParam("getblockheader", Seq(up.writeJs(hash)))
@@ -2430,6 +2478,7 @@ object CliCommand {
   case object CreateNewAccount extends AppServerCliCommand
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
+  case object ListWallets extends AppServerCliCommand
 
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
 

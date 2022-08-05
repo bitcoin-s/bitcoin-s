@@ -32,7 +32,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
 
   def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
-  def onRescanComplete: CallbackHandler[Unit, OnRescanComplete]
+  def onRescanComplete: CallbackHandler[String, OnRescanComplete]
 
   def onFeeRateChanged: CallbackHandler[FeeUnit, OnFeeRateChanged]
 
@@ -86,10 +86,10 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
                      err))
   }
 
-  def executeOnRescanComplete(logger: Logger)(implicit
+  def executeOnRescanComplete(logger: Logger, walletName: String)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onRescanComplete.execute(
-      (),
+      walletName,
       (err: Throwable) =>
         logger.error(s"${onRescanComplete.name} Callback failed with error: ",
                      err))
@@ -118,7 +118,7 @@ trait OnNewAddressGenerated extends Callback[BitcoinAddress]
 trait OnBlockProcessed extends Callback[Block]
 
 /** Triggered when a rescan is */
-trait OnRescanComplete extends Callback[Unit]
+trait OnRescanComplete extends Callback[String]
 
 trait OnFeeRateChanged extends Callback[FeeUnit]
 
@@ -136,7 +136,7 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
         BitcoinAddress,
         OnNewAddressGenerated],
       onBlockProcessed: CallbackHandler[Block, OnBlockProcessed],
-      onRescanComplete: CallbackHandler[Unit, OnRescanComplete],
+      onRescanComplete: CallbackHandler[String, OnRescanComplete],
       onFeeRateChanged: CallbackHandler[FeeUnit, OnFeeRateChanged]
   ) extends WalletCallbacks {
 
@@ -219,8 +219,8 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
         onBlockProcessed
       ),
       onRescanComplete =
-        CallbackHandler[Unit, OnRescanComplete]("onRescanComplete",
-                                                onRescanComplete),
+        CallbackHandler[String, OnRescanComplete]("onRescanComplete",
+                                                  onRescanComplete),
       onFeeRateChanged =
         CallbackHandler[FeeUnit, OnFeeRateChanged]("onFeeRateChanged",
                                                    onFeeRateChanged)

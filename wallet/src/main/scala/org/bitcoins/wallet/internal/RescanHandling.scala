@@ -19,7 +19,6 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
-import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
@@ -67,7 +66,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       rescanState <-
         if (doRescan) {
           logger.info(
-            s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
+            s"Starting rescanning the wallet=${walletConfig.walletName} from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
           val startTime = System.currentTimeMillis()
           val res = for {
             start <- (startOpt, useCreationTime) match {
@@ -90,7 +89,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 s"Rescan is complete, resetting rescan state to false")
               val f = for {
                 _ <- stateDescriptorDAO.updateRescanning(false)
-                _ <- walletCallbacks.executeOnRescanComplete(logger)
+                _ <- walletCallbacks
+                  .executeOnRescanComplete(logger, walletConfig.walletName)
               } yield ()
 
               f.failed.foreach(err =>
@@ -100,14 +100,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
             state
           }
 
-          res.recoverWith {
-            case _: RejectedExecutionException =>
-              Future.unit //don't do anything if its from the threadpool shutting down
-            case err: Throwable =>
-              logger.error(s"Failed to rescan wallet", err)
-              stateDescriptorDAO
-                .updateRescanning(false)
-                .flatMap(_ => Future.failed(err))
+          res.recoverWith { case err: Throwable =>
+            logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
+                         err)
+            stateDescriptorDAO
+              .updateRescanning(false)
+              .flatMap(_ => Future.failed(err))
           }
 
           res.map {
@@ -122,7 +120,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           res
         } else {
           logger.warn(
-            s"Rescan already started, ignoring request to start another one")
+            s"Rescan already started for wallet=${walletConfig.walletName}, ignoring request to start another one")
           Future.successful(RescanState.RescanAlreadyStarted)
         }
 

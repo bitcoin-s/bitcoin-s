@@ -77,7 +77,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         }
       }
     } yield {
-      logger.debug(s"Initializing node setup")
+      logger.info(s"Initializing node setup")
       val numMigrations = migrate()
       val _ = if (isHikariLoggingEnabled) {
         //.get is safe because hikari logging is enabled

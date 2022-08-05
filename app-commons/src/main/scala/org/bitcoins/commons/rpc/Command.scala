@@ -1,5 +1,6 @@
 package org.bitcoins.commons.rpc
 
+import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
 import org.bitcoins.commons.serializers.JsonReaders
@@ -1587,6 +1588,38 @@ object DLCContactRemove {
         val exn = new IllegalArgumentException(
           s"Bad number or arguments to contact-remove, got=${other.length} expected=1")
         Failure(exn)
+    }
+  }
+}
+
+case class LoadWallet(
+    walletNameOpt: Option[String],
+    passwordOpt: Option[AesPassword],
+    bip39PasswordOpt: Option[String])
+    extends CommandRpc
+    with AppServerCliCommand
+
+object LoadWallet extends ServerJsonModels with Logging {
+
+  def fromJsArr(arr: ujson.Arr): Try[LoadWallet] = Try {
+    arr.arr.toList match {
+      case _ :: _ :: bip39PasswordJs :: Nil =>
+        val (walletNameOpt, passwordOpt) =
+          jsToWalletNameAndPassword(arr.arr.slice(0, 2))
+        LoadWallet(walletNameOpt,
+                   passwordOpt,
+                   nullToOpt(bip39PasswordJs).map(_.str))
+      case _ :: _ :: Nil =>
+        val (walletNameOpt, passwordOpt) =
+          jsToWalletNameAndPassword(arr.arr.slice(0, 2))
+        LoadWallet(walletNameOpt, passwordOpt, None)
+      case walletNameJs :: Nil =>
+        LoadWallet(jsToStringOpt(walletNameJs), None, None)
+      case Nil =>
+        LoadWallet(None, None, None)
+      case other =>
+        throw new IllegalArgumentException(
+          s"Bad number of arguments: ${other.length}. Expected: 3")
     }
   }
 }
