@@ -214,8 +214,8 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     ()
   }
 
-  private var currentWalletAppConfigOpt: Option[WalletAppConfig] = None
-  private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
+  @volatile private[this] var currentWalletAppConfigOpt: Option[WalletAppConfig] = None
+  @volatile private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] = None
 
   protected def stopOldWalletAppConfig(
       newWalletConfig: WalletAppConfig): Future[Unit] = {
