@@ -1456,7 +1456,7 @@ case class CreateContractInfo(
     with ServerJsonModels {
 
   def ContractDescriptorTLV: ContractDescriptor = {
-    ContractDescriptor.fromTLV(contractDescriptor)
+    ContractDescriptor.fromSubType(contractDescriptor)
   }
 }
 
