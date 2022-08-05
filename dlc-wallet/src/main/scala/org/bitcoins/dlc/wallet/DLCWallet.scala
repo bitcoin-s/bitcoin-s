@@ -103,7 +103,7 @@ abstract class DLCWallet
     DLCActionBuilder(dlcWalletDAOs)
   }
 
-  private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
+  private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
   private lazy val walletDatabase: SafeDatabase = addressDAO.safeDatabase
 
   /** Updates the contract Id in the wallet database for the given offer and accept */
@@ -224,7 +224,7 @@ abstract class DLCWallet
     val updateOracleSigsA =
       actionBuilder.updateDLCOracleSigsAction(outcomeAndSigByNonce)
     for {
-      updates <- safeDatabase.runVec(updateOracleSigsA)
+      updates <- safeDLCDatabase.runVec(updateOracleSigsA)
     } yield updates
   }
 
@@ -269,7 +269,7 @@ abstract class DLCWallet
       // allow this to fail in the case they have already been unreserved
       _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
       action = actionBuilder.deleteDLCAction(dlcId)
-      _ <- safeDatabase.run(action)
+      _ <- safeDLCDatabase.run(action)
     } yield ()
   }
 
@@ -484,7 +484,7 @@ abstract class DLCWallet
         dlcInputs = dlcInputs,
         dlcOfferDb = dlcOfferDb)
 
-      _ <- safeDatabase.run(offerActions)
+      _ <- safeDLCDatabase.run(offerActions)
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield offer
@@ -624,7 +624,7 @@ abstract class DLCWallet
            acceptDb,
            inputsDb,
            contractDataDb) <-
-            safeDatabase.run(zipped)
+            safeDLCDatabase.run(zipped)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
@@ -652,7 +652,7 @@ abstract class DLCWallet
           createAnnouncementAction = dlcAnnouncementDAO.createAllAction(
             dlcAnnouncementDbs)
 
-          _ <- safeDatabase.run(
+          _ <- safeDLCDatabase.run(
             DBIOAction.seq(createNonceAction, createAnnouncementAction))
         } yield {
           InitializedAccept(
@@ -867,7 +867,7 @@ abstract class DLCWallet
           cetSigsDb = sigsDbs,
           refundSigsDb = refundSigsDb
         )
-        _ <- safeDatabase.run(actions)
+        _ <- safeDLCDatabase.run(actions)
         dlcDb <- updateDLCContractIds(offer, accept)
         _ = logger.info(
           s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
@@ -968,7 +968,7 @@ abstract class DLCWallet
                    sigsAction,
                    refundSigAction,
                    acceptDbAction))
-          _ <- safeDatabase.run(actions)
+          _ <- safeDLCDatabase.run(actions)
 
           // .get is safe here because we must have an offer if we have a dlcDAO
           offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.head)
@@ -1733,7 +1733,7 @@ abstract class DLCWallet
         dlc
       }
     }
-    safeDatabase.run(dlcAction).flatMap { intermediaries =>
+    safeDLCDatabase.run(dlcAction).flatMap { intermediaries =>
       val actions = intermediaries.map { intermediary =>
         getWalletDLCDbsAction(intermediary).map {
           case (closingTxOpt, payoutAddrOpt) =>
@@ -1778,7 +1778,7 @@ abstract class DLCWallet
   }
 
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
-    val intermediaryF = safeDatabase.run(findDLCAction(dlcId))
+    val intermediaryF = safeDLCDatabase.run(findDLCAction(dlcId))
 
     intermediaryF.flatMap {
       case None => Future.successful(None)

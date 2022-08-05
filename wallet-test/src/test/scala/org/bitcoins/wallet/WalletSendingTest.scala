@@ -525,7 +525,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
         recoverToExceptionIf[RuntimeException](failedTx)
 
       exnF.map(err =>
-        assert(err.getMessage.contains("Failed to reserve all utxos")))
+        assert(err.getMessage.contains(
+          "Not enough value in given outputs to make transaction spending 599500000 sats plus fees")))
 
   }
 }

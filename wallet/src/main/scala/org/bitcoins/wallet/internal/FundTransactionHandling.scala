@@ -1,7 +1,8 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet._
+import org.bitcoins.core.api.wallet.db.AccountDb
+import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder._
@@ -10,9 +11,9 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
-import scala.util.control.NonFatal
 
 trait FundTransactionHandling extends WalletLogger { self: Wallet =>
+  import walletConfig.profile.api._
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
@@ -71,24 +72,48 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean): Future[
     FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    val action = fundRawTransactionInternalAction(destinations,
+                                                  feeRate,
+                                                  fromAccount,
+                                                  coinSelectionAlgo,
+                                                  fromTagOpt,
+                                                  markAsReserved)
+    safeDatabase.run(action)
+  }
+
+  private[bitcoins] def fundRawTransactionInternalAction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
+      fromTagOpt: Option[AddressTag],
+      markAsReserved: Boolean): DBIOAction[
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer],
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
     val amts = destinations.map(_.value)
     //need to allow 0 for OP_RETURN outputs
     require(amts.forall(_.satoshis.toBigInt >= 0),
             s"Cannot fund a transaction for a negative amount, got=$amts")
     val amt = amts.sum
-    logger.info(s"Attempting to fund a tx for amt=${amt} with feeRate=$feeRate")
-    val utxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
+    logger.info(s"Attempting to fund a tx for amt=$amt with feeRate=$feeRate")
+    val utxosA =
       for {
         utxos <- fromTagOpt match {
           case None =>
-            listUtxos(fromAccount.hdAccount)
+            spendingInfoDAO.findAllUnspentForAccountAction(
+              fromAccount.hdAccount)
           case Some(tag) =>
-            listUtxos(fromAccount.hdAccount, tag)
+            spendingInfoDAO.findAllUnspentForTagAction(tag).map { utxos =>
+              utxos.filter(utxo =>
+                HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                                        account = fromAccount.hdAccount))
+            }
         }
-        utxoWithTxs <- Future.sequence {
+        utxoWithTxs <- DBIO.sequence {
           utxos.map { utxo =>
             transactionDAO
-              .findByOutPoint(utxo.outPoint)
+              .findByTxIdAction(utxo.outPoint.txIdBE)
               .map(tx => (utxo, tx.get.transaction))
           }
         }
@@ -99,9 +124,9 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       } yield utxoWithTxs.filter(utxo =>
         !immatureCoinbases.exists(_._1 == utxo._1))
 
-    val selectedUtxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
+    val selectedUtxosA =
       for {
-        walletUtxos <- utxosF
+        walletUtxos <- utxosA
 
         // filter out dust
         selectableUtxos = walletUtxos
@@ -119,13 +144,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         filtered = walletUtxos.filter(utxo =>
           utxos.exists(_.outPoint == utxo._1.outPoint))
         _ <-
-          if (markAsReserved) markUTXOsAsReserved(filtered.map(_._1))
-          else Future.unit
+          if (markAsReserved) markUTXOsAsReservedAction(filtered.map(_._1))
+          else DBIO.successful(())
       } yield filtered
 
-    val resultF = for {
-      selectedUtxos <- selectedUtxosF
-      change <- getNewChangeAddress(fromAccount)
+    for {
+      selectedUtxos <- selectedUtxosA
+      change <- getNewChangeAddressAction(fromAccount)
       utxoSpendingInfos = {
         selectedUtxos.map { case (utxo, prevTx) =>
           utxo.toUTXOInfo(keyManager = self.keyManager, prevTx)
@@ -151,19 +176,5 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                       scriptSigParams = utxoSpendingInfos,
                       feeRate)
     }
-
-    resultF.recoverWith { case NonFatal(error) =>
-      logger.error(
-        s"Failed to reserve utxos for amount=${amt} feeRate=$feeRate, unreserving the selected utxos")
-      // un-reserve utxos since we failed to create valid spending infos
-      if (markAsReserved) {
-        for {
-          utxos <- selectedUtxosF
-          _ <- unmarkUTXOsAsReserved(utxos.map(_._1))
-        } yield error
-      } else Future.failed(error)
-    }
-
-    resultF
   }
 }

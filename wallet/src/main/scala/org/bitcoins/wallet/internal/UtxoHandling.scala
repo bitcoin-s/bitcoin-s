@@ -4,12 +4,7 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
-import org.bitcoins.core.protocol.transaction.{
-  CoinbaseInput,
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BlockHashWithConfs
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
@@ -25,6 +20,7 @@ import scala.concurrent.Future
   */
 private[wallet] trait UtxoHandling extends WalletLogger {
   self: Wallet =>
+  import walletConfig.profile.api._
 
   /** @inheritdoc */
   def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
@@ -296,13 +292,21 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   override def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    for {
+      utxos <- safeDatabase.run(markUTXOsAsReservedAction(utxos))
+      _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
+    } yield utxos
+  }
+
+  protected def markUTXOsAsReservedAction(
+      utxos: Vector[SpendingInfoDb]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val outPoints = utxos.map(_.outPoint)
     logger.info(s"Reserving utxos=$outPoints")
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
-    for {
-      utxos <- spendingInfoDAO.markAsReserved(updated)
-      _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
-    } yield utxos
+    spendingInfoDAO.markAsReservedAction(updated)
   }
 
   /** @inheritdoc */

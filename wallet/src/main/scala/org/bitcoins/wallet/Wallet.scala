@@ -94,7 +94,7 @@ abstract class Wallet
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
-  private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
+  protected lazy val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime

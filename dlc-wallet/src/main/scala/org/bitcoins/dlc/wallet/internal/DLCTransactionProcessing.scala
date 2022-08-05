@@ -32,7 +32,7 @@ import scala.concurrent._
   */
 private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
-  private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
+  private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
@@ -224,7 +224,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             _ <- updateAnnouncementA
           } yield updatedDlcDb
         }
-        updatedDlcDb <- safeDatabase.run(actions)
+        updatedDlcDb <- safeDLCDatabase.run(actions)
       } yield {
         logger.info(
           s"Done calculating RemoteClaimed outcome for dlcId=${dlcId.hex}")
