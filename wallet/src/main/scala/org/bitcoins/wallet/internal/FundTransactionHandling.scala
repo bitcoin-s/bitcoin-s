@@ -78,7 +78,11 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                                   coinSelectionAlgo,
                                                   fromTagOpt,
                                                   markAsReserved)
-    safeDatabase.run(action)
+
+    for {
+      (txHelper, callbackF) <- safeDatabase.run(action)
+      _ <- callbackF
+    } yield txHelper
   }
 
   private[bitcoins] def fundRawTransactionInternalAction(
@@ -88,7 +92,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean): DBIOAction[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer],
+    (FundRawTxHelper[ShufflingNonInteractiveFinalizer], Future[Unit]),
     NoStream,
     Effect.Read with Effect.Write with Effect.Transactional] = {
     val amts = destinations.map(_.value)
@@ -143,13 +147,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         )
         filtered = walletUtxos.filter(utxo =>
           utxos.exists(_.outPoint == utxo._1.outPoint))
-        _ <-
+        (_, callbackF) <-
           if (markAsReserved) markUTXOsAsReservedAction(filtered.map(_._1))
-          else DBIO.successful(())
-      } yield filtered
+          else DBIO.successful((Vector.empty, Future.unit))
+      } yield (filtered, callbackF)
 
     for {
-      selectedUtxos <- selectedUtxosA
+      (selectedUtxos, callbackF) <- selectedUtxosA
       change <- getNewChangeAddressAction(fromAccount)
       utxoSpendingInfos = {
         selectedUtxos.map { case (utxo, prevTx) =>
@@ -172,9 +176,11 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                                        feeRate,
                                                        change.scriptPubKey)
 
-      FundRawTxHelper(txBuilderWithFinalizer = txBuilder,
-                      scriptSigParams = utxoSpendingInfos,
-                      feeRate)
+      val fundTxHelper = FundRawTxHelper(txBuilderWithFinalizer = txBuilder,
+                                         scriptSigParams = utxoSpendingInfos,
+                                         feeRate)
+
+      (fundTxHelper, callbackF)
     }
   }
 }

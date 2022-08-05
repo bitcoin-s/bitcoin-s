@@ -293,20 +293,23 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   override def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     for {
-      utxos <- safeDatabase.run(markUTXOsAsReservedAction(utxos))
-      _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
+      (utxos, callbackF) <- safeDatabase.run(markUTXOsAsReservedAction(utxos))
+      _ <- callbackF
     } yield utxos
   }
 
   protected def markUTXOsAsReservedAction(
       utxos: Vector[SpendingInfoDb]): DBIOAction[
-    Vector[SpendingInfoDb],
+    (Vector[SpendingInfoDb], Future[Unit]),
     NoStream,
     Effect.Read with Effect.Write] = {
     val outPoints = utxos.map(_.outPoint)
     logger.info(s"Reserving utxos=$outPoints")
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
-    spendingInfoDAO.markAsReservedAction(updated)
+    spendingInfoDAO.markAsReservedAction(updated).map { utxos =>
+      val callbackF = walletCallbacks.executeOnReservedUtxos(logger, utxos)
+      (utxos, callbackF)
+    }
   }
 
   /** @inheritdoc */
