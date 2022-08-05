@@ -22,7 +22,7 @@ import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.wallet.{Wallet, WalletNotInitialized}
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.rpc.util.BitcoindStreamUtil
 import org.bitcoins.zmq.ZMQSubscriber
 
