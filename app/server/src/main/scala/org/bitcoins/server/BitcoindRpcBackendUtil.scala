@@ -301,15 +301,18 @@ object BitcoindRpcBackendUtil extends Logging {
           bitcoindRpcClient = bitcoindRpcClient,
           parallelism = numParallelism)
 
-        val sinkF: Future[Sink[(Block, GetBlockHeaderResult), Future[Done]]] = {
-          walletF.map { wallet =>
-            Sink.foreachAsync(1) {
-              case (block: Block, blockHeaderResult: GetBlockHeaderResult) =>
+        val sinkF: Future[
+          Sink[(Block, GetBlockHeaderResult), Future[WalletApi]]] = {
+          walletF.map { initWallet =>
+            Sink.foldAsync[WalletApi, (Block, GetBlockHeaderResult)](
+              initWallet) {
+              case (wallet: WalletApi,
+                    (block: Block, blockHeaderResult: GetBlockHeaderResult)) =>
                 val blockProcessedF = wallet.processBlock(block)
-                val executeCallbackF: Future[Unit] = {
-                  blockProcessedF.flatMap { _ =>
+                val executeCallbackF: Future[WalletApi] = {
+                  blockProcessedF.flatMap { w =>
                     chainCallbacksOpt match {
-                      case None           => Future.unit
+                      case None           => Future.successful(w)
                       case Some(callback) =>
                         //this can be slow as we aren't batching headers at all
                         val headerWithHeights =
@@ -318,7 +321,7 @@ object BitcoindRpcBackendUtil extends Logging {
                           .executeOnBlockHeaderConnectedCallbacks(
                             logger,
                             headerWithHeights)
-                        f
+                        f.map(_ => w)
                     }
                   }
                 }
@@ -328,7 +331,7 @@ object BitcoindRpcBackendUtil extends Logging {
           }
         }
 
-        val doneF: Future[Done] = sinkF.flatMap { sink =>
+        val doneF: Future[WalletApi] = sinkF.flatMap { sink =>
           source
             .via(fetchBlocksFlow)
             .toMat(sink)(Keep.right)
@@ -336,9 +339,8 @@ object BitcoindRpcBackendUtil extends Logging {
         }
 
         for {
-          _ <- doneF
-          wallet <- walletF
-          _ <- wallet.updateUtxoPendingStates()
+          w <- doneF
+          _ <- w.updateUtxoPendingStates()
         } yield ()
       }
 
