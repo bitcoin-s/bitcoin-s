@@ -310,20 +310,11 @@ object BitcoindRpcBackendUtil extends Logging {
                     (block: Block, blockHeaderResult: GetBlockHeaderResult)) =>
                 val blockProcessedF = wallet.processBlock(block)
                 val executeCallbackF: Future[WalletApi] = {
-                  blockProcessedF.flatMap { w =>
-                    chainCallbacksOpt match {
-                      case None           => Future.successful(w)
-                      case Some(callback) =>
-                        //this can be slow as we aren't batching headers at all
-                        val headerWithHeights =
-                          Vector((blockHeaderResult.height, block.blockHeader))
-                        val f = callback
-                          .executeOnBlockHeaderConnectedCallbacks(
-                            logger,
-                            headerWithHeights)
-                        f.map(_ => w)
-                    }
-                  }
+                  for {
+                    wallet <- blockProcessedF
+                    _ <- handleChainCallbacks(chainCallbacksOpt,
+                                              blockHeaderResult)
+                  } yield wallet
                 }
 
                 executeCallbackF
@@ -350,6 +341,22 @@ object BitcoindRpcBackendUtil extends Logging {
           transactions: Vector[Transaction]): Future[Unit] = {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
+    }
+  }
+
+  private def handleChainCallbacks(
+      chainCallbacksOpt: Option[ChainCallbacks],
+      blockHeaderResult: GetBlockHeaderResult)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    chainCallbacksOpt match {
+      case None           => Future.unit
+      case Some(callback) =>
+        //this can be slow as we aren't batching headers at all
+        val headerWithHeights =
+          Vector((blockHeaderResult.height, blockHeaderResult.blockHeader))
+        val f = callback
+          .executeOnBlockHeaderConnectedCallbacks(logger, headerWithHeights)
+        f
     }
   }
 
@@ -427,19 +434,22 @@ object BitcoindRpcBackendUtil extends Logging {
       BitcoindStreamUtil.fetchBlocksBitcoind(bitcoind, numParallelism)
 
     val processBlockSink: Sink[(Block, GetBlockHeaderResult), Future[Done]] = {
-      Sink.foreachAsync[(Block, GetBlockHeaderResult)](1) { case (block, _) =>
-        val requestsBlocksF = wallet.processBlock(block)
+      Sink.foreachAsync[(Block, GetBlockHeaderResult)](1) {
+        case (block, blockHeaderResult) =>
+          val processBlocksF = wallet.processBlock(block)
 
-        requestsBlocksF.failed.foreach { case err =>
-          val failedCount = atomicPrevCount.get
-          atomicPrevCount.set(prevCount)
-          logger.error(
-            s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
-            err)
-        }
+          processBlocksF.failed.foreach { case err =>
+            val failedCount = atomicPrevCount.get
+            atomicPrevCount.set(prevCount)
+            logger.error(
+              s"Processing blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+              err)
+          }
 
-        requestsBlocksF
-          .map(_ => ())
+          for {
+            _ <- processBlocksF
+            _ <- handleChainCallbacks(chainCallbacksOpt, blockHeaderResult)
+          } yield ()
       }
     }
 
