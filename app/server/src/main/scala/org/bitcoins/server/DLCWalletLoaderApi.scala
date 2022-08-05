@@ -371,7 +371,7 @@ case class DLCWalletBitcoindBackendLoader(
       _ <- stopOldDLCAppConfig(dlcConfig)
       nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(
         walletHolder)
-      _ = nodeConf.addCallbacks(nodeCallbacks)
+      _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
       //do something with possible rescan?
       _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
