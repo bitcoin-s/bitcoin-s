@@ -155,6 +155,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   it must "be able to discover funds using multiple batches" in {
     fixture: WalletWithBitcoindRpc =>
+      //  700,000,000 sats did not equal 300,000,000 sats
       val wallet = fixture.wallet
       val bitcoind = fixture.bitcoind
 
@@ -170,6 +171,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         addr <- addrF
         _ <- initBalanceF
         txid <- bitcoind.sendToAddress(addr, amt)
+        _ = logger.info(s"rescan.address=$addr rescan.txid=$txid")
         tx <- bitcoind.getRawTransactionRaw(txid)
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
@@ -205,10 +207,11 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
+        _ <- AsyncUtil.nonBlockingSleep(5.second)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
-        assert(balanceAfterPayment1 == balanceAfterRescan)
+        assert(balanceAfterRescan == balanceAfterPayment1)
       }
   }
 
@@ -494,6 +497,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
+        _ <- AsyncUtil.nonBlockingSleep(5.second)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
