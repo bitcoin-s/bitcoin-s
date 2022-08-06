@@ -435,4 +435,70 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       }
   }
 
+  it must "discover payments that occur in the same tx but are discovered during different batches during rescans" in {
+    fixture: WalletWithBitcoindRpc =>
+      val wallet = fixture.wallet
+      val bitcoind = fixture.bitcoind
+
+      val amt = Bitcoins.one
+      val expectedBalance = amt * 2
+      val numBlocks = 1
+      val initBalanceF = wallet.getBalance()
+
+      val defaultAccountF = wallet.getDefaultAccount()
+      //send funds to a fresh wallet address
+      val addr1F = wallet.getNewAddress()
+      val addr2F = wallet.getNewAddress()
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val balanceAfterPayment1F = for {
+        addr1 <- addr1F
+        addr2 <- addr2F
+        _ <- initBalanceF
+        //its important that both of these payments are sent in one tx
+        //so that we check that we can discover payments in the same tx
+        //across different rescan batches
+        sendManyMap = Map(addr1 -> amt, addr2 -> amt)
+        txid <- bitcoind.sendMany(sendManyMap)
+        tx <- bitcoind.getRawTransactionRaw(txid)
+        bitcoindAddr <- bitcoindAddrF
+        blockHashes <-
+          bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
+        newTxWallet <- wallet.processTransaction(transaction = tx,
+                                                 blockHashOpt =
+                                                   blockHashes.headOption)
+        balance <- newTxWallet.getBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+      } yield {
+        //balance doesn't have to exactly equal, as there was money in the
+        //wallet before hand.
+        assert(balance >= expectedBalance)
+        assert(expectedBalance == unconfirmedBalance)
+        balance
+      }
+
+      for {
+        _ <- initBalanceF
+        balanceAfterPayment1 <- balanceAfterPayment1F
+
+        account <- defaultAccountF
+        txIds <-
+          wallet
+            .listUtxos(account.hdAccount)
+            .map(_.map(_.txid))
+        _ <- wallet
+          .findByTxIds(txIds)
+          .map(_.flatMap(_.blockHashOpt))
+
+        _ <- wallet.clearAllUtxos()
+        _ <- wallet.clearAllAddresses()
+        balanceAfterClear <- wallet.getBalance()
+        rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
+        _ <- RescanState.awaitRescanDone(rescanState)
+        balanceAfterRescan <- wallet.getBalance()
+      } yield {
+        assert(balanceAfterClear == CurrencyUnits.zero)
+        assert(balanceAfterPayment1 == balanceAfterRescan)
+      }
+  }
+
 }

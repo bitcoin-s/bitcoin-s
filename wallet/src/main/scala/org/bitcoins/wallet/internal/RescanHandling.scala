@@ -226,11 +226,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
     * @return a list of matching block hashes
     */
   def getMatchingBlocks(
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None,
-      addressBatchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors(),
-      account: HDAccount)(implicit
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int,
+      account: HDAccount,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
       ec: ExecutionContext): Future[RescanState] = {
     require(addressBatchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
@@ -270,7 +270,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressCount <- addressDAO.count()
       inProgress <- matchBlocks(endOpt = endOpt,
                                 startOpt = startOpt,
-                                account = account)
+                                account = account,
+                                addressBatchSize = addressBatchSize)
       _ = recursiveRescan(prevState = inProgress,
                           startOpt = startOpt,
                           endOpt = endOpt,
@@ -370,10 +371,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def matchBlocks(
       endOpt: Option[BlockStamp],
       startOpt: Option[BlockStamp],
-      account: HDAccount): Future[RescanState] = {
+      account: HDAccount,
+      addressBatchSize: Int): Future[RescanState] = {
     val rescanStateF = for {
       rescanState <- getMatchingBlocks(startOpt = startOpt,
                                        endOpt = endOpt,
+                                       addressBatchSize = addressBatchSize,
                                        account = account)(
         ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
     } yield {
@@ -421,6 +424,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     Vector[ScriptPubKey],
     NoStream,
     Effect.Read with Effect.Write with Effect.Transactional] = {
+    logger.info(s"addressCount=$count")
     val addressCountA = addressDAO.countAction
     for {
       addressCount <- addressCountA
