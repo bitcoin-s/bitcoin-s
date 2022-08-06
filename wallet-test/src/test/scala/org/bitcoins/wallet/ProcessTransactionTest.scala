@@ -152,7 +152,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       val receivingAddressF = wallet.getNewAddress()
       val amount = Bitcoins.one
 
-      val amtWithFee = amount + Satoshis(175) //for fee
+      val amtWithFee = amount + Satoshis(200) //for fee
 
       //build funding tx
       val fundingTxF: Future[(Transaction, UInt32)] = for {

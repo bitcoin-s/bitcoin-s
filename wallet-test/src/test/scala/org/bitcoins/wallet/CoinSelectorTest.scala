@@ -97,13 +97,27 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     assert(selections.exists(_ != first))
   }
 
+  it must "select by branch and bound" in { fixture =>
+    val selection = CoinSelector.branchAndBound(walletUtxos = fixture.utxoSet,
+                                                outputs =
+                                                  Vector(fixture.output),
+                                                feeRate = fixture.feeRate,
+                                                changeCost = Satoshis(1))
+
+    val expected = Vector(fixture.utxo1, fixture.utxo2).sortBy(_.value)
+
+    assert(selection.sortBy(_.value) == expected)
+  }
+
   it must "select the least wasteful outputs" in { fixture =>
     val selection =
-      CoinSelector.selectByLeastWaste(walletUtxos = fixture.utxoSet,
-                                      outputs = Vector(fixture.output),
-                                      feeRate = fixture.feeRate,
-                                      longTermFeeRate =
-                                        SatoshisPerByte.fromLong(10))
+      CoinSelector.selectByLeastWaste(
+        walletUtxos = fixture.utxoSet,
+        outputs = Vector(fixture.output),
+        feeRate = fixture.feeRate,
+        changeCost = Satoshis.one,
+        longTermFeeRate = SatoshisPerByte.fromLong(10)
+      )
 
     // Need to sort as ordering will be different sometimes
     val sortedSelection = selection.sortBy(_.outPoint.hex)
@@ -121,8 +135,8 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     val expected3 =
       32 + 4 + 1 + 4 + fixture.utxo3.scriptWitnessOpt.get.bytes.length
 
-    assert(CoinSelector.approximateUtxoSize(fixture.utxo1) == expected1)
-    assert(CoinSelector.approximateUtxoSize(fixture.utxo2) == expected2)
-    assert(CoinSelector.approximateUtxoSize(fixture.utxo3) == expected3)
+    assert(CoinSelector.approximateUtxoBytesSize(fixture.utxo1) == expected1)
+    assert(CoinSelector.approximateUtxoBytesSize(fixture.utxo2) == expected2)
+    assert(CoinSelector.approximateUtxoBytesSize(fixture.utxo3) == expected3)
   }
 }
