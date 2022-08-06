@@ -81,7 +81,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
                 Future.successful(None)
             }
             _ <- clearUtxos(account)
-            state <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
+            state <- doNeutrinoRescan(account = account,
+                                      startOpt = start,
+                                      endOpt = endOpt,
+                                      addressBatchSize = addressBatchSize,
+                                      forceGenerateSpks = false)
             //purposefully don't map on this Future as it won't be completed until
             //the rescan is completely done.
             _ = RescanState.awaitRescanComplete(state).map { _ =>
@@ -139,8 +143,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int,
       range: Range,
       parallelism: Int,
-      filterBatchSize: Int): RescanState.RescanStarted = {
-    val scriptsF = generateScriptPubKeys(account, addressBatchSize)
+      filterBatchSize: Int,
+      forceGenerateSpks: Boolean): RescanState.RescanStarted = {
+    val scriptsF = generateScriptPubKeys(account = account,
+                                         addressBatchSize = addressBatchSize,
+                                         forceGenerateSpks = forceGenerateSpks)
     //by completing the promise returned by this sink
     //we will be able to arbitrarily terminate the stream
     //see: https://doc.akka.io/docs/akka/current/stream/operators/Source/maybe.html
@@ -226,11 +233,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
     * @return a list of matching block hashes
     */
   def getMatchingBlocks(
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None,
-      addressBatchSize: Int = 100,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors(),
-      account: HDAccount)(implicit
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int,
+      account: HDAccount,
+      forceGenerateSpks: Boolean,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
       ec: ExecutionContext): Future[RescanState] = {
     require(addressBatchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
@@ -248,11 +256,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
         s"Beginning to search for matches between ${startHeight}:${endHeight}")
       range = startHeight.to(endHeight)
 
-      rescanStarted = buildRescanFlow(account = account,
-                                      addressBatchSize = addressBatchSize,
-                                      range = range,
-                                      parallelism = parallelismLevel,
-                                      filterBatchSize = addressBatchSize)
+      rescanStarted = buildRescanFlow(
+        account = account,
+        addressBatchSize = addressBatchSize,
+        range = range,
+        parallelism = parallelismLevel,
+        filterBatchSize = addressBatchSize,
+        forceGenerateSpks = forceGenerateSpks
+      )
     } yield {
       rescanStarted
     }
@@ -265,17 +276,18 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[RescanState] = {
+      addressBatchSize: Int,
+      forceGenerateSpks: Boolean): Future[RescanState] = {
     for {
-      addressCount <- addressDAO.count()
       inProgress <- matchBlocks(endOpt = endOpt,
                                 startOpt = startOpt,
-                                account = account)
+                                account = account,
+                                addressBatchSize = addressBatchSize,
+                                forceGenerateSpks)
       _ = recursiveRescan(prevState = inProgress,
                           startOpt = startOpt,
                           endOpt = endOpt,
                           addressBatchSize = addressBatchSize,
-                          addressCount = addressCount,
                           account = account)
     } yield {
       inProgress
@@ -292,7 +304,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      addressCount: Int,
       account: HDAccount): Future[Unit] = {
     val awaitPreviousRescanF = prevState match {
       case r @ (_: RescanState.RescanStarted | RescanState.RescanDone) =>
@@ -306,12 +317,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
-        logger.info(s"addressCount=$addressCount externalGap=$externalGap")
-        if (addressCount != 0) {
-          logger.info(
-            s"We have a small number of addresses preloaded into the wallet")
-          Future.unit
-        } else if (
+        if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
           logger.info(
@@ -321,7 +327,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
               s"match within our address gap limit of ${walletConfig.addressGapLimit}")
-          doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
+          doNeutrinoRescan(account = account,
+                           startOpt = startOpt,
+                           endOpt = endOpt,
+                           addressBatchSize = addressBatchSize,
+                           forceGenerateSpks = true)
         }
       }
     } yield ()
@@ -370,11 +380,15 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def matchBlocks(
       endOpt: Option[BlockStamp],
       startOpt: Option[BlockStamp],
-      account: HDAccount): Future[RescanState] = {
+      account: HDAccount,
+      addressBatchSize: Int,
+      forceGenerateSpks: Boolean): Future[RescanState] = {
     val rescanStateF = for {
       rescanState <- getMatchingBlocks(startOpt = startOpt,
                                        endOpt = endOpt,
-                                       account = account)(
+                                       addressBatchSize = addressBatchSize,
+                                       account = account,
+                                       forceGenerateSpks = forceGenerateSpks)(
         ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
     } yield {
       rescanState
@@ -385,7 +399,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def generateAddressesForRescanAction(
       account: HDAccount,
-      count: Int): DBIOAction[
+      addressBatchSize: Int): DBIOAction[
     Vector[BitcoinAddress],
     NoStream,
     Effect.Read with Effect.Write with Effect.Transactional] = {
@@ -394,7 +408,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       NoStream,
       Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
-        1.to(count)
+        1.to(addressBatchSize)
           .map(_ => getNewAddressAction(account))
       }
     }.map(_.toVector)
@@ -404,7 +418,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       NoStream,
       Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
-        1.to(count)
+        1.to(addressBatchSize)
           .map(_ => getNewAddressAction(account))
       }
     }.map(_.toVector)
@@ -415,9 +429,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield receiveAddresses ++ changeAddresses
   }
 
+  /** If forceGeneratSpks is true or addressCount == 0 we generate a new pool of scriptpubkeys */
   private def generateScriptPubKeysAction(
       account: HDAccount,
-      count: Int): DBIOAction[
+      addressBatchSize: Int,
+      forceGenerateSpks: Boolean): DBIOAction[
     Vector[ScriptPubKey],
     NoStream,
     Effect.Read with Effect.Write with Effect.Transactional] = {
@@ -425,8 +441,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
     for {
       addressCount <- addressCountA
       addresses <- {
-        if (addressCount == 0) {
-          generateAddressesForRescanAction(account, count)
+        if (forceGenerateSpks || addressCount == 0) {
+          logger.info(
+            s"Generating $addressBatchSize fresh addresses for the rescan")
+          generateAddressesForRescanAction(account, addressBatchSize)
         } else {
           //we don't want to continously generate addresses
           //if our wallet already has them, so just use what is in the
@@ -464,8 +482,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def generateScriptPubKeys(
       account: HDAccount,
-      count: Int): Future[Vector[ScriptPubKey]] = {
-    val action = generateScriptPubKeysAction(account, count)
+      addressBatchSize: Int,
+      forceGenerateSpks: Boolean): Future[Vector[ScriptPubKey]] = {
+    val action = generateScriptPubKeysAction(
+      account = account,
+      addressBatchSize = addressBatchSize,
+      forceGenerateSpks = forceGenerateSpks)
     safeDatabase.run(action)
   }
 
