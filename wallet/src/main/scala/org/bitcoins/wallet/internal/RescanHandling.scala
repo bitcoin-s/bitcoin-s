@@ -279,7 +279,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int,
       forceGenerateSpks: Boolean): Future[RescanState] = {
     for {
-      addressCount <- addressDAO.count()
       inProgress <- matchBlocks(endOpt = endOpt,
                                 startOpt = startOpt,
                                 account = account,
@@ -289,7 +288,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
                           startOpt = startOpt,
                           endOpt = endOpt,
                           addressBatchSize = addressBatchSize,
-                          addressCount = addressCount,
                           account = account)
     } yield {
       inProgress
@@ -306,7 +304,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      addressCount: Int,
       account: HDAccount): Future[Unit] = {
     val awaitPreviousRescanF = prevState match {
       case r @ (_: RescanState.RescanStarted | RescanState.RescanDone) =>
@@ -320,12 +317,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
-        logger.info(s"addressCount=$addressCount externalGap=$externalGap")
-        if (addressCount != 0) {
-          logger.info(
-            s"We have a small number of addresses preloaded into the wallet")
-          Future.unit
-        } else if (
+        if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
           logger.info(

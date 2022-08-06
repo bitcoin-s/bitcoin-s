@@ -171,7 +171,6 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         addr <- addrF
         _ <- initBalanceF
         txid <- bitcoind.sendToAddress(addr, amt)
-        _ = logger.info(s"rescan.address=$addr rescan.txid=$txid")
         tx <- bitcoind.getRawTransactionRaw(txid)
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
@@ -501,7 +500,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
-        assert(balanceAfterPayment1 == balanceAfterRescan)
+        assert(balanceAfterRescan == balanceAfterPayment1)
       }
   }
 
