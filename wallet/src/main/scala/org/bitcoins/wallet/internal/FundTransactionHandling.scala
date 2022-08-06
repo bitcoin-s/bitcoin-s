@@ -80,8 +80,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                                   markAsReserved)
 
     for {
-      (txHelper, callbackF) <- safeDatabase.run(action)
-      _ <- callbackF
+      txHelper <- safeDatabase.run(action)
+      _ <- txHelper.reservedUTXOsCallbackF
     } yield txHelper
   }
 
@@ -92,7 +92,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean): DBIOAction[
-    (FundRawTxHelper[ShufflingNonInteractiveFinalizer], Future[Unit]),
+    FundRawTxHelper[ShufflingNonInteractiveFinalizer],
     NoStream,
     Effect.Read with Effect.Write with Effect.Transactional] = {
     val amts = destinations.map(_.value)
@@ -178,9 +178,10 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
       val fundTxHelper = FundRawTxHelper(txBuilderWithFinalizer = txBuilder,
                                          scriptSigParams = utxoSpendingInfos,
-                                         feeRate)
+                                         feeRate = feeRate,
+                                         reservedUTXOsCallbackF = callbackF)
 
-      (fundTxHelper, callbackF)
+      fundTxHelper
     }
   }
 }

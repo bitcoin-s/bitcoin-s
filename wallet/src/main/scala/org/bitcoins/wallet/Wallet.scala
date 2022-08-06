@@ -447,7 +447,7 @@ abstract class Wallet
       _ = require(
         tmp.outputs.size == 1,
         s"Created tx is not as expected, does not have 1 output, got $tmp")
-      rawTxHelper = FundRawTxHelper(withFinalizer, utxos, feeRate)
+      rawTxHelper = FundRawTxHelper(withFinalizer, utxos, feeRate, Future.unit)
       tx <- finishSend(rawTxHelper,
                        tmp.outputs.head.value,
                        feeRate,
@@ -495,7 +495,7 @@ abstract class Wallet
         utxos,
         feeRate,
         changeAddr.scriptPubKey)
-      rawTxHelper = FundRawTxHelper(txBuilder, utxos, feeRate)
+      rawTxHelper = FundRawTxHelper(txBuilder, utxos, feeRate, Future.unit)
       tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
     } yield tx
   }
@@ -596,7 +596,10 @@ abstract class Wallet
                                                                 sequence)
 
       amount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      rawTxHelper = FundRawTxHelper(txBuilder, spendingInfos, newFeeRate)
+      rawTxHelper = FundRawTxHelper(txBuilder,
+                                    spendingInfos,
+                                    newFeeRate,
+                                    Future.unit)
       tx <-
         finishSend(rawTxHelper, amount, newFeeRate, Vector.empty)
     } yield tx
