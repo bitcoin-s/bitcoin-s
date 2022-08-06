@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.client.common
 
 import akka.actor.ActorSystem
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   CompactFilterDb,
@@ -359,7 +360,7 @@ object BitcoindRpcClient {
 
 sealed trait BitcoindVersion
 
-object BitcoindVersion extends StringFactory[BitcoindVersion] {
+object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
 
   /** The newest version of `bitcoind` we support */
   val newest: BitcoindVersion = V23
@@ -435,7 +436,10 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
       case "21" => V21
       case "22" => V22
       case "23" => V23
-      case _    => Unknown
+      case _ =>
+        logger.warn(
+          s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}")
+        newest
     }
   }
 }
