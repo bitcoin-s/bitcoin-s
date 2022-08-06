@@ -1,6 +1,6 @@
-# 1.9.2
+# 1.9.3
 
-This release is backwards compatible with the 1.9.2 release of bitcoin-s
+This release is backwards compatible with the 1.9.3 release of bitcoin-s
 
 See the individual module sections for more information on lower level updates to the codebase.
 
@@ -11,11 +11,11 @@ If you are a typescript developer, [you can access the backend via our typescrip
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
-can `unzip bitcoin-s-server-1.9.2.zip` and then run it with `chmod +x ./bin/bitcoin-s-server && ./bin/bitcoin-s-server` to start the node. You will need to
+can `unzip bitcoin-s-server-1.9.3.zip` and then run it with `chmod +x ./bin/bitcoin-s-server && ./bin/bitcoin-s-server` to start the node. You will need to
 configure the node properly first, you can find example
 configurations [here](https://bitcoin-s.org/docs/config/configuration#example-configuration-file).
 
-You can then unzip the `bitcoin-s-cli-1.9.2.zip` folder and start using the `bitcoin-s-cli` like this:
+You can then unzip the `bitcoin-s-cli-1.9.3.zip` folder and start using the `bitcoin-s-cli` like this:
 
 ```bashrc
 ./bin/bitcoin-s-cli --help
@@ -48,12 +48,12 @@ gpg:                using RSA key 9234F4D6AF47C71B741A390F8976CA0AF71A7A2A
 gpg: Good signature from "Chris Stewart <stewart.chris1234@gmail.com>" [ultimate]
 
 $ sha256sum -c SHA256SUMS.stripped                                                                                            
-bitcoin-s_1.9.1-1_amd64.deb: OK
-bitcoin-s-1.9.1.dmg: OK
+bitcoin-s_1.9.3-1_amd64.deb: OK
+bitcoin-s-1.9.3.dmg: OK
 bitcoin-s-bundle.msi: OK
 bitcoin-s-cli-x86_64-apple-darwin: OK
 bitcoin-s-cli-x86_64-pc-linux: OK
-bitcoin-s-server-1.9.1.zip: OK
+bitcoin-s-server-1.9.3.zip: OK
 
 ```
 
