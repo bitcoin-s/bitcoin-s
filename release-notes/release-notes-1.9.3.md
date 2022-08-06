@@ -73,9 +73,23 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## app commons
 
+Consolidate duplicate data structures in `cli` and `appServer` into a common location.
+
 b7c7cb8fc2 Moving duplicate dataStructures in `cli` and `app-server` into `app-commons` (#4541)
 
 ## App server
+
+This release adds the ability to call `loadwallet [wallet-name] [aes-password-opt] [bip39-password-opt]`.
+This RPC allows you to load a new wallet in bitcoin-s without shutting down and restarting the server.
+
+This release also adds the rpc `exportseed [wallet-name] [aes-password-opt]` to export the mnemonic seed for a wallet.
+
+Websocket events added this release are 
+
+- fee rate change
+- rescan complete
+- sync complete
+- tor started
 
 9f89ba9b7a `loadwallet` endpoint (#4417)
 a02e25b0ce Refactor `WalletRoutes` to take `DLCWalletLoaderApi` as a paramete (#4565)
@@ -101,6 +115,10 @@ a7aad46934 Seed backup API (#4357)
 
 ## bitcoind rpc
 
+This release adds official support for v22 and v23 of bitcoin core.
+It also includes some basic support for fetching blocks via akka streams
+and taproot.
+
 ed4e332cef Dafalut to the latest Bitcoin Core version (#4579)
 ad21a11254 Create BitcoindStreamUtil and refactor to use it (#4578)
 3ae169a41f V22 RPC Support Update Continued (#4424)
@@ -111,6 +129,16 @@ ad21a11254 Create BitcoindStreamUtil and refactor to use it (#4578)
 ## bundle
 
 ## Build
+
+
+Implements electron app builds to combine bitcoin-s backend and bitcoin-s-ts
+frontend into a single electron app.
+
+Adds a flag `DISABLE_JLINK` to disable jlink when running the artifact built by `universal:packageBin`.
+
+This release fixes a package name bug introduced in 1.9.2 (#4401).
+
+Fixes various bugs in bash scripts used by `bitcoin-s-{server, oracle-server}`.
 
 a2117e2551 Downgrade CI jdk 18 -> 17 (#4546)
 6f42f83146 Move OSX check inside of jre path check, fix bug where quarantine wasn't working in case where we are in the same directory as script (#4508)
@@ -124,6 +152,11 @@ aed92c35af Implement DISABLE_JLINK env variable to disable jlink jre's usage at 
 e25c24dc9b Fix package name bug so package name is  ra… (#4402)
 
 ## Core
+
+This release adds support for the [taproot script interpreter](https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki)
+and [taproot signature serialization](https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki)
+
+The next release will add signing support for taproot transactions.
 
 4b83286922 2022 07 25 wallet api refactor (#4545)
 c210052640 Refactor coin selection to be not be bitcoin-s specific (#4496)
@@ -162,6 +195,9 @@ c4fd7035be Add Taproot PSBT fields (#4420)
 a680f03c04 Implement BIP341 (#4409)
 
 ## Crypto
+
+This release implements [musig2](https://github.com/jonasnick/bips/blob/musig2/bip-musig2.mediawiki)
+
 2b60bbb1c3 Remove .map() and use .foreach() with buffer in CryptoBytesUtil.toByteVector() (#4454)
 ae0962d7ed Musig2 Implementation (#4418)
 
@@ -171,6 +207,8 @@ ae0962d7ed Musig2 Implementation (#4418)
 
 ## DLC wallet
 
+Optimizations for the DLC Wallet.
+
 ba396f2fb3 Fetch findByFundingTxId/findByFundingOutPoints in parallel as an optimization (#4560)
 603b7e0aea Make DLCWallet.listDLCs use DBIOActions (#4555)
 
@@ -178,9 +216,15 @@ ba396f2fb3 Fetch findByFundingTxId/findByFundingOutPoints in parallel as an opti
 
 ## fee rate
 
+This release fixes a bug which can cause an application to hang for a long time
+when requesting a fee rate. Now we have a timeout of 1 second when fetching fee rates.
+
 6dfa7683e4 Implement a timeout on fee rate requests (#4503)
 
 ## keymanager
+
+This release of the keymanager now keeps track if seeds have been imported
+into bitcoin-s or generated from internal entropy.
 
 08699c0ee0 Remove nested Option[Option[AesPassword]] (#4564)
 948d2b424e Make KeyManagerAppConfig.walletName return String rather than Option[String] (#4507)
@@ -201,6 +245,20 @@ a0ab0638f8 Allow for custom channel sizes in LndRpcTestUtil.createNodePair (#439
 
 ## node
 
+This release merges multi-peer neutrino support. This release does NOT enable multi peer support by default.
+
+These new configurations are introduced in #4408. Adjust it if you want different behavior.
+```
+bitcoin-s.node.peers = [] # put ip/dns addresses here to force connections to these peers
+bitcoin-s.node.maxConnectedPeers = 1 # try to connect to peers from dns seeds, database, addr messages etc
+bitcoin-s.node.enable-peer-discovery = false # use the defauls suredbits neutrino node as a peer
+bitcoin-s-.node.use-default-peers = true # whether to use suredbits hosted peer
+```
+
+This PR also implements `NodeCallbacks` with akka streams so we can safely call `loadwallet`
+when node callbacks are being executed. Now we want for the streams to complete, and then continue
+loading the ne wallet.
+
 5acbba9377 Replace `BoundedSourceQueueWithComplete` with `SourceQueueWithComplete` (#4576)
 c4d358061a Add P2PClientSupervisor (#4509)
 f5cca7e5e1 Add guard for calling NodeCallbackStreamManager.stop() (#4523)
@@ -217,6 +275,19 @@ a7ba46f67d Update hardcoded seeds (#4412)
 ## Oracle Explorer Client
 
 ## wallet
+
+This release introduces akka streams in the wallet module.
+
+With this new dependency, we implemented rescan's with streams so that the rescan can be arbitrarily terminated
+by the user. The streaming feature was needed to implement the `loadwallet` rpc call safely when a rescan is ongoing.
+
+The wallet now emits a websocket event when a rescan is complete.
+
+This release also fixes a bug in rescans where a single tranaction pays to multiple wallet addresses.
+If those addresses were generated in _separate_ batches during a rescan, funds wouldn't be discovered.
+This is unlikely to happen in practice. Consider rescanning your wallet though on the 1.9.3 release.
+
+Various refactors and optimizations were needed to complete the rescan and `loadwallet` work.
 
 2fa7c39f64 Use DBIOActions to speed up processing transactions (#4572)
 c03b158f94 Implement `RescanTerminatedEarly` exception to terminate the stream, implement `ArgumentSource` (#4574)
@@ -235,9 +306,13 @@ b905afa65e 2022 07 20 wallet rescan stream (#4530)
 
 ## testkit-core
 
+Fixes regression that broke test logging.
+
 aca59ca352 Fix test logging (#4446)
 
 ## testkit
+
+Various PRs to improve flexibility and clean up resources allocated by tests.
 
 8b646802b3 Fix postgres database not clearing after test (#4558)
 f487c1270e Implement cleanup of dlcWallet/wallet DbAppConfig threadpools (#4557)
@@ -246,6 +321,8 @@ f1e9a34690 Remove hard coded values for embedded pg config (#4533)
 412e6a06c4 Allow pg embedded better support for 3rd party libraries (#4532)
 
 ## tor
+
+Emit a `torstarted` websocket callback when tor is fully started.
 
 1b169d8fa0 Implement `torstarted` websocket callback (#4476)
 
