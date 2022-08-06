@@ -17,7 +17,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet._
 
 import scala.concurrent.{Future, Promise}
@@ -32,8 +31,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   self: Wallet =>
 
   import walletConfig.profile.api._
-
-  private lazy val safeDatabase: SafeDatabase = transactionDAO.safeDatabase
 
   /////////////////////
   // Public facing API

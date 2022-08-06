@@ -19,7 +19,6 @@ import org.bitcoins.core.wallet.utxo.{
   AddressTagType
 }
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
@@ -31,8 +30,6 @@ import scala.util.{Failure, Success}
   */
 private[wallet] trait AddressHandling extends WalletLogger {
   self: Wallet =>
-
-  private lazy val safeDatabase: SafeDatabase = addressDAO.safeDatabase
 
   def contains(
       address: BitcoinAddress,
@@ -293,6 +290,13 @@ private[wallet] trait AddressHandling extends WalletLogger {
     NoStream,
     Effect.Read with Effect.Write with Effect.Transactional] = {
     getNewAddressHelperAction(account, HDChainType.External)
+  }
+
+  def getNewChangeAddressAction(account: AccountDb): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    getNewAddressHelperAction(account, HDChainType.Change)
   }
 
   def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {

@@ -457,9 +457,16 @@ case class SpendingInfoDAO()(implicit
       UTXORecord.fromSpendingInfoDb(utxo, spks(utxo.output.scriptPubKey)))
 
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
+    safeDatabase.run(findAllUnspentAction())
+  }
+
+  def findAllUnspentAction(): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
     for {
-      utxos <- _findAllUnspent()
-      infos <- utxoToInfo(utxos)
+      utxos <- _findAllUnspentAction()
+      infos <- utxoToInfoAction(utxos)
     } yield infos
   }
 
@@ -508,6 +515,14 @@ case class SpendingInfoDAO()(implicit
       hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
     val allUtxosF = findAllUnspent()
     allUtxosF.map(filterUtxosByAccount(_, hdAccount))
+  }
+
+  def findAllUnspentForAccountAction(hdAccount: HDAccount): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    val allUtxosA = findAllUnspentAction()
+    allUtxosA.map(filterUtxosByAccount(_, hdAccount))
   }
 
   def findAllForAccountAction(hdAccount: HDAccount): DBIOAction[
@@ -597,8 +612,11 @@ case class SpendingInfoDAO()(implicit
         })
   }
 
-  def findAllUnspentForTag(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
-    val query = table
+  def findAllUnspentForTagAction(tag: AddressTag): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
       .filter(_._1.state.inSet(TxoState.receivedStates))
@@ -608,24 +626,26 @@ case class SpendingInfoDAO()(implicit
       .on(_._2.address === _.address)
       .filter(_._2.tagName === tag.tagName)
       .filter(_._2.tagType === tag.tagType)
-
-    safeDatabase
-      .runVec(query.result)
+      .result
+      .map(_.toVector)
       .map(_.map { case (((utxoRecord, spkDb), _), _) =>
         utxoRecord.toSpendingInfoDb(spkDb.scriptPubKey)
       })
   }
 
-  def markAsReserved(
-      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+  def findAllUnspentForTag(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    safeDatabase.run(findAllUnspentForTagAction(tag))
+  }
+
+  def markAsReservedAction(ts: Vector[SpendingInfoDb]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read with Effect.Write] = {
     //1. Check if any are reserved already
     //2. if not, reserve them
     //3. if they are reserved, throw an exception?
     val outPoints = ts.map(_.outPoint)
-    val action: DBIOAction[
-      Int,
-      NoStream,
-      Effect.Write with Effect.Transactional] = table
+    table
       .filter(_.outPoint.inSet(outPoints))
       .filter(
         _.state.inSet(TxoState.receivedStates)
@@ -638,14 +658,15 @@ case class SpendingInfoDAO()(implicit
             s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
           DBIO.failed(exn)
         } else {
-
           DBIO.successful(count)
         }
       }
-
-    safeDatabase
-      .run(action)
       .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
+  }
+
+  def markAsReserved(
+      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    safeDatabase.run(markAsReservedAction(ts))
   }
 
   def createOutPointsIndexIfNeeded(): Future[Unit] = Future {

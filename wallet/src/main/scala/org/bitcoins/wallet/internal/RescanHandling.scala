@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
@@ -28,7 +27,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
   /////////////////////
   // Public facing API
 
-  private lazy val safeDatabase: SafeDatabase = addressDAO.safeDatabase
   override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
   /** @inheritdoc */
