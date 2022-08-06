@@ -12,6 +12,8 @@ jobs:
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     env:
       PG_ENABLED: "1"
+      PG_STARTUP_WAIT: "60"
+      TESTCONTAINERS_HOST_OVERRIDE: "localhost"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -32,4 +34,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.8 dbCommonsTest/test walletTest/test dlcWalletTest/test chainTest/test nodeTest/test dlcOracle/test
+        run: sbt ++2.13.8 dbCommonsTest/test walletTest/test dlcWalletTest/test chainTest/test nodeTest/test dlcOracleTest/test

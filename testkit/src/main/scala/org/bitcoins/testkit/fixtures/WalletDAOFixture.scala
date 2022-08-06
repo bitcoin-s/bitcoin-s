@@ -72,6 +72,7 @@ trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
   private def dropAll(): Future[Unit] = {
     val res = for {
       _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
+      _ = config.clean()
     } yield ()
     res.failed.foreach(_.printStackTrace())
     res

@@ -23,8 +23,10 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   lazy val pg: Option[EmbeddedPostgres] = {
 
     if (pgEnabled) {
+      val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "60").toInt
       val p = EmbeddedPostgres
         .builder()
+        .setPGStartupWait(java.time.Duration.ofSeconds(pgStartupWait))
         .setServerConfig("max_connections", "25")
         .setServerConfig("shared_buffers", "1MB")
         .start()
@@ -35,7 +37,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   }
 
   def pgUrl(): Option[String] =
-    pg.map(_.getJdbcUrl(userName = "postgres", dbName = "postgres"))
+    pg.map(_.getJdbcUrl("postgres"))
 
   override def afterAll(): Unit = {
     super.afterAll()
@@ -58,7 +60,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
         } finally conn.close()
       } catch {
         case ex: Throwable =>
-          println(sql)
+          System.err.println(sql)
           ex.printStackTrace()
       }
     }

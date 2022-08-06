@@ -208,7 +208,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(!rescan)
       _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
-      _ <- AsyncUtil.awaitConditionF(condition)
+      _ <- AsyncUtil.awaitConditionF(condition,
+                                     maxTries = 200,
+                                     interval = 200.millis)
     } yield succeed
   }
 

@@ -9,6 +9,8 @@ jobs:
   test:
     runs-on: windows-latest
     timeout-minutes: 60
+    env:
+      TESTCONTAINERS_HOST_OVERRIDE: "localhost"
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     steps:
       - name: Configure git
@@ -33,5 +35,5 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: Windows Crypto, Core, and Database tests
-        run: sbt ++2.13.8 cryptoTestJVM/test coreTestJVM/test secp256k1jni/test dlcTest/test appCommonsTest/test dbCommonsTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test appServerTest/test
+        run: sbt ++2.13.8 cryptoTestJVM/test coreTestJVM/test secp256k1jni/test dlcTest/test appCommonsTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test appServerTest/test
         shell: bash

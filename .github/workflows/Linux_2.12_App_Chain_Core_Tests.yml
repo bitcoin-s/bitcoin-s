@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
+    env:
+      PG_STARTUP_WAIT: "60"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -30,4 +32,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.12.15 coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls cryptoJVM/test cryptoTestJVM/test cryptoJVM/coverageReport cryptoJVM/coverageAggregate cryptoJVM/coveralls coreTestJVM/test dlcTest/test coreJVM/coverageReport coreJVM/coverageAggregate coreJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test oracleServerTest/test lnurlTest/test
+        run: sbt ++2.12.15 coverage dbCommonsTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls cryptoJVM/test cryptoTestJVM/test cryptoJVM/coverageReport cryptoJVM/coverageAggregate cryptoJVM/coveralls coreTestJVM/test dlcTest/test coreJVM/coverageReport coreJVM/coverageAggregate coreJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test oracleServerTest/test lnurlTest/test
