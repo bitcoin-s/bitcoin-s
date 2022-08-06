@@ -155,7 +155,6 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   it must "be able to discover funds using multiple batches" in {
     fixture: WalletWithBitcoindRpc =>
-      //  700,000,000 sats did not equal 300,000,000 sats
       val wallet = fixture.wallet
       val bitcoind = fixture.bitcoind
 
