@@ -1,6 +1,6 @@
 # 1.9.3
 
-This release is backwards compatible with the 1.9.3 release of bitcoin-s
+This release is backwards compatible with the 1.9 series of bitcoin-s
 
 See the individual module sections for more information on lower level updates to the codebase.
 
