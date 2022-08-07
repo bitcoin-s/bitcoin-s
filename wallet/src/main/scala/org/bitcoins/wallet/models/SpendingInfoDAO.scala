@@ -678,7 +678,7 @@ case class SpendingInfoDAO()(implicit
     }
   }
 
-  def hasDuplicates(): Future[Boolean] = Future {
+  def hasDuplicates(): Future[Boolean] = FutureUtil.makeAsync { () =>
     withStatement(
       s"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM $fullTableName GROUP BY tx_outpoint HAVING COUNT(*) > 1)") {
       st =>

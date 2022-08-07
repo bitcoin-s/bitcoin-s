@@ -56,7 +56,7 @@ class DLCFeeTestVectorTest extends BitcoinSJvmTest {
     assert(vecResult.isSuccess)
 
     def assertBatch(vec: Vector[DLCFeeTestVector]): Future[Vector[Assertion]] =
-      Future {
+      FutureUtil.makeAsync { () =>
         vec.map { case testVec =>
           assert(DLCFeeTestVector.apply(testVec.inputs) == testVec)
         }

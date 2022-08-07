@@ -6,6 +6,7 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindRpcAppConfig
@@ -66,7 +67,7 @@ class ScanBitcoind()(implicit
       .mapAsync(numParallelism) { case (block, height) =>
         logger.info(
           s"Searching block at height=$height hashBE=${block.blockHeader.hashBE.hex}")
-        Future {
+        FutureUtil.makeAsync { () =>
           f(block)
         }
       }

@@ -3,6 +3,7 @@ package org.bitcoins.testkitcore.util
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.util.FutureUtil
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._
@@ -182,7 +183,7 @@ trait BaseAsyncTest
   def forAllParallel[A](gen: Gen[A])(
       func: A => Assertion): Future[Assertion] = {
     forAllAsync(gen) { a: A =>
-      Future {
+      FutureUtil.makeAsync { () =>
         func(a)
       }
     }
@@ -194,7 +195,7 @@ trait BaseAsyncTest
   def forAllParallel[A, B, C](genA: Gen[A], genB: Gen[B])(
       func: (A, B) => Assertion): Future[Assertion] = {
     forAllAsync(genA, genB) { case (inputA, inputB) =>
-      Future {
+      FutureUtil.makeAsync { () =>
         func(inputA, inputB)
       }
     }
@@ -206,7 +207,7 @@ trait BaseAsyncTest
   def forAllParallel[A, B, C](genA: Gen[A], genB: Gen[B], genC: Gen[C])(
       func: (A, B, C) => Assertion): Future[Assertion] = {
     forAllAsync(genA, genB, genC) { case (inputA, inputB, inputC) =>
-      Future {
+      FutureUtil.makeAsync { () =>
         func(inputA, inputB, inputC)
       }
     }
@@ -222,7 +223,7 @@ trait BaseAsyncTest
       genD: Gen[D])(func: (A, B, C, D) => Assertion): Future[Assertion] = {
     forAllAsync(genA, genB, genC, genD) {
       case (inputA, inputB, inputC, inputD) =>
-        Future {
+        FutureUtil.makeAsync { () =>
           func(inputA, inputB, inputC, inputD)
         }
     }
@@ -239,7 +240,7 @@ trait BaseAsyncTest
       genE: Gen[E])(func: (A, B, C, D, E) => Assertion): Future[Assertion] = {
     forAllAsync(genA, genB, genC, genD, genE) {
       case (inputA, inputB, inputC, inputD, inputE) =>
-        Future {
+        FutureUtil.makeAsync { () =>
           func(inputA, inputB, inputC, inputD, inputE)
         }
     }
@@ -258,7 +259,7 @@ trait BaseAsyncTest
       func: (A, B, C, D, E, F) => Assertion): Future[Assertion] = {
     forAllAsync(genA, genB, genC, genD, genE, genF) {
       case (inputA, inputB, inputC, inputD, inputE, inputF) =>
-        Future {
+        FutureUtil.makeAsync { () =>
           func(inputA, inputB, inputC, inputD, inputE, inputF)
         }
     }
