@@ -12,6 +12,7 @@ import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.ClosePending
 import lnrpc._
+import chainrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._
@@ -148,6 +149,9 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val invoices: InvoicesClient = InvoicesClient(clientSettings)
   lazy val peersClient: PeersClient = PeersClient(clientSettings)
   lazy val stateClient: StateClient = StateClient(clientSettings)
+
+  lazy val chainClient: ChainNotifierClient = ChainNotifierClient(
+    clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
