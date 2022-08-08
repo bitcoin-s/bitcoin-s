@@ -341,8 +341,6 @@ object BitcoindRpcClient {
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
       case BitcoindVersion.V23 => BitcoindV23RpcClient.withActorSystem(instance)
-      case BitcoindVersion.Experimental =>
-        BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version")
@@ -368,7 +366,7 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   val standard: Vector[BitcoindVersion] =
     Vector(V16, V17, V18, V19, V20, V21, V22, V23)
 
-  val known: Vector[BitcoindVersion] = standard :+ Experimental
+  val known: Vector[BitcoindVersion] = standard
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
@@ -402,10 +400,6 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
     override def toString: String = "v23"
   }
 
-  case object Experimental extends BitcoindVersion {
-    override def toString: String = "v0.18.99"
-  }
-
   case object Unknown extends BitcoindVersion {
     override def toString: String = "Unknown"
   }
@@ -426,11 +420,7 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
     int.toString.substring(0, 2) match {
       case "16" => V16
       case "17" => V17
-      case "18" =>
-        int.toString.substring(2, 4) match {
-          case "99" => Experimental
-          case _    => V18
-        }
+      case "18" => V18
       case "19" => V19
       case "20" => V20
       case "21" => V21

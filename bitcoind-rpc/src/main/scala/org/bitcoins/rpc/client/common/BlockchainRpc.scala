@@ -33,7 +33,7 @@ trait BlockchainRpc { self: Client =>
         bitcoindCall[GetBlockChainInfoResultPreV19]("getblockchaininfo")
       case V22 | V21 | V20 | V19 =>
         bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
-      case V23 | Experimental | Unknown =>
+      case V23 | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
     }
   }
@@ -85,7 +85,7 @@ trait BlockchainRpc { self: Client =>
           "getblock",
           List(JsString(headerHash.hex), isVerboseJsonObject))
 
-      case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
+      case V16 | V17 | V18 | V19 | V20 | V21 =>
         bitcoindCall[GetBlockWithTransactionsResultPreV22](
           "getblock",
           List(JsString(headerHash.hex), isVerboseJsonObject))

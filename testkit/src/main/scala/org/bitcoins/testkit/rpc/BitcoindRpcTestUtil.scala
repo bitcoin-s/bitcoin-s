@@ -176,8 +176,7 @@ trait BitcoindRpcTestUtil extends Logging {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (Experimental | V16 | V17 | V18 | V19 | V20 | V21 | V22 |
-          V23) =>
+      case known @ (V16 | V17 | V18 | V19 | V20 | V21 | V22 | V23) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -186,17 +185,7 @@ trait BitcoindRpcTestUtil extends Logging {
           .filter(f => Files.isDirectory(f))
         // drop leading 'v'
         val version = known.toString.drop(1)
-        val filtered =
-          if (known == Experimental)
-            // we want exact match for the experimental version
-            fileList
-              .filter(f => f.toString.endsWith(version))
-          else
-            // we don't want the experimental version to appear in the list along with the production ones
-            fileList
-              .filterNot(f =>
-                f.toString.endsWith(Experimental.toString.drop(1)))
-              .filter(f => f.toString.contains(version))
+        val filtered = fileList.filter(f => f.toString.contains(version))
 
         if (filtered.isEmpty)
           throw new RuntimeException(
@@ -227,7 +216,7 @@ trait BitcoindRpcTestUtil extends Logging {
       case Some(V16) | Some(V17) | Some(V18) =>
         false
       case Some(V19) | Some(V20) | Some(V21) | Some(V22) | Some(V23) | Some(
-            Experimental) | Some(Unknown) | None =>
+            Unknown) | None =>
         true
     }
     val configFile =
@@ -365,20 +354,6 @@ trait BitcoindRpcTestUtil extends Logging {
              versionOpt = Some(BitcoindVersion.V23),
              binaryDirectory = binaryDirectory)
 
-  def vExperimentalInstance(
-      port: Int = RpcUtil.randomPort,
-      rpcPort: Int = RpcUtil.randomPort,
-      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.Experimental),
-             binaryDirectory = binaryDirectory)
-
   /** Gets an instance of bitcoind with the given version */
   def getInstance(
       bitcoindVersion: BitcoindVersion,
@@ -437,13 +412,6 @@ trait BitcoindRpcTestUtil extends Logging {
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
-      case BitcoindVersion.Experimental =>
-        BitcoindRpcTestUtil.vExperimentalInstance(port,
-                                                  rpcPort,
-                                                  zmqConfig,
-                                                  pruneMode,
-                                                  binaryDirectory =
-                                                    binaryDirectory)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Could not create a bitcoind version with version=${BitcoindVersion.Unknown}")
@@ -457,8 +425,7 @@ trait BitcoindRpcTestUtil extends Logging {
         val createWalletF = for {
           version <- server.version
           descriptors = version match {
-            case V16 | V17 | V18 | V19 | V20 |
-                V21 | V22 | Experimental | Unknown =>
+            case V16 | V17 | V18 | V19 | V20 | V21 | V22 | Unknown =>
               false
             case V23 => true
           }
@@ -784,9 +751,6 @@ trait BitcoindRpcTestUtil extends Logging {
         case BitcoindVersion.V23 =>
           BitcoindV23RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v23Instance())
-        case BitcoindVersion.Experimental =>
-          BitcoindV19RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.vExperimentalInstance())
       }
 
       // this is safe as long as this method is never

@@ -55,9 +55,6 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
         .last
 
     foundVersion match {
-      case _: String
-          if foundVersion.equals(BitcoindVersion.Experimental.toString) =>
-        BitcoindVersion.Experimental
       case _: String if foundVersion.startsWith(BitcoindVersion.V16.toString) =>
         BitcoindVersion.V16
       case _: String if foundVersion.startsWith(BitcoindVersion.V17.toString) =>
