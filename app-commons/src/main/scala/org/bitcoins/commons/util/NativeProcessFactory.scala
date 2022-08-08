@@ -1,6 +1,7 @@
 package org.bitcoins.commons.util
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.util.FutureUtil
 
 import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,7 +28,7 @@ trait NativeProcessFactory extends Logging {
   }
 
   /** Starts the binary by spinning up a new process */
-  def startBinary(): Future[Unit] = Future {
+  def startBinary(): Future[Unit] = FutureUtil.makeAsync { () =>
     processOpt match {
       case Some(p) =>
         //don't do anything as it is already started
@@ -49,7 +50,7 @@ trait NativeProcessFactory extends Logging {
     * If the client is a remote client (not started on the host operating system)
     * this method is a no-op
     */
-  def stopBinary(): Future[Unit] = Future {
+  def stopBinary(): Future[Unit] = FutureUtil.makeAsync { () =>
     processOpt match {
       case Some(process) =>
         if (process.isAlive()) {

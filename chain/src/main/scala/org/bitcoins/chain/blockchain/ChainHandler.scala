@@ -388,7 +388,7 @@ class ChainHandler(
       _ = require(
         filterHeaders.size == messages.size,
         s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}")
-      compactFilterDbs <- Future {
+      compactFilterDbs <- FutureUtil.makeAsync { () =>
         filterHeaders.map { filterHeader =>
           findFilterDbFromMessage(filterHeader, messagesByBlockHash)
         }
@@ -453,7 +453,7 @@ class ChainHandler(
       } else {
         filtersByHash.get(filterHeader.previousFilterHeaderBE) match {
           case Some(prevHeader) =>
-            Future {
+            FutureUtil.makeAsync { () =>
               checkHeight(filterHeader, prevHeader)
             }
           case None =>

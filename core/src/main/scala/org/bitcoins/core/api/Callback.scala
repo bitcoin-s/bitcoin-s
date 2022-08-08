@@ -1,6 +1,6 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.core.util.{FutureUtil, SeqWrapper}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -49,7 +49,7 @@ case class CallbackHandler[C, T <: Callback[C]](
     val executeFs = wrapped.map { callback =>
       // Need to wrap in another future so they are all started at once
       // and do not block each other
-      Future {
+      FutureUtil.makeAsync { () =>
         callback(param).recover { case NonFatal(err) =>
           recoverFunc(err)
         }

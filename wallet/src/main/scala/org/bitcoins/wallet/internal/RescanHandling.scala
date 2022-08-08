@@ -13,6 +13,7 @@ import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -530,7 +531,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         .sequence(filterGroups.map { filterGroup =>
           // We need to wrap in a future here to make sure we can
           // potentially run these matches in parallel
-          Future {
+          FutureUtil.makeAsync { () =>
             // Find any matches in the group and add the corresponding block hashes into the result
             filterGroup
               .foldLeft(Vector.empty[BlockMatchingResponse]) {
