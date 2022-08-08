@@ -33,7 +33,7 @@ import org.bitcoins.core.protocol.{
   BitcoinAddress,
   BlockTimeStamp
 }
-import org.bitcoins.core.psbt.InputPSBTMap
+import org.bitcoins.core.psbt.{InputPSBTMap, PSBT}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
@@ -250,6 +250,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val txMapper: BaseColumnType[Transaction] =
     MappedColumnType.base[Transaction, String](_.hex, Transaction.fromHex)
+
+  implicit val PSBTMapper: BaseColumnType[PSBT] =
+    MappedColumnType.base[PSBT, String](_.base64, PSBT.fromBase64)
 
   implicit val currencyUnitMapper: BaseColumnType[CurrencyUnit] =
     MappedColumnType
