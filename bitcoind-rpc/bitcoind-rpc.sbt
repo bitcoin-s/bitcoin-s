@@ -22,9 +22,6 @@ TaskKeys.downloadBitcoind := {
     Files.createDirectories(binaryDir)
   }
 
-  val experimentalVersion =
-    "0.18.99" // TODO: change this when new version compiled on suredbits server
-
   val versions =
     List("23.0",
          "22.0",
@@ -33,8 +30,7 @@ TaskKeys.downloadBitcoind := {
          "0.19.0.1",
          "0.18.1",
          "0.17.0.1",
-         "0.16.3",
-         experimentalVersion)
+         "0.16.3")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -55,9 +51,7 @@ TaskKeys.downloadBitcoind := {
     val (platform, suffix) = getPlatformAndSuffix(version)
     val archiveLocation = binaryDir resolve s"$version.$suffix"
     val location =
-      if (version == experimentalVersion)
-        s"https://s3-us-west-1.amazonaws.com/suredbits.com/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
-      else if (version.init.endsWith("rc")) { // if it is a release candidate
+      if (version.init.endsWith("rc")) { // if it is a release candidate
         val (base, rc) = version.splitAt(version.length - 3)
         s"https://bitcoincore.org/bin/bitcoin-core-$base/test.$rc/bitcoin-$version-$platform.$suffix"
       } else
@@ -113,8 +107,7 @@ TaskKeys.downloadBitcoind := {
               "0.19.0.1" -> "732cc96ae2e5e25603edf76b8c8af976fe518dd925f7e674710c6c8ee5189204",
               "0.18.1" -> "600d1db5e751fa85903e935a01a74f5cc57e1e7473c15fd3e17ed21e202cfe5a",
               "0.17.0.1" -> "6ccc675ee91522eee5785457e922d8a155e4eb7d5524bd130eb0ef0f0c4a6008",
-              "0.16.3" -> "5d422a9d544742bc0df12427383f9c2517433ce7b58cf672b9a9b17c2ef51e4f",
-              experimentalVersion -> "f8b1a0ded648249e5e8c14fca3e11a733da8172b05523922c87557ea5eaaa4c5"
+              "0.16.3" -> "5d422a9d544742bc0df12427383f9c2517433ce7b58cf672b9a9b17c2ef51e4f"
             )
           else if (Properties.isMac)
             Map(
@@ -125,8 +118,7 @@ TaskKeys.downloadBitcoind := {
               "0.19.0.1" -> "a64e4174e400f3a389abd76f4d6b1853788730013ab1dedc0e64b0a0025a0923",
               "0.18.1" -> "b7bbcee7a7540f711b171d6981f939ca8482005fde22689bc016596d80548bb1",
               "0.17.0.1" -> "3b1fb3dd596edb656bbc0c11630392e201c1a4483a0e1a9f5dd22b6556cbae12",
-              "0.16.3" -> "78c3bff3b619a19aed575961ea43cc9e142959218835cf51aede7f0b764fc25d",
-              experimentalVersion -> "cfd4ed0b8db08fb1355aca44ca282b1de31e83b5862efaac527e3952b0987e55"
+              "0.16.3" -> "78c3bff3b619a19aed575961ea43cc9e142959218835cf51aede7f0b764fc25d"
             )
           else if (Properties.isWin)
             Map(
@@ -137,8 +129,7 @@ TaskKeys.downloadBitcoind := {
               "0.19.0.1" -> "7706593de727d893e4b1e750dc296ea682ccee79acdd08bbc81eaacf3b3173cf",
               "0.18.1" -> "b0f94ab43c068bac9c10a59cb3f1b595817256a00b84f0b724f8504b44e1314f",
               "0.17.0.1" -> "2d0a0aafe5a963beb965b7645f70f973a17f4fa4ddf245b61d532f2a58449f3e",
-              "0.16.3" -> "52469c56222c1b5344065ef2d3ce6fc58ae42939a7b80643a7e3ee75ec237da9",
-              experimentalVersion -> "b7ad8e6c0b91adf820499bf891f22f590e969b834980d4910efac5b082d83c49"
+              "0.16.3" -> "52469c56222c1b5344065ef2d3ce6fc58ae42939a7b80643a7e3ee75ec237da9"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
