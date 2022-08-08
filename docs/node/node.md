@@ -65,7 +65,7 @@ implicit val ec = system.dispatcher
 
 //we also require a bitcoind instance to connect to
 //so let's start one (make sure you ran 'sbt downloadBitcoind')
-val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
+val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
 val p2pPort = instance.p2pPort
 val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(instance), Vector.newBuilder)
 
