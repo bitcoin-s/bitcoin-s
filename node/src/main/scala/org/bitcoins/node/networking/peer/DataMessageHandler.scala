@@ -6,6 +6,7 @@ import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
@@ -282,30 +283,34 @@ case class DataMessageHandler(
         logger.info(
           s"Received block message with hash ${block.blockHeader.hash.flip.hex}")
 
-        val newApiF = {
+        val newMsgHandlerF = {
           chainApi
             .getHeader(block.blockHeader.hashBE)
             .flatMap { headerOpt =>
               if (headerOpt.isEmpty) {
                 logger.debug("Processing block's header...")
+                val headersMessage =
+                  HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
                 for {
-                  processedApi <- chainApi.processHeader(block.blockHeader)
+                  newMsgHandler <- handleDataPayload(headersMessage,
+                                                     peerMsgSender,
+                                                     peer)
                   _ <-
                     appConfig.callBacks
                       .executeOnBlockHeadersReceivedCallbacks(
                         Vector(block.blockHeader))
-                } yield processedApi
-              } else Future.successful(chainApi)
+                } yield newMsgHandler
+              } else Future.successful(this)
             }
         }
 
         for {
-          newApi <- newApiF
+          handler <- newMsgHandlerF
           _ <-
             appConfig.callBacks
               .executeOnBlockReceivedCallbacks(block)
         } yield {
-          this.copy(chainApi = newApi)
+          handler
         }
       case TransactionMessage(tx) =>
         MerkleBuffers.putTx(tx, appConfig.callBacks).flatMap {
