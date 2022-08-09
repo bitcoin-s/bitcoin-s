@@ -23,6 +23,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.models.{
   ContractInfo,
   DLCMessage,
+  DLCState,
   DLCStatus,
   OracleSignatures
 }
@@ -419,6 +420,9 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def executeDLCRefund(contractId: ByteVector): Future[Transaction] =
     delegate(_.executeDLCRefund(contractId))
 
+  override def listDLCs(states: Vector[DLCState]): Future[Vector[DLCStatus]] = {
+    delegate(_.listDLCs(states))
+  }
   override def listDLCs(): Future[Vector[DLCStatus]] = delegate(_.listDLCs())
 
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] =
