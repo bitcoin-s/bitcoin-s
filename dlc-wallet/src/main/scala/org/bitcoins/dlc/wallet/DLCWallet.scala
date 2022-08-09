@@ -1742,8 +1742,7 @@ abstract class DLCWallet
             contactId.getHostString + ":" + contactId.getPort)
         case None => dlcDAO.findAllAction()
       }
-      ids = dlcs.map(_.dlcId)
-      dlcFs = ids.map(findDLCAction)
+      dlcFs = dlcs.map(d => findDLCAction(d))
       dlcs <- DBIO.sequence(dlcFs)
     } yield {
       dlcs.collect { case Some(dlc) =>
@@ -1827,6 +1826,14 @@ abstract class DLCWallet
     } yield (closingTxOpt, payoutAddress)
   }
 
+
+  private def findDLCAction(dlcDb: DLCDb): DBIOAction[
+    Option[IntermediaryDLCStatus],
+    NoStream,
+    Effect.Read] = {
+    findDLCStatusAction(dlcDb)
+  }
+
   private def findDLCAction(dlcId: Sha256Digest): DBIOAction[
     Option[IntermediaryDLCStatus],
     NoStream,
@@ -1837,7 +1844,7 @@ abstract class DLCWallet
       dlcDbOpt <- dlcDAO.findByPrimaryKeyAction(dlcId)
       dlcStatusOpt <- dlcDbOpt match {
         case None        => DBIO.successful(None)
-        case Some(dlcDb) => findDLCStatusAction(dlcDb)
+        case Some(dlcDb) => findDLCAction(dlcDb)
       }
     } yield dlcStatusOpt
 
