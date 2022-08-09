@@ -1742,16 +1742,11 @@ abstract class DLCWallet
             contactId.getHostString + ":" + contactId.getPort)
         case None => dlcDAO.findAllAction()
       }
-      dlcFs = dlcs.map(d => findDLCAction(d))
-      dlcs <- DBIO.sequence(dlcFs)
+      dlcsResult <- findDLCStatusesAction(dlcs)
     } yield {
-      dlcs.collect { case Some(dlc) =>
-        dlc
-      }
+      dlcsResult
     }
-
     fetchWalletDbInfo(dlcAction)
-
   }
 
   private def fetchWalletDbInfo(
@@ -1863,35 +1858,55 @@ abstract class DLCWallet
     Option[IntermediaryDLCStatus],
     NoStream,
     Effect.Read] = {
-    val dlcId = dlcDb.dlcId
-    val contractDataOptQ = contractDataDAO.findByPrimaryKey(dlcId)
-    val offerDbOptQ = dlcOfferDAO.findByPrimaryKey(dlcId)
-    val acceptDbOptA = dlcAcceptDAO.findByPrimaryKeyAction(dlcId)
+    findDLCStatusesAction(Vector(dlcDb))
+      .map(_.headOption)
+  }
+
+  private def findDLCStatusesAction(dlcDbs: Vector[DLCDb]): DBIOAction[
+    Vector[IntermediaryDLCStatus],
+    NoStream,
+    Effect.Read] = {
+    val dlcIds = dlcDbs.map(_.dlcId)
+    val contractDbsQ = contractDataDAO.findByPrimaryKeys(dlcIds)
+    val offerDbsQ = dlcOfferDAO.findByPrimaryKeys(dlcIds)
+    val acceptDbsA = dlcAcceptDAO.findByPrimaryKeysAction(dlcIds)
 
     //optimization to use sql queries rather than action
     //as this method gets called a lot.
     val offerAndContractA: DBIOAction[
-      Option[(DLCOfferDb, DLCContractDataDb)],
+      Vector[(DLCOfferDb, DLCContractDataDb)],
       NoStream,
       Effect.Read] = {
-      offerDbOptQ
-        .join(contractDataOptQ)
+      offerDbsQ
+        .join(contractDbsQ)
         .on(_.dlcId === _.dlcId)
         .result
-        .map(_.headOption)
+        .map(_.toVector)
     }
 
-    for {
-      offerAndContractDbOpt <- offerAndContractA
-      acceptDbOpt <- acceptDbOptA
-      result <- {
-        offerAndContractDbOpt match {
-          case Some((offerDb, contractData)) =>
-            buildDLCStatusAction(dlcDb, contractData, offerDb, acceptDbOpt)
-          case None => DBIO.successful(None)
+    val dlcDlbIds: Map[Sha256Digest, DLCDb] =
+      dlcDbs.map(d => (d.dlcId, d)).toMap
+
+    val retval: DBIOAction[
+      Vector[IntermediaryDLCStatus],
+      NoStream,
+      Effect.Read] = for {
+      offerAndContractDbs <- offerAndContractA
+      acceptDbs <- acceptDbsA
+      acceptDbsMap = acceptDbs.map(a => (a.dlcId, a)).toMap
+      result = {
+        offerAndContractDbs.map { case (offerDb, contractData) =>
+          val dlcId = offerDb.dlcId
+          buildDLCStatusAction(dlcDlbIds(dlcId),
+                               contractData,
+                               offerDb,
+                               acceptDbsMap.get(dlcId))
         }
       }
-    } yield result
+      seq <- DBIOAction.sequence(result).map(_.flatten)
+    } yield seq
+
+    retval
   }
 
   /** Helper method to assemble a [[DLCStatus]] */
