@@ -1826,7 +1826,6 @@ abstract class DLCWallet
     } yield (closingTxOpt, payoutAddress)
   }
 
-
   private def findDLCAction(dlcDb: DLCDb): DBIOAction[
     Option[IntermediaryDLCStatus],
     NoStream,
@@ -1855,24 +1854,41 @@ abstract class DLCWallet
     }
   }
 
+  private val mappers =
+    new org.bitcoins.db.DbCommonsColumnMappers(dlcConfig.profile)
+
+  import mappers._
+
   private def findDLCStatusAction(dlcDb: DLCDb): DBIOAction[
     Option[IntermediaryDLCStatus],
     NoStream,
     Effect.Read] = {
     val dlcId = dlcDb.dlcId
-    val contractDataOptA = contractDataDAO.findByPrimaryKeyAction(dlcId)
-    val offerDbOptA = dlcOfferDAO.findByPrimaryKeyAction(dlcId)
+    val contractDataOptQ = contractDataDAO.findByPrimaryKey(dlcId)
+    val offerDbOptQ = dlcOfferDAO.findByPrimaryKey(dlcId)
     val acceptDbOptA = dlcAcceptDAO.findByPrimaryKeyAction(dlcId)
 
+    //optimization to use sql queries rather than action
+    //as this method gets called a lot.
+    val offerAndContractA: DBIOAction[
+      Option[(DLCOfferDb, DLCContractDataDb)],
+      NoStream,
+      Effect.Read] = {
+      offerDbOptQ
+        .join(contractDataOptQ)
+        .on(_.dlcId === _.dlcId)
+        .result
+        .map(_.headOption)
+    }
+
     for {
-      contractDataOpt <- contractDataOptA
-      offerDbOpt <- offerDbOptA
+      offerAndContractDbOpt <- offerAndContractA
       acceptDbOpt <- acceptDbOptA
       result <- {
-        (contractDataOpt, offerDbOpt) match {
-          case (Some(contractData), Some(offerDb)) =>
+        offerAndContractDbOpt match {
+          case Some((offerDb, contractData)) =>
             buildDLCStatusAction(dlcDb, contractData, offerDb, acceptDbOpt)
-          case (_, _) => DBIO.successful(None)
+          case None => DBIO.successful(None)
         }
       }
     } yield result
