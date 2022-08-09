@@ -110,6 +110,12 @@ object DLCState extends StringFactory[DLCState] {
     Signed
   )
 
+  val closedStates: Vector[ClosedState] = Vector(
+    Claimed,
+    RemoteClaimed,
+    Refunded
+  )
+
   override def fromString(str: String): DLCState = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase) match {
       case Some(state) => state

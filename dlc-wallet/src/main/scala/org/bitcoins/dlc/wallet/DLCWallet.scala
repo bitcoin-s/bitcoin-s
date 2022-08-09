@@ -1696,7 +1696,7 @@ abstract class DLCWallet
   }
 
   override def getWalletAccounting(): Future[DLCWalletAccounting] = {
-    val dlcsF = listDLCs()
+    val dlcsF = listDLCs(DLCState.closedStates)
     for {
       dlcs <- dlcsF
       closed = dlcs.collect { case c: ClaimedDLCStatus =>
@@ -1705,6 +1705,20 @@ abstract class DLCWallet
       accountings = closed.map(_.accounting)
       walletAccounting = DLCWalletAccounting.fromDLCAccounting(accountings)
     } yield walletAccounting
+  }
+
+  override def listDLCs(states: Vector[DLCState]): Future[Vector[DLCStatus]] = {
+    val dlcAction = for {
+      dlcs <- dlcDAO.findByStatesAction(states)
+      ids = dlcs.map(_.dlcId)
+      dlcAs = ids.map(findDLCAction)
+      dlcs <- DBIO.sequence(dlcAs)
+    } yield {
+      dlcs.collect { case Some(dlc) =>
+        dlc
+      }
+    }
+    fetchWalletDbInfo(dlcAction)
   }
 
   override def listDLCs(): Future[Vector[DLCStatus]] = {
@@ -1718,7 +1732,10 @@ abstract class DLCWallet
 
   private def listDLCs(
       contactIdOpt: Option[InetSocketAddress]): Future[Vector[DLCStatus]] = {
-    val dlcAction = for {
+    val dlcAction: DBIOAction[
+      Vector[IntermediaryDLCStatus],
+      NoStream,
+      Effect.Read] = for {
       dlcs <- contactIdOpt match {
         case Some(contactId) =>
           dlcDAO.findByContactIdAction(
@@ -1733,6 +1750,16 @@ abstract class DLCWallet
         dlc
       }
     }
+
+    fetchWalletDbInfo(dlcAction)
+
+  }
+
+  private def fetchWalletDbInfo(
+      dlcAction: DBIOAction[
+        Vector[IntermediaryDLCStatus],
+        NoStream,
+        Effect.Read]): Future[Vector[DLCStatus]] = {
     safeDLCDatabase.run(dlcAction).flatMap { intermediaries =>
       val actions = intermediaries.map { intermediary =>
         getWalletDLCDbsAction(intermediary).map {
@@ -1740,7 +1767,6 @@ abstract class DLCWallet
             intermediary.complete(payoutAddrOpt, closingTxOpt)
         }
       }
-
       walletDatabase.run(DBIO.sequence(actions))
     }
   }

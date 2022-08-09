@@ -133,6 +133,22 @@ case class DLCDAO()(implicit
     table.filter(_.peerOpt === peer).result.map(_.toVector)
   }
 
+  def findByStateAction(
+      state: DLCState): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
+    table.filter(_.state === state).result.map(_.toVector)
+  }
+
+  def findByStatesAction(states: Vector[DLCState]): DBIOAction[
+    Vector[DLCDb],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.state.inSet(states)).result.map(_.toVector)
+  }
+
+  def findByState(state: DLCState): Future[Vector[DLCDb]] = {
+    safeDatabase.run(findByStateAction(state))
+  }
+
   def updateDLCContactMapping(
       dlcId: Sha256Digest,
       contcatId: InetSocketAddress): Future[Unit] = {

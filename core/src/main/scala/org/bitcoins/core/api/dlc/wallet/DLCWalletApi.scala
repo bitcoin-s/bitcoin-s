@@ -134,6 +134,9 @@ trait DLCWalletApi { self: WalletApi =>
   /** Creates the refund transaction for the given contractId, does not broadcast it */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]
 
+  /** Fetches all DLCs with the given set of states */
+  def listDLCs(states: Vector[DLCState]): Future[Vector[DLCStatus]]
+
   def listDLCs(): Future[Vector[DLCStatus]]
 
   def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]]
