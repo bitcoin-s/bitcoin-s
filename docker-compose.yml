@@ -3,7 +3,7 @@ version: "3.7"
 services:
   web:
     image: bitcoinscala/wallet-server-ui:latest
-    user: "0:1000"
+    user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m
     volumes:
@@ -23,7 +23,7 @@ services:
       - walletserver
   walletserver:
     image: bitcoinscala/bitcoin-s-server:latest
-    user: "0:1000"
+    user: "1000:1000"
     restart: on-failure
     volumes:
       - ./data/wallet:/home/bitcoin-s/.bitcoin-s
@@ -40,7 +40,9 @@ services:
       BITCOIN_S_DLCNODE_TOR_PASSWORD: "topsecret"
       BITCOIN_S_SERVER_RPC_PASSWORD: $APP_PASSWORD
     ports:
+      - "$APP_SUREDBITS_WALLET_P2P_PORT:$APP_SUREDBITS_WALLET_P2P_PORT"
       - "9999:9999"
+      - "19999:19999"
     depends_on:
       - tor
   tor:
