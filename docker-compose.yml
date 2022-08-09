@@ -3,7 +3,6 @@ version: "3.7"
 services:
   web:
     image: bitcoinscala/wallet-server-ui:latest
-    user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m
     volumes:
@@ -23,7 +22,7 @@ services:
       - walletserver
   walletserver:
     image: bitcoinscala/bitcoin-s-server:latest
-    user: "1000:1000"
+    user: root # works across m1 Mac and x64 linux
     restart: on-failure
     volumes:
       - ./data/wallet:/home/bitcoin-s/.bitcoin-s
