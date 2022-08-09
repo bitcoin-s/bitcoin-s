@@ -277,20 +277,29 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def getBlockChainInfo(
       client: BitcoindRpcClient): Future[GetBlockChainInfoResult] = {
     val promise = Promise[GetBlockChainInfoResult]()
+    val interval = 1.second
+    val maxTries = 12
     for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = { () =>
           val infoF = client.getBlockChainInfo
           val res = infoF.map(promise.success).map(_ => true)
-          res.recover { case _: InWarmUp => false }
+          res.recover { case _: InWarmUp =>
+            logger.info(s"Bitcoind still in warmup, trying again in $interval")
+            false
+
+          }
         },
         // retry for approximately 2 hours
         mode = Exponential,
-        interval = 1.second,
-        maxTries = 12
+        interval = interval,
+        maxTries = maxTries
       )
       info <- promise.future
-    } yield info
+    } yield {
+      logger.info(s"Retrieved blockchainInfo=$info")
+      info
+    }
   }
 
   /** The wallet loader that is being used for our wallet. */
