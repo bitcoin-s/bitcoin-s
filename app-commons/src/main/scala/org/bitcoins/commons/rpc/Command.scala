@@ -1484,6 +1484,35 @@ object CreateContractInfo extends ServerJsonModels {
   }
 }
 
+case class CreateContractInfoFromTemplate(
+    announcementTLV: OracleAnnouncementTLV,
+    contractType: String,
+    parameters: Map[String, String])
+
+object CreateContractInfoFromTemplate {
+
+  def fromJsArr(arr: ujson.Arr): Try[CreateContractInfoFromTemplate] = {
+    arr.arr.toList match {
+      case announcementJs :: contractTypeJs :: parametersJs :: Nil =>
+        Try {
+          val announcementTLV =
+            OracleAnnouncementTLV.fromHex(announcementJs.str)
+          val contractType = contractTypeJs.str
+          val parameters = parametersJs.obj.map { case (k, v) =>
+            (k, v.value.toString)
+          }
+          CreateContractInfoFromTemplate(announcementTLV,
+                                         contractType,
+                                         parameters.toMap)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to createcontractfromtemplate, got=${other.length} expected=3")
+        Failure(exn)
+    }
+  }
+}
+
 case class ContactAdd(alias: String, address: InetSocketAddress, memo: String)
     extends CommandRpc
     with AppServerCliCommand

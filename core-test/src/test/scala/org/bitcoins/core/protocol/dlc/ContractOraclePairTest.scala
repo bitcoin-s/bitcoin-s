@@ -77,6 +77,8 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
     val oracleInfo2 = numericOracleInfo(2)
     val oracleInfo3 = numericOracleInfo(3)
 
+    println(oracleInfo3.announcement.hex)
+
     val announcements =
       OrderedAnnouncements(
         Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement))

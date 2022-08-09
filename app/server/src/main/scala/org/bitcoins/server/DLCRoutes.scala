@@ -7,6 +7,7 @@ import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
+import org.bitcoins.core.dlc.template.DLCTemplateRegistry
 import org.bitcoins.core.protocol.dlc.models.{
   EnumSingleOracleInfo,
   NumericSingleOracleInfo,
@@ -183,6 +184,19 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
               .map { _ =>
                 Server.httpSuccess("ok")
               }
+          }
+      }
+
+    case ServerCommand("createcontractfromtemplate", arr) =>
+      withValidServerCommand(CreateContractInfoFromTemplate.fromJsArr(arr)) {
+        case create: CreateContractInfoFromTemplate =>
+          complete {
+            val template =
+              DLCTemplateRegistry.newDLCTemplate(create.contractType)
+            val contractDescriptor =
+              template.createContractInfo(create.announcementTLV,
+                                          create.parameters)
+            Server.httpSuccess(contractDescriptor.toTLV.hex)
           }
       }
 
