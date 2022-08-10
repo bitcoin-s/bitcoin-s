@@ -1869,17 +1869,19 @@ abstract class DLCWallet
     val dlcIds = dlcDbs.map(_.dlcId)
     val contractDbsQ = contractDataDAO.findByPrimaryKeys(dlcIds)
     val offerDbsQ = dlcOfferDAO.findByPrimaryKeys(dlcIds)
-    val acceptDbsA = dlcAcceptDAO.findByPrimaryKeysAction(dlcIds)
+    val acceptDbsQ = dlcAcceptDAO.findByPrimaryKeys(dlcIds)
 
     //optimization to use sql queries rather than action
     //as this method gets called a lot.
     val offerAndContractA: DBIOAction[
-      Vector[(DLCOfferDb, DLCContractDataDb)],
+      Vector[((DLCOfferDb, DLCContractDataDb), Option[DLCAcceptDb])],
       NoStream,
       Effect.Read] = {
       offerDbsQ
         .join(contractDbsQ)
         .on(_.dlcId === _.dlcId)
+        .joinLeft(acceptDbsQ)
+        .on(_._1.dlcId === _.dlcId)
         .result
         .map(_.toVector)
     }
@@ -1892,15 +1894,13 @@ abstract class DLCWallet
       NoStream,
       Effect.Read] = for {
       offerAndContractDbs <- offerAndContractA
-      acceptDbs <- acceptDbsA
-      acceptDbsMap = acceptDbs.map(a => (a.dlcId, a)).toMap
       result = {
-        offerAndContractDbs.map { case (offerDb, contractData) =>
+        offerAndContractDbs.map { case ((offerDb, contractData), acceptDbOpt) =>
           val dlcId = offerDb.dlcId
           buildDLCStatusAction(dlcDlbIds(dlcId),
                                contractData,
                                offerDb,
-                               acceptDbsMap.get(dlcId))
+                               acceptDbOpt)
         }
       }
       seq <- DBIOAction.sequence(result).map(_.flatten)

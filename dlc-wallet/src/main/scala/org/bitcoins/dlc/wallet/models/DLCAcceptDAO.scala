@@ -31,7 +31,7 @@ case class DLCAcceptDAO()(implicit
   override def createAll(ts: Vector[DLCAcceptDb]): Future[Vector[DLCAcceptDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(
+  override def findByPrimaryKeys(
       ids: Vector[Sha256Digest]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
     table.filter(_.dlcId.inSet(ids))
 
