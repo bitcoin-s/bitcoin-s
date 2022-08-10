@@ -1,12 +1,12 @@
 package org.bitcoins.node
 
-import grizzled.slf4j.Logger
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -15,6 +15,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * a `getdata` message matching it.
   */
 trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def onCompactFiltersReceived: CallbackHandler[
     Vector[(DoubleSha256Digest, GolombFilter)],
@@ -34,7 +36,7 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
 
   override def +(other: NodeCallbacks): NodeCallbacks
 
-  def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(implicit
+  def executeOnTxReceivedCallbacks(tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onTxReceived.execute(
       tx,
@@ -42,7 +44,7 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
         logger.error(s"${onTxReceived.name} Callback failed with error: ", err))
   }
 
-  def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(implicit
+  def executeOnBlockReceivedCallbacks(block: Block)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onBlockReceived.execute(
       block,
@@ -52,7 +54,6 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
   }
 
   def executeOnMerkleBlockReceivedCallbacks(
-      logger: Logger,
       merkleBlock: MerkleBlock,
       txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
     onMerkleBlockReceived.execute(
@@ -64,7 +65,6 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
   }
 
   def executeOnCompactFiltersReceivedCallbacks(
-      logger: Logger,
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(implicit
       ec: ExecutionContext): Future[Unit] = {
     onCompactFiltersReceived.execute(
@@ -75,10 +75,8 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
           err))
   }
 
-  def executeOnBlockHeadersReceivedCallbacks(
-      logger: Logger,
-      headers: Vector[BlockHeader])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnBlockHeadersReceivedCallbacks(headers: Vector[BlockHeader])(
+      implicit ec: ExecutionContext): Future[Unit] = {
     onBlockHeadersReceived.execute(
       headers,
       (err: Throwable) =>

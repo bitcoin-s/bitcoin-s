@@ -115,7 +115,7 @@ object BitcoindRpcBackendUtil extends Logging {
     for {
       _ <- bitcoind.setSyncing(syncing)
     } yield {
-      chainCallbacksOpt.map(_.executeOnSyncFlagChanged(logger, syncing))
+      chainCallbacksOpt.map(_.executeOnSyncFlagChanged(syncing))
       ()
     }
   }
@@ -355,7 +355,7 @@ object BitcoindRpcBackendUtil extends Logging {
         val headerWithHeights =
           Vector((blockHeaderResult.height, blockHeaderResult.blockHeader))
         val f = callback
-          .executeOnBlockHeaderConnectedCallbacks(logger, headerWithHeights)
+          .executeOnBlockHeaderConnectedCallbacks(headerWithHeights)
         f
     }
   }

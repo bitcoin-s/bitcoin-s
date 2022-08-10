@@ -158,7 +158,7 @@ class ChainHandler(
             }.toVector
 
             chainConfig.callBacks
-              .executeOnBlockHeaderConnectedCallbacks(logger, headersWithHeight)
+              .executeOnBlockHeaderConnectedCallbacks(headersWithHeight)
           }
           chains.foreach { c =>
             logger.info(
@@ -1024,7 +1024,7 @@ class ChainHandler(
       changed <- stateDAO.updateSyncing(value)
     } yield {
       if (changed && chainConfig.callBacks.onSyncFlagChanged.nonEmpty) {
-        chainConfig.callBacks.executeOnSyncFlagChanged(logger, value)
+        chainConfig.callBacks.executeOnSyncFlagChanged(value)
       }
       this
     }

@@ -12,14 +12,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.node.{
-  NodeCallbacks,
-  OnBlockHeadersReceived,
-  OnBlockReceived,
-  OnCompactFiltersReceived,
-  OnMerkleBlockReceived,
-  OnTxReceived
-}
+import org.bitcoins.node._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -43,7 +36,7 @@ case class NodeCallbackStreamManager(
     Vector[(DoubleSha256Digest, GolombFilter)],
     Future[Done]] = {
     Sink.foreachAsync(1) { case vec =>
-      callbacks.executeOnCompactFiltersReceivedCallbacks(logger, vec)
+      callbacks.executeOnCompactFiltersReceivedCallbacks(vec)
     }
   }
 
@@ -58,7 +51,7 @@ case class NodeCallbackStreamManager(
 
   private val txSink: Sink[Transaction, Future[Done]] = {
     Sink.foreachAsync(1) { case tx =>
-      callbacks.executeOnTxReceivedCallbacks(logger, tx)
+      callbacks.executeOnTxReceivedCallbacks(tx)
     }
   }
 
@@ -73,7 +66,7 @@ case class NodeCallbackStreamManager(
 
   private val headerSink: Sink[Vector[BlockHeader], Future[Done]] = {
     Sink.foreachAsync(1) { case headers =>
-      callbacks.executeOnBlockHeadersReceivedCallbacks(logger, headers)
+      callbacks.executeOnBlockHeadersReceivedCallbacks(headers)
     }
   }
 
@@ -88,7 +81,7 @@ case class NodeCallbackStreamManager(
 
   private val blockSink: Sink[Block, Future[Done]] = {
     Sink.foreachAsync(1) { case block =>
-      callbacks.executeOnBlockReceivedCallbacks(logger, block)
+      callbacks.executeOnBlockReceivedCallbacks(block)
     }
   }
 
@@ -105,8 +98,7 @@ case class NodeCallbackStreamManager(
     (MerkleBlock, Vector[Transaction]),
     Future[Done]] = {
     Sink.foreachAsync(1) { case tuple =>
-      callbacks.executeOnMerkleBlockReceivedCallbacks(logger = logger,
-                                                      merkleBlock = tuple._1,
+      callbacks.executeOnMerkleBlockReceivedCallbacks(merkleBlock = tuple._1,
                                                       txs = tuple._2)
     }
   }
@@ -196,7 +188,6 @@ case class NodeCallbackStreamManager(
   }
 
   override def executeOnCompactFiltersReceivedCallbacks(
-      logger: Logger,
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(implicit
       ec: ExecutionContext): Future[Unit] = {
     filterQueue
@@ -205,7 +196,6 @@ case class NodeCallbackStreamManager(
   }
 
   override def executeOnMerkleBlockReceivedCallbacks(
-      logger: Logger,
       merkleBlock: MerkleBlock,
       txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
     merkleBlockQueue
@@ -214,7 +204,6 @@ case class NodeCallbackStreamManager(
   }
 
   override def executeOnBlockHeadersReceivedCallbacks(
-      logger: Logger,
       headers: Vector[BlockHeader])(implicit
       ec: ExecutionContext): Future[Unit] = {
     headerQueue
