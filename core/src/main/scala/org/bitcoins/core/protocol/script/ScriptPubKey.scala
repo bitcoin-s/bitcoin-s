@@ -1357,6 +1357,8 @@ case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
             s"pubKeyBytes must be 32 bytes in length, got=${asm(2).byteSize}")
     XOnlyPubKey.fromBytes(asm(2).bytes)
   }
+
+  override def toString = s"rawtr(${pubKey.hex})"
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
