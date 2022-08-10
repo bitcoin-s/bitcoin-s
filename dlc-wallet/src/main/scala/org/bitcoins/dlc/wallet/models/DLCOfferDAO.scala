@@ -30,7 +30,7 @@ case class DLCOfferDAO()(implicit
   override def createAll(ts: Vector[DLCOfferDb]): Future[Vector[DLCOfferDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(
+  override def findByPrimaryKeys(
       ids: Vector[Sha256Digest]): Query[DLCOfferTable, DLCOfferDb, Seq] =
     table.filter(_.dlcId.inSet(ids))
 

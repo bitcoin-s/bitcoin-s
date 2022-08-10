@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
+import org.bitcoins.db.DbCommonsColumnMappers
 import org.bitcoins.dlc.wallet.models._
 
 import scala.concurrent.ExecutionContext
@@ -21,6 +22,8 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
 
   //idk if it matters which profile api i import, but i need access to transactionally
   import dlcWalletDAOs.dlcDAO.profile.api._
+  private val mappers = new DbCommonsColumnMappers(dlcWalletDAOs.dlcDAO.profile)
+  import mappers.sha256DigestMapper
 
   /** Builds an offer in our database, adds relevant information to the global table,
     * contract data, announcements, funding inputs, and the actual offer itself
@@ -116,19 +119,40 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
         Option[DLCOfferDb],
         Vector[DLCFundingInputDb]),
     NoStream,
-    Effect.Read] = {
-    val dlcDbAction = dlcDAO.findByDLCIdAction(dlcId)
-    val contractDataAction = contractDataDAO.findByDLCIdAction(dlcId)
-    val dlcOfferAction = dlcOfferDAO.findByDLCIdAction(dlcId)
+    Effect.Read with Effect.Transactional] = {
+    val dlcDbQ = dlcDAO.findByPrimaryKey(dlcId)
+    val contractDbsQ = contractDataDAO.findByPrimaryKey(dlcId)
+    val offerDbsQ = dlcOfferDAO.findByPrimaryKey(dlcId)
+    //optimization to use sql queries rather than action
+    //as this method gets called a lot.
+    val dlcDbOfferDbContractDataDbOptA: DBIOAction[
+      Option[((DLCDb, DLCOfferDb), DLCContractDataDb)],
+      NoStream,
+      Effect.Read with Effect.Transactional] = {
+      dlcDbQ
+        .join(offerDbsQ)
+        .on(_.dlcId === _.dlcId)
+        .join(contractDbsQ)
+        .on(_._1.dlcId === _.dlcId)
+        .result
+        .transactionally
+        .map(_.headOption)
+    }
+
     val fundingInputsAction = dlcInputsDAO.findByDLCIdAction(dlcId)
     val combined = for {
-      dlcDb <- dlcDbAction
-      contractData <- contractDataAction
-      offer <- dlcOfferAction
+      dlcDbOfferDbContractDataDbOpt <- dlcDbOfferDbContractDataDbOptA
       inputs <- fundingInputsAction
       //only want offerer inputs
       offerInputs = inputs.filter(_.isInitiator)
-    } yield (dlcDb, contractData, offer, offerInputs)
+    } yield {
+      dlcDbOfferDbContractDataDbOpt match {
+        case Some(((dlcDb, dlcOfferDb), contractDataDb)) =>
+          (Some(dlcDb), Some(contractDataDb), Some(dlcOfferDb), offerInputs)
+        case None =>
+          (None, None, None, offerInputs)
+      }
+    }
 
     combined
   }

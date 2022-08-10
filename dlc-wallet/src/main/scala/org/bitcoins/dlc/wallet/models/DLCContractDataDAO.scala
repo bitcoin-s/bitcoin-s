@@ -31,7 +31,7 @@ case class DLCContractDataDAO()(implicit
       ts: Vector[DLCContractDataDb]): Future[Vector[DLCContractDataDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
+  override def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
     DLCContractDataTable,
     DLCContractDataDb,
     Seq] =
