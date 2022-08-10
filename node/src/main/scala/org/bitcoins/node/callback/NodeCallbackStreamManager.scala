@@ -4,7 +4,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Keep, Sink, Source, SourceQueueWithComplete}
-import grizzled.slf4j.{Logger, Logging}
+import grizzled.slf4j.Logging
 import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.gcs.GolombFilter
