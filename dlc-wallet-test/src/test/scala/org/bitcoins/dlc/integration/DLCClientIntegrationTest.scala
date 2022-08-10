@@ -32,7 +32,7 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
-  private val clientsF = BitcoindRpcTestUtil.createNodePairV18(clientAccum)
+  private val clientsF = BitcoindRpcTestUtil.createNodePair(clientAccum)
   private val clientF = clientsF.map(_._1)
   private val addressForMiningF = clientF.flatMap(_.getNewAddress)
 
