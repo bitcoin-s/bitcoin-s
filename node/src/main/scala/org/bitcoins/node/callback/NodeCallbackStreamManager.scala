@@ -173,15 +173,15 @@ case class NodeCallbackStreamManager(
     Vector[BlockHeader],
     OnBlockHeadersReceived] = callbacks.onBlockHeadersReceived
 
-  override def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  override def executeOnTxReceivedCallbacks(tx: Transaction)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     txQueue
       .offer(tx)
       .map(_ => ())
   }
 
-  override def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  override def executeOnBlockReceivedCallbacks(block: Block)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     blockQueue
       .offer(block)
       .map(_ => ())
