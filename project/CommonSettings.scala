@@ -192,12 +192,6 @@ object CommonSettings {
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "openjdk:17-slim",
       dockerRepository := Some("bitcoinscala"),
-      //set the user to be 'bitcoin-s' rather than
-      //the default provided by sbt native packager
-      //which is 'demiourgos728'
-      Docker / daemonUser := "bitcoin-s",
-      //needed for umbrel to run
-      Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value
