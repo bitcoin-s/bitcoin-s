@@ -24,7 +24,7 @@ import org.bitcoins.core.api.node.{
   NodeApi,
   NodeType
 }
-import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
+import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
@@ -540,18 +540,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wallet: NeutrinoHDWalletApi,
       chainCallbacksOpt: Option[ChainCallbacks]): Future[BitcoindSyncState] = {
     val f = for {
-      _ <- AsyncUtil.retryUntilSatisfiedF(
-        conditionF = { () =>
-          for {
-            bitcoindHeight <- bitcoind.getBlockCount
-            walletStateOpt <- wallet.getSyncDescriptorOpt()
-          } yield walletStateOpt.forall(bitcoindHeight >= _.height)
-        },
-        // retry for approximately 2 hours
-        mode = Exponential,
-        interval = 1.second,
-        maxTries = 12
-      )
+      _ <- handlePotentialBitcoindLostBlock(bitcoind, wallet)
       syncF = BitcoindRpcBackendUtil.syncWalletToBitcoind(
         bitcoind,
         wallet,
@@ -588,6 +577,27 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
+  }
+
+  /** Surprisingly on some OSes like umbrel bitcoind can lose blocks during the shutdown process
+    * This means next time we boot up, our wallet will have more blocks than bitcoind!
+    * Eventually bitcoind will synchrnoize with the network. This waits until bitcoind is synced
+    */
+  private def handlePotentialBitcoindLostBlock(
+      bitcoind: BitcoindRpcClient,
+      wallet: WalletApi): Future[Unit] = {
+    AsyncUtil.retryUntilSatisfiedF(
+      conditionF = { () =>
+        for {
+          bitcoindHeight <- bitcoind.getBlockCount
+          walletStateOpt <- wallet.getSyncDescriptorOpt()
+        } yield walletStateOpt.forall(bitcoindHeight >= _.height)
+      },
+      // retry for approximately 2 hours
+      mode = Exponential,
+      interval = 1.second,
+      maxTries = 12
+    )
   }
 
   /** Builds a websocket queue that you can feed elements to.
