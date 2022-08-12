@@ -555,7 +555,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           val mempoolCancellable = BitcoindRpcBackendUtil
             .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
               nodeConf.callBacks
-                .executeOnTxReceivedCallbacks(logger, tx)
+                .executeOnTxReceivedCallbacks(tx)
             }
           val combinedCancellable =
             BitcoindPollingCancellabe(blockingPollingCancellable,

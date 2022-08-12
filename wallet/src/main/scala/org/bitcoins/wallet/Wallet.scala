@@ -259,7 +259,7 @@ abstract class Wallet
     for {
       _ <- nodeApi.broadcastTransaction(transaction)
       _ <- processTransaction(transaction, blockHashOpt = None)
-      _ <- walletCallbacks.executeOnTransactionBroadcast(logger, transaction)
+      _ <- walletCallbacks.executeOnTransactionBroadcast(transaction)
     } yield ()
 
   override def isEmpty(): Future[Boolean] =
@@ -945,7 +945,6 @@ abstract class Wallet
           }
           .foreach { feeRateOpt =>
             walletCallbacks.executeOnFeeRateChanged(
-              logger,
               feeRateOpt.getOrElse(SatoshisPerVirtualByte.negativeOne))
           }
         ()

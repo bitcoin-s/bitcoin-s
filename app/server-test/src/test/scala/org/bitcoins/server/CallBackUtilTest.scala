@@ -44,12 +44,12 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         tx2 <- tx2F
         callbacks <- callbacksF
         initBalance <- initBalanceF
-        _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx1)
+        _ <- callbacks.executeOnTxReceivedCallbacks(tx1)
         _ <- AsyncUtil.nonBlockingSleep(5000.millis)
         balance2 <- wallet.getBalance()
         _ <- callbacks.stop()
         _ <- callbacks
-          .executeOnTxReceivedCallbacks(logger, tx2)
+          .executeOnTxReceivedCallbacks(tx2)
           .recoverWith { case _: StreamDetachedException =>
             //expect the stream to be detatched because we stopped
             //the stream with callbacks.stop()
@@ -85,12 +85,12 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         tx2 <- tx2F
         callbacks <- callbacksF
         initBalance <- initBalanceF
-        _ <- callbacks.executeOnTxReceivedCallbacks(logger, tx1)
+        _ <- callbacks.executeOnTxReceivedCallbacks(tx1)
         _ <- AsyncUtil.nonBlockingSleep(5000.millis)
         balance2 <- wallet.getBalance()
         _ <- callbacks.stop()
         _ <- callbacks
-          .executeOnTxReceivedCallbacks(logger, tx2)
+          .executeOnTxReceivedCallbacks(tx2)
           .recoverWith { case _: StreamDetachedException =>
             //expect the stream to be detatched because we stopped
             //the stream with callbacks.stop()

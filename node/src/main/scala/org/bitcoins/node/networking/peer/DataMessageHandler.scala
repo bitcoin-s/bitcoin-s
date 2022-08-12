@@ -137,8 +137,7 @@ case class DataMessageHandler(
                 newChainApi <- chainApi.processFilters(filterBatch)
                 _ <-
                   appConfig.callBacks
-                    .executeOnCompactFiltersReceivedCallbacks(logger,
-                                                              blockFilters)
+                    .executeOnCompactFiltersReceivedCallbacks(blockFilters)
               } yield (Vector.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
           _ <-
@@ -274,7 +273,6 @@ case class DataMessageHandler(
           newApi <- chainApiF
           newSyncing <- getHeadersF
           _ <- appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
-            logger,
             headers)
         } yield {
           this.copy(chainApi = newApi, syncing = newSyncing)
@@ -295,7 +293,6 @@ case class DataMessageHandler(
                   _ <-
                     appConfig.callBacks
                       .executeOnBlockHeadersReceivedCallbacks(
-                        logger,
                         Vector(block.blockHeader))
                 } yield processedApi
               } else Future.successful(chainApi)
@@ -306,7 +303,7 @@ case class DataMessageHandler(
           newApi <- newApiF
           _ <-
             appConfig.callBacks
-              .executeOnBlockReceivedCallbacks(logger, block)
+              .executeOnBlockReceivedCallbacks(block)
         } yield {
           this.copy(chainApi = newApi)
         }
@@ -321,7 +318,7 @@ case class DataMessageHandler(
               logger.trace(
                 s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
               appConfig.callBacks
-                .executeOnTxReceivedCallbacks(logger, tx)
+                .executeOnTxReceivedCallbacks(tx)
                 .map(_ => this)
             }
         }

@@ -107,9 +107,7 @@ private[peer] object MerkleBuffers extends P2PLogger {
 
       logger.trace(s"Calling merkle block callback(s)")
       callbacks
-        .executeOnMerkleBlockReceivedCallbacks(logger,
-                                               merkleBlock,
-                                               transactionSoFar)
+        .executeOnMerkleBlockReceivedCallbacks(merkleBlock, transactionSoFar)
         .map(_ => true)
     } else {
       logger.trace(
