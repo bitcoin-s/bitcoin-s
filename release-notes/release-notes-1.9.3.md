@@ -1,6 +1,6 @@
 # 1.9.3
 
-This release is backwards compatible with the 1.9 series of bitcoin-s
+This release is backwards compatible with the 1.9.x series of bitcoin-s
 
 See the individual module sections for more information on lower level updates to the codebase.
 
@@ -91,6 +91,7 @@ Websocket events added this release are
 - sync complete
 - tor started
 
+95139bdc3d Improve logging on getBlockchainInfo() (#4590)
 9f89ba9b7a `loadwallet` endpoint (#4417)
 a02e25b0ce Refactor `WalletRoutes` to take `DLCWalletLoaderApi` as a paramete (#4565)
 8cb45e8208 Add unit tests for loader rescans (#4570)
@@ -119,6 +120,8 @@ This release adds official support for v22 and v23 of bitcoin core.
 It also includes some basic support for fetching blocks via akka streams
 and taproot.
 
+d95d3db75c Download `arm64-apple-darwin` bitcoind binary on M1 Mac OS X (#4588)
+7b754138b8 Drop support for the experimental bitcoind version (#4586)
 ed4e332cef Dafalut to the latest Bitcoin Core version (#4579)
 ad21a11254 Create BitcoindStreamUtil and refactor to use it (#4578)
 3ae169a41f V22 RPC Support Update Continued (#4424)
@@ -158,6 +161,8 @@ and [taproot signature serialization](https://github.com/bitcoin/bips/blob/maste
 
 The next release will add signing support for taproot transactions.
 
+26492d2449 Add descriptor for TaprootScriptPubKey (#4595)
+b04a34ad02 Use FutureUtil.makeAsync where we are attmepting to create async Futures (#4583)
 4b83286922 2022 07 25 wallet api refactor (#4545)
 c210052640 Refactor coin selection to be not be bitcoin-s specific (#4496)
 5c9092889b Add abillity to clear callbacks (#4512)
@@ -203,12 +208,17 @@ ae0962d7ed Musig2 Implementation (#4418)
 
 ## db commons
 
+675b210333 Add PSBT database mapper (#4584)
+
 ## DLC node
 
 ## DLC wallet
 
 Optimizations for the DLC Wallet.
 
+46502496c1  Update DLCClientIntegrationTest to use the newest bitcoind (#4596)
+a22e847e2e Implement small optimization to not query for DLCDb twice (#4592)
+326cb9845e Implement listDLCs(state), use it in getWalletAccounting() (#4591)
 ba396f2fb3 Fetch findByFundingTxId/findByFundingOutPoints in parallel as an optimization (#4560)
 603b7e0aea Make DLCWallet.listDLCs use DBIOActions (#4555)
 
@@ -232,6 +242,7 @@ into bitcoin-s or generated from internal entropy.
 
 ## Lnd rpc
 
+ef3bfed1dc Add ChainNotifier to LND (#4589)
 f286b42c71 Retry lnd startup if it fails (#4573)
 678612161b Fix lnd OutputDetails for outputs that dont have an address (#4438)
 828d03c727 Fix out of bounds issues with lnd mappers (#4425)
@@ -289,6 +300,8 @@ This is unlikely to happen in practice. Consider rescanning your wallet though o
 
 Various refactors and optimizations were needed to complete the rescan and `loadwallet` work.
 
+6119a334fa Make fundRawTransactionInternal use DBIOActions (#4575)
+cf22816003 Fix rescan batch boundary bug (#4549)
 2fa7c39f64 Use DBIOActions to speed up processing transactions (#4572)
 c03b158f94 Implement `RescanTerminatedEarly` exception to terminate the stream, implement `ArgumentSource` (#4574)
 524c0af536 Make wallet.getBalance more effienct (#4566)
@@ -328,6 +341,7 @@ Emit a `torstarted` websocket callback when tor is fully started.
 
 ## Website
 
+c7e5317294  2022 08 06 1.9.3 release notes (#4582)
 6b9d2db350 Update license to latest year (#4525)
 135b9f8a35  Update documentation for UI to use build script Advanced Setup  (#4430)
 305e920784 Remove extra stuff from README so its easier to find important stuff (#4433)
@@ -337,6 +351,7 @@ Emit a `torstarted` websocket callback when tor is fully started.
 
 ## Dependencies
 
+c10f7beadb Run yarn upgrade to update website deps (#4581)
 9930c964f7 sbt 1.7.1 (#4497)
 1fc6d2a793 Upgrade sbt to 1.7.0 (#4490)
 0404cffe26 Embedded Pg v1.0.1 (#4567)
