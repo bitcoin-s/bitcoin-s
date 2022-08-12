@@ -65,7 +65,19 @@ object BitcoindRpcBackendUtil extends Logging {
     //run the stream
     val res = streamF.flatMap(_.run())
     res.onComplete { case _ =>
-      setSyncingFlag(false, bitcoind, chainCallbacksOpt)
+      val isBitcoindInSyncF = BitcoindRpcBackendUtil.isBitcoindInSync(bitcoind)
+      isBitcoindInSyncF.flatMap { isBitcoindInSync =>
+        if (isBitcoindInSync) {
+          //if bitcoind is in sync, and we are in sync with bitcoind, set the syncing flag to false
+          setSyncingFlag(false, bitcoind, chainCallbacksOpt)
+        } else {
+          //if bitcoind is not in sync, we cannot be done syncing. Keep the syncing flag to true
+          //so do nothing in this case
+          logger.warn(
+            s"We synced against bitcoind, but bitcoind is not in sync with the network.")
+          Future.unit
+        }
+      }
     }
 
     res.map(_ => ())
@@ -111,11 +123,23 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    logger.info(s"Setting bitcoind syncing flag to $syncing")
+    val oldSyncingFlagF = bitcoind.isSyncing()
     for {
+      oldFlag <- oldSyncingFlagF
       _ <- bitcoind.setSyncing(syncing)
+      _ <- {
+        if (oldFlag != syncing) {
+          val executeCallbackOpt =
+            chainCallbacksOpt.map(_.executeOnSyncFlagChanged(syncing))
+          executeCallbackOpt match {
+            case Some(f) => f
+            case None    => Future.unit
+          }
+        } else {
+          Future.unit
+        }
+      }
     } yield {
-      chainCallbacksOpt.map(_.executeOnSyncFlagChanged(syncing))
       ()
     }
   }
@@ -379,10 +403,11 @@ object BitcoindRpcBackendUtil extends Logging {
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        val isBitcoindSyncingF = bitcoind.isSyncing()
-        isBitcoindSyncingF.map { isBitcoindSyncing =>
-          if (isBitcoindSyncing) {
-            logger.info(s"Bitcoind is syncing, waiting for sync to complete.")
+        val isBitcoindSyncedF = isBitcoindInSync(bitcoind)
+
+        isBitcoindSyncedF.map { isBitcoindSynced =>
+          if (!isBitcoindSynced) {
+            logger.info(s"Bitcoind is not synced, waiting for IBD to complete.")
           } else if (processingBitcoindBlocks.compareAndSet(false, true)) {
             val f = for {
               walletSyncState <- wallet.getSyncState()
@@ -477,19 +502,17 @@ object BitcoindRpcBackendUtil extends Logging {
     logger.debug("Polling bitcoind for block count")
 
     val resF: Future[Unit] = for {
-      _ <- bitcoind.setSyncing(true)
-      _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
       count <- bitcoind.getBlockCount
       retval <- {
         if (prevCount < count) {
           logger.info(
             s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
-
-          // use .tail so we don't process the previous block that we already did
-          val range = prevCount.to(count).tail
-
-          range.foreach(r => queue.offer(r))
-          Future.unit
+          val setSyncFlagF = setSyncingFlag(true, bitcoind, chainCallbacksOpt)
+          setSyncFlagF.map { _ =>
+            // use .tail so we don't process the previous block that we already did
+            val range = prevCount.to(count).tail
+            range.foreach(r => queue.offer(r))
+          }
         } else if (prevCount > count) {
           Future.failed(new RuntimeException(
             s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
@@ -582,6 +605,16 @@ object BitcoindRpcBackendUtil extends Logging {
         f.failed.foreach(err => logger.error(s"Failed to poll mempool", err))
         ()
       }
+    }
+  }
+
+  /** Checks if bitcoind has all blocks for the headers it has seen on the network */
+  private def isBitcoindInSync(bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    for {
+      blockchainInfo <- bitcoind.getBlockChainInfo
+    } yield {
+      blockchainInfo.headers == blockchainInfo.blocks
     }
   }
 
