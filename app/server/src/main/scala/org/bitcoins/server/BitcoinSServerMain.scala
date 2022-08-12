@@ -399,7 +399,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val bitcoindSyncStateF: Future[BitcoindSyncState] = {
       for {
         bitcoind <- bitcoindF
-        bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
+        blockchainInfo <- getBlockChainInfo(bitcoind)
+        _ <- bitcoind.setSyncing(blockchainInfo.initialblockdownload)
+        bitcoindNetwork = blockchainInfo.chain
         _ = require(
           bitcoindNetwork == network,
           s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")

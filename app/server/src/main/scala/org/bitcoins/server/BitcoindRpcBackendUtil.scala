@@ -111,7 +111,7 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    logger.debug(s"Setting bitcoind syncing flag to $syncing")
+    logger.info(s"Setting bitcoind syncing flag to $syncing")
     for {
       _ <- bitcoind.setSyncing(syncing)
     } yield {
