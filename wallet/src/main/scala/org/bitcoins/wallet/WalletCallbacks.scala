@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import grizzled.slf4j.Logger
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * The appropriate callback is executed whenever the wallet finishes,
   * the corresponding function.
   */
-trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
+trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] with Logging {
 
   def onTransactionProcessed: CallbackHandler[
     Transaction,
@@ -38,7 +38,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
 
   def +(other: WalletCallbacks): WalletCallbacks
 
-  def executeOnTransactionProcessed(logger: Logger, tx: Transaction)(implicit
+  def executeOnTransactionProcessed(tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onTransactionProcessed.execute(
       tx,
@@ -48,7 +48,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
           err))
   }
 
-  def executeOnTransactionBroadcast(logger: Logger, tx: Transaction)(implicit
+  def executeOnTransactionBroadcast(tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onTransactionBroadcast.execute(
       tx,
@@ -58,8 +58,8 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
           err))
   }
 
-  def executeOnReservedUtxos(logger: Logger, utxos: Vector[SpendingInfoDb])(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnReservedUtxos(utxos: Vector[SpendingInfoDb])(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onReservedUtxos.execute(
       utxos,
       (err: Throwable) =>
@@ -67,8 +67,8 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
                      err))
   }
 
-  def executeOnNewAddressGenerated(logger: Logger, address: BitcoinAddress)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnNewAddressGenerated(address: BitcoinAddress)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onNewAddressGenerated.execute(
       address,
       (err: Throwable) =>
@@ -77,7 +77,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
           err))
   }
 
-  def executeOnBlockProcessed(logger: Logger, block: Block)(implicit
+  def executeOnBlockProcessed(block: Block)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onBlockProcessed.execute(
       block,
@@ -86,7 +86,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
                      err))
   }
 
-  def executeOnRescanComplete(logger: Logger, walletName: String)(implicit
+  def executeOnRescanComplete(walletName: String)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onRescanComplete.execute(
       walletName,
@@ -95,7 +95,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] {
                      err))
   }
 
-  def executeOnFeeRateChanged(logger: Logger, feeRate: FeeUnit)(implicit
+  def executeOnFeeRateChanged(feeRate: FeeUnit)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onFeeRateChanged.execute(
       feeRate,

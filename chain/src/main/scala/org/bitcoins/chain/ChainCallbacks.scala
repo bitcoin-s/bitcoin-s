@@ -3,13 +3,11 @@ package org.bitcoins.chain
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.slf4j.LoggerFactory
+import slick.util.Logging
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ChainCallbacks extends ModuleCallbacks[ChainCallbacks] {
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
+trait ChainCallbacks extends ModuleCallbacks[ChainCallbacks] with Logging {
 
   def onBlockHeaderConnected: CallbackHandler[
     Vector[(Int, BlockHeader)],

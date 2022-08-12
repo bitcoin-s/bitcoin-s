@@ -232,7 +232,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
     val callbackExecuted = resultA.flatMap { address =>
       val executedF =
-        walletCallbacks.executeOnNewAddressGenerated(logger, address)
+        walletCallbacks.executeOnNewAddressGenerated(address)
       DBIOAction
         .from(executedF)
         .map(_ => address)

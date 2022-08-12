@@ -307,7 +307,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     logger.info(s"Reserving utxos=$outPoints")
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     spendingInfoDAO.markAsReservedAction(updated).map { utxos =>
-      val callbackF = walletCallbacks.executeOnReservedUtxos(logger, utxos)
+      val callbackF = walletCallbacks.executeOnReservedUtxos(utxos)
       (utxos, callbackF)
     }
   }
@@ -348,7 +348,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       updated <- spendingInfoDAO.updateAllSpendingInfoDb(
         pendingConf ++ updatedConfirmed)
 
-      _ <- walletCallbacks.executeOnReservedUtxos(logger, updated)
+      _ <- walletCallbacks.executeOnReservedUtxos(updated)
     } yield updated
   }
 

@@ -87,7 +87,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       hash = block.blockHeader.hashBE
       height <- heightF
       _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
-      _ <- walletConfig.callBacks.executeOnBlockProcessed(logger, block)
+      _ <- walletConfig.callBacks.executeOnBlockProcessed(block)
     } yield {
       res
     }
@@ -446,7 +446,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       _ <-
         // only notify about our transactions
         if (incoming.nonEmpty || outgoing.nonEmpty)
-          walletCallbacks.executeOnTransactionProcessed(logger, transaction)
+          walletCallbacks.executeOnTransactionProcessed(transaction)
         else Future.unit
     } yield {
       ProcessTxResult(incoming, outgoing)

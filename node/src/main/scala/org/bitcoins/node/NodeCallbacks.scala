@@ -1,12 +1,12 @@
 package org.bitcoins.node
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -14,9 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * The appropriate callback is executed whenever the node receives
   * a `getdata` message matching it.
   */
-trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] {
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
+trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with Logging {
 
   def onCompactFiltersReceived: CallbackHandler[
     Vector[(DoubleSha256Digest, GolombFilter)],
