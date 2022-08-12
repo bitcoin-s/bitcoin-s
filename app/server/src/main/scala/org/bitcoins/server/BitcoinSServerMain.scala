@@ -368,10 +368,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         nodeApi <- nodeApiF
         feeProvider <- feeProviderF
       } yield {
-        val l = DLCWalletBitcoindBackendLoader(walletHolder,
-                                               bitcoind,
-                                               nodeApi,
-                                               feeProvider)
+        val l = DLCWalletBitcoindBackendLoader(walletHolder = walletHolder,
+                                               bitcoind = bitcoind,
+                                               nodeApi = nodeApi,
+                                               feeProvider = feeProvider)
 
         walletLoaderApiOpt = Some(l)
         l

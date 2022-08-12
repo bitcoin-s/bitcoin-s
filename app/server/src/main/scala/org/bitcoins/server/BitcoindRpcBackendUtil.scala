@@ -379,39 +379,46 @@ object BitcoindRpcBackendUtil extends Logging {
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        if (processingBitcoindBlocks.compareAndSet(false, true)) {
-          val f = for {
-            walletSyncState <- wallet.getSyncState()
-            rescanning <- wallet.isRescanning()
-            res <-
-              if (!rescanning) {
-                val pollFOptF = pollBitcoind(wallet = wallet,
-                                             bitcoind = bitcoind,
-                                             chainCallbacksOpt =
-                                               chainCallbacksOpt,
-                                             prevCount = walletSyncState.height)
+        val isBitcoindSyncingF = bitcoind.isSyncing()
+        isBitcoindSyncingF.map { isBitcoindSyncing =>
+          if (isBitcoindSyncing) {
+            logger.info(s"Bitcoind is syncing, waiting for sync to complete.")
+          } else if (processingBitcoindBlocks.compareAndSet(false, true)) {
+            val f = for {
+              walletSyncState <- wallet.getSyncState()
+              rescanning <- wallet.isRescanning()
+              res <-
+                if (!rescanning) {
+                  val pollFOptF =
+                    pollBitcoind(wallet = wallet,
+                                 bitcoind = bitcoind,
+                                 chainCallbacksOpt = chainCallbacksOpt,
+                                 prevCount = walletSyncState.height)
 
-                pollFOptF.flatMap {
-                  case Some(pollF) => pollF
-                  case None        => Future.unit
+                  pollFOptF.flatMap {
+                    case Some(pollF) => pollF
+                    case None        => Future.unit
+                  }
+                } else {
+                  logger.info(
+                    s"Skipping scanning the blockchain during wallet rescan")
+                  Future.unit
                 }
-              } else {
-                logger.info(
-                  s"Skipping scanning the blockchain during wallet rescan")
-                Future.unit
-              }
-          } yield res
+            } yield res
 
-          f.onComplete { _ =>
-            processingBitcoindBlocks.set(false)
-            BitcoindRpcBackendUtil.setSyncingFlag(false,
-                                                  bitcoind,
-                                                  chainCallbacksOpt)
-          } //reset polling variable
-          f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
-        } else {
-          logger.info(s"Previous bitcoind polling still running")
+            f.onComplete { _ =>
+              processingBitcoindBlocks.set(false)
+              BitcoindRpcBackendUtil.setSyncingFlag(false,
+                                                    bitcoind,
+                                                    chainCallbacksOpt)
+            } //reset polling variable
+            f.failed.foreach(err =>
+              logger.error(s"Failed to poll bitcoind", err))
+          } else {
+            logger.info(s"Previous bitcoind polling still running")
+          }
         }
+        ()
       }
     }
   }
