@@ -368,10 +368,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         nodeApi <- nodeApiF
         feeProvider <- feeProviderF
       } yield {
-        val l = DLCWalletBitcoindBackendLoader(walletHolder,
-                                               bitcoind,
-                                               nodeApi,
-                                               feeProvider)
+        val l = DLCWalletBitcoindBackendLoader(walletHolder = walletHolder,
+                                               bitcoind = bitcoind,
+                                               nodeApi = nodeApi,
+                                               feeProvider = feeProvider)
 
         walletLoaderApiOpt = Some(l)
         l
@@ -399,7 +399,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val bitcoindSyncStateF: Future[BitcoindSyncState] = {
       for {
         bitcoind <- bitcoindF
-        bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
+        blockchainInfo <- getBlockChainInfo(bitcoind)
+        _ <- bitcoind.setSyncing(blockchainInfo.initialblockdownload)
+        bitcoindNetwork = blockchainInfo.chain
         _ = require(
           bitcoindNetwork == network,
           s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")

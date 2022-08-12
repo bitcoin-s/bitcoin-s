@@ -1020,13 +1020,34 @@ class ChainHandler(
   }
 
   override def setSyncing(value: Boolean): Future[ChainApi] = {
+    val isSyncingF = stateDAO.isSyncing
+    for {
+      isSyncing <- isSyncingF
+      _ <- {
+        if (isSyncing == value) {
+          //do nothing as we are already at this state
+          Future.unit
+        } else {
+          updateSyncingAndExecuteCallback(value)
+        }
+      }
+    } yield {
+      this
+    }
+  }
+
+  private def updateSyncingAndExecuteCallback(value: Boolean): Future[Unit] = {
     for {
       changed <- stateDAO.updateSyncing(value)
-    } yield {
-      if (changed && chainConfig.callBacks.onSyncFlagChanged.nonEmpty) {
-        chainConfig.callBacks.executeOnSyncFlagChanged(value)
+      _ <- {
+        if (changed && chainConfig.callBacks.onSyncFlagChanged.nonEmpty) {
+          chainConfig.callBacks.executeOnSyncFlagChanged(value)
+        } else {
+          Future.unit
+        }
       }
-      this
+    } yield {
+      ()
     }
   }
 }
