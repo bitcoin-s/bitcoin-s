@@ -76,7 +76,21 @@ class LndRpcClientPairTest extends DualLndFixture {
                                       pushAmt = Satoshis(10),
                                       satPerVByte = SatoshisPerVirtualByte.one,
                                       privateChannel = false)
-    } yield assert(outpointOpt.isDefined)
+
+      pendingA <- lndA.listPendingChannels()
+      pendingB <- lndB.listPendingChannels()
+    } yield {
+      assert(outpointOpt.isDefined)
+      val outpoint = outpointOpt.get
+      val expectedOutpoint = s"${outpoint.txId.hex}:${outpoint.vout.toInt}"
+
+      assert(
+        pendingA.pendingOpenChannels.exists(
+          _.channel.get.channelPoint == expectedOutpoint))
+      assert(
+        pendingB.pendingOpenChannels.exists(
+          _.channel.get.channelPoint == expectedOutpoint))
+    }
   }
 
   it must "close a channel" in { param =>

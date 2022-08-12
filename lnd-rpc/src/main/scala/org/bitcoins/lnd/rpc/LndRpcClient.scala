@@ -509,6 +509,12 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .map(_.channels.toVector)
   }
 
+  def listPendingChannels(): Future[PendingChannelsResponse] = {
+    logger.trace("lnd calling pendingchannels")
+
+    lnd.pendingChannels(PendingChannelsRequest())
+  }
+
   def findChannel(
       channelPoint: TransactionOutPoint): Future[Option[Channel]] = {
     listChannels().map { channels =>
