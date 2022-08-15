@@ -15,7 +15,6 @@ If you are a typescript developer, [you can access the backend via our typescrip
 - taproot script/signature verification
 - multi peer neutrino
 
-
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
@@ -77,6 +76,20 @@ https://repo1.maven.org/maven2/org/bitcoin-s/
 
 https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
+## Contributors
+
+```
+    88	Chris Stewart
+    38	benthecarman
+    13	rorp
+    10	Shreyansh
+     4	GreyMcCarthy
+     1	Nadav Kohen
+     1	fiatjaf
+     1	user411
+```
+
+# Modules 
 
 ## app commons
 
