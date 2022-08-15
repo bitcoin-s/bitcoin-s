@@ -8,6 +8,14 @@ Want to get started quickly? See our `docker-compose.yml` file. [See instruction
 
 If you are a typescript developer, [you can access the backend via our typescript library](https://github.com/bitcoin-s/bitcoin-s-ts)
 
+# Executive Summary
+
+- Many websocket events added
+- `loadwallet` RPC to switch wallets without restarting the application
+- taproot script/signature verification
+- multi peer neutrino
+
+
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
@@ -69,7 +77,6 @@ https://repo1.maven.org/maven2/org/bitcoin-s/
 
 https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
-# Executive Summary
 
 ## app commons
 
@@ -91,6 +98,9 @@ Websocket events added this release are
 - sync complete
 - tor started
 
+a0851fea58 Run migrations upfront (#4607)
+d0dadfa423 2022 08 11 issue 4600 and only emit `syncing` ws event when we are actually syncing (#4604)
+b0831f26a7 Refactor waiting for bitcoind lost blocks into helper method, add context (#4602)
 95139bdc3d Improve logging on getBlockchainInfo() (#4590)
 9f89ba9b7a `loadwallet` endpoint (#4417)
 a02e25b0ce Refactor `WalletRoutes` to take `DLCWalletLoaderApi` as a paramete (#4565)
@@ -143,6 +153,8 @@ This release fixes a package name bug introduced in 1.9.2 (#4401).
 
 Fixes various bugs in bash scripts used by `bitcoin-s-{server, oracle-server}`.
 
+6b8f45e393 Update docker-compose.yml (#4599)
+e413f04106 Remove the daemonUser/daemonUserId combination to make our docker images more portable (#4601)
 a2117e2551 Downgrade CI jdk 18 -> 17 (#4546)
 6f42f83146 Move OSX check inside of jre path check, fix bug where quarantine wasn't working in case where we are in the same directory as script (#4508)
 5b44c074f1 Fix `chmod: jre/bin/java: No such file or directory` errors (#4493)
@@ -161,6 +173,7 @@ and [taproot signature serialization](https://github.com/bitcoin/bips/blob/maste
 
 The next release will add signing support for taproot transactions.
 
+c34b0de886 removed logger parameter from where it's used with callbacks (#4598)
 26492d2449 Add descriptor for TaprootScriptPubKey (#4595)
 b04a34ad02 Use FutureUtil.makeAsync where we are attmepting to create async Futures (#4583)
 4b83286922 2022 07 25 wallet api refactor (#4545)
@@ -242,6 +255,7 @@ into bitcoin-s or generated from internal entropy.
 
 ## Lnd rpc
 
+64bc1367c5 Add listPendingChannels to LND (#4603)
 ef3bfed1dc Add ChainNotifier to LND (#4589)
 f286b42c71 Retry lnd startup if it fails (#4573)
 678612161b Fix lnd OutputDetails for outputs that dont have an address (#4438)
@@ -270,6 +284,7 @@ This PR also implements `NodeCallbacks` with akka streams so we can safely call 
 when node callbacks are being executed. Now we want for the streams to complete, and then continue
 loading the ne wallet.
 
+dea99457b5 fix mac node-wallet test failure (#4585)
 5acbba9377 Replace `BoundedSourceQueueWithComplete` with `SourceQueueWithComplete` (#4576)
 c4d358061a Add P2PClientSupervisor (#4509)
 f5cca7e5e1 Add guard for calling NodeCallbackStreamManager.stop() (#4523)
@@ -284,6 +299,8 @@ a7ba46f67d Update hardcoded seeds (#4412)
 7f43ef98ad Default to suredbits node if peers field is left empty (#4404)
 
 ## Oracle Explorer Client
+
+8638d14ca0 Update Oracle Explorer addreess (#4609)
 
 ## wallet
 
@@ -341,6 +358,7 @@ Emit a `torstarted` websocket callback when tor is fully started.
 
 ## Website
 
+9fd9cf1ee4 Update release notes again for 1.9.3 (#4597)
 c7e5317294  2022 08 06 1.9.3 release notes (#4582)
 6b9d2db350 Update license to latest year (#4525)
 135b9f8a35  Update documentation for UI to use build script Advanced Setup  (#4430)
@@ -351,8 +369,11 @@ c7e5317294  2022 08 06 1.9.3 release notes (#4582)
 
 ## Dependencies
 
+d79f70ee82 Bump scalatest to 3.2.13 (#4605)
 c10f7beadb Run yarn upgrade to update website deps (#4581)
 9930c964f7 sbt 1.7.1 (#4497)
 1fc6d2a793 Upgrade sbt to 1.7.0 (#4490)
 0404cffe26 Embedded Pg v1.0.1 (#4567)
 970b6fd6eb upgrade scalatest dependencies (#4411)
+
+
