@@ -268,6 +268,14 @@ object CurrencyUnits extends Numeric[CurrencyUnit] {
     }
   }
 
+  def max(a: CurrencyUnit, b: CurrencyUnit): CurrencyUnit = {
+    if (a > b) a else b
+  }
+
+  def min(a: CurrencyUnit, b: CurrencyUnit): CurrencyUnit = {
+    if (a < b) a else b
+  }
+
   /** The number you need to multiply BTC by to get it's satoshis */
   val btcToSatoshiScalar: Long = 100000000
   val satoshisToBTCScalar: BigDecimal = BigDecimal(1.0) / btcToSatoshiScalar
