@@ -7,11 +7,11 @@ services:
     restart: on-failure
     stop_grace_period: 1m
     volumes:
-      - ./data/wallet:/home/bitcoin-s/.bitcoin-s
+      - ./data/wallet:/wallet
       - ./data/log:/log
     environment:
       LOG_PATH: "/log/"
-      BITCOIN_S_HOME: "/home/bitcoin-s/.bitcoin-s/"
+      BITCOIN_S_HOME: "/wallet/"
       MEMPOOL_API_URL: "http://mempool.space/api"
       WALLET_SERVER_API_URL: "http://walletserver:9999/"
       WALLET_SERVER_WS: "ws://walletserver:19999/events"
@@ -23,10 +23,11 @@ services:
       - walletserver
   walletserver:
     image: bitcoinscala/bitcoin-s-server:latest
+    entrypoint: ["/opt/docker/bin/bitcoin-s-server", "--datadir", "/wallet", "--conf", "/opt/docker/docker-application.conf"]
     user: "0:1000"
     restart: on-failure
     volumes:
-      - ./data/wallet:/home/bitcoin-s/.bitcoin-s
+      - ./data/wallet:/wallet
     environment:
       BITCOIN_S_NODE_MODE: "neutrino"
       BITCOIN_S_NODE_PEERS: "neutrino.suredbits.com:8333"
