@@ -23,7 +23,7 @@ object ExplorerEnv extends StringFactory[ExplorerEnv] {
     override val baseUri: String = s"${siteUrl}v2/"
 
     override val torUrl: String =
-      "http://oraclez4zobtsekasdz5aq3pgw75cwrso5dbckfz5wrfexfhv7755oid.onion/"
+      "http://oraclehq5rftjmzpwlvayvapb5cnkqoxd5hin3ueimm3xnntn4x4vmad.onion/"
     override val torBaseUri: String = s"${torUrl}v2/"
   }
 
