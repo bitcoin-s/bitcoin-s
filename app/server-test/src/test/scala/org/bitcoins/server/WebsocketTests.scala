@@ -13,7 +13,7 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.ConsoleCli.exec
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
-  BlockProcessedNotification,
+  BlockProcessedNotifications,
   SyncFlagChangedNotification
 }
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification._
@@ -252,7 +252,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       notifications <- notificationsF
     } yield {
       val count = notifications.count(
-        _ == BlockProcessedNotification(getBlockHeaderResult))
+        _ == BlockProcessedNotifications(Vector(getBlockHeaderResult)))
       assert(count == 1, s"count=$count")
     }
   }

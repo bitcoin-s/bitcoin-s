@@ -20,7 +20,6 @@ import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.dlc.wallet.{
   DLCWalletCallbacks,
@@ -46,15 +45,8 @@ object WebsocketUtil extends Logging {
           ChainUtil.getBlockHeaderResult(hashes, chainApi)
         val f = for {
           results <- resultsF
-          notifications =
-            results.map(result =>
-              ChainNotification.BlockProcessedNotification(result))
-          _ <- FutureUtil.sequentially(notifications) { case msg =>
-            val x: Future[Unit] = queue
-              .offer(msg)
-              .map(_ => ())
-            x
-          }
+          notifications = ChainNotification.BlockProcessedNotifications(results)
+          _ <- queue.offer(notifications)
         } yield {
           ()
         }

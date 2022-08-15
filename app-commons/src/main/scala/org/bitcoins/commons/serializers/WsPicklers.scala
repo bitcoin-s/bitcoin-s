@@ -1,7 +1,7 @@
 package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
-  BlockProcessedNotification,
+  BlockProcessedNotifications,
   SyncFlagChangedNotification
 }
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
@@ -46,8 +46,10 @@ object WsPicklers {
   private def writeChainNotification(
       notification: ChainNotification[_]): ujson.Obj = {
     val payloadJson: ujson.Value = notification match {
-      case BlockProcessedNotification(block) =>
-        upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler)
+      case BlockProcessedNotifications(blocks) =>
+        val objs = blocks.map(block =>
+          upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler))
+        ujson.Arr.from(objs)
       case SyncFlagChangedNotification(syncing) =>
         upickle.default.writeJs(syncing)
     }
@@ -64,9 +66,17 @@ object WsPicklers {
 
     typeObj match {
       case ChainWsType.BlockProcessed =>
-        val block =
-          upickle.default.read(payloadObj)(Picklers.getBlockHeaderResultPickler)
-        BlockProcessedNotification(block)
+        val blockResults = payloadObj.arr.toVector.map {
+          case obj: ujson.Obj =>
+            val block =
+              upickle.default.read(obj)(Picklers.getBlockHeaderResultPickler)
+            block
+          case x @ (_: ujson.Bool | _: ujson.Str | _: ujson.Arr | ujson.Null |
+              _: ujson.Num) =>
+            sys.error(s"Cannot parse blockprocessed notification from json=$x")
+        }
+
+        ChainNotification.BlockProcessedNotifications(blockResults)
       case ChainWsType.SyncFlagChanged =>
         val syncing = payloadObj.bool
         SyncFlagChangedNotification(syncing)
@@ -210,10 +220,11 @@ object WsPicklers {
     readwriter[ujson.Obj].bimap(writeChainNotification, readChainNotification)
   }
 
-  implicit val blockProcessedPickler: ReadWriter[BlockProcessedNotification] = {
+  implicit val blockProcessedPickler: ReadWriter[
+    BlockProcessedNotifications] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
-      readChainNotification(_).asInstanceOf[BlockProcessedNotification]
+      readChainNotification(_).asInstanceOf[BlockProcessedNotifications]
     )
   }
 

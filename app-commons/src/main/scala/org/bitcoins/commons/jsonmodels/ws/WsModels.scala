@@ -201,8 +201,8 @@ object WalletNotification {
 
 object ChainNotification {
 
-  case class BlockProcessedNotification(payload: GetBlockHeaderResult)
-      extends ChainNotification[GetBlockHeaderResult] {
+  case class BlockProcessedNotifications(payload: Vector[GetBlockHeaderResult])
+      extends ChainNotification[Vector[GetBlockHeaderResult]] {
     override val `type`: ChainWsType = ChainWsType.BlockProcessed
 
     override val json: ujson.Value = {
