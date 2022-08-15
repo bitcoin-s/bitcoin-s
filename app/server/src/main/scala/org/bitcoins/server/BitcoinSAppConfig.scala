@@ -8,6 +8,7 @@ import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.{StartStopAsync, TimeUtil}
+import org.bitcoins.db.DbManagement
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -79,6 +80,12 @@ case class BitcoinSAppConfig(
     val torConfig = torConf.start()
     val torDependentConfigs =
       Vector(nodeConf, bitcoindRpcConf, dlcConf, dlcNodeConf)
+
+    val dbConfigs: Vector[DbManagement] =
+      Vector(chainConf, walletConf, nodeConf, dlcConf)
+
+    //run all migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
+    val _ = dbConfigs.map(_.migrate())
 
     val startedTorDependentConfigsF = for {
       _ <- torConfig
