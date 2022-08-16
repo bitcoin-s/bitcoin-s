@@ -313,22 +313,12 @@ case class DataMessageHandler(
           handler
         }
       case TransactionMessage(tx) =>
-        MerkleBuffers.putTx(tx, appConfig.callBacks).flatMap {
-          belongsToMerkle =>
-            if (belongsToMerkle) {
-              logger.trace(
-                s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
-              Future.successful(this)
-            } else {
-              logger.trace(
-                s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-              appConfig.callBacks
-                .executeOnTxReceivedCallbacks(tx)
-                .map(_ => this)
-            }
-        }
-      case MerkleBlockMessage(merkleBlock) =>
-        MerkleBuffers.putMerkle(merkleBlock)
+        logger.trace(s"Received txmsg=${tx.txIdBE}, processing given callbacks")
+        appConfig.callBacks
+          .executeOnTxReceivedCallbacks(tx)
+          .map(_ => this)
+      case MerkleBlockMessage(_) =>
+        logger.warn(s"Merkleblock is not supported")
         Future.successful(this)
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
