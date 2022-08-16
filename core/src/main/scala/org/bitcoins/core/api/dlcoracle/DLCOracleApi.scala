@@ -117,4 +117,9 @@ trait DLCOracleApi {
 
   /** Signs the SHA256 hash of the given bytes using the oracle's signing key */
   def signMessage(message: ByteVector): SchnorrDigitalSignature
+
+  /** Returns the staking address private key in wallet import format
+    * so a user can take it an recover the funds in another wallet
+    */
+  def exportSigningKeyWIF: String
 }

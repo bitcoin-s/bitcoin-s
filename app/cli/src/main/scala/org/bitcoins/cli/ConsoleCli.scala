@@ -1525,6 +1525,9 @@ object ConsoleCli {
       cmd("getstakingaddress")
         .action((_, conf) => conf.copy(command = GetStakingAddress))
         .text(s"Get oracle's staking address"),
+      cmd("exportstakingaddresswif")
+        .action((_, conf) => conf.copy(command = ExportStakingAddressWif))
+        .text(s"Export the private key for the wallet's staking address"),
       cmd("listannouncements")
         .action((_, conf) => conf.copy(command = ListAnnouncements))
         .text(s"Lists all announcement names"),
@@ -2227,6 +2230,8 @@ object ConsoleCli {
         RequestParam("setoraclename", Seq(up.writeJs(oracleName)))
       case GetStakingAddress =>
         RequestParam("getstakingaddress")
+      case ExportStakingAddressWif =>
+        RequestParam("exportstakingaddresswif")
       case ListAnnouncements =>
         RequestParam("listannouncements")
       case GetAnnouncement(eventName) =>
@@ -2507,6 +2512,8 @@ object CliCommand {
   // Oracle
   case object GetPublicKey extends OracleServerCliCommand
   case object GetStakingAddress extends OracleServerCliCommand
+
+  case object ExportStakingAddressWif extends OracleServerCliCommand
   case object ListAnnouncements extends OracleServerCliCommand
 
   case class GetAnnouncement(eventName: String) extends OracleServerCliCommand
