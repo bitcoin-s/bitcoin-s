@@ -159,7 +159,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
     }
 
-    val configuredWalletF = {
+    val configuredWalletF: Future[
+      (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
       for {
         walletNameOpt <- getLastLoadedWalletName()
         neutrinoWalletLoader <- neutrinoWalletLoaderF
@@ -220,6 +221,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     //start our http server now that we are synced
     val startedF = for {
+      _ <- configuredWalletF
       _ <- startHttpServer(
         nodeApiF = startedNodeF,
         chainApi = chainApi,
