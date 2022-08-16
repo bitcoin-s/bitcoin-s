@@ -56,6 +56,7 @@ Make sure you don't back the seed file to a place that is not safe.
   - `message` - Message to hash and sign
 - `setoraclename` `oraclename` Sets the oracle name in the database
 - `getoraclename` gets the oraclename for the database
+- `exportstakingaddresswif` exports the staking addresses private key so it can be recovered in another wallet.
   
 ### Create Event Example
 
@@ -208,4 +209,12 @@ You can retrieve the oracle name with
 ```
 curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getoraclename", "params" : []}' -H "Content-Type: application/json" http://127.0.0.1:9998/
 {"result":"MY_ORACLE_NAME","error":null}
+```
+
+
+### Exporting the staking address
+
+```
+curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "exportstakingaddresswif", "params": []}' -H "Content-Type: application/json" http://127.0.0.1:9998/
+{"result":"5Kcx1CqW6soAFAvDd32T4932BPZPUqYHmXzSxydhfVBKHoWxF1C","error":null}
 ```

@@ -326,5 +326,10 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           Server.httpSuccess(name)
         }
       }
+    case ServerCommand("exportstakingaddresswif", _) =>
+      complete {
+        val wif = oracle.exportSigningKeyWIF
+        Server.httpSuccess(wif)
+      }
   }
 }

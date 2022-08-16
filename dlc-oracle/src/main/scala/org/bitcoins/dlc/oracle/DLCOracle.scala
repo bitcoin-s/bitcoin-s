@@ -4,9 +4,13 @@ import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
-import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.config.{BitcoinNetwork, MainNet}
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitTestNet3Priv
-import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, ExtPublicKey}
+import org.bitcoins.core.crypto.{
+  ECPrivateKeyUtil,
+  ExtPrivateKeyHardened,
+  ExtPublicKey
+}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -73,7 +77,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     val path = BIP32Path.fromHardenedString(
       s"m/${purpose.constant}'/${coin.coinType.toInt}'/${account.index}'/${chain.index}'/$index'")
-
     extPrivateKey.deriveChildPrivKey(path).key
   }
 
@@ -514,6 +517,11 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   override def setOracleName(name: String): Future[Unit] = {
     masterXpubDAO.updateName(name)
+  }
+
+  override def exportSigningKeyWIF: String = {
+    ECPrivateKeyUtil.toWIF(privKey = signingKey.toPrivateKeyBytes(false),
+                           network = MainNet)
   }
 }
 
