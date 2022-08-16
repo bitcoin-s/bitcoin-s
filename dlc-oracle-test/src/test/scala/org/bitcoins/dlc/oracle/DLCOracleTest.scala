@@ -3,6 +3,7 @@ package org.bitcoins.dlc.oracle
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -1058,5 +1059,12 @@ class DLCOracleTest extends DLCOracleFixture {
       assert(emptyNameOpt.isEmpty)
       assert(testNameOpt.contains("test name"))
     }
+  }
+
+  it must "export staking address wif" in { dlcOracle: DLCOracle =>
+    val pubKey = dlcOracle.publicKey
+    val wif = dlcOracle.exportSigningKeyWIF
+    val privKey = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
+    assert(privKey.toPrivateKey.schnorrPublicKey == pubKey)
   }
 }
