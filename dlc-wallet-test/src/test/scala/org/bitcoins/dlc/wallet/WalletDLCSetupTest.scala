@@ -123,7 +123,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
       assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
-      val inOutcomeSigs = outcomeSigs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)).toSet
+      val inOutcomeSigs =
+        outcomeSigs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)).toSet
 
       assert(sign.cetSigs.outcomeSigs.forall(inOutcomeSigs))
 
