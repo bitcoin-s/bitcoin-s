@@ -39,7 +39,8 @@ object Deps {
     val flywayV = "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
     val postgresV = "42.5.0" //https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
-    val slickV = "3.3.3"
+
+    val slickV = "3.4.0"
     val sqliteV = "3.39.2.1" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
