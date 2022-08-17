@@ -5,7 +5,8 @@ import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 import java.nio.file.Paths
 import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
+import com.typesafe.sbt.packager.docker.DockerChmodType
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
 import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
@@ -192,6 +193,7 @@ object CommonSettings {
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "openjdk:17-slim",
       dockerRepository := Some("bitcoinscala"),
+      dockerAdditionalPermissions += (DockerChmodType.Custom("a=rx"),"/opt/docker/bin/bitcoin-s-server"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value
