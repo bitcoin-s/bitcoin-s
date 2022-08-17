@@ -235,14 +235,14 @@ object AppConfig extends Logging {
     * TODO: use different directories on Windows and Mac,
     * should probably mimic what Bitcoin Core does
     */
-  private[bitcoins] val DEFAULT_BITCOIN_S_DATADIR: Path =
+  private[bitcoins] lazy val DEFAULT_BITCOIN_S_DATADIR: Path =
     Paths.get(Properties.userHome, ".bitcoin-s")
 
   /** Matches the default data directory location
     * with a network appended,
     * both with and without a trailing `/`
     */
-  private val defaultDatadirRegex: Regex = {
+  private lazy val defaultDatadirRegex: Regex = {
     // Fix for windows
     val home = Properties.userHome.replace('\\', '/')
 
