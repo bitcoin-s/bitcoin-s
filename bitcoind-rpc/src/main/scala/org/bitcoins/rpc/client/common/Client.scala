@@ -170,7 +170,7 @@ trait Client
           case _: Success[_] =>
         }
         cookieExistsF
-      case _: PasswordBased => Future.successful(())
+      case _: PasswordBased => Future.unit
 
     }
     val isAlreadyStarted: Future[Boolean] = isStartedF
@@ -254,7 +254,7 @@ trait Client
       responseF.flatMap(getPayload(_))
 
     // Ping successful if no error can be parsed from the payload
-    val parsedF = payloadF.map { payload =>
+    val parsedF: Future[Boolean] = payloadF.map { payload =>
       (payload \ errorKey).validate[BitcoindException] match {
         case _: JsSuccess[BitcoindException] => false
         case _: JsError                      => true
@@ -443,7 +443,7 @@ trait Client
         (json \ errorKey).validate[BitcoindException] match {
           case JsSuccess(err, _) =>
             if (printError) {
-              logger.error(s"$err")
+              logger.error(s"parseResult.err=$err command=$command")
             }
             throw err
           case _: JsError =>
