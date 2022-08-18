@@ -539,7 +539,7 @@ case class P2PClientActor(
     require(
       msg.isInstanceOf[ExpectsResponse],
       s"Tried to wait for response to message which is not a query, got=$msg")
-    logger.info(s"Expecting response for ${msg.commandName} for $peer")
+    logger.debug(s"Expecting response for ${msg.commandName} for $peer")
     currentPeerMsgHandlerRecv.handleExpectResponse(msg).map { newReceiver =>
       currentPeerMsgHandlerRecv = newReceiver
     }

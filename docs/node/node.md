@@ -112,14 +112,12 @@ val nodeF = for {
   chainApi <- chainApiF
   peer <- peerF
 } yield {
-    //you can set this to only sync compact filters after the timestamp
-    val walletCreationTimeOpt = None
-    val dataMessageHandler = DataMessageHandler(chainApi, walletCreationTimeOpt)
-    NeutrinoNode(paramPeers = Vector(peer),
-               dataMessageHandler = dataMessageHandler,
-               nodeConfig = nodeConfig,
-               chainConfig = chainConfig,
-               actorSystem = system)
+    NeutrinoNode(chainApi = chainApi,
+        walletCreationTimeOpt = None, //you can set this to only sync compact filters after the timestamp
+        paramPeers = Vector(peer),
+        nodeConfig = nodeConfig,
+        chainConfig = chainConfig,
+        actorSystem = system)
 }
 
 //let's start it
