@@ -193,7 +193,6 @@ object CommonSettings {
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "openjdk:17-slim",
       dockerRepository := Some("bitcoinscala"),
-      dockerAdditionalPermissions += (DockerChmodType.Custom("a=rx"),"/opt/docker/bin/bitcoin-s-server"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value
