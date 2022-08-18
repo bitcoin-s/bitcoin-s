@@ -108,7 +108,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         announcementDataA,
         nonceDbsA)
 
-      (announcementsB, announcementDataB, nonceDbsB) <- walletADLCManagement
+      (announcementsB, announcementDataB, nonceDbsB) <- walletBDLCManagement
         .getDLCAnnouncementDbs(dlcDb.dlcId)
       announcementTLVsB = walletBDLCManagement.getOracleAnnouncements(
         announcementsB,
@@ -123,10 +123,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
       assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
-      assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
-        outcomeSigs.exists(dbSig =>
-          (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig)))
-      })
+      val inOutcomeSigs =
+        outcomeSigs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)).toSet
+
+      assert(sign.cetSigs.outcomeSigs.forall(inOutcomeSigs))
 
       assert(announcementTLVsA == announcementTLVsB)
 
