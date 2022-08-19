@@ -46,7 +46,7 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
     for {
       read <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(read.isEmpty)
-      isIBDDone <- dao.isIBDDone
+      isIBDDone <- dao.isIBD
       _ = assert(!isIBDDone)
 
       _ <- dao.updateIsIbd(false)
@@ -54,7 +54,7 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
       _ = assert(
         read == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
                                             IsInitialBlockDownload(false))))
-      sync <- dao.isSyncing
+      sync <- dao.isIBD
       _ = assert(!sync)
 
       _ <- dao.updateIsIbd(true)
@@ -63,7 +63,7 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
       _ = assert(
         read == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
                                             IsInitialBlockDownload(true))))
-      isIBDone2 <- dao.isIBDDone
+      isIBDone2 <- dao.isIBD
       _ = assert(isIBDone2)
     } yield succeed
 

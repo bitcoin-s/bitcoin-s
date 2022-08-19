@@ -1019,6 +1019,10 @@ class ChainHandler(
     stateDAO.isSyncing
   }
 
+  override def isIBD(): Future[Boolean] = {
+    stateDAO.isIBD
+  }
+
   override def setSyncing(value: Boolean): Future[ChainApi] = {
     val isSyncingF = stateDAO.isSyncing
     for {

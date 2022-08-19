@@ -69,7 +69,7 @@ case class ChainStateDescriptorDAO()(implicit
     }
   }
 
-  def getIsIBDDone(): Future[Option[IsInitialBlockDownload]] = {
+  def getIsIBD(): Future[Option[IsInitialBlockDownload]] = {
     read(IsInitialBlockDownload.tpe).map {
       case Some(db) =>
         val desc = IsInitialBlockDownload.fromString(db.descriptor.toString)
@@ -80,7 +80,7 @@ case class ChainStateDescriptorDAO()(implicit
 
   def isSyncing: Future[Boolean] = getSync().map(_.exists(_.syncing))
 
-  def isIBDDone: Future[Boolean] = getIsIBDDone().map(_.exists(_.isComplete))
+  def isIBD: Future[Boolean] = getIsIBD().map(_.exists(_.isComplete))
 
   def updateSyncing(syncing: Boolean): Future[Boolean] = {
     val tpe: ChainStateDescriptorType = Syncing

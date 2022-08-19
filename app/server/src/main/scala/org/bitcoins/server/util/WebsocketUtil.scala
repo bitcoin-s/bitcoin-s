@@ -44,6 +44,8 @@ object WebsocketUtil extends Logging {
           headersWithHeight.map(_._2.hashBE)
         val resultsF =
           ChainUtil.getBlockHeaderResult(hashes, chainApi)
+
+        //val isIBD = chainApi.isSyncing()
         val f = for {
           results <- resultsF
           notifications =
