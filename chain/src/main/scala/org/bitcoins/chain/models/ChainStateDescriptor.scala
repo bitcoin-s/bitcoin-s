@@ -9,10 +9,10 @@ object ChainStateDescriptorType
 
   final case object Syncing extends ChainStateDescriptorType
 
-  final case object IsInitialBlockDownloadDone extends ChainStateDescriptorType
+  final case object IsInitialBlockDownload extends ChainStateDescriptorType
 
   val all: Vector[ChainStateDescriptorType] =
-    Vector(IsInitialBlockDownloadDone, Syncing)
+    Vector(IsInitialBlockDownload, Syncing)
 
   override def fromStringOpt(str: String): Option[ChainStateDescriptorType] = {
     val result =
@@ -41,7 +41,7 @@ sealed trait ChainStateDescriptorFactory[T <: ChainStateDescriptor]
 object ChainStateDescriptor extends StringFactory[ChainStateDescriptor] {
 
   val all: Vector[StringFactory[ChainStateDescriptor]] =
-    Vector(IsInitialBlockDownloadDone, SyncDescriptor)
+    Vector(IsInitialBlockDownload, SyncDescriptor)
 
   override def fromString(string: String): ChainStateDescriptor = {
     all.find(f => f.fromStringT(string).isSuccess) match {
@@ -71,22 +71,22 @@ object SyncDescriptor extends ChainStateDescriptorFactory[SyncDescriptor] {
   }
 }
 
-case class IsInitialBlockDownloadDone(isComplete: Boolean)
+case class IsInitialBlockDownload(isComplete: Boolean)
     extends ChainStateDescriptor {
 
   override val descriptorType: ChainStateDescriptorType =
-    ChainStateDescriptorType.IsInitialBlockDownloadDone
-  override val toString = s"${IsInitialBlockDownloadDone.prefix} $isComplete"
+    ChainStateDescriptorType.IsInitialBlockDownload
+  override val toString = s"${IsInitialBlockDownload.prefix} $isComplete"
 }
 
-object IsInitialBlockDownloadDone
-    extends ChainStateDescriptorFactory[IsInitialBlockDownloadDone] {
+object IsInitialBlockDownload
+    extends ChainStateDescriptorFactory[IsInitialBlockDownload] {
   val prefix: String = "IsInitialBlockDownload".toLowerCase()
 
   override val tpe: ChainStateDescriptorType =
-    ChainStateDescriptorType.IsInitialBlockDownloadDone
+    ChainStateDescriptorType.IsInitialBlockDownload
 
-  override def fromString(string: String): IsInitialBlockDownloadDone = {
+  override def fromString(string: String): IsInitialBlockDownload = {
     fromStringOpt(string) match {
       case Some(ibd) => ibd
       case None =>
@@ -94,13 +94,12 @@ object IsInitialBlockDownloadDone
     }
   }
 
-  override def fromStringOpt(
-      string: String): Option[IsInitialBlockDownloadDone] = {
+  override def fromStringOpt(string: String): Option[IsInitialBlockDownload] = {
     val arr = string.split(' ').take(2)
 
     if (arr(0).toLowerCase == prefix) {
       val isBool: Boolean = java.lang.Boolean.parseBoolean(arr(1))
-      val result = IsInitialBlockDownloadDone(isBool)
+      val result = IsInitialBlockDownload(isBool)
       Some(result)
     } else {
       None

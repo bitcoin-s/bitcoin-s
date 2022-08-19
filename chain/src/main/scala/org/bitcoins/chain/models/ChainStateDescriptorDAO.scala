@@ -69,10 +69,10 @@ case class ChainStateDescriptorDAO()(implicit
     }
   }
 
-  def getIsIBDDone(): Future[Option[IsInitialBlockDownloadDone]] = {
-    read(IsInitialBlockDownloadDone.tpe).map {
+  def getIsIBDDone(): Future[Option[IsInitialBlockDownload]] = {
+    read(IsInitialBlockDownload.tpe).map {
       case Some(db) =>
-        val desc = IsInitialBlockDownloadDone.fromString(db.descriptor.toString)
+        val desc = IsInitialBlockDownload.fromString(db.descriptor.toString)
         Some(desc)
       case None => None
     }
@@ -107,21 +107,21 @@ case class ChainStateDescriptorDAO()(implicit
     safeDatabase.run(actions)
   }
 
-  def updateIsIbdDone(isIbdDone: Boolean): Future[Boolean] = {
-    val tpe: ChainStateDescriptorType = IsInitialBlockDownloadDone.tpe
+  def updateIsIbd(isIbdDone: Boolean): Future[Boolean] = {
+    val tpe: ChainStateDescriptorType = IsInitialBlockDownload.tpe
     val query = table.filter(_.tpe === tpe)
     val actions = for {
       dbs <- query.result
       res <- dbs.headOption match {
         case None =>
-          val desc = IsInitialBlockDownloadDone(isIbdDone)
+          val desc = IsInitialBlockDownload(isIbdDone)
           val db = ChainStateDescriptorDb(tpe, desc)
           (table += db).map(_ => isIbdDone)
         case Some(db) =>
           val oldDesc =
-            IsInitialBlockDownloadDone.fromString(db.descriptor.toString)
+            IsInitialBlockDownload.fromString(db.descriptor.toString)
           if (oldDesc.isComplete != isIbdDone) {
-            val newDesc = IsInitialBlockDownloadDone(isIbdDone)
+            val newDesc = IsInitialBlockDownload(isIbdDone)
             val newDb = ChainStateDescriptorDb(tpe, newDesc)
             query.update(newDb).map(_ => true)
           } else {

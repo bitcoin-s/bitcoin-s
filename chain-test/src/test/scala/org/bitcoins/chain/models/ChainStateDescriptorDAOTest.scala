@@ -44,25 +44,25 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
 
   it should "set and get ibd flag" in { dao: ChainStateDescriptorDAO =>
     for {
-      read <- dao.read(IsInitialBlockDownloadDone.tpe)
+      read <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(read.isEmpty)
       isIBDDone <- dao.isIBDDone
       _ = assert(!isIBDDone)
 
-      _ <- dao.updateIsIbdDone(false)
-      read <- dao.read(ChainStateDescriptorType.IsInitialBlockDownloadDone)
+      _ <- dao.updateIsIbd(false)
+      read <- dao.read(ChainStateDescriptorType.IsInitialBlockDownload)
       _ = assert(
-        read == Some(ChainStateDescriptorDb(IsInitialBlockDownloadDone.tpe,
-                                            IsInitialBlockDownloadDone(false))))
+        read == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
+                                            IsInitialBlockDownload(false))))
       sync <- dao.isSyncing
       _ = assert(!sync)
 
-      _ <- dao.updateIsIbdDone(true)
+      _ <- dao.updateIsIbd(true)
 
-      read <- dao.read(IsInitialBlockDownloadDone.tpe)
+      read <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(
-        read == Some(ChainStateDescriptorDb(IsInitialBlockDownloadDone.tpe,
-                                            IsInitialBlockDownloadDone(true))))
+        read == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
+                                            IsInitialBlockDownload(true))))
       isIBDone2 <- dao.isIBDDone
       _ = assert(isIBDone2)
     } yield succeed
