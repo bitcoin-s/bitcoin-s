@@ -289,6 +289,11 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     syncing.set(value)
     Future.successful(this)
   }
+
+  override def setIBD(value: Boolean): Future[ChainApi] = {
+    logger.warn(s"Cannot set IBD of BitcoindRpcClient, this is a noop")
+    Future.successful(this)
+  }
 }
 
 object BitcoindRpcClient {

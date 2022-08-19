@@ -155,6 +155,7 @@ case class DataMessageHandler(
             }
           }
           newChainApi <- newChainApi.setSyncing(newSyncing2)
+          _ <- newChainApi.setIBD(newSyncing)
         } yield {
           this.copy(
             chainApi = newChainApi,

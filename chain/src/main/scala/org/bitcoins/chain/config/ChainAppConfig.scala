@@ -114,6 +114,14 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   lazy val filterBatchSize: Int =
     config.getInt(s"bitcoin-s.${moduleName}.neutrino.filter-batch-size")
 
+  /** Whether we should emit block processed events during IBD or not.
+    * This is because websocket events can overwhelm UIs during IBD.
+    * If this is set, we won't emit blockprocessed event until ibd is complete.
+    */
+  lazy val ibdBlockProcessedEvents: Boolean = {
+    config.getBoolean(s"bitcoin-s.${moduleName}.websocket.block-processed-ibd")
+  }
+
 }
 
 object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {

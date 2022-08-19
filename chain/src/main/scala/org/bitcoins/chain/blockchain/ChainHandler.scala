@@ -1040,6 +1040,27 @@ class ChainHandler(
     }
   }
 
+  def setIBD(value: Boolean): Future[ChainApi] = {
+    val isIBDF = stateDAO.isIBD
+    for {
+      isIBD <- isIBDF
+      _ <- {
+        if (isIBD == value) {
+          //do nothing as we are already at this state
+          Future.unit
+        } else if (!isIBD && value) {
+          logger.warn(
+            s"Can only do IBD once, cannot set flag to true when database flag is false.")
+          Future.unit
+        } else {
+          stateDAO.updateIsIbd(value)
+        }
+      }
+    } yield {
+      this
+    }
+  }
+
   private def updateSyncingAndExecuteCallback(value: Boolean): Future[Unit] = {
     for {
       changed <- stateDAO.updateSyncing(value)

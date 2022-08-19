@@ -181,5 +181,9 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
     override def setSyncing(value: Boolean): Future[ChainApi] =
       Future.successful(this)
+
+    override def setIBD(value: Boolean): Future[ChainApi] = {
+      Future.successful(this)
+    }
   }
 }

@@ -75,11 +75,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     for {
       startedConfig <- startedConfigF
       chainApi = ChainHandler.fromDatabase()
+      nodeType = nodeConf.nodeType
       //on server startup we assume we are out of sync with the bitcoin network
       //so we set this flag to true.
-      _ <- chainApi.setSyncing(true)
+      _ <- initializeChainState(chainApi, nodeType)
       start <- {
-        nodeConf.nodeType match {
+        nodeType match {
           case _: InternalImplementationNodeType =>
             startBitcoinSBackend(startedConfig.torStartedF)
           case NodeType.BitcoindBackend =>
@@ -90,6 +91,32 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       logger.info(
         s"Done start BitcoinSServerMain, it took=${TimeUtil.currentEpochMs - startTime}ms")
       start
+    }
+  }
+
+  private def initializeChainState(
+      chainHandler: ChainHandler,
+      nodeType: NodeType): Future[Unit] = {
+    val syncF = chainHandler.setSyncing(true)
+    val blockCountF = chainHandler.getBlockCount()
+    nodeType match {
+      case NodeType.NeutrinoNode =>
+        blockCountF.flatMap { blockCount =>
+          if (blockCount == 0) {
+            //means we are starting a fresh node, set IBD to true
+            chainHandler
+              .setIBD(true)
+              .map(_ => ())
+          } else {
+            Future.unit
+          }
+        }
+      case NodeType.BitcoindBackend =>
+        //don't need to do anything as we outsource chain management to bitcoind
+        syncF.map(_ => ())
+      case NodeType.FullNode =>
+        sys.error(
+          s"Full not is not implemented, not sure what to do with chainstate")
     }
   }
 
