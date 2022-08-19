@@ -159,6 +159,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
      - `tx` - Transaction encoded in hex to decode
  - `getmediantimepast` - Returns the median time past
+ - `getinfo` returns general information about our blockchain state
 
 ### Wallet
  - `rescan` `[options]` - Rescan for wallet UTXOs
@@ -366,6 +367,13 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `keys` - The hex-encoded public keys.
     - `address_type` -The address type to use. Options are "legacy", "p2sh-segwit", and "bech32"
  - `estimatefee` - Returns the recommended fee rate using the fee provider
+
+## getinfo
+
+```bash
+curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getinfo", "params": []}' -H "Content-Type: application/json" http://127.0.0.1:9999/
+{"result":{"network":"main","blockHeight":750129,"blockHash":"00000000000000000002f7d39ca6c914329a8d87010215ef6466c17ffaba0a1f","torStarted":true,"syncing":false,"isinitialblockdownload":false},"error":null}
+```
 
 ## Sign PSBT with Wallet Example
 
