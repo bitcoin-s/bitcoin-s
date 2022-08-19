@@ -71,12 +71,12 @@ object SyncDescriptor extends ChainStateDescriptorFactory[SyncDescriptor] {
   }
 }
 
-case class IsInitialBlockDownload(isComplete: Boolean)
+case class IsInitialBlockDownload(isIBDRunning: Boolean)
     extends ChainStateDescriptor {
 
   override val descriptorType: ChainStateDescriptorType =
     ChainStateDescriptorType.IsInitialBlockDownload
-  override val toString = s"${IsInitialBlockDownload.prefix} $isComplete"
+  override val toString = s"${IsInitialBlockDownload.prefix} $isIBDRunning"
 }
 
 object IsInitialBlockDownload

@@ -80,8 +80,6 @@ case class ChainStateDescriptorDAO()(implicit
 
   def isSyncing: Future[Boolean] = getSync().map(_.exists(_.syncing))
 
-  def isIBD: Future[Boolean] = getIsIBD().map(_.exists(_.isComplete))
-
   def updateSyncing(syncing: Boolean): Future[Boolean] = {
     val tpe: ChainStateDescriptorType = Syncing
     val query = table.filter(_.tpe === tpe)
@@ -107,21 +105,21 @@ case class ChainStateDescriptorDAO()(implicit
     safeDatabase.run(actions)
   }
 
-  def updateIsIbd(isIbdDone: Boolean): Future[Boolean] = {
+  def updateIsIbd(isIBDRunning: Boolean): Future[Boolean] = {
     val tpe: ChainStateDescriptorType = IsInitialBlockDownload.tpe
     val query = table.filter(_.tpe === tpe)
     val actions = for {
       dbs <- query.result
       res <- dbs.headOption match {
         case None =>
-          val desc = IsInitialBlockDownload(isIbdDone)
+          val desc = IsInitialBlockDownload(isIBDRunning)
           val db = ChainStateDescriptorDb(tpe, desc)
-          (table += db).map(_ => isIbdDone)
+          (table += db).map(_ => isIBDRunning)
         case Some(db) =>
           val oldDesc =
             IsInitialBlockDownload.fromString(db.descriptor.toString)
-          if (oldDesc.isComplete != isIbdDone) {
-            val newDesc = IsInitialBlockDownload(isIbdDone)
+          if (oldDesc.isIBDRunning) {
+            val newDesc = IsInitialBlockDownload(isIBDRunning)
             val newDb = ChainStateDescriptorDb(tpe, newDesc)
             query.update(newDb).map(_ => true)
           } else {

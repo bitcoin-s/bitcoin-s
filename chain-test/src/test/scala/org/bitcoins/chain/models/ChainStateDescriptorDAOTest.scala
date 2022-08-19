@@ -46,25 +46,35 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
     for {
       read <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(read.isEmpty)
-      isIBDDone <- dao.isIBD
-      _ = assert(!isIBDDone)
-
-      _ <- dao.updateIsIbd(false)
-      read <- dao.read(ChainStateDescriptorType.IsInitialBlockDownload)
-      _ = assert(
-        read == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
-                                            IsInitialBlockDownload(false))))
-      sync <- dao.isIBD
-      _ = assert(!sync)
+      isIBDDoneOpt <- dao.getIsIBD()
+      _ = assert(isIBDDoneOpt.isEmpty)
 
       _ <- dao.updateIsIbd(true)
 
-      read <- dao.read(IsInitialBlockDownload.tpe)
+      read1 <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(
-        read == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
-                                            IsInitialBlockDownload(true))))
-      isIBDone2 <- dao.isIBD
-      _ = assert(isIBDone2)
+        read1 == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
+                                             IsInitialBlockDownload(true))))
+      isIBDOpt2 <- dao.getIsIBD()
+      _ = assert(isIBDOpt2.isDefined && isIBDOpt2.get.isIBDRunning == true)
+
+      _ <- dao.updateIsIbd(false)
+      read2 <- dao.read(ChainStateDescriptorType.IsInitialBlockDownload)
+      _ = assert(
+        read2 == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
+                                             IsInitialBlockDownload(false))))
+      isIBDOpt3 <- dao.getIsIBD()
+      _ = assert(isIBDOpt3.isDefined && isIBDOpt3.get.isIBDRunning == false)
+
+      //cannot revert IBD
+      _ <- dao.updateIsIbd(true)
+
+      read3 <- dao.read(IsInitialBlockDownload.tpe)
+      _ = assert(
+        read3 == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
+                                             IsInitialBlockDownload(false))))
+      isIBDOpt4 <- dao.getIsIBD()
+      _ = assert(isIBDOpt4.isDefined && isIBDOpt4.get.isIBDRunning == false)
     } yield succeed
 
   }
