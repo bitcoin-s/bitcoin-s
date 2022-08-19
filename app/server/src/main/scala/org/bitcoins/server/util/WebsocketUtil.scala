@@ -51,7 +51,7 @@ object WebsocketUtil extends Logging {
         val emitBlockProccessedWhileIBDOnGoing =
           chainAppConfig.ibdBlockProcessedEvents
         isIBDF.flatMap { isIBD =>
-          if (isIBD && emitBlockProccessedWhileIBDOnGoing) {
+          if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
             //do nothing, don't emit events until IBD is complete
             Future.unit
           } else {
@@ -61,7 +61,6 @@ object WebsocketUtil extends Logging {
                 results.map(result =>
                   ChainNotification.BlockProcessedNotification(result))
               _ <- FutureUtil.sequentially(notifications) { case msg =>
-                logger.info(s"buildChainCallbacks.msg=$msg")
                 val x: Future[Unit] = queue
                   .offer(msg)
                   .map(_ => ())
