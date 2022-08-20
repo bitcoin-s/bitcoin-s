@@ -304,13 +304,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       account: HDAccount): Future[Unit] = {
-    val awaitPreviousRescanF = prevState match {
-      case r @ (_: RescanState.RescanStarted | RescanState.RescanDone) =>
-        RescanState.awaitRescanComplete(r)
-      case RescanState.RescanAlreadyStarted =>
-        //don't continue rescanning if previous rescan was not started
-        Future.unit
-    }
+    val awaitPreviousRescanF =
+      RescanState.awaitRescanComplete(rescanState = prevState)
     for {
       _ <- awaitPreviousRescanF
       externalGap <- calcAddressGap(HDChainType.External, account)
@@ -325,7 +320,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         } else {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
-              s"match within our address gap limit of ${walletConfig.addressGapLimit}")
+              s"match within our address gap limit of ${walletConfig.addressGapLimit} externalGap=$externalGap changeGap=$changeGap")
           doNeutrinoRescan(account = account,
                            startOpt = startOpt,
                            endOpt = endOpt,
@@ -418,7 +413,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
-          .map(_ => getNewAddressAction(account))
+          .map(_ => getNewChangeAddressAction(account))
       }
     }.map(_.toVector)
 
