@@ -515,6 +515,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.clearAllUtxos()
         rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
         _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
+        _ <- RescanState.awaitRescanDone(rescanState)
         addresses <- wallet.listAddresses()
       } yield {
         assert(addresses.exists(_.isChange))
