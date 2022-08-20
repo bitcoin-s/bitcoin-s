@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.common.BitcoindVersion.{
   Unknown,
-  V16,
   V17,
   V18,
   V19,
@@ -98,7 +97,7 @@ trait PsbtRpc {
     self.version.flatMap {
       case V22 | V23 | Unknown =>
         bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
-      case V16 | V17 | V18 | V19 | V20 | V21 =>
+      case V17 | V18 | V19 | V20 | V21 =>
         bitcoindCall[DecodePsbtResultPreV22]("decodepsbt",
                                              List(Json.toJson(psbt)))
     }
