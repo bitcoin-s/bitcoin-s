@@ -1,4 +1,4 @@
-name: Linux 2.13 Node Tests
+name: Linux 2.13 Node & Scalajs Tests
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
