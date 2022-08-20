@@ -503,4 +503,25 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       }
   }
 
+  it must "generate addresses for a rescan that are both external and change addresses" in {
+    fixture =>
+      val wallet = fixture.wallet
+
+      val rescanF = for {
+        //need to clear all utxos / addresses to test this
+        //otherwise the wallet will see we already have addresses and not generate
+        //a fresh pool of addresses
+        _ <- wallet.clearAllAddresses()
+        _ <- wallet.clearAllUtxos()
+        rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
+        addresses <- wallet.listAddresses()
+      } yield {
+        assert(addresses.exists(_.isChange))
+        assert(addresses.exists(!_.isChange))
+      }
+
+      rescanF
+  }
+
 }
