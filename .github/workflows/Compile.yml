@@ -22,4 +22,4 @@ jobs:
           java-version: '17'
           cache: 'sbt'
       - name: Compile and Check Formatting
-        run: sbt -J-Xmx2g +test:compile scalafmtCheckAll
+        run: sbt -J-Xmx2g +test:compile scalafmtCheckAll docs/mdoc
