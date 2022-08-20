@@ -9,7 +9,6 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
