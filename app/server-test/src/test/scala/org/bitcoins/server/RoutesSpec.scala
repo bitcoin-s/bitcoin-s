@@ -1706,9 +1706,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects()
         .returning(100)
         .atLeastOnce()
-      (mockWalletApi.isEmpty: () => Future[Boolean])
-        .expects()
-        .returning(Future.successful(false))
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
@@ -1729,9 +1726,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
-      (mockWalletApi.isEmpty: () => Future[Boolean])
-        .expects()
-        .returning(Future.successful(false))
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
@@ -1762,9 +1756,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       }
 
-      (mockWalletApi.isEmpty: () => Future[Boolean])
-        .expects()
-        .returning(Future.successful(false))
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
@@ -1792,9 +1783,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           responseAs[String] == """{"result":"Rescan started.","error":null}""")
       }
 
-      (mockWalletApi.isEmpty: () => Future[Boolean])
-        .expects()
-        .returning(Future.successful(false))
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
@@ -1858,9 +1846,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           responseAs[String] == s"""{"result":null,"error":"Expected a positive integer (data: -1)"}""")
       }
 
-      (mockWalletApi.isEmpty: () => Future[Boolean])
-        .expects()
-        .returning(Future.successful(false))
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],

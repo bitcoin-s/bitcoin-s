@@ -1083,35 +1083,29 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
   private def handleRescan(rescan: Rescan): Future[String] = {
     if (loadWalletApi.isRescanStateEmpty) {
       val res = for {
-        empty <- wallet.isEmpty()
         rescanState <- {
-          if (empty) {
-            //if wallet is empty, just return Done immediately
-            Future.successful(RescanState.RescanDone)
-          } else {
-            rescanStateOpt match {
-              case Some(rescanState) =>
-                val stateF: Future[RescanState] = rescanState match {
-                  case started: RescanState.RescanStarted =>
-                    if (started.isStopped) {
-                      //means rescan is done, reset the variable
-                      rescanStateOpt = Some(RescanDone)
-                      Future.successful(RescanDone)
-                    } else {
-                      //do nothing, we don't want to reset/stop a rescan that is running
-                      Future.successful(started)
-                    }
-                  case RescanState.RescanDone =>
-                    //if the previous rescan is done, start another rescan
-                    startRescan(rescan)
-                  case RescanState.RescanAlreadyStarted =>
-                    Future.successful(RescanState.RescanAlreadyStarted)
-                }
+          rescanStateOpt match {
+            case Some(rescanState) =>
+              val stateF: Future[RescanState] = rescanState match {
+                case started: RescanState.RescanStarted =>
+                  if (started.isStopped) {
+                    //means rescan is done, reset the variable
+                    rescanStateOpt = Some(RescanDone)
+                    Future.successful(RescanDone)
+                  } else {
+                    //do nothing, we don't want to reset/stop a rescan that is running
+                    Future.successful(started)
+                  }
+                case RescanState.RescanDone =>
+                  //if the previous rescan is done, start another rescan
+                  startRescan(rescan)
+                case RescanState.RescanAlreadyStarted =>
+                  Future.successful(RescanState.RescanAlreadyStarted)
+              }
 
-                stateF
-              case None =>
-                startRescan(rescan)
-            }
+              stateF
+            case None =>
+              startRescan(rescan)
           }
         }
         _ = loadWalletApi.setRescanState(rescanState)
