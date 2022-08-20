@@ -1083,12 +1083,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
   private def handleRescan(rescan: Rescan): Future[String] = {
     if (loadWalletApi.isRescanStateEmpty) {
       val res = for {
-        empty <- wallet.isEmpty()
         rescanState <- {
-          if (empty) {
-            //if wallet is empty, just return Done immediately
-            Future.successful(RescanState.RescanDone)
-          } else {
             rescanStateOpt match {
               case Some(rescanState) =>
                 val stateF: Future[RescanState] = rescanState match {
@@ -1112,7 +1107,6 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               case None =>
                 startRescan(rescan)
             }
-          }
         }
         _ = loadWalletApi.setRescanState(rescanState)
         msg = getRescanMsg(rescanState)
