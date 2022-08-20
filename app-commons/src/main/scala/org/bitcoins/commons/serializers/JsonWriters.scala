@@ -6,9 +6,10 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt._
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto._
 import play.api.libs.json._
@@ -35,6 +36,35 @@ object JsonWriters {
           throw new IllegalArgumentException(
             "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
       }
+  }
+
+  implicit object CurrencyUnitWrites extends Writes[CurrencyUnit] {
+    override def writes(o: CurrencyUnit): JsValue = JsNumber(o.satoshis.toLong)
+  }
+
+  implicit object SchnorrPublicKeyWrites extends Writes[SchnorrPublicKey] {
+    override def writes(o: SchnorrPublicKey): JsValue = JsString(o.hex)
+  }
+
+  implicit object SchnorrNonceWrites extends Writes[SchnorrNonce] {
+    override def writes(o: SchnorrNonce): JsValue = JsString(o.hex)
+  }
+
+  implicit object FieldElementWrites extends Writes[FieldElement] {
+    override def writes(o: FieldElement): JsValue = JsString(o.hex)
+  }
+
+  implicit object SchnorrDigitalSignatureWrites
+      extends Writes[SchnorrDigitalSignature] {
+    override def writes(o: SchnorrDigitalSignature): JsValue = JsString(o.hex)
+  }
+
+  implicit object ScriptWitnessWrites extends Writes[ScriptWitness] {
+    override def writes(o: ScriptWitness): JsValue = JsString(o.hex)
+  }
+
+  implicit object ScriptTypeWrites extends Writes[ScriptType] {
+    override def writes(o: ScriptType): JsValue = JsString(o.toString)
   }
 
   implicit object BitcoinsWrites extends Writes[Bitcoins] {
@@ -82,6 +112,14 @@ object JsonWriters {
         Seq(("txid", JsString(o.previousOutput.txIdBE.hex)),
             ("vout", JsNumber(o.previousOutput.vout.toLong)),
             ("sequence", JsNumber(o.sequence.toLong))))
+  }
+
+  implicit object TransactionOutPointWrites
+      extends OWrites[TransactionOutPoint] {
+
+    override def writes(o: TransactionOutPoint): JsObject = {
+      Json.obj("txid" -> o.txIdBE.hex, "vout" -> o.vout.toLong)
+    }
   }
 
   implicit object UInt32Writes extends Writes[UInt32] {
