@@ -24,6 +24,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.wallet.internal.TransactionProcessing
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent._
 
@@ -256,27 +257,26 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       blockHashOpt: Option[DoubleSha256DigestBE],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
-      relevantReceivedOutputs: Vector[OutputWithIndex]
-  ): Future[Vector[SpendingInfoDb]] = {
-    val dlcDbsF = dlcDAO.findByFundingTxId(tx.txIdBE)
-    super
-      .processReceivedUtxos(
-        tx,
-        blockHashOpt,
-        spendingInfoDbs,
-        newTags,
-        relevantReceivedOutputs
-      )
+      relevantReceivedOutputs: Vector[OutputWithIndex]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Write with Effect.Read] = {
+    val dlcDbsA = dlcDAO.findByFundingTxIdAction(tx.txIdBE)
+    val actions = super
+      .processReceivedUtxos(tx,
+                            blockHashOpt,
+                            spendingInfoDbs,
+                            newTags,
+                            relevantReceivedOutputs)
       .flatMap { res =>
         for {
-          dlcDbs <- dlcDbsF
+          dlcDbs <- dlcDbsA
           _ <-
             if (dlcDbs.nonEmpty) {
               logger.info(
-                s"Processing received utxos in tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
-              )
-              insertTransaction(tx, blockHashOpt)
-            } else FutureUtil.unit
+                s"Processing received utxos in tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)")
+              insertTransactionAction(tx, blockHashOpt)
+            } else DBIOAction.successful(())
 
           // Update the state to be confirmed or broadcasted
           updated = dlcDbs.map { dlcDb =>
@@ -297,14 +297,16 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             }
           }
 
-          _ <- dlcDAO.updateAll(updated)
+          _ <- dlcDAO.updateAllAction(updated)
           dlcIds = updated.map(_.dlcId).distinct
-          isRescanning <- isRescanning()
-          _ <- sendWsDLCStateChange(dlcIds, isRescanning)
+          isRescanning <- DBIOAction.from(isRescanning())
+          _ <- DBIOAction.from(sendWsDLCStateChange(dlcIds, isRescanning))
         } yield {
           res
         }
       }
+
+    actions
   }
 
   /** Sends out a websocket event for the given dlcIds since their [[DLCState]]

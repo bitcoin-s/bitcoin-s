@@ -228,11 +228,16 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE],
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
-      addressDb: AddressDb
-  ): Future[SpendingInfoDb] = {
-    val confirmationsF: Future[Int] = blockHashOpt match {
+      addressDb: AddressDb): DBIOAction[
+    SpendingInfoDb,
+    NoStream,
+    Effect.Write with Effect.Read] = {
+    val confirmationsA: DBIOAction[
+      Int,
+      NoStream,
+      Effect.Write with Effect.Read] = blockHashOpt match {
       case Some(blockHash) =>
-        chainQueryApi
+        val confsF = chainQueryApi
           .getNumberOfConfirmations(blockHash)
           .map {
             case Some(confs) =>
@@ -242,25 +247,29 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                 s"Could not find block with our chain data source, hash=${blockHash}"
               )
           }
+
+        slick.dbio.DBIOAction.from(confsF)
       case None =>
-        Future.successful(0) // no confirmations on the tx
+        slick.dbio.DBIOAction.successful(0) //no confirmations on the tx
     }
 
-    val stateF: Future[TxoState] = confirmationsF.map { confs =>
-      if (
-        tx.inputs.head
-          .isInstanceOf[CoinbaseInput] && confs <= Consensus.coinbaseMaturity
-      ) {
-        TxoState.ImmatureCoinbase
-      } else {
-        UtxoHandling.getReceiveConfsState(
-          confs,
-          walletConfig.requiredConfirmations
-        )
+    val stateA: DBIOAction[TxoState, NoStream, Effect.Write with Effect.Read] =
+      confirmationsA.map { confs =>
+        if (
+          tx.inputs.head
+            .isInstanceOf[CoinbaseInput] && confs <= Consensus.coinbaseMaturity
+        ) {
+          TxoState.ImmatureCoinbase
+        } else {
+          UtxoHandling.getReceiveConfsState(confs,
+                                            walletConfig.requiredConfirmations)
+        }
       }
-    }
 
-    val utxoF: Future[SpendingInfoDb] = stateF.map { state =>
+    val utxoA: DBIOAction[
+      SpendingInfoDb,
+      NoStream,
+      Effect.Write with Effect.Read] = stateA.map { state =>
       addressDb match {
         case segwitAddr: SegWitAddressDb =>
           SegwitV0SpendingInfo(
@@ -294,8 +303,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
 
     for {
-      utxo <- utxoF
-      written <- spendingInfoDAO.createUnless(utxo) {
+      utxo <- utxoA
+      written <- spendingInfoDAO.createUnlessAction(utxo) {
         (foundUtxo, utxoToCreate) =>
           foundUtxo.state.isInstanceOf[SpentState] && utxoToCreate.state
             .isInstanceOf[ReceivedState]

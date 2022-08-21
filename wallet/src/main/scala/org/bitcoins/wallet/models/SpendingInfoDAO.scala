@@ -70,9 +70,11 @@ case class SpendingInfoDAO()(implicit
       }
   }
 
-  def createUnless(
-      si: SpendingInfoDb
-  )(condition: (UTXORecord, UTXORecord) => Boolean): Future[SpendingInfoDb] = {
+  def createUnlessAction(si: SpendingInfoDb)(
+      condition: (UTXORecord, UTXORecord) => Boolean): DBIOAction[
+    SpendingInfoDb,
+    NoStream,
+    Effect.Write with Effect.Read] = {
     val actions = for {
       foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
       cond <- foundOpt match {
@@ -91,15 +93,20 @@ case class SpendingInfoDAO()(implicit
           .headOption
     } yield (utxo, spk)
 
+    actions.map {
+      case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+      case _ =>
+        throw new SQLException(
+          s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
+    }
+  }
+
+  def createUnless(si: SpendingInfoDb)(
+      condition: (UTXORecord, UTXORecord) => Boolean): Future[
+    SpendingInfoDb] = {
+    val actions = createUnlessAction(si)(condition)
     safeDatabase
       .run(actions)
-      .map {
-        case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si"
-          )
-      }
   }
 
   private def insertAction(
@@ -145,7 +152,10 @@ case class SpendingInfoDAO()(implicit
       update(si).map(res => acc :+ res))
   }
 
-  def update(si: SpendingInfoDb): Future[SpendingInfoDb] = {
+  def updateAction(si: SpendingInfoDb): DBIOAction[
+    SpendingInfoDb,
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val actions = for {
       spkOpt <-
         spkTable
@@ -174,15 +184,17 @@ case class SpendingInfoDAO()(implicit
           .result
           .headOption
     } yield (utxo, spk)
+    actions.map {
+      case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+      case _ =>
+        throw new SQLException(
+          s"Unexpected result: Cannot update either a UTXO or a SPK record for $si")
+    }
+  }
+
+  def update(si: SpendingInfoDb): Future[SpendingInfoDb] = {
     safeDatabase
-      .run(actions)
-      .map {
-        case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot update either a UTXO or a SPK record for $si"
-          )
-      }
+      .run(updateAction(si))
   }
 
   def upsert(si: SpendingInfoDb): Future[SpendingInfoDb] = {

@@ -127,10 +127,17 @@ case class DLCDAO()(implicit
     safeDatabase.runVec(q.result)
   }
 
-  def findByFundingTxId(txId: DoubleSha256DigestBE): Future[Vector[DLCDb]] = {
+  def findByFundingTxIdAction(txId: DoubleSha256DigestBE): DBIOAction[
+    Vector[DLCDb],
+    NoStream,
+    Effect.Read] = {
     val q = table.filter(_.fundingTxIdOpt === txId)
+    q.result.map(_.toVector)
+  }
 
-    safeDatabase.runVec(q.result)
+  def findByFundingTxId(txId: DoubleSha256DigestBE): Future[Vector[DLCDb]] = {
+    val action = findByFundingTxIdAction(txId)
+    safeDatabase.runVec(action)
   }
 
   def findByContactId(contactId: String): Future[Vector[DLCDb]] = {
