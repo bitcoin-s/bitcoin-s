@@ -5,9 +5,8 @@ env:
   DISABLE_SECP256K1: "true"
 on:
   push:
-    branches: [master, main, adaptor-dlc]
+    branches: [master, main]
     tags: ["*"]
-  pull_request:
   release:
     types: [published]
 jobs:
