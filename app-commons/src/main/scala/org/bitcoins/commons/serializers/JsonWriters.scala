@@ -119,7 +119,8 @@ object JsonWriters {
       extends OWrites[TransactionOutPoint] {
 
     override def writes(o: TransactionOutPoint): JsObject = {
-      Json.obj(PicklerKeys.txIdKey -> o.txIdBE.hex, PicklerKeys.voutKey -> o.vout.toLong)
+      Json.obj(PicklerKeys.txIdKey -> o.txIdBE.hex,
+               PicklerKeys.voutKey -> o.vout.toLong)
     }
   }
 
