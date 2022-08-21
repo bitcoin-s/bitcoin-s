@@ -205,7 +205,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
-        _ <- AsyncUtil.nonBlockingSleep(5.second)
+        _ <- AsyncUtil.nonBlockingSleep(10.second)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
@@ -495,7 +495,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
-        _ <- AsyncUtil.nonBlockingSleep(5.second)
+        _ <- AsyncUtil.nonBlockingSleep(10.second)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
