@@ -136,7 +136,7 @@ class ChainHandler(
         //this means we are given zero headers that were valid.
         //Return a failure in this case to avoid issue 2365
         //https://github.com/bitcoin-s/bitcoin-s/issues/2365
-        Future.failed(new RuntimeException(
+        Future.failed(InvalidBlockHeader(
           s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
       } else {
         val chains = blockchainUpdates.map(_.blockchain)
