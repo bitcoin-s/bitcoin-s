@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -297,29 +296,6 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
         Future.unit
       }
     )(test)
-  }
-}
-
-/** Bitcoind fixtures with two cached BitcoindV16RpcClient that are connected via p2p */
-trait BitcoindFixturesCachedPairV16
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair[BitcoindV16RpcClient] {
-  override type FixtureParam = NodePair[BitcoindV16RpcClient]
-
-  override val version: BitcoindVersion = BitcoindVersion.V16
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val futOutcome = for {
-      pair <- clientsF
-      futOutcome = with2BitcoindsCached(test, pair)
-      f <- futOutcome.toFuture
-    } yield f
-    new FutureOutcome(futOutcome)
-  }
-
-  override def afterAll(): Unit = {
-    super[BitcoindFixturesCachedPair].afterAll()
-    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
 

@@ -46,7 +46,7 @@ trait MultisigRpc { self: Client =>
           "addmultisigaddress",
           params,
           uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V16 | V17 | V18 | V19 =>
+      case V17 | V18 | V19 =>
         bitcoindCall[MultiSigResultPreV20]("addmultisigaddress",
                                            params,
                                            uriExtensionOpt =
@@ -88,7 +88,7 @@ trait MultisigRpc { self: Client =>
           "createmultisig",
           List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))),
           uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V16 | V17 | V18 | V19 =>
+      case V17 | V18 | V19 =>
         bitcoindCall[MultiSigResultPreV20](
           "createmultisig",
           List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))),
