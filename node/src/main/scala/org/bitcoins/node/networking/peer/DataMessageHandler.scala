@@ -1,6 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.Done
+import org.bitcoins.chain.blockchain.InvalidBlockHeader
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
@@ -233,64 +234,17 @@ case class DataMessageHandler(
           copy(chainApi = processed)
         }
 
-        chainApiHeaderProcessF.failed.flatMap {
-          case r: RuntimeException
-              if r.getMessage.startsWith(
-                "Failed to connect any headers to our internal chain state") =>
-            logger.debug(
-              s"Invalid headers of count $count sent from ${syncPeer.get} in state $state")
-
-            state match {
-              case HeaderSync =>
-                manager.peerData(peer).updateInvalidMessageCount()
-
-                if (
-                  manager
-                    .peerData(peer)
-                    .exceededMaxInvalidMessages && manager.peers.size > 1
-                ) {
-                  logger.info(
-                    s"$peer exceeded max limit of invalid messages. Disconnecting.")
-                  for {
-                    _ <- manager.removePeer(peer)
-                    newDmh <- manager.syncFromNewPeer()
-                  } yield newDmh.copy(state = HeaderSync)
-                } else {
-                  logger.info(s"Re-querying headers from $peer.")
-                  for {
-                    blockchains <- BlockHeaderDAO().getBlockchains()
-                    cachedHeaders = blockchains
-                      .flatMap(_.headers)
-                      .map(_.hashBE.flip)
-                    _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-                  } yield this
-                }
-
-              case headerState @ ValidatingHeaders(_, failedCheck, _) =>
-                //if a peer sends invalid data then mark it as failed, dont disconnect
-                logger.debug(
-                  s"Got invalid headers from $peer while validating. Marking as failed.")
-                val newHeaderState =
-                  headerState.copy(failedCheck = failedCheck + peer)
-                val newDmh = copy(state = newHeaderState)
-
-                if (newHeaderState.validated) {
-                  logger.info(
-                    s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
-                  fetchCompactFilters(newDmh).map(
-                    _.copy(state = PostHeaderSync))
-                } else {
-                  Future.successful(newDmh)
-                }
-
-              case _: DataMessageHandlerState =>
-                Future.successful(this)
-            }
-          case throwable: Throwable => throw throwable
-        }
+        val recoveredDMHF: Future[DataMessageHandler] =
+          chainApiHeaderProcessF.recoverWith {
+            case _: InvalidBlockHeader =>
+              logger.debug(
+                s"Invalid headers of count $count sent from ${syncPeer.get} in state $state")
+              recoverInvalidHeader(peer, peerMsgSender)
+            case throwable: Throwable => throw throwable
+          }
 
         val getHeadersF: Future[DataMessageHandler] =
-          chainApiHeaderProcessF
+          recoveredDMHF
             .flatMap { newDmh =>
               val newApi = newDmh.chainApi
               if (headers.nonEmpty) {
@@ -550,6 +504,56 @@ case class DataMessageHandler(
         }
       }
     } yield syncing
+  }
+
+  /** Recover the data message handler if we received an invalid block header from a peer */
+  private def recoverInvalidHeader(
+      peer: Peer,
+      peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
+    state match {
+      case HeaderSync =>
+        manager.peerData(peer).updateInvalidMessageCount()
+        if (
+          manager
+            .peerData(peer)
+            .exceededMaxInvalidMessages && manager.peers.size > 1
+        ) {
+          logger.info(
+            s"$peer exceeded max limit of invalid messages. Disconnecting.")
+          for {
+            _ <- manager.removePeer(peer)
+            newDmh <- manager.syncFromNewPeer()
+          } yield newDmh.copy(state = HeaderSync)
+        } else {
+          logger.info(s"Re-querying headers from $peer.")
+          for {
+            blockchains <- BlockHeaderDAO().getBlockchains()
+            cachedHeaders = blockchains
+              .flatMap(_.headers)
+              .map(_.hashBE.flip)
+            _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
+          } yield this
+        }
+
+      case headerState @ ValidatingHeaders(_, failedCheck, _) =>
+        //if a peer sends invalid data then mark it as failed, dont disconnect
+        logger.debug(
+          s"Got invalid headers from $peer while validating. Marking as failed.")
+        val newHeaderState =
+          headerState.copy(failedCheck = failedCheck + peer)
+        val newDmh = copy(state = newHeaderState)
+
+        if (newHeaderState.validated) {
+          logger.info(
+            s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
+          fetchCompactFilters(newDmh).map(_.copy(state = PostHeaderSync))
+        } else {
+          Future.successful(newDmh)
+        }
+
+      case _: DataMessageHandlerState =>
+        Future.successful(this)
+    }
   }
 
   private def fetchCompactFilters(
