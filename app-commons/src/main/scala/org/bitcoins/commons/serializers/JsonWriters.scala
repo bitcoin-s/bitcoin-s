@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto._
 import play.api.libs.json._
@@ -118,7 +119,7 @@ object JsonWriters {
       extends OWrites[TransactionOutPoint] {
 
     override def writes(o: TransactionOutPoint): JsObject = {
-      Json.obj("txid" -> o.txIdBE.hex, "vout" -> o.vout.toLong)
+      Json.obj(PicklerKeys.txIdKey -> o.txIdBE.hex, PicklerKeys.voutKey -> o.vout.toLong)
     }
   }
 
