@@ -7,8 +7,8 @@ import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.currency._
+import org.bitcoins.core.number._
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.ln._
@@ -17,12 +17,7 @@ import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.routing.{ChannelRoute, NodeRoute, Route}
-import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
-  ScriptSignature,
-  WitnessVersion,
-  WitnessVersion0
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
@@ -151,6 +146,13 @@ object JsonReaders {
       SerializerUtil.processJsNumber[Bitcoins](Bitcoins(_))(json)
   }
 
+  implicit object CurrencyUnitReads extends Reads[CurrencyUnit] {
+
+    override def reads(json: JsValue): JsResult[CurrencyUnit] =
+      SerializerUtil.processJsNumber[CurrencyUnit](num =>
+        Satoshis(num.toBigInt))(json)
+  }
+
   implicit object SatoshisReads extends Reads[Satoshis] {
 
     override def reads(json: JsValue): JsResult[Satoshis] =
@@ -162,6 +164,21 @@ object JsonReaders {
 
     override def reads(json: JsValue): JsResult[BlockHeader] =
       SerializerUtil.processJsString[BlockHeader](BlockHeader.fromHex)(json)
+  }
+
+  implicit object UInt16Reads extends Reads[UInt16] {
+
+    override def reads(json: JsValue): JsResult[UInt16] =
+      json match {
+        case JsNumber(n) =>
+          n.toBigIntExact match {
+            case Some(num) => JsSuccess(UInt16(num))
+            case None      => SerializerUtil.buildErrorMsg("UInt16", n)
+          }
+        case JsString(s) => JsSuccess(UInt16.fromHex(s))
+        case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
+          SerializerUtil.buildJsErrorMsg("jsnumber", err)
+      }
   }
 
   implicit object Int32Reads extends Reads[Int32] {
@@ -292,6 +309,13 @@ object JsonReaders {
         json)
   }
 
+  implicit object ScriptWitnessReads extends Reads[ScriptWitness] {
+
+    override def reads(json: JsValue): JsResult[ScriptWitness] =
+      SerializerUtil.processJsStringOpt[ScriptWitness](
+        ScriptWitness.fromHexOpt)(json)
+  }
+
   implicit object BlockReads extends Reads[Block] {
 
     override def reads(json: JsValue): JsResult[Block] =
@@ -323,6 +347,26 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[SchnorrPublicKey] =
       SerializerUtil.processJsString[SchnorrPublicKey](
         SchnorrPublicKey.fromHex)(json)
+  }
+
+  implicit object SchnorrNonceReads extends Reads[SchnorrNonce] {
+
+    override def reads(json: JsValue): JsResult[SchnorrNonce] =
+      SerializerUtil.processJsString[SchnorrNonce](SchnorrNonce.fromHex)(json)
+  }
+
+  implicit object SchnorrDigitalSignatureReads
+      extends Reads[SchnorrDigitalSignature] {
+
+    override def reads(json: JsValue): JsResult[SchnorrDigitalSignature] =
+      SerializerUtil.processJsString[SchnorrDigitalSignature](
+        SchnorrDigitalSignature.fromHex)(json)
+  }
+
+  implicit object FieldElementReads extends Reads[FieldElement] {
+
+    override def reads(json: JsValue): JsResult[FieldElement] =
+      SerializerUtil.processJsString[FieldElement](FieldElement.fromHex)(json)
   }
 
   implicit object P2PKHAddressReads extends Reads[P2PKHAddress] {
