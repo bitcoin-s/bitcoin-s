@@ -263,6 +263,14 @@ to ensure the entire module is initialized correctly.</p>
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
         <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
+        
+        websocket {
+          <span class="hljs-comment"># don't emit block processed events over the websocket</span>
+          <span class="hljs-comment"># until IBD is complete. This is an optimization for the</span>
+          <span class="hljs-comment"># the UI so it doesn't have to handle hundreds of thousands of </span>
+          <span class="hljs-comment"># events while IBD is going on.</span>
+          <span class="hljs-attr">block-processed-ibd</span> = <span class="hljs-literal">false</span>
+      }
     }
 
     <span class="hljs-comment"># settings for wallet module</span>
