@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>MuSig · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S now has support for [MuSig](https://github.com/jonasnick/bips/blob/musig2/bip-musig2.mediawiki)."/><meta name="docsearch:version" content="1.9.3"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="MuSig · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S now has support for [MuSig](https://github.com/jonasnick/bips/blob/musig2/bip-musig2.mediawiki)."/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>1.9.3</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/crypto/musig.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">MuSig</h1></header><article><div><span><p>Bitcoin-S now has support for <a href="https://github.com/jonasnick/bips/blob/musig2/bip-musig2.mediawiki">MuSig</a>.</p>
+<p>This module contains classes representing public <code>KeySet</code>s, MuSig nonces, and MuSig aggregate key tweaks, as well as utility functions for all MuSig computations.</p>
+<p>The functions for aggregating key data are:</p>
+<ul>
+<li><code>aggPubKey</code>
+<ul>
+<li>This is a member of <code>KeySet</code> and returns the aggregate public key for this set of signers, including the tweaks provided. In most uses, a subsequent call to <code>schnorrPublicKey</code> is required for Bitcoin applications.</li>
+</ul></li>
+<li><code>MuSigNoncePub.aggregate</code>
+<ul>
+<li>Given a <code>Vector[MuSigNoncePub]</code> of the signer's nonces, returns the aggregate <code>MuSigNoncePub</code>. This aggregation can be done before the message, or even the <code>KeySet</code> is known.</li>
+</ul></li>
+</ul>
+<p>The functions for signing and verification are:</p>
+<ul>
+<li><code>MuSigUtil.sign</code>
+<ul>
+<li>This function generates a MuSig partial signature using a private key and <code>MuSigNoncePriv</code>. This consists of a pair <code>(R, s)</code> where <code>R</code> is the aggregate nonce key (same for all signers) and <code>s</code> is the actual partial signature that needs to be shared.</li>
+</ul></li>
+<li><code>MuSigUtil.partialSigVerify</code>
+<ul>
+<li>This function validates a single partial signature against that signer's public key and <code>MuSigNoncePub</code>.</li>
+</ul></li>
+<li><code>MuSigUtil.signAgg</code>
+<ul>
+<li>This function aggregates all of the <code>s</code> values into a single valid <code>SchnorrDigitalSignature</code> (using the aggregate nonce key <code>R</code>).</li>
+</ul></li>
+</ul>
+<p>Note that no new function is required for aggregate verification as <code>SchnorrPublicKey</code>'s <code>verify</code> function is to be used.</p>
+<p>Lastly, it should be mentioned that <code>MuSigNoncePriv</code>s must be constructed using either <code>MuSigNoncePriv.gen</code> or <code>MuSigNoncePriv.genInternal</code> (the latter should only be used with 32 bytes of secure random entropy). These generation functions take as input any context information that is available at nonce generation time, namely your signing key, aggregate public key, message, and any extra bytes you may have available. Including these optional inputs improves the security of nonce generation (which must be absolutely secure).</p>
+<p>The following code shows a two-party MuSig execution:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-comment">// Alice and Bob generate and exchange nonce data (new nonces for every sig)</span>
+<span class="hljs-keyword">val</span> aliceNoncePriv = <span class="hljs-type">MuSigNoncePriv</span>.gen()
+<span class="hljs-keyword">val</span> aliceNonce = aliceNoncePriv.toPublicNonces <span class="hljs-comment">// Alice sends this to Bob // Alice sends this to Bob</span>
+<span class="hljs-keyword">val</span> bobNoncePriv = <span class="hljs-type">MuSigNoncePriv</span>.gen()
+<span class="hljs-keyword">val</span> bobNonce = bobNoncePriv.toPublicNonces <span class="hljs-comment">// Bob sends this to Alice // Bob sends this to Alice</span>
+
+<span class="hljs-comment">// The aggregate musig nonce can be computed from Alice's and Bob's</span>
+<span class="hljs-keyword">val</span> aggMuSigNonce = <span class="hljs-type">MuSigNoncePub</span>.aggregate(<span class="hljs-type">Vector</span>(aliceNonce, bobNonce))
+
+<span class="hljs-comment">// Any party can (non-interactively) compute the aggregate public key</span>
+<span class="hljs-keyword">val</span> pubKeys = <span class="hljs-type">Vector</span>(alicePubKey, bobPubKey)
+<span class="hljs-keyword">val</span> keySet = <span class="hljs-type">KeySet</span>(pubKeys, tweaks) <span class="hljs-comment">// This is where you put MuSigTweaks // This is where you put MuSigTweaks</span>
+<span class="hljs-keyword">val</span> aggPubKey = keySet.aggPubKey.schnorrPublicKey
+
+<span class="hljs-comment">// Alice generates a partial signature for the message</span>
+<span class="hljs-keyword">val</span> (aliceR, aliceSig) = 
+    <span class="hljs-type">MuSigUtil</span>.sign(aliceNoncePriv, aggMuSigNonce, alicePrivKey, msg, keySet)
+<span class="hljs-comment">// Bob generates a partial signature for the message</span>
+<span class="hljs-keyword">val</span> (bobR, bobSig) =
+    <span class="hljs-type">MuSigUtil</span>.sign(bobNoncePriv, aggMuSigNonce, bobPrivKey, msg, keySet)
+require(aliceR == bobR)
+<span class="hljs-keyword">val</span> <span class="hljs-type">R</span> = aliceR
+
+<span class="hljs-comment">// Alice and Bob exchange and verify each other's sigs (s values)</span>
+require(
+        <span class="hljs-type">MuSigUtil</span>.partialSigVerify(aliceSig,
+                                   aliceNonce,
+                                   aggMuSigNonce,
+                                   alicePubKey,
+                                   keySet,
+                                   msg))
+require(
+        <span class="hljs-type">MuSigUtil</span>.partialSigVerify(bobSig,
+                                   bobNonce,
+                                   aggMuSigNonce,
+                                   bobPubKey,
+                                   keySet,
+                                   msg))
+
+<span class="hljs-comment">// In the case that the aggregator is not Alice or Bob, R can be computed as follows</span>
+<span class="hljs-keyword">val</span> <span class="hljs-type">R2</span> = <span class="hljs-type">SigningSession</span>(aggMuSigNonce, keySet, msg).aggNonce
+require(<span class="hljs-type">R2</span> == <span class="hljs-type">R</span>)
+
+<span class="hljs-comment">// Finally, any party can aggregate the partial signatures</span>
+<span class="hljs-keyword">val</span> sig = <span class="hljs-type">MuSigUtil</span>.signAgg(<span class="hljs-type">Vector</span>(aliceSig, bobSig), <span class="hljs-type">R</span>)
+
+<span class="hljs-comment">// This signature can now be validated as a normal BIP340 Schnorr signature</span>
+require(aggPubKey.verify(msg, sig))
+</code></pre>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 7/6/2022 by Nadav Kohen</em></div><div class="docs-prevnext"></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2022 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
