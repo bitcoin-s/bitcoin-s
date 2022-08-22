@@ -1019,6 +1019,16 @@ class ChainHandler(
     stateDAO.isSyncing
   }
 
+  override def isIBD(): Future[Boolean] = {
+    stateDAO.getIsIBD().map {
+      case Some(ibd) =>
+        ibd.isIBDRunning
+      case None =>
+        //if we do not have the state descriptor in the database, default to true on IBD
+        true
+    }
+  }
+
   override def setSyncing(value: Boolean): Future[ChainApi] = {
     val isSyncingF = stateDAO.isSyncing
     for {
@@ -1029,6 +1039,27 @@ class ChainHandler(
           Future.unit
         } else {
           updateSyncingAndExecuteCallback(value)
+        }
+      }
+    } yield {
+      this
+    }
+  }
+
+  override def setIBD(value: Boolean): Future[ChainApi] = {
+    val isIBDF: Future[Option[IsInitialBlockDownload]] = stateDAO.getIsIBD()
+    for {
+      isIBDOpt <- isIBDF
+      _ <- {
+        if (isIBDOpt.isDefined && isIBDOpt.get.isIBDRunning == value) {
+          //do nothing as we are already at this state
+          Future.unit
+        } else if (isIBDOpt.isDefined && !isIBDOpt.get.isIBDRunning && value) {
+          logger.warn(
+            s"Can only do IBD once, cannot set flag to true when database flag is false.")
+          Future.unit
+        } else {
+          stateDAO.updateIsIbd(value)
         }
       }
     } yield {

@@ -72,13 +72,16 @@ case class ChainRoutes(
         for {
           header <- chain.getBestBlockHeader()
           syncing <- chain.isSyncing()
+          isIBD <- chain.isIBD()
         } yield {
-          val info = BitcoinSServerInfo(network = network,
-                                        blockHeight = header.height,
-                                        blockHash = header.hashBE,
-                                        torStarted =
-                                          startedTorConfigF.isCompleted,
-                                        syncing = syncing)
+          val info = BitcoinSServerInfo(
+            network = network,
+            blockHeight = header.height,
+            blockHash = header.hashBE,
+            torStarted = startedTorConfigF.isCompleted,
+            syncing = syncing,
+            isInitialBlockDownload = isIBD
+          )
           Server.httpSuccess(info.toJson)
         }
       }

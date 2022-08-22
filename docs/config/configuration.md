@@ -229,6 +229,14 @@ bitcoin-s {
         
         hikari-logging = true
         hikari-logging-interval = 10 minute
+        
+        websocket {
+          # don't emit block processed events over the websocket
+          # until IBD is complete. This is an optimization for the
+          # the UI so it doesn't have to handle hundreds of thousands of 
+          # events while IBD is going on.
+          block-processed-ibd = false
+      }
     }
 
     # settings for wallet module

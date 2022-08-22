@@ -281,8 +281,17 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
 
+  override def isIBD(): Future[Boolean] = {
+    getBlockChainInfo.map(_.initialblockdownload)
+  }
+
   override def setSyncing(value: Boolean): Future[ChainApi] = {
     syncing.set(value)
+    Future.successful(this)
+  }
+
+  override def setIBD(value: Boolean): Future[ChainApi] = {
+    logger.warn(s"Cannot set IBD of BitcoindRpcClient, this is a noop")
     Future.successful(this)
   }
 }

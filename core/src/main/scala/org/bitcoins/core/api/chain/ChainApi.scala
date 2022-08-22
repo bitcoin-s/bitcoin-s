@@ -152,5 +152,9 @@ trait ChainApi extends ChainQueryApi {
 
   def isSyncing(): Future[Boolean]
 
+  def isIBD(): Future[Boolean]
+
   def setSyncing(value: Boolean): Future[ChainApi]
+
+  def setIBD(value: Boolean): Future[ChainApi]
 }
