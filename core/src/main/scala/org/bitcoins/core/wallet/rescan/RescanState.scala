@@ -51,6 +51,11 @@ object RescanState {
 
     def doneF: Future[Vector[BlockMatchingResponse]] = blocksMatchedF
 
+    /** Fails a rescan with the given exception */
+    def fail(err: Throwable): Unit = {
+      completeRescanEarlyP.failure(err)
+    }
+
     /** Completes the stream that the rescan in progress uses.
       * This aborts the rescan early.
       */

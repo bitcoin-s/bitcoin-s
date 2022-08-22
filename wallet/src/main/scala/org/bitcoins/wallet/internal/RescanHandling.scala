@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
+import org.bitcoins.core.wallet.rescan.RescanState.RescanTerminatedEarly
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
@@ -142,6 +143,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
     for {
       rescanState <- rescanStateF
       _ <- RescanState.awaitRescanDone(rescanState).recoverWith {
+        case RescanTerminatedEarly =>
+          logger.info(
+            s"Rescan terminated early, don't reset isRescanning flag as new wallet is likely being loaded")
+          Future.unit
         case err: Throwable =>
           logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
                        err)
