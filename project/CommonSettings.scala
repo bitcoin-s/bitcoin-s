@@ -17,7 +17,7 @@ import scala.util.Properties
 
 object CommonSettings {
 
-  val previousStableVersion: String = "1.9.2"
+  val previousStableVersion: String = "1.9.3"
 
   private def isCI = {
     Properties
