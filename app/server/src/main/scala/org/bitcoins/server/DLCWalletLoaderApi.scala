@@ -183,7 +183,10 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
             case RescanState.RescanTerminatedEarly =>
               rescanStateOpt = None
             case scala.util.control.NonFatal(exn) =>
-              logger.error(s"Failed to reset rescanState in wallet loader", exn)
+              logger.error(
+                s"Failed to reset rescanState in wallet loader. Resetting rescan state",
+                exn)
+              rescanStateOpt = None
           }
           rescanStateOpt = Some(started)
         } else {
