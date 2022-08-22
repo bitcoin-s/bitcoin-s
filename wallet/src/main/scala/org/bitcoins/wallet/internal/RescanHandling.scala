@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
+import org.bitcoins.core.wallet.rescan.RescanState.RescanTerminatedEarly
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
@@ -67,7 +68,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           logger.info(
             s"Starting rescanning the wallet=${walletConfig.walletName} from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
           val startTime = System.currentTimeMillis()
-          val res = for {
+          val resF: Future[RescanState] = for {
             start <- (startOpt, useCreationTime) match {
               case (Some(_), true) =>
                 Future.failed(new IllegalArgumentException(
@@ -103,15 +104,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
             state
           }
 
-          res.recoverWith { case err: Throwable =>
-            logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
-                         err)
-            stateDescriptorDAO
-              .updateRescanning(false)
-              .flatMap(_ => Future.failed(err))
-          }
+          //register callbacks for resetting rescan flag in case of failure
+          val _ = handleRescanFailure(resF)
 
-          res.map {
+          resF.map {
             case r: RescanState.RescanStarted =>
               r.doneF.map(_ =>
                 logger.info(s"Finished rescanning the wallet. It took ${System
@@ -120,7 +116,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
             //nothing to log
           }
 
-          res
+          resF
         } else {
           logger.warn(
             s"Rescan already started for wallet=${walletConfig.walletName}, ignoring request to start another one")
@@ -130,6 +126,36 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield {
       rescanState
     }
+  }
+
+  /** Register callbacks to reset rescan flag in the database if there is a rescan failure */
+  private def handleRescanFailure(
+      rescanStateF: Future[RescanState]): Future[Unit] = {
+    //handle the case where there is a top level rescan failure when _starting_ the rescan
+    rescanStateF.recoverWith { case err: Throwable =>
+      logger.error(s"Failed to rescan wallet=${walletConfig.walletName}", err)
+      stateDescriptorDAO
+        .updateRescanning(false)
+        .flatMap(_ => Future.failed(err))
+    }
+
+    //handle the case where the rescan fails while the rescan is in progress
+    for {
+      rescanState <- rescanStateF
+      _ <- RescanState.awaitRescanDone(rescanState).recoverWith {
+        case RescanTerminatedEarly =>
+          logger.info(
+            s"Rescan terminated early, don't reset isRescanning flag as new wallet is likely being loaded")
+          Future.unit
+        case err: Throwable =>
+          logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
+                       err)
+          stateDescriptorDAO
+            .updateRescanning(false)
+            .flatMap(_ => Future.failed(err))
+
+      }
+    } yield ()
   }
 
   lazy val walletCreationBlockHeight: Future[BlockHeight] =
