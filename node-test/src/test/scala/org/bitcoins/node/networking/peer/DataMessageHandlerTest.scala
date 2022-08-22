@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
@@ -40,6 +41,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         dataMessageHandler = DataMessageHandler(chainApi,
                                                 None,
                                                 node,
+                                                HeaderSync,
                                                 syncPeer = Some(peer))(
           node.executionContext,
           node.nodeAppConfig,
@@ -87,6 +89,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi,
                              None,
                              node,
+                             HeaderSync,
                              syncPeer = Some(peer))(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
@@ -126,6 +129,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi,
                              None,
                              node,
+                             HeaderSync,
                              syncPeer = Some(peer))(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
@@ -163,6 +167,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi,
                              None,
                              node,
+                             HeaderSync,
                              syncPeer = Some(peer))(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
@@ -201,6 +206,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi,
                              None,
                              node,
+                             HeaderSync,
                              syncPeer = Some(peer))(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)

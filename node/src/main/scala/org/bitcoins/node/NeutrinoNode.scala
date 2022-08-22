@@ -15,6 +15,7 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   DataMessageHandler
@@ -44,7 +45,7 @@ case class NeutrinoNode(
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
   private var dataMessageHandler: DataMessageHandler =
-    DataMessageHandler(chainApi, walletCreationTimeOpt, this)
+    DataMessageHandler(chainApi, walletCreationTimeOpt, this, HeaderSync)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 

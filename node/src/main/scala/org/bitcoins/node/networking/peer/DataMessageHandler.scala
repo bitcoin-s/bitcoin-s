@@ -31,13 +31,13 @@ case class DataMessageHandler(
     chainApi: ChainApi,
     walletCreationTimeOpt: Option[Instant],
     node: Node,
+    state: DataMessageHandlerState,
     initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
     filterHeightOpt: Option[Int] = None,
     syncing: Boolean = false,
-    syncPeer: Option[Peer] = None,
-    state: DataMessageHandlerState = HeaderSync)(implicit
+    syncPeer: Option[Peer] = None)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)

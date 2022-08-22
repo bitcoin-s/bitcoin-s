@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import com.typesafe.config.ConfigFactory
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.node.models.Peer
@@ -33,11 +32,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
   }
 
   override protected def getFreshConfig: BitcoinSAppConfig = {
-    val configs = ConfigFactory.parseString("""
-                                              | peer-discovery-timeout = 5s
-                                              |""".stripMargin)
-    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(pgUrl,
-                                                                       configs)
+    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(pgUrl)
   }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
