@@ -61,7 +61,7 @@ object RescanState {
       */
     def stop(): Future[Vector[BlockMatchingResponse]] = {
       if (!completeRescanEarlyP.isCompleted) {
-        completeRescanEarlyP.failure(RescanTerminatedEarly)
+        fail(RescanTerminatedEarly)
       }
       blocksMatchedF.recoverWith {
         case RescanTerminatedEarly =>
