@@ -15,15 +15,18 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   DataMessageHandler
 }
 
+import java.time.Instant
 import scala.concurrent.Future
 
 case class NeutrinoNode(
-    private var dataMessageHandler: DataMessageHandler,
+    chainApi: ChainApi,
+    walletCreationTimeOpt: Option[Instant],
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
@@ -40,6 +43,9 @@ case class NeutrinoNode(
   implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
+
+  private var dataMessageHandler: DataMessageHandler =
+    DataMessageHandler(chainApi, walletCreationTimeOpt, this, HeaderSync)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 

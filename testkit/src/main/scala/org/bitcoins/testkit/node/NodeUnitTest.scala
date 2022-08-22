@@ -190,11 +190,12 @@ object NodeUnitTest extends P2PLogger {
       chainConf: ChainAppConfig,
       nodeConf: NodeAppConfig,
       system: ActorSystem): NeutrinoNode = {
-    import system.dispatcher
-
-    val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
-
-    NeutrinoNode(dmh, nodeConf, chainConf, system, paramPeers = Vector(peer))
+    NeutrinoNode(chainApi,
+                 walletCreationTimeOpt,
+                 nodeConf,
+                 chainConf,
+                 system,
+                 paramPeers = Vector(peer))
   }
 
   def buildPeerMessageReceiver(
@@ -424,9 +425,9 @@ object NodeUnitTest extends P2PLogger {
       peer <- createPeer(bitcoind)
       chainApi <- chainApiF
     } yield {
-      val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
-      NeutrinoNode(paramPeers = Vector(peer),
-                   dataMessageHandler = dmh,
+      NeutrinoNode(chainApi,
+                   walletCreationTimeOpt,
+                   paramPeers = Vector(peer),
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system)
@@ -456,9 +457,9 @@ object NodeUnitTest extends P2PLogger {
       _ <- nodeAppConfig.start()
       chainApi <- chainApiF
     } yield {
-      val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
-      NeutrinoNode(paramPeers = Vector(peer),
-                   dataMessageHandler = dmh,
+      NeutrinoNode(chainApi,
+                   walletCreationTimeOpt,
+                   paramPeers = Vector(peer),
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system)
@@ -491,9 +492,9 @@ object NodeUnitTest extends P2PLogger {
       chainApi <- chainApiF
       peers <- Future.sequence(peersF)
     } yield {
-      val dmh = DataMessageHandler(chainApi, creationTimeOpt)
-      NeutrinoNode(paramPeers = peers,
-                   dataMessageHandler = dmh,
+      NeutrinoNode(chainApi,
+                   creationTimeOpt,
+                   paramPeers = peers,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system)
