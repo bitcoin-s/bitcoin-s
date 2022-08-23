@@ -1,14 +1,8 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{
-  BroadcastHub,
-  Keep,
-  Sink,
-  Source,
-  SourceQueueWithComplete
-}
 import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
@@ -19,11 +13,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.node.{
-  InternalImplementationNodeType,
-  NodeApi,
-  NodeType
-}
+import org.bitcoins.core.api.node.{InternalImplementationNodeType, NodeApi, NodeType}
 import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.dlc.node.DLCNode
