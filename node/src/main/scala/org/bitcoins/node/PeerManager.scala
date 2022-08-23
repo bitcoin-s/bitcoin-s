@@ -376,7 +376,7 @@ case class PeerManager(
   }
 
   private val dataMessageStreamSource = Source
-    .queue[StreamDataMessageWrapper](1000,
+    .queue[StreamDataMessageWrapper](10000,
                                      overflowStrategy = OverflowStrategy.fail)
     .mapAsync(1) {
       case msg @ DataMessageWrapper(payload, peerMsgSender, peer) =>
