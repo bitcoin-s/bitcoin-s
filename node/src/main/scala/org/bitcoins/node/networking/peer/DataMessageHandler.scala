@@ -688,10 +688,14 @@ case class DataMessageHandler(
           creationTimeHeight <- creationTimeHeightF
           filterCount <- filterCountF
         } yield {
+          //filterHeightOpt contains the height of the last filter of the last batch
+          //so if we want to start syncing filters from the correct height we need to
+          //decrease the computed height
+          val height = Math.max(0, creationTimeHeight - 1)
           //want to choose the maximum out of these too
           //if our internal chainstate filter count is > creationTimeHeight
           //we just want to start syncing from our last seen filter
-          Some(Math.max(creationTimeHeight, filterCount))
+          Some(Math.max(height, filterCount))
         }
       case None =>
         Future.successful(None)
