@@ -8,6 +8,7 @@ import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ServerBindings}
 
+import java.nio.file.Files
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
@@ -80,6 +81,10 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
   override val customFinalDirOpt: Option[String] = Some("oracle")
 
   val serverCmdLineArgs = ServerArgParser(args.toVector)
+
+  if (Files.notExists(datadirParser.networkDir)) {
+    Files.createDirectories(datadirParser.networkDir)
+  }
 
   val datadirParser =
     DatadirParser(serverCmdLineArgs, customFinalDirOpt)
