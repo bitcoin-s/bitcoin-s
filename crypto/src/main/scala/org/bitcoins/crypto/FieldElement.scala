@@ -27,6 +27,8 @@ case class FieldElement(bytes: ByteVector)
   def getPublicKey: ECPublicKey = toPrivateKey.publicKey
 
   override def fieldObj: FiniteFieldObject[FieldElement] = FieldElement
+
+  override def toString: String = s"FieldElement(${bytes.toHex})"
 }
 
 object FieldElement
