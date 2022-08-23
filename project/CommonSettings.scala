@@ -193,6 +193,7 @@ object CommonSettings {
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "openjdk:17-slim",
       dockerRepository := Some("bitcoinscala"),
+      Docker / daemonUser := "bitcoin-s",
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value

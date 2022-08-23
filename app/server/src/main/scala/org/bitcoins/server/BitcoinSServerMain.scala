@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{
   BroadcastHub,
   Keep,
@@ -8,7 +9,6 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
-import akka.stream.OverflowStrategy
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
