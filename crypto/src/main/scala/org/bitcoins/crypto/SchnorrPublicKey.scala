@@ -69,6 +69,8 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   def xCoord: CurveCoordinate = CurveCoordinate(bytes)
 
   def toXOnly: XOnlyPubKey = XOnlyPubKey(bytes)
+
+  override def toString: String = s"SchnorrPublicKey(${bytes.toHex})"
 }
 
 object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
