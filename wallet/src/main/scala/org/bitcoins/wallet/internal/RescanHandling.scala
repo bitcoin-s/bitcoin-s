@@ -519,14 +519,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
       filtersResponse: Vector[ChainQueryApi.FilterResponse],
       parallelismLevel: Int)(implicit
       ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
-    val startHeight = filtersResponse.head.blockHeight
-    val endHeight = filtersResponse.last.blockHeight
+    val startHeightOpt = filtersResponse.headOption.map(_.blockHeight)
+    val endHeightOpt = filtersResponse.lastOption.map(_.blockHeight)
     for {
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
       _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
       logger.info(
-        s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
+        s"Found ${filtered.length} matches from start=$startHeightOpt to end=$endHeightOpt")
       filtered
     }
   }
