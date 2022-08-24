@@ -75,8 +75,10 @@ case class CompactFilterDAO()(implicit
     table.filter(_.blockHash.inSet(ids))
   }
 
-  override protected def findAll(
-      ts: Vector[CompactFilterDb]): Query[Table[_], CompactFilterDb, Seq] = {
+  override protected def findAll(ts: Vector[CompactFilterDb]): Query[
+    Table[CompactFilterDb],
+    CompactFilterDb,
+    Seq] = {
     findByPrimaryKeys(ts.map(_.blockHashBE))
   }
 

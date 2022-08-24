@@ -38,7 +38,7 @@ case class IncomingDLCOfferDAO()(implicit
     table.filter(_.hash.inSet(ids))
 
   override protected def findAll(ts: Vector[IncomingDLCOfferDb]): Query[
-    Table[_],
+    Table[IncomingDLCOfferDb],
     IncomingDLCOfferDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.hash))
