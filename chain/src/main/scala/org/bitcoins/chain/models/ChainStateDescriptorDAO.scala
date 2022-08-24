@@ -47,14 +47,14 @@ case class ChainStateDescriptorDAO()(implicit
   }
 
   override def findByPrimaryKey(id: ChainStateDescriptorType): Query[
-    Table[_],
+    Table[ChainStateDescriptorDb],
     ChainStateDescriptorDb,
     Seq] = {
     table.filter(_.tpe === id)
   }
 
   override def findAll(ts: Vector[ChainStateDescriptorDb]): Query[
-    Table[_],
+    Table[ChainStateDescriptorDb],
     ChainStateDescriptorDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.tpe))

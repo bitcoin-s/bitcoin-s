@@ -63,7 +63,7 @@ case class DLCAnnouncementDAO()(implicit
   }
 
   override def find(t: DLCAnnouncementDb): profile.api.Query[
-    Table[_],
+    Table[DLCAnnouncementDb],
     DLCAnnouncementDb,
     Seq] = {
     findByPrimaryKey(DLCAnnouncementPrimaryKey(t.dlcId, t.announcementId))

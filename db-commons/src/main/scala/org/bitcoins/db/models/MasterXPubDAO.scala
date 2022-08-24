@@ -87,7 +87,7 @@ case class MasterXPubDAO()(implicit
 
   override protected def findAll(
       ts: Vector[ExtPublicKeyDTO]): profile.api.Query[
-    profile.api.Table[_],
+    profile.api.Table[ExtPublicKeyDTO],
     ExtPublicKeyDTO,
     Seq] = {
     findByPrimaryKeys(ts.map(_.publicKey))

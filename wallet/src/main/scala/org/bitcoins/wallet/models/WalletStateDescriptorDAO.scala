@@ -47,14 +47,14 @@ case class WalletStateDescriptorDAO()(implicit
   }
 
   override def findByPrimaryKey(id: WalletStateDescriptorType): Query[
-    Table[_],
+    Table[WalletStateDescriptorDb],
     WalletStateDescriptorDb,
     Seq] = {
     table.filter(_.tpe === id)
   }
 
   override def findAll(ts: Vector[WalletStateDescriptorDb]): Query[
-    Table[_],
+    Table[WalletStateDescriptorDb],
     WalletStateDescriptorDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.tpe))

@@ -42,14 +42,14 @@ case class NodeStateDescriptorDAO()(implicit
   }
 
   override def findByPrimaryKey(id: NodeStateDescriptorType): Query[
-    Table[_],
+    Table[NodeStateDescriptorDb],
     NodeStateDescriptorDb,
     Seq] = {
     table.filter(_.tpe === id)
   }
 
   override def findAll(ts: Vector[NodeStateDescriptorDb]): Query[
-    Table[_],
+    Table[NodeStateDescriptorDb],
     NodeStateDescriptorDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
