@@ -11,7 +11,7 @@ object DLCContactDbHelper {
 
   def fromPeerAddress(peerAddress: String): DLCContactDb =
     DLCContactDb(
-      alias = "",
+      alias = peerAddress.take(8),
       address =
         NetworkUtil.parseInetSocketAddress(peerAddress, DLC.DefaultPort),
       memo = ""
