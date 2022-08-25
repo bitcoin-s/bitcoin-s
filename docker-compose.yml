@@ -7,11 +7,11 @@ services:
     restart: on-failure
     stop_grace_period: 1m
     volumes:
-      - ./data/wallet:/wallet
+      - ./data/wallet:/bitcoin-s
       - ./data/log:/log
     environment:
       LOG_PATH: "/log/"
-      BITCOIN_S_HOME: "/wallet/"
+      BITCOIN_S_HOME: "/bitcoin-s/"
       MEMPOOL_API_URL: "http://mempool.space/api"
       WALLET_SERVER_API_URL: "http://walletserver:9999/"
       WALLET_SERVER_WS: "ws://walletserver:19999/events"
