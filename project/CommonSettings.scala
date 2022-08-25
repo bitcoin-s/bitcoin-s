@@ -194,6 +194,10 @@ object CommonSettings {
       dockerBaseImage := "openjdk:17-slim",
       dockerRepository := Some("bitcoinscala"),
       Docker / daemonUser := "bitcoin-s",
+      //needed for umbrel environment, container uids and host uids must matchup so we can
+      //properly write to volumes on the host machine
+      //see: https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
+      Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value

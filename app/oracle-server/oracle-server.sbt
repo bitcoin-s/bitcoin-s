@@ -20,16 +20,6 @@ dockerExposedPorts ++= Seq(9998)
 
 dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-oracle-server")
 
-//so the server can be read and executed by all users
-dockerAdditionalPermissions += (DockerChmodType.Custom("a=rx"),"/opt/docker/bin/bitcoin-s-oracle-server")
-
-//make it so all users can execute the startup script
-//for the oracle server
-//this is needed for umbrel
-//https://linuxize.com/post/chmod-command-in-linux/#symbolic-text-method
-dockerAdditionalPermissions += (DockerChmodType.Custom(
-  "a=rx"), "/opt/docker/bin/bitcoin-s-oracle-server")
-
 //this passes in our default configuration for docker
 //you can override this by passing in a custom conf file
 //when the docker container is started by using bind mount
