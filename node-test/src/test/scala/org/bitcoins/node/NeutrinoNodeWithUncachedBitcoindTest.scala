@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 import org.bitcoins.server.BitcoinSAppConfig
@@ -30,6 +31,9 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       Future.sequence(peersF)
     }
   }
+
+  lazy val invalidHeader = BlockHeader.fromHex(
+    s"0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f2003000000")
 
   override protected def getFreshConfig: BitcoinSAppConfig = {
     BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(pgUrl)
@@ -125,7 +129,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
             node.nodeConfig,
             node.chainConfig))
 
-        invalidHeader = node.chainAppConfig.chain.genesisBlock.blockHeader
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         sender <- node.peerManager.peerData(peer).peerMessageSender
         _ <- node.getDataMessageHandler.addToStream(invalidHeaderMessage,
@@ -144,7 +147,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       val peerManager = node.peerManager
 
       def sendInvalidHeaders(peer: Peer): Future[Unit] = {
-        val invalidHeader = node.chainAppConfig.chain.genesisBlock.blockHeader
         val invalidHeaderMessage =
           HeadersMessage(headers = Vector(invalidHeader))
         val senderF = node.peerManager.peerData(peer).peerMessageSender

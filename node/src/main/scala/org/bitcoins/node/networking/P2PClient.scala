@@ -14,7 +14,6 @@ import org.bitcoins.core.p2p.{
   NetworkPayload
 }
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
-import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.{
@@ -27,6 +26,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageReceiverState
 }
+import org.bitcoins.node.{P2PLogger, ResponseTimeout}
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
 import scodec.bits.ByteVector
@@ -119,6 +119,10 @@ case class P2PClientActor(
           case _ =>
         }
         sendNetworkMessage(message, peerConnection)
+      case ResponseTimeout(msg) =>
+        currentPeerMsgHandlerRecv =
+          Await.result(currentPeerMsgHandlerRecv.onResponseTimeout(msg),
+                       timeout)
       case payload: NetworkPayload =>
         val networkMsg = NetworkMessage(network, payload)
         self.forward(networkMsg)
@@ -319,8 +323,9 @@ case class P2PClientActor(
           _: Normal | _: Disconnected | _: Waiting) =>
         state match {
           case wait: Waiting =>
-            currentPeerMsgHandlerRecv.onResponseTimeout(wait.responseFor)
-            wait.expectedResponseCancellable.cancel()
+            currentPeerMsgHandlerRecv = Await.result(
+              currentPeerMsgHandlerRecv.onResponseTimeout(wait.responseFor),
+              timeout)
           case init: Initializing =>
             init.initializationTimeoutCancellable.cancel()
           case _ =>

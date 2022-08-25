@@ -368,6 +368,17 @@ case class PeerManager(
     Future.unit
   }
 
+  def sendResponseTimeout(peer: Peer, payload: NetworkPayload): Future[Unit] = {
+    logger.debug(
+      s"Sending response timeout for ${payload.commandName} to $peer")
+    if (peerData.contains(peer)) {
+      peerData(peer).client.map(_.actor ! ResponseTimeout(payload))
+    } else {
+      logger.debug(s"Requested to send response timeout for unknown $peer")
+      Future.unit
+    }
+  }
+
   def syncFromNewPeer(): Future[DataMessageHandler] = {
     logger.debug(s"Trying to sync from new peer")
     val newNode =
@@ -407,3 +418,5 @@ case class PeerManager(
   val dataMessageStream: SourceQueueWithComplete[StreamDataMessageWrapper] =
     dataMessageStreamSource.to(dataMessageStreamSink).run()
 }
+
+case class ResponseTimeout(payload: NetworkPayload)

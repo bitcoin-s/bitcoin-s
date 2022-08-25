@@ -1,7 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.Done
-import org.bitcoins.chain.blockchain.InvalidBlockHeader
+import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
@@ -235,17 +235,8 @@ case class DataMessageHandler(
           copy(chainApi = processed)
         }
 
-        val recoveredDMHF: Future[DataMessageHandler] =
-          chainApiHeaderProcessF.recoverWith {
-            case _: InvalidBlockHeader =>
-              logger.debug(
-                s"Invalid headers of count $count sent from ${syncPeer.get} in state $state")
-              recoverInvalidHeader(peer, peerMsgSender)
-            case throwable: Throwable => throw throwable
-          }
-
         val getHeadersF: Future[DataMessageHandler] =
-          recoveredDMHF
+          chainApiHeaderProcessF
             .flatMap { newDmh =>
               val newApi = newDmh.chainApi
               if (headers.nonEmpty) {
@@ -390,6 +381,18 @@ case class DataMessageHandler(
                 }
               }
             }
+
+        getHeadersF.recoverWith {
+          case _: DuplicateHeaders =>
+            logger.debug(
+              s"Received duplicate headers from ${syncPeer.get} in state=$state")
+            Future.successful(this)
+          case _: InvalidBlockHeader =>
+            logger.debug(
+              s"Invalid headers of count $count sent from ${syncPeer.get} in state=$state")
+            recoverInvalidHeader(peer, peerMsgSender)
+          case e: Throwable => throw e
+        }
 
         getHeadersF.failed.map { err =>
           logger.error(s"Error when processing headers message", err)

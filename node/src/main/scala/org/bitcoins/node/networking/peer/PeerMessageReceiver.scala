@@ -140,10 +140,7 @@ class PeerMessageReceiver(
       case good @ (_: Initializing | _: Normal | _: Waiting) =>
         val handleF: Future[Unit] = good match {
           case wait: Waiting =>
-            onResponseTimeout(wait.responseFor).map { _ =>
-              wait.expectedResponseCancellable.cancel()
-              ()
-            }
+            onResponseTimeout(wait.responseFor).map(_ => ())
           case wait: Initializing =>
             wait.initializationTimeoutCancellable.cancel()
             Future.unit
@@ -262,7 +259,8 @@ class PeerMessageReceiver(
     node.peerManager.onInitializationTimeout(peer)
   }
 
-  def onResponseTimeout(networkPayload: NetworkPayload): Future[Unit] = {
+  def onResponseTimeout(
+      networkPayload: NetworkPayload): Future[PeerMessageReceiver] = {
     assert(networkPayload.isInstanceOf[ExpectsResponse])
     logger.debug(
       s"Handling response timeout for ${networkPayload.commandName} from $peer")
@@ -277,11 +275,22 @@ class PeerMessageReceiver(
       case payload: ExpectsResponse =>
         logger.debug(
           s"Response for ${payload.commandName} from $peer timed out in state $state")
-        node.peerManager.onQueryTimeout(payload, peer)
+        node.peerManager.onQueryTimeout(payload, peer).map { _ =>
+          state match {
+            case _: Waiting if state.isConnected && state.isInitialized =>
+              val newState =
+                Normal(state.clientConnectP,
+                       state.clientDisconnectP,
+                       state.versionMsgP,
+                       state.verackMsgP)
+              toState(newState)
+            case _: PeerMessageReceiverState => this
+          }
+        }
       case _ =>
         logger.error(
           s"onResponseTimeout called for ${networkPayload.commandName} which does not expect response")
-        Future.unit
+        Future.successful(this)
     }
   }
 
@@ -294,7 +303,8 @@ class PeerMessageReceiver(
         logger.debug(s"Handling expected response for ${msg.commandName}")
         val expectedResponseCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime)(
-            Await.result(onResponseTimeout(msg), 10.seconds))
+            Await.result(node.peerManager.sendResponseTimeout(peer, msg),
+                         10.seconds))
         val newState = Waiting(
           clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP,
@@ -316,7 +326,7 @@ class PeerMessageReceiver(
       case Preconnection | _: Initializing | _: Disconnected =>
         //so we sent a message when things were good, but not we are back to connecting?
         //can happen when can happen where once we initialize the remote peer immediately disconnects us
-        onResponseTimeout(msg).flatMap(_ => Future.successful(this))
+        onResponseTimeout(msg)
     }
   }
 
