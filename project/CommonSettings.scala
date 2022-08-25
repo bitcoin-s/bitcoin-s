@@ -3,9 +3,9 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerRepository, dockerUpdateLatest, maintainer}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
-import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
+import com.typesafe.sbt.packager.docker.DockerChmodType
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
 import sbt._
 import sbt.Keys._
@@ -200,9 +200,6 @@ object CommonSettings {
       Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
-      dockerCommands ++= Seq(
-        Cmd("RUN", "mkdir", "/wallet")
-      ),
       dockerUpdateLatest := isSnapshot.value
     )
   }
