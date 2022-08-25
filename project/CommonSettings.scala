@@ -3,7 +3,7 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerRepository, dockerUpdateLatest, maintainer}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerExposedVolumes, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
 import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
@@ -200,9 +200,8 @@ object CommonSettings {
       Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
-      dockerCommands ++= Seq(
-        Cmd("RUN", "mkdir", "/wallet")
-      ),
+      //add a default exposed volume of /bitcoin-s so we can always write data here
+      dockerExposedVolumes += "/bitcoin-s",
       dockerUpdateLatest := isSnapshot.value
     )
   }

@@ -23,11 +23,11 @@ services:
       - walletserver
   walletserver:
     image: bitcoinscala/bitcoin-s-server:latest
-    entrypoint: ["/opt/docker/bin/bitcoin-s-server", "--datadir", "/wallet", "--conf", "/opt/docker/docker-application.conf"]
+    entrypoint: ["/opt/docker/bin/bitcoin-s-server", "--datadir", "/bitcoin-s", "--conf", "/opt/docker/docker-application.conf"]
     user: "0:1000"
     restart: on-failure
     volumes:
-      - ./data/wallet:/wallet
+      - ./data/wallet:/bitcoin-s
     environment:
       BITCOIN_S_NODE_MODE: "neutrino"
       BITCOIN_S_NODE_PEERS: "neutrino.suredbits.com:8333"
