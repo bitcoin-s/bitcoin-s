@@ -384,11 +384,11 @@ case class DataMessageHandler(
 
         getHeadersF.recoverWith {
           case _: DuplicateHeaders =>
-            logger.debug(
+            logger.warn(
               s"Received duplicate headers from ${syncPeer.get} in state=$state")
             Future.successful(this)
           case _: InvalidBlockHeader =>
-            logger.debug(
+            logger.warn(
               s"Invalid headers of count $count sent from ${syncPeer.get} in state=$state")
             recoverInvalidHeader(peer, peerMsgSender)
           case e: Throwable => throw e
