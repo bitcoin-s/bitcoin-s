@@ -82,14 +82,14 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
 
   val serverCmdLineArgs = ServerArgParser(args.toVector)
 
-  if (Files.notExists(datadirParser.networkDir)) {
-    Files.createDirectories(datadirParser.networkDir)
-  }
-
   val datadirParser =
     DatadirParser(serverCmdLineArgs, customFinalDirOpt)
 
   System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
+
+  if (Files.notExists(datadirParser.networkDir)) {
+    Files.createDirectories(datadirParser.networkDir)
+  }
 
   implicit lazy val conf: DLCOracleAppConfig =
     DLCOracleAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(

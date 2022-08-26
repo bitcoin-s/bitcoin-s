@@ -43,7 +43,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 import java.sql.SQLException
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
@@ -685,11 +685,11 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   val datadirParser =
     DatadirParser(serverCmdLineArgs, customFinalDirOpt)
 
+  System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
+
   if (Files.notExists(datadirParser.networkDir)) {
     Files.createDirectories(datadirParser.networkDir)
   }
-
-  System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
 
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(
