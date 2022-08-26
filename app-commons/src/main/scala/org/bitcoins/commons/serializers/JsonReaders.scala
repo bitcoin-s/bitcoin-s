@@ -31,8 +31,8 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.core.wallet.fee._
+import org.bitcoins.crypto._
 import play.api.libs.json._
 import ujson.{Num, Str, Value}
 import scodec.bits.ByteVector
@@ -710,6 +710,13 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[BitcoinFeeUnit] =
       SerializerUtil.processJsNumber[BitcoinFeeUnit](num =>
         SatoshisPerByte(Satoshis((num * 100000).toBigInt)))(json)
+  }
+
+  implicit object SatoshisPerVByteReads extends Reads[SatoshisPerVirtualByte] {
+
+    override def reads(json: JsValue): JsResult[SatoshisPerVirtualByte] =
+      SerializerUtil.processJsNumberBigInt[SatoshisPerVirtualByte](num =>
+        SatoshisPerVirtualByte.fromLong(num.toLong))(json)
   }
 
   implicit object FileReads extends Reads[File] {
