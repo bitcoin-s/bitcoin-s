@@ -12,6 +12,7 @@ import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
@@ -147,6 +148,11 @@ object JsonWriters {
       override def writes(o: Map[K, V]): JsValue =
         Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
+
+  implicit object SatoshisPerVByteWrites
+      extends Writes[SatoshisPerVirtualByte] {
+    override def writes(o: SatoshisPerVirtualByte): JsValue = JsNumber(o.toLong)
+  }
 
   implicit object SatoshisWrites extends Writes[Satoshis] {
     override def writes(o: Satoshis): JsValue = JsNumber(o.toBigDecimal)
