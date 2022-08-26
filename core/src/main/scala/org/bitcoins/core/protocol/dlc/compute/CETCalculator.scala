@@ -13,6 +13,7 @@ import org.bitcoins.core.util.{Indexed, NumberUtil}
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 object CETCalculator {
 
@@ -462,8 +463,14 @@ object CETCalculator {
       function: DLCPayoutCurve,
       totalCollateral: Satoshis,
       rounding: RoundingIntervals): Vector[CETOutcome] = {
-    val min = 0
     val max = Math.pow(base, numDigits).toLong - 1
+    // find the first valid outcome
+    val min =
+      0L
+        .to(max)
+        .find(x => Try(function(x)).isSuccess)
+        .getOrElse(throw new IllegalArgumentException(
+          "Cannot find a valid min outcome value"))
 
     computeCETs(base, numDigits, function, totalCollateral, rounding, min, max)
   }

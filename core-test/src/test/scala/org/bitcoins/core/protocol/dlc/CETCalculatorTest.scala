@@ -1,10 +1,12 @@
 package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{Satoshis, SatoshisInt}
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator._
 import org.bitcoins.core.protocol.dlc.models.{
+  DLCHyperbolaPayoutCurvePiece,
   DLCPayoutCurve,
+  OutcomePayoutPoint,
   PiecewisePolynomialPoint,
   RoundingIntervals
 }
@@ -261,7 +263,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
     assert(groupings == expected)
   }
 
-  it should "correctly compute all needed CETs" in {
+  it should "correctly compute all needed CETs a polynomial curve" in {
     val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
         PiecewisePolynomialPoint(0, -1000, isEndpoint = true),
@@ -344,6 +346,47 @@ class CETCalculatorTest extends BitcoinSUnitTest {
                                 rounding = RoundingIntervals.noRounding,
                                 min = 0,
                                 max = 110)
+    assert(cetOutcomes == expected)
+  }
+
+  it should "correctly compute all needed CETs for a hyperbolic curve" in {
+    val totalCollateral = 150.sats
+    val func = DLCPayoutCurve(
+      Vector(
+        DLCHyperbolaPayoutCurvePiece(
+          usePositivePiece = true,
+          translateOutcome = BigDecimal(0),
+          translatePayout = BigDecimal(0),
+          a = BigDecimal(1),
+          b = BigDecimal(0),
+          c = BigDecimal(0),
+          d = BigDecimal(25 * 10),
+          leftEndpoint = OutcomePayoutPoint(0, totalCollateral),
+          rightEndpoint = OutcomePayoutPoint(9, 0.sats)
+        )
+      ),
+      serializationVersion = DLCSerializationVersion.Beta
+    )
+
+    val expected = Vector(
+      CETOutcome(Vector(1), totalCollateral),
+      CETOutcome(Vector(2), 125.sats),
+      CETOutcome(Vector(3), 83.sats),
+      CETOutcome(Vector(4), 62.sats),
+      CETOutcome(Vector(5), 50.sats),
+      CETOutcome(Vector(6), 41.sats),
+      CETOutcome(Vector(7), 35.sats),
+      CETOutcome(Vector(8), 31.sats),
+      CETOutcome(Vector(9), 27.sats)
+    )
+
+    // let the calculator to compute the min and max outcomes
+    val cetOutcomes =
+      CETCalculator.computeCETs(base = 10,
+                                numDigits = 1,
+                                function = func,
+                                totalCollateral = totalCollateral,
+                                rounding = RoundingIntervals.noRounding)
     assert(cetOutcomes == expected)
   }
 
