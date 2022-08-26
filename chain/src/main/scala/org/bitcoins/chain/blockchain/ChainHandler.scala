@@ -119,6 +119,10 @@ class ChainHandler(
       val filteredHeaders = headers.filterNot(h =>
         headersWeAlreadyHave.exists(_.hashBE == h.hashBE))
 
+      if (filteredHeaders.isEmpty) {
+        return Future.failed(DuplicateHeaders(s"Received duplicate headers."))
+      }
+
       val blockchainUpdates: Vector[BlockchainUpdate] = {
         Blockchain.connectHeadersToChains(headers = filteredHeaders,
                                           blockchains = blockchains)
