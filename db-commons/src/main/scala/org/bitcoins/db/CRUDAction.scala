@@ -54,8 +54,7 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
 
   def findByPrimaryKeyAction(
       id: PrimaryKeyType): DBIOAction[Option[T], NoStream, Effect.Read] = {
-    findByPrimaryKeysAction(Vector(id))
-      .map(_.headOption)
+    findByPrimaryKey(id).result.map(_.headOption)
   }
 
   protected def find(t: T): Query[Table[T], T, Seq] = findAll(Vector(t))
