@@ -3,14 +3,13 @@ version: "3.7"
 services:
   web:
     image: bitcoinscala/wallet-server-ui:latest
-    user: "0:1000"
+    user: $BITCOIN_S_UID
     restart: on-failure
     stop_grace_period: 1m
     volumes:
-      - ./data/wallet:/bitcoin-s
-      - ./data/log:/log
+      - bitcoin-s-datadir:/bitcoin-s
     environment:
-      LOG_PATH: "/log/"
+      LOG_PATH: "/bitcoin-s/log/"
       BITCOIN_S_HOME: "/bitcoin-s/"
       MEMPOOL_API_URL: "http://mempool.space/api"
       WALLET_SERVER_API_URL: "http://walletserver:9999/"
@@ -24,10 +23,10 @@ services:
   walletserver:
     image: bitcoinscala/bitcoin-s-server:latest
     entrypoint: ["/opt/docker/bin/bitcoin-s-server", "--datadir", "/bitcoin-s", "--conf", "/opt/docker/docker-application.conf"]
-    user: "0:1000"
+    user: $BITCOIN_S_UID
     restart: on-failure
     volumes:
-      - ./data/wallet:/bitcoin-s
+      - bitcoin-s-datadir:/bitcoin-s
     environment:
       BITCOIN_S_NODE_MODE: "neutrino"
       BITCOIN_S_NODE_PEERS: "neutrino.suredbits.com:8333"
@@ -40,6 +39,7 @@ services:
       BITCOIN_S_DLCNODE_TOR_CONTROL: "tor:9051"
       BITCOIN_S_DLCNODE_TOR_PASSWORD: "topsecret"
       BITCOIN_S_SERVER_RPC_PASSWORD: $APP_PASSWORD
+      DISABLE_JLINK: "1"
     ports:
       - "9999:9999"
     depends_on:
@@ -48,3 +48,13 @@ services:
     image:  bitcoinscala/tor:latest
     entrypoint: ["/tor", "--ExitRelay", "0", "--BridgeRelay",  "0", "--SOCKSPort", "0.0.0.0:9050", "--ControlPort", "0.0.0.0:9051", "--HashedControlPassword", "16:EF3A794FD6F30EF76049147EF252111809E7D51C049FEB353B547C1553"]
     restart: on-failure
+
+volumes:
+  bitcoin-s-datadir:
+    name: "bitcoin-s"
+    driver: local
+    external: false
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}
