@@ -23,7 +23,7 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 In this repo, you can just run
 
 ```
-APP_PASSWORD=topsecret docker-compose up
+APP_PASSWORD=topsecret BITCOIN_S_UID="$(id -u):$(id -g)" docker-compose up
 ```
 
 which will spin up a docker environment that starts syncing the backend and will allow you to visit
