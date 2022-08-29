@@ -197,7 +197,7 @@ object CommonSettings {
       //needed for umbrel environment, container uids and host uids must matchup so we can
       //properly write to volumes on the host machine
       //see: https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-      Docker / daemonUserUid := Some("1000"),
+      //Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       //add a default exposed volume of /bitcoin-s so we can always write data here
