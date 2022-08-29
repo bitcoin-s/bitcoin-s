@@ -6,10 +6,6 @@ Universal / packageName := {
   CommonSettings.buildPackageName(old)
 }
 
-// Ensure actor system is shut down
-// when server is quit
-Compile / fork := true
-
 libraryDependencies ++= Deps.server.value
 
 mainClass := Some("org.bitcoins.server.BitcoinSServerMain")
@@ -22,6 +18,9 @@ packageDescription := "Runs a Bitcoin neutrino node and wallet, has functionalit
 dockerExposedPorts ++= Seq(9999, 19999)
 
 dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-server")
+
+//so the server can be read and executed by all users
+dockerAdditionalPermissions += (DockerChmodType.Custom("a=rx"),"/opt/docker/bin/bitcoin-s-server")
 
 //this passes in our default configuration for docker
 //you can override this by passing in a custom configuration
