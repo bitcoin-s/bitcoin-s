@@ -7,7 +7,7 @@ services:
     restart: on-failure
     stop_grace_period: 1m
     volumes:
-      - bitcoin-s-datadir:/bitcoin-s
+      - bitcoin-s-frontend-log:/bitcoin-s
     environment:
       LOG_PATH: "/bitcoin-s/log/"
       BITCOIN_S_HOME: "/bitcoin-s/"
@@ -26,7 +26,7 @@ services:
     user: $BITCOIN_S_UID
     restart: on-failure
     volumes:
-      - bitcoin-s-datadir:/bitcoin-s
+      - bitcoin-s-backend-datadir:/bitcoin-s
     environment:
       BITCOIN_S_NODE_MODE: "neutrino"
       BITCOIN_S_NODE_PEERS: "neutrino.suredbits.com:8333"
@@ -50,11 +50,19 @@ services:
     restart: on-failure
 
 volumes:
-  bitcoin-s-datadir:
-    name: "bitcoin-s"
+  bitcoin-s-backend-datadir:
+    name: "bitcoin-s-backend-datadir"
     driver: local
     external: false
     driver_opts:
       o: bind
       type: none
-      device: ${PWD}
+      device: ${PWD}/data/wallet
+  bitcoin-s-frontend-log:
+    name: "bitcoin-s-frontend-log"
+    driver: local
+    external: false
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}/data
