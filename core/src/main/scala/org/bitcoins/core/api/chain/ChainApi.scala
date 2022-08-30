@@ -62,7 +62,7 @@ trait ChainApi extends ChainQueryApi {
     */
   def processFilterHeader(
       filterHeader: FilterHeader,
-      blockHash: DoubleSha256DigestBE): Future[ChainApi] = {
+      blockHash: DoubleSha256DigestBE): Future[FilterHeaderProcessResult] = {
     processFilterHeaders(Vector(filterHeader), blockHash)
   }
 
@@ -71,7 +71,7 @@ trait ChainApi extends ChainQueryApi {
     */
   def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
-      stopHash: DoubleSha256DigestBE): Future[ChainApi]
+      stopHash: DoubleSha256DigestBE): Future[FilterHeaderProcessResult]
 
   /** Generates a block range in form of (startHeight, stopHash) by the given stop hash.
     */
@@ -145,7 +145,7 @@ trait ChainApi extends ChainQueryApi {
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int]
 
-  /** Fetchs the block headers between from and to (inclusive). */
+  /** Fetches the block headers between from and to (inclusive). */
   def getHeadersBetween(
       from: BlockHeaderDb,
       to: BlockHeaderDb): Future[Vector[BlockHeaderDb]]
@@ -157,4 +157,17 @@ trait ChainApi extends ChainQueryApi {
   def setSyncing(value: Boolean): Future[ChainApi]
 
   def setIBD(value: Boolean): Future[ChainApi]
+
+  /** Returns a [[FilterSyncMarker]] given a header start height and batch size if
+    * startHeight<=maxHeight of header chain. Returns [[None]] otherwise
+    */
+  def filterSyncMarkerFromHeaderStart(
+      startHeight: Int,
+      batchSize: Int): Future[Option[FilterSyncMarker]]
 }
+
+case class FilterHeaderProcessResult(
+    chainApi: ChainApi,
+    startHeight: Option[CompactFilterHeaderDb],
+    endHeight: Option[CompactFilterHeaderDb]
+)

@@ -68,8 +68,7 @@ case class PeerManager(
   def clients: Vector[Future[P2PClient]] =
     _peerData.values.map(_.client).toVector
 
-  def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
-    //wait when requested
+  def allPeersWithService(services: ServiceIdentifier): Future[Vector[Peer]] = {
     val waitF =
       awaitPeerWithService(services,
                            timeout = nodeAppConfig.peerDiscoveryTimeout)
@@ -81,12 +80,34 @@ case class PeerManager(
           .keys
           .toVector
       assert(filteredPeers.nonEmpty)
-      val (good, failedRecently) =
-        filteredPeers.partition(p => !peerData(p).hasFailedRecently)
 
-      if (good.nonEmpty) good(Random.nextInt(good.length))
-      else
+      filteredPeers
+    }
+  }
+
+  def allPeerMsgSendersWithService(
+      services: ServiceIdentifier): Future[Vector[PeerMessageSender]] = {
+    for {
+      peers <- allPeersWithService(services)
+      peerMsgSendersF = peers.map(p => peerData(p).peerMessageSender)
+      peerMsgSenders <- Future.sequence(peerMsgSendersF)
+    } yield {
+      peerMsgSenders
+    }
+  }
+
+  def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
+
+    for {
+      peers <- allPeersWithService(services)
+      (good, failedRecently) = peers.partition(p =>
+        !peerData(p).hasFailedRecently)
+    } yield {
+      if (good.nonEmpty) {
+        good(Random.nextInt(good.length))
+      } else {
         failedRecently(Random.nextInt(failedRecently.length))
+      }
     }
   }
 
@@ -254,7 +275,7 @@ case class PeerManager(
       //one of the peers we tries got initialized successfully
       val hasCf = finder.getData(peer).serviceIdentifier.nodeCompactFilters
 
-      logger.debug(s"Initialized peer $peer with $hasCf")
+      logger.debug(s"Initialized peer $peer with compact filters=$hasCf")
 
       def sendAddrReq: Future[Unit] =
         finder.getData(peer).peerMessageSender.flatMap(_.sendGetAddrMessage())
@@ -273,15 +294,8 @@ case class PeerManager(
             replacePeer(replacePeer = notCf.head, withPeer = peer)
           else {
             //no use for this apart from writing in db
-            //we do want to give it enough time to send addr messages
-            AsyncUtil
-              .nonBlockingSleep(duration = 10.seconds)
-              .flatMap { _ =>
-                //could have already been deleted in case of connection issues
-                if (finder.hasPeer(peer))
-                  finder.getData(peer).client.map(_.close())
-                else Future.unit
-              }
+            //TODO: move this out a stream
+            Future.unit
           }
         }
       }
@@ -355,7 +369,11 @@ case class PeerManager(
 
     payload match {
       case _: GetHeadersMessage =>
-        dataMessageStream.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
+        dataMessageStream.offer(HeaderTimeout(peer)).map(_ => ())
+      case msg: GetCompactFiltersMessage =>
+        dataMessageStream.offer(FilterTimeout(peer, msg)).map(_ => ())
+      case msg: GetCompactFilterHeadersMessage =>
+        dataMessageStream.offer(FilterHeaderTimeout(peer, msg)).map(_ => ())
       case _ =>
         if (peer == node.getDataMessageHandler.syncPeer.get)
           syncFromNewPeer().map(_ => ())
@@ -392,18 +410,17 @@ case class PeerManager(
                                        OverflowStrategy.backpressure)
     .mapAsync(1) {
       case msg @ DataMessageWrapper(payload, peerMsgSender, peer) =>
-        logger.debug(s"Got ${payload.commandName} from ${peer} in stream")
+        logger.debug(s"Got ${payload.commandName} from $peer in stream")
         node.getDataMessageHandler
           .handleDataPayload(payload, peerMsgSender, peer)
           .map { newDmh =>
             node.updateDataMessageHandler(newDmh)
             msg
           }
-      case msg @ HeaderTimeoutWrapper(peer) =>
-        logger.debug(s"Processing timeout header for $peer")
-        node.getDataMessageHandler.onHeaderRequestTimeout(peer).map { newDmh =>
+      case msg: DataTimeouts =>
+        logger.debug(s"Processing data query timeout=$msg from ${msg.peer}")
+        node.getDataMessageHandler.handleQueryTimeout(msg).map { newDmh =>
           node.updateDataMessageHandler(newDmh)
-          logger.debug(s"Done processing timeout header for $peer")
           msg
         }
     }
@@ -412,7 +429,7 @@ case class PeerManager(
     Sink.foreach[StreamDataMessageWrapper] {
       case DataMessageWrapper(payload, _, peer) =>
         logger.debug(s"Done processing ${payload.commandName} in ${peer}")
-      case HeaderTimeoutWrapper(_) =>
+      case msg: DataTimeouts => logger.debug(s"Re-querying failed msg=$msg")
     }
 
   val dataMessageStream: SourceQueueWithComplete[StreamDataMessageWrapper] =

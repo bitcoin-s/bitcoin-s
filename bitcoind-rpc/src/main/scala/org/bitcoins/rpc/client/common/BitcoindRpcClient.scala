@@ -7,7 +7,12 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.{
+  ChainApi,
+  ChainQueryApi,
+  FilterHeaderProcessResult,
+  FilterSyncMarker
+}
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.gcs.FilterHeader
@@ -39,8 +44,6 @@ import scala.concurrent.Future
   * version of Bitcoin Core. It implements RPC calls that are similar
   * across different versions. If you need RPC calls specific to a
   * version, check out
-  * [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
-  * or
   * [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]].
   *
   * If a RPC call fails for any reason, a
@@ -182,8 +185,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
-      stopHash: DoubleSha256DigestBE): Future[ChainApi] =
-    Future.successful(this)
+      stopHash: DoubleSha256DigestBE): Future[FilterHeaderProcessResult] =
+    Future.successful(FilterHeaderProcessResult(this, None, None))
 
   override def getHeader(
       hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
@@ -294,6 +297,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     logger.warn(s"Cannot set IBD of BitcoindRpcClient, this is a noop")
     Future.successful(this)
   }
+
+  override def filterSyncMarkerFromHeaderStart(
+      startHeight: Int,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = ???
 }
 
 object BitcoindRpcClient {

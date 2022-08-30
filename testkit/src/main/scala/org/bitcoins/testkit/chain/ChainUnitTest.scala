@@ -10,7 +10,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.config.AppConfig
-import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.{ChainApi, FilterHeaderProcessResult}
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
@@ -214,9 +214,9 @@ trait ChainUnitTest
   def createChainHandlerWithGenesisFilter(): Future[ChainHandler] = {
     for {
       chainHandler <- createChainHandler()
-      filterHeaderChainApi <- chainHandler.processFilterHeader(
-        ChainUnitTest.genesisFilterHeaderDb.filterHeader,
-        ChainUnitTest.genesisHeaderDb.hashBE)
+      FilterHeaderProcessResult(filterHeaderChainApi, _, _) <- chainHandler
+        .processFilterHeader(ChainUnitTest.genesisFilterHeaderDb.filterHeader,
+                             ChainUnitTest.genesisHeaderDb.hashBE)
       filterChainApi <-
         filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandler]
@@ -226,9 +226,9 @@ trait ChainUnitTest
     ChainHandlerCached] = {
     for {
       chainHandler <- createChainHandler()
-      filterHeaderChainApi <- chainHandler.processFilterHeader(
-        ChainUnitTest.genesisFilterHeaderDb.filterHeader,
-        ChainUnitTest.genesisHeaderDb.hashBE)
+      FilterHeaderProcessResult(filterHeaderChainApi, _, _) <- chainHandler
+        .processFilterHeader(ChainUnitTest.genesisFilterHeaderDb.filterHeader,
+                             ChainUnitTest.genesisHeaderDb.hashBE)
       filterChainApi <-
         filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandlerCached]

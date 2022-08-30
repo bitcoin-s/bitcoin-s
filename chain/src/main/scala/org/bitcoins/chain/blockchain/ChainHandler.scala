@@ -6,7 +6,11 @@ import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db._
-import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.{
+  ChainApi,
+  FilterHeaderProcessResult,
+  FilterSyncMarker
+}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -326,9 +330,62 @@ class ChainHandler(
   }
 
   /** @inheritdoc */
+  override def filterSyncMarkerFromHeaderStart(
+      startHeight: Int,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+
+    val blockchainsF = {
+      for {
+        latestChains <- blockHeaderDAO.getBlockchains()
+        latestChainsAheadStart = latestChains.filter(
+          _.tip.height >= startHeight)
+        blockchains <-
+          if (latestChainsAheadStart.isEmpty) {
+            Future.successful(latestChains)
+          } else {
+            //some chains exist which may have start
+            val filtered =
+              latestChainsAheadStart.filter(_.exists(_.height == startHeight))
+            if (filtered.isEmpty) {
+              blockHeaderDAO.getBlockchainsBetweenHeights(
+                startHeight,
+                startHeight + batchSize - 1)
+            } else {
+              Future.successful(filtered)
+            }
+          }
+      } yield blockchains
+    }
+    blockchainsF.map { blockchains =>
+      if (blockchains.isEmpty) {
+        None
+      } else {
+        val targetHeight = startHeight + batchSize - 1
+        val mostWorkChainOpt = org.bitcoins.core
+          .seqUtil(blockchains)
+          .maxByOption(_.tip.chainWork)
+        val hashHeightOpt = mostWorkChainOpt.flatMap { mostWorkChain =>
+          val maxHeight = mostWorkChain.tip.height
+          if (startHeight > maxHeight) { None }
+          else if (targetHeight >= maxHeight) {
+            val marker = FilterSyncMarker(startHeight, mostWorkChain.tip.hash)
+            Some(marker)
+          } else {
+            val find =
+              mostWorkChain
+                .find(_.height == targetHeight)
+            find.map(h => FilterSyncMarker(startHeight, h.hash))
+          }
+        }
+        hashHeightOpt
+      }
+    }
+  }
+
+  /** @inheritdoc */
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
-      stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
+      stopHash: DoubleSha256DigestBE): Future[FilterHeaderProcessResult] = {
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
       blockHeaders <-
         blockHeaderDAO
@@ -350,25 +407,28 @@ class ChainHandler(
 
     for {
       filterHeadersToCreate <- filterHeadersToCreateF
-      _ <- verifyFilterHeaders(filterHeadersToCreate)
-      _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
-      _ <- chainConfig.callBacks.executeOnCompactFilterHeaderConnectedCallbacks(
-        filterHeadersToCreate)
-    } yield {
-      val minHeightOpt = filterHeadersToCreate.minByOption(_.height)
-      val maxHeightOpt = filterHeadersToCreate.maxByOption(_.height)
+      minHeightOpt = filterHeadersToCreate.minByOption(_.height)
+      maxHeightOpt = filterHeadersToCreate.maxByOption(_.height)
 
-      (minHeightOpt, maxHeightOpt) match {
+      _ <- (minHeightOpt, maxHeightOpt) match {
         case (Some(minHeight), Some(maxHeight)) =>
           logger.info(
             s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best filterheader.blockHash=${maxHeight.blockHashBE.hex}")
-          this
+          for {
+            _ <- verifyFilterHeaders(filterHeadersToCreate, minHeight)
+            _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
+            _ <- chainConfig.callBacks
+              .executeOnCompactFilterHeaderConnectedCallbacks(
+                filterHeadersToCreate)
+          } yield {
+            ()
+          }
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>
           logger.warn("Was unable to process any filters headers")
-          this
+          Future.unit
       }
-    }
+    } yield FilterHeaderProcessResult(this, minHeightOpt, maxHeightOpt)
   }
 
   /** @inheritdoc */
@@ -423,16 +483,18 @@ class ChainHandler(
     * or in the database, throws if it doesn't
     */
   def verifyFilterHeaders(
-      filterHeaders: Vector[CompactFilterHeaderDb]): Future[Unit] = {
+      filterHeaders: Vector[CompactFilterHeaderDb],
+      minHeight: CompactFilterHeaderDb): Future[Unit] = {
     val byHash = filterHeaders.foldLeft(
       Map.empty[DoubleSha256DigestBE, CompactFilterHeaderDb])((acc, fh) =>
       acc.updated(fh.hashBE, fh))
-    val verify = checkFilterHeader(byHash)(_)
+    val verify = checkFilterHeader(byHash, minHeight)(_)
     FutureUtil.sequentially(filterHeaders)(verify).map(_ => ())
   }
 
   private def checkFilterHeader(
-      filtersByHash: Map[DoubleSha256DigestBE, CompactFilterHeaderDb])(
+      filtersByHash: Map[DoubleSha256DigestBE, CompactFilterHeaderDb],
+      skipPreviousFor: CompactFilterHeaderDb)(
       filterHeader: CompactFilterHeaderDb): Future[Unit] = {
 
     def checkHeight(
@@ -458,6 +520,11 @@ class ChainHandler(
       if (filterHeader.previousFilterHeaderBE == DoubleSha256DigestBE.empty) {
         Future.failed(new IllegalArgumentException(
           s"Previous filter header hash for a regular block must not be empty: ${filterHeader}"))
+      } else if (filterHeader == skipPreviousFor) {
+        logger.debug(
+          s"Skipping check for previous filter header for $filterHeader")
+        //TODO: validate with checkpoints too
+        Future.unit
       } else {
         filtersByHash.get(filterHeader.previousFilterHeaderBE) match {
           case Some(prevHeader) =>

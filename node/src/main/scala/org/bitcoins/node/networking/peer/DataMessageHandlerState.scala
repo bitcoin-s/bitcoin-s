@@ -1,5 +1,10 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
+import org.bitcoins.core.p2p.{
+  GetCompactFilterHeadersMessage,
+  GetCompactFiltersMessage
+}
 import org.bitcoins.node.models.Peer
 
 sealed abstract class DataMessageHandlerState
@@ -16,5 +21,21 @@ object DataMessageHandlerState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
   }
 
-  final case object PostHeaderSync extends DataMessageHandlerState
+  final case object FetchFilterCheckpoints extends DataMessageHandlerState
+
+  case class FilterHeaderSync(
+      nextFetchHeight: Int,
+      verifyLater: Vector[(CompactFilterHeaderDb, CompactFilterHeaderDb)],
+      failedQueries: Vector[GetCompactFilterHeadersMessage],
+      askedFor: Map[Peer, Int],
+      headerCount: Int)
+      extends DataMessageHandlerState
+
+  case class FilterSync(
+      nextFetchHeight: Int,
+      askedFor: Map[Peer, Int],
+      failedQueries: Vector[GetCompactFiltersMessage])
+      extends DataMessageHandlerState
+
+  final case object IBDDone extends DataMessageHandlerState
 }

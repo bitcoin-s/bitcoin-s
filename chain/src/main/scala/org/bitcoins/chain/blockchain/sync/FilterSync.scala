@@ -2,8 +2,8 @@ package org.bitcoins.chain.blockchain.sync
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
+import org.bitcoins.core.api.chain.{ChainApi, FilterHeaderProcessResult}
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -185,7 +185,7 @@ abstract class FilterSync extends ChainVerificationLogger {
             Future.successful(chainApi)
           case Some(blockHeader) =>
             for {
-              headersChainApi <-
+              FilterHeaderProcessResult(headersChainApi, _, _) <-
                 chainApi.processFilterHeaders(filterHeaders, blockHeader.hashBE)
               filtersChainApi <- headersChainApi.processFilters(compactFilters)
             } yield filtersChainApi

@@ -3,13 +3,13 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.chain.{ChainCallbacks, OnSyncFlagChanged}
-import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   BlockHeaderDbHelper,
   CompactFilterHeaderDb
 }
+import org.bitcoins.core.api.chain.{ChainApi, FilterHeaderProcessResult}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -306,15 +306,19 @@ class ChainHandlerTest extends ChainDbUnitTest {
     )
 
     for {
-      _ <- chainHandler.verifyFilterHeaders(goodBatch)
+      _ <- chainHandler.verifyFilterHeaders(goodBatch, goodBatch.head)
       _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(invalidGenesisFilterHeaderBatch))
+        chainHandler.verifyFilterHeaders(invalidGenesisFilterHeaderBatch,
+                                         invalidGenesisFilterHeaderBatch.head))
       _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(invalidFilterHeaderBatch))
+        chainHandler.verifyFilterHeaders(invalidFilterHeaderBatch,
+                                         invalidFilterHeaderBatch.head))
       _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(selfReferenceFilterHeaderBatch))
+        chainHandler.verifyFilterHeaders(selfReferenceFilterHeaderBatch,
+                                         selfReferenceFilterHeaderBatch.head))
       _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(unknownFilterHeaderBatch))
+        chainHandler.verifyFilterHeaders(unknownFilterHeaderBatch,
+                                         unknownFilterHeaderBatch.head))
     } yield succeed
   }
 
@@ -344,7 +348,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
           filterHash =
             DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
           prevHeaderHash = ChainUnitTest.genesisFilterHeaderDb.hashBE.flip)
-        newChainHandler <-
+        FilterHeaderProcessResult(newChainHandler, _, _) <-
           chainHandler.processFilterHeader(firstFilterHeader, blockHashBE)
         process <- newChainHandler.processFilter(firstFilter)
       } yield {
