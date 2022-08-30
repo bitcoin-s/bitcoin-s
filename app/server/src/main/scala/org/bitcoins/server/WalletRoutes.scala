@@ -440,7 +440,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
             val hex = Files.readAllLines(path).get(0)
 
-            val offerMessage = LnMessageFactory(DLCOfferTLV).fromHexT(hex)
+            val offerMessage = LnMessageFactory(DLCOfferTLV)
+              .fromHexT(hex)
               .getOrElse(LnMessage(DLCOfferTLV.fromHex(hex)))
 
             wallet
@@ -478,7 +479,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
             val hex = Files.readAllLines(path).get(0)
 
-            val acceptMessage = LnMessageFactory(DLCAcceptTLV).fromHexT(hex)
+            val acceptMessage = LnMessageFactory(DLCAcceptTLV)
+              .fromHexT(hex)
               .getOrElse(LnMessage(DLCAcceptTLV.fromHex(hex)))
 
             wallet
@@ -512,7 +514,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
             val hex = Files.readAllLines(path).get(0)
 
-            val signMessage = LnMessageFactory(DLCSignTLV).fromHexT(hex)
+            val signMessage = LnMessageFactory(DLCSignTLV)
+              .fromHexT(hex)
               .getOrElse(LnMessage(DLCSignTLV.fromHex(hex)))
 
             wallet.addDLCSigs(signMessage.tlv).map { db =>
@@ -542,7 +545,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case Success(DLCDataFromFile(path, _, _, _)) =>
           val hex = Files.readAllLines(path).get(0)
 
-          val signMessage = LnMessageFactory(DLCSignTLV).fromHexT(hex)
+          val signMessage = LnMessageFactory(DLCSignTLV)
+            .fromHexT(hex)
             .getOrElse(LnMessage(DLCSignTLV.fromHex(hex)))
           complete {
             for {

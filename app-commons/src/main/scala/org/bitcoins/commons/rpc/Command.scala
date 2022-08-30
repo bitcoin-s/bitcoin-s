@@ -1004,8 +1004,10 @@ object AcceptDLCOffer extends ServerJsonModels {
         offerJs: Value,
         payoutAddressJs: Value,
         changeAddressJs: Value,
-        peerAddressJs: Value) = Try {
-      val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+        peerAddressJs: Value): Try[AcceptDLCOffer] = Try {
+      val offer = LnMessageFactory(DLCOfferTLV)
+        .fromHexT(offerJs.str)
+        .getOrElse(LnMessage(DLCOfferTLV.fromHex(offerJs.str)))
       val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
       val payoutAddressOpt =
         payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
