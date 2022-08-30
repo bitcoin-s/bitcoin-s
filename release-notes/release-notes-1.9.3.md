@@ -95,6 +95,7 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 Consolidate duplicate data structures in `cli` and `appServer` into a common location.
 
+66d298be3e Add SatoshisPerVirtualByte json serializers (#4672)
 825937ea5f Add more JSON serializers (#4628)
 b7c7cb8fc2 Moving duplicate dataStructures in `cli` and `app-server` into `app-commons` (#4541)
 
@@ -112,6 +113,7 @@ Websocket events added this release are
 - sync complete
 - tor started
 
+f65b483d6f Allow LnMessage(tlv) & raw tlv to be used in `DLCRoutes` (#4682)
 b18da7ac2b Fix bug where it prevented us from rescanning an empty wallet (#4632)
 153d20128f Improve logging to try and solve 4618 (#4622)
 85c01f7a8c More lazy initialization for BitcoinSServerMain (#4621)
@@ -173,6 +175,15 @@ This release fixes a package name bug introduced in 1.9.2 (#4401).
 
 Fixes various bugs in bash scripts used by `bitcoin-s-{server, oracle-server}`.
 
+d6c7247a79 Simple docker-compose.yml, add BITCOIN_S_UID, add DISABLE_JLINK (#4680)
+c266ba849f Set entrypoint scripts so they are executable by anyone, revert daemonUserId to test on umbrel (#4678)
+969333c9e4 Add correct volume mapping for UI (#4670)
+15032e27a1 Add default exposed volume of /bitcoin-s so we can always write data to a place (#4669)
+85a0a0b889 Add docker command mkdir /wallet (#4666)
+ac24bfb230 Revert #4601 / #4624 so that docker works on umbrel again (#4665)
+288918d705 Partially revert #4601 and re-add `daemonUser := bitcoin-s` (#4655)
+2001e86ab9 If `DISABLE_JLINK` set, don't try to chmod `jre/bin/java` (#4651)
+0b39c38419 Configure scalafmt to preserve line endings (#4638)
 28311e1550 Only build native bitcoin-s-cli on tags or merges to master (#4636)
 713ee75d4c Get rid of standalone scalajs, mdoc CI matrix. Consolidate with other CI jobs (#4633)
 2dad9f57b8 Fix bug where we weren't specify the bash script for each project to modify file permissions (#4625)
@@ -192,6 +203,7 @@ e25c24dc9b Fix package name bug so package name is  ra… (#4402)
 
 ## chain 
 
+86463231d6 2022 08 18 Add configuration to only emit websocket events when IBD is done (#4627)
 27120a2bb9 Add InvalidBlockHeader ChainException (#4635)
 
 ## Core
@@ -201,6 +213,7 @@ and [taproot signature serialization](https://github.com/bitcoin/bips/blob/maste
 
 The next release will add signing support for taproot transactions.
 
+e5545cb3b9 Improve toString functions for schnorr data types (#4644)
 c34b0de886 removed logger parameter from where it's used with callbacks (#4598)
 26492d2449 Add descriptor for TaprootScriptPubKey (#4595)
 b04a34ad02 Use FutureUtil.makeAsync where we are attmepting to create async Futures (#4583)
@@ -249,6 +262,8 @@ ae0962d7ed Musig2 Implementation (#4418)
 
 ## db commons
 
+b514e812b5 Use findByPrimaryKey query in findByPrimaryKeyAction (#4671)
+02f525fd39 Make CRUDAction types more strict (#4657)
 675b210333 Add PSBT database mapper (#4584)
 
 ## DLC node
@@ -257,6 +272,7 @@ ae0962d7ed Musig2 Implementation (#4418)
 
 Optimizations for the DLC Wallet.
 
+a5186cd1da Change default DLC peer alias (#4663)
 34c10c6c65 Fix WalletDLCSetupTest (#4623)
 46502496c1  Update DLCClientIntegrationTest to use the newest bitcoind (#4596)
 a22e847e2e Implement small optimization to not query for DLCDb twice (#4592)
@@ -311,8 +327,13 @@ bitcoin-s-.node.use-default-peers = true # whether to use suredbits hosted peer
 
 This PR also implements `NodeCallbacks` with akka streams so we can safely call `loadwallet`
 when node callbacks are being executed. Now we want for the streams to complete, and then continue
-loading the ne wallet.
+loading the next wallet.
 
+9353c41e8f Add some guards for when we set IBD flag to reduce false positive WARN messages (#4683)
+2cae3f803d Fix infinite invalid header loop (#4667)
+4e4e4aa9ed change stream to use backpressure (#4654)
+068187c93d increase buffer size of dataMessageStream to 10000 (#4646)
+2c2e03b279 Header sync validation (#4456)
 d241e6f9e4 Remove merklebuffers (#4615)
 dea99457b5 fix mac node-wallet test failure (#4585)
 5acbba9377 Replace `BoundedSourceQueueWithComplete` with `SourceQueueWithComplete` (#4576)
@@ -347,6 +368,11 @@ This is unlikely to happen in practice. Consider rescanning your wallet though o
 
 Various refactors and optimizations were needed to complete the rescan and `loadwallet` work.
 
+7c112b8a90 Fix rescan for existing wallets (#4656)
+9afab28d50 Fix empty.head exception in rescan flow (#4649)
+451b525be5 Don't process block that we can't fetch height for (#4613)
+a0eb0824a2 Fix some bugs around resetting rescan state when a rescan fails (#4642)
+c09da6f116 Bump rescan test timeouts from 5 -> 10 seconds (#4639)
 eb1327824b Fix bug where we were not generating change addresses during a rescan (#4631)
 6119a334fa Make fundRawTransactionInternal use DBIOActions (#4575)
 cf22816003 Fix rescan batch boundary bug (#4549)
@@ -389,6 +415,7 @@ Emit a `torstarted` websocket callback when tor is fully started.
 
 ## Website
 
+e65346f558 Version 1.9.3 of everything (#4643)
 531fd0f865 Update 1.9.3 release notes through #4609 (#4612)
 9fd9cf1ee4 Update release notes again for 1.9.3 (#4597)
 c7e5317294  2022 08 06 1.9.3 release notes (#4582)
@@ -407,4 +434,3 @@ c10f7beadb Run yarn upgrade to update website deps (#4581)
 1fc6d2a793 Upgrade sbt to 1.7.0 (#4490)
 0404cffe26 Embedded Pg v1.0.1 (#4567)
 970b6fd6eb upgrade scalatest dependencies (#4411)
-
