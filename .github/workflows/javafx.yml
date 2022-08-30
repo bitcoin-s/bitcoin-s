@@ -3,9 +3,6 @@ name: JavaFX Desktop Apps
 on:
   push:
     branches: [master, main]
-    tags: ["*"]
-  release:
-    types: [ published ]
 
 env:
   pkg-assembly: 'bitcoin-s-bundle.jar'
