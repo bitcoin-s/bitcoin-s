@@ -51,10 +51,10 @@ This will download the `bitcoin-s-server.zip` file and set up Suredbits Wallets 
 Now, if you wish to run the Suredbits Wallet application in dev mode then run 
 
 ```
-cd wallet-electron-ts && npm run start"
-
+cd wallet-electron-ts && npm run start
 ```
-###Instill desktop application (Optional)
+
+### Install desktop application (Optional)
 
 If you would like to use the desktop application then, search for the Suredbits Wallet application in finder, windows explorer, ect ... double click on the icon and complete the installation 
 

@@ -29,9 +29,12 @@ APP_PASSWORD=topsecret BITCOIN_S_UID="$(id -u):$(id -g)" docker-compose up
 which will spin up a docker environment that starts syncing the backend and will allow you to visit
 the web frontend of the wallet at `localhost:3002`
 
-or you can run the binaries natively, here are the instructions.
+or you can build and run the electron app natively.
 
-[Web frontend](https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui#walletserverui)
+```
+git clone https://github.com/bitcoin-s/bitcoin-s-ts.git
+cd bitcoin-s-ts && ./build-wallet-electron.sh
+```
 
 ### Getting setup (developers)
 
