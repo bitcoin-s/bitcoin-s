@@ -143,7 +143,7 @@ case class DataMessageHandler(
             }
           // If we are not syncing or our filter batch is full, process the filters
           filterBatch = currentFilterBatch :+ filter
-          (newBatch, newChainApi) <-
+          (newBatch, newChainApi) <- {
             if (!newSyncing || batchSizeFull) {
               val blockFilters = filterBatch.map { filter =>
                 (filter.blockHash,
@@ -157,6 +157,7 @@ case class DataMessageHandler(
                     .executeOnCompactFiltersReceivedCallbacks(blockFilters)
               } yield (Vector.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
+          }
           _ <-
             if (batchSizeFull) {
               logger.info(
@@ -171,7 +172,7 @@ case class DataMessageHandler(
             }
           }
           newChainApi <- newChainApi.setSyncing(newSyncing2)
-          _ <- newChainApi.setIBD(newSyncing)
+          _ <- checkIBD(newChainApi)
         } yield {
           this.copy(
             chainApi = newChainApi,
@@ -716,6 +717,23 @@ case class DataMessageHandler(
         } yield (filterHeaderHeight,
                  if (filterHeight == 0) 0 else filterHeight + 1)
     }
+  }
+
+  /** Checks if the IBD flag needs to be set from true -> false */
+  private def checkIBD(chainApi: ChainApi): Future[Unit] = {
+    val isSyncingF = chainApi.isSyncing()
+    val isIBDF = chainApi.isIBD()
+    for {
+      isSyncing <- isSyncingF
+      isIBD <- isIBDF
+      _ <- {
+        if (isIBD) {
+          chainApi.setIBD(isSyncing)
+        } else {
+          Future.unit
+        }
+      }
+    } yield ()
   }
 }
 
