@@ -1004,8 +1004,10 @@ object AcceptDLCOffer extends ServerJsonModels {
         offerJs: Value,
         payoutAddressJs: Value,
         changeAddressJs: Value,
-        peerAddressJs: Value) = Try {
-      val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+        peerAddressJs: Value): Try[AcceptDLCOffer] = Try {
+      val offer = LnMessageFactory(DLCOfferTLV)
+        .fromHexT(offerJs.str)
+        .getOrElse(LnMessage(DLCOfferTLV.fromHex(offerJs.str)))
       val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
       val payoutAddressOpt =
         payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
@@ -1107,7 +1109,9 @@ object SignDLC extends ServerJsonModels {
     jsArr.arr.toList match {
       case acceptJs :: Nil =>
         Try {
-          val accept = LnMessageFactory(DLCAcceptTLV).fromHex(acceptJs.str)
+          val accept = LnMessageFactory(DLCAcceptTLV)
+            .fromHexT(acceptJs.str)
+            .getOrElse(LnMessage(DLCAcceptTLV.fromHex(acceptJs.str)))
           SignDLC(accept)
         }
       case Nil =>
@@ -1130,7 +1134,10 @@ object AddDLCSigs extends ServerJsonModels {
     jsArr.arr.toList match {
       case sigsJs :: Nil =>
         Try {
-          val sigs = LnMessageFactory(DLCSignTLV).fromHex(sigsJs.str)
+          val sigs = LnMessageFactory(DLCSignTLV)
+            .fromHexT(sigsJs.str)
+            .getOrElse(LnMessage(DLCSignTLV.fromHex(sigsJs.str)))
+
           AddDLCSigs(sigs)
         }
       case Nil =>
