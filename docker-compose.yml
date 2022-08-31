@@ -3,7 +3,7 @@ version: "3.7"
 services:
   web:
     image: bitcoinscala/wallet-server-ui:latest
-    user: $BITCOIN_S_UID
+    user: 0:1000
     restart: on-failure
     stop_grace_period: 1m
     volumes:
@@ -24,7 +24,7 @@ services:
   walletserver:
     image: bitcoinscala/bitcoin-s-server:latest
     entrypoint: ["/opt/docker/bin/bitcoin-s-server", "--datadir", "/bitcoin-s", "--conf", "/opt/docker/docker-application.conf"]
-    user: $BITCOIN_S_UID
+    user: 0:1000
     restart: on-failure
     volumes:
       - ./data/wallet:/bitcoin-s
