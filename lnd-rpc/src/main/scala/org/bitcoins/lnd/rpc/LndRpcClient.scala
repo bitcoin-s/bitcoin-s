@@ -998,7 +998,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    Try(stateClient.getState(GetStateRequest()).onComplete {
+    val t = Try(stateClient.getState(GetStateRequest()).onComplete {
       case Success(state) =>
         state.state match {
           case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
@@ -1011,6 +1011,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       case Failure(_) =>
         p.success(false)
     })
+
+    t.failed.foreach { _ =>
+      p.success(false)
+    }
 
     p.future
   }
