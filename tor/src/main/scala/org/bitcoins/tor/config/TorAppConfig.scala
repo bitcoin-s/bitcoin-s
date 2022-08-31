@@ -15,6 +15,7 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 /** Configuration for the Bitcoin-S node
   * @param directory The data directory of the node
@@ -44,6 +45,9 @@ case class TorAppConfig(
   lazy val torProvided = getBoolean("tor.provided")
 
   lazy val useRandomPorts = getBoolean("tor.use-random-ports")
+
+  lazy val targets = getStringList("tor.targets")
+    .map(NetworkUtil.parseInetSocketAddress(_, -1))
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (getBoolean("proxy.enabled")) {
@@ -221,6 +225,10 @@ case class TorAppConfig(
 
   private def getStringOrNone(key: String): Option[String] =
     getConfigValue(config.getStringOrNone)(key)
+
+  private def getStringList(key: String): Vector[String] =
+    getConfigValue(config.getStringList)(key).asScala.toVector
+      .flatMap(_.split(","))
 
   private def getConfigValue[V](getValue: String => V)(key: String): V = {
     subModuleNameOpt match {

@@ -29,6 +29,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       .bind(
         wallet,
         config.listenAddress,
+        config.torConf.targets,
         config.torParams
       )
       .map { case (addr, actor) =>
