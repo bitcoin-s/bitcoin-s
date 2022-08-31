@@ -83,7 +83,7 @@ case class NeutrinoNode(
       chainApi <- chainApiFromDb()
       _ <- chainApi.getBestBlockHash()
       _ <- chainApi.setSyncing(true)
-
+      _ = logger.info(s"Fetching peers to sync with...")
       syncPeer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
       _ = logger.info(s"Syncing with $syncPeer")
