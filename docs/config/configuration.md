@@ -212,8 +212,8 @@ bitcoin-s {
         # The path to the private key of the onion service being created
         # privateKeyPath = /path/to/priv/key
         
-        # Optonal Tor targets. If empty all hidden serices will be crated at localhost. 
-        tragets = []
+        # Optonal Tor targets. If empty all hidden serices will be created at localhost. 
+        targets = []
     }
     
     # settings for the chain module
