@@ -13,6 +13,7 @@ import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.TLVGen
 import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
 import org.scalamock.scalatest.MockFactory
@@ -123,7 +124,7 @@ class WalletRoutesSpec
       val expectedTlv = DLCOfferTLV.fromHex(tlv)
       val offer = DLCOffer.fromTLV(expectedTlv)
       val dummyAcceptLnMsg =
-        LnMessage(TLVGen.dlcAcceptTLV(offer.toTLV).sample.get)
+        LnMessage(TLVGen.dlcAcceptTLV(offer.toTLV).sampleSome)
       val acceptTLV = DLCAccept.fromTLV(dummyAcceptLnMsg.tlv, offer)
       (mockWalletApi
         .acceptDLCOffer(_: DLCOfferTLV,
