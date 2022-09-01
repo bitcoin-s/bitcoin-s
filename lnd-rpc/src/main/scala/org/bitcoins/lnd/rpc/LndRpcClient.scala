@@ -10,7 +10,7 @@ import invoicesrpc.LookupInvoiceMsg.InvoiceRef
 import invoicesrpc._
 import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
-import lnrpc.CloseStatusUpdate.Update.ClosePending
+import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
 import lnrpc._
 import chainrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
@@ -457,7 +457,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def closeChannel(
       outPoint: TransactionOutPoint,
       force: Boolean,
-      feeRate: SatoshisPerVirtualByte): Future[TransactionOutPoint] = {
+      feeRate: SatoshisPerVirtualByte): Future[DoubleSha256DigestBE] = {
     val channelPoint =
       ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
 
@@ -468,24 +468,32 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def closeChannel(
-      outPoint: TransactionOutPoint): Future[TransactionOutPoint] = {
+      outPoint: TransactionOutPoint): Future[DoubleSha256DigestBE] = {
     val channelPoint =
       ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
     closeChannel(CloseChannelRequest(Some(channelPoint)))
   }
 
   def closeChannel(
-      request: CloseChannelRequest): Future[TransactionOutPoint] = {
+      request: CloseChannelRequest): Future[DoubleSha256DigestBE] = {
     logger.trace("lnd calling closechannel")
 
     lnd
       .closeChannel(request)
       .map(_.update)
-      .filter(_.isClosePending)
+      .filter(t => t.isClosePending || t.isChanClose)
       .runWith(Sink.head)
-      .collect { case ClosePending(closeUpdate) =>
-        val txId = DoubleSha256Digest(closeUpdate.txid)
-        TransactionOutPoint(txId, closeUpdate.outputIndex)
+      .collect {
+        case ClosePending(closeUpdate) =>
+          val txId = DoubleSha256Digest(closeUpdate.txid)
+          txId.flip
+        case ChanClose(chanClose) =>
+          if (chanClose.success) {
+            val txId = DoubleSha256Digest(chanClose.closingTxid)
+            txId.flip
+          } else {
+            throw new RuntimeException(s"Channel close failed")
+          }
       }
   }
 

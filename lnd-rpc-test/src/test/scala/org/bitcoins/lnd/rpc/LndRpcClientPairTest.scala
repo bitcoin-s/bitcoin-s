@@ -106,9 +106,9 @@ class LndRpcClientPairTest extends DualLndFixture {
       vout = UInt32(voutStr.tail.toLong)
       channelPoint = TransactionOutPoint(txId, vout)
 
-      outPoint <- lnd.closeChannel(channelPoint)
+      txIdBE <- lnd.closeChannel(channelPoint)
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
-      tx <- bitcoind.getRawTransaction(outPoint.txIdBE)
+      tx <- bitcoind.getRawTransaction(txIdBE)
       find <- lnd.findChannel(channelPoint)
     } yield {
       assert(tx.confirmations.isDefined)
