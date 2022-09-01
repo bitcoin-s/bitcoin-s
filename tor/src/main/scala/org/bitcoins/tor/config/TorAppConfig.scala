@@ -45,6 +45,9 @@ case class TorAppConfig(
 
   lazy val useRandomPorts = getBoolean("tor.use-random-ports")
 
+  lazy val targets = getStringList("tor.targets")
+    .map(NetworkUtil.parseInetSocketAddress(_, -1))
+
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (getBoolean("proxy.enabled")) {
       val address = if (torProvided) {
@@ -221,6 +224,15 @@ case class TorAppConfig(
 
   private def getStringOrNone(key: String): Option[String] =
     getConfigValue(config.getStringOrNone)(key)
+
+  private def getStringList(key: String): Vector[String] = try {
+    val list = getConfigValue(config.getStringList)(key)
+    0.until(list.size())
+      .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
+      .flatMap(_.split(","))
+  } catch {
+    case _: com.typesafe.config.ConfigException.Missing => Vector()
+  }
 
   private def getConfigValue[V](getValue: String => V)(key: String): V = {
     subModuleNameOpt match {
