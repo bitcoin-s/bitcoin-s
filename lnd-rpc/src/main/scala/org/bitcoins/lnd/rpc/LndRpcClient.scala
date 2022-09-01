@@ -10,7 +10,7 @@ import invoicesrpc.LookupInvoiceMsg.InvoiceRef
 import invoicesrpc._
 import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
-import lnrpc.CloseStatusUpdate.Update.ClosePending
+import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
 import lnrpc._
 import chainrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
@@ -42,6 +42,7 @@ import peersrpc.PeersClient
 import routerrpc._
 import scodec.bits._
 import signrpc._
+import verrpc._
 import walletrpc.FundPsbtRequest.Fees.SatPerVbyte
 import walletrpc.FundPsbtRequest.Template.Psbt
 import walletrpc.{
@@ -149,6 +150,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val invoices: InvoicesClient = InvoicesClient(clientSettings)
   lazy val peersClient: PeersClient = PeersClient(clientSettings)
   lazy val stateClient: StateClient = StateClient(clientSettings)
+  lazy val versionerClient: VersionerClient = VersionerClient(clientSettings)
 
   lazy val chainClient: ChainNotifierClient = ChainNotifierClient(
     clientSettings)
@@ -196,6 +198,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def nodeId: Future[NodeId] = {
     getInfo.map(info => NodeId(info.identityPubkey))
+  }
+
+  def getVersion(): Future[Version] = {
+    logger.trace("lnd calling getversion")
+    versionerClient.getVersion(VersionRequest())
   }
 
   def lookupInvoice(rHash: PaymentHashTag): Future[Invoice] = {
@@ -450,7 +457,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def closeChannel(
       outPoint: TransactionOutPoint,
       force: Boolean,
-      feeRate: SatoshisPerVirtualByte): Future[TransactionOutPoint] = {
+      feeRate: SatoshisPerVirtualByte): Future[DoubleSha256DigestBE] = {
     val channelPoint =
       ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
 
@@ -461,24 +468,32 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def closeChannel(
-      outPoint: TransactionOutPoint): Future[TransactionOutPoint] = {
+      outPoint: TransactionOutPoint): Future[DoubleSha256DigestBE] = {
     val channelPoint =
       ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
     closeChannel(CloseChannelRequest(Some(channelPoint)))
   }
 
   def closeChannel(
-      request: CloseChannelRequest): Future[TransactionOutPoint] = {
+      request: CloseChannelRequest): Future[DoubleSha256DigestBE] = {
     logger.trace("lnd calling closechannel")
 
     lnd
       .closeChannel(request)
       .map(_.update)
-      .filter(_.isClosePending)
+      .filter(t => t.isClosePending || t.isChanClose)
       .runWith(Sink.head)
-      .collect { case ClosePending(closeUpdate) =>
-        val txId = DoubleSha256Digest(closeUpdate.txid)
-        TransactionOutPoint(txId, closeUpdate.outputIndex)
+      .collect {
+        case ClosePending(closeUpdate) =>
+          val txId = DoubleSha256Digest(closeUpdate.txid)
+          txId.flip
+        case ChanClose(chanClose) =>
+          if (chanClose.success) {
+            val txId = DoubleSha256Digest(chanClose.closingTxid)
+            txId.flip
+          } else {
+            throw new RuntimeException(s"Channel close failed")
+          }
       }
   }
 
@@ -991,7 +1006,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    Try(stateClient.getState(GetStateRequest()).onComplete {
+    val t = Try(stateClient.getState(GetStateRequest()).onComplete {
       case Success(state) =>
         state.state match {
           case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
@@ -1004,6 +1019,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       case Failure(_) =>
         p.success(false)
     })
+
+    t.failed.foreach { _ =>
+      p.success(false)
+    }
 
     p.future
   }

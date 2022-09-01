@@ -34,21 +34,20 @@ case class LndInstanceLocal(
   override val certificateOpt: Option[String] = None
   override val certFileOpt: Option[File] = Some(certFile)
 
+  def macaroonPath: Path = datadir
+    .resolve("data")
+    .resolve("chain")
+    .resolve("bitcoin")
+    .resolve(LndInstanceLocal.getNetworkDirName(network))
+    .resolve("admin.macaroon")
+
   private var macaroonOpt: Option[String] = None
 
   override def macaroon: String = {
     macaroonOpt match {
       case Some(value) => value
       case None =>
-        val path =
-          datadir
-            .resolve("data")
-            .resolve("chain")
-            .resolve("bitcoin")
-            .resolve(LndInstanceLocal.getNetworkDirName(network))
-            .resolve("admin.macaroon")
-
-        val bytes = Files.readAllBytes(path)
+        val bytes = Files.readAllBytes(macaroonPath)
         val hex = ByteVector(bytes).toHex
 
         macaroonOpt = Some(hex)
