@@ -15,7 +15,6 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.jdk.CollectionConverters.ListHasAsScala
 
 /** Configuration for the Bitcoin-S node
   * @param directory The data directory of the node
@@ -227,7 +226,9 @@ case class TorAppConfig(
     getConfigValue(config.getStringOrNone)(key)
 
   private def getStringList(key: String): Vector[String] = try {
-    getConfigValue(config.getStringList)(key).asScala.toVector
+    val list = getConfigValue(config.getStringList)(key)
+    0.until(list.size())
+      .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
       .flatMap(_.split(","))
   } catch {
     case _: com.typesafe.config.ConfigException.Missing => Vector()
