@@ -226,9 +226,12 @@ case class TorAppConfig(
   private def getStringOrNone(key: String): Option[String] =
     getConfigValue(config.getStringOrNone)(key)
 
-  private def getStringList(key: String): Vector[String] =
+  private def getStringList(key: String): Vector[String] = try {
     getConfigValue(config.getStringList)(key).asScala.toVector
       .flatMap(_.split(","))
+  } catch {
+    case _: com.typesafe.config.ConfigException.Missing => Vector()
+  }
 
   private def getConfigValue[V](getValue: String => V)(key: String): V = {
     subModuleNameOpt match {
