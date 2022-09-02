@@ -3,8 +3,6 @@ package org.bitcoins.lnd.rpc.config
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.config._
-import org.bitcoins.rpc.config.BitcoindAuthCredentials._
-import org.bitcoins.rpc.config._
 import scodec.bits._
 
 import java.io.File
@@ -25,9 +23,6 @@ case class LndInstanceLocal(
     listenBinding: URI,
     restUri: URI,
     rpcUri: URI,
-    bitcoindAuthCredentials: PasswordBased,
-    bitcoindRpcUri: URI,
-    zmqConfig: ZmqConfig,
     debugLevel: LogLevel)
     extends LndInstance {
 

@@ -3,12 +3,10 @@ package org.bitcoins.lnd.rpc.config
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
-import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
-import org.bitcoins.rpc.config.ZmqConfig
 import scodec.bits.ByteVector
 
 import java.io.File
-import java.net.{InetSocketAddress, URI}
+import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Properties
 
@@ -97,15 +95,6 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     }.headOption
   }
 
-  /** Converts a string to an InetSocketAddress */
-  private def toInetSocketAddress(string: String): InetSocketAddress = {
-    val uri = new URI(string)
-    new InetSocketAddress(uri.getHost, uri.getPort)
-  }
-
-  lazy val bitcoindUser: String = getValue("bitcoind.rpcuser").get
-  lazy val bitcoindPass: String = getValue("bitcoind.rpcpass").get
-
   lazy val listenBinding: URI = new URI({
     val baseUrl = getValue("listen").getOrElse("127.0.0.1:9735")
     if (baseUrl.startsWith("http")) baseUrl
@@ -123,19 +112,6 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     if (baseUrl.startsWith("http")) baseUrl
     else "http://" + baseUrl
   })
-
-  lazy val bitcoindBinding: URI = new URI({
-    val baseUrl =
-      getValue("bitcoind.rpchost").getOrElse(s"127.0.0.1:${network.rpcPort}")
-    if (baseUrl.startsWith("http")) baseUrl
-    else "http://" + baseUrl
-  })
-
-  lazy val zmqpubrawblock: Option[InetSocketAddress] =
-    getValue("bitcoind.zmqpubrawblock").map(toInetSocketAddress)
-
-  lazy val zmqpubrawtx: Option[InetSocketAddress] =
-    getValue("bitcoind.zmqpubrawtx").map(toInetSocketAddress)
 
   lazy val debuglevel: LogLevel = getValue("debuglevel")
     .flatMap(LogLevel.fromStringOpt)
@@ -164,9 +140,6 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     listenBinding,
     restBinding,
     rpcBinding,
-    PasswordBased(bitcoindUser, bitcoindPass),
-    bitcoindBinding,
-    ZmqConfig(rawBlock = zmqpubrawblock, rawTx = zmqpubrawtx),
     debuglevel
   )
 

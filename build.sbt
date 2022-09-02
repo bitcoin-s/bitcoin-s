@@ -136,7 +136,7 @@ lazy val eclairRpc = project
 lazy val lndRpc = project
   .in(file("lnd-rpc"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(asyncUtilsJVM, bitcoindRpc)
+  .dependsOn(asyncUtilsJVM, appCommons)
 
 lazy val clightningRpc = project
   .in(file("clightning-rpc"))
