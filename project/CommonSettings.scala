@@ -191,7 +191,7 @@ object CommonSettings {
   lazy val dockerSettings: Seq[Setting[_]] = {
     Vector(
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
-      dockerBaseImage := "openjdk:17-slim",
+      dockerBaseImage := "eclipse-temurin:17",
       dockerRepository := Some("bitcoinscala"),
       Docker / daemonUser := "bitcoin-s",
       //needed for umbrel environment, container uids and host uids must matchup so we can
