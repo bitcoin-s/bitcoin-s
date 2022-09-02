@@ -113,6 +113,7 @@ Websocket events added this release are
 - sync complete
 - tor started
 
+dbcde5d3c7 Fix flaky test (#4695)
 f65b483d6f Allow LnMessage(tlv) & raw tlv to be used in `DLCRoutes` (#4682)
 b18da7ac2b Fix bug where it prevented us from rescanning an empty wallet (#4632)
 153d20128f Improve logging to try and solve 4618 (#4622)
@@ -163,6 +164,8 @@ ad21a11254 Create BitcoindStreamUtil and refactor to use it (#4578)
 
 ## bundle
 
+945b3914dd Remove javafx release (#4684)
+
 ## Build
 
 
@@ -175,6 +178,9 @@ This release fixes a package name bug introduced in 1.9.2 (#4401).
 
 Fixes various bugs in bash scripts used by `bitcoin-s-{server, oracle-server}`.
 
+3578b56ea3 Switch base docker image to eclipse-temurin:17 (#4697)
+7322186b56 Fix Tor hidden service config (#4689)
+49b2730f8c revert docker-compose user again as its impossible to create mounted direcotry as non root user (#4691)
 d6c7247a79 Simple docker-compose.yml, add BITCOIN_S_UID, add DISABLE_JLINK (#4680)
 c266ba849f Set entrypoint scripts so they are executable by anyone, revert daemonUserId to test on umbrel (#4678)
 969333c9e4 Add correct volume mapping for UI (#4670)
@@ -300,6 +306,8 @@ into bitcoin-s or generated from internal entropy.
 
 ## Lnd rpc
 
+dac65ca806 Fixes for force closes or failure to close lnd channel (#4692)
+80051d4089 Make macaroon path accessible in LndInstanceLocal, add Versioner RPC (#4688)
 64bc1367c5 Add listPendingChannels to LND (#4603)
 ef3bfed1dc Add ChainNotifier to LND (#4589)
 f286b42c71 Retry lnd startup if it fails (#4573)
@@ -329,6 +337,7 @@ This PR also implements `NodeCallbacks` with akka streams so we can safely call 
 when node callbacks are being executed. Now we want for the streams to complete, and then continue
 loading the next wallet.
 
+d2f8811a1c Add log when we are fetching peers to sync with (#4693)
 9353c41e8f Add some guards for when we set IBD flag to reduce false positive WARN messages (#4683)
 2cae3f803d Fix infinite invalid header loop (#4667)
 4e4e4aa9ed change stream to use backpressure (#4654)
@@ -415,6 +424,7 @@ Emit a `torstarted` websocket callback when tor is fully started.
 
 ## Website
 
+15b6e429b2 Update README to use grey's new `build-wallet-electron.sh` script (#4686)
 e65346f558 Version 1.9.3 of everything (#4643)
 531fd0f865 Update 1.9.3 release notes through #4609 (#4612)
 9fd9cf1ee4 Update release notes again for 1.9.3 (#4597)
