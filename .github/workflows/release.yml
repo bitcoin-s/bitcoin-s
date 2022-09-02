@@ -178,6 +178,7 @@ jobs:
           fetch-depth: 0 # for previoustag
       #    ref: electron-forge-config # TODO : Merge to master and remove
           path: bitcoin-s-ts
+      # TESTING
       - name: Get Previous tag
         id: tstag
         uses: WyriHaximus/github-action-get-previous-tag@v1
