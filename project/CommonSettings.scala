@@ -11,6 +11,7 @@ import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
 import sbtassembly.AssemblyKeys._
+import sbtdynver.DynVer
 
 import scala.sys.process.Process
 import scala.util.Properties
@@ -202,8 +203,7 @@ object CommonSettings {
       Docker / version := version.value,
       //add a default exposed volume of /bitcoin-s so we can always write data here
       dockerExposedVolumes += "/bitcoin-s",
-      dockerUpdateLatest := isSnapshot.value,
-      mappings in (Compile, packageDoc) := Seq()
+      dockerUpdateLatest := DynVer.isSnapshot
     )
   }
 
@@ -339,13 +339,12 @@ object CommonSettings {
     JlinkIgnore.byPackagePrefix(cliIgnore:_*)
   }
 
-  def buildPackageName(packageName: String, isTag: Boolean): String = {
-
+  def buildPackageName(packageName: String): String = {
     val osName = System.getProperty("os.name").toLowerCase().split('.').head.replaceAll("\\s", "")
     val split = packageName.split("-")
     val versionIdx = split.zipWithIndex.find(_._1.count(_ == '.') > 1).get._2
     val insertedOSName = split.take(versionIdx) ++ Vector(osName)
-    if (isTag) {
+    if (isRelease) {
       //bitcoin-s-server-linux-1.9.3-1-60bfd603-SNAPSHOT.zip -> bitcoin-s-server-linux-1.9.3.zip
       insertedOSName.mkString("-") ++ "-" ++ split(versionIdx)
     } else {
@@ -353,6 +352,10 @@ object CommonSettings {
       //bitcoin-s-cli-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip -> bitcoin-s-cli-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip
       (insertedOSName ++ split.drop(versionIdx)).mkString("-")
     }
+  }
 
+  /** @see https://github.com/sbt/sbt-dynver#detail */
+  def isRelease:Boolean = {
+     DynVer.isVersionStable && !DynVer.isSnapshot
   }
 }

@@ -3,7 +3,7 @@ name := s"bitcoin-s-server"
 
 Universal / packageName := {
   val old = (Universal / packageName).value
-  CommonSettings.buildPackageName(old, false)
+  CommonSettings.buildPackageName(old)
 }
 
 libraryDependencies ++= Deps.server.value
