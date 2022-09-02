@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for previoustag
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
@@ -175,8 +175,14 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: bitcoin-s/bitcoin-s-ts
+          fetch-depth: 0 # for previoustag
       #    ref: electron-forge-config # TODO : Merge to master and remove
           path: bitcoin-s-ts
+      - name: Get Previous tag
+        id: tstag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: bitcoin-s-ts install and build
         working-directory: bitcoin-s-ts
         run: |
@@ -289,14 +295,14 @@ jobs:
       #   if: startsWith(matrix.os,'macos')
       #   uses: actions/upload-artifact@v3
       #   env:
-      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #     pkg-version: ${{steps.tstag.outputs.tag}}
       #   with:
       #     name: krystalbull-${{ matrix.TARGET }}-zip
       #     path: ${{env.KB_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
+          pkg-version: ${{steps.tstag.outputs.tag}}
         with:
           name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
           path: ${{env.KB_MAKE}}/*.${{ matrix.FORMAT }}
@@ -304,10 +310,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
+          name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.tstag.outputs.tag}}
           files: ${{env.KB_MAKE}}/*.${{ matrix.FORMAT }}
         env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
+          pkg-version: ${{steps.tstag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Build Suredbits Wallet
       - name: Download bitcoin-s-server
@@ -381,14 +387,14 @@ jobs:
       #   if: startsWith(matrix.os,'macos')
       #   uses: actions/upload-artifact@v3
       #   env:
-      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #     pkg-version: ${{steps.tstag.outputs.tag}}
       #   with:
       #     name: suredbits-wallet-${{ matrix.TARGET }}-zip
       #     path: ${{env.W_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
+          pkg-version: ${{steps.tstag.outputs.tag}}
         with:
           name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
           path: ${{env.W_MAKE}}/*.${{ matrix.FORMAT }}
@@ -396,8 +402,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
+          name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.tstag.outputs.tag}}
           files: ${{env.W_MAKE}}/*.${{ matrix.FORMAT }}
         env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
+          pkg-version: ${{steps.tstag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
