@@ -340,7 +340,7 @@ object CommonSettings {
   }
 
   def buildPackageName(packageName: String): String = {
-    val osName = System.getProperty("os.name").toLowerCase().split('.').head.replaceAll("\\s", "")
+    val osName = getSimpleOSName
     val split = packageName.split("-")
     val versionIdx = split.zipWithIndex.find(_._1.count(_ == '.') > 1).get._2
     val insertedOSName = split.take(versionIdx) ++ Vector(osName)
@@ -357,5 +357,17 @@ object CommonSettings {
   /** @see https://github.com/sbt/sbt-dynver#detail */
   def isRelease:Boolean = {
      DynVer.isVersionStable && !DynVer.isSnapshot
+  }
+
+  private def getSimpleOSName: String = {
+    if(Properties.isWin) {
+      "windows"
+    } else if (Properties.isMac) {
+      "mac"
+    } else if (Properties.isLinux) {
+      "linux"
+    } else {
+      "unknown-os"
+    }
   }
 }
