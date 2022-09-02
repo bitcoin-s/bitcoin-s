@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, feature_electron_build]
+    branches: [master, main, electrum-github-release] # adding branch name here will trigger release building on commits
     tags: ["*"]
   release:
     types: [ published ]
