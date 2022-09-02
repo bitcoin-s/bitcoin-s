@@ -181,6 +181,7 @@ jobs:
       - name: Get Previous tag
         id: tstag
         uses: WyriHaximus/github-action-get-previous-tag@v1
+        working-directory: bitcoin-s-ts
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: bitcoin-s-ts install and build
