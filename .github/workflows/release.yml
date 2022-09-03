@@ -183,7 +183,6 @@ jobs:
         with:
           node-version: 16.x
       - name: bitcoin-s-ts install and build
-        working-directory: bitcoin-s-ts
         run: |
           npm ci
           npm run build
