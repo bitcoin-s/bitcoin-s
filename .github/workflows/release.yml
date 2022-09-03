@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, feature_electron_build]
+    branches: [master, main, 2022-09-03-fix-electron-build]
     tags: ["*"]
   release:
     types: [ published ]
@@ -178,6 +178,9 @@ jobs:
           fetch-depth: 0 # for previoustag
       #    ref: electron-forge-config # TODO : Merge to master and remove
           path: bitcoin-s-ts
+      - name: cd bitcoin-s-ts
+        run: |
+          cd bitcoin-s-ts
       - name: Get Previous tag
         id: tstag
         uses: WyriHaximus/github-action-get-previous-tag@v1
