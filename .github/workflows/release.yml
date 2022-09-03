@@ -159,9 +159,9 @@ jobs:
         run: |
           pwd
           ls -la
-          cd bitcoin-s-ts
-          ls -la
-          pwd
+ #         cd bitcoin-s-ts
+  #        ls -la
+   #       pwd
       - name: Get Previous tag
         id: tstag
         uses: WyriHaximus/github-action-get-previous-tag@v1
