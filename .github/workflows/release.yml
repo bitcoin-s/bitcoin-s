@@ -154,6 +154,14 @@ jobs:
           repository: bitcoin-s/bitcoin-s-ts
           fetch-depth: 0 # for previoustag
           #    ref: electron-forge-config # TODO : Merge to master and remove
+#          path: bitcoin-s-ts
+      - name: cd bitcoin-s-ts
+        run: |
+          pwd
+          ls -la
+          cd bitcoin-s-ts
+          ls -la
+          pwd
       - name: Get Previous tag
         id: tstag
         uses: WyriHaximus/github-action-get-previous-tag@v1
@@ -183,6 +191,7 @@ jobs:
         with:
           node-version: 16.x
       - name: bitcoin-s-ts install and build
+        working-directory: bitcoin-s-ts
         run: |
           npm ci
           npm run build
