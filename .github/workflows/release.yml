@@ -148,6 +148,25 @@ jobs:
       W_OUT: "bitcoin-s-ts/wallet-electron-ts/out"
       W_MAKE: "bitcoin-s-ts/wallet-electron-ts/out/make"
     steps:
+      - name: Checkout bitcoin-s-ts repo
+        uses: actions/checkout@v3
+        with:
+          repository: bitcoin-s/bitcoin-s-ts
+          fetch-depth: 0 # for previoustag
+          #    ref: electron-forge-config # TODO : Merge to master and remove
+          path: bitcoin-s-ts
+      - name: cd bitcoin-s-ts
+        run: |
+          pwd
+          ls -la
+          cd bitcoin-s-ts
+          ls -la
+          pwd
+      - name: Get Previous tag
+        id: tstag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       # macos keychain unlocking for signing identity access
       - name: (macos) Import developer cert to keychain
         if: startsWith(matrix.os,'macos')
@@ -171,24 +190,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-      - name: Checkout bitcoin-s-ts repo
-        uses: actions/checkout@v3
-        with:
-          repository: bitcoin-s/bitcoin-s-ts
-          fetch-depth: 0 # for previoustag
-      #    ref: electron-forge-config # TODO : Merge to master and remove
-          path: bitcoin-s-ts
-      - name: cd bitcoin-s-ts
-        run: |
-          pwd
-          ls -la
-          cd bitcoin-s-ts
-          ls -la
-      - name: Get Previous tag
-        id: tstag
-        uses: WyriHaximus/github-action-get-previous-tag@v1
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: bitcoin-s-ts install and build
         working-directory: bitcoin-s-ts
         run: |
