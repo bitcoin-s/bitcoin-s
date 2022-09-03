@@ -162,6 +162,8 @@ jobs:
           cd bitcoin-s-ts
           ls -la
           pwd
+          git rev-list --tags --max-count=1
+          git describe --tags
       - name: Get Previous tag
         id: tstag
         uses: WyriHaximus/github-action-get-previous-tag@v1
