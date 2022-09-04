@@ -669,15 +669,6 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.run(markAsReservedAction(ts))
   }
 
-  def createOutPointsIndexIfNeeded(): Future[Unit] = Future {
-    withStatement(
-      s"CREATE UNIQUE INDEX IF NOT EXISTS utxo_outpoints ON $fullTableName (tx_outpoint)") {
-      st =>
-        st.executeUpdate()
-        ()
-    }
-  }
-
   def hasDuplicates(): Future[Boolean] = FutureUtil.makeAsync { () =>
     withStatement(
       s"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM $fullTableName GROUP BY tx_outpoint HAVING COUNT(*) > 1)") {
