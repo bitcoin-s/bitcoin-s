@@ -29,7 +29,5 @@ jobs:
             ~/.sbt
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
-      - name: Load .env file
-        uses: xom9ikk/dotenv@v1.0.2
       - name: run tests
         run: sbt -J-Xmx2g ++2.13.8 coverage nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcNodeTest/test cryptoTestJS/test coreJS/test 'set scalaJSStage in Global := FullOptStage' cryptoTestJS/test coreJS/test asyncUtilsTestJS/test
