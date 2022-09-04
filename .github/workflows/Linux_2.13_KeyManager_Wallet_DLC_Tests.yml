@@ -29,5 +29,7 @@ jobs:
             ~/.sbt
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
+      - name: Load .env file
+        uses: xom9ikk/dotenv@v1.0.2
       - name: run tests
         run: sbt ++2.13.8 coverage keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls feeProviderTest/test walletTest/test dlcWalletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls dlcOracleTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test oracleExplorerClient/test dlcOracle/coverageReport dlcOracle/coverageAggregate dlcOracle/coveralls
