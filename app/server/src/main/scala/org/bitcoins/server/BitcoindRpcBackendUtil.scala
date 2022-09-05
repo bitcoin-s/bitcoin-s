@@ -225,7 +225,8 @@ object BitcoindRpcBackendUtil extends Logging {
           println(s"Received tx ${tx.txIdBE.hex}, processing")
           val f = wallet.processTransaction(tx, None)
           f.failed.foreach { err =>
-            println(s"failed to process raw tx zmq message", err)
+            throw new RuntimeException("failed to process raw tx zmq message",
+                                       err)
           }
           ()
         }
@@ -241,11 +242,11 @@ object BitcoindRpcBackendUtil extends Logging {
     zmqConfig.rawBlock.foreach { zmq =>
       val rawBlockListener: Option[Block => Unit] = Some {
         { block: Block =>
-          println(
-            s"Received block ${block.blockHeader.hashBE.hex}, processing")
+          println(s"Received block ${block.blockHeader.hashBE.hex}, processing")
           val f = wallet.processBlock(block)
           f.failed.foreach { err =>
-            println(s"failed to process raw block zmq message", err)
+            throw new RuntimeException("failed to process raw tx zmq message",
+                                       err)
           }
           ()
         }
