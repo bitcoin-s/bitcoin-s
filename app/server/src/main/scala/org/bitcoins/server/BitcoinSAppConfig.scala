@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.commons.config.AppConfig.DEFAULT_BITCOIN_S_CONF_FILE
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
@@ -121,7 +122,9 @@ case class BitcoinSAppConfig(
   /** The underlying config the result of our fields derive from */
   lazy val config: Config = {
     val finalConfig =
-      AppConfig.getBaseConfig(baseDatadir = baseDatadir, configOverrides)
+      AppConfig.getBaseConfig(baseDatadir = baseDatadir,
+                              DEFAULT_BITCOIN_S_CONF_FILE,
+                              configOverrides)
     val resolved = finalConfig.resolve()
 
     resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")

@@ -115,8 +115,11 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
   /** The blockchain network we're on */
   lazy val network: BitcoinNetwork = chain.network
 
+  def configFileName: String = AppConfig.DEFAULT_BITCOIN_S_CONF_FILE
+
   protected lazy val config: Config = {
-    val finalConfig = AppConfig.getBaseConfig(baseDatadir, configOverrides)
+    val finalConfig =
+      AppConfig.getBaseConfig(baseDatadir, configFileName, configOverrides)
 
     logger.trace(s"Resolved bitcoin-s config:")
     logger.trace(finalConfig.asReadableJson)
@@ -175,13 +178,14 @@ object AppConfig extends Logging {
 
   def getBaseConfig(
       baseDatadir: Path,
+      configFileName: String,
       configOverrides: Vector[Config]): Config = {
     val configOptions =
       ConfigParseOptions
         .defaults()
         .setClassLoader(getClass().getClassLoader())
     val datadirConfig = {
-      val file = baseDatadir.resolve("bitcoin-s.conf")
+      val file = baseDatadir.resolve(configFileName)
       val config = if (Files.isReadable(file)) {
         ConfigFactory.parseFile(file.toFile, configOptions)
       } else {
@@ -237,6 +241,9 @@ object AppConfig extends Logging {
     */
   private[bitcoins] lazy val DEFAULT_BITCOIN_S_DATADIR: Path =
     Paths.get(Properties.userHome, ".bitcoin-s")
+
+  private[bitcoins] lazy val DEFAULT_BITCOIN_S_CONF_FILE: String =
+    "bitcoin-s.conf"
 
   /** Matches the default data directory location
     * with a network appended,
