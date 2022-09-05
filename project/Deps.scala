@@ -5,25 +5,25 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.70"
-    val dropwizardMetricsV = "4.2.9" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.11" //https://github.com/dropwizard/metrics
 
-    val logback = "1.2.11"
+    val logback = "1.4.0" //https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
     val logkitV = "1.0.1"
     val avalonLoggingV = "4.1.5"
 
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
-    val scalaTest = "3.2.13"
+    val scalaTest = "3.2.13" //https://www.scalatest.org/
 
     val scalaTestPlus =
       "3.2.12.0-RC2" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
-    val slf4j = "1.7.36"
+    val slf4j = "2.0.0"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
     val scalapb = "0.11.10"
     val akkav = "10.2.9"
-    val playv = "2.9.2"
+    val playv = "2.9.3" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.19"
     val jUnixSocketV = "2.4.0"
     val scodecV = "1.1.30"
@@ -36,11 +36,11 @@ object Deps {
 
     val asyncNewScalaV = "1.0.1"
 
-    val flywayV = "8.5.9"
-    val postgresV = "42.3.4"
+    val flywayV = "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
+    val postgresV = "42.5.0" //https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
-    val sqliteV = "3.36.0.3"
+    val sqliteV = "3.39.2.1" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
@@ -49,7 +49,7 @@ object Deps {
 
     val breezeV = "1.3"
 
-    val newMicroPickleV = "1.6.0"
+    val newMicroPickleV = "2.0.0" //https://github.com/com-lihaoyi/upickle/
     val newMicroJsonV = newMicroPickleV
 
     val osgiFrameworkV = "1.10.0"
@@ -67,9 +67,9 @@ object Deps {
 
     val scalaJsStubsV = "1.1.0"
     // CLI deps
-    val scoptV = "4.0.1"
-    val sttpV = "3.6.1"
-    val codehausV = "3.1.7"
+    val scoptV = "4.1.0"
+    val sttpV = "3.7.6" // https://github.com/softwaremill/sttp
+    val codehausV = "3.1.8"
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
 

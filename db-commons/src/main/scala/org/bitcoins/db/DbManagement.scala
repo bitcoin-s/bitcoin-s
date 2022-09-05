@@ -36,6 +36,7 @@ trait DbManagement extends Logging {
       val conf = Flyway
         .configure()
         .locations(s"classpath:$driverName/$module/migration/")
+        .loadDefaultConfigurationFiles()
       appConfig.schemaName match {
         case Some(schema) =>
           conf
