@@ -8,11 +8,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.{
-  NeutrinoHDWalletApi,
-  NeutrinoWalletApi,
-  WalletApi
-}
+import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -218,16 +214,19 @@ object BitcoindRpcBackendUtil extends Logging {
   }
 
   def startZMQWalletCallbacks(
-      wallet: WalletApi with NeutrinoWalletApi,
-      zmqConfig: ZmqConfig): Unit = {
+      wallet: NeutrinoHDWalletApi,
+      zmqConfig: ZmqConfig)(implicit ec: ExecutionContext): Unit = {
     require(zmqConfig != ZmqConfig.empty,
             "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
     zmqConfig.rawTx.foreach { zmq =>
       val rawTxListener: Option[Transaction => Unit] = Some {
         { tx: Transaction =>
-          logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
-          wallet.processTransaction(tx, None)
+          println(s"Received tx ${tx.txIdBE.hex}, processing")
+          val f = wallet.processTransaction(tx, None)
+          f.failed.foreach { err =>
+            println(s"failed to process raw tx zmq message", err)
+          }
           ()
         }
       }
@@ -242,9 +241,12 @@ object BitcoindRpcBackendUtil extends Logging {
     zmqConfig.rawBlock.foreach { zmq =>
       val rawBlockListener: Option[Block => Unit] = Some {
         { block: Block =>
-          logger.debug(
+          println(
             s"Received block ${block.blockHeader.hashBE.hex}, processing")
-          wallet.processBlock(block)
+          val f = wallet.processBlock(block)
+          f.failed.foreach { err =>
+            println(s"failed to process raw block zmq message", err)
+          }
           ()
         }
       }
