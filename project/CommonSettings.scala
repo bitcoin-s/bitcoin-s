@@ -302,6 +302,15 @@ object CommonSettings {
       "ch.qos.logback.core.net" -> "javax.mail",
       "ch.qos.logback.core.net" -> "javax.mail.internet",
       "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
+      "ch.qos.logback.classic" -> "jakarta.servlet.http",
+      "ch.qos.logback.classic.helpers" -> "jakarta.servlet",
+      "ch.qos.logback.classic.helpers" -> "jakarta.servlet.http",
+      "ch.qos.logback.classic.selector.servlet" -> "jakarta.servlet",
+      "ch.qos.logback.classic.servlet" -> "jakarta.servlet",
+      "ch.qos.logback.core.net" -> "jakarta.mail",
+      "ch.qos.logback.core.net" -> "jakarta.mail.internet",
+      "ch.qos.logback.core.status" -> "jakarta.servlet",
+      "ch.qos.logback.core.status" -> "jakarta.servlet.http"
     )
   }
 
