@@ -35,7 +35,9 @@ case class DatadirParser(
     serverArgs.configOpt match {
       case None =>
         AppConfig
-          .getBaseConfig(datadirPath, Vector(networkConfig))
+          .getBaseConfig(datadirPath,
+                         AppConfig.DEFAULT_BITCOIN_S_CONF_FILE,
+                         Vector(networkConfig))
           .withFallback(datadirConfig)
           .resolve()
       case Some(config) =>
