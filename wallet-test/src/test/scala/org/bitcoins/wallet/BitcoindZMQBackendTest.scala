@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.server.BitcoindRpcBackendUtil
@@ -62,7 +63,7 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ = BitcoindRpcBackendUtil.startZMQWalletCallbacks(
         wallet,
         bitcoind.instance.zmqConfig)
-
+      _ <- AsyncUtil.nonBlockingSleep(5.seconds)
       _ <- attemptZMQTx(addr, wallet)
 
       unconfirmed <- wallet.getUnconfirmedBalance()

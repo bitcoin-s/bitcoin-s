@@ -245,8 +245,9 @@ object BitcoindRpcBackendUtil extends Logging {
           println(s"Received block ${block.blockHeader.hashBE.hex}, processing")
           val f = wallet.processBlock(block)
           f.failed.foreach { err =>
-            throw new RuntimeException("failed to process raw tx zmq message",
-                                       err)
+            throw new RuntimeException(
+              "failed to process raw block zmq message",
+              err)
           }
           ()
         }
