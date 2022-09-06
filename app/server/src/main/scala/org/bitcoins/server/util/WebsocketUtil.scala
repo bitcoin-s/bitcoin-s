@@ -8,6 +8,7 @@ import org.bitcoins.chain.{
   OnBlockHeaderConnected,
   OnSyncFlagChanged
 }
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
@@ -35,6 +36,23 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object WebsocketUtil extends Logging {
 
+  private def sendHeadersToWs(
+      results: Vector[GetBlockHeaderResult],
+      queue: SourceQueueWithComplete[WsNotification[_]])(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    val notifications =
+      results.map(result =>
+        ChainNotification.BlockProcessedNotification(result))
+    for {
+      _ <- FutureUtil.sequentially(notifications) { case msg =>
+        val x: Future[Unit] = queue
+          .offer(msg)
+          .map(_ => ())
+        x
+      }
+    } yield ()
+  }
+
   def buildChainCallbacks(
       queue: SourceQueueWithComplete[WsNotification[_]],
       chainApi: ChainApi)(implicit
@@ -52,20 +70,15 @@ object WebsocketUtil extends Logging {
           chainAppConfig.ibdBlockProcessedEvents
         isIBDF.flatMap { isIBD =>
           if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
-            //do nothing, don't emit events until IBD is complete
-            Future.unit
+            //only emit the last header so that we don't overwhelm the UI
+            for {
+              results <- resultsF
+              _ <- sendHeadersToWs(Vector(results.last), queue)
+            } yield ()
           } else {
             val f = for {
               results <- resultsF
-              notifications =
-                results.map(result =>
-                  ChainNotification.BlockProcessedNotification(result))
-              _ <- FutureUtil.sequentially(notifications) { case msg =>
-                val x: Future[Unit] = queue
-                  .offer(msg)
-                  .map(_ => ())
-                x
-              }
+              _ <- sendHeadersToWs(results, queue)
             } yield {
               ()
             }
