@@ -11,6 +11,7 @@ import org.bitcoins.chain.{
 import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
+  DLCNodeNotification,
   WalletNotification,
   WalletWsType,
   WsNotification
@@ -22,6 +23,11 @@ import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
+import org.bitcoins.dlc.node.{
+  DLCNodeCallbacks,
+  OnPeerConnectionEstablished,
+  OnPeerConnectionFailed
+}
 import org.bitcoins.dlc.wallet.{
   DLCWalletCallbacks,
   OnDLCOfferAdd,
@@ -195,5 +201,28 @@ object WebsocketUtil extends Logging {
 
     onDLCStateChange(onStateChange) + onDLCOfferAdd(
       onOfferAdd) + onDLCOfferRemove(onOfferRemove)
+  }
+
+  def buildDLCNodeCallbacks(
+      walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
+      ec: ExecutionContext): DLCNodeCallbacks = {
+
+    val onConnectionEstablished: OnPeerConnectionEstablished = { payload =>
+      val notification =
+        DLCNodeNotification.DLCNodeConnectionEstablished(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onConnectionFailed: OnPeerConnectionFailed = { payload =>
+      val notification = DLCNodeNotification.DLCNodeConnectionFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    import DLCNodeCallbacks._
+
+    onPeerConnectionEstablished(
+      onConnectionEstablished) + onPeerConnectionFailed(onConnectionFailed)
   }
 }

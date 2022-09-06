@@ -51,6 +51,7 @@ class DLCClient(
     case c @ Tcp.CommandFailed(cmd: Tcp.Connect) =>
       val ex = c.cause.getOrElse(new IOException("Unknown Error"))
       log.error(s"Cannot connect to ${cmd.remoteAddress} ", ex)
+      connectedAddress.foreach(_.failure(ex))
       throw ex
     case Tcp.Connected(peerOrProxyAddress, _) =>
       val connection = sender()

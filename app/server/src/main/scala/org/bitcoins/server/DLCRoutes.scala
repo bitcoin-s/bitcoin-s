@@ -186,5 +186,13 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("checkconnection", arr) =>
+      withValidServerCommand(DLCCheckConnection.fromJsArr(arr)) { addr =>
+        complete {
+          dlcNode.checkPeerConnection(addr.address).map { _ =>
+            Server.httpSuccess("initiated")
+          }
+        }
+      }
   }
 }

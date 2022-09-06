@@ -9,8 +9,11 @@ import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{Sha256Digest, StringFactory}
+import ujson.Value
 
-/** The event type being sent over the websocket. An example is [[WalletWsType.BlockProcessed]] */
+import java.net.InetSocketAddress
+
+/** The event type being sent over the websocket. An example is [[WalletWsType.NewAddress]] */
 sealed trait WsType
 
 object WsType extends StringFactory[WsType] {
@@ -27,6 +30,7 @@ object WsType extends StringFactory[WsType] {
 sealed trait WalletWsType extends WsType
 sealed trait ChainWsType extends WsType
 sealed trait TorWsType extends WsType
+sealed trait DLCNodeWsType extends WsType
 
 object WalletWsType extends StringFactory[WalletWsType] {
   case object TxProcessed extends WalletWsType
@@ -92,6 +96,22 @@ object TorWsType extends StringFactory[TorWsType] {
   }
 }
 
+object DLCNodeWsType extends StringFactory[DLCNodeWsType] {
+  case object DLCConnectionEstablished extends DLCNodeWsType
+  case object DLCConnectionFailed extends DLCNodeWsType
+
+  private val all = Vector(DLCConnectionEstablished, DLCConnectionFailed)
+
+  override def fromStringOpt(string: String): Option[DLCNodeWsType] = {
+    all.find(_.toString.toLowerCase() == string.toLowerCase)
+  }
+
+  override def fromString(string: String): DLCNodeWsType = {
+    fromStringOpt(string)
+      .getOrElse(sys.error(s"Cannot find chain ws type for string=$string"))
+  }
+}
+
 /** A notification that we send over the websocket.
   * The type of the notification is indicated by [[WsType]].
   * An example is [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
@@ -113,6 +133,10 @@ sealed trait WalletNotification[T] extends WsNotification[T] {
 
 sealed trait TorNotification[T] extends WsNotification[T] {
   override def `type`: TorWsType
+}
+
+sealed trait DLCNodeNotification[T] extends WsNotification[T] {
+  override def `type`: DLCNodeWsType
 }
 
 object WalletNotification {
@@ -229,5 +253,24 @@ object TorNotification {
     override val json: ujson.Value = {
       upickle.default.writeJs(this)(WsPicklers.torStartedPickler)
     }
+  }
+}
+
+object DLCNodeNotification {
+
+  case class DLCNodeConnectionEstablished(payload: InetSocketAddress)
+      extends DLCNodeNotification[InetSocketAddress] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionEstablished
+
+    override def json: Value = upickle.default.writeJs(this)(
+      WsPicklers.dlcNodeConnectionEstablishedPickler)
+  }
+
+  case class DLCNodeConnectionFailed(payload: (InetSocketAddress, String))
+      extends DLCNodeNotification[(InetSocketAddress, String)] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionFailed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcNodeConnectionFailedPickler)
   }
 }
