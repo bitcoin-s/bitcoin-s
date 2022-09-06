@@ -178,7 +178,7 @@ case class TorAppConfig(
     //tor can take at least 25 seconds to start at times
     //see: https://github.com/bitcoin-s/bitcoin-s/pull/3558#issuecomment-899819698
     AsyncUtil
-      .retryUntilSatisfied(checkIfLogExists, 1.second, 60)
+      .retryUntilSatisfied(checkIfLogExists, 1.second, 120)
       //execute started callbacks
       .flatMap(_ => callBacks.executeOnTorStarted())
       .recover { case _: AsyncUtil.RpcRetryException =>
