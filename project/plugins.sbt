@@ -46,12 +46,11 @@ addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.2")
 
 // gRPC
 //https://github.com/akka/akka-grpc
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.4")
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.6")
 
 // Scala.js
 //https://www.scala-js.org/doc/project/
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.8.0")
-
 
 //https://github.com/scalacenter/scalajs-bundler
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.20.0")
