@@ -105,6 +105,7 @@ trait BitcoindRpcTestUtil extends Logging {
                   |regtest=1
                   |server=1
                   |daemon=$isDaemon
+                  |[regtest]
                   |rpcuser=$username
                   |rpcpassword=$pass
                   |rpcport=${rpcUri.getPort}
