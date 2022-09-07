@@ -42,7 +42,7 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
   def contractDescriptors: Vector[ContractDescriptor]
 
   /** Returns the maximum payout the offerer could win from this contract */
-  def max: Satoshis
+  def maxOffererPayout: Satoshis
 
   /** Computes the CET set and their corresponding payouts using CETCalculator. */
   def allOutcomesAndPayouts: Vector[(OracleOutcome, Satoshis)]
@@ -220,7 +220,7 @@ case class SingleContractInfo(
   }
 
   /** @inheritdoc */
-  override val max: Satoshis = {
+  override val maxOffererPayout: Satoshis = {
     contractDescriptor match {
       case descriptor: EnumContractDescriptor =>
         descriptor.values.maxBy(_.toLong)
@@ -406,7 +406,8 @@ case class DisjointUnionContractInfo(contracts: Vector[SingleContractInfo])
   }
 
   /** @inheritdoc */
-  override val max: Satoshis = contracts.map(_.max).max
+  override val maxOffererPayout: Satoshis =
+    contracts.map(_.maxOffererPayout).max
 
   /** @inheritdoc */
   override lazy val allOutcomesAndPayouts: Vector[(OracleOutcome, Satoshis)] = {

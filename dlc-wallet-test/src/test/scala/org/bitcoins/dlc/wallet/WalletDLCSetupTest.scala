@@ -317,7 +317,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
             accept.fundingInputs
               .map(_.output.value)
               .sum >= accept.collateral)
-          assert(accept.collateral == offer.contractInfo.max - offer.collateral)
+          assert(
+            accept.collateral == offer.contractInfo.totalCollateral - offer.collateral)
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -790,7 +791,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         accept <- walletB.acceptDLCOffer(offer, None, None, None)
         _ = {
           assert(accept.fundingInputs.nonEmpty)
-          assert(accept.collateral == offer.contractInfo.max - offer.collateral)
+          assert(
+            accept.collateral == offer.contractInfo.maxOffererPayout - offer.collateral)
           assert(accept.changeAddress.value.nonEmpty)
         }
 
