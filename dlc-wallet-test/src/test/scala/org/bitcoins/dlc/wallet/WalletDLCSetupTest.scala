@@ -989,7 +989,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val offerData: DLCOffer =
         DLCWalletUtil.buildDLCOffer(totalCollateral = Bitcoins(100))
-      //val walletBBalanceF = walletB.getBalance()
+
       for {
         offer <- walletA.createDLCOffer(
           contractInfo = offerData.contractInfo,

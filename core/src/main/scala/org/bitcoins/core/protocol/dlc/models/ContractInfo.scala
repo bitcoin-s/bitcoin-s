@@ -220,7 +220,14 @@ case class SingleContractInfo(
   }
 
   /** @inheritdoc */
-  override val max: Satoshis = totalCollateral
+  override val max: Satoshis = {
+    contractDescriptor match {
+      case descriptor: EnumContractDescriptor =>
+        descriptor.values.maxBy(_.toLong)
+      case _: NumericContractDescriptor =>
+        totalCollateral
+    }
+  }
 
   /** @inheritdoc */
   override lazy val allOutcomesAndPayouts: Vector[(OracleOutcome, Satoshis)] = {

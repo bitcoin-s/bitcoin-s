@@ -56,9 +56,8 @@ object DLCWalletUtil extends Logging {
   val total: Satoshis = (expectedDefaultAmt / Satoshis(2)).satoshis
   val half: Satoshis = (total / Satoshis(2)).satoshis
 
-  val sampleOutcomes: Vector[(EnumOutcome, Satoshis)] = Vector(
-    EnumOutcome(winStr) -> (expectedDefaultAmt / Satoshis(2)).satoshis,
-    EnumOutcome(loseStr) -> Satoshis.zero)
+  val sampleOutcomes: Vector[(EnumOutcome, Satoshis)] =
+    Vector(EnumOutcome(winStr) -> total, EnumOutcome(loseStr) -> Satoshis.zero)
 
   lazy val sampleContractDescriptor: EnumContractDescriptor =
     EnumContractDescriptor(sampleOutcomes)
@@ -85,7 +84,8 @@ object DLCWalletUtil extends Logging {
     ContractOraclePair.EnumPair(sampleContractDescriptor, invalidOracleInfo)
 
   lazy val sampleContractInfo: SingleContractInfo =
-    SingleContractInfo(half, sampleContractOraclePair)
+    SingleContractInfo(totalCollateral = total,
+                       contractOraclePair = sampleContractOraclePair)
 
   val amt2: Satoshis = Satoshis(100000)
 
