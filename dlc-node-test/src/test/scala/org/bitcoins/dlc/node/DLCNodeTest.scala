@@ -26,41 +26,55 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
 
     val configA = nodeA.config
 
-    val errorMessageP = Promise[String]()
+    val errorP = Promise[String]()
     val failure =
       DLCNodeCallbacks.onPeerConnectionFailed(new OnPeerConnectionFailed {
-        override def apply(param: (InetSocketAddress, String)): Future[Unit] = {
-          errorMessageP.success(param._2)
+        override def apply(param: InetSocketAddress): Future[Unit] = {
+          errorP.success("err")
           Future.unit
         }
       })
     configA.addCallbacks(failure)
 
-    val okP = Promise[Boolean]()
+    val okP = Promise[String]()
     val established = DLCNodeCallbacks.onPeerConnectionEstablished(
       new OnPeerConnectionEstablished {
         override def apply(param: InetSocketAddress): Future[Unit] = {
-          okP.success(true)
+          okP.success("ok")
           Future.unit
         }
       })
     configA.addCallbacks(established)
 
+    val initiatedP = Promise[String]()
+    val init =
+      DLCNodeCallbacks.onPeerConnectionInitiated(new OnPeerConnectionInitiated {
+        override def apply(param: InetSocketAddress): Future[Unit] = {
+          initiatedP.success("init")
+          Future.unit
+        }
+      })
+    configA.addCallbacks(init)
+
     for {
       (addrB, _) <- nodeB.serverBindF
-      _ = assert(!errorMessageP.isCompleted)
+      _ = assert(!initiatedP.isCompleted)
+      _ = assert(!errorP.isCompleted)
       _ = assert(!okP.isCompleted)
-      _ <- nodeA.checkPeerConnection(addrB)
+      // don't wait for the future completion here, we want to test OnPeerConnectionInitiated
+      _ = nodeA.checkPeerConnection(addrB)
+      initiated <- initiatedP.future
+      _ = assert(initiated == "init")
       ok <- okP.future
-      _ = assert(ok)
-      _ = assert(!errorMessageP.isCompleted)
+      _ = assert(ok == "ok")
+      _ = assert(!errorP.isCompleted)
       invalidAddr = InetSocketAddress.createUnresolved(addrB.getHostString,
                                                        NetworkUtil.randomPort())
       _ <- recoverToSucceededIf[java.net.ConnectException](
         nodeA.checkPeerConnection(invalidAddr))
-      errorMessage <- errorMessageP.future
+      error <- errorP.future
     } yield {
-      assert(errorMessage.nonEmpty)
+      assert(error == "err")
     }
   }
 

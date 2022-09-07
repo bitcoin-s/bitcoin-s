@@ -123,6 +123,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   private def connectToPeer(
       peerAddress: InetSocketAddress): Future[ActorRef] = {
+    config.callBacks.executeOnPeerConnectionInitiated(peerAddress)
     val peer =
       Peer(socket = peerAddress, socks5ProxyParams = config.socks5ProxyParams)
 
@@ -136,8 +137,8 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     f.onComplete {
       case Success(_) =>
         config.callBacks.executeOnPeerConnectionEstablished(peerAddress)
-      case Failure(ex) =>
-        config.callBacks.executeOnPeerConnectionFailed(peerAddress, ex)
+      case Failure(_) =>
+        config.callBacks.executeOnPeerConnectionFailed(peerAddress)
     }
 
     f

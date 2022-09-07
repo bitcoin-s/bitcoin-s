@@ -26,7 +26,8 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.dlc.node.{
   DLCNodeCallbacks,
   OnPeerConnectionEstablished,
-  OnPeerConnectionFailed
+  OnPeerConnectionFailed,
+  OnPeerConnectionInitiated
 }
 import org.bitcoins.dlc.wallet.{
   DLCWalletCallbacks,
@@ -207,6 +208,13 @@ object WebsocketUtil extends Logging {
       walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
       ec: ExecutionContext): DLCNodeCallbacks = {
 
+    val onConnectionInitiated: OnPeerConnectionInitiated = { payload =>
+      val notification =
+        DLCNodeNotification.DLCNodeConnectionInitiated(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
     val onConnectionEstablished: OnPeerConnectionEstablished = { payload =>
       val notification =
         DLCNodeNotification.DLCNodeConnectionEstablished(payload)
@@ -222,7 +230,8 @@ object WebsocketUtil extends Logging {
 
     import DLCNodeCallbacks._
 
-    onPeerConnectionEstablished(
+    onPeerConnectionInitiated(
+      onConnectionInitiated) + onPeerConnectionEstablished(
       onConnectionEstablished) + onPeerConnectionFailed(onConnectionFailed)
   }
 }

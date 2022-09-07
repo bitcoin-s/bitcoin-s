@@ -97,10 +97,13 @@ object TorWsType extends StringFactory[TorWsType] {
 }
 
 object DLCNodeWsType extends StringFactory[DLCNodeWsType] {
+  case object DLCConnectionInitiated extends DLCNodeWsType
   case object DLCConnectionEstablished extends DLCNodeWsType
   case object DLCConnectionFailed extends DLCNodeWsType
 
-  private val all = Vector(DLCConnectionEstablished, DLCConnectionFailed)
+  private val all = Vector(DLCConnectionInitiated,
+                           DLCConnectionEstablished,
+                           DLCConnectionFailed)
 
   override def fromStringOpt(string: String): Option[DLCNodeWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -258,6 +261,14 @@ object TorNotification {
 
 object DLCNodeNotification {
 
+  case class DLCNodeConnectionInitiated(payload: InetSocketAddress)
+      extends DLCNodeNotification[InetSocketAddress] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionInitiated
+
+    override def json: Value = upickle.default.writeJs(this)(
+      WsPicklers.dlcNodeConnectionInitiatedPickler)
+  }
+
   case class DLCNodeConnectionEstablished(payload: InetSocketAddress)
       extends DLCNodeNotification[InetSocketAddress] {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionEstablished
@@ -266,8 +277,8 @@ object DLCNodeNotification {
       WsPicklers.dlcNodeConnectionEstablishedPickler)
   }
 
-  case class DLCNodeConnectionFailed(payload: (InetSocketAddress, String))
-      extends DLCNodeNotification[(InetSocketAddress, String)] {
+  case class DLCNodeConnectionFailed(payload: InetSocketAddress)
+      extends DLCNodeNotification[InetSocketAddress] {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionFailed
 
     override def json: Value =

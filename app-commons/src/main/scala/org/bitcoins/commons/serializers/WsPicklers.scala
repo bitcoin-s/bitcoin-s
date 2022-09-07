@@ -6,7 +6,8 @@ import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
 }
 import org.bitcoins.commons.jsonmodels.ws.DLCNodeNotification.{
   DLCNodeConnectionEstablished,
-  DLCNodeConnectionFailed
+  DLCNodeConnectionFailed,
+  DLCNodeConnectionInitiated
 }
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferAddNotification,
@@ -184,10 +185,12 @@ object WsPicklers {
     def addr2str(address: InetSocketAddress) =
       address.getHostName + ":" + address.getPort
     val payloadJson: ujson.Value = notification match {
+      case DLCNodeConnectionInitiated(address) =>
+        upickle.default.writeJs(addr2str(address))
       case DLCNodeConnectionEstablished(address) =>
         upickle.default.writeJs(addr2str(address))
-      case DLCNodeConnectionFailed((address, error)) =>
-        ujson.Obj(addr2str(address) -> error)
+      case DLCNodeConnectionFailed(address) =>
+        upickle.default.writeJs(addr2str(address))
     }
     val notificationObj = ujson.Obj(
       PicklerKeys.typeKey -> writeJs(notification.`type`),
@@ -202,18 +205,18 @@ object WsPicklers {
     val payloadObj = obj(PicklerKeys.payloadKey)
 
     typeObj match {
+      case DLCNodeWsType.DLCConnectionInitiated =>
+        val address: InetSocketAddress =
+          NetworkUtil.parseInetSocketAddress(payloadObj.str, DLC.DefaultPort)
+        DLCNodeConnectionInitiated(address)
       case DLCNodeWsType.DLCConnectionEstablished =>
         val address: InetSocketAddress =
           NetworkUtil.parseInetSocketAddress(payloadObj.str, DLC.DefaultPort)
         DLCNodeConnectionEstablished(address)
       case DLCNodeWsType.DLCConnectionFailed =>
-        val payload = payloadObj.obj.keySet.headOption
-          .map(addr =>
-            (NetworkUtil.parseInetSocketAddress(addr, DLC.DefaultPort),
-             payloadObj.obj(addr).str))
-          .getOrElse(
-            throw new RuntimeException("Invalid `dlcconnectionfailed` payload"))
-        DLCNodeConnectionFailed(payload)
+        val address: InetSocketAddress =
+          NetworkUtil.parseInetSocketAddress(payloadObj.str, DLC.DefaultPort)
+        DLCNodeConnectionFailed(address)
     }
   }
 
@@ -302,6 +305,13 @@ object WsPicklers {
       writeTorNotification(_),
       readTorNotification(_)
         .asInstanceOf[TorNotification.TorStartedNotification.type])
+  }
+
+  implicit val dlcNodeConnectionInitiatedPickler: ReadWriter[
+    DLCNodeConnectionInitiated] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionInitiated])
   }
 
   implicit val dlcNodeConnectionFailedPickler: ReadWriter[

@@ -10,15 +10,29 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Callbacks for responding to events in the DLC node. */
 trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
 
+  def onPeerConnectionInitiated: CallbackHandler[
+    InetSocketAddress,
+    OnPeerConnectionInitiated]
+
   def onPeerConnectionEstablished: CallbackHandler[
     InetSocketAddress,
     OnPeerConnectionEstablished]
 
   def onPeerConnectionFailed: CallbackHandler[
-    (InetSocketAddress, String),
+    InetSocketAddress,
     OnPeerConnectionFailed]
 
   override def +(other: DLCNodeCallbacks): DLCNodeCallbacks
+
+  def executeOnPeerConnectionInitiated(peerAddress: InetSocketAddress)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onPeerConnectionInitiated.execute(
+      peerAddress,
+      (err: Throwable) =>
+        logger.error(
+          s"${onPeerConnectionInitiated.name} Callback failed with error: ",
+          err))
+  }
 
   def executeOnPeerConnectionEstablished(peerAddress: InetSocketAddress)(
       implicit ec: ExecutionContext): Future[Unit] = {
@@ -30,11 +44,10 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
           err))
   }
 
-  def executeOnPeerConnectionFailed(
-      peerAddress: InetSocketAddress,
-      ex: Throwable)(implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnPeerConnectionFailed(peerAddress: InetSocketAddress)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     onPeerConnectionFailed.execute(
-      (peerAddress, ex.getMessage),
+      peerAddress,
       (err: Throwable) =>
         logger.error(
           s"${onPeerConnectionFailed.name} Callback failed with error: ",
@@ -42,24 +55,31 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
   }
 }
 
+trait OnPeerConnectionInitiated extends Callback[InetSocketAddress]
+
 trait OnPeerConnectionEstablished extends Callback[InetSocketAddress]
 
-trait OnPeerConnectionFailed extends Callback[(InetSocketAddress, String)]
+trait OnPeerConnectionFailed extends Callback[InetSocketAddress]
 
 object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
 
   // Use Impl pattern here to enforce the correct names on the CallbackHandlers
   private case class DLCNodeCallbacksImpl(
+      onPeerConnectionInitiated: CallbackHandler[
+        InetSocketAddress,
+        OnPeerConnectionInitiated],
       onPeerConnectionEstablished: CallbackHandler[
         InetSocketAddress,
         OnPeerConnectionEstablished],
       onPeerConnectionFailed: CallbackHandler[
-        (InetSocketAddress, String),
+        InetSocketAddress,
         OnPeerConnectionFailed])
       extends DLCNodeCallbacks {
 
     override def +(other: DLCNodeCallbacks): DLCNodeCallbacks =
       copy(
+        onPeerConnectionInitiated =
+          onPeerConnectionInitiated ++ other.onPeerConnectionInitiated,
         onPeerConnectionEstablished =
           onPeerConnectionEstablished ++ other.onPeerConnectionEstablished,
         onPeerConnectionFailed =
@@ -67,7 +87,10 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
       )
   }
 
-  /** Constructs a set of callbacks that only acts on TX received */
+  def onPeerConnectionInitiated(
+      f: OnPeerConnectionInitiated): DLCNodeCallbacks =
+    DLCNodeCallbacks(onPeerConnectionInitiated = Vector(f))
+
   def onPeerConnectionEstablished(
       f: OnPeerConnectionEstablished): DLCNodeCallbacks =
     DLCNodeCallbacks(onPeerConnectionEstablished = Vector(f))
@@ -77,20 +100,26 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
 
   /** Empty callbacks that does nothing with the received data */
   override val empty: DLCNodeCallbacks =
-    DLCNodeCallbacks(Vector.empty, Vector.empty)
+    DLCNodeCallbacks(Vector.empty, Vector.empty, Vector.empty)
 
   def apply(
+      onPeerConnectionInitiated: Vector[OnPeerConnectionInitiated] =
+        Vector.empty,
       onPeerConnectionEstablished: Vector[OnPeerConnectionEstablished] =
         Vector.empty,
       onPeerConnectionFailed: Vector[OnPeerConnectionFailed] =
         Vector.empty): DLCNodeCallbacks = {
     DLCNodeCallbacksImpl(
+      onPeerConnectionInitiated =
+        CallbackHandler[InetSocketAddress, OnPeerConnectionInitiated](
+          "onPeerConnectionInitiated",
+          onPeerConnectionInitiated),
       onPeerConnectionEstablished =
         CallbackHandler[InetSocketAddress, OnPeerConnectionEstablished](
           "onPeerConnectionEstablished",
           onPeerConnectionEstablished),
       onPeerConnectionFailed =
-        CallbackHandler[(InetSocketAddress, String), OnPeerConnectionFailed](
+        CallbackHandler[InetSocketAddress, OnPeerConnectionFailed](
           "onPeerConnectionFailed",
           onPeerConnectionFailed)
     )
