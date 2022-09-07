@@ -84,7 +84,7 @@ object DLCWalletUtil extends Logging {
   lazy val invalidContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, invalidOracleInfo)
 
-  lazy val sampleContractInfo: ContractInfo =
+  lazy val sampleContractInfo: SingleContractInfo =
     SingleContractInfo(half, sampleContractOraclePair)
 
   val amt2: Satoshis = Satoshis(100000)
@@ -185,6 +185,11 @@ object DLCWalletUtil extends Logging {
     feeRate = SatoshisPerVirtualByte(Satoshis(3)),
     timeouts = dummyTimeouts
   )
+
+  def buildDLCOffer(totalCollateral: CurrencyUnit): DLCOffer = {
+    val ci = sampleContractInfo.copy(totalCollateral = totalCollateral.satoshis)
+    sampleDLCOffer.copy(contractInfo = ci)
+  }
 
   lazy val sampleDLCOffer2 = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,

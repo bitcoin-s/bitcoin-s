@@ -3,7 +3,6 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.protocol.dlc.models.{
   DLCState,
   DLCStatus,
-  DisjointUnionContractInfo,
   SingleContractInfo
 }
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
@@ -101,9 +100,6 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
         DLCWalletUtil.sampleContractInfo match {
           case single: SingleContractInfo =>
             DLCWalletUtil.getSigs(single)
-          case disjoint: DisjointUnionContractInfo =>
-            sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
         }
       }
       transaction <- walletA.executeDLC(contractId, sigs._1).map(_.get)

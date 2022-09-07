@@ -982,6 +982,30 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     } yield res
   }
 
+  it must "fail to accept an offer when you do not have enough money in the wallet" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+      val walletB = wallets._2.wallet
+
+      val offerData: DLCOffer =
+        DLCWalletUtil.buildDLCOffer(totalCollateral = Bitcoins(100))
+      //val walletBBalanceF = walletB.getBalance()
+      for {
+        offer <- walletA.createDLCOffer(
+          contractInfo = offerData.contractInfo,
+          collateral = offerData.collateral,
+          feeRateOpt = Some(offerData.feeRate),
+          locktime = offerData.timeouts.contractMaturity.toUInt32,
+          refundLocktime = UInt32.max,
+          peerAddressOpt = None,
+          externalPayoutAddressOpt = None,
+          externalChangeAddressOpt = None
+        )
+        _ <- recoverToSucceededIf[RuntimeException](
+          walletB.acceptDLCOffer(offer, None, None, None))
+      } yield succeed
+  }
+
   it must "fail to create an offer with an invalid announcement signature" in {
     wallets =>
       val walletA = wallets._1.wallet
