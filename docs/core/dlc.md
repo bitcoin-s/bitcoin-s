@@ -152,7 +152,7 @@ val oracleInfo = NumericMultiOracleInfo(
 )
 
 val contractInfo = SingleContractInfo(totalCollateral, ContractOraclePair.NumericPair(descriptor, oracleInfo))
-contractInfo.max
+contractInfo.totalCollateral
 contractInfo.allOutcomes.length
 
 val signingOracles = oracleInfo.singleOracleInfos.take(3)
