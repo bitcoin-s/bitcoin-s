@@ -76,7 +76,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           accept.fundingInputs
             .map(_.output.value)
             .sum >= accept.collateral)
-        assert(accept.collateral == offer.contractInfo.max - offer.collateral)
+        assert(
+          accept.collateral == offer.contractInfo.totalCollateral - offer.collateral)
         assert(accept.changeAddress.value.nonEmpty)
       }
 
@@ -141,6 +142,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   it must "correctly negotiate a dlc" in {
     fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleDLCOffer)
+  }
+
+  it must "correctly negotiate a non winner take all dlc" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      testNegotiate(fundedDLCWallets,
+                    DLCWalletUtil.sampleDLCOfferNonWinnerTakeAll)
   }
 
   it must "correctly negotiate a dlc with a multi-nonce oracle info" in {
