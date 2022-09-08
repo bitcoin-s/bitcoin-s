@@ -101,11 +101,20 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     else "http://" + baseUrl
   })
 
-  lazy val rpcBinding: URI = new URI({
-    val baseUrl = getValue("rpclisten").getOrElse("127.0.0.1:10009")
-    if (baseUrl.startsWith("http")) baseUrl
-    else "http://" + baseUrl
-  })
+  lazy val rpcBinding: URI = {
+    val uri = new URI({
+      val baseUrl = getValue("rpclisten").getOrElse("127.0.0.1:10009")
+      if (baseUrl.startsWith("http")) baseUrl
+      else "http://" + baseUrl
+    })
+
+    // if our local lnd is bound to 0.0.0.0
+    // then we can just make requests to localhost
+    if (uri.getHost == "0.0.0.0") {
+      logger.warn("lnd rpc is bound to 0.0.0.0, using localhost instead")
+      new URI(s"http://127.0.0.1:${uri.getPort}")
+    } else uri
+  }
 
   lazy val restBinding: URI = new URI({
     val baseUrl = getValue("restlisten").getOrElse("127.0.0.1:8080")
