@@ -103,8 +103,10 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
           "Offer change address must have same network as final address")
   require(acceptChangeAddress.networkParameters == network,
           "Accept change address must have same network as final address")
-  require(totalInput >= contractInfo.max,
-          "Total collateral must add up to max winnings")
+  require(
+    totalInput >= contractInfo.totalCollateral,
+    s"Total collateral must add up to max winnings, totalInput=${totalInput} contractInfo.totalCollateral=${contractInfo.totalCollateral}"
+  )
   require(
     offerTotalFunding >= offerTotalCollateral,
     "Offer funding inputs must add up to at least offer's total collateral")
