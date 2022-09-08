@@ -79,7 +79,12 @@ trait LndRpcTestUtil extends Logging {
        |historicalsyncinterval=1s
        |trickledelay=1000
        |listen=127.0.0.1:$port
-       |rpclisten=127.0.0.1:$rpcPort
+       |
+       |# allow requests from docker containers
+       |tlsextradomain=host.docker.internal
+       |tlsextradomain=host-gateway
+       |rpclisten=0.0.0.0:$rpcPort
+       |
        |externalip=127.0.0.1
        |maxpendingchannels=10
        |bitcoind.rpcuser = ${bitcoindInstance.authCredentials
