@@ -25,7 +25,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       case (isInit, offerTLV) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+        val totalCollateral = offer.contractInfo.totalCollateral
 
         val payoutAddress = Option.empty[PayoutAddress]
 
@@ -60,7 +60,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       case (isInit, offerTLV, contractId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+        val totalCollateral = offer.contractInfo.totalCollateral
 
         // random testnet address
         val payoutAddress =
@@ -102,7 +102,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       case (isInit, offerTLV, contractId, txId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+        val totalCollateral = offer.contractInfo.totalCollateral
 
         val payoutAddress = Option.empty[PayoutAddress]
 
@@ -140,7 +140,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       case (isInit, offerTLV, contractId, fundingTxId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+        val totalCollateral = offer.contractInfo.totalCollateral
 
         val payoutAddress = Option.empty[PayoutAddress]
 
@@ -178,7 +178,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       case (isInit, offerTLV, contractId, fundingTxId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.max
+        val totalCollateral = offer.contractInfo.totalCollateral
 
         val payoutAddress = Option.empty[PayoutAddress]
 
@@ -219,7 +219,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sigs) =>
       val offer = DLCOffer.fromTLV(offerTLV)
 
-      val totalCollateral = offer.contractInfo.max
+      val totalCollateral = offer.contractInfo.totalCollateral
       val randomMyPayout =
         Math.abs(scala.util.Random.nextLong() % totalCollateral.toLong)
       val myPayout: CurrencyUnit = Satoshis(randomMyPayout)
@@ -274,7 +274,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sig) =>
       val offer = DLCOffer.fromTLV(offerTLV)
 
-      val totalCollateral = offer.contractInfo.max
+      val totalCollateral = offer.contractInfo.totalCollateral
 
       val randomMyPayout =
         Math.abs(scala.util.Random.nextLong() % totalCollateral.toLong)
@@ -330,7 +330,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId) =>
       val offer = DLCOffer.fromTLV(offerTLV)
 
-      val totalCollateral = offer.contractInfo.max
+      val totalCollateral = offer.contractInfo.totalCollateral
 
       val randomMyPayout =
         Math.abs(scala.util.Random.nextLong() % totalCollateral.toLong)

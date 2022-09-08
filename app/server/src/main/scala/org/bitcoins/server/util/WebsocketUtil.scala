@@ -2,11 +2,13 @@ package org.bitcoins.server.util
 
 import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.{
   ChainCallbacks,
   OnBlockHeaderConnected,
   OnSyncFlagChanged
 }
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
@@ -14,7 +16,6 @@ import org.bitcoins.commons.jsonmodels.ws.{
   WalletWsType,
   WsNotification
 }
-
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -35,30 +36,55 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object WebsocketUtil extends Logging {
 
+  private def sendHeadersToWs(
+      results: Vector[GetBlockHeaderResult],
+      queue: SourceQueueWithComplete[WsNotification[_]])(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    val notifications =
+      results.map(result =>
+        ChainNotification.BlockProcessedNotification(result))
+    for {
+      _ <- FutureUtil.sequentially(notifications) { case msg =>
+        val x: Future[Unit] = queue
+          .offer(msg)
+          .map(_ => ())
+        x
+      }
+    } yield ()
+  }
+
   def buildChainCallbacks(
       queue: SourceQueueWithComplete[WsNotification[_]],
-      chainApi: ChainApi)(implicit ec: ExecutionContext): ChainCallbacks = {
+      chainApi: ChainApi)(implicit
+      ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): ChainCallbacks = {
     val onBlockProcessed: OnBlockHeaderConnected = {
       case headersWithHeight: Vector[(Int, BlockHeader)] =>
         val hashes: Vector[DoubleSha256DigestBE] =
           headersWithHeight.map(_._2.hashBE)
         val resultsF =
           ChainUtil.getBlockHeaderResult(hashes, chainApi)
-        val f = for {
-          results <- resultsF
-          notifications =
-            results.map(result =>
-              ChainNotification.BlockProcessedNotification(result))
-          _ <- FutureUtil.sequentially(notifications) { case msg =>
-            val x: Future[Unit] = queue
-              .offer(msg)
-              .map(_ => ())
-            x
+
+        val isIBDF = chainApi.isIBD()
+        val emitBlockProccessedWhileIBDOnGoing =
+          chainAppConfig.ibdBlockProcessedEvents
+        isIBDF.flatMap { isIBD =>
+          if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
+            //only emit the last header so that we don't overwhelm the UI
+            for {
+              results <- resultsF
+              _ <- sendHeadersToWs(Vector(results.last), queue)
+            } yield ()
+          } else {
+            val f = for {
+              results <- resultsF
+              _ <- sendHeadersToWs(results, queue)
+            } yield {
+              ()
+            }
+            f
           }
-        } yield {
-          ()
         }
-        f
     }
 
     val onSyncFlagChanged: OnSyncFlagChanged = { syncing =>

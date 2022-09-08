@@ -20,6 +20,15 @@ class LndRpcClientTest extends LndFixture {
     } yield assert(info.blockHeight >= UInt32.zero)
   }
 
+  it must "get version from lnd" in { lnd =>
+    for {
+      version <- lnd.getVersion()
+    } yield {
+      assert(version.version.nonEmpty)
+      assert(version.goVersion.nonEmpty)
+    }
+  }
+
   it must "create an invoice using sats" in { lnd =>
     val memo = "this is my memo"
     val amount = Satoshis(1000)

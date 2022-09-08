@@ -78,6 +78,7 @@ object DLCServer extends Logging {
   def bind(
       dlcWalletApi: DLCWalletApi,
       bindAddress: InetSocketAddress,
+      targets: Vector[InetSocketAddress],
       torParams: Option[TorParams],
       dataHandlerFactory: DLCDataHandler.Factory =
         DLCDataHandler.defaultFactory)(implicit
@@ -94,7 +95,8 @@ object DLCServer extends Logging {
               params.controlAddress,
               params.authentication,
               params.privateKeyPath,
-              bindAddress.getPort
+              bindAddress.getPort,
+              targets.map(ip => s"${ip.getHostString}:${ip.getPort}")
             )
             .map(Some(_))
         case None =>

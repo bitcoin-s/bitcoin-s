@@ -9,6 +9,7 @@ object PicklerKeys {
   final val scriptPubKeyKey: String = "scriptPubKey"
   final val hdPathKey: String = "hdPath"
   final val txIdKey: String = "txid"
+  final val voutKey: String = "vout"
   final val stateKey: String = "state"
   final val spendingTxIdKey: String = "spendingTxId"
 
@@ -49,6 +50,7 @@ object PicklerKeys {
 
   final val torStartedKey: String = "torStarted"
   final val syncKey: String = "syncing"
+  final val isInitialBlockDownload: String = "isinitialblockdownload"
 
   //tlv points
   final val pointsKey = "points"

@@ -32,6 +32,10 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
     safeDatabase.runVec(actions)
   }
 
+  override protected def findByPrimaryKey(
+      id: Long): Query[TableAutoInc[T], T, Seq] =
+    table.filter(_.id === id)
+
   override def findByPrimaryKeys(
       ids: Vector[Long]): Query[TableAutoInc[T], T, Seq] = {
     table.filter { t =>
@@ -39,7 +43,7 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
     }
   }
 
-  override def findAll(ts: Vector[T]): Query[Table[_], T, Seq] = {
+  override def findAll(ts: Vector[T]): Query[Table[T], T, Seq] = {
     val ids = ts.filter(_.id.isDefined).map(_.id.get)
     findByPrimaryKeys(ids)
   }

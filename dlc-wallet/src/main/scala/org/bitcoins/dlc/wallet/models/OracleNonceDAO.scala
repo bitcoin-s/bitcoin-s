@@ -49,19 +49,22 @@ case class OracleNonceDAO()(implicit
 
   override protected def findByPrimaryKey(
       id: OracleNoncePrimaryKey): profile.api.Query[
-    profile.api.Table[_],
+    profile.api.Table[OracleNonceDb],
     OracleNonceDb,
     Seq] = {
     table.filter(t =>
       t.announcementId === id.announcementId && t.index === id.index)
   }
 
-  override def find(t: OracleNonceDb): Query[Table[_], OracleNonceDb, Seq] = {
+  override def find(
+      t: OracleNonceDb): Query[Table[OracleNonceDb], OracleNonceDb, Seq] = {
     findByPrimaryKey(OracleNoncePrimaryKey(t.announcementId, t.index))
   }
 
-  override protected def findAll(
-      ts: Vector[OracleNonceDb]): Query[Table[_], OracleNonceDb, Seq] =
+  override protected def findAll(ts: Vector[OracleNonceDb]): Query[
+    Table[OracleNonceDb],
+    OracleNonceDb,
+    Seq] =
     findByPrimaryKeys(
       ts.map(t => OracleNoncePrimaryKey(t.announcementId, t.index)))
 

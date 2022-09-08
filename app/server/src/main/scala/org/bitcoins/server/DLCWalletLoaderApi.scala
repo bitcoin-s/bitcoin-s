@@ -18,7 +18,6 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -114,35 +113,6 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
     nodeStateDAO.updateWalletName(walletNameOpt)
   }
 
-  protected def handleDuplicateSpendingInfoDb(
-      wallet: DLCNeutrinoHDWalletApi,
-      walletConfig: WalletAppConfig)(implicit
-      ec: ExecutionContext): Future[Unit] = {
-    val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
-    for {
-      rescanNeeded <- spendingInfoDAO.hasDuplicates()
-      _ <-
-        if (rescanNeeded) {
-          logger.warn("Found duplicate UTXOs. Rescanning...")
-          wallet
-            .rescanNeutrinoWallet(startOpt = None,
-                                  endOpt = None,
-                                  addressBatchSize =
-                                    wallet.discoveryBatchSize(),
-                                  useCreationTime = true,
-                                  force = true)
-            .recover { case scala.util.control.NonFatal(exn) =>
-              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
-                           exn)
-              RescanState.RescanDone
-            }
-        } else {
-          Future.successful(RescanState.RescanDone)
-        }
-      _ <- spendingInfoDAO.createOutPointsIndexIfNeeded()
-    } yield ()
-  }
-
   protected def restartRescanIfNeeded(wallet: DLCNeutrinoHDWalletApi)(implicit
       ec: ExecutionContext): Future[RescanState] = {
     for {
@@ -183,7 +153,10 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
             case RescanState.RescanTerminatedEarly =>
               rescanStateOpt = None
             case scala.util.control.NonFatal(exn) =>
-              logger.error(s"Failed to reset rescanState in wallet loader", exn)
+              logger.error(
+                s"Failed to reset rescanState in wallet loader. Resetting rescan state",
+                exn)
+              rescanStateOpt = None
           }
           rescanStateOpt = Some(started)
         } else {
@@ -328,7 +301,6 @@ case class DLCWalletNeutrinoBackendLoader(
         CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
-      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
       rescanState <- restartRescanIfNeeded(walletHolder)
       _ = setRescanState(rescanState)
     } yield {
@@ -379,7 +351,6 @@ case class DLCWalletBitcoindBackendLoader(
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
       //do something with possible rescan?
-      _ <- handleDuplicateSpendingInfoDb(walletHolder, walletConfig)
       rescanState <- restartRescanIfNeeded(walletHolder)
       _ = setRescanState(rescanState)
     } yield {

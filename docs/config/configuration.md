@@ -211,6 +211,9 @@ bitcoin-s {
 
         # The path to the private key of the onion service being created
         # privateKeyPath = /path/to/priv/key
+        
+        # Optonal Tor targets. If empty all hidden serices will be created at localhost. 
+        targets = []
     }
     
     # settings for the chain module
@@ -229,6 +232,14 @@ bitcoin-s {
         
         hikari-logging = true
         hikari-logging-interval = 10 minute
+        
+        websocket {
+          # don't emit block processed events over the websocket
+          # until IBD is complete. This is an optimization for the
+          # the UI so it doesn't have to handle hundreds of thousands of 
+          # events while IBD is going on.
+          block-processed-ibd = false
+      }
     }
 
     # settings for wallet module

@@ -22,7 +22,6 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   StringFactory
 }
-import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -282,8 +281,17 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
 
+  override def isIBD(): Future[Boolean] = {
+    getBlockChainInfo.map(_.initialblockdownload)
+  }
+
   override def setSyncing(value: Boolean): Future[ChainApi] = {
     syncing.set(value)
+    Future.successful(this)
+  }
+
+  override def setIBD(value: Boolean): Future[ChainApi] = {
+    logger.warn(s"Cannot set IBD of BitcoindRpcClient, this is a noop")
     Future.successful(this)
   }
 }
@@ -333,7 +341,6 @@ object BitcoindRpcClient {
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V16 => BitcoindV16RpcClient.withActorSystem(instance)
       case BitcoindVersion.V17 => BitcoindV17RpcClient.withActorSystem(instance)
       case BitcoindVersion.V18 => BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
@@ -364,13 +371,9 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   val newest: BitcoindVersion = V23
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V16, V17, V18, V19, V20, V21, V22, V23)
+    Vector(V17, V18, V19, V20, V21, V22, V23)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V16 extends BitcoindVersion {
-    override def toString: String = "v0.16"
-  }
 
   case object V17 extends BitcoindVersion {
     override def toString: String = "v0.17"
@@ -418,7 +421,6 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     //need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "16" => V16
       case "17" => V17
       case "18" => V18
       case "19" => V19

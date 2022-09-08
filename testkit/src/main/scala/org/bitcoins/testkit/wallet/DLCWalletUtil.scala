@@ -56,17 +56,34 @@ object DLCWalletUtil extends Logging {
   val total: Satoshis = (expectedDefaultAmt / Satoshis(2)).satoshis
   val half: Satoshis = (total / Satoshis(2)).satoshis
 
-  val sampleOutcomes: Vector[(EnumOutcome, Satoshis)] = Vector(
-    EnumOutcome(winStr) -> (expectedDefaultAmt / Satoshis(2)).satoshis,
-    EnumOutcome(loseStr) -> Satoshis.zero)
+  val sampleOutcomes: Vector[(EnumOutcome, Satoshis)] =
+    Vector(EnumOutcome(winStr) -> total, EnumOutcome(loseStr) -> Satoshis.zero)
+
+  val nonWinnerTakeAllOutcomes: Vector[(EnumOutcome, Satoshis)] = {
+    val offset = Satoshis(10000)
+    Vector(
+      EnumOutcome(winStr) -> (total.satoshis - offset).satoshis,
+      EnumOutcome(loseStr) -> offset
+    )
+  }
 
   lazy val sampleContractDescriptor: EnumContractDescriptor =
     EnumContractDescriptor(sampleOutcomes)
+
+  lazy val sampleContractDescriptorNonWinnerTakeAll: EnumContractDescriptor = {
+    EnumContractDescriptor(nonWinnerTakeAllOutcomes)
+  }
 
   lazy val sampleOracleInfo: EnumSingleOracleInfo =
     EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
                                       rValue,
                                       sampleOutcomes.map(_._1))
+
+  lazy val sampleOracleInfoNonWinnerTakeAll: EnumSingleOracleInfo = {
+    EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
+                                      rValue,
+                                      nonWinnerTakeAllOutcomes.map(_._1))
+  }
 
   lazy val invalidOracleInfo: EnumSingleOracleInfo = {
     val info = EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
@@ -81,11 +98,21 @@ object DLCWalletUtil extends Logging {
   lazy val sampleContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
+  lazy val sampleContractOraclePairNonWinnerTakeAll: ContractOraclePair.EnumPair = {
+    ContractOraclePair.EnumPair(sampleContractDescriptorNonWinnerTakeAll,
+                                sampleOracleInfoNonWinnerTakeAll)
+  }
+
   lazy val invalidContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, invalidOracleInfo)
 
-  lazy val sampleContractInfo: ContractInfo =
-    SingleContractInfo(half, sampleContractOraclePair)
+  lazy val sampleContractInfo: SingleContractInfo =
+    SingleContractInfo(totalCollateral = total,
+                       contractOraclePair = sampleContractOraclePair)
+
+  lazy val sampleContractInfoNonWinnerTakeAll: SingleContractInfo = {
+    SingleContractInfo(total, sampleContractOraclePairNonWinnerTakeAll)
+  }
 
   val amt2: Satoshis = Satoshis(100000)
 
@@ -185,6 +212,14 @@ object DLCWalletUtil extends Logging {
     feeRate = SatoshisPerVirtualByte(Satoshis(3)),
     timeouts = dummyTimeouts
   )
+
+  lazy val sampleDLCOfferNonWinnerTakeAll: DLCOffer =
+    sampleDLCOffer.copy(contractInfo = sampleContractInfoNonWinnerTakeAll)
+
+  def buildDLCOffer(totalCollateral: CurrencyUnit): DLCOffer = {
+    val ci = sampleContractInfo.copy(totalCollateral = totalCollateral.satoshis)
+    sampleDLCOffer.copy(contractInfo = ci)
+  }
 
   lazy val sampleDLCOffer2 = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,

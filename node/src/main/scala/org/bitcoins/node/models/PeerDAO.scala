@@ -38,8 +38,8 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
   }
 
   override protected def findAll(
-      ts: Vector[PeerDb]): Query[Table[_], PeerDb, Seq] = findByPrimaryKeys(
-    ts.map(_.address))
+      ts: Vector[PeerDb]): Query[Table[PeerDb], PeerDb, Seq] =
+    findByPrimaryKeys(ts.map(_.address))
 
   def deleteByKey(address: String): Future[Int] = {
     val bytes = ByteVector(address.getBytes)

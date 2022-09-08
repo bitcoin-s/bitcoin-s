@@ -1,5 +1,5 @@
 ![Bitcoin-S logo](website/static/img/bitcoin-s-dark-logo.png)
-[![Build Status](https://github.com/bitcoin-s/bitcoin-s/workflows/Release/badge.svg)](https://github.com/bitcoin-s/bitcoin-s/actions) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s?branch=master) [![Maven Central](https://img.shields.io/badge/Maven%20Central-1.9.2
+[![Build Status](https://github.com/bitcoin-s/bitcoin-s/workflows/Release/badge.svg)](https://github.com/bitcoin-s/bitcoin-s/actions) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s?branch=master) [![Maven Central](https://img.shields.io/badge/Maven%20Central-1.9.3
 -brightgreen.svg)](https://mvnrepository.com/artifact/org.bitcoin-s) [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/bitcoin-s-core)
 
 Feature-rich toolkit for making Bitcoin and Lightning applications on the JVM.
@@ -29,9 +29,12 @@ APP_PASSWORD=topsecret docker-compose up
 which will spin up a docker environment that starts syncing the backend and will allow you to visit
 the web frontend of the wallet at `localhost:3002`
 
-or you can run the binaries natively, here are the instructions.
+or you can build and run the electron app natively.
 
-[Web frontend](https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui#walletserverui)
+```
+git clone https://github.com/bitcoin-s/bitcoin-s-ts.git
+cd bitcoin-s-ts && ./build-wallet-electron.sh
+```
 
 ### Getting setup (developers)
 
@@ -41,75 +44,52 @@ This link is intended for setting up development of bitcoin-s. If you want to ju
 
 ### Adding bitcoin-s to your library
 
-The latest release of bitcoin-s is `1.9.2
-`, here is how you can use the dependencies in your projects:
+The latest release of bitcoin-s is `1.9.3`, here is how you can use the dependencies in your projects:
 
 ```
-libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-crypto" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-crypto" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-chain" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-chain" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-oracle" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-oracle" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-oracle-explorer-client" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-oracle-explorer-client" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-app-commons" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-app-commons" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-db-commons" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-db-commons" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-fee-provider" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-fee-provider" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-lnd-rpc" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-lnd-rpc" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-key-manager" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-key-manager" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-node" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-node" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-wallet" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-wallet" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-wallet" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-wallet" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit-core" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit-core" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-tor" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-tor" % "1.9.3"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-cli" % "1.9.2
-"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-cli" % "1.9.3"
 
 ```
 

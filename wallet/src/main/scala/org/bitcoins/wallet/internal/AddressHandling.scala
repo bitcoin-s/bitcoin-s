@@ -274,6 +274,20 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  def getNewChangeAddressAction(account: HDAccount): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional] = {
+    val accountDbOptA = findAccountAction(account)
+    accountDbOptA.flatMap {
+      case Some(accountDb) => getNewChangeAddressAction(accountDb)
+      case None =>
+        DBIOAction.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"))
+    }
+  }
+
   def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
     val accountDbOptF = findAccount(account)
     accountDbOptF.flatMap {

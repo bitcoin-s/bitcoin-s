@@ -6,8 +6,6 @@ Universal / packageName := {
   CommonSettings.buildPackageName(old)
 }
 
-// Ensure actor system is shut down
-// when server is quit
 Compile / fork := true
 
 libraryDependencies ++= Deps.server.value

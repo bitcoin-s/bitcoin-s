@@ -71,7 +71,7 @@ case class CompactFilterHeaderDAO()(implicit
     table.filter(_.hash.inSet(ids))
 
   override protected def findAll(ts: Vector[CompactFilterHeaderDb]): Query[
-    Table[_],
+    Table[CompactFilterHeaderDb],
     CompactFilterHeaderDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.hashBE))

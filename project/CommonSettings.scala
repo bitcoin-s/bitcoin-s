@@ -3,21 +3,22 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerRepository, dockerUpdateLatest, maintainer}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerExposedVolumes, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
-import com.typesafe.sbt.packager.docker.DockerChmodType
+import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
 import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
 import sbtassembly.AssemblyKeys._
+import sbtdynver.DynVer
 
 import scala.sys.process.Process
 import scala.util.Properties
 
 object CommonSettings {
 
-  val previousStableVersion: String = "1.9.2"
+  val previousStableVersion: String = "1.9.3"
 
   private def isCI = {
     Properties
@@ -191,11 +192,18 @@ object CommonSettings {
   lazy val dockerSettings: Seq[Setting[_]] = {
     Vector(
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
-      dockerBaseImage := "openjdk:17-slim",
+      dockerBaseImage := "eclipse-temurin:17",
       dockerRepository := Some("bitcoinscala"),
+      Docker / daemonUser := "bitcoin-s",
+      //needed for umbrel environment, container uids and host uids must matchup so we can
+      //properly write to volumes on the host machine
+      //see: https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
+      //Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
-      dockerUpdateLatest := isSnapshot.value
+      //add a default exposed volume of /bitcoin-s so we can always write data here
+      dockerExposedVolumes += "/bitcoin-s",
+      dockerUpdateLatest := DynVer.isSnapshot
     )
   }
 
@@ -294,6 +302,15 @@ object CommonSettings {
       "ch.qos.logback.core.net" -> "javax.mail",
       "ch.qos.logback.core.net" -> "javax.mail.internet",
       "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
+      "ch.qos.logback.classic" -> "jakarta.servlet.http",
+      "ch.qos.logback.classic.helpers" -> "jakarta.servlet",
+      "ch.qos.logback.classic.helpers" -> "jakarta.servlet.http",
+      "ch.qos.logback.classic.selector.servlet" -> "jakarta.servlet",
+      "ch.qos.logback.classic.servlet" -> "jakarta.servlet",
+      "ch.qos.logback.core.net" -> "jakarta.mail",
+      "ch.qos.logback.core.net" -> "jakarta.mail.internet",
+      "ch.qos.logback.core.status" -> "jakarta.servlet",
+      "ch.qos.logback.core.status" -> "jakarta.servlet.http"
     )
   }
 
@@ -332,13 +349,34 @@ object CommonSettings {
   }
 
   def buildPackageName(packageName: String): String = {
-    //bitcoin-s-server-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT -> bitcoin-s-server-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT
-    //bitcoin-s-cli-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip -> bitcoin-s-cli-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip
-
-    val osName = System.getProperty("os.name").toLowerCase().split('.').head.replaceAll("\\s", "")
+    val osName = getSimpleOSName
     val split = packageName.split("-")
-    val versionIdx = split.zipWithIndex.find(_._1.count(_ =='.') > 1).get._2
-    val insertedOSName = split.take(versionIdx) ++ Vector(osName) ++ split.drop(versionIdx)
-    insertedOSName.mkString("-")
+    val versionIdx = split.zipWithIndex.find(_._1.count(_ == '.') > 1).get._2
+    val insertedOSName = split.take(versionIdx) ++ Vector(osName)
+    if (isRelease) {
+      //bitcoin-s-server-linux-1.9.3-1-60bfd603-SNAPSHOT.zip -> bitcoin-s-server-linux-1.9.3.zip
+      insertedOSName.mkString("-") ++ "-" ++ split(versionIdx)
+    } else {
+      //bitcoin-s-server-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT -> bitcoin-s-server-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT
+      //bitcoin-s-cli-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip -> bitcoin-s-cli-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip
+      (insertedOSName ++ split.drop(versionIdx)).mkString("-")
+    }
+  }
+
+  /** @see https://github.com/sbt/sbt-dynver#detail */
+  def isRelease:Boolean = {
+     DynVer.isVersionStable && !DynVer.isSnapshot
+  }
+
+  private def getSimpleOSName: String = {
+    if(Properties.isWin) {
+      "windows"
+    } else if (Properties.isMac) {
+      "mac"
+    } else if (Properties.isLinux) {
+      "linux"
+    } else {
+      "unknown-os"
+    }
   }
 }

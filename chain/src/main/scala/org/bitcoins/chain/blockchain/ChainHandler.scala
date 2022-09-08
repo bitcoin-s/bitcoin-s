@@ -119,6 +119,10 @@ class ChainHandler(
       val filteredHeaders = headers.filterNot(h =>
         headersWeAlreadyHave.exists(_.hashBE == h.hashBE))
 
+      if (filteredHeaders.isEmpty) {
+        return Future.failed(DuplicateHeaders(s"Received duplicate headers."))
+      }
+
       val blockchainUpdates: Vector[BlockchainUpdate] = {
         Blockchain.connectHeadersToChains(headers = filteredHeaders,
                                           blockchains = blockchains)
@@ -136,7 +140,7 @@ class ChainHandler(
         //this means we are given zero headers that were valid.
         //Return a failure in this case to avoid issue 2365
         //https://github.com/bitcoin-s/bitcoin-s/issues/2365
-        Future.failed(new RuntimeException(
+        Future.failed(InvalidBlockHeader(
           s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
       } else {
         val chains = blockchainUpdates.map(_.blockchain)
@@ -1019,6 +1023,16 @@ class ChainHandler(
     stateDAO.isSyncing
   }
 
+  override def isIBD(): Future[Boolean] = {
+    stateDAO.getIsIBD().map {
+      case Some(ibd) =>
+        ibd.isIBDRunning
+      case None =>
+        //if we do not have the state descriptor in the database, default to true on IBD
+        true
+    }
+  }
+
   override def setSyncing(value: Boolean): Future[ChainApi] = {
     val isSyncingF = stateDAO.isSyncing
     for {
@@ -1029,6 +1043,27 @@ class ChainHandler(
           Future.unit
         } else {
           updateSyncingAndExecuteCallback(value)
+        }
+      }
+    } yield {
+      this
+    }
+  }
+
+  override def setIBD(value: Boolean): Future[ChainApi] = {
+    val isIBDF: Future[Option[IsInitialBlockDownload]] = stateDAO.getIsIBD()
+    for {
+      isIBDOpt <- isIBDF
+      _ <- {
+        if (isIBDOpt.isDefined && isIBDOpt.get.isIBDRunning == value) {
+          //do nothing as we are already at this state
+          Future.unit
+        } else if (isIBDOpt.isDefined && !isIBDOpt.get.isIBDRunning && value) {
+          logger.warn(
+            s"Can only do IBD once, cannot set flag to true when database flag is false.")
+          Future.unit
+        } else {
+          stateDAO.updateIsIbd(value)
         }
       }
     } yield {

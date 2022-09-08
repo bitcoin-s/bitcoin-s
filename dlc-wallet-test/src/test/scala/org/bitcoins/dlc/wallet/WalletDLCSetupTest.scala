@@ -76,7 +76,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           accept.fundingInputs
             .map(_.output.value)
             .sum >= accept.collateral)
-        assert(accept.collateral == offer.contractInfo.max - offer.collateral)
+        assert(
+          accept.collateral == offer.contractInfo.totalCollateral - offer.collateral)
         assert(accept.changeAddress.value.nonEmpty)
       }
 
@@ -141,6 +142,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   it must "correctly negotiate a dlc" in {
     fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleDLCOffer)
+  }
+
+  it must "correctly negotiate a non winner take all dlc" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      testNegotiate(fundedDLCWallets,
+                    DLCWalletUtil.sampleDLCOfferNonWinnerTakeAll)
   }
 
   it must "correctly negotiate a dlc with a multi-nonce oracle info" in {
@@ -310,7 +317,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
             accept.fundingInputs
               .map(_.output.value)
               .sum >= accept.collateral)
-          assert(accept.collateral == offer.contractInfo.max - offer.collateral)
+          assert(
+            accept.collateral == offer.contractInfo.totalCollateral - offer.collateral)
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -783,7 +791,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         accept <- walletB.acceptDLCOffer(offer, None, None, None)
         _ = {
           assert(accept.fundingInputs.nonEmpty)
-          assert(accept.collateral == offer.contractInfo.max - offer.collateral)
+          assert(
+            accept.collateral == offer.contractInfo.maxOffererPayout - offer.collateral)
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -980,6 +989,30 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       res <- recoverToSucceededIf[IllegalArgumentException](
         walletB.signDLC(accept))
     } yield res
+  }
+
+  it must "fail to accept an offer when you do not have enough money in the wallet" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+      val walletB = wallets._2.wallet
+
+      val offerData: DLCOffer =
+        DLCWalletUtil.buildDLCOffer(totalCollateral = Bitcoins(100))
+
+      for {
+        offer <- walletA.createDLCOffer(
+          contractInfo = offerData.contractInfo,
+          collateral = offerData.collateral,
+          feeRateOpt = Some(offerData.feeRate),
+          locktime = offerData.timeouts.contractMaturity.toUInt32,
+          refundLocktime = UInt32.max,
+          peerAddressOpt = None,
+          externalPayoutAddressOpt = None,
+          externalChangeAddressOpt = None
+        )
+        _ <- recoverToSucceededIf[RuntimeException](
+          walletB.acceptDLCOffer(offer, None, None, None))
+      } yield succeed
   }
 
   it must "fail to create an offer with an invalid announcement signature" in {

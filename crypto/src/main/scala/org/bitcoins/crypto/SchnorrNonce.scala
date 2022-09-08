@@ -12,6 +12,8 @@ case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
   def xCoord: CurveCoordinate = {
     CurveCoordinate(bytes)
   }
+
+  override def toString: String = s"SchnorrNonce(${bytes.toHex})"
 }
 
 object SchnorrNonce extends Factory[SchnorrNonce] {

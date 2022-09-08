@@ -205,7 +205,9 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
-        _ <- AsyncUtil.nonBlockingSleep(5.second)
+        _ <- AsyncUtil.awaitConditionF(
+          () => wallet.getBalance().map(_ == balanceAfterPayment1),
+          maxTries = 100)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
@@ -436,6 +438,40 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       }
   }
 
+  it must "set the rescan flag when a rescan starts and then unset it when the rescan has an exception occur" in {
+    fixture: WalletWithBitcoindRpc =>
+      val wallet = fixture.wallet
+
+      for {
+        isRescanning1 <- wallet.isRescanning()
+        _ = assert(!isRescanning1,
+                   "Cannot be rescanning before we started the test")
+        //start the rescan
+        state <- wallet.rescanNeutrinoWallet(startOpt = None,
+                                             endOpt = None,
+                                             addressBatchSize = 10,
+                                             useCreationTime = true,
+                                             force = false)
+        isRescanning2 <- wallet.isRescanning()
+        _ = assert(isRescanning2,
+                   s"Rescan flag must be set after starting a rescan")
+        _ = state match {
+          case started: RescanState.RescanStarted =>
+            started.fail(
+              new RuntimeException(
+                "Purposefully terminate rescan early for test"))
+          case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+            fail(s"Rescan must be started")
+        }
+        _ <- AsyncUtil.nonBlockingSleep(
+          1.second
+        ) //extra buffer to avoid race condition
+        isRescanning3 <- wallet.isRescanning()
+      } yield {
+        assert(!isRescanning3)
+      }
+  }
+
   it must "discover payments that occur in the same tx but are discovered during different batches during rescans" in {
     fixture: WalletWithBitcoindRpc =>
       val wallet = fixture.wallet
@@ -495,12 +531,36 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         balanceAfterClear <- wallet.getBalance()
         rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
-        _ <- AsyncUtil.nonBlockingSleep(5.second)
+        _ <- AsyncUtil.awaitConditionF(
+          () => wallet.getBalance().map(_ == balanceAfterPayment1),
+          maxTries = 100)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterClear == CurrencyUnits.zero)
         assert(balanceAfterRescan == balanceAfterPayment1)
       }
+  }
+
+  it must "generate addresses for a rescan that are both external and change addresses" in {
+    fixture =>
+      val wallet = fixture.wallet
+
+      val rescanF = for {
+        //need to clear all utxos / addresses to test this
+        //otherwise the wallet will see we already have addresses and not generate
+        //a fresh pool of addresses
+        _ <- wallet.clearAllUtxos()
+        _ <- wallet.clearAllAddresses()
+        rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
+        _ <- RescanState.awaitRescanDone(rescanState)
+        addresses <- wallet.listAddresses()
+      } yield {
+        assert(addresses.exists(_.isChange))
+        assert(addresses.exists(!_.isChange))
+      }
+
+      rescanF
   }
 
 }

@@ -10,7 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ChainStateDescriptorDb(
     tpe: ChainStateDescriptorType,
     descriptor: ChainStateDescriptor) {
-  require(descriptor.descriptorType == tpe)
+  require(descriptor.descriptorType == tpe,
+          s"descriptorTpe=${descriptor.descriptorType} tpe=$tpe")
 }
 
 case class ChainStateDescriptorDAO()(implicit
@@ -47,14 +48,14 @@ case class ChainStateDescriptorDAO()(implicit
   }
 
   override def findByPrimaryKey(id: ChainStateDescriptorType): Query[
-    Table[_],
+    Table[ChainStateDescriptorDb],
     ChainStateDescriptorDb,
     Seq] = {
     table.filter(_.tpe === id)
   }
 
   override def findAll(ts: Vector[ChainStateDescriptorDb]): Query[
-    Table[_],
+    Table[ChainStateDescriptorDb],
     ChainStateDescriptorDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
@@ -63,6 +64,15 @@ case class ChainStateDescriptorDAO()(implicit
     read(Syncing).map {
       case Some(db) =>
         val desc = SyncDescriptor.fromString(db.descriptor.toString)
+        Some(desc)
+      case None => None
+    }
+  }
+
+  def getIsIBD(): Future[Option[IsInitialBlockDownload]] = {
+    read(IsInitialBlockDownload.tpe).map {
+      case Some(db) =>
+        val desc = IsInitialBlockDownload.fromString(db.descriptor.toString)
         Some(desc)
       case None => None
     }
@@ -84,6 +94,32 @@ case class ChainStateDescriptorDAO()(implicit
           val oldDesc = SyncDescriptor.fromString(db.descriptor.toString)
           if (oldDesc.syncing != syncing) {
             val newDesc = SyncDescriptor(syncing)
+            val newDb = ChainStateDescriptorDb(tpe, newDesc)
+            query.update(newDb).map(_ => true)
+          } else {
+            DBIO.successful(false)
+          }
+      }
+    } yield res
+
+    safeDatabase.run(actions)
+  }
+
+  def updateIsIbd(isIBDRunning: Boolean): Future[Boolean] = {
+    val tpe: ChainStateDescriptorType = IsInitialBlockDownload.tpe
+    val query = table.filter(_.tpe === tpe)
+    val actions = for {
+      dbs <- query.result
+      res <- dbs.headOption match {
+        case None =>
+          val desc = IsInitialBlockDownload(isIBDRunning)
+          val db = ChainStateDescriptorDb(tpe, desc)
+          (table += db).map(_ => isIBDRunning)
+        case Some(db) =>
+          val oldDesc =
+            IsInitialBlockDownload.fromString(db.descriptor.toString)
+          if (oldDesc.isIBDRunning) {
+            val newDesc = IsInitialBlockDownload(isIBDRunning)
             val newDb = ChainStateDescriptorDb(tpe, newDesc)
             query.update(newDb).map(_ => true)
           } else {

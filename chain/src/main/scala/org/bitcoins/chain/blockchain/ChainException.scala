@@ -26,3 +26,7 @@ case class DuplicateFilters(message: String) extends ChainException(message)
 /** The given block range is invalid
   */
 case class InvalidBlockRange(message: String) extends ChainException(message)
+
+case class InvalidBlockHeader(message: String) extends ChainException(message)
+
+case class DuplicateHeaders(message: String) extends ChainException(message)

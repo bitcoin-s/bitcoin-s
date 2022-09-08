@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.server.BitcoindRpcBackendUtil
@@ -10,7 +11,6 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.control.NonFatal
 
 class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
@@ -63,11 +63,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ = BitcoindRpcBackendUtil.startZMQWalletCallbacks(
         wallet,
         bitcoind.instance.zmqConfig)
-
+      _ <- AsyncUtil.nonBlockingSleep(5.seconds)
       _ <- attemptZMQTx(addr, wallet)
-        .recoverWith { case NonFatal(_) =>
-          attemptZMQTx(addr, wallet)
-        }
 
       unconfirmed <- wallet.getUnconfirmedBalance()
       _ = assert(unconfirmed == amountToSend)
@@ -76,9 +73,6 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ = assert(confirmed == Satoshis.zero)
 
       _ <- attemptZMQBlock(6, wallet)
-        .recoverWith { case NonFatal(_) =>
-          attemptZMQBlock(1, wallet)
-        }
 
       balance <- wallet.getConfirmedBalance()
     } yield {

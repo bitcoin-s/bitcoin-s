@@ -66,7 +66,6 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * @return Option[T] - the record if found, else none
     */
   def read(id: PrimaryKeyType): Future[Option[T]] = {
-    logger.trace(s"Reading from DB with config: ${appConfig}")
     val query = findByPrimaryKey(id)
     val rows: Future[Seq[T]] = safeDatabase.run(query.result)
     rows.map(_.headOption)

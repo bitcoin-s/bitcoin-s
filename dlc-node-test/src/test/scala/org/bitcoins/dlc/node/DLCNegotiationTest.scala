@@ -37,7 +37,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val handlerP = Promise[ActorRef]()
 
       for {
-        _ <- DLCServer.bind(walletA, bindAddress, None)
+        _ <- DLCServer.bind(walletA, bindAddress, Vector(), None)
         _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
                                walletB,
                                Some(handlerP))
@@ -91,7 +91,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val handlerP = Promise[ActorRef]()
 
       for {
-        _ <- DLCServer.bind(walletA, bindAddress, None)
+        _ <- DLCServer.bind(walletA, bindAddress, Vector(), None)
         _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
                                walletB,
                                Some(handlerP))

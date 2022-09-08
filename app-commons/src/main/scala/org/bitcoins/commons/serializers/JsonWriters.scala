@@ -6,10 +6,13 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt._
+import org.bitcoins.core.script.ScriptType
+import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
@@ -35,6 +38,35 @@ object JsonWriters {
           throw new IllegalArgumentException(
             "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
       }
+  }
+
+  implicit object CurrencyUnitWrites extends Writes[CurrencyUnit] {
+    override def writes(o: CurrencyUnit): JsValue = JsNumber(o.satoshis.toLong)
+  }
+
+  implicit object SchnorrPublicKeyWrites extends Writes[SchnorrPublicKey] {
+    override def writes(o: SchnorrPublicKey): JsValue = JsString(o.hex)
+  }
+
+  implicit object SchnorrNonceWrites extends Writes[SchnorrNonce] {
+    override def writes(o: SchnorrNonce): JsValue = JsString(o.hex)
+  }
+
+  implicit object FieldElementWrites extends Writes[FieldElement] {
+    override def writes(o: FieldElement): JsValue = JsString(o.hex)
+  }
+
+  implicit object SchnorrDigitalSignatureWrites
+      extends Writes[SchnorrDigitalSignature] {
+    override def writes(o: SchnorrDigitalSignature): JsValue = JsString(o.hex)
+  }
+
+  implicit object ScriptWitnessWrites extends Writes[ScriptWitness] {
+    override def writes(o: ScriptWitness): JsValue = JsString(o.hex)
+  }
+
+  implicit object ScriptTypeWrites extends Writes[ScriptType] {
+    override def writes(o: ScriptType): JsValue = JsString(o.toString)
   }
 
   implicit object BitcoinsWrites extends Writes[Bitcoins] {
@@ -84,6 +116,15 @@ object JsonWriters {
             ("sequence", JsNumber(o.sequence.toLong))))
   }
 
+  implicit object TransactionOutPointWrites
+      extends OWrites[TransactionOutPoint] {
+
+    override def writes(o: TransactionOutPoint): JsObject = {
+      Json.obj(PicklerKeys.txIdKey -> o.txIdBE.hex,
+               PicklerKeys.voutKey -> o.vout.toLong)
+    }
+  }
+
   implicit object UInt32Writes extends Writes[UInt32] {
     override def writes(o: UInt32): JsValue = JsNumber(o.toLong)
   }
@@ -107,6 +148,11 @@ object JsonWriters {
       override def writes(o: Map[K, V]): JsValue =
         Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
+
+  implicit object SatoshisPerVByteWrites
+      extends Writes[SatoshisPerVirtualByte] {
+    override def writes(o: SatoshisPerVirtualByte): JsValue = JsNumber(o.toLong)
+  }
 
   implicit object SatoshisWrites extends Writes[Satoshis] {
     override def writes(o: Satoshis): JsValue = JsNumber(o.toBigDecimal)

@@ -60,7 +60,7 @@ case class AddressTagDAO()(implicit
   }
 
   override def findByPrimaryKey(id: (BitcoinAddress, AddressTagType)): Query[
-    Table[_],
+    Table[AddressTagDb],
     AddressTagDb,
     Seq] = {
     val (address, tagType) = id
@@ -70,7 +70,7 @@ case class AddressTagDAO()(implicit
   }
 
   override def findAll(
-      ts: Vector[AddressTagDb]): Query[Table[_], AddressTagDb, Seq] =
+      ts: Vector[AddressTagDb]): Query[Table[AddressTagDb], AddressTagDb, Seq] =
     findByPrimaryKeys(ts.map(t => (t.address, t.tagType)))
 
   def findByAddressAction(address: BitcoinAddress): DBIOAction[

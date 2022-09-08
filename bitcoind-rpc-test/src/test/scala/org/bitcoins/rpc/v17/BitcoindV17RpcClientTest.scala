@@ -13,6 +13,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionInput
+
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.NodePair
 import org.bitcoins.testkit.rpc.{
@@ -266,6 +267,5 @@ class BitcoindV17RpcClientTest extends BitcoindFixturesCachedPairV17 {
     } yield {
       assert(wallets.contains("suredbits"))
     }
-
   }
 }

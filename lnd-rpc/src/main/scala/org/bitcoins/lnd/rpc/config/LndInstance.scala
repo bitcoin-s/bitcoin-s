@@ -3,8 +3,6 @@ package org.bitcoins.lnd.rpc.config
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.config._
-import org.bitcoins.rpc.config.BitcoindAuthCredentials._
-import org.bitcoins.rpc.config._
 import scodec.bits._
 
 import java.io.File
@@ -25,14 +23,18 @@ case class LndInstanceLocal(
     listenBinding: URI,
     restUri: URI,
     rpcUri: URI,
-    bitcoindAuthCredentials: PasswordBased,
-    bitcoindRpcUri: URI,
-    zmqConfig: ZmqConfig,
     debugLevel: LogLevel)
     extends LndInstance {
 
   override val certificateOpt: Option[String] = None
   override val certFileOpt: Option[File] = Some(certFile)
+
+  def macaroonPath: Path = datadir
+    .resolve("data")
+    .resolve("chain")
+    .resolve("bitcoin")
+    .resolve(LndInstanceLocal.getNetworkDirName(network))
+    .resolve("admin.macaroon")
 
   private var macaroonOpt: Option[String] = None
 
@@ -40,15 +42,7 @@ case class LndInstanceLocal(
     macaroonOpt match {
       case Some(value) => value
       case None =>
-        val path =
-          datadir
-            .resolve("data")
-            .resolve("chain")
-            .resolve("bitcoin")
-            .resolve(LndInstanceLocal.getNetworkDirName(network))
-            .resolve("admin.macaroon")
-
-        val bytes = Files.readAllBytes(path)
+        val bytes = Files.readAllBytes(macaroonPath)
         val hex = ByteVector(bytes).toHex
 
         macaroonOpt = Some(hex)

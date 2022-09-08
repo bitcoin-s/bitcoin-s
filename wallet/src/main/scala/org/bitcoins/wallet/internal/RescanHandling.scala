@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
+import org.bitcoins.core.wallet.rescan.RescanState.RescanTerminatedEarly
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
@@ -67,7 +68,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           logger.info(
             s"Starting rescanning the wallet=${walletConfig.walletName} from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
           val startTime = System.currentTimeMillis()
-          val res = for {
+          val resF: Future[RescanState] = for {
             start <- (startOpt, useCreationTime) match {
               case (Some(_), true) =>
                 Future.failed(new IllegalArgumentException(
@@ -103,15 +104,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
             state
           }
 
-          res.recoverWith { case err: Throwable =>
-            logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
-                         err)
-            stateDescriptorDAO
-              .updateRescanning(false)
-              .flatMap(_ => Future.failed(err))
-          }
+          //register callbacks for resetting rescan flag in case of failure
+          val _ = handleRescanFailure(resF)
 
-          res.map {
+          resF.map {
             case r: RescanState.RescanStarted =>
               r.doneF.map(_ =>
                 logger.info(s"Finished rescanning the wallet. It took ${System
@@ -120,7 +116,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
             //nothing to log
           }
 
-          res
+          resF
         } else {
           logger.warn(
             s"Rescan already started for wallet=${walletConfig.walletName}, ignoring request to start another one")
@@ -130,6 +126,36 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield {
       rescanState
     }
+  }
+
+  /** Register callbacks to reset rescan flag in the database if there is a rescan failure */
+  private def handleRescanFailure(
+      rescanStateF: Future[RescanState]): Future[Unit] = {
+    //handle the case where there is a top level rescan failure when _starting_ the rescan
+    rescanStateF.recoverWith { case err: Throwable =>
+      logger.error(s"Failed to rescan wallet=${walletConfig.walletName}", err)
+      stateDescriptorDAO
+        .updateRescanning(false)
+        .flatMap(_ => Future.failed(err))
+    }
+
+    //handle the case where the rescan fails while the rescan is in progress
+    for {
+      rescanState <- rescanStateF
+      _ <- RescanState.awaitRescanDone(rescanState).recoverWith {
+        case RescanTerminatedEarly =>
+          logger.info(
+            s"Rescan terminated early, don't reset isRescanning flag as new wallet is likely being loaded")
+          Future.unit
+        case err: Throwable =>
+          logger.error(s"Failed to rescan wallet=${walletConfig.walletName}",
+                       err)
+          stateDescriptorDAO
+            .updateRescanning(false)
+            .flatMap(_ => Future.failed(err))
+
+      }
+    } yield ()
   }
 
   lazy val walletCreationBlockHeight: Future[BlockHeight] =
@@ -304,13 +330,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       account: HDAccount): Future[Unit] = {
-    val awaitPreviousRescanF = prevState match {
-      case r @ (_: RescanState.RescanStarted | RescanState.RescanDone) =>
-        RescanState.awaitRescanComplete(r)
-      case RescanState.RescanAlreadyStarted =>
-        //don't continue rescanning if previous rescan was not started
-        Future.unit
-    }
+    val awaitPreviousRescanF =
+      RescanState.awaitRescanComplete(rescanState = prevState)
     for {
       _ <- awaitPreviousRescanF
       externalGap <- calcAddressGap(HDChainType.External, account)
@@ -325,7 +346,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         } else {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
-              s"match within our address gap limit of ${walletConfig.addressGapLimit}")
+              s"match within our address gap limit of ${walletConfig.addressGapLimit} externalGap=$externalGap changeGap=$changeGap")
           doNeutrinoRescan(account = account,
                            startOpt = startOpt,
                            endOpt = endOpt,
@@ -418,7 +439,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
-          .map(_ => getNewAddressAction(account))
+          .map(_ => getNewChangeAddressAction(account))
       }
     }.map(_.toVector)
 
@@ -498,14 +519,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
       filtersResponse: Vector[ChainQueryApi.FilterResponse],
       parallelismLevel: Int)(implicit
       ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
-    val startHeight = filtersResponse.head.blockHeight
-    val endHeight = filtersResponse.last.blockHeight
+    val startHeightOpt = filtersResponse.headOption.map(_.blockHeight)
+    val endHeightOpt = filtersResponse.lastOption.map(_.blockHeight)
     for {
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
       _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
       logger.info(
-        s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
+        s"Found ${filtered.length} matches from start=$startHeightOpt to end=$endHeightOpt")
       filtered
     }
   }

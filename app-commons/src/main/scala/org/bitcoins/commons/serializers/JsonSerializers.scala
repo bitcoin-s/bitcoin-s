@@ -224,6 +224,21 @@ object JsonSerializers {
           SatoshisPerVirtualByte(Satoshis(num.toBigInt)))(json)
     }
 
+  implicit val TransactionOutputReads: Reads[TransactionOutput] =
+    Json.reads[TransactionOutput]
+
+  implicit val TransactionOutputWrites: OWrites[TransactionOutput] =
+    Json.writes[TransactionOutput]
+
+  implicit val transactionOutPointWrites: OWrites[TransactionOutPoint] =
+    TransactionOutPointWrites
+
+  implicit val OutputReferenceReads: Reads[OutputReference] =
+    Json.reads[OutputReference]
+
+  implicit val OutputReferenceWrites: OWrites[OutputReference] =
+    Json.writes[OutputReference]
+
   implicit val peerNetworkInfoPreV21Reads: Reads[PeerNetworkInfoPreV21] =
     Json.reads[PeerNetworkInfoPreV21]
 

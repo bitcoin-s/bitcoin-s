@@ -91,19 +91,11 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
   it should "be able to list wallets" in { nodePair: FixtureParam =>
     val client = nodePair.node1
-    val localInstance = client.getDaemon match {
-      case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitcoind instance in test cases")
-      case local: BitcoindInstanceLocal =>
-        local
-    }
     for {
       wallets <- client.listWallets
     } yield {
 
-      val expectedFileName =
-        if (localInstance.getVersion == BitcoindVersion.V16) "wallet.dat"
-        else ""
+      val expectedFileName = ""
 
       assert(wallets == Vector(expectedFileName))
     }

@@ -68,43 +68,51 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       logger.info(
         s"Processing block=${block.blockHeader.hash.flip.hex} heightOpt=$heightOpt")
     }
-    val resF = for {
-      isEmpty <- isEmptyF
-      newWallet <- {
-        if (!isEmpty) {
-          processBlockCachedUtxos(block)
-        } else {
-          //do nothing if the wallet is empty as an optimization
-          //this is for users first downloading bitcoin-s
-          //and syncing their node
-          Future.successful(this)
+
+    heightF.flatMap {
+      case Some(height) =>
+        val resF = for {
+          isEmpty <- isEmptyF
+          newWallet <- {
+            if (!isEmpty) {
+              processBlockCachedUtxos(block)
+            } else {
+              //do nothing if the wallet is empty as an optimization
+              //this is for users first downloading bitcoin-s
+              //and syncing their node
+              Future.successful(this)
+            }
+          }
+        } yield newWallet
+
+        val f = for {
+          res <- resF
+          hash = block.blockHeader.hashBE
+          _ <- stateDescriptorDAO.updateSyncHeight(hash, height)
+          _ <- walletConfig.callBacks.executeOnBlockProcessed(block)
+        } yield {
+          res
         }
-      }
-    } yield newWallet
 
-    val f = for {
-      res <- resF
-      hash = block.blockHeader.hashBE
-      height <- heightF
-      _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
-      _ <- walletConfig.callBacks.executeOnBlockProcessed(block)
-    } yield {
-      res
+        f.onComplete(failure =>
+          signalBlockProcessingCompletion(block.blockHeader.hash, failure))
+
+        f.foreach { _ =>
+          val stop = TimeUtil.currentEpochMs
+          logger.info(
+            s"Finished processing of block=${block.blockHeader.hash.flip.hex}. It took ${stop - start}ms")
+        }
+        f.failed.foreach(e =>
+          logger.error(
+            s"Error processing of block=${block.blockHeader.hash.flip.hex}.",
+            e))
+        f
+      case None =>
+        logger.warn(
+          s"Could not find blockheight for blockHash=${block.blockHeader.hashBE.hex}, skipping processing in wallet")
+        Future.successful(this)
     }
 
-    f.onComplete(failure =>
-      signalBlockProcessingCompletion(block.blockHeader.hash, failure))
-
-    f.foreach { _ =>
-      val stop = TimeUtil.currentEpochMs
-      logger.info(
-        s"Finished processing of block=${block.blockHeader.hash.flip.hex}. It took ${stop - start}ms")
-    }
-    f.failed.foreach(e =>
-      logger.error(
-        s"Error processing of block=${block.blockHeader.hash.flip.hex}.",
-        e))
-    f
   }
 
   /** Helper method to process a block. This fetches all of our relevent spending info dbs
