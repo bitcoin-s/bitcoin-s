@@ -6,6 +6,8 @@ Universal / packageName := {
   CommonSettings.buildPackageName(old)
 }
 
+Compile / fork := true
+
 libraryDependencies ++= Deps.server.value
 
 mainClass := Some("org.bitcoins.server.BitcoinSServerMain")
