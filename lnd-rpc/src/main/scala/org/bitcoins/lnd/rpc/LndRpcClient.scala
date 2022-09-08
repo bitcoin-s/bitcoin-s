@@ -131,8 +131,12 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       case None         => None
     }
 
+    val host =
+      if (instance.rpcUri.getHost == "0.0.0.0") "localhost"
+      else instance.rpcUri.getHost
+
     val client = GrpcClientSettings
-      .connectToServiceAt(instance.rpcUri.getHost, instance.rpcUri.getPort)
+      .connectToServiceAt(host, instance.rpcUri.getPort)
       .withCallCredentials(callCredentials)
 
     trustManagerOpt match {
