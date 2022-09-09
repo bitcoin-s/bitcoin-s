@@ -7,18 +7,13 @@ import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
-import org.bitcoins.core.protocol.dlc.models.{
-  EnumSingleOracleInfo,
-  NumericSingleOracleInfo,
-  SingleContractInfo
-}
-import org.bitcoins.core.protocol.tlv.{
-  EnumEventDescriptorV0TLV,
-  NumericEventDescriptorTLV
-}
+import org.bitcoins.core.protocol.dlc.models.{EnumSingleOracleInfo, NumericSingleOracleInfo, SingleContractInfo}
+import org.bitcoins.core.protocol.tlv.{EnumEventDescriptorV0TLV, NumericEventDescriptorTLV}
 import org.bitcoins.server.routes._
 import ujson._
 import upickle.default._
+
+import scala.concurrent.Future
 
 case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
@@ -186,5 +181,13 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("checkconnection", arr) =>
+      withValidServerCommand(DLCCheckConnection.fromJsArr(arr)) { addr =>
+        complete {
+          Future(dlcNode.checkPeerConnection(addr.address)).map { _ =>
+            Server.httpSuccess("initiated")
+          }
+        }
+      }
   }
 }
