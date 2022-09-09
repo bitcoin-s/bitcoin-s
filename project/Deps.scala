@@ -26,7 +26,7 @@ object Deps {
     val playv = "2.9.3" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.20"
     val jUnixSocketV = "2.5.1"
-    val scodecV = "1.1.30"
+    val scodecV = "1.1.34"
     val junitV = "0.13.3"
     val nativeLoaderV = "2.4.0"
     val typesafeConfigV = "1.4.2"
@@ -36,7 +36,8 @@ object Deps {
 
     val asyncNewScalaV = "1.0.1"
 
-    val flywayV = "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
+    val flywayV =
+      "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
     val postgresV = "42.5.0" //https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
@@ -124,7 +125,8 @@ object Deps {
     val akkaTestkit =
       "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
 
-    val gson = "com.google.code.gson" % "gson" % V.gsonV //https://github.com/google/gson
+    val gson =
+      "com.google.code.gson" % "gson" % V.gsonV //https://github.com/google/gson
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
@@ -164,10 +166,12 @@ object Deps {
     lazy val javaFxDeps =
       List(javaFxBase, javaFxControls, javaFxGraphics, javaFxMedia)
 
-    val javaxServlet = "javax.servlet" % "javax.servlet-api" % V.javaxServletV // https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api
-    val javaxJms = "javax.jms" % "javax.jms-api" % V.javaxJmsV // https://mvnrepository.com/artifact/javax.jms/javax.jms-api
-    val javaxMail = "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
-
+    val javaxServlet =
+      "javax.servlet" % "javax.servlet-api" % V.javaxServletV // https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api
+    val javaxJms =
+      "javax.jms" % "javax.jms-api" % V.javaxJmsV // https://mvnrepository.com/artifact/javax.jms/javax.jms-api
+    val javaxMail =
+      "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
@@ -185,9 +189,12 @@ object Deps {
     val logback =
       "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
 
-    val log4j = "log4j" % "log4j" % V.log4jV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L486
-    val logkit = "logkit" % "logkit" % V.logkitV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
-    val avalonLogging = "avalon-framework" % "avalon-framework" % V.avalonLoggingV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
+    val log4j =
+      "log4j" % "log4j" % V.log4jV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L486
+    val logkit =
+      "logkit" % "logkit" % V.logkitV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
+    val avalonLogging =
+      "avalon-framework" % "avalon-framework" % V.avalonLoggingV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
 
     val grizzledSlf4j =
       "org.clapper" %% "grizzled-slf4j" % V.grizzledSlf4j withSources () withJavadoc ()
@@ -211,9 +218,12 @@ object Deps {
     val newMicroPickle =
       Def.setting("com.lihaoyi" %%% "upickle" % V.newMicroPickleV)
 
-    val osgiFramework = "org.osgi" % "org.osgi.framework" % V.osgiFrameworkV // https://mvnrepository.com/artifact/org.osgi/org.osgi.framework,
-    val osgiJdbc = "org.osgi" % "org.osgi.service.jdbc" % V.osgiJdbcV // https://mvnrepository.com/artifact/org.osgi/org.osgi.service.jdbc
-    val osgiCore = "org.osgi" % "osgi.core" % V.osgiCoreV // https://mvnrepository.com/artifact/org.osgi/osgi.core,
+    val osgiFramework =
+      "org.osgi" % "org.osgi.framework" % V.osgiFrameworkV // https://mvnrepository.com/artifact/org.osgi/org.osgi.framework,
+    val osgiJdbc =
+      "org.osgi" % "org.osgi.service.jdbc" % V.osgiJdbcV // https://mvnrepository.com/artifact/org.osgi/org.osgi.service.jdbc
+    val osgiCore =
+      "org.osgi" % "osgi.core" % V.osgiCoreV // https://mvnrepository.com/artifact/org.osgi/osgi.core,
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -248,8 +258,11 @@ object Deps {
     val dropwizardMetricsCore =
       "io.dropwizard.metrics" % "metrics-core" % V.dropwizardMetricsV withSources () withJavadoc ()
 
-    val dropwizardMetricsHealthChecks = "io.dropwizard.metrics" % "metrics-healthchecks" % V.dropwizardMetricsV
-    val dropwizardMetricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % V.dropwizardMetricsV // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm
+    val dropwizardMetricsHealthChecks =
+      "io.dropwizard.metrics" % "metrics-healthchecks" % V.dropwizardMetricsV
+
+    val dropwizardMetricsJvm =
+      "io.dropwizard.metrics" % "metrics-jvm" % V.dropwizardMetricsV // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm
 
     val zxingCore =
       "com.google.zxing" % "core" % V.zxingV withSources () withJavadoc ()
@@ -486,28 +499,23 @@ object Deps {
     //transitive deps needed for jlink
     Compile.codehaus,
     Compile.gson,
-
     Compile.dropwizardMetricsHealthChecks,
     Compile.dropwizardMetricsJvm,
-
     //postgres transitive deps
     Compile.jna,
     Compile.waffleJna,
     Compile.osgiCore,
     Compile.osgiJdbc,
     Compile.osgiFramework,
-
     //logging transitive deps
     Compile.log4j,
     Compile.avalonLogging,
     Compile.logkit,
-
     //transitive javax deps
     Compile.javaxServlet,
     Compile.javaxMail,
     Compile.javaxJms
   )
-
 
   private val appServerTransitiveDeps = serverTransitiveDeps
   private val oracleServerTransitiveDeps = serverTransitiveDeps
@@ -518,7 +526,7 @@ object Deps {
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
-      Compile.akkaSlf4j,
+      Compile.akkaSlf4j
     ) ++ oracleServerTransitiveDeps
   }
 
