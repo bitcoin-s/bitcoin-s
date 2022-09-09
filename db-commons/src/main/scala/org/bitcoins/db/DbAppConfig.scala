@@ -31,10 +31,21 @@ abstract class DbAppConfig extends AppConfig {
     }
   }
 
+  lazy val dbPasswordOpt: Option[String] = config.getStringOrNone("db.password")
+
   lazy val jdbcUrl: String = {
     driver match {
       case SQLite =>
-        s""""jdbc:sqlite:"${AppConfig.safePathToString(dbPath)}/$dbName"""
+        val suffix = dbPasswordOpt match {
+          case Some(password) =>
+            if (password.isEmpty) ""
+            else s"?cipher=sqlcipher&legacy=1&kdf_iter=4000&key=$password"
+          case None => ""
+        }
+        val base =
+          s""""jdbc:sqlite:"${AppConfig.safePathToString(dbPath)}/$dbName"""
+
+        base + suffix
       case PostgreSQL =>
         s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }

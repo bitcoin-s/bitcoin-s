@@ -42,7 +42,7 @@ object Deps {
     val akkaActorV = akkaStreamv
 
     val slickV = "3.4.0"
-    val sqliteV = "3.39.3.0" //https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.39.3.0" //https://github.com/Willena/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
@@ -209,7 +209,7 @@ object Deps {
     val slick =
       "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
-    val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
+    val sqlite = "io.github.willena" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
 
