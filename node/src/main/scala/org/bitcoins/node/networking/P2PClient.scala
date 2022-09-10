@@ -392,7 +392,7 @@ case class P2PClientActor(
         unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
-        logger.debug(
+        logger.info(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv =
           Await.result(currentPeerMsgHandlerRecv.disconnect(), timeout)
