@@ -2,7 +2,9 @@ package org.bitcoins.rpc.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
+import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.Socks5ProxyParams
@@ -11,7 +13,8 @@ import org.bitcoins.tor.config.TorAppConfig
 import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file._
-import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Future, Promise}
 
 /** Configuration for a BitcoindRpcClient
   * @param directory The data directory of the Bitcoin-S instance
@@ -173,7 +176,7 @@ case class BitcoindRpcAppConfig(
         //first get a generic rpc client so we can retrieve
         //the proper version of the remote running bitcoind
         val noVersionRpc = new BitcoindRpcClient(bitcoindInstance)
-        val versionF = noVersionRpc.version
+        val versionF = getBitcoindVersion(noVersionRpc)
 
         //if we don't retrieve the proper version, we can
         //end up with exceptions on an rpc client that actually supports
@@ -183,6 +186,34 @@ case class BitcoindRpcAppConfig(
         versionF.map { version =>
           BitcoindRpcClient.fromVersion(version, instance = bitcoindInstance)
         }
+    }
+  }
+
+  private def getBitcoindVersion(
+      client: BitcoindRpcClient): Future[BitcoindVersion] = {
+    val promise = Promise[BitcoindVersion]()
+    val interval = 1.second
+    val maxTries = 300 //5 minutes
+    for {
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        conditionF = { () =>
+          val infoF = client.version
+          val res = infoF.map(promise.success).map(_ => true)
+          res.recover { case _: InWarmUp =>
+            logger.info(s"Bitcoind still in warmup, trying again in $interval")
+            false
+
+          }
+        },
+        // retry for approximately 5 minutes
+        mode = AsyncUtil.Linear,
+        interval = interval,
+        maxTries = maxTries
+      )
+      version <- promise.future
+    } yield {
+      logger.info(s"Retrieved bitcoind version=$version")
+      version
     }
   }
 }
