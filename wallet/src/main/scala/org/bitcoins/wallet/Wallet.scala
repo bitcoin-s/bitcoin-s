@@ -130,13 +130,9 @@ abstract class Wallet
 
   override def start(): Future[Wallet] = {
     logger.info("Starting Wallet")
-    for {
-      _ <- walletConfig.start()
-      _ = walletConfig.startRebroadcastTxsScheduler(this)
-      _ = startFeeRateCallbackScheduler()
-    } yield {
-      this
-    }
+    walletConfig.startRebroadcastTxsScheduler(this)
+    startFeeRateCallbackScheduler()
+    Future.successful(this)
   }
 
   override def stop(): Future[Wallet] = {
