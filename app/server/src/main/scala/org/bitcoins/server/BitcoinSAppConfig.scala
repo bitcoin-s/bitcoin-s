@@ -76,14 +76,14 @@ case class BitcoinSAppConfig(
     val start = TimeUtil.currentEpochMs
     //configurations that don't depend on tor startup
     //start these in parallel as an optimization
-    val nonTorConfigs = Vector(kmConf, chainConf, walletConf)
+    val nonTorConfigs = Vector(kmConf, chainConf, walletConf, dlcConf)
 
     val torConfig = torConf.start()
     val torDependentConfigs =
-      Vector(nodeConf, bitcoindRpcConf, dlcConf, dlcNodeConf)
+      Vector(nodeConf, bitcoindRpcConf, dlcNodeConf)
 
     val dbConfigsDependentOnTor: Vector[DbManagement] =
-      Vector(nodeConf, dlcConf)
+      Vector(nodeConf)
 
     //run migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
     //since we don't require tor dependent configs
