@@ -37,7 +37,11 @@ object BitcoindAuthCredentials extends Logging {
   case class PasswordBased(
       username: String,
       password: String
-  ) extends BitcoindAuthCredentials
+  ) extends BitcoindAuthCredentials {
+    override def toString:String = {
+      s"PasswordBased($username,masked_password)"
+    }
+  }
 
   /** Authenticate by providing a cookie file
     * found in the `bitcoind` data directory.
