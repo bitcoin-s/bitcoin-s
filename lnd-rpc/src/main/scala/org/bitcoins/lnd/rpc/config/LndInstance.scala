@@ -57,7 +57,15 @@ case class LndInstanceLocal(
 object LndInstanceLocal
     extends InstanceFactoryLocal[LndInstanceLocal, ActorSystem] {
 
-  override val DEFAULT_DATADIR: Path = Paths.get(Properties.userHome, ".lnd")
+  override val DEFAULT_DATADIR: Path = {
+    if (Properties.isMac) {
+      Paths.get(Properties.userHome, "Library", "Application Support", "lnd")
+    } else if (Properties.isWin) {
+      Paths.get("C:", "Users", Properties.userName, "Appdata", "Local", "lnd")
+    } else {
+      Paths.get(Properties.userHome, ".lnd")
+    }
+  }
 
   override val DEFAULT_CONF_FILE: Path = DEFAULT_DATADIR.resolve("lnd.conf")
 
