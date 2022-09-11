@@ -86,14 +86,21 @@ case class BitcoinSAppConfig(
       Vector(chainConf, walletConf, nodeConf, dlcConf)
 
     //run all migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
-    val _ = dbConfigs.map(_.migrate())
+    val migrateF =
+      Future.traverse(dbConfigs)(dbConfig => Future(dbConfig.migrate()))
 
     val startedTorDependentConfigsF = for {
       _ <- torConfig
+      _ <- migrateF
       _ <- Future.sequence(torDependentConfigs.map(_.start()))
     } yield ()
 
-    val startedNonTorConfigs = Future.sequence(nonTorConfigs.map(_.start()))
+    val startedNonTorConfigs = {
+      for {
+        _ <- migrateF
+        _ <- Future.sequence(nonTorConfigs.map(_.start()))
+      } yield ()
+    }
 
     for {
       _ <- startedNonTorConfigs

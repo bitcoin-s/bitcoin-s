@@ -13,6 +13,7 @@ import org.bitcoins.dlc.node.peer.Peer
 
 import java.net.InetSocketAddress
 import scala.concurrent._
+import scala.util.{Failure, Success}
 
 case class DLCNode(wallet: DLCWalletApi)(implicit
     system: ActorSystem,
@@ -111,15 +112,35 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     } yield res
   }
 
+  override def checkPeerConnection(
+      peerAddress: InetSocketAddress): Future[Unit] = {
+    for {
+      handler <- connectToPeer(peerAddress)
+    } yield {
+      handler ! DLCConnectionHandler.CloseConnection
+    }
+  }
+
   private def connectToPeer(
       peerAddress: InetSocketAddress): Future[ActorRef] = {
+    config.callBacks.executeOnPeerConnectionInitiated(peerAddress)
     val peer =
       Peer(socket = peerAddress, socks5ProxyParams = config.socks5ProxyParams)
 
     val handlerP = Promise[ActorRef]()
-    for {
+
+    val f = for {
       _ <- DLCClient.connect(peer, wallet, Some(handlerP))
       handler <- handlerP.future
     } yield handler
+
+    f.onComplete {
+      case Success(_) =>
+        config.callBacks.executeOnPeerConnectionEstablished(peerAddress)
+      case Failure(_) =>
+        config.callBacks.executeOnPeerConnectionFailed(peerAddress)
+    }
+
+    f
   }
 }
