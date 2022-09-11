@@ -2,9 +2,9 @@ package org.bitcoins.rpc.config
 
 import java.io.File
 import java.nio.file.{Files, Paths}
-
 import org.bitcoins.core.config._
 import grizzled.slf4j.Logging
+import org.bitcoins.crypto.MaskedToString
 
 /** This trait contains the information we need to authenticate
   * to a `bitcoind` node.
@@ -37,9 +37,11 @@ object BitcoindAuthCredentials extends Logging {
   case class PasswordBased(
       username: String,
       password: String
-  ) extends BitcoindAuthCredentials {
-    override def toString:String = {
-      s"PasswordBased($username,masked_password)"
+  ) extends BitcoindAuthCredentials
+      with MaskedToString {
+
+    override def toStringSensitive: String = {
+      s"PasswordBased($username,$password)"
     }
   }
 
