@@ -86,15 +86,22 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## App server
 
+7b7847885e Attempt to reduce redundant work on startup to speed up start up time (#4764)
+7460dcd255 Parallelize running of individual migrations (#4761)
 6b432ea509 Emit 2000th header received during IBD (#4719)
 a36e55c892 Fix patterns I missed when updating logback (#4713)
 
 ## bitcoind rpc
 
+0c05edd633 mask bitcoind password (#4763)
+61d4882efd Implement retry of fetching bitcoind version when calling `clientF` (#4760)
+
 ## bundle
 
 ## Build
 
+7d9d0c577f Run scalafmt (#4757)
+7fe9bdbe35 re-add Compile / fork in server.sbt so we can run appServer from sbt console (#4730)
 06844bcd13 Make docker publish use java 18 to avoid slick 3.4.0 issues (#4718)
 d2fb3fc150 Revert "Make electron build use bitcoin-s-ts latest tag (#4701)" (#4711)
 38725f0155 Make electron build use bitcoin-s-ts latest tag (#4701)
@@ -106,13 +113,19 @@ d2fb3fc150 Revert "Make electron build use bitcoin-s-ts latest tag (#4701)" (#47
 
 ## Core
 
+2f18f622ab Give BitcoinNetworks.knownNetworks proper type (#4766)
+
 ## Crypto
 
 ## db commons
 
 ## DLC node
 
+16893f999e DLC connection checks and notifications (#4720)
+
 ## DLC wallet
+
+26595ab3ac Fix bug where no exception was thrown if the acceptor did not have enough money (#4728)
 
 ## gui
 
@@ -122,16 +135,21 @@ d2fb3fc150 Revert "Make electron build use bitcoin-s-ts latest tag (#4701)" (#47
 
 ## Lnd rpc
 
+20ed1dcab0 Fix lnd default datadir (#4767)
+8bbfbc89d7 Add handling so test lnd clients can be reached by docker (#4729)
 1758197d58 Remove bitcoind as a dep for lnd (#4703)
 
 ## Lnurl
 
 ## node
 
+fae1a53579 Bump `bitcoin-s.node.query-wait-time=120 seconds` (#4759)
+
 ## Oracle Explorer Client
 
 ## wallet
 
+81cddc12df Remove checkRootAccount/downloadMissingUtxos (#4762)
 2bf1c9d1a5 Try to debug what is happening on CI with zmq test (#4708)
 2448fe13e8 Revert the unique outpoint index DB migration (#4652)
 
@@ -149,6 +167,8 @@ d2fb3fc150 Revert "Make electron build use bitcoin-s-ts latest tag (#4701)" (#47
 
 ## Dependencies
 
+2d83210ba3 Update flyway-core to 9.2.3 (#4744)
+12326c7f33 Update sqlite-jdbc to 3.39.3.0 (#4755)
 6bfb669343 Update akka deps (#4724)
 fd7bef3aa7 Try out slick 3.4.0-RC3 (#4620)
 3ee4fe1138 Upgrade dependencies (#4705)
