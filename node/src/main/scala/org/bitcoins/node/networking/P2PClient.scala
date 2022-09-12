@@ -392,7 +392,7 @@ case class P2PClientActor(
         unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
-        logger.debug(
+        logger.info(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv =
           Await.result(currentPeerMsgHandlerRecv.disconnect(), timeout)
@@ -505,7 +505,7 @@ case class P2PClientActor(
       case P2PClient.CloseCommand =>
         peerConnectionOpt match {
           case Some(peerConnection) =>
-            logger.debug(s"Disconnecting from peer $peer")
+            logger.info(s"Disconnecting from peer $peer")
             context become ignoreNetworkMessages(Some(peerConnection),
                                                  ByteVector.empty)
             currentPeerMsgHandlerRecv =
@@ -516,7 +516,7 @@ case class P2PClientActor(
               s"Attempting to disconnect peer that was not connected!")
         }
       case P2PClient.CloseAnyStateCommand =>
-        logger.debug(s"Received close any state for $peer")
+        logger.info(s"Received close any state for $peer")
         peerConnectionOpt match {
           case Some(peerConnection) =>
             context become ignoreNetworkMessages(Some(peerConnection),

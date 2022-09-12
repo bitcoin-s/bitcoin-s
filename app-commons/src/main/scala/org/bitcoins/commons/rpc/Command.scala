@@ -1683,6 +1683,31 @@ object PayoutCurveToCSV extends ServerJsonModels {
   }
 }
 
+case class DLCCheckConnection(address: InetSocketAddress)
+    extends CommandRpc
+    with AppServerCliCommand
+    with ServerJsonModels
+
+object DLCCheckConnection {
+
+  def fromJsArr(arr: ujson.Arr): Try[DLCCheckConnection] = {
+    arr.arr.toList match {
+      case addressJs :: Nil =>
+        Try {
+          val address = {
+            val uri = new URI(s"tcp://${addressJs.str}")
+            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+          }
+          DLCCheckConnection(address)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to checkconnection, got=${other.length} expected=1")
+        Failure(exn)
+    }
+  }
+}
+
 case class LoadWallet(
     walletNameOpt: Option[String],
     passwordOpt: Option[AesPassword],
