@@ -43,7 +43,9 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
         { (_, _, connectionHandler) =>
           serverConnectionHandlerOpt = Some(connectionHandler)
           serverProbe.ref
-        }
+        },
+        { (_, _) => () },
+        { (_, _, _) => () }
       ))
 
     val resultF: Future[Future[Assertion]] = for {
@@ -53,13 +55,17 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
       var clientConnectionHandlerOpt = Option.empty[ActorRef]
       val clientProbe = TestProbe()
       val client = TestActorRef(
-        DLCClient.props(dlcWalletApi.wallet,
-                        Some(connectedAddressPromise),
-                        None,
-                        { (_, _, connectionHandler) =>
-                          clientConnectionHandlerOpt = Some(connectionHandler)
-                          clientProbe.ref
-                        }))
+        DLCClient.props(
+          dlcWalletApi.wallet,
+          Some(connectedAddressPromise),
+          None,
+          { (_, _, connectionHandler) =>
+            clientConnectionHandlerOpt = Some(connectionHandler)
+            clientProbe.ref
+          },
+          { (_, _) => () },
+          { (_, _, _) => () }
+        ))
       client ! DLCClient.Connect(Peer(connectAddress, socks5ProxyParams = None))
 
       for {

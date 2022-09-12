@@ -4,9 +4,11 @@ import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
+import scodec.bits.ByteVector
 
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -17,7 +19,9 @@ class DLCClient(
     dlcWalletApi: DLCWalletApi,
     connectedAddress: Option[Promise[InetSocketAddress]],
     handlerP: Option[Promise[ActorRef]],
-    dataHandlerFactory: DLCDataHandler.Factory)
+    dataHandlerFactory: DLCDataHandler.Factory,
+    handleWrite: (BigSizeUInt, ByteVector) => Unit,
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit)
     extends Actor
     with ActorLogging {
 
@@ -77,7 +81,9 @@ class DLCClient(
               new DLCConnectionHandler(dlcWalletApi,
                                        connection,
                                        handlerP,
-                                       dataHandlerFactory)))
+                                       dataHandlerFactory,
+                                       handleWrite,
+                                       handleWriteError)))
           connectedAddress.foreach(_.success(peerAddress))
       }
   }
@@ -99,7 +105,9 @@ class DLCClient(
           new DLCConnectionHandler(dlcWalletApi,
                                    proxy,
                                    handlerP,
-                                   dataHandlerFactory)))
+                                   dataHandlerFactory,
+                                   handleWrite,
+                                   handleWriteError)))
       connectedAddress.foreach(_.success(remoteAddress))
     case Terminated(actor) if actor == proxy =>
       context stop self
@@ -122,20 +130,37 @@ object DLCClient {
       dlcWalletApi: DLCWalletApi,
       connectedAddress: Option[Promise[InetSocketAddress]],
       handlerP: Option[Promise[ActorRef]],
-      dataHandlerFactory: DLCDataHandler.Factory): Props = Props(
-    new DLCClient(dlcWalletApi, connectedAddress, handlerP, dataHandlerFactory))
+      dataHandlerFactory: DLCDataHandler.Factory,
+      handleWrite: (BigSizeUInt, ByteVector) => Unit,
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit): Props =
+    Props(
+      new DLCClient(dlcWalletApi,
+                    connectedAddress,
+                    handlerP,
+                    dataHandlerFactory,
+                    handleWrite,
+                    handleWriteError))
 
   def connect(
       peer: Peer,
       dlcWalletApi: DLCWalletApi,
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory =
-        DLCDataHandler.defaultFactory)(implicit
-      system: ActorSystem): Future[InetSocketAddress] = {
+        DLCDataHandler.defaultFactory,
+      handleWrite: (BigSizeUInt, ByteVector) => Unit = { (_, _) => () },
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit = {
+        (_, _, _) =>
+          ()
+      })(implicit system: ActorSystem): Future[InetSocketAddress] = {
     val promise = Promise[InetSocketAddress]()
     val actor =
       system.actorOf(
-        props(dlcWalletApi, Some(promise), handlerP, dataHandlerFactory))
+        props(dlcWalletApi,
+              Some(promise),
+              handlerP,
+              dataHandlerFactory,
+              handleWrite,
+              handleWriteError))
     actor ! Connect(peer)
     promise.future
   }

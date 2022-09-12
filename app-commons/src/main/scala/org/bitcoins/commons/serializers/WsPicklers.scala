@@ -5,9 +5,15 @@ import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
   SyncFlagChangedNotification
 }
 import org.bitcoins.commons.jsonmodels.ws.DLCNodeNotification.{
+  DLCAcceptFailed,
+  DLCAcceptSucceed,
   DLCNodeConnectionEstablished,
   DLCNodeConnectionFailed,
-  DLCNodeConnectionInitiated
+  DLCNodeConnectionInitiated,
+  DLCOfferSendFailed,
+  DLCOfferSendSucceed,
+  DLCSignFailed,
+  DLCSignSucceed
 }
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferAddNotification,
@@ -33,6 +39,7 @@ import org.bitcoins.commons.jsonmodels.ws.{
 import org.bitcoins.core.config.DLC
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.crypto.Sha256Digest
 import upickle.default._
 
 import java.net.InetSocketAddress
@@ -191,6 +198,18 @@ object WsPicklers {
         upickle.default.writeJs(addr2str(address))
       case DLCNodeConnectionFailed(address) =>
         upickle.default.writeJs(addr2str(address))
+      case DLCAcceptFailed(id) =>
+        upickle.default.writeJs(id.hex)
+      case DLCAcceptSucceed(id) =>
+        upickle.default.writeJs(id.hex)
+      case DLCOfferSendFailed(id) =>
+        upickle.default.writeJs(id.hex)
+      case DLCOfferSendSucceed(id) =>
+        upickle.default.writeJs(id.hex)
+      case DLCSignFailed(id) =>
+        upickle.default.writeJs(id.hex)
+      case DLCSignSucceed(id) =>
+        upickle.default.writeJs(id.hex)
     }
     val notificationObj = ujson.Obj(
       PicklerKeys.typeKey -> writeJs(notification.`type`),
@@ -217,6 +236,18 @@ object WsPicklers {
         val address: InetSocketAddress =
           NetworkUtil.parseInetSocketAddress(payloadObj.str, DLC.DefaultPort)
         DLCNodeConnectionFailed(address)
+      case DLCNodeWsType.DLCAcceptFailed =>
+        DLCAcceptFailed(Sha256Digest.fromHex(payloadObj.str))
+      case DLCNodeWsType.DLCAcceptSucceed =>
+        DLCAcceptSucceed(Sha256Digest.fromHex(payloadObj.str))
+      case DLCNodeWsType.DLCOfferSendFailed =>
+        DLCOfferSendFailed(Sha256Digest.fromHex(payloadObj.str))
+      case DLCNodeWsType.DLCOfferSendSucceed =>
+        DLCOfferSendSucceed(Sha256Digest.fromHex(payloadObj.str))
+      case DLCNodeWsType.DLCSignFailed =>
+        DLCSignFailed(Sha256Digest.fromHex(payloadObj.str))
+      case DLCNodeWsType.DLCSignSucceed =>
+        DLCSignSucceed(Sha256Digest.fromHex(payloadObj.str))
     }
   }
 
@@ -328,4 +359,39 @@ object WsPicklers {
       readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionEstablished])
   }
 
+  implicit val dlcAcceptSucceedPickler: ReadWriter[DLCAcceptSucceed] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCAcceptSucceed])
+  }
+
+  implicit val dlcAcceptFailedPickler: ReadWriter[DLCAcceptFailed] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCAcceptFailed])
+  }
+
+  implicit val dlcSignSucceedPickler: ReadWriter[DLCSignSucceed] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCSignSucceed])
+  }
+
+  implicit val dlcSignFailedPickler: ReadWriter[DLCSignFailed] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCSignFailed])
+  }
+
+  implicit val dlcOfferSendSucceedPickler: ReadWriter[DLCOfferSendSucceed] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCOfferSendSucceed])
+  }
+
+  implicit val dlcOfferSendFailedPickler: ReadWriter[DLCOfferSendFailed] = {
+    readwriter[ujson.Obj].bimap(
+      writeDLCNodeNotification(_),
+      readDLCNodeNotification(_).asInstanceOf[DLCOfferSendFailed])
+  }
 }

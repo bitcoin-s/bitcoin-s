@@ -3,6 +3,7 @@ package org.bitcoins.dlc.node
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
+import org.bitcoins.crypto.Sha256Digest
 
 import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,6 +22,18 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
   def onPeerConnectionFailed: CallbackHandler[
     InetSocketAddress,
     OnPeerConnectionFailed]
+
+  def onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed]
+
+  def onOfferSendFailed: CallbackHandler[Sha256Digest, OnOfferSendFailed]
+
+  def onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed]
+
+  def onAcceptFailed: CallbackHandler[Sha256Digest, OnAcceptFailed]
+
+  def onSignSucceed: CallbackHandler[Sha256Digest, OnSignSucceed]
+
+  def onSignFailed: CallbackHandler[Sha256Digest, OnSignFailed]
 
   override def +(other: DLCNodeCallbacks): DLCNodeCallbacks
 
@@ -53,6 +66,59 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
           s"${onPeerConnectionFailed.name} Callback failed with error: ",
           err))
   }
+
+  def executeOnOfferSendSucceed(tempContractId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onOfferSendSucceed.execute(
+      tempContractId,
+      (err: Throwable) =>
+        logger.error(s"${onOfferSendSucceed.name} Callback failed with error: ",
+                     err))
+  }
+
+  def executeOnOfferSendFailed(tempContractId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onOfferSendFailed.execute(
+      tempContractId,
+      (err: Throwable) =>
+        logger.error(s"${onOfferSendFailed.name} Callback failed with error: ",
+                     err))
+  }
+
+  def executeOnAcceptSucceed(tempContractId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onAcceptSucceed.execute(
+      tempContractId,
+      (err: Throwable) =>
+        logger.error(s"${onAcceptSucceed.name} Callback failed with error: ",
+                     err))
+  }
+
+  def executeOnAcceptFailed(tempContractId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onAcceptFailed.execute(
+      tempContractId,
+      (err: Throwable) =>
+        logger.error(s"${onAcceptFailed.name} Callback failed with error: ",
+                     err))
+  }
+
+  def executeOnSignSucceed(tempContractId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onSignSucceed.execute(
+      tempContractId,
+      (err: Throwable) =>
+        logger.error(s"${onSignSucceed.name} Callback failed with error: ",
+                     err))
+  }
+
+  def executeOnSignFailed(tempContractId: Sha256Digest)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onSignFailed.execute(
+      tempContractId,
+      (err: Throwable) =>
+        logger.error(s"${onSignFailed.name} Callback failed with error: ", err))
+  }
 }
 
 trait OnPeerConnectionInitiated extends Callback[InetSocketAddress]
@@ -60,6 +126,18 @@ trait OnPeerConnectionInitiated extends Callback[InetSocketAddress]
 trait OnPeerConnectionEstablished extends Callback[InetSocketAddress]
 
 trait OnPeerConnectionFailed extends Callback[InetSocketAddress]
+
+trait OnOfferSendSucceed extends Callback[Sha256Digest]
+
+trait OnOfferSendFailed extends Callback[Sha256Digest]
+
+trait OnAcceptSucceed extends Callback[Sha256Digest]
+
+trait OnAcceptFailed extends Callback[Sha256Digest]
+
+trait OnSignSucceed extends Callback[Sha256Digest]
+
+trait OnSignFailed extends Callback[Sha256Digest]
 
 object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
 
@@ -73,7 +151,13 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
         OnPeerConnectionEstablished],
       onPeerConnectionFailed: CallbackHandler[
         InetSocketAddress,
-        OnPeerConnectionFailed])
+        OnPeerConnectionFailed],
+      onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed],
+      onOfferSendFailed: CallbackHandler[Sha256Digest, OnOfferSendFailed],
+      onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed],
+      onAcceptFailed: CallbackHandler[Sha256Digest, OnAcceptFailed],
+      onSignSucceed: CallbackHandler[Sha256Digest, OnSignSucceed],
+      onSignFailed: CallbackHandler[Sha256Digest, OnSignFailed])
       extends DLCNodeCallbacks {
 
     override def +(other: DLCNodeCallbacks): DLCNodeCallbacks =
@@ -83,7 +167,13 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
         onPeerConnectionEstablished =
           onPeerConnectionEstablished ++ other.onPeerConnectionEstablished,
         onPeerConnectionFailed =
-          onPeerConnectionFailed ++ other.onPeerConnectionFailed
+          onPeerConnectionFailed ++ other.onPeerConnectionFailed,
+        onOfferSendSucceed = onOfferSendSucceed ++ other.onOfferSendSucceed,
+        onOfferSendFailed = onOfferSendFailed ++ other.onOfferSendFailed,
+        onAcceptSucceed = onAcceptSucceed ++ other.onAcceptSucceed,
+        onAcceptFailed = onAcceptFailed ++ other.onAcceptFailed,
+        onSignSucceed = onSignSucceed ++ other.onSignSucceed,
+        onSignFailed = onSignFailed ++ other.onSignFailed
       )
   }
 
@@ -107,8 +197,14 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
         Vector.empty,
       onPeerConnectionEstablished: Vector[OnPeerConnectionEstablished] =
         Vector.empty,
-      onPeerConnectionFailed: Vector[OnPeerConnectionFailed] =
-        Vector.empty): DLCNodeCallbacks = {
+      onPeerConnectionFailed: Vector[OnPeerConnectionFailed] = Vector.empty,
+      onOfferSendSucceed: Vector[OnOfferSendSucceed] = Vector.empty,
+      onOfferSendFailed: Vector[OnOfferSendFailed] = Vector.empty,
+      onAcceptSucceed: Vector[OnAcceptSucceed] = Vector.empty,
+      onAcceptFailed: Vector[OnAcceptFailed] = Vector.empty,
+      onSignSucceed: Vector[OnSignSucceed] = Vector.empty,
+      onSignFailed: Vector[OnSignFailed] = Vector.empty
+  ): DLCNodeCallbacks = {
     DLCNodeCallbacksImpl(
       onPeerConnectionInitiated =
         CallbackHandler[InetSocketAddress, OnPeerConnectionInitiated](
@@ -121,7 +217,24 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
       onPeerConnectionFailed =
         CallbackHandler[InetSocketAddress, OnPeerConnectionFailed](
           "onPeerConnectionFailed",
-          onPeerConnectionFailed)
+          onPeerConnectionFailed),
+      onOfferSendSucceed =
+        CallbackHandler[Sha256Digest, OnOfferSendSucceed]("onOfferSendSucceed",
+                                                          onOfferSendSucceed),
+      onOfferSendFailed =
+        CallbackHandler[Sha256Digest, OnOfferSendFailed]("onOfferSendFailed",
+                                                         onOfferSendFailed),
+      onAcceptSucceed =
+        CallbackHandler[Sha256Digest, OnAcceptSucceed]("onAcceptSucceed",
+                                                       onAcceptSucceed),
+      onAcceptFailed =
+        CallbackHandler[Sha256Digest, OnAcceptFailed]("onAcceptFailed",
+                                                      onAcceptFailed),
+      onSignSucceed =
+        CallbackHandler[Sha256Digest, OnSignSucceed]("onSignSucceed",
+                                                     onSignSucceed),
+      onSignFailed = CallbackHandler[Sha256Digest, OnSignFailed]("onSignFailed",
+                                                                 onSignFailed)
     )
   }
 }

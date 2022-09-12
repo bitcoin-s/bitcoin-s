@@ -12,6 +12,7 @@ import org.bitcoins.testkit.wallet.BitcoinSDualWalletTest
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.scalatest.FutureOutcome
+import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
 import scala.concurrent.Promise
@@ -89,12 +90,21 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         InetSocketAddress.createUnresolved("127.0.0.1", port)
 
       val handlerP = Promise[ActorRef]()
+      val okP = Promise[ByteVector]()
+      val errorP = Promise[ByteVector]()
 
       for {
         _ <- DLCServer.bind(walletA, bindAddress, Vector(), None)
-        _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
-                               walletB,
-                               Some(handlerP))
+        _ <- DLCClient.connect(
+          Peer(connectAddress, socks5ProxyParams = None),
+          walletB,
+          Some(handlerP),
+          handleWrite = { (_, tlvId) => okP.success(tlvId) },
+          handleWriteError = { (_, tlvId, ex) =>
+            errorP.success(tlvId)
+            ex.printStackTrace()
+          }
+        )
 
         handler <- handlerP.future
 
@@ -113,14 +123,18 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
                                         None)
         tlv = SendOfferTLV(peer = "peer", message = "msg", offer = offer.toTLV)
 
+        _ = assert(!okP.isCompleted)
+        _ = assert(!errorP.isCompleted)
         _ = handler ! DLCDataHandler.Send(LnMessage(tlv))
+        ok <- okP.future
+        _ = assert(ok == tlv.offer.tempContractId.bytes)
+        _ = assert(!errorP.isCompleted)
 
         _ <- TestAsyncUtil.awaitConditionF { () =>
           walletA.listIncomingDLCOffers().map(_.nonEmpty)
         }
         postA <- walletA.listIncomingDLCOffers()
         postB <- walletB.listIncomingDLCOffers()
-
       } yield {
         assert(postA.nonEmpty)
         assert(postB.isEmpty)

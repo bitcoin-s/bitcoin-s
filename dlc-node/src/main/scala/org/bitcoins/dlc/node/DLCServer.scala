@@ -5,7 +5,9 @@ import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.tor._
+import scodec.bits.ByteVector
 
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -15,7 +17,9 @@ class DLCServer(
     dlcWalletApi: DLCWalletApi,
     bindAddress: InetSocketAddress,
     boundAddress: Option[Promise[InetSocketAddress]],
-    dataHandlerFactory: DLCDataHandler.Factory = DLCDataHandler.defaultFactory)
+    dataHandlerFactory: DLCDataHandler.Factory,
+    handleWrite: (BigSizeUInt, ByteVector) => Unit,
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit)
     extends Actor
     with ActorLogging {
 
@@ -47,7 +51,9 @@ class DLCServer(
           new DLCConnectionHandler(dlcWalletApi,
                                    connection,
                                    None,
-                                   dataHandlerFactory)))
+                                   dataHandlerFactory,
+                                   handleWrite,
+                                   handleWriteError)))
   }
 
   override def postStop(): Unit = {
@@ -72,8 +78,16 @@ object DLCServer extends Logging {
       dlcWalletApi: DLCWalletApi,
       bindAddress: InetSocketAddress,
       boundAddress: Option[Promise[InetSocketAddress]] = None,
-      dataHandlerFactory: DLCDataHandler.Factory): Props = Props(
-    new DLCServer(dlcWalletApi, bindAddress, boundAddress, dataHandlerFactory))
+      dataHandlerFactory: DLCDataHandler.Factory,
+      handleWrite: (BigSizeUInt, ByteVector) => Unit,
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit): Props =
+    Props(
+      new DLCServer(dlcWalletApi,
+                    bindAddress,
+                    boundAddress,
+                    dataHandlerFactory,
+                    handleWrite,
+                    handleWriteError))
 
   def bind(
       dlcWalletApi: DLCWalletApi,
@@ -81,7 +95,12 @@ object DLCServer extends Logging {
       targets: Vector[InetSocketAddress],
       torParams: Option[TorParams],
       dataHandlerFactory: DLCDataHandler.Factory =
-        DLCDataHandler.defaultFactory)(implicit
+        DLCDataHandler.defaultFactory,
+      handleWrite: (BigSizeUInt, ByteVector) => Unit = { (_, _) => () },
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit = {
+        (_, _, _) =>
+          ()
+      })(implicit
       system: ActorSystem): Future[(InetSocketAddress, ActorRef)] = {
     import system.dispatcher
 
@@ -105,7 +124,12 @@ object DLCServer extends Logging {
           Future.successful(None)
       }
       actorRef = system.actorOf(
-        props(dlcWalletApi, bindAddress, Some(promise), dataHandlerFactory))
+        props(dlcWalletApi,
+              bindAddress,
+              Some(promise),
+              dataHandlerFactory,
+              handleWrite,
+              handleWriteError))
       boundAddress <- promise.future
     } yield {
       val addr = onionAddress.getOrElse(boundAddress)

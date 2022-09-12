@@ -4,12 +4,13 @@ import akka.actor.{ActorRef, ActorSystem}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress}
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.node.config._
 import org.bitcoins.dlc.node.peer.Peer
+import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
 import scala.concurrent._
@@ -31,7 +32,9 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
         wallet,
         config.listenAddress,
         config.torConf.targets,
-        config.torParams
+        config.torParams,
+        handleWrite = handleTLVSendSucceed,
+        handleWriteError = handleTLVSendFailed
       )
       .map { case (addr, actor) =>
         hostAddressP.success(addr)
@@ -65,7 +68,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       externalPayoutAddress: Option[BitcoinAddress],
       externalChangeAddress: Option[BitcoinAddress]): Future[
     DLCMessage.DLCAccept] = {
-    for {
+    val f = for {
       handler <- connectToPeer(peerAddress)
       accept <- wallet.acceptDLCOffer(dlcOffer.tlv,
                                       Some(peerAddress),
@@ -75,13 +78,18 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       handler ! DLCDataHandler.Send(accept.toMessage)
       accept
     }
+
+    f.failed.foreach(_ =>
+      config.callBacks.executeOnAcceptFailed(dlcOffer.tlv.tempContractId))
+
+    f
   }
 
   override def sendDLCOffer(
       peerAddress: InetSocketAddress,
       message: String,
       offerTLV: DLCOfferTLV): Future[Sha256Digest] = {
-    for {
+    val f = for {
       handler <- connectToPeer(peerAddress)
       localAddress <- getHostAddress
     } yield {
@@ -93,6 +101,11 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       handler ! DLCDataHandler.Send(lnMessage)
       offerTLV.tempContractId
     }
+
+    f.failed.foreach(_ =>
+      config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId))
+
+    f
   }
 
   override def sendDLCOffer(
@@ -121,6 +134,38 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     }
   }
 
+  private def handleTLVSendFailed(
+      tlvType: BigSizeUInt,
+      tlvId: ByteVector,
+      error: Throwable): Unit = {
+    tlvType match {
+      case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
+        config.callBacks.executeOnOfferSendFailed(Sha256Digest.fromBytes(tlvId))
+      case DLCAcceptTLV.tpe =>
+        config.callBacks.executeOnAcceptFailed(Sha256Digest.fromBytes(tlvId))
+      case DLCSignTLV.tpe =>
+        config.callBacks.executeOnSignFailed(Sha256Digest.fromBytes(tlvId))
+      case _ => // ignore
+    }
+    logger.debug("TLV send error ", error)
+  }
+
+  private def handleTLVSendSucceed(
+      tlvType: BigSizeUInt,
+      tlvId: ByteVector): Unit = {
+    tlvType match {
+      case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
+        config.callBacks.executeOnOfferSendSucceed(
+          Sha256Digest.fromBytes(tlvId))
+      case DLCAcceptTLV.tpe =>
+        config.callBacks.executeOnAcceptSucceed(Sha256Digest.fromBytes(tlvId))
+      case DLCSignTLV.tpe =>
+        config.callBacks.executeOnSignSucceed(Sha256Digest.fromBytes(tlvId))
+      case _ => // ignore
+    }
+    ()
+  }
+
   private def connectToPeer(
       peerAddress: InetSocketAddress): Future[ActorRef] = {
     config.callBacks.executeOnPeerConnectionInitiated(peerAddress)
@@ -130,7 +175,11 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     val handlerP = Promise[ActorRef]()
 
     val f = for {
-      _ <- DLCClient.connect(peer, wallet, Some(handlerP))
+      _ <- DLCClient.connect(peer,
+                             wallet,
+                             Some(handlerP),
+                             handleWrite = handleTLVSendSucceed,
+                             handleWriteError = handleTLVSendFailed)
       handler <- handlerP.future
     } yield handler
 

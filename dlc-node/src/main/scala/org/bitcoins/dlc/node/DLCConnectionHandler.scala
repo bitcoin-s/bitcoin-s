@@ -6,10 +6,12 @@ import akka.io.Tcp
 import akka.util.ByteString
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.node.DLCConnectionHandler.parseIndividualMessages
 import scodec.bits.ByteVector
 
+import java.io.IOException
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.{Failure, Success, Try}
@@ -18,7 +20,9 @@ class DLCConnectionHandler(
     dlcWalletApi: DLCWalletApi,
     connection: ActorRef,
     handlerP: Option[Promise[ActorRef]],
-    dataHandlerFactory: DLCDataHandler.Factory)
+    dataHandlerFactory: DLCDataHandler.Factory,
+    handleWrite: (BigSizeUInt, ByteVector) => Unit,
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit)
     extends Actor
     with ActorLogging {
 
@@ -38,8 +42,10 @@ class DLCConnectionHandler(
 
   def connected(unalignedBytes: ByteVector): Receive = LoggingReceive {
     case lnMessage: LnMessage[TLV] =>
+      val id = tlvId(lnMessage)
       val byteMessage = ByteString(lnMessage.bytes.toArray)
-      connection ! Tcp.Write(byteMessage)
+      connection ! Tcp.Write(byteMessage,
+                             DLCConnectionHandler.Ack(lnMessage.tlv.tpe, id))
       connection ! Tcp.ResumeReading
 
     case tlv: TLV =>
@@ -89,13 +95,19 @@ class DLCConnectionHandler(
 
     case Tcp.PeerClosed => context.stop(self)
 
-    case c @ Tcp.CommandFailed(_: Tcp.Write) =>
-      // O/S buffer was full
-      val errorMessage = "Cannot write bytes "
-      c.cause match {
-        case Some(ex) => log.error(errorMessage, ex)
-        case None     => log.error(errorMessage)
+    case DLCConnectionHandler.Ack(tlvType, tlvId) => handleWrite(tlvType, tlvId)
+
+    case c @ Tcp.CommandFailed(write: Tcp.Write) =>
+      val ex = c.cause match {
+        case Some(ex) => ex
+        case None     => new IOException("Tcp.Write failed")
       }
+      log.error("Cannot write bytes ", ex)
+      val (tlvType, tlvId) = write.ack match {
+        case DLCConnectionHandler.Ack(t, id) => (t, id)
+        case _                               => (BigSizeUInt(0), ByteVector.empty)
+      }
+      handleWriteError(tlvType, tlvId, ex)
 
       handler ! DLCConnectionHandler.WriteFailed(c.cause)
     case DLCConnectionHandler.CloseConnection =>
@@ -105,24 +117,39 @@ class DLCConnectionHandler(
     case Terminated(actor) if actor == connection =>
       context.stop(self)
   }
+
+  private def tlvId(lnMessage: LnMessage[TLV]) = {
+    lnMessage.tlv match {
+      case acceptTLV: DLCAcceptTLV => acceptTLV.tempContractId.bytes
+      case offerTLV: DLCOfferTLV   => offerTLV.tempContractId.bytes
+      case sendOfferTLV: SendOfferTLV =>
+        sendOfferTLV.offer.tempContractId.bytes
+      case dlcSign: DLCSignTLV => dlcSign.contractId
+      case tlv: TLV            => tlv.sha256.bytes
+    }
+  }
 }
 
 object DLCConnectionHandler extends Logging {
 
   case object CloseConnection
   case class WriteFailed(cause: Option[Throwable])
-  case object Ack extends Tcp.Event
+  case class Ack(tlvType: BigSizeUInt, id: ByteVector) extends Tcp.Event
 
   def props(
       dlcWalletApi: DLCWalletApi,
       connection: ActorRef,
       handlerP: Option[Promise[ActorRef]],
-      dataHandlerFactory: DLCDataHandler.Factory): Props = {
+      dataHandlerFactory: DLCDataHandler.Factory,
+      handleWrite: (BigSizeUInt, ByteVector) => Unit,
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit): Props = {
     Props(
       new DLCConnectionHandler(dlcWalletApi,
                                connection,
                                handlerP,
-                               dataHandlerFactory))
+                               dataHandlerFactory,
+                               handleWrite,
+                               handleWriteError))
   }
 
   private[bitcoins] def parseIndividualMessages(

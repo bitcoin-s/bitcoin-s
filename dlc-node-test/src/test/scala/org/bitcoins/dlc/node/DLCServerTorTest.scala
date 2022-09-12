@@ -65,7 +65,9 @@ class DLCServerTorTest
             { (_, _, connectionHandler) =>
               serverConnectionHandlerOpt = Some(connectionHandler)
               serverProbe.ref
-            }
+            },
+            { (_, _) => () },
+            { (_, _, _) => () }
           ))
 
         val resultF: Future[Future[Assertion]] = for {
@@ -83,7 +85,9 @@ class DLCServerTorTest
               { (_, _, connectionHandler) =>
                 clientConnectionHandlerOpt = Some(connectionHandler)
                 clientProbe.ref
-              }
+              },
+              { (_, _) => () },
+              { (_, _, _) => () }
             ))
 
           client ! DLCClient.Connect(
