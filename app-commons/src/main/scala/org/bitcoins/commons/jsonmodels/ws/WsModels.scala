@@ -261,7 +261,7 @@ object ChainNotification {
 
   case class CompactFilterProcessedNotification(payload: CompactFilterDb)
       extends ChainNotification[CompactFilterDb] {
-    override val `type`: ChainWsType = ChainWsType.CompactFilterHeaderProcessed
+    override val `type`: ChainWsType = ChainWsType.CompactFilterProcessed
 
     override val json: ujson.Value = {
       upickle.default.write(this)(WsPicklers.compactFilterProcessedPickler)
