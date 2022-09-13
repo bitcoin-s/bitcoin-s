@@ -46,12 +46,17 @@ case class DLCAcceptDAO()(implicit
       dlcs: Vector[DLCAcceptDb]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  def findByContractId(contractId: ByteVector): DBIOAction[
+  def findByContractIdAction(contractId: ByteVector): DBIOAction[
     Option[DLCAcceptDb],
     NoStream,
     Effect.Read] = {
     val query = table.filter(_.contractId === contractId)
     query.result.map(_.headOption)
+  }
+
+  def findByContractId(contractId: ByteVector): Future[Option[DLCAcceptDb]] = {
+    val action = findByContractIdAction(contractId)
+    safeDatabase.run(action)
   }
 
   override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
