@@ -57,9 +57,6 @@ case class LndRpcTestClient(
             lnd <- lndRpcClientF
 
             _ <- lnd.start()
-            // Sleep to make sure lnd is ready for RPC requests
-            _ <- TestAsyncUtil.nonBlockingSleep(1.second)
-
             // Wait for it to be ready
             _ <- TestAsyncUtil.awaitConditionF(() => lnd.isStarted,
                                                interval = 500.milliseconds,
