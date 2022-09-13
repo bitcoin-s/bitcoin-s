@@ -143,7 +143,8 @@ object DLCAcceptUtil extends Logging {
       dlc: DLCDb,
       acceptWithoutSigs: DLCAcceptWithoutSigs,
       dlcPubKeys: DLCPublicKeys,
-      collateral: CurrencyUnit): DLCAcceptDb = {
+      collateral: CurrencyUnit,
+      contractId: ByteVector): DLCAcceptDb = {
     DLCAcceptDb(
       dlcId = dlc.dlcId,
       fundingKey = dlcPubKeys.fundingKey,
@@ -152,7 +153,8 @@ object DLCAcceptUtil extends Logging {
       collateral = collateral,
       changeAddress = acceptWithoutSigs.changeAddress,
       changeSerialId = acceptWithoutSigs.changeSerialId,
-      negotiationFieldsTLV = NoNegotiationFields.toTLV
+      negotiationFieldsTLV = NoNegotiationFields.toTLV,
+      contractId = contractId
     )
   }
 
@@ -167,7 +169,7 @@ object DLCAcceptUtil extends Logging {
       dlcAcceptDbs <- dlcWalletDAOs.dlcAcceptDAO.findByDLCId(dlcId)
       dlcAcceptFOpt = {
         dlcAcceptDbs.headOption.map { case dlcAcceptDb =>
-          logger.debug(
+          logger.info(
             s"DLC Accept (${dlcId.hex}) has already been made, returning accept")
           for {
             fundingInputs <-

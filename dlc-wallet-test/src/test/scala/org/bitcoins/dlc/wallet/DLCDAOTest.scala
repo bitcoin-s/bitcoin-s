@@ -17,10 +17,12 @@ import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
 import org.scalatest.Assertion
+import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
 import java.sql.SQLException
 import scala.concurrent.Future
+import scala.util.Random
 
 class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
@@ -64,8 +66,11 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val dlcDAO = daos.dlcDAO
     val acceptDAO = daos.dlcAcceptDAO
 
+    val contractId = ByteVector(Random.nextBytes(32))
     val acceptDb =
-      DLCAcceptDbHelper.fromDLCAccept(dlcId, DLCWalletUtil.sampleDLCAccept)
+      DLCAcceptDbHelper.fromDLCAccept(dlcId,
+                                      DLCWalletUtil.sampleDLCAccept,
+                                      contractId)
 
     verifyDatabaseInsertion(acceptDb, dlcId, acceptDAO, dlcDAO)
   }
