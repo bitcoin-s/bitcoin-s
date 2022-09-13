@@ -289,6 +289,12 @@ object WsPicklers {
     )
   }
 
+  implicit val dlcNodeNotificationPickler: ReadWriter[
+    DLCNodeNotification[_]] = {
+    readwriter[ujson.Obj]
+      .bimap(writeDLCNodeNotification, readDLCNodeNotification)
+  }
+
   implicit val walletNotificationPickler: ReadWriter[WalletNotification[_]] = {
     readwriter[ujson.Obj].bimap(writeWalletNotification, readWalletNotification)
   }
