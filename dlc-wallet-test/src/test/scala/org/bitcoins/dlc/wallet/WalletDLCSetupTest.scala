@@ -1182,4 +1182,54 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None, None)
       } yield succeed
   }
+
+  it must "accept an offer that was sent with identical dlcId" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4772
+
+      val walletA = fundedDLCWallets._1.wallet
+      val walletB = fundedDLCWallets._2.wallet
+
+      val offerData = DLCWalletUtil.sampleDLCOffer
+      for {
+        offer1 <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.collateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32,
+          None,
+          None,
+          None
+        )
+
+        //accept it once
+        _ <- walletB.acceptDLCOffer(offer1, None, None, None)
+
+        //cancel the offer
+        _ <- walletA.cancelDLC(offer1.dlcId)
+
+        //reoffer it
+        offer2 <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.collateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32,
+          None,
+          None,
+          None
+        )
+
+        _ = assert(offer2.dlcId == offer1.dlcId,
+                   s"dlcIds must be identical for test to work")
+
+        //accept it again
+        accept2 <- walletB.acceptDLCOffer(offer2, None, None, None)
+
+        //if make sure we can accept it and verify CET signatures,
+        //which is what failed in: https://github.com/bitcoin-s/bitcoin-s/issues/4772
+        _ <- walletA.signDLC(accept2)
+      } yield succeed
+  }
 }
