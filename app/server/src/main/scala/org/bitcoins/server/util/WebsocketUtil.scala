@@ -6,9 +6,15 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.{
   ChainCallbacks,
   OnBlockHeaderConnected,
+  OnCompactFilterConnected,
+  OnCompactFilterHeaderConnected,
   OnSyncFlagChanged
 }
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
+  BlockProcessedNotification,
+  CompactFilterHeaderProcessedNotification,
+  CompactFilterProcessedNotification
+}
 import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
@@ -18,6 +24,7 @@ import org.bitcoins.commons.jsonmodels.ws.{
   WsNotification
 }
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
@@ -44,12 +51,9 @@ import scala.concurrent.{ExecutionContext, Future}
 object WebsocketUtil extends Logging {
 
   private def sendHeadersToWs(
-      results: Vector[GetBlockHeaderResult],
+      notifications: Vector[ChainNotification[_]],
       queue: SourceQueueWithComplete[WsNotification[_]])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val notifications =
-      results.map(result =>
-        ChainNotification.BlockProcessedNotification(result))
     for {
       _ <- FutureUtil.sequentially(notifications) { case msg =>
         val x: Future[Unit] = queue
@@ -80,16 +84,53 @@ object WebsocketUtil extends Logging {
             //only emit the last header so that we don't overwhelm the UI
             for {
               results <- resultsF
-              _ <- sendHeadersToWs(Vector(results.last), queue)
+              notification = BlockProcessedNotification(results.last)
+              _ <- sendHeadersToWs(Vector(notification), queue)
             } yield ()
           } else {
             val f = for {
               results <- resultsF
-              _ <- sendHeadersToWs(results, queue)
+              notifications = results.map(BlockProcessedNotification(_))
+              _ <- sendHeadersToWs(notifications, queue)
             } yield {
               ()
             }
             f
+          }
+        }
+    }
+
+    val onCompactFilterHeaderProcessed: OnCompactFilterHeaderConnected = {
+      case filterHeaders: Vector[CompactFilterHeaderDb] =>
+        val isIBDF = chainApi.isIBD()
+        val emitBlockProccessedWhileIBDOnGoing =
+          chainAppConfig.ibdBlockProcessedEvents
+        isIBDF.flatMap { isIBD =>
+          if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
+            val notifications =
+              CompactFilterHeaderProcessedNotification(filterHeaders.last)
+            sendHeadersToWs(Vector(notifications), queue)
+          } else {
+            val notifications =
+              filterHeaders.map(CompactFilterHeaderProcessedNotification(_))
+            sendHeadersToWs(notifications, queue)
+          }
+        }
+    }
+
+    val onCompactFilterProcessed: OnCompactFilterConnected = {
+      case filters: Vector[CompactFilterDb] =>
+        val isIBDF = chainApi.isIBD()
+        val emitBlockProccessedWhileIBDOnGoing =
+          chainAppConfig.ibdBlockProcessedEvents
+        isIBDF.flatMap { isIBD =>
+          if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
+            val notifications = CompactFilterProcessedNotification(filters.last)
+            sendHeadersToWs(Vector(notifications), queue)
+          } else {
+            val notifications =
+              filters.map(CompactFilterProcessedNotification(_))
+            sendHeadersToWs(notifications, queue)
           }
         }
     }
@@ -102,7 +143,10 @@ object WebsocketUtil extends Logging {
     }
 
     ChainCallbacks.onBlockHeaderConnected(onBlockProcessed) +
-      ChainCallbacks.onOnSyncFlagChanged(onSyncFlagChanged)
+      ChainCallbacks.onOnSyncFlagChanged(onSyncFlagChanged) +
+      ChainCallbacks.onCompactFilterHeaderConnected(
+        onCompactFilterHeaderProcessed) +
+      ChainCallbacks.onCompactFilterConnected(onCompactFilterProcessed)
   }
 
   /** Builds websocket callbacks for the wallet */

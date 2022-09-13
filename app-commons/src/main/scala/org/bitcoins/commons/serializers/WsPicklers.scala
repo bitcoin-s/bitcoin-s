@@ -2,6 +2,8 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
   BlockProcessedNotification,
+  CompactFilterHeaderProcessedNotification,
+  CompactFilterProcessedNotification,
   SyncFlagChangedNotification
 }
 import org.bitcoins.commons.jsonmodels.ws.DLCNodeNotification.{
@@ -64,6 +66,11 @@ object WsPicklers {
     val payloadJson: ujson.Value = notification match {
       case BlockProcessedNotification(block) =>
         upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler)
+      case CompactFilterHeaderProcessedNotification(filterHeader) =>
+        upickle.default.writeJs(filterHeader)(
+          Picklers.compactFilterHeaderPickler)
+      case CompactFilterProcessedNotification(filter) =>
+        upickle.default.writeJs(filter)(Picklers.compactFilterDbPickler)
       case SyncFlagChangedNotification(syncing) =>
         upickle.default.writeJs(syncing)
     }
@@ -83,6 +90,16 @@ object WsPicklers {
         val block =
           upickle.default.read(payloadObj)(Picklers.getBlockHeaderResultPickler)
         BlockProcessedNotification(block)
+      case ChainWsType.CompactFilterHeaderProcessed =>
+        val filterheader =
+          upickle.default.read(payloadObj)(Picklers.compactFilterHeaderPickler)
+
+        CompactFilterHeaderProcessedNotification(filterheader)
+
+      case ChainWsType.CompactFilterProcessed =>
+        val filter =
+          upickle.default.read(payloadObj)(Picklers.compactFilterDbPickler)
+        CompactFilterProcessedNotification(filter)
       case ChainWsType.SyncFlagChanged =>
         val syncing = payloadObj.bool
         SyncFlagChangedNotification(syncing)
@@ -270,6 +287,23 @@ object WsPicklers {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_).asInstanceOf[BlockProcessedNotification]
+    )
+  }
+
+  implicit val compactFilterHeaderProcessedPickler: ReadWriter[
+    CompactFilterHeaderProcessedNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeChainNotification(_),
+      readChainNotification(_)
+        .asInstanceOf[CompactFilterHeaderProcessedNotification]
+    )
+  }
+
+  implicit val compactFilterProcessedPickler: ReadWriter[
+    CompactFilterProcessedNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeChainNotification(_),
+      readChainNotification(_).asInstanceOf[CompactFilterProcessedNotification]
     )
   }
 
