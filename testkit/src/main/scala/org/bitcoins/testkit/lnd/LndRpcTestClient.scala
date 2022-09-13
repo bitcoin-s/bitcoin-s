@@ -131,6 +131,8 @@ object LndRpcTestClient extends SbtBinaryFactory {
 
     val platform =
       if (Properties.isLinux) "linux-amd64"
+      else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
+        "darwin-arm64"
       else if (Properties.isMac) "darwin-amd64"
       else if (Properties.isWin) "windows-amd64"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
