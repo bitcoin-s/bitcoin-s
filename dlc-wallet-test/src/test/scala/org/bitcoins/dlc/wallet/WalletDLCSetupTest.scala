@@ -1190,7 +1190,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
 
-      val offerData = DLCWalletUtil.sampleDLCOffer
+      //needs to be 4 BTC to select all utxos to make sure dlcId is identical
+      val offerData = DLCWalletUtil.buildDLCOffer(Bitcoins(3))
       for {
         offer1 <- walletA.createDLCOffer(
           offerData.contractInfo,
@@ -1208,7 +1209,6 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         //cancel the offer
         _ <- walletA.cancelDLC(offer1.dlcId)
-
         //reoffer it
         offer2 <- walletA.createDLCOffer(
           offerData.contractInfo,
