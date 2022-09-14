@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.grpc.{GrpcClientSettings, SSLContextUtils}
 import akka.stream.scaladsl.{Sink, Source}
+import chainrpc._
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
 import invoicesrpc.LookupInvoiceMsg.InvoiceRef
@@ -12,7 +13,6 @@ import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
 import lnrpc._
-import chainrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._
@@ -33,7 +33,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
@@ -58,7 +58,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /** @param binaryOpt Path to lnd executable
   */
