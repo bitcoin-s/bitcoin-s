@@ -1011,11 +1011,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       val state = Await.result(getStateF, 5.seconds)
 
       state.state match {
-        case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
+        case WalletState.SERVER_ACTIVE =>
           p.trySuccess(true)
         case _: WalletState.Unrecognized | WalletState.WAITING_TO_START |
             WalletState.UNLOCKED | WalletState.LOCKED |
-            WalletState.NON_EXISTING =>
+            WalletState.NON_EXISTING | WalletState.RPC_ACTIVE =>
           p.trySuccess(false)
       }
     }
