@@ -74,8 +74,9 @@ object WsPicklers {
       case SyncFlagChangedNotification(syncing) =>
         upickle.default.writeJs(syncing)
     }
+    val typeJson = upickle.default.writeJs(notification.`type`)
     val notificationObj = ujson.Obj(
-      PicklerKeys.typeKey -> writeJs(notification.`type`),
+      PicklerKeys.typeKey -> typeJson,
       PicklerKeys.payloadKey -> payloadJson
     )
     notificationObj

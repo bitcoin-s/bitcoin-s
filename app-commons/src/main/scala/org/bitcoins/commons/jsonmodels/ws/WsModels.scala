@@ -254,7 +254,7 @@ object ChainNotification {
     override val `type`: ChainWsType = ChainWsType.CompactFilterHeaderProcessed
 
     override val json: ujson.Value = {
-      upickle.default.write(this)(
+      upickle.default.writeJs(this)(
         WsPicklers.compactFilterHeaderProcessedPickler)
     }
   }
@@ -264,7 +264,7 @@ object ChainNotification {
     override val `type`: ChainWsType = ChainWsType.CompactFilterProcessed
 
     override val json: ujson.Value = {
-      upickle.default.write(this)(WsPicklers.compactFilterProcessedPickler)
+      upickle.default.writeJs(this)(WsPicklers.compactFilterProcessedPickler)
     }
   }
 
