@@ -57,7 +57,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /** @param binaryOpt Path to lnd executable
@@ -1006,22 +1006,22 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    val t = Try(stateClient.getState(GetStateRequest()).onComplete {
-      case Success(state) =>
-        state.state match {
-          case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
-            p.success(true)
-          case _: WalletState.Unrecognized |
-              WalletState.WAITING_TO_START | WalletState.UNLOCKED |
-              WalletState.LOCKED | WalletState.NON_EXISTING =>
-            p.success(false)
-        }
-      case Failure(_) =>
-        p.success(false)
-    })
+    val t = Try {
+      val getStateF = stateClient.getState(GetStateRequest())
+      val state = Await.result(getStateF, 5.seconds)
+
+      state.state match {
+        case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
+          p.trySuccess(true)
+        case _: WalletState.Unrecognized | WalletState.WAITING_TO_START |
+            WalletState.UNLOCKED | WalletState.LOCKED |
+            WalletState.NON_EXISTING =>
+          p.trySuccess(false)
+      }
+    }
 
     t.failed.foreach { _ =>
-      p.success(false)
+      p.trySuccess(false)
     }
 
     p.future
