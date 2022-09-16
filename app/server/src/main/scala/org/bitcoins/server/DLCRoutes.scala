@@ -20,6 +20,8 @@ import org.bitcoins.server.routes._
 import ujson._
 import upickle.default._
 
+import scala.concurrent.Future
+
 case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
 
@@ -186,5 +188,13 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           }
       }
 
+    case ServerCommand("checkconnection", arr) =>
+      withValidServerCommand(DLCCheckConnection.fromJsArr(arr)) { addr =>
+        complete {
+          Future(dlcNode.checkPeerConnection(addr.address)).map { _ =>
+            Server.httpSuccess("initiated")
+          }
+        }
+      }
   }
 }

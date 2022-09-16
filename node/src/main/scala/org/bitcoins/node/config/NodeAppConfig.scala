@@ -194,7 +194,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.query-wait-time")) {
       val duration = config.getDuration("bitcoin-s.node.query-wait-time")
       TimeUtil.durationToFiniteDuration(duration)
-    } else 15.seconds
+    } else 120.seconds
   }
 
   /** maximum consecutive number of invalid responses allowed from the same peer */
