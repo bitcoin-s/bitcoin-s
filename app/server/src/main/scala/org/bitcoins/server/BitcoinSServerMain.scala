@@ -298,6 +298,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     torConf.addCallbacks(torCallbacks)
 
+    val dlcNodeCallbacks = WebsocketUtil.buildDLCNodeCallbacks(wsQueue)
+    dlcNodeConf.addCallbacks(dlcNodeCallbacks)
+
     ()
   }
 
@@ -459,6 +462,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         }
         dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
         _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
+        dlcNodeCallbacks = WebsocketUtil.buildDLCNodeCallbacks(wsQueue)
+        _ = dlcNodeConf.addCallbacks(dlcNodeCallbacks)
         _ <- startedTorConfigF
       } yield {
         logger.info(s"Done starting Main!")

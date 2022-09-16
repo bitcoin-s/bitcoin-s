@@ -23,14 +23,7 @@ import org.bitcoins.commons.jsonmodels.ws.{
   WalletWsType,
   WsNotification
 }
-import org.bitcoins.commons.rpc.{
-  GetBlockHeader,
-  GetNewAddress,
-  GetTransaction,
-  LockUnspent,
-  Rescan,
-  SendToAddress
-}
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress

@@ -5,11 +5,11 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.70"
-    val dropwizardMetricsV = "4.2.11" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.12" //https://github.com/dropwizard/metrics
 
-    val logback = "1.4.0" //https://github.com/qos-ch/logback
+    val logback = "1.4.1" //https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
-    val logkitV = "1.0.1"
+    val logkitV = "1.2.2"
     val avalonLoggingV = "4.1.5"
 
     val grizzledSlf4j = "1.3.4"
@@ -42,7 +42,7 @@ object Deps {
     val akkaActorV = akkaStreamv
 
     val slickV = "3.4.0"
-    val sqliteV = "3.39.2.1" //https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.39.3.0" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
@@ -73,7 +73,7 @@ object Deps {
     val sttpV = "3.7.6" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.8"
     val scalaJsTimeV = "2.3.0"
-    val zxingV = "3.4.1"
+    val zxingV = "3.5.0"
 
     val monixV = "3.4.0"
 
@@ -81,9 +81,9 @@ object Deps {
     val javaxJmsV = "2.0.1"
     val javaxMailV = "1.4.7"
 
-    val gsonV = "2.9.0"
+    val gsonV = "2.9.1"
     val jnaV = "5.12.1"
-    val waffleJnaV = "1.9.1"
+    val waffleJnaV = "3.2.0"
   }
 
   object Compile {

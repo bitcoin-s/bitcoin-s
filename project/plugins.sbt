@@ -25,7 +25,7 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 
 // bloop is a build server, enabling faster builds and more rapid dev feedback
 //https://github.com/scalacenter/bloop
-addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.5.0")
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.5.3")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
@@ -33,7 +33,7 @@ addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.10")
 
 // write markdown files with type-checked Scala
 //https://github.com/scalameta/mdoc
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.2")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.3")
 
 //https://github.com/scalameta/sbt-scalafmt
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.6")
@@ -53,7 +53,7 @@ addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.6")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.8.0")
 
 //https://github.com/scalacenter/scalajs-bundler
-addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.20.0")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.0")
 
 //https://github.com/portable-scala/sbt-crossproject
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.2.0")
