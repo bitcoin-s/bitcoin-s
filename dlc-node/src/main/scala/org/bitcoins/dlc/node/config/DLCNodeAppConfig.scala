@@ -3,9 +3,10 @@ package org.bitcoins.dlc.node.config
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory}
+import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
-import org.bitcoins.dlc.node.DLCNode
+import org.bitcoins.dlc.node.{DLCNode, DLCNodeCallbacks}
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
@@ -20,7 +21,8 @@ import scala.concurrent._
   */
 case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     implicit ec: ExecutionContext)
-    extends AppConfig {
+    extends AppConfig
+    with CallbackConfig[DLCNodeCallbacks] {
 
   override protected[bitcoins] def moduleName: String =
     DLCNodeAppConfig.moduleName
@@ -36,6 +38,8 @@ case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   override def stop(): Future[Unit] = Future.unit
+
+  override lazy val callbackFactory: DLCNodeCallbacks.type = DLCNodeCallbacks
 
   lazy val torConf: TorAppConfig =
     TorAppConfig(baseDatadir, Some(moduleName), configOverrides)

@@ -70,7 +70,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   private val syncing = new AtomicBoolean(false)
 
-  override lazy val version: Future[BitcoindVersion] = {
+  override def version: Future[BitcoindVersion] = {
     instance match {
       case _: BitcoindInstanceRemote =>
         getNetworkInfo.map(info =>

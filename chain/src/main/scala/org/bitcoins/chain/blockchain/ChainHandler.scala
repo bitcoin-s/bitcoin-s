@@ -352,6 +352,8 @@ class ChainHandler(
       filterHeadersToCreate <- filterHeadersToCreateF
       _ <- verifyFilterHeaders(filterHeadersToCreate)
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
+      _ <- chainConfig.callBacks.executeOnCompactFilterHeaderConnectedCallbacks(
+        filterHeadersToCreate)
     } yield {
       val minHeightOpt = filterHeadersToCreate.minByOption(_.height)
       val maxHeightOpt = filterHeadersToCreate.maxByOption(_.height)
@@ -398,6 +400,8 @@ class ChainHandler(
         }
       }
       _ <- filterDAO.createAll(compactFilterDbs)
+      _ <- chainConfig.callBacks.executeOnCompactFilterConnectedCallbacks(
+        compactFilterDbs)
     } yield {
       val minHeightOpt = compactFilterDbs.minByOption(_.height)
       val maxHeightOpt = compactFilterDbs.maxByOption(_.height)

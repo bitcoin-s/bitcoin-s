@@ -101,33 +101,6 @@ abstract class Wallet
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
-  private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
-    for {
-      utxos <- spendingInfoDAO.findAllSpendingInfos()
-      hasTxs <- FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], utxos) {
-        (accum, utxo) =>
-          // If we don't have tx in our transactionDAO, add it to the list
-          transactionDAO
-            .read(utxo.txid)
-            .map(txOpt => if (txOpt.isEmpty) accum :+ utxo else accum)
-      }
-    } yield hasTxs
-  }
-
-  protected def downloadMissingUtxos: Future[Unit] =
-    for {
-      utxos <- utxosWithMissingTx
-      txDbs <- transactionDAO.findByTxIdBEs(utxos.map(_.txid))
-      blockHashes = txDbs.flatMap(_.blockHashOpt.map(_.flip))
-      // Download the block the tx is from so we process the block and subsequent txs
-      _ <-
-        if (blockHashes.nonEmpty) {
-          logger.info(
-            s"Missing relevant ${utxos.size} wallet transactions, fetching their blocks..")
-          nodeApi.downloadBlocks(blockHashes.distinct)
-        } else Future.unit
-    } yield ()
-
   private def checkRootAccount: Future[Unit] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
@@ -154,13 +127,10 @@ abstract class Wallet
 
   override def start(): Future[Wallet] = {
     logger.info("Starting Wallet")
-    for {
-      _ <- walletConfig.start()
-      _ <- checkRootAccount
-      _ <- downloadMissingUtxos
-      _ = walletConfig.startRebroadcastTxsScheduler(this)
-      _ = startFeeRateCallbackScheduler()
-    } yield {
+
+    checkRootAccount.map { _ =>
+      walletConfig.startRebroadcastTxsScheduler(this)
+      startFeeRateCallbackScheduler()
       this
     }
   }
