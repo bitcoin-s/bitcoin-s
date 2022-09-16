@@ -4,7 +4,7 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.70"
+    val bouncyCastle = "1.71.1"
     val dropwizardMetricsV = "4.2.12" //https://github.com/dropwizard/metrics
 
     val logback = "1.4.1" //https://github.com/qos-ch/logback
@@ -89,7 +89,7 @@ object Deps {
   object Compile {
 
     val bouncycastle =
-      "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
+      "org.bouncycastle" % "bcprov-jdk18on" % V.bouncyCastle withSources () withJavadoc ()
 
     val scodec =
       Def.setting(
