@@ -20,10 +20,6 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends Logging {
   lazy val profile: JdbcProfile = dbConfig.profile
   import profile.api._
 
-  lazy val dbUsername: String = dbConfig.config.getString("db.user")
-
-  lazy val dbPassword: String = dbConfig.config.getString("db.password")
-
   lazy val numThreads: Int = dbConfig.config.getInt("db.numThreads")
 
   /** The database we are connecting to */
