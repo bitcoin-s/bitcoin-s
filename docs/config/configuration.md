@@ -172,7 +172,7 @@ bitcoin-s {
         try-peers-interval = 12s
         
         # wait time for queries like getheaders etc before switching to another
-        query-wait-time = 15s
+        query-wait-time = 120s
         
         hikari-logging = true
         hikari-logging-interval = 10 minute

@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.grpc.{GrpcClientSettings, SSLContextUtils}
 import akka.stream.scaladsl.{Sink, Source}
+import chainrpc._
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
 import invoicesrpc.LookupInvoiceMsg.InvoiceRef
@@ -12,7 +13,6 @@ import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
 import lnrpc._
-import chainrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._
@@ -33,7 +33,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
@@ -57,8 +57,8 @@ import java.net.InetSocketAddress
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.util.Try
 
 /** @param binaryOpt Path to lnd executable
   */
@@ -1006,22 +1006,22 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    val t = Try(stateClient.getState(GetStateRequest()).onComplete {
-      case Success(state) =>
-        state.state match {
-          case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
-            p.success(true)
-          case _: WalletState.Unrecognized |
-              WalletState.WAITING_TO_START | WalletState.UNLOCKED |
-              WalletState.LOCKED | WalletState.NON_EXISTING =>
-            p.success(false)
-        }
-      case Failure(_) =>
-        p.success(false)
-    })
+    val t = Try {
+      val getStateF = stateClient.getState(GetStateRequest())
+      val state = Await.result(getStateF, 5.seconds)
+
+      state.state match {
+        case WalletState.SERVER_ACTIVE =>
+          p.trySuccess(true)
+        case _: WalletState.Unrecognized | WalletState.WAITING_TO_START |
+            WalletState.UNLOCKED | WalletState.LOCKED |
+            WalletState.NON_EXISTING | WalletState.RPC_ACTIVE =>
+          p.trySuccess(false)
+      }
+    }
 
     t.failed.foreach { _ =>
-      p.success(false)
+      p.trySuccess(false)
     }
 
     p.future
