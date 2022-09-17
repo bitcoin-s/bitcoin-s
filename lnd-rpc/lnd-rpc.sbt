@@ -43,6 +43,8 @@ TaskKeys.downloadLnd := {
 
   val (platform, suffix) =
     if (Properties.isLinux) ("linux-amd64", "tar.gz")
+    else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
+      ("darwin-arm64", "tar.gz")
     else if (Properties.isMac) ("darwin-amd64", "tar.gz")
     else if (Properties.isWin) ("windows-amd64", "zip")
     else sys.error(s"Unsupported OS: ${Properties.osName}")
@@ -73,6 +75,8 @@ TaskKeys.downloadLnd := {
     val expectedHash =
       if (Properties.isLinux)
         "60511b4717a82c303e164f7d1048fd52f965c5fcb7aefaa11678be48e81a9dcc"
+      else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
+        "c1e1452dd2f4cf6bca248cc6b63d2f1b8f64b82ae0f81dcf669575bc4b359f84"
       else if (Properties.isMac)
         "eacf6e8f19de942fb23f481c85541342d3248bd545616822a172da3d23c03c9d"
       else if (Properties.isWin)
