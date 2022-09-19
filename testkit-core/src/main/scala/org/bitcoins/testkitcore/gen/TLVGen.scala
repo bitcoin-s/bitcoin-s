@@ -173,7 +173,7 @@ trait TLVGen {
       (contractDescriptor, _) =
         DLCTestUtil.genContractDescriptors(outcomes.toVector, totalInput)
     } yield {
-      (contractDescriptor.toTLV, totalInput)
+      (contractDescriptor.toSubType, totalInput)
     }
   }
 
@@ -192,7 +192,7 @@ trait TLVGen {
       (contractDescriptor, _) =
         DLCTestUtil.genMultiDigitContractInfo(numDigits, totalInput)
     } yield {
-      (contractDescriptor.toTLV, totalInput)
+      (contractDescriptor.toSubType, totalInput)
     }
   }
 
@@ -211,11 +211,11 @@ trait TLVGen {
       privKey <- CryptoGenerators.privateKey
       rValue <- CryptoGenerators.schnorrNonce
     } yield {
-      OracleInfoV0TLV(
-        OracleAnnouncementV0TLV.dummyForEventsAndKeys(
-          privKey,
-          rValue,
-          outcomes.map(EnumOutcome.apply)))
+      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummyForEventsAndKeys(
+                        privKey,
+                        rValue,
+                        outcomes.map(EnumOutcome.apply)),
+                      DLCSerializationVersion.current)
     }
   }
 
@@ -226,7 +226,12 @@ trait TLVGen {
       oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(outcomes))
     } yield {
       val announcements = oracles.map(_.announcement).toVector
-      OracleInfoV1TLV(threshold, OrderedAnnouncements(announcements))
+      //this should randomly generated
+      val oracleParamsOpt = NoneDLCType
+      OracleInfoV1TLV(threshold,
+                      OrderedAnnouncements(announcements),
+                      oracleParamsOpt,
+                      DLCSerializationVersion.current)
     }
   }
 
@@ -240,7 +245,8 @@ trait TLVGen {
       rValues <- Gen.listOfN(numDigits, CryptoGenerators.schnorrNonce)
     } yield {
       OracleInfoV0TLV(
-        OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues.toVector))
+        OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues.toVector),
+        DLCSerializationVersion.current)
     }
   }
 
@@ -251,7 +257,12 @@ trait TLVGen {
       oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(numDigits))
     } yield {
       val announcements = oracles.map(_.announcement).toVector
-      OracleInfoV1TLV(threshold, OrderedAnnouncements(announcements))
+      //this should randomly generated
+      val oracleParamsOpt = NoneDLCType
+      OracleInfoV1TLV(threshold,
+                      OrderedAnnouncements(announcements),
+                      oracleParamsOpt,
+                      DLCSerializationVersion.current)
     }
   }
 
@@ -296,14 +307,17 @@ trait TLVGen {
       (descriptor, totalCollateral) <-
         contractDescriptorTLVWithTotalCollateral
       oracleInfo <- descriptor match {
-        case ContractDescriptorV0TLV(outcomeAndValues) =>
+        case ContractDescriptorV0TLV(outcomeAndValues, _) =>
           val outcomes = outcomeAndValues.map(_._1)
           oracleInfoTLV(outcomes)
-        case ContractDescriptorV1TLV(numDigits, _, _) =>
+        case ContractDescriptorV1TLV(numDigits, _, _, _) =>
           oracleInfoTLV(numDigits)
       }
     } yield {
-      ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
+      ContractInfoV0TLV(totalCollateral,
+                        descriptor,
+                        oracleInfo,
+                        DLCSerializationVersion.current)
     }
   }
 
@@ -314,11 +328,11 @@ trait TLVGen {
       kValue <- CryptoGenerators.privateKey
       outcomes <- Gen.listOf(StringGenerators.genUTF8String)
     } yield {
-      (OracleInfoV0TLV(
-         OracleAnnouncementV0TLV.dummyForEventsAndKeys(
-           privKey,
-           kValue.schnorrNonce,
-           outcomes.toVector.map(EnumOutcome.apply))),
+      (OracleInfoV0TLV(OracleAnnouncementV0TLV.dummyForEventsAndKeys(
+                         privKey,
+                         kValue.schnorrNonce,
+                         outcomes.toVector.map(EnumOutcome.apply)),
+                       DLCSerializationVersion.current),
        privKey,
        kValue)
     }
@@ -390,13 +404,15 @@ trait TLVGen {
   def cetSignaturesV0TLV: Gen[CETSignaturesV0TLV] = {
     Gen
       .nonEmptyListOf(CryptoGenerators.adaptorSignature)
-      .map(sigs => CETSignaturesV0TLV(sigs.toVector))
+      .map(sigs =>
+        CETSignaturesV0TLV(sigs.toVector, DLCSerializationVersion.current))
   }
 
   def cetSignaturesV0TLV(numCETs: Int): Gen[CETSignaturesV0TLV] = {
     Gen
       .listOfN(numCETs, CryptoGenerators.adaptorSignature)
-      .map(sigs => CETSignaturesV0TLV(sigs.toVector))
+      .map(sigs =>
+        CETSignaturesV0TLV(sigs.toVector, DLCSerializationVersion.current))
   }
 
   def fundingSignaturesV0TLV: Gen[FundingSignaturesV0TLV] = {
@@ -409,13 +425,16 @@ trait TLVGen {
         numWitnesses,
         WitnessGenerators.p2wpkhWitnessV0 // TODO: make more general
       )
-      .map(witnesses => FundingSignaturesV0TLV(witnesses.toVector))
+      .map(witnesses =>
+        FundingSignaturesV0TLV(witnesses.toVector,
+                               DLCSerializationVersion.current))
   }
 
   def dlcOfferTLV: Gen[DLCOfferTLV] = {
     for {
       chainHash <- Gen.oneOf(
         Networks.knownNetworks.map(_.chainParams.genesisBlock.blockHeader.hash))
+      tempContractId <- CryptoGenerators.sha256Digest
       contractInfo <- contractInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
@@ -438,9 +457,10 @@ trait TLVGen {
       }
 
       DLCOfferTLV(
-        protocolVersionOpt = None, //TODO: Comeback and change this
+        protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
         contractFlags = 0.toByte,
         chainHash = chainHash,
+        tempContractIdOpt = Some(tempContractId),
         contractInfo = contractInfo,
         fundingPubKey = fundingPubKey,
         payoutSPK = payoutAddress.scriptPubKey,
@@ -485,6 +505,7 @@ trait TLVGen {
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
       DLCAcceptTLV(
+        protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
         tempContractId,
         totalCollateralSatoshis,
         fundingPubKey,
@@ -495,13 +516,13 @@ trait TLVGen {
         changeSerialId,
         cetSigs,
         refundSig,
-        NoNegotiationFieldsTLV
+        NoNegotiationFieldsTLV(DLCSerializationVersion.current)
       )
     }
   }
 
   def dlcAcceptTLV(offer: DLCOfferTLV): Gen[DLCAcceptTLV] = {
-    val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
+    val contractInfo = ContractInfo.fromSubType(offer.contractInfo)
 
     for {
       fundingPubKey <- CryptoGenerators.publicKey
@@ -520,6 +541,7 @@ trait TLVGen {
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
       DLCAcceptTLV(
+        protocolVersionOpt = None, //TODO: Comeback and change this
         tempContractId = DLCOffer.fromTLV(offer).tempContractId,
         acceptCollateralSatoshis = Satoshis(acceptCollateral),
         fundingPubKey = fundingPubKey,
@@ -530,7 +552,8 @@ trait TLVGen {
         changeSerialId = changeSerialId,
         cetSignatures = cetSigs,
         refundSignature = refundSig,
-        negotiationFields = NoNegotiationFieldsTLV
+        negotiationFields =
+          NoNegotiationFieldsTLV(DLCSerializationVersion.current)
       )
     }
   }
@@ -557,12 +580,16 @@ trait TLVGen {
       refundSig <- CryptoGenerators.digitalSignature
       fundingSigs <- fundingSignaturesV0TLV
     } yield {
-      DLCSignTLV(contractId, cetSigs, refundSig, fundingSigs)
+      DLCSignTLV(protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+                 contractId,
+                 cetSigs,
+                 refundSig,
+                 fundingSigs)
     }
   }
 
   def dlcSignTLV(offer: DLCOfferTLV, accept: DLCAcceptTLV): Gen[DLCSignTLV] = {
-    val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
+    val contractInfo = ContractInfo.fromSubType(offer.contractInfo)
 
     for {
       cetSigs <- cetSignaturesV0TLV(contractInfo.allOutcomes.length)
@@ -576,7 +603,11 @@ trait TLVGen {
       val fundingTx = builder.buildFundingTx
       val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)
 
-      DLCSignTLV(contractId, cetSigs, refundSig, fundingSigs)
+      DLCSignTLV(protocolVersionOpt = None, //TODO: Comeback and change this
+                 contractId,
+                 cetSigs,
+                 refundSig,
+                 fundingSigs)
     }
   }
 
@@ -609,11 +640,11 @@ trait TLVGen {
       oracleEventV0TLV,
       eventDescriptorTLV,
       oracleAnnouncementV0TLV,
-      contractInfoV0TLV,
-      oracleInfoV0TLV,
-      fundingInputV0TLV(),
-      cetSignaturesV0TLV,
-      fundingSignaturesV0TLV,
+      //contractInfoV0TLV,
+//      oracleInfoV0TLV,
+//      fundingInputV0TLV(),
+//      cetSignaturesV0TLV,
+//      fundingSignaturesV0TLV,
       dlcOfferTLV,
       dlcAcceptTLV,
       dlcSignTLV

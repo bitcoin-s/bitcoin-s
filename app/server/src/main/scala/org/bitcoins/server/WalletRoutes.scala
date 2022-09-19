@@ -368,9 +368,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
                              peerAddressOpt)) =>
           complete {
             val announcements = contractInfo.oracleInfo match {
-              case OracleInfoV0TLV(announcement)        => Vector(announcement)
-              case OracleInfoV1TLV(_, announcements)    => announcements
-              case OracleInfoV2TLV(_, announcements, _) => announcements
+              case OracleInfoV0TLV(announcement, _)        => Vector(announcement)
+              case OracleInfoV1TLV(_, announcements, _, _) => announcements
             }
             if (!announcements.forall(_.validateSignature)) {
               throw new RuntimeException(

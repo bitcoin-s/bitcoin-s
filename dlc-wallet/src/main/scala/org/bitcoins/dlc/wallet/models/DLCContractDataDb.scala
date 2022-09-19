@@ -3,7 +3,11 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
+import org.bitcoins.core.protocol.tlv.{
+  ContractDescriptorTLV,
+  OptionDLCType,
+  OracleParamsV0TLV
+}
 import org.bitcoins.crypto._
 
 /** This table contains all the meta information about a DLC.
@@ -12,7 +16,7 @@ import org.bitcoins.crypto._
 case class DLCContractDataDb(
     dlcId: Sha256Digest,
     oracleThreshold: Int,
-    oracleParamsTLVOpt: Option[OracleParamsV0TLV],
+    oracleParamsTLVOpt: OptionDLCType[OracleParamsV0TLV],
     contractDescriptorTLV: ContractDescriptorTLV,
     contractMaturity: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
@@ -21,4 +25,27 @@ case class DLCContractDataDb(
 
   lazy val dlcTimeouts: DLCTimeouts =
     DLCTimeouts(contractMaturity, contractTimeout)
+}
+
+object DLCContractDataDbHelper {
+
+  def apply(
+      dlcId: Sha256Digest,
+      oracleThreshold: Int,
+      oracleParamsTLVOpt: Option[OracleParamsV0TLV],
+      contractDescriptorTLV: ContractDescriptorTLV,
+      contractMaturity: BlockTimeStamp,
+      contractTimeout: BlockTimeStamp,
+      totalCollateral: CurrencyUnit
+  ): DLCContractDataDb = {
+    DLCContractDataDb(
+      dlcId = dlcId,
+      oracleThreshold = oracleThreshold,
+      oracleParamsTLVOpt = OptionDLCType(oracleParamsTLVOpt),
+      contractDescriptorTLV = contractDescriptorTLV,
+      contractMaturity = contractMaturity,
+      contractTimeout = contractTimeout,
+      totalCollateral = totalCollateral
+    )
+  }
 }

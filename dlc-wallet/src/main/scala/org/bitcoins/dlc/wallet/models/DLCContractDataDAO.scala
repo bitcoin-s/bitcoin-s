@@ -2,7 +2,11 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BlockTimeStamp
-import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
+import org.bitcoins.core.protocol.tlv.{
+  ContractDescriptorTLV,
+  OptionDLCType,
+  OracleParamsV0TLV
+}
 import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -72,7 +76,7 @@ case class DLCContractDataDAO()(implicit
 
     def oracleThreshold: Rep[Int] = column("oracle_threshold")
 
-    def oracleParamsOpt: Rep[Option[OracleParamsV0TLV]] = column(
+    def oracleParamsOpt: Rep[OptionDLCType[OracleParamsV0TLV]] = column(
       "oracle_params")
 
     def contractDescriptor: Rep[ContractDescriptorTLV] = column(

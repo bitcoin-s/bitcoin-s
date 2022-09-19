@@ -284,7 +284,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       for {
         offer <- walletA.createDLCOffer(
-          offerData.contractInfo.toTLV,
+          offerData.contractInfo.toSubType,
           offerData.collateral,
           Some(offerData.feeRate),
           offerData.timeouts.contractMaturity.toUInt32,
@@ -748,6 +748,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val offerData = DLCOffer(
         DLCOfferTLV.currentVersionOpt,
+        Sha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
         SingleContractInfo(contractDescriptor, oracleInfo),
         dummyDLCKeys,
         Satoshis(5000),
@@ -1077,7 +1078,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
       val contractInfo = ContractInfoV0TLV.fromHex(
         "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
-      val contractInfo1 = DLCWalletUtil.sampleDLCOffer.contractInfo.toTLV
+      val contractInfo1 = DLCWalletUtil.sampleDLCOffer.contractInfo.toSubType
 
       val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
       val totalCollateral = Satoshis(5000)

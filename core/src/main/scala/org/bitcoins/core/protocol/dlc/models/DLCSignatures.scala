@@ -1,7 +1,10 @@
 package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.protocol.script.ScriptWitnessV0
-import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
+import org.bitcoins.core.protocol.tlv.{
+  DLCSerializationVersion,
+  FundingSignaturesV0TLV
+}
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.util.{Indexed, SeqWrapper}
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
@@ -31,7 +34,7 @@ case class FundingSignatures(
   }
 
   def toTLV: FundingSignaturesV0TLV = {
-    FundingSignaturesV0TLV(sigs.map(_._2))
+    FundingSignaturesV0TLV(sigs.map(_._2), DLCSerializationVersion.current)
   }
 }
 

@@ -201,6 +201,7 @@ object DLCWalletUtil extends Logging {
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    tempContractId = Sha256Digest.empty,
     contractInfo = sampleContractInfo,
     pubKeys = dummyDLCKeys,
     collateral = half,
@@ -223,6 +224,7 @@ object DLCWalletUtil extends Logging {
 
   lazy val sampleDLCOffer2 = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    tempContractId = Sha256Digest.empty,
     contractInfo = sampleContractInfo2,
     pubKeys = dummyDLCKeys,
     collateral = sampleContractInfo2.totalCollateral,
@@ -237,6 +239,7 @@ object DLCWalletUtil extends Logging {
 
   lazy val invalidDLCOffer: DLCOffer = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    tempContractId = Sha256Digest.empty,
     contractInfo = invalidContractInfo,
     pubKeys = dummyDLCKeys,
     collateral = half,
@@ -250,7 +253,9 @@ object DLCWalletUtil extends Logging {
   )
 
   lazy val sampleMultiNonceDLCOffer: DLCOffer =
-    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo)
+    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo,
+                        tempContractId =
+                          Sha256Digest(ECPrivateKey.freshPrivateKey.bytes))
 
   lazy val dummyOutcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)] =
     Vector(
@@ -272,6 +277,7 @@ object DLCWalletUtil extends Logging {
     Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId))
 
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
+    DLCOfferTLV.currentVersionOpt,
     collateral = half,
     pubKeys = dummyDLCKeys,
     fundingInputs = Vector(dummyFundingInputs.last),
@@ -289,10 +295,13 @@ object DLCWalletUtil extends Logging {
       (TransactionOutPoint(dummyBlockHash, UInt32.zero), dummyScriptWitness)))
 
   lazy val sampleDLCSign: DLCSign =
-    DLCSign(dummyCETSigs,
-            dummyPartialSig,
-            dummyFundingSignatures,
-            ByteVector.empty)
+    DLCSign(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+      cetSigs = dummyCETSigs,
+      refundSig = dummyPartialSig,
+      fundingSigs = dummyFundingSignatures,
+      contractId = ByteVector.empty
+    )
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
     dlcId = Sha256Digest(
@@ -319,8 +328,8 @@ object DLCWalletUtil extends Logging {
   lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(
     dlcId = sampleDLCDb.dlcId,
     oracleThreshold = 1,
-    oracleParamsTLVOpt = None,
-    contractDescriptorTLV = sampleContractDescriptor.toTLV,
+    oracleParamsTLVOpt = NoneDLCType,
+    contractDescriptorTLV = sampleContractDescriptor.toSubType,
     contractMaturity = BlockTimeStamp(0),
     contractTimeout = BlockTimeStamp(1),
     totalCollateral = total

@@ -25,6 +25,7 @@ object DLCTxGen {
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
       feeRate: SatoshisPerVirtualByte =
         SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
+    val tempContractId = getTempContractId()
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
     val oracleInfo = EnumSingleOracleInfo(
@@ -39,6 +40,7 @@ object DLCTxGen {
                                      .bytes,
                                    kVal)
     DLCParams(
+      tempContractId,
       oracleInfo,
       SerializedContractInfoEntry.fromContractDescriptor(contractDescriptor),
       contractMaturityBound,
@@ -278,7 +280,11 @@ object DLCTxGen {
 
       val contractId = fundingTx.txIdBE.bytes.xor(accept.tempContractId.bytes)
       val sign =
-        DLCSign(offerCETSigs, offererRefundSig, offerFundingSigs, contractId)
+        DLCSign(offer.protocolVersionOpt,
+                offerCETSigs,
+                offererRefundSig,
+                offerFundingSigs,
+                contractId)
 
       SuccessTestVector(
         inputs,

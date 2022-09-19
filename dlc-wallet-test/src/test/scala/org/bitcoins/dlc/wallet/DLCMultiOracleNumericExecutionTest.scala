@@ -43,7 +43,7 @@ class DLCMultiOracleNumericExecutionTest
   val oracleInfo: NumericMultiOracleInfo =
     NumericMultiOracleInfo(threshold = threshold,
                            announcements = OrderedAnnouncements(announcements),
-                           params = params)
+                           paramsOpt = Some(params))
 
   val contractOraclePair: ContractOraclePair.NumericPair =
     ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)

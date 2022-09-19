@@ -135,7 +135,7 @@ object BroadcastDLCDialog
       vbox.children.add(gridPane)
 
       val (oracleKey, eventId) =
-        GUIUtil.getOraclePubKeyEventId(status.contractInfo.toTLV)
+        GUIUtil.getOraclePubKeyEventId(status.contractInfo.toSubType)
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(
@@ -180,15 +180,16 @@ object BroadcastDLCDialog
 
       status.contractInfo match {
         case singleContractInfo: SingleContractInfo =>
-          singleContractInfo.contractDescriptor.toTLV match {
+          singleContractInfo.contractDescriptor.toSubType match {
             case v0: ContractDescriptorV0TLV =>
               gridPane.add(new Label("Potential Outcome"), 0, nextRow)
               gridPane.add(new Label("Payouts"), 1, nextRow)
               nextRow += 1
 
               val descriptor = EnumContractDescriptor
-                .fromTLV(v0)
+                .fromSubType(v0)
                 .flip(status.totalCollateral.satoshis)
+                .outcomeValueMap
 
               descriptor.foreach { case (str, satoshis) =>
                 gridPane.add(new TextField() {
@@ -208,7 +209,7 @@ object BroadcastDLCDialog
             case v1: ContractDescriptorV1TLV =>
               val previewGraphButton: Button = new Button("Preview Graph") {
                 onAction = _ => {
-                  val descriptor = NumericContractDescriptor.fromTLV(v1)
+                  val descriptor = NumericContractDescriptor.fromSubType(v1)
                   val payoutCurve = if (status.isInitiator) {
                     descriptor.outcomeValueFunc
                   } else {

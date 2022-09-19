@@ -365,7 +365,7 @@ lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
 
 lazy val coreTestJVM = coreTest.jvm
   .settings(libraryDependencies ++= Deps.coreTestJVM.value)
-  .dependsOn(testkit)
+  .dependsOn(appCommons,testkit)
 
 lazy val coreTestJS = coreTest.js
   .enablePlugins(ScalaJSBundlerPlugin)

@@ -83,7 +83,7 @@ object DLCTestUtil {
         PiecewisePolynomialEndpoint(topCollar, rightVal),
         PiecewisePolynomialEndpoint(overMaxValue - 1, rightVal)
       ),
-      serializationVersion = DLCSerializationVersion.Beta
+      serializationVersion = DLCSerializationVersion.current
     )
     val roundingIntervalsToUse =
       if (numRounds > 0 && roundingIntervals == RoundingIntervals.noRounding) {

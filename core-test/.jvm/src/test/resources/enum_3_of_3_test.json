@@ -1,0 +1,210 @@
+{
+  "offer_message": {
+    "message": {
+      "protocolVersion": 1,
+      "contractFlags": 0,
+      "chainHash": "06226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f",
+      "temporaryContractId": "3f62c0b0d2e58985b50312d79f567c1e24e73c9020e39bb55e35b2a78cbc8916",
+      "contractInfo": {
+        "singleContractInfo": {
+          "totalCollateral": 200000000,
+          "contractInfo": {
+            "contractDescriptor": {
+              "enumeratedContractDescriptor": {
+                "payouts": [
+                  {
+                    "outcome": "a",
+                    "localPayout": 200000000
+                  },
+                  {
+                    "outcome": "b",
+                    "localPayout": 0
+                  },
+                  {
+                    "outcome": "c",
+                    "localPayout": 200000000
+                  },
+                  {
+                    "outcome": "d",
+                    "localPayout": 0
+                  }
+                ]
+              }
+            },
+            "oracleInfo": {
+              "multi": {
+                "threshold": 3,
+                "oracleAnnouncements": [
+                  {
+                    "announcementSignature": "40dd8917551273b0995586415ea0d1cd563fe09ee7c23ef71e7f3d597e08b9d5563a626b5edcfa7ba3d5b169bf3b9b5b430c17fa92d9e1cf573a5fb72b6e1ada",
+                    "oraclePublicKey": "b97e84e1988de11297b4f2088a723a8904e8bde65bbb06fdb8852254c8cc2c4f",
+                    "oracleEvent": {
+                      "oracleNonces": [
+                        "381efae1b4b83eb060d0468c018d685f6c915f2c48e37114a90f9541964ed2af"
+                      ],
+                      "eventMaturityEpoch": 1623133104,
+                      "eventDescriptor": {
+                        "enumEvent": {
+                          "outcomes": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      },
+                      "eventId": "Test"
+                    }
+                  },
+                  {
+                    "announcementSignature": "5bbc6f506e27cb14cc1dcd633da10e9c946bb872fbc483c9287dafd693c3a2ddf9b6a5b399facb899e96949658e8e733ff5b6b678cf6624869d7fb77182b509d",
+                    "oraclePublicKey": "ef68ed382aad934c786739302d131ac3cc7257004b32c9fe361fe01ed404d639",
+                    "oracleEvent": {
+                      "oracleNonces": [
+                        "08298599cb25d5efa5924024a7c35801cc1ac5d284f8ecfb99d3db67262c1a33"
+                      ],
+                      "eventMaturityEpoch": 1623133104,
+                      "eventDescriptor": {
+                        "enumEvent": {
+                          "outcomes": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      },
+                      "eventId": "Test"
+                    }
+                  },
+                  {
+                    "announcementSignature": "b61e9ad9ab7205bb37740ec2f75db8f48a66ed29fc7e9a08a33e6e9a12f8a1f63e2edadad892293b7efb5d9691f73e1fbcbf134e1dc60ff57536f765c9a5ba4a",
+                    "oraclePublicKey": "7ef162d300c7454fd86403b9c73e79b84839653c2c6a144c794df289fd66303d",
+                    "oracleEvent": {
+                      "oracleNonces": [
+                        "6b0962ff4e444806f0fbc588ba6250514bf26b6323cdc16a8b8d5f0b0b4e630d"
+                      ],
+                      "eventMaturityEpoch": 1623133104,
+                      "eventDescriptor": {
+                        "enumEvent": {
+                          "outcomes": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      },
+                      "eventId": "Test"
+                    }
+                  }
+                ],
+                "oracleParams": null
+              }
+            }
+          }
+        }
+      },
+      "fundingPubkey": "02abea992869cb905be0f6fde98ce2448741504b3d2a2ae8933064f7371ea0267e",
+      "payoutSpk": "0014d34ff7f9a8fc804ff05e20e7a29a4eeada9e51e5",
+      "payoutSerialId": "3105154226838036862",
+      "offerCollateral": 100000000,
+      "fundingInputs": [
+        {
+          "inputSerialId": "16924049837702443162",
+          "prevTx": "020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03520101ffffffff0200f2052a01000000160014cc6a78085a467c442acb8140ff33d1fbd61ba9bc0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000",
+          "prevTxVout": 0,
+          "sequence": 4294967295,
+          "maxWitnessLen": 107,
+          "redeemScript": ""
+        }
+      ],
+      "changeSpk": "0014f8140840d6ef2a7d63e749e9c0d8fc35a59ce8c3",
+      "changeSerialId": "1268814263800591591",
+      "fundOutputSerialId": "18023717729201319151",
+      "feeRatePerVb": 2,
+      "cetLocktime": 1623133104,
+      "refundLocktime": 1623737904
+    },
+    "serialized": "a71a000000010006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f3f62c0b0d2e58985b50312d79f567c1e24e73c9020e39bb55e35b2a78cbc891600000000000bebc20000040161000000000bebc200016200000000000000000163000000000bebc2000164000000000000000001000303fdd8249d40dd8917551273b0995586415ea0d1cd563fe09ee7c23ef71e7f3d597e08b9d5563a626b5edcfa7ba3d5b169bf3b9b5b430c17fa92d9e1cf573a5fb72b6e1adab97e84e1988de11297b4f2088a723a8904e8bde65bbb06fdb8852254c8cc2c4ffdd822390001381efae1b4b83eb060d0468c018d685f6c915f2c48e37114a90f9541964ed2af60bf0bb0fdd8060a000401610162016301640454657374fdd8249d5bbc6f506e27cb14cc1dcd633da10e9c946bb872fbc483c9287dafd693c3a2ddf9b6a5b399facb899e96949658e8e733ff5b6b678cf6624869d7fb77182b509def68ed382aad934c786739302d131ac3cc7257004b32c9fe361fe01ed404d639fdd82239000108298599cb25d5efa5924024a7c35801cc1ac5d284f8ecfb99d3db67262c1a3360bf0bb0fdd8060a000401610162016301640454657374fdd8249db61e9ad9ab7205bb37740ec2f75db8f48a66ed29fc7e9a08a33e6e9a12f8a1f63e2edadad892293b7efb5d9691f73e1fbcbf134e1dc60ff57536f765c9a5ba4a7ef162d300c7454fd86403b9c73e79b84839653c2c6a144c794df289fd66303dfdd8223900016b0962ff4e444806f0fbc588ba6250514bf26b6323cdc16a8b8d5f0b0b4e630d60bf0bb0fdd8060a0004016101620163016404546573740002abea992869cb905be0f6fde98ce2448741504b3d2a2ae8933064f7371ea0267e00160014d34ff7f9a8fc804ff05e20e7a29a4eeada9e51e52b17b951477be17e0000000005f5e10001eade4da8f142f09aa8020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03520101ffffffff0200f2052a01000000160014cc6a78085a467c442acb8140ff33d1fbd61ba9bc0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9012000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffff006b000000160014f8140840d6ef2a7d63e749e9c0d8fc35a59ce8c3119bbbd9b7c874e7fa211bc7ecf46cef000000000000000260bf0bb060c84630"
+  },
+  "accept_message": {
+    "message": {
+      "protocolVersion": 1,
+      "temporaryContractId": "3f62c0b0d2e58985b50312d79f567c1e24e73c9020e39bb55e35b2a78cbc8916",
+      "acceptCollateral": 100000000,
+      "fundingPubkey": "02daed087a6471a29fca4ea91c4beb6c63f33c2a9b3fde4d4f31bbc38bdf762d93",
+      "payoutSpk": "00146a2a24f1bc1ca8089aa46b0580d670fe6e496d93",
+      "payoutSerialId": "18025622004646536656",
+      "fundingInputs": [
+        {
+          "inputSerialId": "7941682260973188694",
+          "prevTx": "020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03510101ffffffff0200f2052a010000001600141734d1e9e7a3a71bc29351adaecedfae81448d2c0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000",
+          "prevTxVout": 0,
+          "sequence": 4294967295,
+          "maxWitnessLen": 107,
+          "redeemScript": ""
+        }
+      ],
+      "changeSpk": "001428bfc5a1aecf18a72b07b3e2d8240a3250ca1c92",
+      "changeSerialId": "5037010087475615394",
+      "cetAdaptorSignatures": {
+        "ecdsaAdaptorSignatures": [
+          {
+            "signature": "0203eacd8558aa21dc2abee2258ccd378107ce5574b11d6a6d66d094d1621c0db703f7d940734982583d49f506d4d6f240249279b381c4e90e5dc0a43d00cd256ba51ed50113e62d97581eec95266c859732fa78b5e5d0b5ac4b5d212c3bdf540d0f8be03a9431fe5285164f34f983dec10caf05b4cb262626a2f73c9b5efd4fc0dfbff8482149ab1a220c3833a80943a8ecf2c0144b58b0fa75436a0f7272b8f2c0"
+          },
+          {
+            "signature": "023be9e5673347b7c94ce624e96232bc4c16bc90f51b1e1e987a2e5481318ce86f020ca7c932e4cbcc86110ab00fc5b013cf14195de7256c97d7da06da41d320f28f5d62b0cc39e16bf060d1b23c5d654bbd59eb084d7cabe85174239bbbba3ba6c9f069643a5b8e3ca460f31911184159a3d135a3edf7a77cc3488dd5fc96b5b665097a30e6771b1feda3ebad0df01694e1f4d5a556013cb2a4fc01f2363e789315"
+          },
+          {
+            "signature": "03a82d463a83e5f529d42de1c60dcc9ff8250040e6967059ab6856145e22b53f8f032a17d885f89d20d13d220beac06fc4317f1a6db9fc181ccc744907e2e4e8f7bc36adebb773ac25266b2c838ba339a8e5409810723f4d9125f972b5edab7d6a1f679fc00cba68a5c201049431de5fb76ae8796d18a6c8900c33bfbc1df3a1d5c4ac2c4f68f5cc3ab8eb8050221b50fb15155b42fcdb94caa81f761606d4ef08b3"
+          },
+          {
+            "signature": "03735bc03310fa75002f8adba9a9ea5535ba06b48eb431d824dabdf19c03d1b25d0231633344fe710a1d3975101817aaeebb2d8398205b625eeba00780f62b430ea44c983c4210b39391416508eb8e0839673da67321c908e530b6d78a78d2945e90d7b65d2e6b5107ff72141316ae0163cbb2510024729b7c8bade9e14ae0ad2451c15f4d177c11436bf27fafd565401484c5dfa4ec250d011596f877ad39e4b650"
+          }
+        ]
+      },
+      "refundSignature": "304402206331b94cc58975d10a6c4fc2bb2c80df0ffe53a04ba79fee9def143647bd680e022017eeba656ee796e33f3f5df6715836731c3a67fb94019637ef6dbe16b055bc23",
+      "negotiationFields": null
+    },
+    "serialized": "a71c000000013f62c0b0d2e58985b50312d79f567c1e24e73c9020e39bb55e35b2a78cbc89160000000005f5e10002daed087a6471a29fca4ea91c4beb6c63f33c2a9b3fde4d4f31bbc38bdf762d93001600146a2a24f1bc1ca8089aa46b0580d670fe6e496d93fa27dfb59a6be5d0016e3685f08453f656a8020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03510101ffffffff0200f2052a010000001600141734d1e9e7a3a71bc29351adaecedfae81448d2c0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9012000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffff006b00000016001428bfc5a1aecf18a72b07b3e2d8240a3250ca1c9245e70dfcc20b16a2040203eacd8558aa21dc2abee2258ccd378107ce5574b11d6a6d66d094d1621c0db703f7d940734982583d49f506d4d6f240249279b381c4e90e5dc0a43d00cd256ba51ed50113e62d97581eec95266c859732fa78b5e5d0b5ac4b5d212c3bdf540d0f8be03a9431fe5285164f34f983dec10caf05b4cb262626a2f73c9b5efd4fc0dfbff8482149ab1a220c3833a80943a8ecf2c0144b58b0fa75436a0f7272b8f2c0023be9e5673347b7c94ce624e96232bc4c16bc90f51b1e1e987a2e5481318ce86f020ca7c932e4cbcc86110ab00fc5b013cf14195de7256c97d7da06da41d320f28f5d62b0cc39e16bf060d1b23c5d654bbd59eb084d7cabe85174239bbbba3ba6c9f069643a5b8e3ca460f31911184159a3d135a3edf7a77cc3488dd5fc96b5b665097a30e6771b1feda3ebad0df01694e1f4d5a556013cb2a4fc01f2363e78931503a82d463a83e5f529d42de1c60dcc9ff8250040e6967059ab6856145e22b53f8f032a17d885f89d20d13d220beac06fc4317f1a6db9fc181ccc744907e2e4e8f7bc36adebb773ac25266b2c838ba339a8e5409810723f4d9125f972b5edab7d6a1f679fc00cba68a5c201049431de5fb76ae8796d18a6c8900c33bfbc1df3a1d5c4ac2c4f68f5cc3ab8eb8050221b50fb15155b42fcdb94caa81f761606d4ef08b303735bc03310fa75002f8adba9a9ea5535ba06b48eb431d824dabdf19c03d1b25d0231633344fe710a1d3975101817aaeebb2d8398205b625eeba00780f62b430ea44c983c4210b39391416508eb8e0839673da67321c908e530b6d78a78d2945e90d7b65d2e6b5107ff72141316ae0163cbb2510024729b7c8bade9e14ae0ad2451c15f4d177c11436bf27fafd565401484c5dfa4ec250d011596f877ad39e4b6506331b94cc58975d10a6c4fc2bb2c80df0ffe53a04ba79fee9def143647bd680e17eeba656ee796e33f3f5df6715836731c3a67fb94019637ef6dbe16b055bc2300"
+  },
+  "sign_message": {
+    "message": {
+      "protocolVersion": 1,
+      "contractId": "f125a70271584b7997be574e4bc8bc23853c94676f5edec21fad67277b11f61a",
+      "cetAdaptorSignatures": {
+        "ecdsaAdaptorSignatures": [
+          {
+            "signature": "021275449eb0179dcae72a32b0fdf43eea60947e70c5ecea46732a622d12127f0a022d16d14d93ef1544d620bd42442a4c80fd9918e5286dc15da983ebf389b2cf78d1d5bd5b14ebdf46279186df9f5beb878b746897275a94ac12676dc0e16fab81608cd1be9a79bc75155c4234a061a743621e0b64ff7acea8063acdd6792d0ae8ab066d3d9d23a882e12c73c54fbf448d417ad8b3198b3a6223e3ea14ab57bf3d"
+          },
+          {
+            "signature": "0264aad8093af3fdbc572b4f9b433964408d7130149ef256c3d80007a33271eead02bb086d6db46c9425a437ff23a5d199fffbf69e0ee1e2235fb85350605dca94f6d88a4e7ea616314d6e7cb45c7c5bd88f0bf48e8779bf2c91494646bbf1578bc4f496e1c69d2ab551b13e0900e95695b1c28a2309ab9e2de26f0bbb0a2293a68c71c554b052bdc5d9499426604467ad95ef5c54f664d7c7469736ce81b51023da"
+          },
+          {
+            "signature": "0295ec0840b663fb7e8c00193cfa52d7cb64c6b623af8e83a09e772e22dbc1ae45039200ea68e3f229303b5f6768810bd94e85a789d0cea10a7f64a8fa912b14b2dfc28f1f77134db2a63e0abab82e009bbf06ca38b6a7b038ee789b3301f69537c3b13a9533b971a8e1da6d4317e1a9e546aebb5f23c3097c3d03dc7c734e73e0171d27fd1eafd1fc9b98c0373922844ddc5eba071185a10a0674399c3b9d164453"
+          },
+          {
+            "signature": "022d45bd6be2784e003925c65224279be3a7e0dd068d9e1d1d00aa5c90282c0af00312c7e385dc3fe65590339f5feb0630869799d7edd652e7e71e88ed51eca67c849d0d26f0ad08e7cd2ce392db5af194221ec5e0f57a1a7c44ac8f6f7146a5d2149b1577429d1a1d71524f625a0b58ae68675162f2e3e40b3b9b02af57f0cc045526236e6944d6b2786f5e18888864cc486eebd3d16701cf44d687203c48ac9418"
+          }
+        ]
+      },
+      "refundSignature": "304402205ae12fe9aa1ba16503137d81c95e462bd28b0e1b421a78934226d7e42487f9830220388952f814a81d8b6f98c2052940f14ade4feca72a14f6dc98e5d9d46e521d32",
+      "fundingSignatures": {
+        "fundingSignatures": [
+          {
+            "witnessElements": [
+              {
+                "witness": "304402200a3eb011cde10ab37b97e6cc3d8abd63852d676e96123f04252518e3e0d4eb8b02207685ec55656ea7bc98374707199d33890735561cbf371fe4421605ced01e2b1801"
+              },
+              {
+                "witness": "037867483e5f4222e4f1fa6f4a279fa8d56436cb7a28e39acd40eaf9bc1a6cd3c6"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "serialized": "a71e00000001f125a70271584b7997be574e4bc8bc23853c94676f5edec21fad67277b11f61a04021275449eb0179dcae72a32b0fdf43eea60947e70c5ecea46732a622d12127f0a022d16d14d93ef1544d620bd42442a4c80fd9918e5286dc15da983ebf389b2cf78d1d5bd5b14ebdf46279186df9f5beb878b746897275a94ac12676dc0e16fab81608cd1be9a79bc75155c4234a061a743621e0b64ff7acea8063acdd6792d0ae8ab066d3d9d23a882e12c73c54fbf448d417ad8b3198b3a6223e3ea14ab57bf3d0264aad8093af3fdbc572b4f9b433964408d7130149ef256c3d80007a33271eead02bb086d6db46c9425a437ff23a5d199fffbf69e0ee1e2235fb85350605dca94f6d88a4e7ea616314d6e7cb45c7c5bd88f0bf48e8779bf2c91494646bbf1578bc4f496e1c69d2ab551b13e0900e95695b1c28a2309ab9e2de26f0bbb0a2293a68c71c554b052bdc5d9499426604467ad95ef5c54f664d7c7469736ce81b51023da0295ec0840b663fb7e8c00193cfa52d7cb64c6b623af8e83a09e772e22dbc1ae45039200ea68e3f229303b5f6768810bd94e85a789d0cea10a7f64a8fa912b14b2dfc28f1f77134db2a63e0abab82e009bbf06ca38b6a7b038ee789b3301f69537c3b13a9533b971a8e1da6d4317e1a9e546aebb5f23c3097c3d03dc7c734e73e0171d27fd1eafd1fc9b98c0373922844ddc5eba071185a10a0674399c3b9d164453022d45bd6be2784e003925c65224279be3a7e0dd068d9e1d1d00aa5c90282c0af00312c7e385dc3fe65590339f5feb0630869799d7edd652e7e71e88ed51eca67c849d0d26f0ad08e7cd2ce392db5af194221ec5e0f57a1a7c44ac8f6f7146a5d2149b1577429d1a1d71524f625a0b58ae68675162f2e3e40b3b9b02af57f0cc045526236e6944d6b2786f5e18888864cc486eebd3d16701cf44d687203c48ac94185ae12fe9aa1ba16503137d81c95e462bd28b0e1b421a78934226d7e42487f983388952f814a81d8b6f98c2052940f14ade4feca72a14f6dc98e5d9d46e521d32010247304402200a3eb011cde10ab37b97e6cc3d8abd63852d676e96123f04252518e3e0d4eb8b02207685ec55656ea7bc98374707199d33890735561cbf371fe4421605ced01e2b180121037867483e5f4222e4f1fa6f4a279fa8d56436cb7a28e39acd40eaf9bc1a6cd3c6"
+  }
+}

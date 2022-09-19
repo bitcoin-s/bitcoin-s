@@ -46,17 +46,20 @@ trait TestVectorGen[T <: TestVector, Input] {
     val str = source.getLines().reduce(_ ++ _)
     source.close()
 
-    Json.parse(str).validate[JsArray].flatMap { arr =>
+    val result = Json.parse(str).validate[JsArray].flatMap { arr =>
       arr.value
         .foldLeft[JsResult[Vector[T]]](JsSuccess(Vector.empty)) {
           case (jsResultAccum, json) =>
             jsResultAccum.flatMap { accum =>
-              testVectorParser.fromJson(json).map { testVec =>
+              val parsedT = testVectorParser.fromJson(json)
+
+              parsedT.map { testVec =>
                 accum :+ testVec
               }
             }
         }
     }
+    result
   }
 
   def readInputsFromDefaultTestFile(): JsResult[Vector[Input]] = {

@@ -379,7 +379,7 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
               case Failure(_) => ()
               case Success(contractInfo) =>
                 contractInfo.oracleInfo match {
-                  case OracleInfoV0TLV(announcement) =>
+                  case OracleInfoV0TLV(announcement, _) =>
                     onAnnouncementEntered(
                       announcement.asInstanceOf[OracleAnnouncementV0TLV],
                       Some(contractInfo))
@@ -427,7 +427,7 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
           contractInfoOpt match {
             case Some(contractInfo) =>
               contractInfo.contractDescriptor match {
-                case ContractDescriptorV0TLV(outcomes) =>
+                case ContractDescriptorV0TLV(outcomes, _) =>
                   outcomes.foreach(outcome =>
                     addEnumOutcomeRow(outcome._1, Some(outcome._2)))
                 case _: ContractDescriptorV1TLV =>
@@ -454,7 +454,7 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
           contractInfoOpt match {
             case Some(contractInfo) =>
               contractInfo.contractDescriptor match {
-                case ContractDescriptorV0TLV(_) =>
+                case ContractDescriptorV0TLV(_, _) =>
                   throw new RuntimeException(
                     "Got incompatible contract info and announcement")
                 case descriptor: ContractDescriptorV1TLV =>
@@ -539,7 +539,7 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
           announcementOrContractInfoTF.text.value) match {
           case Failure(_) => None
           case Success(contractInfo) =>
-            Some(OracleInfo.fromTLV(contractInfo.oracleInfo))
+            Some(OracleInfo.fromSubType(contractInfo.oracleInfo))
         }
       case Success(announcement) => Some(SingleOracleInfo(announcement))
     }
@@ -588,21 +588,14 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
 
         val descriptor = EnumContractDescriptor(contractMap)
 
-        SingleContractInfo(descriptor, oracleInfo).toTLV
+        SingleContractInfo(descriptor, oracleInfo).toSubType
       case oracleInfo: NumericOracleInfo =>
-        val textFields: Vector[(TextField, TextField)] = {
-          roundingMap.toVector.sortBy(_._1).map(_._2)
-        }
-        val (totalCollateral, numericContractDescriptor) =
-          getNumericContractInfo(
-            decompOpt,
-            pointMap.toVector.sortBy(_._1).map(_._2),
-            textFields
-          )
+        val (totalCol, numeric) = getNumericContractInfo(
+          decompOpt,
+          pointMap.toVector.sortBy(_._1).map(_._2),
+          roundingMap.toVector.sortBy(_._1).map(_._2))
 
-        SingleContractInfo(totalCollateral,
-                           numericContractDescriptor,
-                           oracleInfo).toTLV
+        SingleContractInfo(totalCol, numeric, oracleInfo).toSubType
     }
 
     CreateDLCOffer(

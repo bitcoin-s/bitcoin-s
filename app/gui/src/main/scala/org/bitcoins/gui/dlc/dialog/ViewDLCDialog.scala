@@ -107,7 +107,7 @@ object ViewDLCDialog {
       row += 1
       add(getLabel("Contract Info"), 0, row)
 
-      add(getTextField(status.contractInfo.toTLV.hex),
+      add(getTextField(status.contractInfo.toSubType.hex),
           columnIndex = 1,
           rowIndex = row)
 

@@ -327,6 +327,11 @@ abstract class DLCWallet
       SatoshisPerVirtualByte(fee.currencyUnit)
     }
 
+    // in version 2 of the dlc spec, instead of hashing the offer TLV to
+    // to get the tempContractId, we just randomly generate one
+    val tempContractId: Sha256Digest =
+      Sha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+
     for {
       feeRate <- feeRateF
       //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
@@ -411,6 +416,7 @@ abstract class DLCWallet
 
       offer = DLCOffer(
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+        tempContractId = tempContractId,
         contractInfo = contractInfo,
         pubKeys = dlcPubKeys,
         collateral = collateral.satoshis,
@@ -448,11 +454,11 @@ abstract class DLCWallet
         peerOpt = peerAddressOpt.map(a => a.getHostString + ":" + a.getPort)
       )
 
-      contractDataDb = DLCContractDataDb(
+      contractDataDb = DLCContractDataDbHelper(
         dlcId = dlcId,
         oracleThreshold = contractInfo.oracleInfos.head.threshold,
         oracleParamsTLVOpt = oracleParamsOpt,
-        contractDescriptorTLV = contractInfo.contractDescriptors.head.toTLV,
+        contractDescriptorTLV = contractInfo.contractDescriptors.head.toSubType,
         contractMaturity = timeouts.contractMaturity,
         contractTimeout = timeouts.contractTimeout,
         totalCollateral = contractInfo.totalCollateral
@@ -987,6 +993,7 @@ abstract class DLCWallet
 
           offer =
             offerDb.toDLCOffer(
+              dlc.tempContractId,
               contractInfo,
               DLCTxUtil.matchPrevTxsWithInputs(offerInputs, prevTxs),
               dlc,
@@ -1114,10 +1121,13 @@ abstract class DLCWallet
       logger.info(
         s"Done creating sign message with contractId=${contractId.toHex} tempContractId=${dlc.tempContractId.hex}")
       //?? is signer.signRefundTx persisted anywhere ??
-      DLCSign(cetSigs,
-              signerOpt.map(_.signRefundTx).get,
-              FundingSignatures(sortedSigVec),
-              contractId)
+      DLCSign(
+        protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+        cetSigs = cetSigs,
+        refundSig = signerOpt.map(_.signRefundTx).get,
+        fundingSigs = FundingSignatures(sortedSigVec),
+        contractId = contractId
+      )
     }
   }
 

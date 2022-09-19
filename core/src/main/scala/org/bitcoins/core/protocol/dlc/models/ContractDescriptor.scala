@@ -14,7 +14,8 @@ import org.bitcoins.core.util.SeqWrapper
   * which is reusable between DLCs.
   * @see https://github.com/discreetlogcontracts/dlcspecs/blob/a8876ed28ed33d5f7d5104f01aa2a8d80d128460/Messaging.md#version-1-contract_descriptor
   */
-sealed trait ContractDescriptor extends TLVSerializable[ContractDescriptorTLV] {
+sealed trait ContractDescriptor
+    extends DLCSpecTypeSerializable[ContractDescriptorTLV] {
 
   /** Returns the counter-party's ContractDescriptor corresponding to this one.
     *
@@ -30,17 +31,19 @@ sealed trait ContractDescriptor extends TLVSerializable[ContractDescriptorTLV] {
 }
 
 object ContractDescriptor
-    extends TLVDeserializable[ContractDescriptorTLV, ContractDescriptor](
-      ContractDescriptorTLV) {
+    extends DLCSpecTypeDeserializable[
+      ContractDescriptorTLV,
+      ContractDescriptor](ContractDescriptorTLV) {
 
   val empty: ContractDescriptor = EnumContractDescriptor(
     Vector(EnumOutcome("") -> Satoshis.zero))
 
-  override def fromTLV(tlv: ContractDescriptorTLV): ContractDescriptor = {
+  override def fromSubType(tlv: ContractDescriptorTLV): ContractDescriptor = {
     tlv match {
-      case tlv: ContractDescriptorV0TLV => EnumContractDescriptor.fromTLV(tlv)
+      case tlv: ContractDescriptorV0TLV =>
+        EnumContractDescriptor.fromSubType(tlv)
       case tlv: ContractDescriptorV1TLV =>
-        NumericContractDescriptor.fromTLV(tlv)
+        NumericContractDescriptor.fromSubType(tlv)
     }
   }
 }
@@ -49,7 +52,7 @@ object ContractDescriptor
 case class EnumContractDescriptor(
     outcomeValueMap: Vector[(EnumOutcome, Satoshis)])
     extends ContractDescriptor
-    with TLVSerializable[ContractDescriptorV0TLV]
+    with DLCSpecTypeSerializable[ContractDescriptorV0TLV]
     with SeqWrapper[(EnumOutcome, Satoshis)] {
 
   require(outcomeValueMap.nonEmpty, "Cannot give an empty set of outcomes")
@@ -60,10 +63,11 @@ case class EnumContractDescriptor(
 
   def values: Vector[Satoshis] = outcomeValueMap.map(_._2)
 
-  override def toTLV: ContractDescriptorV0TLV =
+  override def toSubType: ContractDescriptorV0TLV =
     ContractDescriptorV0TLV(outcomeValueMap.map { case (outcome, amt) =>
-      outcome.outcome -> amt
-    })
+                              outcome.outcome -> amt
+                            },
+                            DLCSerializationVersion.current)
 
   override def flip(totalCollateral: Satoshis): EnumContractDescriptor = {
     EnumContractDescriptor(outcomeValueMap.map { case (hash, amt) =>
@@ -73,8 +77,9 @@ case class EnumContractDescriptor(
 }
 
 object EnumContractDescriptor
-    extends TLVDeserializable[ContractDescriptorV0TLV, EnumContractDescriptor](
-      ContractDescriptorV0TLV) {
+    extends DLCSpecTypeDeserializable[
+      ContractDescriptorV0TLV,
+      EnumContractDescriptor](ContractDescriptorV0TLV) {
 
   def fromStringVec(vec: Vector[(String, Satoshis)]): EnumContractDescriptor = {
     EnumContractDescriptor(vec.map { case (str, amt) =>
@@ -82,7 +87,8 @@ object EnumContractDescriptor
     })
   }
 
-  override def fromTLV(tlv: ContractDescriptorV0TLV): EnumContractDescriptor = {
+  override def fromSubType(
+      tlv: ContractDescriptorV0TLV): EnumContractDescriptor = {
     fromStringVec(tlv.outcomes)
   }
 }
@@ -97,7 +103,7 @@ case class NumericContractDescriptor(
     numDigits: Int,
     roundingIntervals: RoundingIntervals)
     extends ContractDescriptor
-    with TLVSerializable[ContractDescriptorV1TLV] {
+    with DLCSpecTypeSerializable[ContractDescriptorV1TLV] {
 
   private val minValue: Long = 0L
   private val maxValue: Long = (Math.pow(2, numDigits) - 1).toLong
@@ -122,22 +128,23 @@ case class NumericContractDescriptor(
     )
   }
 
-  override def toTLV: ContractDescriptorV1TLV = {
+  override def toSubType: ContractDescriptorV1TLV = {
     ContractDescriptorV1TLV(numDigits,
-                            outcomeValueFunc.toTLV,
-                            roundingIntervals.toTLV)
+                            outcomeValueFunc.toSubType,
+                            roundingIntervals.toTLV,
+                            DLCSerializationVersion.current)
   }
 }
 
 object NumericContractDescriptor
-    extends TLVDeserializable[
+    extends DLCSpecTypeDeserializable[
       ContractDescriptorV1TLV,
       NumericContractDescriptor](ContractDescriptorV1TLV) {
 
-  override def fromTLV(
+  override def fromSubType(
       tlv: ContractDescriptorV1TLV): NumericContractDescriptor = {
     NumericContractDescriptor(
-      DLCPayoutCurve.fromTLV(tlv.payoutFunction),
+      DLCPayoutCurve.fromSubType(tlv.payoutFunction),
       tlv.numDigits,
       RoundingIntervals.fromTLV(tlv.roundingIntervals)
     )

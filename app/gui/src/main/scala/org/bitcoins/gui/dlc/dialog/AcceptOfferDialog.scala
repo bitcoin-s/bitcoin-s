@@ -176,7 +176,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
               nextRow += 1
 
               val descriptor = EnumContractDescriptor
-                .fromTLV(v0)
+                .fromSubType(v0)
                 .flip(offer.contractInfo.totalCollateral)
               descriptor.foreach { case (str, satoshis) =>
                 gridPane.add(new TextField() {
@@ -200,7 +200,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
               }
             case v1: ContractDescriptorV1TLV =>
               val descriptor = NumericContractDescriptor
-                .fromTLV(v1)
+                .fromSubType(v1)
                 .flip(offer.contractInfo.totalCollateral)
 
               val previewGraphButton: Button = new Button("Preview Graph") {
