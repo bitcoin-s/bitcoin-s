@@ -199,8 +199,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       require(
         dbs.map(_.pubkey).distinct.length == 1,
         s"Attestation pubkey must be the same for all events with the same announcement signature")
+
+      //bug here, we don't guarantee that attestation public keys are unique!
       val metadataOptF =
-        oracleDataManagement.findMetadataByAttestationPubKey(dbs.head.pubkey)
+        oracleDataManagement.findMetadataByNonce(dbs.head.nonce)
       metadataOptF.map { metadataOpt =>
         val e = OracleEvent.fromPendingEventDbs(dbs, metadataOpt)
         Some(e)
@@ -232,7 +234,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         dbs.map(_.pubkey).distinct.length == 1,
         s"Attestation pubkey must be the same for all events with the same announcement signature")
       val metadataOptF =
-        oracleDataManagement.findMetadataByAttestationPubKey(dbs.head.pubkey)
+        oracleDataManagement.findMetadataByNonce(eventDbs.head.nonce)
       metadataOptF.map { metadataOpt =>
         val e = OracleEvent.fromCompletedEventDbs(dbs, metadataOpt)
         Some(e)
@@ -284,7 +286,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         Future.successful(None)
       } else {
         getFullOracleEvents(dbs)
-          .map(_.headOption)
       }
     }
   }
@@ -445,8 +446,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
             new IllegalArgumentException(
               s"Nonce not found from this oracle ${nonce.hex}"))
       }
-
       eventOpt <- eventDAO.read(nonce)
+      eventDbs <- eventDAO.findByNonces(Vector(nonce))
       eventDb <- eventOpt match {
         case Some(value) =>
           require(
@@ -510,12 +511,15 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def signDigits(
       oracleAnnouncement: BaseOracleAnnouncement,
       num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
-    logger.info(
-      s"Signing digits for eventName=${oracleAnnouncement.eventTLV.eventId} num=$num")
+
     oracleAnnouncement match {
       case v1: OracleAnnouncementV1TLV =>
+        logger.info(
+          s"Signing announcement v1 digits for eventName=${oracleAnnouncement.eventTLV.eventId} num=$num")
         signDigitsV1Announcement(announcementV1 = v1, num = num)
       case v0: OracleAnnouncementV0TLV =>
+        logger.info(
+          s"Signing announcement v0 digits for eventName=${oracleAnnouncement.eventTLV.eventId} num=$num")
         signDigitsV0Announcement(announcementV0 = v0, num = num)
     }
   }
@@ -523,104 +527,36 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   private def signDigitsV0Announcement(
       announcementV0: OracleAnnouncementV0TLV,
       num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
-    val oracleEventV0TLV = announcementV0.eventTLV
-    val eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV = {
-      oracleEventV0TLV.eventDescriptor match {
-        case _: EnumEventDescriptorV0TLV =>
-          throw new IllegalArgumentException(
-            "Must have a DigitDecomposition event descriptor use signEvent instead")
-        case decomp: DigitDecompositionEventDescriptorV0TLV =>
-          decomp
-      }
-    }
-
-    // Make this a vec so it is easier to add on
-    val signSigF =
-      eventDescriptorTLV match {
-        case _: SignedDigitDecompositionEventDescriptor =>
-          val signOutcome = DigitDecompositionSignAttestation(num >= 0)
-          val signNonce = oracleEventV0TLV match {
-            case v0: OracleEventV0TLV => v0.nonces.head
-            case v1: OracleEventV1TLV =>
-              sys.error(s"Cannot have a v1 event when creating a v0 attestation, got=$v1")
-          }
-          createAttestation(signNonce, signOutcome).map(db => Vector(db))
-
-        case _: UnsignedDigitDecompositionEventDescriptor =>
-          FutureUtil.emptyVec[EventDb]
-      }
-
-    val boundedNum = if (num < eventDescriptorTLV.minNum) {
-      logger.info(
-        s"Number given $num is less than the minimum, signing minimum instead")
-      eventDescriptorTLV.minNum.toLong
-    } else if (num > eventDescriptorTLV.maxNum) {
-      logger.info(
-        s"Number given $num is greater than the maximum, signing maximum instead")
-      eventDescriptorTLV.maxNum.toLong
-    } else num
-
-    val decomposed = NumberUtil.decompose(Math.abs(boundedNum),
-                                          eventDescriptorTLV.base.toInt,
-                                          eventDescriptorTLV.numDigits.toInt)
-
-    val oracleEventNonces = oracleEventV0TLV match {
-      case v0: OracleEventV0TLV =>
-        v0.nonces
-      case v1: OracleEventV1TLV =>
-        sys.error(s"Cannot have a v1 event when creating a v0 attestation, got=$v1")
-    }
-    val nonces = eventDescriptorTLV match {
-      case _: UnsignedDigitDecompositionEventDescriptor =>
-        oracleEventNonces
-      case _: SignedDigitDecompositionEventDescriptor =>
-        oracleEventNonces.tail
-    }
-
-    val digitSigAVecF: Future[
-      Vector[DBIOAction[EventDb, NoStream, Effect.Write]]] = Future.sequence {
-      nonces.zipWithIndex.map { case (nonce, index) =>
-        val digit = decomposed(index)
-        createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
-      }.toVector
-    }
-    val digitSigAF: Future[
-      DBIOAction[Vector[EventDb], NoStream, Effect.Write]] = {
-      digitSigAVecF.map(digitSigs => DBIO.sequence(digitSigs))
-    }
-
-    for {
-      signSig <- signSigF
-      digitSigA <- digitSigAF
-      digitSigs <- safeDatabase.run(digitSigA)
-    } yield {
-      val event = OracleEvent.fromCompletedEventDbs(
-        eventDbs = signSig ++ digitSigs,
-        metadataOpt = None
-      )
-      event match {
-        case enum: CompletedEnumV0OracleEvent =>
-          sys.error(
-            s"Cannot have an enum oracle event when signing a numeric announcement, got=$enum")
-        case numeric: CompletedDigitDecompositionV0OracleEvent =>
-          numeric
-      }
-    }
+    signNumericAnnouncement(announcement = announcementV0,
+                            num = num,
+                            nonces = announcementV0.eventTLV.nonces,
+                            metadataOpt = None)
   }
 
   private def signDigitsV1Announcement(
       announcementV1: OracleAnnouncementV1TLV,
       num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
-    val oracleEventV0TLV = announcementV1.eventTLV
-    val metadata = announcementV1.metadata
-    val metadataNonces = metadata.attestations.nonces
+    signNumericAnnouncement(announcement = announcementV1,
+                            num = num,
+                            nonces =
+                              announcementV1.metadata.attestations.nonces,
+                            metadataOpt = Some(announcementV1.metadata))
+  }
 
-    val eventDescriptorTLV: DigitDecompositionEventDescriptorDLCType = {
+  private def signNumericAnnouncement(
+      announcement: BaseOracleAnnouncement,
+      num: Long,
+      nonces: OrderedNonces,
+      metadataOpt: Option[OracleMetadata]): Future[
+    CompletedDigitDecompositionV0OracleEvent] = {
+    val oracleEventV0TLV = announcement.eventTLV
+
+    val eventDescriptorTLV: BaseNumericEventDescriptorTLV = {
       oracleEventV0TLV.eventDescriptor match {
-        case _: EnumEventDescriptorDLCSubType =>
+        case _: EnumEventDescriptorDLCSubType | _: EnumEventDescriptorV0TLV =>
           throw new IllegalArgumentException(
             "Must have a DigitDecomposition event descriptor use signEvent instead")
-        case decomp: DigitDecompositionEventDescriptorDLCType =>
+        case decomp: BaseNumericEventDescriptorTLV =>
           decomp
       }
     }
@@ -628,11 +564,13 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     // Make this a vec so it is easier to add on
     val signSigF =
       eventDescriptorTLV match {
-        case _: SignedDigitDecompositionEventDescriptorDLCType =>
+        case _: SignedDigitDecompositionEventDescriptorDLCType |
+            _: SignedDigitDecompositionEventDescriptor =>
           val signOutcome = DigitDecompositionSignAttestation(num >= 0)
-          createAttestation(metadataNonces.head, signOutcome)
+          createAttestation(nonces.head, signOutcome)
             .map(db => Vector(db))
-        case _: UnsignedDigitDecompositionEventDescriptorDLCType =>
+        case _: UnsignedDigitDecompositionEventDescriptorDLCType |
+            _: UnsignedDigitDecompositionEventDescriptor =>
           FutureUtil.emptyVec[EventDb]
       }
 
@@ -650,18 +588,18 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                           eventDescriptorTLV.base.toInt,
                                           eventDescriptorTLV.numDigits.toInt)
 
-    val nonces: OrderedNonces = eventDescriptorTLV match {
+    val digitNonces: OrderedNonces = eventDescriptorTLV match {
       case _: UnsignedDigitDecompositionEventDescriptor |
           _: UnsignedDigitDecompositionEventDescriptorDLCType =>
-        metadataNonces
+        nonces
       case _: SignedDigitDecompositionEventDescriptor |
           _: SignedDigitDecompositionEventDescriptorDLCType =>
-        OrderedNonces(metadataNonces.tail.toVector)
+        OrderedNonces(nonces.tail.toVector)
     }
 
     val digitSigAVecF: Future[
       Vector[DBIOAction[EventDb, NoStream, Effect.Write]]] = Future.sequence {
-      nonces.zipWithIndex.map { case (nonce, index) =>
+      digitNonces.zipWithIndex.map { case (nonce, index) =>
         val digit = decomposed(index)
         createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
       }.toVector
@@ -677,7 +615,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       digitSigs <- safeDatabase.run(digitSigA)
     } yield {
       val event =
-        OracleEvent.fromCompletedEventDbs(signSig ++ digitSigs, Some(metadata))
+        OracleEvent.fromCompletedEventDbs(signSig ++ digitSigs, metadataOpt)
       event match {
         case enum: CompletedEnumV0OracleEvent =>
           sys.error(

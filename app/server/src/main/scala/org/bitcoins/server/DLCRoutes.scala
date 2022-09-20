@@ -13,8 +13,8 @@ import org.bitcoins.core.protocol.dlc.models.{
   SingleContractInfo
 }
 import org.bitcoins.core.protocol.tlv.{
-  EnumEventDescriptorV0TLV,
-  NumericEventDescriptorTLV
+  BaseEnumEventDescriptor,
+  BaseNumericEventDescriptorTLV
 }
 import org.bitcoins.server.routes._
 import ujson._
@@ -58,9 +58,9 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           complete {
             val oracleInfo =
               create.announcementTLV.eventTLV.eventDescriptor match {
-                case _: NumericEventDescriptorTLV =>
+                case _: BaseNumericEventDescriptorTLV =>
                   NumericSingleOracleInfo(create.announcementTLV)
-                case _: EnumEventDescriptorV0TLV =>
+                case _: BaseEnumEventDescriptor =>
                   EnumSingleOracleInfo(create.announcementTLV)
               }
             val contractInfo = SingleContractInfo(create.totalCollateral,

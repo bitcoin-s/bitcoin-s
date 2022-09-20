@@ -88,6 +88,13 @@ case class EventDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
+  def findByNonces(nonces: Vector[SchnorrNonce]): Future[Vector[EventDb]] = {
+    val query = table.filter(_.nonce.inSet(nonces))
+    safeDatabase
+      .run(query.result)
+      .map(_.toVector)
+  }
+
   class EventTable(tag: Tag) extends Table[EventDb](tag, schemaName, "events") {
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)

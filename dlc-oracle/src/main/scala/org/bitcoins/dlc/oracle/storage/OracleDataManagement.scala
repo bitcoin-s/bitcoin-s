@@ -19,7 +19,7 @@ import org.bitcoins.core.protocol.tlv.{
   OracleMetadata
 }
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.crypto.{ECPrivateKey, SchnorrPublicKey}
+import org.bitcoins.crypto.{ECPrivateKey, SchnorrNonce, SchnorrPublicKey}
 import org.bitcoins.dlc.oracle.util.EventDbUtil
 import slick.dbio.{DBIO, DBIOAction, Effect, NoStream}
 
@@ -157,6 +157,21 @@ case class OracleDataManagement(daos: DLCOracleDAOs)(implicit
       attestationPubKey: SchnorrPublicKey): Future[Option[OracleMetadata]] = {
     val action = findMetadataByAttestationPubKeyAction(attestationPubKey)
     safeDatabase.run(action)
+  }
+
+  def findMetadataByNonce(
+      nonce: SchnorrNonce): Future[Option[OracleMetadata]] = {
+
+    for {
+      nonceOpt <- oracleSchnorrNonceDAO.findByNonce(nonce)
+      metadataOpt <- {
+        nonceOpt match {
+          case Some(db) => getOracleMetadata(db.id)
+          case None     => Future.successful(None)
+        }
+      }
+    } yield metadataOpt
+
   }
 
 }

@@ -51,6 +51,17 @@ case class OracleSchnorrNonceDAO()(implicit
       .map(_.toVector)
   }
 
+  def findByNonceAction(nonce: SchnorrNonce): DBIOAction[
+    Option[NonceSignaturePairDb],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.nonce === nonce).result.map(_.headOption)
+  }
+
+  def findByNonce(nonce: SchnorrNonce): Future[Option[NonceSignaturePairDb]] = {
+    safeDatabase.run(findByNonceAction(nonce))
+  }
+
   class NonceTable(tag: Tag)
       extends Table[NonceSignaturePairDb](tag,
                                           schemaName,
