@@ -188,9 +188,9 @@ object EnumSingleOracleInfo
       privKey: ECPrivateKey,
       nonce: SchnorrNonce,
       events: Vector[EnumOutcome]): EnumSingleOracleInfo = {
-    EnumSingleOracleInfo(
-      OracleAnnouncementV0TLV
-        .dummyForEventsAndKeys(privKey, nonce, events))
+    val announcement = OracleAnnouncementV1TLV
+      .dummyForEventsAndKeys(privKey, nonce, events)
+    EnumSingleOracleInfo(announcement)
   }
 
   override def fromSubType(tlv: OracleInfoV0TLV): EnumSingleOracleInfo = {

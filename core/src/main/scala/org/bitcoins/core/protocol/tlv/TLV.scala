@@ -2747,6 +2747,18 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
                             metadata = metadata)
   }
 
+  def buildAnnouncementSignature(
+      announcementPrivKey: ECPrivateKey,
+      signingVersion: SigningVersion,
+      eventTLV: OracleEventV1TLV,
+      metadata: OracleMetadata): SchnorrDigitalSignature = {
+    val announcementBytes =
+      signingVersion.calcAnnouncementHash(eventTLV, metadata)
+    val announcementSignature =
+      announcementPrivKey.schnorrSign(announcementBytes)
+
+    announcementSignature
+  }
   private val oracleName = NormalizedString("oracle_name")
   private val oracleDescription = NormalizedString("oracle_description")
   private val creationTime = UInt32.zero
@@ -2759,8 +2771,7 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
       events.map(outcome => outcome.outcome))
 
     val event = OracleEventV1TLV.buildDummy(eventDescriptor)
-    val sig =
-      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+
     val attestation = SchnorrAttestation.build(privKey,
                                                privKey.schnorrPublicKey,
                                                OrderedNonces(Vector(nonce)))
@@ -2777,7 +2788,10 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
                                   creationTime,
                                   attestation,
                                   metadataSignature)
-
+    val sig = buildAnnouncementSignature(privKey,
+                                         SigningVersion.latest,
+                                         event,
+                                         metadata)
     OracleAnnouncementV1TLV(sig, event, metadata)
   }
 
@@ -2791,8 +2805,7 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
       unit = "dummy",
       precision = Int32.zero)
     val event = OracleEventV1TLV.buildDummy(eventDescriptor)
-    val sig =
-      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+
     val attestation = SchnorrAttestation.build(privKey,
                                                privKey.schnorrPublicKey,
                                                OrderedNonces(nonces))
@@ -2809,7 +2822,11 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
                                   creationTime,
                                   attestation,
                                   metadataSignature)
-    OracleAnnouncementV1TLV(sig, event, metadata)
+    val signature = buildAnnouncementSignature(privKey,
+                                               SigningVersion.latest,
+                                               event,
+                                               metadata)
+    OracleAnnouncementV1TLV(signature, event, metadata)
   }
 }
 

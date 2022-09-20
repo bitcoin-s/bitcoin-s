@@ -345,7 +345,7 @@ object DLCUtil {
           acc :+ OracleSignatures(SingleOracleInfo(announcement), sig)
         case None =>
           throw new RuntimeException(
-            s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
+            s"Cannot find announcement for associated public key, pubKey=${sig.publicKey.hex} nonce=$firstNonce announcements=$announcements attestments=$attestments")
       }
     }
   }
