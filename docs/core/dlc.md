@@ -142,7 +142,7 @@ val announcements = 0.until(5).toVector.map { _ =>
     val oraclePrivKey = ECPrivateKey.freshPrivateKey
     val nonces = 0.until(15).toVector.map(_ => ECPrivateKey.freshPrivateKey.schnorrNonce)
     val orderedNonces = OrderedNonces.fromUnsorted(nonces)
-  	OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, orderedNonces)
+  	OracleAnnouncementV1TLV.dummyForKeys(oraclePrivKey, orderedNonces)
 }
 val params = OracleParamsV0TLV(maxErrorExp = 5,minFailExp = 3, maximizeCoverage =false)
 val oracleInfo = NumericMultiOracleInfo(

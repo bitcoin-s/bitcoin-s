@@ -2695,7 +2695,7 @@ object OracleInfoV1TLV extends Factory[OracleInfoV1TLV] {
 
       val threshold = iter.takeU16().toInt
       val oracles =
-        iter.takeBigSizePrefixedList(() => iter.take(OracleAnnouncementTLV))
+        iter.takeBigSizePrefixedList(() => iter.take(OracleAnnouncementV1TLV))
       val paramsOpt = iter.takeOpt(OracleParamsV0TLV)
       OracleInfoV1TLV(threshold,
                       OrderedAnnouncements(oracles),
@@ -2750,15 +2750,68 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
   def dummyForEventsAndKeys(
       privKey: ECPrivateKey,
       nonce: SchnorrNonce,
-      events: Vector[EnumOutcome]): OracleAnnouncementTLV = {
-    val eventDescriptor = EnumEventDescriptorV0TLV(
+      events: Vector[EnumOutcome]): OracleAnnouncementV1TLV = {
+    val eventDescriptor = EnumEventDescriptorDLCSubType(
       events.map(outcome => outcome.outcome))
 
-    val event = OracleEventV0TLV.buildDummy(Vector(nonce), eventDescriptor)
+    val event = OracleEventV1TLV.buildDummy(eventDescriptor)
     val sig =
       privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+    val attestation = SchnorrAttestation.build(privKey,
+                                               privKey.schnorrPublicKey,
+                                               OrderedNonces(Vector(nonce)))
 
-    OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
+    val oracleName = NormalizedString("oracle_name")
+    val oracleDescription = NormalizedString("oracle_description")
+    val creationTime = UInt32.zero
+    val metadataSignature = OracleMetadataSignature.buildSignature(
+      privKey,
+      oracleName,
+      oracleDescription,
+      creationTime,
+      attestation)
+    val metadata = OracleMetadata(privKey.schnorrPublicKey,
+                                  oracleName,
+                                  oracleDescription,
+                                  creationTime,
+                                  attestation,
+                                  metadataSignature)
+
+    OracleAnnouncementV1TLV(sig, event, metadata)
+  }
+
+  def dummyForKeys(
+      privKey: ECPrivateKey,
+      nonces: Vector[SchnorrNonce]): OracleAnnouncementV1TLV = {
+    val eventDescriptor = DigitDecompositionEventDescriptorDLCType(
+      UInt8.two,
+      isSigned = false,
+      numDigits = nonces.length,
+      unit = "dummy",
+      precision = Int32.zero)
+    val event = OracleEventV1TLV.buildDummy(eventDescriptor)
+    val sig =
+      privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+    val attestation = SchnorrAttestation.build(privKey,
+                                               privKey.schnorrPublicKey,
+                                               OrderedNonces(nonces))
+
+    val oracleName = NormalizedString("oracle_name")
+    val oracleDescription = NormalizedString("oracle_description")
+    val creationTime = UInt32.zero
+    val metadataSignature = OracleMetadataSignature.buildSignature(
+      privKey,
+      oracleName,
+      oracleDescription,
+      creationTime,
+      attestation)
+    val metadata = OracleMetadata(privKey.schnorrPublicKey,
+                                  oracleName,
+                                  oracleDescription,
+                                  creationTime,
+                                  attestation,
+                                  metadataSignature)
+    OracleAnnouncementV1TLV(sig, event, metadata)
   }
 }
 
@@ -3364,6 +3417,14 @@ object OracleEventV1TLV extends Factory[OracleEventV1TLV] {
     OracleEventV1TLV(eventDescriptor = eventDescriptor,
                      eventId = eventId,
                      timestamps = timestamps)
+  }
+
+  def buildDummy(
+      eventDescriptorTLV: EventDescriptorDLCType): OracleEventV1TLV = {
+    val timestamp = FixedOracleEventTimestamp(UInt32.zero)
+    OracleEventV1TLV(eventDescriptorTLV,
+                     eventId = NormalizedString("dummy"),
+                     timestamps = timestamp)
   }
 }
 
