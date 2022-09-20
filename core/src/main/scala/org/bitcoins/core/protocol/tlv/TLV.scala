@@ -2695,7 +2695,7 @@ object OracleInfoV1TLV extends Factory[OracleInfoV1TLV] {
 
       val threshold = iter.takeU16().toInt
       val oracles =
-        iter.takeBigSizePrefixedList(() => iter.take(OracleAnnouncementV1TLV))
+        iter.takeBigSizePrefixedList(() => iter.take(OracleAnnouncementTLV))
       val paramsOpt = iter.takeOpt(OracleParamsV0TLV)
       OracleInfoV1TLV(threshold,
                       OrderedAnnouncements(oracles),
