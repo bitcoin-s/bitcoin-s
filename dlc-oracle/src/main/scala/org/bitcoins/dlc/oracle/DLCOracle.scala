@@ -160,12 +160,24 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   override def listEvents(): Future[Vector[OracleEvent]] = {
     eventDAO.findAll().flatMap { eventDbs =>
-      getFullOracleEvents(eventDbs)
+      val eventDbsSorted = eventDbs.groupBy(_.announcementSignature)
+      val resultF = Future.traverse(eventDbsSorted.values) { eventDbs =>
+        getFullOracleEvents(eventDbs)
+      }
+
+      resultF.map(_.flatten.toVector)
     }
   }
 
   private def getFullOracleEvents(
-      eventDbs: Vector[EventDb]): Future[Vector[OracleEvent]] = {
+      eventDbs: Vector[EventDb]): Future[Option[OracleEvent]] = {
+    require(
+      eventDbs.map(_.eventName).distinct.size == 1,
+      s"Event names must all be the same, first eventName=${eventDbs.head.eventName}")
+    require(
+      eventDbs.map(_.pubkey).distinct.size == 1,
+      s"Event pubkeys must all be the same, first event pubKey=${eventDbs.head.pubkey}")
+
     val eventDb = eventDbs.head
     eventDb.attestationOpt match {
       case Some(_) => getCompleteOracleEvent(eventDbs)
@@ -174,7 +186,14 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   }
 
   private def getPendingOracleEvent(
-      eventDbs: Vector[EventDb]): Future[Vector[PendingOracleEvent]] = {
+      eventDbs: Vector[EventDb]): Future[Option[PendingOracleEvent]] = {
+    require(
+      eventDbs.map(_.eventName).distinct.size == 1,
+      s"Event names must all be the same, first eventName=${eventDbs.head.eventName}")
+    require(
+      eventDbs.map(_.pubkey).distinct.size == 1,
+      s"Event pubkeys must all be the same, first event pubKey=${eventDbs.head.pubkey}")
+
     val events = eventDbs.groupBy(_.announcementSignature)
     val resultNested = events.values.map { dbs =>
       require(
@@ -190,11 +209,23 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     Future
       .sequence(resultNested)
-      .map(_.flatten.toVector)
+      .map(_.headOption.flatten)
   }
 
   private def getCompleteOracleEvent(
-      eventDbs: Vector[EventDb]): Future[Vector[CompletedOracleEvent]] = {
+      eventDbs: Vector[EventDb]): Future[Option[CompletedOracleEvent]] = {
+    require(
+      eventDbs.forall(_.attestationOpt.isDefined),
+      s"To make completed events all attestations need to be defined, got=${eventDbs
+        .map(_.eventName)}")
+
+    require(
+      eventDbs.map(_.eventName).distinct.size == 1,
+      s"Event names must all be the same, first eventName=${eventDbs.head.eventName}")
+    require(
+      eventDbs.map(_.pubkey).distinct.size == 1,
+      s"Event pubkeys must all be the same, first event pubKey=${eventDbs.head.pubkey}")
+
     val events = eventDbs.groupBy(_.announcementSignature)
     val resultNested = events.values.map { dbs =>
       require(
@@ -210,18 +241,28 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     Future
       .sequence(resultNested)
-      .map(_.flatten.toVector)
+      .map(_.headOption.flatten)
   }
 
   override def listPendingEvents(): Future[Vector[PendingOracleEvent]] = {
     listPendingEventDbs().flatMap { eventDbs =>
-      getPendingOracleEvent(eventDbs)
+      val events = eventDbs.groupBy(_.announcementSignature)
+      val resultF = Future.traverse(events.values) { eventDbs =>
+        getPendingOracleEvent(eventDbs)
+      }
+
+      resultF.map(_.flatten.toVector)
     }
   }
 
   override def listCompletedEvents(): Future[Vector[CompletedOracleEvent]] = {
     listCompletedEventDbs().flatMap { eventDbs =>
-      getCompleteOracleEvent(eventDbs)
+      val events = eventDbs.groupBy(_.announcementSignature)
+      val resultF = Future.traverse(events.values) { eventDbs =>
+        getCompleteOracleEvent(eventDbs)
+      }
+
+      resultF.map(_.flatten.toVector)
     }
   }
 
