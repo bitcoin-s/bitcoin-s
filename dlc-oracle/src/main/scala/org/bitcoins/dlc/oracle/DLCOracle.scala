@@ -236,6 +236,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       val metadataOptF =
         oracleDataManagement.findMetadataByNonce(eventDbs.head.nonce)
       metadataOptF.map { metadataOpt =>
+        logger.info(s"signEnum.metadataOpt=$metadataOpt")
         val e = OracleEvent.fromCompletedEventDbs(dbs, metadataOpt)
         Some(e)
       }
@@ -413,6 +414,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                   "Use signLargeRange for signing multi nonce outcomes")
 
       sign <- createAttestation(eventDbs.head.nonce, outcome)
+      _ = logger.info(s"signEnum.sign=$sign")
       oracleEvent <- getCompleteOracleEvent(Vector(sign))
         .map(_.head)
     } yield {
@@ -447,7 +449,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
               s"Nonce not found from this oracle ${nonce.hex}"))
       }
       eventOpt <- eventDAO.read(nonce)
-      eventDbs <- eventDAO.findByNonces(Vector(nonce))
       eventDb <- eventOpt match {
         case Some(value) =>
           require(
@@ -479,7 +480,16 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       )
 
       hashBytes = eventOutcomeDb.hashedMessage
-      sig = attestationPrivKey.schnorrSignWithNonce(hashBytes, kVal)
+      sig = {
+        val privKey = eventDb.eventDescriptorTLV match {
+          case _: EventDescriptorTLV | _: NumericEventDescriptorTLV =>
+            //old format doesn't use attestation key
+            announcementPrivKey
+          case _: EventDescriptorDLCType | _: NumericEventDescriptorDLCType =>
+            attestationPrivKey
+        }
+        privKey.schnorrSignWithNonce(hashBytes, kVal)
+      }
 
       updated = eventDb.copy(attestationOpt = Some(sig.sig),
                              outcomeOpt = Some(outcome.outcomeString))
