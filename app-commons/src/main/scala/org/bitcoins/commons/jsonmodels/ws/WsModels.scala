@@ -2,6 +2,7 @@ package org.bitcoins.commons.jsonmodels.ws
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.serializers.WsPicklers
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -67,9 +68,19 @@ object WalletWsType extends StringFactory[WalletWsType] {
 
 object ChainWsType extends StringFactory[ChainWsType] {
   case object BlockProcessed extends ChainWsType
+
+  case object CompactFilterHeaderProcessed extends ChainWsType
+
+  case object CompactFilterProcessed extends ChainWsType
   case object SyncFlagChanged extends ChainWsType
 
-  private val all: Vector[ChainWsType] = Vector(BlockProcessed, SyncFlagChanged)
+  private val all: Vector[ChainWsType] =
+    Vector(
+      BlockProcessed,
+      CompactFilterHeaderProcessed,
+      CompactFilterProcessed,
+      SyncFlagChanged
+    )
 
   override def fromStringOpt(string: String): Option[ChainWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -248,6 +259,26 @@ object ChainNotification {
 
     override val json: ujson.Value = {
       upickle.default.writeJs(this)(WsPicklers.blockProcessedPickler)
+    }
+  }
+
+  case class CompactFilterHeaderProcessedNotification(
+      payload: CompactFilterHeaderDb)
+      extends ChainNotification[CompactFilterHeaderDb] {
+    override val `type`: ChainWsType = ChainWsType.CompactFilterHeaderProcessed
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(
+        WsPicklers.compactFilterHeaderProcessedPickler)
+    }
+  }
+
+  case class CompactFilterProcessedNotification(payload: CompactFilterDb)
+      extends ChainNotification[CompactFilterDb] {
+    override val `type`: ChainWsType = ChainWsType.CompactFilterProcessed
+
+    override val json: ujson.Value = {
+      upickle.default.writeJs(this)(WsPicklers.compactFilterProcessedPickler)
     }
   }
 

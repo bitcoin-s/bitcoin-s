@@ -22,22 +22,8 @@ import org.bitcoins.commons.jsonmodels.ws.DLCNodeNotification.{
   DLCNodeConnectionInitiated
 }
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification._
-import org.bitcoins.commons.jsonmodels.ws.{
-  ChainNotification,
-  DLCNodeNotification,
-  WalletNotification,
-  WalletWsType,
-  WsNotification
-}
-import org.bitcoins.commons.rpc.{
-  AcceptDLC,
-  GetBlockHeader,
-  GetNewAddress,
-  GetTransaction,
-  LockUnspent,
-  Rescan,
-  SendToAddress
-}
+import org.bitcoins.commons.jsonmodels.ws._
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress

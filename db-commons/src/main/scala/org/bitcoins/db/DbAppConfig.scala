@@ -19,6 +19,12 @@ abstract class DbAppConfig extends AppConfig {
     Future.successful(slickDbConfig.db.close())
   }
 
+  lazy val dbUsername: String =
+    config.getString(s"bitcoin-s.$moduleName.db.user")
+
+  lazy val dbPassword: String =
+    config.getString(s"bitcoin-s.$moduleName.db.password")
+
   lazy val driver: DatabaseDriver = {
     val driverStr =
       getConfigString(s"bitcoin-s.$moduleName.db.driver").toLowerCase
@@ -98,6 +104,8 @@ abstract class DbAppConfig extends AppConfig {
          |     db {
          |        path = ${AppConfig.safePathToString(dbPath)}
          |        name = $dbName
+         |        user = "$dbUsername"
+         |        password = "$dbPassword"
          |        url = $jdbcUrl
          |     }
          |  }

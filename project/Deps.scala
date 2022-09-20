@@ -4,21 +4,22 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.70"
-    val dropwizardMetricsV = "4.2.11" //https://github.com/dropwizard/metrics
+    val bouncyCastle = "1.71.1"
+    val dropwizardMetricsV = "4.2.12" //https://github.com/dropwizard/metrics
 
-    val logback = "1.4.0" //https://github.com/qos-ch/logback
+    val logback = "1.4.1" //https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
-    val logkitV = "1.0.1"
-    val avalonLoggingV = "4.1.5"
+
+    val logkitV = "1.2.2"
+    val avalonLoggingV = "20020627"
 
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.15.4"
+    val scalacheck = "1.16.0"
     val scalaTest = "3.2.13" //https://www.scalatest.org/
 
     val scalaTestPlus =
       "3.2.12.0-RC2" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
-    val slf4j = "2.0.0"
+    val slf4j = "2.0.1"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
     val scalapb = "0.11.11"
@@ -31,8 +32,8 @@ object Deps {
     val nativeLoaderV = "2.4.0"
     val typesafeConfigV = "1.4.2"
 
-    val scalaFxV = "17.0.1-R26"
-    val javaFxV = "18-ea+10"
+    val scalaFxV = "18.0.2-R29"
+    val javaFxV = "20-ea+2"
 
     val asyncNewScalaV = "1.0.1"
 
@@ -41,12 +42,12 @@ object Deps {
     val postgresV = "42.5.0" //https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
-    val slickV = "3.4.0"
+    val slickV = "3.4.1"
     val sqliteV = "3.39.3.0" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
-    val scalaCollectionCompatV = "2.6.0"
+    val scalaCollectionCompatV = "2.8.1"
     val pgEmbeddedV = "1.0.1"
 
     val breezeV = "1.3"
@@ -70,10 +71,10 @@ object Deps {
     val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.1.0"
-    val sttpV = "3.7.6" // https://github.com/softwaremill/sttp
+    val sttpV = "3.8.0" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.8"
     val scalaJsTimeV = "2.3.0"
-    val zxingV = "3.4.1"
+    val zxingV = "3.5.0"
 
     val monixV = "3.4.0"
 
@@ -81,15 +82,15 @@ object Deps {
     val javaxJmsV = "2.0.1"
     val javaxMailV = "1.4.7"
 
-    val gsonV = "2.9.0"
-    val jnaV = "5.11.0"
-    val waffleJnaV = "1.9.1"
+    val gsonV = "2.9.1"
+    val jnaV = "5.12.1"
+    val waffleJnaV = "3.2.0"
   }
 
   object Compile {
 
     val bouncycastle =
-      "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
+      "org.bouncycastle" % "bcprov-jdk18on" % V.bouncyCastle withSources () withJavadoc ()
 
     val scodec =
       Def.setting(

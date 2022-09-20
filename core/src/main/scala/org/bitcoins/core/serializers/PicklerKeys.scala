@@ -41,6 +41,10 @@ object PicklerKeys {
   final val theirPayout: String = "theirPayout"
   final val pnl: String = "pnl"
   final val rateOfReturn: String = "rateOfReturn"
+  final val previousFilterHeaderKey: String = "previousFilterHeader"
+  final val filterHashKey: String = "filterHash"
+  final val filterTypeKey: String = "filterType"
+  final val compactFilterBytesKey: String = "compactFilterBytes"
 
   final val networkKey: String = "network"
 
