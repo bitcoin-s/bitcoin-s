@@ -155,7 +155,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     val result = oracleAppConfig.migrate()
     oracleAppConfig.driver match {
       case SQLite =>
-        val expected = 6
+        val expected = 7
         assert(result.migrationsExecuted == expected)
         val flywayInfo = oracleAppConfig.info()
 
