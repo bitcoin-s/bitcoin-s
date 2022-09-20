@@ -236,7 +236,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       val metadataOptF =
         oracleDataManagement.findMetadataByNonce(eventDbs.head.nonce)
       metadataOptF.map { metadataOpt =>
-        logger.info(s"signEnum.metadataOpt=$metadataOpt")
         val e = OracleEvent.fromCompletedEventDbs(dbs, metadataOpt)
         Some(e)
       }
@@ -414,7 +413,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                   "Use signLargeRange for signing multi nonce outcomes")
 
       sign <- createAttestation(eventDbs.head.nonce, outcome)
-      _ = logger.info(s"signEnum.sign=$sign")
       oracleEvent <- getCompleteOracleEvent(Vector(sign))
         .map(_.head)
     } yield {
