@@ -32,4 +32,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.8 coverage dbCommonsTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls cryptoTestJVM/test cryptoJVM/test cryptoJVM/coverageReport cryptoJVM/coverageAggregate cryptoJVM/coveralls coreTestJVM/test dlcTest/test coreJVM/coverageReport coreJVM/coverageAggregate coreJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test oracleServerTest/test lnurlTest/test
+        run: sbt ++2.13.8 coverage dbCommonsTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls cryptoTestJVM/test cryptoJVM/test cryptoJVM/coverageReport cryptoJVM/coverageAggregate cryptoJVM/coveralls coreTestJVM/test coreJVM/coverageReport coreJVM/coverageAggregate coreJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test oracleServerTest/test lnurlTest/test
