@@ -721,8 +721,4 @@ object Deps {
     Compile.akkaStream,
     Compile.playJson
   )
-
-  val dlcTest = Vector(
-    Compile.playJson
-  )
 }
