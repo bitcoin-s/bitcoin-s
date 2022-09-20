@@ -13,7 +13,7 @@ object SchnorrSigPointTestVectorGen
       SchnorrSigPointTestVectorInput] {
 
   override val defaultTestFile: File = new File(
-    "dlc-test/src/test/scala/org/bitcoins/dlc/testgen/dlc_schnorr_test.json")
+    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_schnorr_test.json")
 
   override val testVectorParser: SchnorrSigPointTestVector.type =
     SchnorrSigPointTestVector

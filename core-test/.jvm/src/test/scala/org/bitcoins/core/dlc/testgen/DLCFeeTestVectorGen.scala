@@ -12,7 +12,7 @@ object DLCFeeTestVectorGen
     extends TestVectorGen[DLCFeeTestVector, DLCFeeTestVectorInput] {
 
   override val defaultTestFile: File = new File(
-    "dlc-test/src/test/scala/org/bitcoins/dlc/testgen/dlc_fee_test.json")
+    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_fee_test.json")
 
   override val testVectorParser: DLCFeeTestVector.type =
     DLCFeeTestVector

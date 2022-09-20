@@ -11,7 +11,7 @@ object DLCParsingTestVectorGen
     extends TestVectorGen[DLCParsingTestVector, TLV] {
 
   override val defaultTestFile: File = new File(
-    "dlc-test/src/test/scala/org/bitcoins/dlc/testgen/dlc_message_test.json")
+    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_message_test.json")
 
   override val testVectorParser: DLCParsingTestVector.type =
     DLCParsingTestVector
