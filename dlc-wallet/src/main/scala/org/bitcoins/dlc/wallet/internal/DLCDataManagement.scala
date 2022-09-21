@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet.internal
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.TransactionDb
+import org.bitcoins.core.dlc.oracle.OracleMetadataWithId
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.execution._
@@ -16,6 +17,11 @@ import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.SafeDatabase
+import org.bitcoins.dlc.commons.oracle.{
+  OracleCommonDataManagement,
+  OracleMetadataDAO,
+  OracleSchnorrNonceDAO
+}
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.DLCActionBuilder
@@ -30,7 +36,8 @@ import scala.util.Try
 /** Handles fetching and constructing different DLC datastructures from the database */
 case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     ec: ExecutionContext)
-    extends Logging {
+    extends Logging
+    with OracleCommonDataManagement {
   val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
   private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
@@ -42,6 +49,12 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private val announcementDAO = dlcWalletDAOs.oracleAnnouncementDAO
   private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
   private val remoteTxDAO = dlcWalletDAOs.dlcRemoteTxDAO
+
+  override protected val oracleMetadataDAO: OracleMetadataDAO =
+    dlcWalletDAOs.oracleMetadataDAO
+
+  override protected val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
+    dlcWalletDAOs.oracleSchnorrNonceDAO
 
   private val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(dlcWalletDAOs)
@@ -55,12 +68,17 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     dataF.map(data => data.map(_.offer))
   }
 
+  /** @param dlcId
+    * @return all relevent database information. The Option[OracleMetadataWithId] is for the case where we don't have metadata
+    *         due to a legacy announcement that doesn't contain metadata
+    */
   private[wallet] def getDLCAnnouncementDbsAction(
       dlcId: Sha256Digest): DBIOAction[
     (
         Vector[DLCAnnouncementDb],
         Vector[OracleAnnouncementDataDb],
-        Vector[OracleNonceDb]
+        Vector[OracleNonceDb],
+        Vector[Option[OracleMetadataWithId]]
     ),
     NoStream,
     Effect.Read] = {
@@ -73,21 +91,27 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     val noncesDbA =
       announcementIdsA.flatMap(ids =>
         oracleNonceDAO.findByAnnouncementIdsAction(ids))
-
+    val metadataDbWithIdA = announcementIdsA.flatMap { ids =>
+      val actionsNested = ids.map(id => getOracleMetadataAction(id))
+      DBIOAction.sequence(actionsNested)
+    }
     for {
       announcements <- announcementsA
       announcementData <- announcementDataA
       nonceDbs <- noncesDbA
+      metadataDbWithId <- metadataDbWithIdA
     } yield {
-      (announcements, announcementData, nonceDbs)
+      (announcements, announcementData, nonceDbs, metadataDbWithId)
     }
   }
 
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[(
-      Vector[DLCAnnouncementDb],
-      Vector[OracleAnnouncementDataDb],
-      Vector[OracleNonceDb])] = {
+      ec: ExecutionContext): Future[
+    (
+        Vector[DLCAnnouncementDb],
+        Vector[OracleAnnouncementDataDb],
+        Vector[OracleNonceDb],
+        Vector[Option[OracleMetadataWithId]])] = {
     safeDatabase.run(getDLCAnnouncementDbsAction(dlcId))
   }
 
@@ -97,7 +121,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def getUsedOracleAnnouncements(
       dlcAnnouncementDbs: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): Vector[
+      nonceDbs: Vector[OracleNonceDb],
+      metadatas: Vector[OracleMetadataWithId]): Vector[
     (BaseOracleAnnouncement, Long)] = {
     val withIds: Vector[(BaseOracleAnnouncement, Long)] = nonceDbs
       .groupBy(_.announcementId)
@@ -112,13 +137,17 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
               val result = data.eventDescriptor match {
                 case dlcType: EventDescriptorDLCType =>
+                  val metadataOpt = metadatas.find(_.announcementId == id)
+                  require(
+                    metadataOpt.isDefined,
+                    s"metadata could not be found for announcementId=$id metadatas=$metadatas")
                   val eventTLV = OracleEventV1TLV(
                     eventDescriptor = dlcType,
                     eventId = data.eventId,
                     timestamps = FixedOracleEventTimestamp(data.eventMaturity))
                   (OracleAnnouncementV1TLV(data.announcementSignature,
                                            eventTLV,
-                                           metadata = ???),
+                                           metadata = metadataOpt.get.metadata),
                    data.id.get)
                 case tlv: EventDescriptorTLV =>
                   val eventTLV = OracleEventV0TLV(
@@ -147,9 +176,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def getOracleAnnouncements(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): OrderedAnnouncements = {
+      nonceDbs: Vector[OracleNonceDb],
+      metadatas: Vector[Option[OracleMetadataWithId]]): OrderedAnnouncements = {
     val announcements =
-      getOracleAnnouncementsWithId(announcementIds, announcementData, nonceDbs)
+      getOracleAnnouncementsWithId(announcementIds,
+                                   announcementData,
+                                   nonceDbs,
+                                   metadatas)
         .map(_._1)
     OrderedAnnouncements(announcements)
   }
@@ -157,7 +190,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def getOracleAnnouncementsWithId(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): Vector[
+      nonceDbs: Vector[OracleNonceDb],
+      metadatas: Vector[Option[OracleMetadataWithId]]): Vector[
     (BaseOracleAnnouncement, Long)] = {
     val withIds: Vector[(BaseOracleAnnouncement, Long)] = {
       val idNonceVec: Vector[(Long, Vector[OracleNonceDb])] =
@@ -168,6 +202,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
             val announcemntWithId = data.eventDescriptor match {
               case dlcType: EventDescriptorDLCType =>
+                val metadataOpt = metadatas.find {
+                  case Some(ann) => ann.announcementId == id
+                  case None      => false
+                }.flatten
+                require(
+                  metadataOpt.isDefined,
+                  s"metadata could not be found for announcementId=$id metadatas=$metadatas")
                 val eventTLV = OracleEventV1TLV(
                   dlcType,
                   data.eventId,
@@ -176,7 +217,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
                 (OracleAnnouncementV1TLV(data.announcementSignature,
                                          eventTLV,
-                                         metadata = ???),
+                                         metadata = metadataOpt.get.metadata),
                  data.id.get)
               case tlv: EventDescriptorTLV =>
                 val eventTLV = OracleEventV0TLV(
@@ -207,22 +248,27 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       dlcId: Sha256Digest): Future[ContractInfo] = {
     for {
       contractData <- contractDataDAO.read(dlcId).map(_.get)
-      (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-        dlcId)
+      (announcements, announcementData, nonceDbs, metadata) <-
+        getDLCAnnouncementDbs(dlcId)
     } yield getContractInfo(contractData,
                             announcements,
                             announcementData,
-                            nonceDbs)
+                            nonceDbs,
+                            metadata)
   }
 
   private[wallet] def getContractInfo(
       contractDataDb: DLCContractDataDb,
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): ContractInfo = {
+      nonceDbs: Vector[OracleNonceDb],
+      metadata: Vector[Option[OracleMetadataWithId]]): ContractInfo = {
 
     val announcementTLVs =
-      getOracleAnnouncements(announcementIds, announcementData, nonceDbs)
+      getOracleAnnouncements(announcementIds,
+                             announcementData,
+                             nonceDbs,
+                             metadata)
 
     ContractDescriptor.fromSubType(contractDataDb.contractDescriptorTLV) match {
       case enum: EnumContractDescriptor =>
@@ -266,13 +312,15 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     val announcementDataF = getDLCAnnouncementDbs(dlcId)
     val result: Future[Option[Future[OfferedDbState]]] = for {
       (dlcDbOpt, contractDataDbOpt, offerDbOpt, fundingInputDbs) <- combinedF
-      (announcements, announcementData, nonceDbs) <- announcementDataF
+      (announcements, announcementData, nonceDbs, metadatas) <-
+        announcementDataF
       contractInfoOpt = {
         contractDataDbOpt.map { case contractData =>
           getContractInfo(contractData,
                           announcements,
                           announcementData,
-                          nonceDbs)
+                          nonceDbs,
+                          metadatas)
         }
       }
 
@@ -868,6 +916,11 @@ object DLCDataManagement {
     val incomingDLCOfferDAO: IncomingDLCOfferDAO = IncomingDLCOfferDAO()
     val contactDAO: DLCContactDAO = DLCContactDAO()
 
+    val oracleMetadataDAO: OracleMetadataDAO = OracleMetadataDAO()
+
+    val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
+      OracleSchnorrNonceDAO()
+
     val dlcWalletDAOs = DLCWalletDAOs(
       dlcDAO,
       contractDataDAO,
@@ -881,7 +934,9 @@ object DLCDataManagement {
       announcementDAO,
       dlcRemoteTxDAO,
       incomingDLCOfferDAO,
-      contactDAO
+      contactDAO,
+      oracleMetadataDAO,
+      oracleSchnorrNonceDAO
     )
 
     DLCDataManagement(dlcWalletDAOs)

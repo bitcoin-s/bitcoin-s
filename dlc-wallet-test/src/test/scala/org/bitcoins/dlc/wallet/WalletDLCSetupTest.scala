@@ -102,19 +102,23 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       walletBChange <- walletB.addressDAO.read(accept.changeAddress)
       walletBFinal <- walletB.addressDAO.read(accept.pubKeys.payoutAddress)
 
-      (announcementsA, announcementDataA, nonceDbsA) <- walletADLCManagement
-        .getDLCAnnouncementDbs(dlcDb.dlcId)
+      (announcementsA, announcementDataA, nonceDbsA, metadatasA) <-
+        walletADLCManagement
+          .getDLCAnnouncementDbs(dlcDb.dlcId)
       announcementTLVsA = walletADLCManagement.getOracleAnnouncements(
         announcementsA,
         announcementDataA,
-        nonceDbsA)
+        nonceDbsA,
+        metadatasA)
 
-      (announcementsB, announcementDataB, nonceDbsB) <- walletBDLCManagement
-        .getDLCAnnouncementDbs(dlcDb.dlcId)
+      (announcementsB, announcementDataB, nonceDbsB, metadatasB) <-
+        walletBDLCManagement
+          .getDLCAnnouncementDbs(dlcDb.dlcId)
       announcementTLVsB = walletBDLCManagement.getOracleAnnouncements(
         announcementsB,
         announcementDataB,
-        nonceDbsB)
+        nonceDbsB,
+        metadatasB)
     } yield {
       assert(dlcDb.contractIdOpt.get == sign.contractId)
 

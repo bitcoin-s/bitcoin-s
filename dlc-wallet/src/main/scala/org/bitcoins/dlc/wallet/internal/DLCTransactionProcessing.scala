@@ -157,8 +157,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           }
         }
         (sigDbs, refundSigOpt) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
-        (announcements, announcementData, nonceDbs) <- dlcDataManagement
-          .getDLCAnnouncementDbs(dlcId)
+        (announcements, announcementData, nonceDbs, metadatas) <-
+          dlcDataManagement
+            .getDLCAnnouncementDbs(dlcId)
 
         cet <-
           transactionDAO
@@ -180,7 +181,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         announcementsWithId = dlcDataManagement.getOracleAnnouncementsWithId(
           announcements,
           announcementData,
-          nonceDbs)
+          nonceDbs,
+          metadatas)
 
         usedIds = {
           announcementsWithId

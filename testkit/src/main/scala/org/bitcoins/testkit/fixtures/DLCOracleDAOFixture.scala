@@ -1,5 +1,9 @@
 package org.bitcoins.testkit.fixtures
 
+import org.bitcoins.dlc.commons.oracle.{
+  OracleMetadataDAO,
+  OracleSchnorrNonceDAO
+}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}

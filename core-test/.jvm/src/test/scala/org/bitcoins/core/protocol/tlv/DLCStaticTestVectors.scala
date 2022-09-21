@@ -299,11 +299,15 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
   private def parseAttestmentMsg(
       obj: ujson.Obj): Vector[AttestmentTestMessage] = {
     val attestmentMsgJson = obj(PicklerKeys.attestationsKey).arr
-    attestmentMsgJson.map { case obj: ujson.Obj =>
-      val attestmentTLV: SchnorrAttestationTLV =
-        upickle.default.read(obj)(Picklers.schnorrAttestationTLV)
-      val serialized = obj(PicklerKeys.serializedKey).str
-      AttestmentTestMessage(attestmentTLV, serialized, obj)
+    attestmentMsgJson.map {
+      case obj: ujson.Obj =>
+        val attestmentTLV: SchnorrAttestationTLV =
+          upickle.default.read(obj)(Picklers.schnorrAttestationTLV)
+        val serialized = obj(PicklerKeys.serializedKey).str
+        AttestmentTestMessage(attestmentTLV, serialized, obj)
+      case x @ (_: ujson.Bool | _: ujson.Num | ujson.Null | _: ujson.Arr |
+          _: ujson.Str) =>
+        sys.error(s"Unexpectd json for attestment, got=$x")
     }.toVector
 
   }

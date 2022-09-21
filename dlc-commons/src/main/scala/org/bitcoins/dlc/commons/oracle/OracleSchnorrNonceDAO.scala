@@ -1,19 +1,19 @@
-package org.bitcoins.dlc.oracle.storage
+package org.bitcoins.dlc.commons.oracle
 
 import org.bitcoins.core.dlc.oracle.{NonceSignaturePairDb, OracleMetadataDb}
 import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
-import org.bitcoins.db.{CRUD, SlickUtil}
-import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
+import org.bitcoins.db.{CRUD, DbAppConfig, SlickUtil}
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class OracleSchnorrNonceDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCOracleAppConfig)
+    override val appConfig: DbAppConfig)
     extends CRUD[NonceSignaturePairDb, Long]
     with SlickUtil[NonceSignaturePairDb, Long] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+
   import mappers._
   import profile.api._
 
@@ -68,6 +68,7 @@ case class OracleSchnorrNonceDAO()(implicit
                                           "oracle_schnorr_nonces") {
 
     def id: Rep[Long] = column("id")
+
     def nonce: Rep[SchnorrNonce] = column("nonce", O.Unique)
 
     def signature: Rep[SchnorrDigitalSignature] = column("signature", O.Unique)

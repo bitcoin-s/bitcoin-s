@@ -23,6 +23,10 @@ import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.MasterXPubUtil
+import org.bitcoins.dlc.commons.oracle.{
+  OracleMetadataDAO,
+  OracleSchnorrNonceDAO
+}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.WalletStorage
@@ -203,7 +207,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       //bug here, we don't guarantee that attestation public keys are unique!
       val metadataOptF =
         oracleDataManagement.findMetadataByNonce(dbs.head.nonce)
-      metadataOptF.map { metadataOpt =>
+      metadataOptF.map { metadataDbOpt =>
+        val metadataOpt = metadataDbOpt.map(_.metadata)
         val e = OracleEvent.fromPendingEventDbs(dbs, metadataOpt)
         Some(e)
       }
@@ -235,7 +240,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         s"Attestation pubkey must be the same for all events with the same announcement signature")
       val metadataOptF =
         oracleDataManagement.findMetadataByNonce(eventDbs.head.nonce)
-      metadataOptF.map { metadataOpt =>
+      metadataOptF.map { metadataDbOpt =>
+        val metadataOpt = metadataDbOpt.map(_.metadata)
         val e = OracleEvent.fromCompletedEventDbs(dbs, metadataOpt)
         Some(e)
       }

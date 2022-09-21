@@ -4,7 +4,8 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.dlc.oracle.{
   NonceSignaturePair,
   NonceSignaturePairDb,
-  OracleMetadataDb
+  OracleMetadataDb,
+  OracleMetadataWithId
 }
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
@@ -2888,7 +2889,8 @@ object OracleMetadata extends Factory[OracleMetadata] {
 
   def fromDbs(
       metadataDb: OracleMetadataDb,
-      nonceSignatureDbs: Vector[NonceSignaturePairDb]): OracleMetadata = {
+      nonceSignatureDbs: Vector[NonceSignaturePairDb]): OracleMetadataWithId = {
+    require(metadataDb.id.isDefined, s"MetadataDb must have an id defined")
     val pok: SchnorrProofOfKnowledge = SchnorrProofOfKnowledge(
       attestationPubKeySignature = metadataDb.attestationPubKeySignature,
       nonceSignature = nonceSignatureDbs.map(_.signature)
@@ -2900,7 +2902,7 @@ object OracleMetadata extends Factory[OracleMetadata] {
     )
     val metadataSignature = OracleMetadataSignature(
       metadataDb.metadataSignature)
-    OracleMetadata(
+    val metadata = OracleMetadata(
       announcementPublicKey =
         metadataDb.announcementPublicKey, //i think this is wrong???
       oracleName = metadataDb.oracleName,
@@ -2909,6 +2911,7 @@ object OracleMetadata extends Factory[OracleMetadata] {
       attestations = schnorrAttestation,
       metadataSignature = metadataSignature
     )
+    OracleMetadataWithId(metadataDb.id.get, metadata)
   }
 }
 

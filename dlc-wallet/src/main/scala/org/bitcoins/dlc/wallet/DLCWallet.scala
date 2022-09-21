@@ -29,6 +29,10 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
+import org.bitcoins.dlc.commons.oracle.{
+  OracleMetadataDAO,
+  OracleSchnorrNonceDAO
+}
 import org.bitcoins.dlc.wallet.DLCWallet.InvalidAnnouncementSignature
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
@@ -81,6 +85,11 @@ abstract class DLCWallet
   private[bitcoins] val contactDAO: DLCContactDAO =
     DLCContactDAO()
 
+  private val oracleMetadataDAO: OracleMetadataDAO = OracleMetadataDAO()
+
+  private val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
+    OracleSchnorrNonceDAO()
+
   private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
@@ -94,7 +103,9 @@ abstract class DLCWallet
     announcementDAO,
     remoteTxDAO,
     incomingOfferDAO,
-    contactDAO
+    contactDAO,
+    oracleMetadataDAO,
+    oracleSchnorrNonceDAO
   )
 
   private[wallet] val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)
@@ -985,13 +996,15 @@ abstract class DLCWallet
             transactionDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
 
           contractData <- contractDataDAO.read(dlcId).map(_.get)
-          (announcements, announcementData, nonceDbs) <- dlcDataManagement
-            .getDLCAnnouncementDbs(dlcId)
+          (announcements, announcementData, nonceDbs, metadatas) <-
+            dlcDataManagement
+              .getDLCAnnouncementDbs(dlcId)
 
           contractInfo = dlcDataManagement.getContractInfo(contractData,
                                                            announcements,
                                                            announcementData,
-                                                           nonceDbs)
+                                                           nonceDbs,
+                                                           metadatas)
 
           offer =
             offerDb.toDLCOffer(
@@ -1522,13 +1535,15 @@ abstract class DLCWallet
       //can continue executing, do nothing
     }
     for {
-      (announcements, announcementData, nonceDbs) <- dlcDataManagement
-        .getDLCAnnouncementDbs(dlcDb.dlcId)
+      (announcements, announcementData, nonceDbs, metadataDbs) <-
+        dlcDataManagement
+          .getDLCAnnouncementDbs(dlcDb.dlcId)
 
       announcementTLVs = dlcDataManagement.getOracleAnnouncements(
         announcements,
         announcementData,
-        nonceDbs)
+        nonceDbs,
+        metadataDbs)
 
       oracleSigs = DLCUtil.buildOracleSignaturesNaive(
         announcements = announcementTLVs,
@@ -1934,22 +1949,26 @@ abstract class DLCWallet
       dlcDataManagement.getDLCAnnouncementDbsAction(dlcId)
 
     val contractInfoAndAnnouncementsA = {
-      aggregatedA.map { case (announcements, announcementData, nonceDbs) =>
-        val contractInfo = dlcDataManagement.getContractInfo(contractData,
-                                                             announcements,
-                                                             announcementData,
-                                                             nonceDbs)
-        val announcementsWithId =
-          dlcDataManagement.getOracleAnnouncementsWithId(announcements,
-                                                         announcementData,
-                                                         nonceDbs)
-        (contractInfo, announcementsWithId)
+      aggregatedA.map {
+        case (announcements, announcementData, nonceDbs, metadataDbsWithId) =>
+          val contractInfo =
+            dlcDataManagement.getContractInfo(contractData,
+                                              announcements,
+                                              announcementData,
+                                              nonceDbs,
+                                              metadataDbsWithId)
+          val announcementsWithId =
+            dlcDataManagement.getOracleAnnouncementsWithId(announcements,
+                                                           announcementData,
+                                                           nonceDbs,
+                                                           metadataDbsWithId)
+          (contractInfo, announcementsWithId)
       }
     }
 
     val statusA = for {
       (contractInfo, announcementsWithId) <- contractInfoAndAnnouncementsA
-      (announcementIds, _, nonceDbs) <- aggregatedA
+      (announcementIds, _, nonceDbs, _) <- aggregatedA
     } yield IntermediaryDLCStatus(dlcDb,
                                   contractInfo,
                                   contractData,

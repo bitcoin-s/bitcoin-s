@@ -54,7 +54,7 @@ class OracleDataManagementTest extends OracleDataManagementFixture {
       id = metadataDb.id
       read <- dataManagement.getOracleMetadata(id.get)
     } yield {
-      assert(read.get == metadata)
+      assert(read.get.metadata == metadata)
     }
   }
 }

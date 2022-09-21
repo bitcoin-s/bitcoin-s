@@ -227,7 +227,7 @@ class DLCOracleTest extends DLCOracleFixture {
         metadata <- oracleDataManagement
           .findMetadataByAttestationPubKey(
             eventOpt.get.metadataOpt.get.attestationPublicKey)
-          .map(_.get)
+          .map(_.head)
       } yield {
         assert(announcement.validateSignature)
         assert(eventOpt.isDefined)
@@ -253,10 +253,10 @@ class DLCOracleTest extends DLCOracleFixture {
           OracleAnnouncementV1TLV(announcementSignature =
                                     event.announcementSignature,
                                   eventTLV = expectedEventTLV,
-                                  metadata = metadata)
+                                  metadata = metadata.metadata)
 
         assert(event.eventTLV == expectedEventTLV)
-        assert(event.metadataOpt.get == metadata)
+        assert(event.metadataOpt.get == metadata.metadata)
         assert(event.announcementTLV == expectedAnnouncementTLV)
 
         val announceBytes =

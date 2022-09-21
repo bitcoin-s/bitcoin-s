@@ -1,13 +1,15 @@
 package org.bitcoins.testkit.fixtures
 
+import org.bitcoins.dlc.commons.oracle.{
+  OracleMetadataDAO,
+  OracleSchnorrNonceDAO
+}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage.{
   DLCOracleDAOs,
   EventDAO,
   EventOutcomeDAO,
   OracleDataManagement,
-  OracleMetadataDAO,
-  OracleSchnorrNonceDAO,
   RValueDAO
 }
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
@@ -28,7 +30,6 @@ trait OracleDataManagementFixture extends BitcoinSFixture with EmbeddedPg {
     val eventDAO = EventDAO()
     val outcomeDAO = EventOutcomeDAO()
     val oracleMetadataDAO = OracleMetadataDAO()
-    println(s"${oracleMetadataDAO.table}")
     val oracleSchnorrNonceDAO = OracleSchnorrNonceDAO()
     DLCOracleDAOs(rValueDAO = rValueDAO,
                   eventDAO = eventDAO,
