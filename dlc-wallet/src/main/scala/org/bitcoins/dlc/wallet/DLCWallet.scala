@@ -306,6 +306,47 @@ abstract class DLCWallet
     }
   }
 
+  private def validateAndCreateAnnouncementsIfDNE(
+      contractInfo: ContractInfo): Future[Vector[OracleAnnouncementDataDb]] = {
+    if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
+      return Future.failed(InvalidAnnouncementSignature(
+        s"Contract info contains invalid announcement signature(s), got=${contractInfo.oracleInfos}"))
+    }
+    val announcements =
+      contractInfo.oracleInfos.head.singleOracleInfos.map(_.announcement)
+
+    for {
+      //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
+      //filter announcements that we already have in the db
+      groupedAnnouncements <- groupByExistingAnnouncements(announcements)
+      announcementDataDbs <- announcementDAO.createAll(
+        groupedAnnouncements.newAnnouncements)
+      allAnnouncementDbs =
+        announcementDataDbs ++ groupedAnnouncements.existingAnnouncements
+
+      newAnnouncements = announcements.filter(a =>
+        groupedAnnouncements.newAnnouncements.exists(
+          _.announcementSignature == a.announcementSignature))
+
+      newAnnouncementsWithId = newAnnouncements.map { tlv =>
+        val idOpt: Option[Long] =
+          announcementDataDbs
+            .find(_.announcementSignature == tlv.announcementSignature)
+            .flatMap(_.id)
+        (tlv, idOpt.get)
+      }
+
+      _ <- Future.traverse(newAnnouncements) {
+        case _: OracleAnnouncementV0TLV =>
+          val nonceDbs =
+            OracleNonceDbHelper.fromAnnouncements(newAnnouncementsWithId)
+          oracleNonceDAO.createAll(nonceDbs)
+        case v1: OracleAnnouncementV1TLV =>
+          dlcDataManagement.createOracleMetadata(v1.metadata)
+      }
+    } yield allAnnouncementDbs
+  }
+
   /** Creates a DLCOffer, if one has already been created
     * with the given parameters then that one will be returned instead.
     *
@@ -327,14 +368,6 @@ abstract class DLCWallet
       return Future.failed(
         new IllegalArgumentException("External DLC addresses are not allowed"))
     }
-    if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
-      return Future.failed(
-        InvalidAnnouncementSignature(
-          s"Contract info contains invalid announcement signature(s)"))
-    }
-
-    val announcements =
-      contractInfo.oracleInfos.head.singleOracleInfos.map(_.announcement)
 
     val feeRateF = determineFeeRate(feeRateOpt).map { fee =>
       SatoshisPerVirtualByte(fee.currencyUnit)
@@ -346,28 +379,9 @@ abstract class DLCWallet
       Sha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
 
     for {
+      allAnnouncementDbs <- validateAndCreateAnnouncementsIfDNE(contractInfo)
       feeRate <- feeRateF
-      //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
-      //filter announcements that we already have in the db
-      groupedAnnouncements <- groupByExistingAnnouncements(announcements)
-      announcementDataDbs <- announcementDAO.createAll(
-        groupedAnnouncements.newAnnouncements)
-      allAnnouncementDbs =
-        announcementDataDbs ++ groupedAnnouncements.existingAnnouncements
 
-      newAnnouncements = announcements.filter(a =>
-        groupedAnnouncements.newAnnouncements.exists(
-          _.announcementSignature == a.announcementSignature))
-
-      newAnnouncementsWithId = newAnnouncements.map { tlv =>
-        val idOpt: Option[Long] =
-          announcementDataDbs
-            .find(_.announcementSignature == tlv.announcementSignature)
-            .flatMap(_.id)
-        (tlv, idOpt.get)
-      }
-      nonceDbs = OracleNonceDbHelper.fromAnnouncements(newAnnouncementsWithId)
-      _ <- oracleNonceDAO.createAll(nonceDbs)
       chainType = HDChainType.External
 
       account <- getDefaultAccountForType(AddressType.SegWit)
