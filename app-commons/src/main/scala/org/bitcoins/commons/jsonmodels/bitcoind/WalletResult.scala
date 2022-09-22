@@ -226,6 +226,7 @@ case class ListTransactionsResult(
     trusted: Option[Boolean],
     generated: Option[Boolean],
     blockhash: Option[DoubleSha256DigestBE],
+    blockheight: Option[Int],
     blockindex: Option[Int],
     blocktime: Option[UInt32],
     txid: Option[DoubleSha256DigestBE],
