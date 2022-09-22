@@ -1,7 +1,7 @@
 package org.bitcoins.core.dlc.oracle
 
-import org.bitcoins.core.protocol.tlv.BaseOracleAnnouncement
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementV1TLV
 
 case class OracleAnnouncementWithId(
     id: Long,
-    announcement: BaseOracleAnnouncement)
+    announcement: OracleAnnouncementV1TLV)

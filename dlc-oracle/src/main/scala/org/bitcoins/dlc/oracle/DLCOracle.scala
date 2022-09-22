@@ -161,23 +161,13 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     priv.add(tweak)
   }
 
-  override def listEventDbs(): Future[Vector[EventDb]] = eventDAO.findAll()
-
-  override def listPendingEventDbs(): Future[Vector[EventDb]] =
-    eventDAO.getPendingEvents
-
-  override def listCompletedEventDbs(): Future[Vector[EventDb]] =
-    eventDAO.getCompletedEvents
-
   override def listEvents(): Future[Vector[OracleEvent]] = {
-    eventDAO.findAll().flatMap { eventDbs =>
-      val eventDbsSorted = eventDbs.groupBy(_.announcementSignature)
-      val resultF = Future.traverse(eventDbsSorted.values) { eventDbs =>
-        getFullOracleEvents(eventDbs)
-      }
-
-      resultF.map(_.flatten.toVector)
-    }
+    val pendingF = listPendingEvents()
+    val completedF = listCompletedEvents()
+    for {
+      pending <- pendingF
+      completed <- completedF
+    } yield pending ++ completed
   }
 
   private def getFullOracleEvents(
@@ -262,18 +252,37 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   }
 
   override def listPendingEvents(): Future[Vector[PendingOracleEvent]] = {
-    listPendingEventDbs().flatMap { eventDbs =>
-      val events = eventDbs.groupBy(_.announcementSignature)
-      val resultF = Future.traverse(events.values) { eventDbs =>
-        getPendingOracleEvent(eventDbs)
+
+    val oldPendingEventsF: Future[Vector[PendingOracleEvent]] =
+      eventDAO.getPendingEvents.flatMap { eventDbs =>
+        val events = eventDbs.groupBy(_.announcementSignature)
+        val resultF = Future.traverse(events.values) { eventDbs =>
+          getPendingOracleEvent(eventDbs)
+        }
+
+        resultF.map(_.flatten.toVector)
       }
 
-      resultF.map(_.flatten.toVector)
-    }
+    val newPendingAnnouncementsF = oracleDataManagement.getPendingAnnouncements
+
+    val newPendingEventsF: Future[Vector[PendingOracleEvent]] = for {
+      newPendingAnnouncements <- newPendingAnnouncementsF
+      pendingEvent = newPendingAnnouncements.map { a =>
+        a.announcement match {
+          case v1: OracleAnnouncementV1TLV =>
+            OracleEvent.fromAnnouncement(v1)
+        }
+      }
+    } yield pendingEvent
+
+    for {
+      newPendingEvents <- newPendingEventsF
+      oldPendingEvents <- oldPendingEventsF
+    } yield newPendingEvents ++ oldPendingEvents
   }
 
   override def listCompletedEvents(): Future[Vector[CompletedOracleEvent]] = {
-    listCompletedEventDbs().flatMap { eventDbs =>
+    val oldCompletedEventsF = eventDAO.getCompletedEvents.flatMap { eventDbs =>
       val events = eventDbs.groupBy(_.announcementSignature)
       val resultF = Future.traverse(events.values) { eventDbs =>
         getCompleteOracleEvent(eventDbs)
@@ -281,18 +290,27 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
       resultF.map(_.flatten.toVector)
     }
+
+    val completedAnnouncementsF = oracleDataManagement.getCompletedAnnouncements
+    val completedEventsF = for {
+      completedAnnouncements <- completedAnnouncementsF
+      completedEvents = completedAnnouncements.map {
+        announcementAttestationPair =>
+          OracleEvent.fromAnnouncementAttestationPair(
+            announcementAttestationPair.announcement,
+            announcementAttestationPair.attestation)
+      }
+    } yield completedEvents
+
+    for {
+      oldCompletedEvents <- oldCompletedEventsF
+      completedEvents <- completedEventsF
+    } yield completedEvents ++ oldCompletedEvents
   }
 
   override def findEvent(
       announcement: BaseOracleAnnouncement): Future[Option[OracleEvent]] = {
-    eventDAO.findByAnnouncement(announcement).flatMap { dbs =>
-      if (dbs.isEmpty) {
-        Future.successful(None)
-      } else {
-        getFullOracleEvents(dbs)
-          .map(_.headOption)
-      }
-    }
+    findEvent(announcement.eventTLV.eventId)
   }
 
   override def findEvent(eventName: String): Future[Option[OracleEvent]] = {
@@ -525,16 +543,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       s"The nonce from derived seed did not match database, db=${rValDb.nonce.hex} derived=${kVal.schnorrNonce.hex}, rValDb=$rValDb"
     )
 
-    val sig = {
-      val privKey = announcement.eventTLV.eventDescriptor match {
-        case _: EventDescriptorTLV | _: NumericEventDescriptorTLV =>
-          //old format doesn't use attestation key
-          sys.error(s"Cannot have old format descriptor for v1 announcement")
-        case _: EventDescriptorDLCType | _: NumericEventDescriptorDLCType =>
-          attestationPrivKey
-      }
-      privKey.schnorrSignWithNonce(dataToSign = hash, nonce = kVal)
-    }
+    val sig = attestationPrivKey
+      .schnorrSignWithNonce(dataToSign = hash, nonce = kVal)
 
     val updated = nonceSignatureDb.copy(attestationOpt = Some(sig.sig),
                                         outcomeOpt =
@@ -560,13 +570,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
             new IllegalArgumentException(
               s"No event saved with nonce ${nonce.hex} $outcome"))
       }
-
-      hash = eventDb.signingVersion
-        .calcOutcomeHash(outcome.outcomeString)
-      eventOutcomeOpt <- eventOutcomeDAO.find(nonce, hash)
-
       sigVersion = eventDb.signingVersion
 
+      hash = sigVersion.calcOutcomeHash(eventDb.eventDescriptorTLV,
+                                        outcome.outcomeString)
       kVal = getKValue(rValDb, sigVersion)
       _ = require(
         kVal.schnorrNonce == rValDb.nonce,
@@ -787,22 +794,57 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def deleteAnnouncement(
       eventName: String): Future[BaseOracleAnnouncement] = {
     logger.warn(s"Deleting announcement with name=$eventName")
+
     for {
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No announcement found by event name $eventName")
       event = eventOpt.get
-      eventDbs <- eventDAO.findByAnnouncement(event.announcementTLV)
+      deletedAnnouncement <- {
+        event.announcementTLV match {
+          case v0: OracleAnnouncementV0TLV =>
+            deleteV0Announcement(v0)
+          case v1: OracleAnnouncementV1TLV =>
+            deleteV1Announcement(v1)
+        }
+      }
+    } yield deletedAnnouncement
+  }
+
+  private def deleteV0Announcement(
+      announcementV0TLV: OracleAnnouncementV0TLV): Future[
+    OracleAnnouncementV0TLV] = {
+    for {
+      eventDbs <- eventDAO.findByAnnouncement(announcementV0TLV)
       _ = require(
         eventDbs.forall(_.attestationOpt.isEmpty),
-        s"Cannot have attesations defined when deleting an announcement, name=$eventName")
+        s"Cannot have attesations defined when deleting an announcement, name=${announcementV0TLV.eventTLV.eventId}"
+      )
       nonces = eventDbs.map(_.nonce)
       rVals <- rValueDAO.findByNonces(nonces)
       outcomeDbs <- eventOutcomeDAO.findByNonces(nonces)
       _ <- eventOutcomeDAO.deleteAll(outcomeDbs)
       _ <- rValueDAO.deleteAll(rVals)
       _ <- eventDAO.deleteAll(eventDbs)
-    } yield eventOpt.get.announcementTLV
+    } yield announcementV0TLV
+  }
+
+  private def deleteV1Announcement(
+      announcementV1TLV: OracleAnnouncementV1TLV): Future[
+    OracleAnnouncementV1TLV] = {
+    val announcementsA = oracleDataManagement
+      .getByEventNameAction(announcementV1TLV.eventTLV.eventId)
+    val action = for {
+      announcements <- announcementsA
+      nested = announcements.map { annWithId =>
+        oracleDataManagement.deleteAnnouncementAction(annWithId.announcement)
+      }
+      _ <- DBIO.sequence(nested)
+    } yield {
+      announcementV1TLV
+    }
+
+    safeDatabase.run(action)
   }
 
   /** @inheritdoc */
@@ -833,15 +875,46 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     */
   override def deleteAttestation(
       announcement: BaseOracleAnnouncement): Future[OracleEvent] = {
-    for {
-      eventDbs <- eventDAO.findByAnnouncement(announcement)
-      _ = require(eventDbs.exists(_.attestationOpt.isDefined),
-                  s"Event given is unsigned")
+    logger.warn(
+      s"Attempting to delete attestations for ${announcement.eventTLV.eventId}")
+    announcement match {
+      case _: OracleAnnouncementV0TLV =>
+        for {
+          eventDbs <- eventDAO.findByAnnouncement(announcement)
+          _ = require(eventDbs.exists(_.attestationOpt.isDefined),
+                      s"Event given is unsigned")
 
-      updated = eventDbs.map(_.copy(outcomeOpt = None, attestationOpt = None))
-      _ <- eventDAO.updateAll(updated)
-      oracleEvents <- getFullOracleEvents(eventDbs)
-    } yield oracleEvents.head
+          updated = eventDbs.map(
+            _.copy(outcomeOpt = None, attestationOpt = None))
+          _ <- eventDAO.updateAll(updated)
+          oracleEvents <- getFullOracleEvents(eventDbs)
+        } yield oracleEvents.head
+      case v1: OracleAnnouncementV1TLV =>
+        val deleteAttestationsAction = for {
+          announcementVec <- oracleDataManagement.getByEventNameAction(
+            v1.eventTLV.eventId)
+          nonces <- {
+            announcementVec.headOption match {
+              case Some(announcement) =>
+                oracleDataManagement.getNonceSchnorrDbAction(announcement.id)
+              case None =>
+                DBIO.successful(Vector.empty)
+            }
+          }
+          //remove attestation/outcome
+          noAttestations = nonces.map(n =>
+            n.copy(attestationOpt = None, outcomeOpt = None))
+          deleteActionNested = noAttestations.map(a =>
+            oracleDataManagement.updateNonceSignatureDbAction(a))
+          deleteAction <- DBIO.sequence(deleteActionNested)
+        } yield deleteAction
+        val deletedF = safeDatabase.run(deleteAttestationsAction)
+
+        for {
+          _ <- deletedF
+          event <- findEvent(announcement)
+        } yield event.get
+    }
   }
 
   override def oracleName(): Future[Option[String]] = {

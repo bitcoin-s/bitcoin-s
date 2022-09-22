@@ -1,6 +1,5 @@
 package org.bitcoins.core.api.dlcoracle
 
-import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.dlc.oracle.OracleAnnouncementWithId
 import org.bitcoins.core.number._
@@ -23,12 +22,6 @@ trait DLCOracleApi {
   def setOracleName(name: String): Future[Unit]
 
   def stakingAddress(network: BitcoinNetwork): Bech32Address
-
-  def listEventDbs(): Future[Vector[EventDb]]
-
-  def listPendingEventDbs(): Future[Vector[EventDb]]
-
-  def listCompletedEventDbs(): Future[Vector[EventDb]]
 
   def listEvents(): Future[Vector[OracleEvent]]
 

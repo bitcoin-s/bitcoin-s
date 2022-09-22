@@ -1,7 +1,7 @@
 package org.bitcoins.core.api.dlcoracle
 
 import org.bitcoins.core.api.dlcoracle.db.EventDb
-import org.bitcoins.core.dlc.oracle.NonceSignaturePairDb
+import org.bitcoins.core.dlc.oracle.{NonceSignaturePairDb}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
@@ -250,77 +250,88 @@ object OracleEvent {
                                     attestationOpt = schnorrAttestationOpt)
   }
 
+  def fromAnnouncement(
+      announcementV1: OracleAnnouncementV1TLV): PendingOracleEvent = {
+    announcementV1.eventTLV.eventDescriptor match {
+      case enum: EnumEventDescriptorDLCSubType =>
+        PendingEnumV0OracleEvent(
+          announcementV1.attestationPublicKey,
+          announcementV1.metadata.attestations.nonces.head,
+          announcementV1.eventTLV.eventId,
+          signingVersion = SigningVersion.latest,
+          maturationTime = announcementV1.eventTLV.maturation,
+          announcementSignature = announcementV1.announcementSignature,
+          eventDescriptorTLV = enum,
+          metadataOpt = Some(announcementV1.metadata)
+        )
+      case numeric: NumericEventDescriptorDLCType =>
+        PendingDigitDecompositionV0OracleEvent(
+          pubkey = announcementV1.attestationPublicKey,
+          nonces = announcementV1.metadata.attestations.nonces,
+          eventName = announcementV1.eventTLV.eventId,
+          signingVersion = SigningVersion.latest,
+          maturationTime = announcementV1.eventTLV.maturation,
+          announcementSignature = announcementV1.announcementSignature,
+          eventDescriptorTLV = numeric,
+          metadataOpt = Some(announcementV1.metadata)
+        )
+    }
+  }
+
+  def fromAnnouncementAttestationPair(
+      announcementV1: OracleAnnouncementV1TLV,
+      attestation: SchnorrAttestationTLV): CompletedOracleEvent = {
+    announcementV1.eventTLV.eventDescriptor match {
+      case enum: EnumEventDescriptorDLCSubType =>
+        CompletedEnumV0OracleEvent(
+          pubkey = announcementV1.attestationPublicKey,
+          nonce = announcementV1.metadata.attestations.nonces.head,
+          eventName = announcementV1.eventTLV.eventId,
+          signingVersion = SigningVersion.latest,
+          maturationTime = announcementV1.eventTLV.maturation,
+          announcementSignature = announcementV1.announcementSignature,
+          eventDescriptorTLV = enum,
+          metadataOpt = Some(announcementV1.metadata),
+          outcome = EnumAttestation(attestation.outcomes.head),
+          attestation = attestation.sigs.head.sig
+        )
+      case decomp: NumericEventDescriptorDLCType =>
+        val numericOutcome = decomp match {
+          case _: UnsignedDigitDecompositionEventDescriptor |
+              _: UnsignedDigitDecompositionEventDescriptorDLCType =>
+            val digits = attestation.outcomes.map(_.normStr.toInt)
+            UnsignedNumericOutcome(digits)
+          case _: SignedDigitDecompositionEventDescriptor |
+              _: SignedDigitDecompositionEventDescriptorDLCType =>
+            val positive = attestation.outcomes.head == "+"
+            val digits = attestation.outcomes.tail.map(_.normStr.toInt)
+            SignedNumericOutcome(positive, digits)
+
+        }
+
+        CompletedDigitDecompositionV0OracleEvent(
+          pubkey = announcementV1.attestationPublicKey,
+          nonces = announcementV1.metadata.attestations.nonces,
+          eventName = announcementV1.eventTLV.eventId,
+          signingVersion = SigningVersion.latest,
+          maturationTime = announcementV1.eventTLV.maturation,
+          announcementSignature = announcementV1.announcementSignature,
+          eventDescriptorTLV = decomp,
+          metadataOpt = Some(announcementV1.metadata),
+          dlcOutcome = numericOutcome,
+          attestations = attestation.sigs.map(_.sig)
+        )
+    }
+  }
+
   def fromAnnouncementAndAttestations(
       announcementV1: OracleAnnouncementV1TLV,
       attestationOpt: Option[SchnorrAttestationTLV]): OracleEvent = {
     attestationOpt match {
       case Some(attestation) =>
-        announcementV1.eventTLV.eventDescriptor match {
-          case enum: EnumEventDescriptorDLCSubType =>
-            CompletedEnumV0OracleEvent(
-              pubkey = announcementV1.announcementPublicKey,
-              nonce = announcementV1.metadata.attestations.nonces.head,
-              eventName = announcementV1.eventTLV.eventId,
-              signingVersion = SigningVersion.latest,
-              maturationTime = announcementV1.eventTLV.maturation,
-              announcementSignature = announcementV1.announcementSignature,
-              eventDescriptorTLV = enum,
-              metadataOpt = Some(announcementV1.metadata),
-              outcome = EnumAttestation(attestation.outcomes.head),
-              attestation = attestation.sigs.head.sig
-            )
-          case decomp: NumericEventDescriptorDLCType =>
-            val numericOutcome = decomp match {
-              case _: UnsignedDigitDecompositionEventDescriptor |
-                  _: UnsignedDigitDecompositionEventDescriptorDLCType =>
-                val digits = attestation.outcomes.map(_.normStr.toInt)
-                UnsignedNumericOutcome(digits)
-              case _: SignedDigitDecompositionEventDescriptor |
-                  _: SignedDigitDecompositionEventDescriptorDLCType =>
-                val positive = attestation.outcomes.head == "+"
-                val digits = attestation.outcomes.tail.map(_.normStr.toInt)
-                SignedNumericOutcome(positive, digits)
-
-            }
-
-            CompletedDigitDecompositionV0OracleEvent(
-              pubkey = announcementV1.announcementPublicKey,
-              nonces = announcementV1.metadata.attestations.nonces,
-              eventName = announcementV1.eventTLV.eventId,
-              signingVersion = SigningVersion.latest,
-              maturationTime = announcementV1.eventTLV.maturation,
-              announcementSignature = announcementV1.announcementSignature,
-              eventDescriptorTLV = decomp,
-              metadataOpt = Some(announcementV1.metadata),
-              dlcOutcome = numericOutcome,
-              attestations = attestation.sigs.map(_.sig)
-            )
-        }
+        fromAnnouncementAttestationPair(announcementV1, attestation)
       case None =>
-        announcementV1.eventTLV.eventDescriptor match {
-          case enum: EnumEventDescriptorDLCSubType =>
-            PendingEnumV0OracleEvent(
-              announcementV1.announcementPublicKey,
-              announcementV1.metadata.attestations.nonces.head,
-              announcementV1.eventTLV.eventId,
-              signingVersion = SigningVersion.latest,
-              maturationTime = announcementV1.eventTLV.maturation,
-              announcementSignature = announcementV1.announcementSignature,
-              eventDescriptorTLV = enum,
-              metadataOpt = Some(announcementV1.metadata)
-            )
-          case numeric: NumericEventDescriptorDLCType =>
-            PendingDigitDecompositionV0OracleEvent(
-              pubkey = announcementV1.announcementPublicKey,
-              nonces = announcementV1.metadata.attestations.nonces,
-              eventName = announcementV1.eventTLV.eventId,
-              signingVersion = SigningVersion.latest,
-              maturationTime = announcementV1.eventTLV.maturation,
-              announcementSignature = announcementV1.announcementSignature,
-              eventDescriptorTLV = numeric,
-              metadataOpt = Some(announcementV1.metadata)
-            )
-        }
+        fromAnnouncement(announcementV1)
     }
   }
 
@@ -503,11 +514,11 @@ object OracleEvent {
       signingVersion: SigningVersion): Boolean = {
     val tlvOutcomes = schnorrAttestation.outcomes
     val attestations = schnorrAttestation.sigs
-    val nonces = announcementV1TLV.nonces
+    val nonces = announcementV1TLV.noncesFlattened
     verifyAttestationHelper(
       tlvOutcomes = tlvOutcomes,
       attestations = attestations,
-      nonces = nonces.map(_.toVector).flatten,
+      nonces = nonces,
       announcement = announcementV1TLV,
       attestationPubKey = announcementV1TLV.metadata.attestationPublicKey,
       signingVersion = signingVersion

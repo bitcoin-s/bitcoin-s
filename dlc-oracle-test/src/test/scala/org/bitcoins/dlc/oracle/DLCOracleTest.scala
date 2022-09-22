@@ -34,13 +34,13 @@ class DLCOracleTest extends DLCOracleFixture {
   }
 
   it must "start with no events" in { dlcOracle: DLCOracle =>
-    dlcOracle.listEventDbs().map { events =>
+    dlcOracle.listEvents().map { events =>
       assert(events.isEmpty)
     }
   }
 
   it must "start with no pending events" in { dlcOracle: DLCOracle =>
-    dlcOracle.listPendingEventDbs().map { events =>
+    dlcOracle.listPendingEvents().map { events =>
       assert(events.isEmpty)
     }
   }
@@ -156,7 +156,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
       for {
         _ <- dlcOracle.createNewAnnouncement("test", time, testDescriptor)
-        pendingEvents <- dlcOracle.listPendingEventDbs()
+        pendingEvents <- dlcOracle.listPendingEvents()
       } yield {
         assert(pendingEvents.size == 1)
         assert(pendingEvents.head.eventDescriptorTLV == testDescriptor)
@@ -536,7 +536,7 @@ class DLCOracleTest extends DLCOracleFixture {
       announcementWithId <-
         dlcOracle.createNewEnumAnnouncement("test", futureTime, enumOutcomes)
       announcement = announcementWithId.announcement
-      beforePending <- dlcOracle.listPendingEventDbs()
+      beforePending <- dlcOracle.listPendingEvents()
       beforeEvents <- dlcOracle.listEvents()
       _ = assert(beforePending.size == 1)
       _ = assert(beforeEvents.size == 1)
@@ -545,7 +545,7 @@ class DLCOracleTest extends DLCOracleFixture {
       nonce = announcement.nonces.head.head
 
       _ <- dlcOracle.createAttestation(nonce, EnumAttestation(outcome))
-      afterPending <- dlcOracle.listPendingEventDbs()
+      afterPending <- dlcOracle.listPendingEvents()
       afterEvents <- dlcOracle.listEvents()
     } yield {
       assert(afterPending.isEmpty)

@@ -62,14 +62,26 @@ case class OracleAnnouncementDataDAO()(implicit
     findByIds(Vector(id)).map(_.headOption)
   }
 
-  def findByEventName(
-      eventName: String): Future[Vector[OracleAnnouncementDataDb]] = {
+  def findByEventNameAction(eventName: String): DBIOAction[
+    Vector[OracleAnnouncementDataDb],
+    NoStream,
+    Effect.Read] = {
     val action = table
       .filter(_.eventId === eventName)
       .result
       .map(_.toVector)
+    action
+  }
 
+  def findByEventName(
+      eventName: String): Future[Vector[OracleAnnouncementDataDb]] = {
+    val action = findByEventNameAction(eventName)
     safeDatabase.run(action)
+  }
+
+  def deleteByAnnouncementIdAction(
+      announcementId: Long): DBIOAction[Int, NoStream, Effect.Write] = {
+    table.filter(_.id === announcementId).delete
   }
 
   class OracleAnnouncementsTable(tag: Tag)

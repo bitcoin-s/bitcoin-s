@@ -52,6 +52,11 @@ case class OracleMetadataDAO()(implicit
       .map(_.toVector)
   }
 
+  def deleteByAnnouncementIdAction(
+      announcementId: Long): DBIOAction[Int, NoStream, Effect.Write] = {
+    table.filter(_.announcementId === announcementId).delete
+  }
+
   class OracleMetadataTable(tag: Tag)
       extends Table[OracleMetadataDb](tag, schemaName, "oracle_metadata") {
 

@@ -2859,6 +2859,51 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
                                                metadata)
     OracleAnnouncementV1TLV(signature, event, metadata)
   }
+
+  lazy val dummy: OracleAnnouncementV1TLV = {
+    val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
+      "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
+    val event = OracleEventV1TLV.buildDummy(
+      EnumEventDescriptorDLCSubType(
+        Vector(
+          NormalizedString("a"),
+          NormalizedString("b"),
+          NormalizedString("c")
+        )))
+
+    val orderedNonces = OrderedNonces(
+      Vector(ECPrivateKey.freshPrivateKey.schnorrNonce))
+    val schnorrAttestation = SchnorrAttestation.build(
+      dummyPrivKey,
+      dummyPrivKey.schnorrPublicKey,
+      orderedNonces)
+
+    val metadataSignature = OracleMetadataSignature.buildSignature(
+      announcementPrivKey = dummyPrivKey,
+      oracleName = oracleName,
+      oracleDescription = oracleDescription,
+      creationTime = creationTime,
+      schnorrAttestation = schnorrAttestation
+    )
+
+    val metadata: OracleMetadata = OracleMetadata(
+      dummyPrivKey.schnorrPublicKey,
+      oracleName,
+      oracleDescription,
+      creationTime,
+      schnorrAttestation,
+      metadataSignature
+    )
+    val announcementSignature = buildAnnouncementSignature(
+      dummyPrivKey,
+      SigningVersion.latest,
+      event,
+      metadata)
+
+    OracleAnnouncementV1TLV(announcementSignature = announcementSignature,
+                            event,
+                            metadata = metadata)
+  }
 }
 
 case class OracleMetadata(

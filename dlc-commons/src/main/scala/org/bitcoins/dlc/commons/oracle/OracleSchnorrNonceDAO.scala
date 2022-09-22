@@ -79,15 +79,20 @@ case class OracleSchnorrNonceDAO()(implicit
   }
 
   /** Updates the outcome/attestation on a nonce signature pair in the db */
-  def updateOutcomeAttestation(
+  def updateNonceSignatureDb(
       nonceSignatureDb: NonceSignaturePairDb): DBIOAction[
     Int,
     NoStream,
     Effect.Write] = {
-    require(nonceSignatureDb.attestationOpt.isDefined)
+//    require(nonceSignatureDb.attestationOpt.isDefined)
     table
       .filter(_.nonce === nonceSignatureDb.nonce)
       .update(nonceSignatureDb)
+  }
+
+  def deleteByAnnouncementId(
+      announcementId: Long): DBIOAction[Int, NoStream, Effect.Write] = {
+    table.filter(_.announcementId === announcementId).delete
   }
 
   class NonceTable(tag: Tag)

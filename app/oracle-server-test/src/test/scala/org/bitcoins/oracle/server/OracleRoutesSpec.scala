@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.tlv.{
   NormalizedString,
   OracleAnnouncementV0TLV,
+  OracleAnnouncementV1TLV,
   OracleAttestmentTLV
 }
 import org.bitcoins.crypto._
@@ -61,7 +62,7 @@ class OracleRoutesSpec
     OracleTestUtil.dummyAttestmentTLV
 
   val announcementWithId =
-    OracleAnnouncementWithId(0, OracleAnnouncementV0TLV.dummy)
+    OracleAnnouncementWithId(0, OracleAnnouncementV1TLV.dummy)
 
   "The oracle server" must {
 
