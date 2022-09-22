@@ -837,7 +837,17 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     val action = for {
       announcements <- announcementsA
       nested = announcements.map { annWithId =>
-        oracleDataManagement.deleteAnnouncementAction(annWithId.announcement)
+        val attestationOptA =
+          oracleDataManagement.getAttestmentsAction(annWithId.id)
+        attestationOptA.flatMap {
+          case Some(attestation) =>
+            val eventId = annWithId.announcement.eventTLV.eventId
+            sys.error(
+              s"Cannot delete announcement=${eventId} that has attestations, attestation=$attestation")
+          case None =>
+            oracleDataManagement.deleteAnnouncementAction(
+              annWithId.announcement)
+        }
       }
       _ <- DBIO.sequence(nested)
     } yield {
@@ -875,14 +885,14 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     */
   override def deleteAttestation(
       announcement: BaseOracleAnnouncement): Future[OracleEvent] = {
-    logger.warn(
-      s"Attempting to delete attestations for ${announcement.eventTLV.eventId}")
+    val eventId = announcement.eventTLV.eventId
+    logger.warn(s"Attempting to delete attestations for $eventId")
     announcement match {
       case _: OracleAnnouncementV0TLV =>
         for {
           eventDbs <- eventDAO.findByAnnouncement(announcement)
           _ = require(eventDbs.exists(_.attestationOpt.isDefined),
-                      s"Event given is unsigned")
+                      s"Event given is unsigned, eventId=$eventId")
 
           updated = eventDbs.map(
             _.copy(outcomeOpt = None, attestationOpt = None))
@@ -901,6 +911,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                 DBIO.successful(Vector.empty)
             }
           }
+          _ = require(nonces.exists(_.attestationOpt.isDefined),
+                      s"Event given is unsigned, eventId=$eventId")
           //remove attestation/outcome
           noAttestations = nonces.map(n =>
             n.copy(attestationOpt = None, outcomeOpt = None))
