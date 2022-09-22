@@ -1397,6 +1397,58 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("payoutcurvetocsv")
+        .action((_, conf) =>
+          conf.copy(command = CurveToCSV(null, null, None, None, false)))
+        .text("Writes a payout curve to a CSV file")
+        .children(
+          arg[String]("filename")
+            .text("File name")
+            .required()
+            .action((filename, conf) =>
+              conf.copy(command = conf.command match {
+                case csv: CurveToCSV =>
+                  csv.copy(filename = filename)
+                case other => other
+              })),
+          arg[Either[ContractInfoV0TLV, ContractDescriptorV1TLV]]("contract")
+            .text(
+              "Hex encoded numeric contract descriptor or numeric contract info")
+            .required()
+            .action((contract, conf) =>
+              conf.copy(command = conf.command match {
+                case csv: CurveToCSV =>
+                  csv.copy(contract = contract)
+                case other => other
+              })),
+          opt[String]("outcomeLabel")
+            .text("Outcome column label")
+            .optional()
+            .action((outcomeLabel, conf) =>
+              conf.copy(command = conf.command match {
+                case csv: CurveToCSV =>
+                  csv.copy(outcomeLabelOpt = Some(outcomeLabel))
+                case other => other
+              })),
+          opt[String]("payoutLabel")
+            .text("Payout column label")
+            .optional()
+            .action((payoutLabel, conf) =>
+              conf.copy(command = conf.command match {
+                case csv: CurveToCSV =>
+                  csv.copy(payoutLabelOpt = Some(payoutLabel))
+                case other => other
+              })),
+          opt[Boolean]("emptyFirstColumn")
+            .text("Create an empty first column")
+            .optional()
+            .action((emptyFirstColumn, conf) =>
+              conf.copy(command = conf.command match {
+                case csv: CurveToCSV =>
+                  csv.copy(emptyFirstColumn = emptyFirstColumn)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -2319,6 +2371,25 @@ object ConsoleCli {
         val args = Seq(up.writeJs(offerHash))
         RequestParam("offer-remove", args)
 
+      case CurveToCSV(filename,
+                      contract,
+                      outcomeLabelOpt,
+                      payoutLabelOpt,
+                      emptyFirstColumn) =>
+        val hex = contract match {
+          case Right(contractDescriptor) => contractDescriptor.hex
+          case Left(contractInfo)        => contractInfo.hex
+        }
+        val args = Seq(
+          up.writeJs(filename),
+          up.writeJs(hex),
+          if (outcomeLabelOpt.isEmpty) Null
+          else up.writeJs(outcomeLabelOpt.get),
+          if (payoutLabelOpt.isEmpty) Null else up.writeJs(payoutLabelOpt.get),
+          up.writeJs(emptyFirstColumn)
+        )
+        RequestParam("payoutcurvetocsv", args)
+
       case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
           _: Broadcastable | _: OracleServerCliCommand) =>
         sys.error(s"Command $cmd unsupported")
@@ -2469,6 +2540,14 @@ object CliCommand {
       extends AppServerCliCommand
 
   case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
+
+  case class CurveToCSV(
+      filename: String,
+      contract: Either[ContractInfoV0TLV, ContractDescriptorV1TLV],
+      outcomeLabelOpt: Option[String],
+      payoutLabelOpt: Option[String],
+      emptyFirstColumn: Boolean)
+      extends AppServerCliCommand
 
   // Wallet
 

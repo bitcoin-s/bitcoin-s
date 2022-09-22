@@ -13,7 +13,11 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.dlc.models.ContractDescriptor
+import org.bitcoins.core.protocol.dlc.models.{
+  ContractDescriptor,
+  ContractInfo,
+  NumericContractDescriptor
+}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -839,7 +843,7 @@ object CreateDLCOffer extends ServerJsonModels {
         payoutAddressJs: Value,
         changeAddressJs: Value,
         peerAddressJs: Value) = Try {
-      val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
+      val contractInfoTLV = jsToContractInfoV0TLV(contractInfoJs)
       val collateral = jsToSatoshis(collateralJs)
       val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
       val locktimeJsOpt = nullToOpt(locktimeJs)
@@ -1599,6 +1603,86 @@ object DLCContactRemove {
   }
 }
 
+case class PayoutCurveToCSV(
+    filename: String,
+    contract: Either[ContractInfoV0TLV, ContractDescriptorV1TLV],
+    outcomeLabelOpt: Option[String],
+    payoutLabelOpt: Option[String],
+    emptyFirstColumn: Boolean)
+    extends CommandRpc
+    with AppServerCliCommand {
+
+  def toContractDescriptor: NumericContractDescriptor = {
+    contract match {
+      case Right(contractDescriptorV1TLV) =>
+        NumericContractDescriptor.fromTLV(contractDescriptorV1TLV)
+      case Left(contractInfoV0TLV) =>
+        val descriptor =
+          ContractInfo.fromTLV(contractInfoV0TLV).contractDescriptors.head
+        descriptor match {
+          case numericDescriptor: NumericContractDescriptor => numericDescriptor
+          case _: ContractDescriptor =>
+            throw new IllegalArgumentException(
+              "Expected a numeric contract descriptor")
+        }
+    }
+  }
+
+  def totalCollateralOpt: Option[Satoshis] = contract match {
+    case Right(_)           => None
+    case Left(contractInfo) => Some(contractInfo.totalCollateral)
+  }
+}
+
+object PayoutCurveToCSV extends ServerJsonModels {
+
+  def fromJsArr(arr: ujson.Arr): Try[PayoutCurveToCSV] = {
+
+    def parseArgs(
+        filenameJs: Value,
+        contractJs: Value,
+        outcomeLabelJs: Value,
+        payoutLabelJs: Value,
+        emptyFirstColumnJs: Value) = {
+      Try {
+        val filename = filenameJs.str
+        val contract = Try(jsToContractInfoV0TLV(contractJs)) match {
+          case Success(contractInfo) => Left(contractInfo)
+          case Failure(_)            => Right(jsToContractDescriptorV1TLV(contractJs))
+        }
+        val outcomeLabelOpt = jsToStringOpt(outcomeLabelJs)
+        val payoutLabelOpt = jsToStringOpt(payoutLabelJs)
+        val emptyFirstColumn =
+          if (emptyFirstColumnJs == Null) false else emptyFirstColumnJs.bool
+        PayoutCurveToCSV(filename,
+                         contract,
+                         outcomeLabelOpt,
+                         payoutLabelOpt,
+                         emptyFirstColumn)
+      }
+    }
+
+    arr.arr.toList match {
+      case filenameJs :: contractJs :: outcomeLabelJs :: payoutLabelJs :: emptyFirstColumnJs :: Nil =>
+        parseArgs(filenameJs,
+                  contractJs,
+                  outcomeLabelJs,
+                  payoutLabelJs,
+                  emptyFirstColumnJs)
+      case filenameJs :: contractJs :: outcomeLabelJs :: payoutLabelJs :: Nil =>
+        parseArgs(filenameJs, contractJs, outcomeLabelJs, payoutLabelJs, Null)
+      case filenameJs :: contractJs :: outcomeLabelJs :: Nil =>
+        parseArgs(filenameJs, contractJs, outcomeLabelJs, Null, Null)
+      case filenameJs :: contractJs :: Nil =>
+        parseArgs(filenameJs, contractJs, Null, Null, Null)
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to payoutcurvetocsv, got=${other.length} expected=5")
+        Failure(exn)
+    }
+  }
+}
+
 case class DLCCheckConnection(address: InetSocketAddress)
     extends CommandRpc
     with AppServerCliCommand
@@ -1668,10 +1752,18 @@ trait ServerJsonModels {
           "Expected an OracleAnnouncementTLV as a hex string")
     }
 
-  def jsToContractInfoTLV(js: Value): ContractInfoV0TLV =
+  def jsToContractInfoV0TLV(js: Value): ContractInfoV0TLV =
     js match {
       case str: Str =>
         ContractInfoV0TLV(str.value)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
+    }
+
+  def jsToContractDescriptorV1TLV(js: Value): ContractDescriptorV1TLV =
+    js match {
+      case str: Str =>
+        ContractDescriptorV1TLV(str.value)
       case _: Value =>
         throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
     }

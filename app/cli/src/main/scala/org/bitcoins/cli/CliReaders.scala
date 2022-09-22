@@ -27,6 +27,7 @@ import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import java.util.Date
+import scala.util.{Failure, Success, Try}
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {
@@ -411,4 +412,19 @@ object CliReaders {
 
     override def reads: String => AddressType = AddressType.fromString
   }
+
+  implicit val eitherContractDescriptorOrContractInfoReader: Read[
+    Either[ContractInfoV0TLV, ContractDescriptorV1TLV]] =
+    new Read[Either[ContractInfoV0TLV, ContractDescriptorV1TLV]] {
+      override def arity: Int = 1
+
+      override def reads: String => Either[
+        ContractInfoV0TLV,
+        ContractDescriptorV1TLV] = { hex =>
+        Try(ContractInfoV0TLV.fromHex(hex)) match {
+          case Success(contractInfo) => Left(contractInfo)
+          case Failure(_)            => Right(ContractDescriptorV1TLV.fromHex(hex))
+        }
+      }
+    }
 }

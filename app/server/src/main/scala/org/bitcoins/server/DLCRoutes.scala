@@ -16,6 +16,7 @@ import org.bitcoins.core.protocol.tlv.{
   EnumEventDescriptorV0TLV,
   NumericEventDescriptorTLV
 }
+import org.bitcoins.core.util.DLCUtil
 import org.bitcoins.server.routes._
 import ujson._
 import upickle.default._
@@ -185,6 +186,24 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
               .map { _ =>
                 Server.httpSuccess("ok")
               }
+          }
+      }
+
+    case ServerCommand("payoutcurvetocsv", arr) =>
+      withValidServerCommand(PayoutCurveToCSV.fromJsArr(arr)) {
+        payoutCurveToCSV =>
+          complete {
+            Future(
+              DLCUtil.writePayoutCurveAsCSV(
+                payoutCurveToCSV.filename,
+                payoutCurveToCSV.toContractDescriptor,
+                payoutCurveToCSV.totalCollateralOpt,
+                payoutCurveToCSV.outcomeLabelOpt.getOrElse("Outcome"),
+                payoutCurveToCSV.payoutLabelOpt.getOrElse("Payout"),
+                payoutCurveToCSV.emptyFirstColumn
+              )).map { _ =>
+              Server.httpSuccess("ok")
+            }
           }
       }
 
