@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.dlc.commons.oracle.{
+  OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
 }

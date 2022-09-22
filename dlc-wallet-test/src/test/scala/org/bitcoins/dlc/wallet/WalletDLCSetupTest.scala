@@ -546,7 +546,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         _ <- walletA.cancelDLC(dlcId)
 
-        announcementData <- walletA.announcementDAO.findByPublicKey(
+        announcementData <- walletA.announcementDAO.findByAnnouncementPublicKey(
           announcementTLV.announcementPublicKey)
         nonceDbs <- walletA.oracleNonceDAO.findByAnnouncementIds(
           announcementData.map(_.id.get))

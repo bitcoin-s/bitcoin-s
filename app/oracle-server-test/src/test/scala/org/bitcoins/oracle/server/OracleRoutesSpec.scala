@@ -5,6 +5,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config._
+import org.bitcoins.core.dlc.oracle.OracleAnnouncementWithId
 import org.bitcoins.core.number.{Int32, UInt8}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.tlv.{
@@ -58,6 +59,9 @@ class OracleRoutesSpec
 
   val dummyAttestmentTLV: OracleAttestmentTLV =
     OracleTestUtil.dummyAttestmentTLV
+
+  val announcementWithId =
+    OracleAnnouncementWithId(0, OracleAnnouncementV0TLV.dummy)
 
   "The oracle server" must {
 
@@ -161,7 +165,7 @@ class OracleRoutesSpec
       (mockOracleApi
         .createNewEnumAnnouncement(_: String, _: Instant, _: Vector[String]))
         .expects("id", Instant.ofEpochSecond(1612396800), Vector("1", "2"))
-        .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
+        .returning(Future.successful(announcementWithId))
 
       val route =
         oracleRoutes.handleCommand(
@@ -181,7 +185,7 @@ class OracleRoutesSpec
       (mockOracleApi
         .createNewEnumAnnouncement(_: String, _: Instant, _: Vector[String]))
         .expects("id", Instant.ofEpochSecond(1612396800), Vector("1", "2"))
-        .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
+        .returning(Future.successful(announcementWithId))
 
       val route =
         oracleRoutes.handleCommand(
@@ -212,7 +216,7 @@ class OracleRoutesSpec
                  17,
                  "units",
                  Int32.zero)
-        .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
+        .returning(Future.successful(announcementWithId))
 
       val route =
         oracleRoutes.handleCommand(
@@ -247,7 +251,7 @@ class OracleRoutesSpec
                  17,
                  "units",
                  Int32.zero)
-        .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
+        .returning(Future.successful(announcementWithId))
 
       val route =
         oracleRoutes.handleCommand(
@@ -282,7 +286,7 @@ class OracleRoutesSpec
                  17,
                  "units",
                  Int32.zero)
-        .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
+        .returning(Future.successful(announcementWithId))
 
       val route =
         oracleRoutes.handleCommand(

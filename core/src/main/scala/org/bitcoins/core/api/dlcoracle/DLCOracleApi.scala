@@ -2,12 +2,14 @@ package org.bitcoins.core.api.dlcoracle
 
 import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.dlc.oracle.OracleAnnouncementWithId
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+
 import java.time.Instant
 import scala.concurrent.Future
 
@@ -46,19 +48,19 @@ trait DLCOracleApi {
       isSigned: Boolean,
       numDigits: Int,
       unit: String,
-      precision: Int32): Future[BaseOracleAnnouncement]
+      precision: Int32): Future[OracleAnnouncementWithId]
 
   def createNewEnumAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      outcomes: Vector[String]): Future[BaseOracleAnnouncement]
+      outcomes: Vector[String]): Future[OracleAnnouncementWithId]
 
   def createNewAnnouncement(
       eventName: String,
       maturationTime: Instant,
       descriptor: EventDescriptorDLCType,
       signingVersion: SigningVersion = SigningVersion.latest): Future[
-    BaseOracleAnnouncement]
+    OracleAnnouncementWithId]
 
   /** Signs an enumerated announcement
     * @param eventName the event name of the announcement
@@ -78,7 +80,7 @@ trait DLCOracleApi {
 
   def createAttestation(
       nonce: SchnorrNonce,
-      outcome: DLCAttestationType): Future[EventDb]
+      outcome: DLCAttestationType): Future[FieldElement]
 
   def signDigits(
       eventName: String,

@@ -1,13 +1,9 @@
 package org.bitcoins.dlc.oracle.storage
 
-import org.bitcoins.core.dlc.oracle.{NonceSignaturePairDb, OracleMetadataDb}
+import org.bitcoins.core.dlc.oracle.OracleAnnouncementWithId
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv.{
-  NormalizedString,
-  OracleMetadata,
-  OracleMetadataSignature,
-  SchnorrAttestation
-}
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.fixtures.OracleDataManagementFixture
@@ -19,7 +15,7 @@ class OracleDataManagementTest extends OracleDataManagementFixture {
 
   behavior of "OracleDataManagement"
 
-  it must "write and read oracle metadata" in { dataManagement =>
+  it must "write and read v1 oracle announcements" in { dataManagement =>
     //dataManagement.daos.oracleMetadataDAO.getSql()
     //dataManagement.daos.oracleSchnorrNonceDAO.getSql()
     val announcementPrivKey = ECPrivateKey.freshPrivateKey
@@ -46,15 +42,42 @@ class OracleDataManagementTest extends OracleDataManagementFixture {
                                   attestations = schnorrAttestation,
                                   metadataSignature = metadataSignature)
 
-    val createdF: Future[(OracleMetadataDb, Vector[NonceSignaturePairDb])] =
-      dataManagement.createOracleMetadata(metadata)
+    val eventDescriptor = EnumEventDescriptorDLCSubType(
+      Vector(
+        NormalizedString("a"),
+        NormalizedString("b"),
+        NormalizedString("c")
+      ))
+    val oracleEventV1 = OracleEventV1TLV(
+      eventDescriptor = eventDescriptor,
+      NormalizedString("eventId"),
+      FixedOracleEventTimestamp(UInt32(Instant.now().getEpochSecond))
+    )
+
+    val announcementSignature =
+      OracleAnnouncementV1TLV.buildAnnouncementSignature(
+        announcementPrivKey,
+        signingVersion = SigningVersion.latest,
+        eventTLV = oracleEventV1,
+        metadata = metadata
+      )
+
+    val announcement = OracleAnnouncementV1TLV(
+      announcementSignature,
+      eventTLV = oracleEventV1,
+      metadata
+    )
+    val createdF: Future[OracleAnnouncementWithId] =
+      dataManagement.createAnnouncement(announcement)
 
     for {
-      (metadataDb, _) <- createdF
-      id = metadataDb.id
-      read <- dataManagement.getOracleMetadata(id.get)
+      annWithId <- createdF
+      id = annWithId.id
+      readMetadata <- dataManagement.getOracleMetadata(id)
+      readAnnouncement <- dataManagement.getAnnouncement(id)
     } yield {
-      assert(read.get.metadata == metadata)
+      assert(readMetadata.get.metadata == metadata)
+      assert(readAnnouncement.get.announcement == announcement)
     }
   }
 }

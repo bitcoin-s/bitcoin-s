@@ -81,11 +81,12 @@ class DLCOracleTest extends DLCOracleFixture {
                                                  precision = Int32.zero)
 
       for {
-        announcement <- dlcOracle.createNewAnnouncement(eventName = eventName,
-                                                        maturationTime =
-                                                          futureTime,
-                                                        descriptorTLV)
-
+        announcementWithId <- dlcOracle.createNewAnnouncement(eventName =
+                                                                eventName,
+                                                              maturationTime =
+                                                                futureTime,
+                                                              descriptorTLV)
+        announcement = announcementWithId.announcement
         // To get around foreign key, won't be needed
         _ <- dlcOracle.eventOutcomeDAO.deleteAll()
 
@@ -99,7 +100,8 @@ class DLCOracleTest extends DLCOracleFixture {
       } yield {
         eventOpt match {
           case Some(event) =>
-            assert(announcement == event.announcementTLV)
+            val eventAnnouncement = event.announcementTLV
+            assert(announcement == eventAnnouncement)
           case None => fail()
         }
       }
@@ -125,15 +127,16 @@ class DLCOracleTest extends DLCOracleFixture {
                                                    precision = Int32.zero)
 
         for {
-          announcementA <- oracleA.createNewAnnouncement(eventName = eventName,
-                                                         maturationTime =
-                                                           futureTime,
-                                                         descriptorTLV)
-          announcementB <- oracleB.createNewAnnouncement(eventName = eventName,
-                                                         maturationTime =
-                                                           futureTime,
-                                                         descriptorTLV)
-
+          announcementAWithId <- oracleA.createNewAnnouncement(
+            eventName = eventName,
+            maturationTime = futureTime,
+            descriptorTLV)
+          announcementA = announcementAWithId.announcement
+          announcementBWithId <- oracleB.createNewAnnouncement(
+            eventName = eventName,
+            maturationTime = futureTime,
+            descriptorTLV)
+          announcementB = announcementBWithId.announcement
           // Can't compare announcementTLV because different nonces might be used for signature
           _ = assert(
             announcementA.announcementPublicKey == announcementB.announcementPublicKey)
@@ -220,9 +223,9 @@ class DLCOracleTest extends DLCOracleFixture {
       val eventName = "test"
       val oracleDataManagement = dlcOracle.oracleDataManagement
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewEnumAnnouncement(eventName, time, enumOutcomes)
-
+        announcement = announcementWithId.announcement
         eventOpt <- dlcOracle.findEvent(announcement)
         metadata <- oracleDataManagement
           .findMetadataByAttestationPubKey(
@@ -279,9 +282,9 @@ class DLCOracleTest extends DLCOracleFixture {
       EnumEventDescriptorDLCSubType(descriptor.outcomes)
 
     for {
-      announcement <-
+      announcementWithId <-
         dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
-
+      announcement = announcementWithId.announcement
       completedEvent <-
         dlcOracle.signEnum(announcement.eventTLV, EnumAttestation(outcome))
     } yield {
@@ -307,7 +310,7 @@ class DLCOracleTest extends DLCOracleFixture {
     val outcome = -321L
 
     for {
-      announcement <-
+      announcementWithId <-
         dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                    maturationTime = futureTime,
                                                    base = UInt8(10),
@@ -315,7 +318,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                                    numDigits = 3,
                                                    unit = "units",
                                                    precision = Int32.zero)
-
+      announcement = announcementWithId.announcement
       _ = assert(announcement.validateSignature)
 
       eventTLV = announcement.eventTLV
@@ -375,7 +378,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val outcome = -1931L
 
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                      maturationTime =
                                                        futureTime,
@@ -384,7 +387,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                                      numDigits = 3,
                                                      unit = "units",
                                                      precision = Int32.zero)
-
+        announcement = announcementWithId.announcement
         _ = assert(announcement.validateSignature)
 
         eventTLV = announcement.eventTLV
@@ -445,7 +448,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val outcome = 2
 
       for {
-        announcement <-
+        announcementWithid <-
           dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                      maturationTime =
                                                        futureTime,
@@ -454,7 +457,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                                      numDigits = 3,
                                                      unit = "units",
                                                      precision = Int32.zero)
-
+        announcement = announcementWithid.announcement
         _ = assert(announcement.validateSignature)
 
         eventTLV = announcement.eventTLV
@@ -509,7 +512,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val numDigits = 18
       val eventName = "test"
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
                                                      maturationTime =
                                                        futureTime,
@@ -518,7 +521,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                                      numDigits = numDigits,
                                                      unit = "units",
                                                      precision = Int32.zero)
-
+        announcement = announcementWithId.announcement
         _ = assert(announcement.validateSignature)
 
         event <- dlcOracle.signDigits(eventName, outcome)
@@ -530,8 +533,9 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "correctly track pending events" in { dlcOracle: DLCOracle =>
     val outcome = enumOutcomes.head
     for {
-      announcement <-
+      announcementWithId <-
         dlcOracle.createNewEnumAnnouncement("test", futureTime, enumOutcomes)
+      announcement = announcementWithId.announcement
       beforePending <- dlcOracle.listPendingEventDbs()
       beforeEvents <- dlcOracle.listEvents()
       _ = assert(beforePending.size == 1)
@@ -562,11 +566,11 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle: DLCOracle =>
       recoverToSucceededIf[RuntimeException] {
         for {
-          announcement <-
+          announcementWithId <-
             dlcOracle.createNewEnumAnnouncement("test",
                                                 futureTime,
                                                 enumOutcomes)
-
+          announcement = announcementWithId.announcement
           nonce = announcement.nonces.head.head
 
           _ <- dlcOracle.createAttestation(
@@ -579,7 +583,7 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "sign a negative number for a unsigned digit decomp event that results in 0" in {
     dlcOracle: DLCOracle =>
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                      maturationTime =
                                                        futureTime,
@@ -588,7 +592,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                                      numDigits = 3,
                                                      unit = "units",
                                                      precision = Int32.zero)
-
+        announcement = announcementWithId.announcement
         res <- dlcOracle.signDigits(announcement, -2)
       } yield {
         assert(res.outcomeBase10 == 0)
@@ -684,8 +688,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                                        Int32(0))
 
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewAnnouncement(eventName, maturationTime, descriptor)
+        announcement = announcementWithId.announcement
         event <-
           dlcOracle
             .signDigits(announcement, -2)
@@ -710,8 +715,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                                          Int32(0))
 
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewAnnouncement(eventName, maturationTime, descriptor)
+        announcement = announcementWithId.announcement
         event <-
           dlcOracle
             .signDigits(announcement, 2)
@@ -737,14 +743,16 @@ class DLCOracleTest extends DLCOracleFixture {
                                                          Int32(0))
 
       for {
-        announcement1 <-
+        announcement1WithId <-
           dlcOracle.createNewAnnouncement(eventName1,
                                           maturationTime,
                                           descriptor)
-        announcement2 <-
+        announcement2WithId <-
           dlcOracle.createNewAnnouncement(eventName2,
                                           maturationTime,
                                           descriptor)
+        announcement1 = announcement1WithId.announcement
+        announcement2 = announcement2WithId.announcement
         event1 <-
           dlcOracle
             .signDigits(announcement1, 2)
@@ -777,9 +785,9 @@ class DLCOracleTest extends DLCOracleFixture {
         EnumEventDescriptorDLCSubType(descriptor.outcomes)
 
       for {
-        announcement <-
+        announcementWithId <-
           dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
-
+        announcement = announcementWithId.announcement
         _ <-
           dlcOracle.signEnum(announcement.eventTLV, EnumAttestation(outcome))
 
@@ -883,7 +891,8 @@ class DLCOracleTest extends DLCOracleFixture {
                                           Vector("0", "1", "2"))
     for {
       c <- createdF
-      _ <- dlcOracle.deleteAnnouncement(c)
+      announcement = c.announcement
+      _ <- dlcOracle.deleteAnnouncement(announcement)
       //make sure we can't find it
       annOpt <- dlcOracle.findEvent(eventName)
     } yield {
@@ -903,7 +912,8 @@ class DLCOracleTest extends DLCOracleFixture {
                                                  precision = Int32.zero)
     for {
       c <- createdF
-      _ <- dlcOracle.deleteAnnouncement(c)
+      announcement = c.announcement
+      _ <- dlcOracle.deleteAnnouncement(announcement)
       //make sure we can't find it
       annOpt <- dlcOracle.findEvent(eventName)
     } yield {

@@ -8,6 +8,10 @@ import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
+import org.bitcoins.core.dlc.oracle.{
+  OracleAnnouncementDataDb,
+  OracleAnnouncementDbHelper
+}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
@@ -30,6 +34,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.commons.oracle.{
+  OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
 }
@@ -342,7 +347,7 @@ abstract class DLCWallet
             OracleNonceDbHelper.fromAnnouncements(newAnnouncementsWithId)
           oracleNonceDAO.createAll(nonceDbs)
         case v1: OracleAnnouncementV1TLV =>
-          dlcDataManagement.createOracleMetadata(v1.metadata)
+          dlcDataManagement.createAnnouncement(v1)
       }
     } yield allAnnouncementDbs
   }

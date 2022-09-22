@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.commons.oracle.{
+  OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
 }
@@ -23,13 +24,17 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
     val rValueDAO = RValueDAO()
     val eventDAO = EventDAO()
     val outcomeDAO = EventOutcomeDAO()
+    val oracleAnnouncementDAO = OracleAnnouncementDataDAO()
     val oracleMetadataDAO = OracleMetadataDAO()
     val oracleSchnorrNonceDAO = OracleSchnorrNonceDAO()
-    DLCOracleDAOs(rValueDAO = rValueDAO,
-                  eventDAO = eventDAO,
-                  outcomeDAO = outcomeDAO,
-                  oracleMetadataDAO = oracleMetadataDAO,
-                  oracleSchnorrNonceDAO = oracleSchnorrNonceDAO)
+    DLCOracleDAOs(
+      rValueDAO = rValueDAO,
+      eventDAO = eventDAO,
+      outcomeDAO = outcomeDAO,
+      oracleAnnouncementDAO = oracleAnnouncementDAO,
+      oracleMetadataDAO = oracleMetadataDAO,
+      oracleSchnorrNonceDAO = oracleSchnorrNonceDAO
+    )
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {

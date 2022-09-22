@@ -568,4 +568,5 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       _.metadataSignature.hex,
       OracleMetadataSignature.fromHex)
   }
+
 }

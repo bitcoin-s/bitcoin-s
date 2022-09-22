@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.wallet.models
+package org.bitcoins.core.dlc.oracle
 
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.number.UInt32
@@ -8,8 +8,8 @@ import org.bitcoins.crypto._
 case class OracleAnnouncementDataDb(
     id: Option[Long],
     announcementSignature: SchnorrDigitalSignature,
-    publicKey: SchnorrPublicKey,
-    signingPublicKey: SchnorrPublicKey,
+    announcementPublicKey: SchnorrPublicKey,
+    attestationPublicKey: SchnorrPublicKey,
     eventId: String,
     eventDescriptor: BaseEventDescriptor,
     eventMaturity: UInt32
@@ -23,15 +23,28 @@ object OracleAnnouncementDbHelper {
 
   def fromAnnouncement(
       tlv: BaseOracleAnnouncement): OracleAnnouncementDataDb = {
-    OracleAnnouncementDataDb(
-      None,
-      tlv.announcementSignature,
-      tlv.announcementPublicKey,
-      tlv.announcementPublicKey,
-      tlv.eventTLV.eventId,
-      tlv.eventTLV.eventDescriptor,
-      tlv.eventTLV.eventMaturityEpoch
-    )
+    tlv match {
+      case _: OracleAnnouncementV0TLV =>
+        OracleAnnouncementDataDb(
+          None,
+          tlv.announcementSignature,
+          tlv.announcementPublicKey,
+          tlv.announcementPublicKey,
+          tlv.eventTLV.eventId,
+          tlv.eventTLV.eventDescriptor,
+          tlv.eventTLV.eventMaturityEpoch
+        )
+      case v1: OracleAnnouncementV1TLV =>
+        OracleAnnouncementDataDb(
+          None,
+          tlv.announcementSignature,
+          v1.announcementPublicKey,
+          v1.attestationPublicKey,
+          tlv.eventTLV.eventId,
+          tlv.eventTLV.eventDescriptor,
+          tlv.eventTLV.eventMaturityEpoch
+        )
+    }
 
   }
 

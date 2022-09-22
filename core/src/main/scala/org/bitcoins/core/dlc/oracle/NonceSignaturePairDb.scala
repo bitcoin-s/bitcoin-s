@@ -1,14 +1,23 @@
 package org.bitcoins.core.dlc.oracle
 
-import org.bitcoins.core.dlc.oracle
-import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
+import org.bitcoins.crypto.{FieldElement, SchnorrDigitalSignature, SchnorrNonce}
 
 case class NonceSignaturePairDb(
-    id: Long,
+    announcementId: Long,
     nonce: SchnorrNonce,
-    signature: SchnorrDigitalSignature) {
+    nonceProof: SchnorrDigitalSignature,
+    attestationOpt: Option[FieldElement],
+    outcomeOpt: Option[String]) {
+  require(attestationOpt.isDefined == outcomeOpt.isDefined,
+          s"Attestation must be present if outcome is present")
+
+  val signatureOpt: Option[SchnorrDigitalSignature] = {
+    attestationOpt.map { attestation =>
+      SchnorrDigitalSignature(nonce, attestation)
+    }
+  }
 
   val nonceSignaturePair: NonceSignaturePair = {
-    oracle.NonceSignaturePair(nonce = nonce, nonceSignature = signature)
+    NonceSignaturePair(nonce = nonce, nonceProof = nonceProof)
   }
 }

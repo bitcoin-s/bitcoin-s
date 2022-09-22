@@ -8,9 +8,9 @@ import org.bitcoins.crypto.{
 
 case class NonceSignaturePair(
     nonce: SchnorrNonce,
-    nonceSignature: SchnorrDigitalSignature) {
+    nonceProof: SchnorrDigitalSignature) {
 
   def verify(pubKey: SchnorrPublicKey): Boolean = {
-    pubKey.verify(nonce.bytes, nonceSignature)
+    pubKey.verify(nonce.bytes, nonceProof)
   }
 }

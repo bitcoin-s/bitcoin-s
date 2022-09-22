@@ -3,7 +3,10 @@ package org.bitcoins.dlc.wallet.internal
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.TransactionDb
-import org.bitcoins.core.dlc.oracle.OracleMetadataWithId
+import org.bitcoins.core.dlc.oracle.{
+  OracleAnnouncementDataDb,
+  OracleMetadataWithId
+}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.execution._
@@ -18,6 +21,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.commons.oracle.{
+  OracleAnnouncementDataDAO,
   OracleCommonDataManagement,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
@@ -49,6 +53,9 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private val announcementDAO = dlcWalletDAOs.oracleAnnouncementDAO
   private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
   private val remoteTxDAO = dlcWalletDAOs.dlcRemoteTxDAO
+
+  override protected val oracleAnnouncementDAO: OracleAnnouncementDataDAO =
+    dlcWalletDAOs.oracleAnnouncementDAO
 
   override protected val oracleMetadataDAO: OracleMetadataDAO =
     dlcWalletDAOs.oracleMetadataDAO
@@ -157,7 +164,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                     eventId = data.eventId
                   )
                   (OracleAnnouncementV0TLV(data.announcementSignature,
-                                           data.publicKey,
+                                           data.announcementPublicKey,
                                            eventTLV),
                    data.id.get)
               }
@@ -227,7 +234,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                   eventId = data.eventId
                 )
                 (OracleAnnouncementV0TLV(data.announcementSignature,
-                                         data.publicKey,
+                                         data.announcementPublicKey,
                                          eventTLV),
                  data.id.get)
             }

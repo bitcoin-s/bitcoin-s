@@ -1,12 +1,11 @@
 package org.bitcoins.core.dlc.oracle
 
-import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv.{NormalizedString, OracleMetadata}
 import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrPublicKey}
 
 case class OracleMetadataDb(
-    id: Option[Long],
+    announcementId: Long,
     announcementPublicKey: SchnorrPublicKey,
     oracleName: NormalizedString,
     oracleDescription: NormalizedString,
@@ -14,18 +13,15 @@ case class OracleMetadataDb(
     metadataSignature: SchnorrDigitalSignature,
     attestationPublicKey: SchnorrPublicKey,
     attestationPubKeySignature: SchnorrDigitalSignature
-) extends DbRowAutoInc[OracleMetadataDb] {
-
-  override def copyWithId(id: Long): OracleMetadataDb = {
-    copy(id = Some(id))
-  }
-}
+)
 
 object OracleMetadataDbHelper {
 
-  def fromOracleMetadata(oracleMetadata: OracleMetadata): OracleMetadataDb = {
+  def fromOracleMetadata(
+      oracleMetadata: OracleMetadata,
+      announcementId: Long): OracleMetadataDb = {
     OracleMetadataDb(
-      id = None,
+      announcementId = announcementId,
       announcementPublicKey = oracleMetadata.announcementPublicKey,
       oracleName = oracleMetadata.oracleName,
       oracleDescription = oracleMetadata.oracleDescription,

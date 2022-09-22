@@ -58,8 +58,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           complete {
             oracle
               .createNewEnumAnnouncement(label, maturationTime, outcomes)
-              .map { announcementTLV =>
-                Server.httpSuccess(announcementTLV.hex)
+              .map { annWithId =>
+                Server.httpSuccess(annWithId.announcement.hex)
               }
           }
       }
@@ -90,8 +90,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                                                 numDigits,
                                                 unit,
                                                 Int32(precision))
-              .map { announcementTLV =>
-                Server.httpSuccess(announcementTLV.hex)
+              .map { annWithId =>
+                Server.httpSuccess(annWithId.announcement.hex)
               }
           }
       }
@@ -120,8 +120,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                                                 numDigits,
                                                 unit,
                                                 Int32(precision))
-              .map { announcementTLV =>
-                Server.httpSuccess(announcementTLV.hex)
+              .map { annWithId =>
+                Server.httpSuccess(annWithId.announcement.hex)
               }
           }
       }

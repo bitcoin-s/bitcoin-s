@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.dlc.oracle.{
   NonceSignaturePair,
   NonceSignaturePairDb,
+  OracleAnnouncementDataDb,
   OracleMetadataDb,
   OracleMetadataWithId
 }
@@ -2718,6 +2719,10 @@ case class OracleAnnouncementV1TLV(
   override val announcementPublicKey: SchnorrPublicKey =
     metadata.announcementPublicKey
 
+  val attestationPublicKey: SchnorrPublicKey = {
+    metadata.attestationPublicKey
+  }
+
   override lazy val sha256: Sha256Digest = CryptoUtil.sha256(bytes)
 
   override def validateSignature: Boolean = {
@@ -2733,6 +2738,11 @@ case class OracleAnnouncementV1TLV(
   override val nonces: Vector[OrderedNonces] = {
     //is this right? Comeback and look at this
     Vector(metadata.attestations.nonces)
+  }
+
+  /** Flattened nonces, no longer distinguished based on announcement */
+  val noncesFlattened: Vector[SchnorrNonce] = {
+    nonces.flatMap(_.toVector)
   }
 }
 
@@ -2763,6 +2773,26 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
   private val oracleName = NormalizedString("oracle_name")
   private val oracleDescription = NormalizedString("oracle_description")
   private val creationTime = UInt32.zero
+
+  def fromAnnouncementAndMetadataDbs(
+      annDb: OracleAnnouncementDataDb,
+      metadata: OracleMetadata): OracleAnnouncementV1TLV = {
+    require(
+      annDb.eventDescriptor.isInstanceOf[EventDescriptorDLCType],
+      s"Can only construct v1 announcements from v1 descriptors, got=${annDb.eventDescriptor}")
+
+    val oracleEventV1 = OracleEventV1TLV(
+      annDb.eventDescriptor.asInstanceOf[EventDescriptorDLCType],
+      annDb.eventId,
+      FixedOracleEventTimestamp(annDb.eventMaturity)
+    )
+
+    OracleAnnouncementV1TLV(
+      annDb.announcementSignature,
+      eventTLV = oracleEventV1,
+      metadata
+    )
+  }
 
   def dummyForEventsAndKeys(
       privKey: ECPrivateKey,
@@ -2890,10 +2920,9 @@ object OracleMetadata extends Factory[OracleMetadata] {
   def fromDbs(
       metadataDb: OracleMetadataDb,
       nonceSignatureDbs: Vector[NonceSignaturePairDb]): OracleMetadataWithId = {
-    require(metadataDb.id.isDefined, s"MetadataDb must have an id defined")
     val pok: SchnorrProofOfKnowledge = SchnorrProofOfKnowledge(
       attestationPubKeySignature = metadataDb.attestationPubKeySignature,
-      nonceSignature = nonceSignatureDbs.map(_.signature)
+      nonceSignature = nonceSignatureDbs.map(_.nonceProof)
     )
     val schnorrAttestation: SchnorrAttestation = SchnorrAttestation(
       attestationPublicKey = metadataDb.attestationPublicKey,
@@ -2911,7 +2940,7 @@ object OracleMetadata extends Factory[OracleMetadata] {
       attestations = schnorrAttestation,
       metadataSignature = metadataSignature
     )
-    OracleMetadataWithId(metadataDb.id.get, metadata)
+    OracleMetadataWithId(metadataDb.announcementId, metadata)
   }
 }
 
@@ -2967,6 +2996,32 @@ object SchnorrAttestation extends Factory[SchnorrAttestation] {
       announcementPrivKey.schnorrSign(attestationPubKey.bytes)
     val pok = SchnorrProofOfKnowledge(attestationPubKeySig, signatures)
     SchnorrAttestation(attestationPubKey, nonces, pok)
+  }
+
+  def fromAnnouncementAndNonceSignatures(
+      announcement: OracleAnnouncementV1TLV,
+      nonceSignatures: Vector[NonceSignaturePairDb]): Option[
+    SchnorrAttestationTLV] = {
+    val isNoncesValid: Boolean = nonceSignatures.forall(db =>
+      announcement.noncesFlattened.exists(_ == db.nonce))
+
+    require(isNoncesValid, s"Nonce signature dbs must be in the announcement")
+
+    if (nonceSignatures.forall(_.outcomeOpt.isDefined)) {
+      val signatures = nonceSignatures.map(_.signatureOpt).flatten
+      val outcomes = nonceSignatures.map(_.outcomeOpt).flatten
+      val attestation =
+        SchnorrAttestationTLV(eventId = announcement.eventTLV.eventId,
+                              publicKey =
+                                announcement.metadata.attestationPublicKey,
+                              sigs = signatures,
+                              outcomes = outcomes)
+      Some(attestation)
+    } else if (nonceSignatures.forall(_.outcomeOpt.isEmpty)) {
+      None
+    } else {
+      None
+    }
   }
 }
 
