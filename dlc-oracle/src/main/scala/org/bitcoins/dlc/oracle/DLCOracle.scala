@@ -469,8 +469,9 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     val announcementV1F = oracleDataManagement.getByEventName(eventName)
 
     val nonceF = announcementV1F.flatMap { case announcements =>
-      require(announcements.length == 1,
-              s"Can only have 1 announcement for signing enum events")
+      require(
+        announcements.isEmpty || announcements.length == 1,
+        s"Can only have 1 announcement for signing enum events, got=$announcements")
       val nonceF = if (announcements.nonEmpty) {
         //sign v1 announcement
         val nonces = announcements.head.announcement
