@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO

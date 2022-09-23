@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.oracle.util
+package org.bitcoins.core.dlc.oracle.util
 
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._

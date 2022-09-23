@@ -34,6 +34,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
@@ -95,6 +96,8 @@ abstract class DLCWallet
   private val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
     OracleSchnorrNonceDAO()
 
+  private val outcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
+
   private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
@@ -110,7 +113,8 @@ abstract class DLCWallet
     incomingOfferDAO,
     contactDAO,
     oracleMetadataDAO,
-    oracleSchnorrNonceDAO
+    oracleSchnorrNonceDAO,
+    outcomeDAO
   )
 
   private[wallet] val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)

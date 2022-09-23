@@ -32,5 +32,18 @@ CREATE TABLE "oracle_announcement_data"
     "event_id"               VARCHAR(254)                      NOT NULL,
     "event_descriptor"       VARCHAR(254)                      NOT NULL
 );
+
 CREATE
     INDEX "oracle_announcements_pub_key_index" on "oracle_announcement_data" ("pub_key");
+
+
+ALTER TABLE "event_outcomes" RENAME TO "_event_outcomes_old";
+
+CREATE TABLE "event_outcomes"
+(
+    `nonce`          VARCHAR(254) NOT NULL,
+    `message`        VARCHAR(254) NOT NULL,
+    `hashed_message` VARCHAR(254) NOT NULL
+);
+
+INSERT INTO "event_outcomes" SELECT * FROM "_event_outcomes_old";

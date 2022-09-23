@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO

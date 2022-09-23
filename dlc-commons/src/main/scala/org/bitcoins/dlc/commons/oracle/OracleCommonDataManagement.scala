@@ -1,6 +1,8 @@
 package org.bitcoins.dlc.commons.oracle
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDb
+import org.bitcoins.core.dlc.oracle.util.EventDbUtil
 import org.bitcoins.core.dlc.oracle.{
   NonceSignaturePairDb,
   OracleAnnouncementDbHelper,
@@ -9,6 +11,7 @@ import org.bitcoins.core.dlc.oracle.{
   OracleMetadataDbHelper,
   OracleMetadataWithId
 }
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.{OracleAnnouncementV1TLV, OracleMetadata}
 import org.bitcoins.crypto.{SchnorrNonce, SchnorrPublicKey}
 import slick.dbio.{DBIOAction, Effect, NoStream}
@@ -20,6 +23,7 @@ trait OracleCommonDataManagement extends Logging {
   protected val oracleAnnouncementDAO: OracleAnnouncementDataDAO
   protected val oracleMetadataDAO: OracleMetadataDAO
   protected val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO
+  protected val eventOutcomeDAO: EventOutcomeDAO
 
   private lazy val safeDatabase = oracleMetadataDAO.safeDatabase
 
@@ -32,7 +36,20 @@ trait OracleCommonDataManagement extends Logging {
     for {
       annDb <- oracleAnnouncementDAO.createAction(annDb)
       _ <- createOracleMetaDataAction(annV1.metadata, annDb.id.get)
+      _ <- createEventOutcomesAction(annV1)
     } yield OracleAnnouncementWithId(annDb.id.get, annV1)
+  }
+
+  private def createEventOutcomesAction(
+      announcementV1TLV: OracleAnnouncementV1TLV): DBIOAction[
+    Vector[EventOutcomeDb],
+    NoStream,
+    Effect.Write] = {
+    val outcomes: Vector[EventOutcomeDb] = EventDbUtil.toEventOutcomeDbs(
+      announcementV1TLV,
+      SigningVersion.latest
+    )
+    eventOutcomeDAO.createAllAction(outcomes)
   }
 
   def createAnnouncement(annV1: OracleAnnouncementV1TLV)(implicit
@@ -196,5 +213,12 @@ trait OracleCommonDataManagement extends Logging {
     }
 
     announcementNoncePairOptF
+  }
+
+  def getOutcomesForNonceAction(nonce: SchnorrNonce): DBIOAction[
+    Vector[EventOutcomeDb],
+    NoStream,
+    Effect.Read] = {
+    eventOutcomeDAO.findByNonceAction(nonce)
   }
 }

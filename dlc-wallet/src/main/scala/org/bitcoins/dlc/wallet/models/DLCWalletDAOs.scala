@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
@@ -21,4 +22,5 @@ case class DLCWalletDAOs(
     incomingDLCOfferDAO: IncomingDLCOfferDAO,
     contactDAO: DLCContactDAO,
     oracleMetadataDAO: OracleMetadataDAO,
-    oracleSchnorrNonceDAO: OracleSchnorrNonceDAO)
+    oracleSchnorrNonceDAO: OracleSchnorrNonceDAO,
+    outcomeDAO: EventOutcomeDAO)

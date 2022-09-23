@@ -22,7 +22,7 @@ class OracleDataManagementTest extends OracleDataManagementFixture {
     val announcementPubKey = announcementPrivKey.schnorrPublicKey
     val attesatationPubKey = ECPrivateKey.freshPrivateKey.schnorrPublicKey
     val nonces =
-      OrderedNonces(Vector.fill(5)(ECPrivateKey.freshPrivateKey.schnorrNonce))
+      OrderedNonces(Vector.fill(1)(ECPrivateKey.freshPrivateKey.schnorrNonce))
     val name = NormalizedString("oracle_name")
     val description = NormalizedString("oracle_description")
     val creationTime: UInt32 = UInt32(Instant.now.getEpochSecond)

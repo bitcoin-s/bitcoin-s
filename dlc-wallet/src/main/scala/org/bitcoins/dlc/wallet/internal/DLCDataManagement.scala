@@ -21,6 +21,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleCommonDataManagement,
   OracleMetadataDAO,
@@ -62,6 +63,9 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   override protected val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
     dlcWalletDAOs.oracleSchnorrNonceDAO
+
+  override protected val eventOutcomeDAO: EventOutcomeDAO =
+    dlcWalletDAOs.outcomeDAO
 
   private val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(dlcWalletDAOs)
@@ -928,6 +932,8 @@ object DLCDataManagement {
     val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
       OracleSchnorrNonceDAO()
 
+    val outcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
+
     val dlcWalletDAOs = DLCWalletDAOs(
       dlcDAO,
       contractDataDAO,
@@ -943,7 +949,8 @@ object DLCDataManagement {
       incomingDLCOfferDAO,
       contactDAO,
       oracleMetadataDAO,
-      oracleSchnorrNonceDAO
+      oracleSchnorrNonceDAO,
+      outcomeDAO
     )
 
     DLCDataManagement(dlcWalletDAOs)

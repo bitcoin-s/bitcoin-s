@@ -1,17 +1,16 @@
-package org.bitcoins.dlc.oracle.storage
+package org.bitcoins.dlc.commons.oracle
 
-import org.bitcoins.core.api.dlcoracle.db.{EventDb, EventOutcomeDb}
+import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDb
 import org.bitcoins.crypto.SchnorrNonce
-import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}
-import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
+import org.bitcoins.db.{CRUD, DbAppConfig, DbCommonsColumnMappers, SlickUtil}
 import scodec.bits.ByteVector
-import slick.lifted.{ForeignKeyQuery, ProvenShape}
+import slick.lifted.ProvenShape
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class EventOutcomeDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCOracleAppConfig)
+    override val appConfig: DbAppConfig)
     extends CRUD[EventOutcomeDb, (SchnorrNonce, String)]
     with SlickUtil[EventOutcomeDb, (SchnorrNonce, String)] {
 
@@ -24,8 +23,8 @@ case class EventOutcomeDAO()(implicit
   override val table: TableQuery[EventOutcomeTable] =
     TableQuery[EventOutcomeTable]
 
-  private lazy val eventTable: TableQuery[EventDAO#EventTable] =
-    EventDAO().table
+  /*  private lazy val eventTable: TableQuery[EventDAO#EventTable] =
+    EventDAO().table*/
 
   override def createAll(
       ts: Vector[EventOutcomeDb]): Future[Vector[EventOutcomeDb]] =
@@ -45,8 +44,16 @@ case class EventOutcomeDAO()(implicit
     findByPrimaryKeys(ids)
   }
 
+  def findByNonceAction(nonce: SchnorrNonce): DBIOAction[
+    Vector[EventOutcomeDb],
+    NoStream,
+    Effect.Read] = {
+    table.filter(_.nonce === nonce).result.map(_.toVector)
+  }
+
   def findByNonce(nonce: SchnorrNonce): Future[Vector[EventOutcomeDb]] = {
-    findByNonces(Vector(nonce))
+    val action = findByNonceAction(nonce)
+    safeDatabase.run(action)
   }
 
   def findByNonces(
@@ -77,10 +84,10 @@ case class EventOutcomeDAO()(implicit
       (nonce, message, hashedMessage).<>(EventOutcomeDb.tupled,
                                          EventOutcomeDb.unapply)
 
-    def fk: ForeignKeyQuery[_, EventDb] = {
-      foreignKey("fk_nonce",
-                 sourceColumns = nonce,
-                 targetTableQuery = eventTable)(_.nonce)
-    }
+//    def fk: ForeignKeyQuery[_, EventDb] = {
+//      foreignKey("fk_nonce",
+//                 sourceColumns = nonce,
+//                 targetTableQuery = eventTable)(_.nonce)
+//    }
   }
 }

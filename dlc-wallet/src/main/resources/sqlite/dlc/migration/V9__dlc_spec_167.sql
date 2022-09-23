@@ -18,3 +18,10 @@ create table "oracle_schnorr_nonces" (
     "outcome" VARCHAR(254),
     constraint "fk_metadata_id" foreign key("id") references "oracle_metadata"("id") on update NO ACTION on delete NO ACTION
 );
+
+CREATE TABLE "event_outcomes"
+(
+    `nonce`          VARCHAR(64) NOT NULL,
+    `message`        VARCHAR(254) NOT NULL,
+    `hashed_message` VARCHAR(32) NOT NULL
+);

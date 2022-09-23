@@ -28,6 +28,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleMetadataDAO,
   OracleSchnorrNonceDAO
@@ -530,7 +531,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       signingVersion: SigningVersion): DBIOAction[
     NonceSignaturePairDb,
     NoStream,
-    Effect.Write] = {
+    Effect.Write with Effect.Read] = {
     require(nonceSignatureDb.attestationOpt.isEmpty,
             s"Cannot sign nonce twice, got=$nonceSignatureDb")
     val hash = signingVersion.calcOutcomeHash(outcome.bytes)
@@ -541,14 +542,24 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       s"The nonce from derived seed did not match database, db=${rValDb.nonce.hex} derived=${kVal.schnorrNonce.hex}, rValDb=$rValDb"
     )
 
-    val sig = attestationPrivKey
-      .schnorrSignWithNonce(dataToSign = hash, nonce = kVal)
+    val outcomeExistsA =
+      oracleDataManagement.getOutcomesForNonceAction(nonceSignatureDb.nonce)
+    outcomeExistsA.flatMap { outcomeExists =>
+      //verify we have a hash in the database for the thing that was signed
+      val hashExists = outcomeExists.exists(_.hashedMessage == hash)
+      if (hashExists) {
+        val sig = attestationPrivKey
+          .schnorrSignWithNonce(dataToSign = hash, nonce = kVal)
 
-    val updated = nonceSignatureDb.copy(attestationOpt = Some(sig.sig),
-                                        outcomeOpt =
-                                          Some(outcome.outcomeString))
-    oracleDataManagement.updateNonceSignatureDbAction(updated)
-
+        val updated = nonceSignatureDb.copy(attestationOpt = Some(sig.sig),
+                                            outcomeOpt =
+                                              Some(outcome.outcomeString))
+        oracleDataManagement.updateNonceSignatureDbAction(updated)
+      } else {
+        sys.error(
+          s"Unknown outcome in database for what oracle attestted to, outcome=$outcome rValDb=$rValDb nonceSignatureDb=$nonceSignatureDb")
+      }
+    }
   }
 
   private def createAttestationV0Action(
@@ -596,7 +607,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   private def createAttestationActionF(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[
-    DBIOAction[FieldElement, NoStream, Effect.Write]] = {
+    DBIOAction[FieldElement, NoStream, Effect.Write with Effect.Read]] = {
     val announcementNoncePairOptF =
       oracleDataManagement.getAnnouncmementByNonce(nonce)
 
@@ -738,16 +749,18 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         OrderedNonces(nonces.tail.toVector)
     }
 
-    val digitSigAVecF: Future[
-      Vector[DBIOAction[FieldElement, NoStream, Effect.Write]]] =
+    val digitSigAVecF: Future[Vector[
+      DBIOAction[FieldElement, NoStream, Effect.Write with Effect.Read]]] =
       Future.sequence {
         digitNonces.zipWithIndex.map { case (nonce, index) =>
           val digit = decomposed(index)
           createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
         }.toVector
       }
-    val digitSigAF: Future[
-      DBIOAction[Vector[FieldElement], NoStream, Effect.Write]] = {
+    val digitSigAF: Future[DBIOAction[
+      Vector[FieldElement],
+      NoStream,
+      Effect.Write with Effect.Read]] = {
       digitSigAVecF.map(digitSigs => DBIO.sequence(digitSigs))
     }
 

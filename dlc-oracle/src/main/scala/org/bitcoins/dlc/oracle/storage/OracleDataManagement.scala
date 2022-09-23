@@ -13,6 +13,7 @@ import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto.{ECPrivateKey, SchnorrNonce}
 import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
   OracleAnnouncementDataDAO,
   OracleCommonDataManagement,
   OracleMetadataDAO,
@@ -35,6 +36,8 @@ case class OracleDataManagement(daos: DLCOracleDAOs)(implicit
 
   override protected val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
     daos.oracleSchnorrNonceDAO
+
+  override protected val eventOutcomeDAO: EventOutcomeDAO = daos.outcomeDAO
 
   private val rValueDAO = daos.rValueDAO
 
