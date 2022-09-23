@@ -582,8 +582,7 @@ object OracleEvent {
     enumEventDescriptor.outcomes.exists { outcome =>
       val attestationType = EnumAttestation(outcome)
       val hash =
-        signingVersion.calcOutcomeHash(enumEventDescriptor,
-                                       attestationType.bytes)
+        signingVersion.calcOutcomeHash(attestationType.bytes)
       attestationPubKey.verify(hash, sig) && outcome == tlvOutcomes.head
     }
   }
@@ -625,7 +624,7 @@ object OracleEvent {
       attestationsToVerify.zip(outcomesToVerify).forall { case (sig, outcome) =>
         digitOutcomes.exists { attestationType =>
           val hash =
-            signingVersion.calcOutcomeHash(dd, attestationType.bytes)
+            signingVersion.calcOutcomeHash(attestationType.bytes)
           attestationPubKey.verify(
             hash,
             sig) && attestationType.outcomeString == outcome.toString

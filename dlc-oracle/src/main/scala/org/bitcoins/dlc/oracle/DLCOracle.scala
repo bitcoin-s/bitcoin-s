@@ -523,7 +523,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   }
 
   private def createAttestationV1NonceAction(
-      announcement: OracleAnnouncementV1TLV,
       nonceSignatureDb: NonceSignaturePairDb,
       rValDb: RValueDb,
       outcome: DLCAttestationType,
@@ -533,9 +532,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     Effect.Write] = {
     require(nonceSignatureDb.attestationOpt.isEmpty,
             s"Cannot sign nonce twice, got=$nonceSignatureDb")
-    val hash = signingVersion.calcOutcomeHash(
-      announcement.eventTLV.eventDescriptor,
-      outcome.bytes)
+    val hash = signingVersion.calcOutcomeHash(outcome.bytes)
 
     val kVal = getKValue(rValDb, signingVersion)
     require(
@@ -572,8 +569,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       }
       sigVersion = eventDb.signingVersion
 
-      hash = sigVersion.calcOutcomeHash(eventDb.eventDescriptorTLV,
-                                        outcome.outcomeString)
+      hash = sigVersion.calcOutcomeHash(outcome.outcomeString)
       kVal = getKValue(rValDb, sigVersion)
       _ = require(
         kVal.schnorrNonce == rValDb.nonce,
@@ -616,9 +612,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       announcementNoncePairOpt <- announcementNoncePairOptF
       action <- {
         announcementNoncePairOpt match {
-          case Some((annV1, nonceSignatureDb)) =>
+          case Some((_, nonceSignatureDb)) =>
             val action = createAttestationV1NonceAction(
-              announcement = annV1,
               nonceSignatureDb = nonceSignatureDb,
               rValDb = rValDb,
               outcome = outcome,
