@@ -23,13 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("23.0",
-         "22.0",
-         "0.21.1",
-         "0.20.1",
-         "0.19.0.1",
-         "0.18.1",
-         "0.17.0.1")
+    List("23.0", "22.0", "0.21.1", "0.20.1", "0.19.0.1", "0.18.1", "0.17.0.1")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -38,7 +32,8 @@ TaskKeys.downloadBitcoind := {
     if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
     else if (Properties.isMac)
       version match {
-        case "23.0" if System.getProperty("os.arch") == "aarch64" => ("arm64-apple-darwin", "tar.gz")
+        case "23.0" if System.getProperty("os.arch") == "aarch64" =>
+          ("arm64-apple-darwin", "tar.gz")
         case "23.0" => ("x86_64-apple-darwin", "tar.gz")
         case _      => ("osx64", "tar.gz")
       }
@@ -110,11 +105,10 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isMac)
             Map(
-              "23.0" -> (
-                if (System.getProperty("os.arch") == "aarch64")
-                  "7c8bc63731aa872b7b334a8a7d96e33536ad77d49029bad179b09dca32cd77ac"
-                else
-                  "c816780583009a9dad426dc0c183c89be9da98906e1e2c7ebae91041c1aaaaf3"),
+              "23.0" -> (if (System.getProperty("os.arch") == "aarch64")
+                           "7c8bc63731aa872b7b334a8a7d96e33536ad77d49029bad179b09dca32cd77ac"
+                         else
+                           "c816780583009a9dad426dc0c183c89be9da98906e1e2c7ebae91041c1aaaaf3"),
               "22.0" -> "2744d199c3343b2d94faffdfb2c94d75a630ba27301a70e47b0ad30a7e0155e9",
               "0.21.1" -> "1ea5cedb64318e9868a66d3ab65de14516f9ada53143e460d50af428b5aec3c7",
               "0.20.1" -> "b9024dde373ea7dad707363e07ec7e265383204127539ae0c234bff3a61da0d1",
@@ -134,7 +128,8 @@ TaskKeys.downloadBitcoind := {
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
-        if (hash.equalsIgnoreCase(expectedHash(version))) {
+        val success = hash.equalsIgnoreCase(expectedHash(version))
+        if (success) {
           logger.info(s"Download complete and verified, unzipping result")
 
           val extractCommand =
@@ -148,6 +143,9 @@ TaskKeys.downloadBitcoind := {
 
         logger.info(s"Deleting archive")
         Files.delete(archiveLocation)
+
+        if (!success)
+          throw new RuntimeException(s"Failed to download bitcoind v$version")
       }
 
     }
