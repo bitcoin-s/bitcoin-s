@@ -10,7 +10,7 @@ object Deps {
     val logback = "1.4.1" //https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
-    val logkitV = "1.2.2"
+    val logkitV = "20020529"
     val avalonLoggingV = "20020627"
 
     val grizzledSlf4j = "1.3.4"
