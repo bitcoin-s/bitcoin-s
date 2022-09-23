@@ -328,32 +328,42 @@ abstract class DLCWallet
       //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
       //filter announcements that we already have in the db
       groupedAnnouncements <- groupByExistingAnnouncements(announcements)
-      announcementDataDbs <- announcementDAO.createAll(
+      announcementDataDbsA = createNewAnnouncementsAction(
         groupedAnnouncements.newAnnouncements)
+      announcementDataDbs <- safeDatabase.run(announcementDataDbsA)
       allAnnouncementDbs =
         announcementDataDbs ++ groupedAnnouncements.existingAnnouncements
+    } yield allAnnouncementDbs.map(_._1)
+  }
 
-      newAnnouncements = announcements.filter(a =>
-        groupedAnnouncements.newAnnouncements.exists(
-          _.announcementSignature == a.announcementSignature))
+  private def createNewAnnouncementsAction(newAnnouncements: Vector[
+    (OracleAnnouncementDataDb, BaseOracleAnnouncement)]): DBIOAction[
+    Vector[(OracleAnnouncementDataDb, BaseOracleAnnouncement)],
+    NoStream,
+    Effect.Write with Effect.Read] = {
+    val newAnnouncementActions = newAnnouncements.map {
+      case (db, announcement) =>
+        val action = announcement match {
+          case v0: OracleAnnouncementV0TLV =>
+            for {
+              announcementDataDb <- announcementDAO.createAction(db)
+              id = announcementDataDb.id.get
+              nonceDb =
+                OracleNonceDbHelper.fromAnnouncement(id, v0)
+              _ <- oracleNonceDAO.createAllAction(nonceDb)
+            } yield (announcementDataDb, v0)
+          case v1: OracleAnnouncementV1TLV =>
+            for {
+              annWithId <- dlcDataManagement.createAnnouncementAction(v1)
+              annDataOpt <- announcementDAO.findByIdAction(annWithId.id)
+            } yield {
+              (annDataOpt.get, v1)
+            }
+        }
 
-      newAnnouncementsWithId = newAnnouncements.map { tlv =>
-        val idOpt: Option[Long] =
-          announcementDataDbs
-            .find(_.announcementSignature == tlv.announcementSignature)
-            .flatMap(_.id)
-        (tlv, idOpt.get)
-      }
-
-      _ <- Future.traverse(newAnnouncements) {
-        case _: OracleAnnouncementV0TLV =>
-          val nonceDbs =
-            OracleNonceDbHelper.fromAnnouncements(newAnnouncementsWithId)
-          oracleNonceDAO.createAll(nonceDbs)
-        case v1: OracleAnnouncementV1TLV =>
-          dlcDataManagement.createAnnouncement(v1)
-      }
-    } yield allAnnouncementDbs
+        action
+    }
+    DBIOAction.sequence(newAnnouncementActions)
   }
 
   /** Creates a DLCOffer, if one has already been created
@@ -647,7 +657,7 @@ abstract class DLCWallet
           acceptAction = dlcAcceptDAO.createAction(acceptDb)
           inputsAction = dlcInputsDAO.upsertAllAction(acceptInputs)
           contractAction = contractDataDAO.createAction(contractDataDb)
-          createdAnnouncementsAction = announcementDAO.createAllAction(
+          createdAnnouncementsAction = createNewAnnouncementsAction(
             groupedAnnouncements.newAnnouncements)
           zipped = {
             for {
@@ -672,12 +682,12 @@ abstract class DLCWallet
 
           newAnnouncements = announcements.filter(a =>
             groupedAnnouncements.newAnnouncements.exists(
-              _.announcementSignature == a.announcementSignature))
+              _._1.announcementSignature == a.announcementSignature))
 
           newAnnouncementsWithId = newAnnouncements.map { tlv =>
             val idOpt = createdDbs
-              .find(_.announcementSignature == tlv.announcementSignature)
-              .flatMap(_.id)
+              .find(_._1.announcementSignature == tlv.announcementSignature)
+              .flatMap(_._1.id)
             (tlv, idOpt.get)
           }
           nonceDbs = OracleNonceDbHelper.fromAnnouncements(
@@ -687,7 +697,7 @@ abstract class DLCWallet
           dlcAnnouncementDbs = announcementDataDbs.zipWithIndex.map {
             case (a, index) =>
               DLCAnnouncementDb(dlcId = dlcId,
-                                announcementId = a.id.get,
+                                announcementId = a._1.id.get,
                                 index = index,
                                 used = false)
           }
@@ -2029,11 +2039,13 @@ abstract class DLCWallet
     * @param existingAnnouncements announcements we already have in our db
     */
   private case class AnnouncementGrouping(
-      newAnnouncements: Vector[OracleAnnouncementDataDb],
-      existingAnnouncements: Vector[OracleAnnouncementDataDb]) {
-    require(existingAnnouncements.forall(_.id.isDefined))
-    require(newAnnouncements.forall(_.id.isEmpty),
-            s"announcmeent had id defined=${newAnnouncements.map(_.id)}")
+      newAnnouncements: Vector[
+        (OracleAnnouncementDataDb, BaseOracleAnnouncement)],
+      existingAnnouncements: Vector[
+        (OracleAnnouncementDataDb, BaseOracleAnnouncement)]) {
+    require(existingAnnouncements.forall(_._1.id.isDefined))
+    require(newAnnouncements.forall(_._1.id.isEmpty),
+            s"announcmeent had id defined=${newAnnouncements.map(_._1.id)}")
   }
 
   /** This is needed because our upserts do not work
@@ -2047,8 +2059,13 @@ abstract class DLCWallet
       announcementTLVs: Vector[BaseOracleAnnouncement]): Future[
     AnnouncementGrouping] = {
 
+    val announceSignatureMap: Map[
+      SchnorrDigitalSignature,
+      BaseOracleAnnouncement] = {
+      announcementTLVs.map(a => (a.announcementSignature, a)).toMap
+    }
     val announcementSignatures: Vector[SchnorrDigitalSignature] = {
-      announcementTLVs.map(a => a.announcementSignature)
+      announceSignatureMap.map(_._1).toVector
     }
 
     val existingAnnouncementsInDbF: Future[Vector[OracleAnnouncementDataDb]] =
@@ -2057,15 +2074,19 @@ abstract class DLCWallet
 
     for {
       existingAnnouncementsDb <- existingAnnouncementsInDbF
+      existingAnnouncements = existingAnnouncementsDb
+        .map(e => (e, announceSignatureMap(e.announcementSignature)))
       newAnnouncements = announcementTLVs.filterNot(a =>
         existingAnnouncementsDb.exists(
           _.announcementSignature == a.announcementSignature))
     } yield {
       val newAnnouncementsDb =
         OracleAnnouncementDbHelper.fromAnnouncements(newAnnouncements)
+      val newAnnouncementsWithTLV = newAnnouncementsDb
+        .map(n => (n, announceSignatureMap(n.announcementSignature)))
 
-      AnnouncementGrouping(newAnnouncements = newAnnouncementsDb,
-                           existingAnnouncements = existingAnnouncementsDb)
+      AnnouncementGrouping(newAnnouncements = newAnnouncementsWithTLV,
+                           existingAnnouncements = existingAnnouncements)
     }
   }
 }
