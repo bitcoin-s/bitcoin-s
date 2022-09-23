@@ -22,14 +22,14 @@ trait EventDbUtil {
         enum.outcomes.map { outcome =>
           val attestationType = EnumAttestation(outcome)
           val hash =
-            signingVersion.calcOutcomeHash(enum, attestationType.bytes)
+            signingVersion.calcOutcomeHash(attestationType.bytes)
           EventOutcomeDb(nonce, outcome, hash)
         }
       case decomp: DigitDecompositionEventDescriptorV0TLV =>
         val signDbs = decomp match {
           case _: SignedDigitDecompositionEventDescriptor =>
-            val plusHash = signingVersion.calcOutcomeHash(decomp, "+")
-            val minusHash = signingVersion.calcOutcomeHash(decomp, "-")
+            val plusHash = signingVersion.calcOutcomeHash("+")
+            val minusHash = signingVersion.calcOutcomeHash("-")
             Vector(EventOutcomeDb(nonces.head, "+", plusHash),
                    EventOutcomeDb(nonces.head, "-", minusHash))
           case _: UnsignedDigitDecompositionEventDescriptor =>
@@ -47,7 +47,7 @@ trait EventDbUtil {
           0.until(decomp.base.toInt).map { num =>
             val attestationType = DigitDecompositionAttestation(num)
             val hash =
-              signingVersion.calcOutcomeHash(decomp, attestationType.bytes)
+              signingVersion.calcOutcomeHash(attestationType.bytes)
             EventOutcomeDb(nonce, num.toString, hash)
           }
         }

@@ -289,8 +289,7 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(completedEvent.attestation == sig.sig)
           assert(completedEvent.outcomes == Vector(EnumAttestation(outcome)))
 
-          val descriptor = completedEvent.eventDescriptorTLV
-          val hash = SigningVersion.latest.calcOutcomeHash(descriptor, outcome)
+          val hash = SigningVersion.latest.calcOutcomeHash(outcome)
 
           assert(dlcOracle.publicKey.verify(hash, sig))
           assert(
@@ -334,10 +333,8 @@ class DLCOracleTest extends DLCOracleFixture {
                                      DigitDecompositionAttestation(1))
           assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
 
-          val descriptor = completedEvent.eventDescriptorTLV
-
           // Sign Signature Check
-          val signHash = SigningVersion.latest.calcOutcomeHash(descriptor, "-")
+          val signHash = SigningVersion.latest.calcOutcomeHash("-")
           val signSig = completedEvent.signatures.head
           assert(dlcOracle.publicKey.verify(signHash, signSig))
           assert(
@@ -348,7 +345,6 @@ class DLCOracleTest extends DLCOracleFixture {
           // 100s Place signature Check
           val hash100 =
             SigningVersion.latest.calcOutcomeHash(
-              descriptor,
               DigitDecompositionAttestation(3).bytes)
           val sig100 = completedEvent.signatures(1)
           assert(dlcOracle.publicKey.verify(hash100, sig100))
@@ -359,7 +355,6 @@ class DLCOracleTest extends DLCOracleFixture {
           // 10s Place signature Check
           val hash10 =
             SigningVersion.latest.calcOutcomeHash(
-              descriptor,
               DigitDecompositionAttestation(2).bytes)
           val sig10 = completedEvent.signatures(2)
           assert(dlcOracle.publicKey.verify(hash10, sig10))
@@ -370,7 +365,6 @@ class DLCOracleTest extends DLCOracleFixture {
           // 1s Place signature Check
           val hash1 =
             SigningVersion.latest.calcOutcomeHash(
-              descriptor,
               DigitDecompositionAttestation(1).bytes)
           val sig1 = completedEvent.signatures(3)
           assert(dlcOracle.publicKey.verify(hash1, sig1))
@@ -412,11 +406,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                        DigitDecompositionAttestation(11))
             assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
 
-            val descriptor = completedEvent.eventDescriptorTLV
-
             // Sign Signature Check
             val signHash =
-              SigningVersion.latest.calcOutcomeHash(descriptor, "-")
+              SigningVersion.latest.calcOutcomeHash("-")
             val signSig = completedEvent.signatures.head
             assert(dlcOracle.publicKey.verify(signHash, signSig))
             assert(
@@ -427,7 +419,6 @@ class DLCOracleTest extends DLCOracleFixture {
             // 100s Place signature Check
             val hash100 =
               SigningVersion.latest.calcOutcomeHash(
-                descriptor,
                 DigitDecompositionAttestation(7).bytes)
             val sig100 = completedEvent.signatures(1)
             assert(dlcOracle.publicKey.verify(hash100, sig100))
@@ -438,7 +429,6 @@ class DLCOracleTest extends DLCOracleFixture {
             // 10s Place signature Check
             val hash10 =
               SigningVersion.latest.calcOutcomeHash(
-                descriptor,
                 DigitDecompositionAttestation(8).bytes)
             val sig10 = completedEvent.signatures(2)
             assert(dlcOracle.publicKey.verify(hash10, sig10))
@@ -449,7 +439,6 @@ class DLCOracleTest extends DLCOracleFixture {
             // 1s Place signature Check
             val hash1 =
               SigningVersion.latest.calcOutcomeHash(
-                descriptor,
                 DigitDecompositionAttestation(11).bytes)
             val sig1 = completedEvent.signatures(3)
             assert(dlcOracle.publicKey.verify(hash1, sig1))
@@ -490,12 +479,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                        DigitDecompositionAttestation(0))
             assert(completedEvent.outcomes == digitOutcomes)
 
-            val descriptor = completedEvent.eventDescriptorTLV
-
             // 100s Place signature Check
             val hash100 =
               SigningVersion.latest.calcOutcomeHash(
-                descriptor,
                 DigitDecompositionAttestation(0).bytes)
             val sig100 = completedEvent.signatures.head
             assert(dlcOracle.publicKey.verify(hash100, sig100))
@@ -507,7 +493,6 @@ class DLCOracleTest extends DLCOracleFixture {
             // 10s Place signature Check
             val hash10 =
               SigningVersion.latest.calcOutcomeHash(
-                descriptor,
                 DigitDecompositionAttestation(1).bytes)
             val sig10 = completedEvent.signatures(1)
             assert(dlcOracle.publicKey.verify(hash10, sig10))
@@ -518,7 +503,6 @@ class DLCOracleTest extends DLCOracleFixture {
             // 1s Place signature Check
             val hash1 =
               SigningVersion.latest.calcOutcomeHash(
-                descriptor,
                 DigitDecompositionAttestation(0).bytes)
             val sig1 = completedEvent.signatures(2)
             assert(dlcOracle.publicKey.verify(hash1, sig1))

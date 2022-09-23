@@ -334,8 +334,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
               s"No event saved with nonce ${nonce.hex} $outcome"))
       }
 
-      hash = eventDb.signingVersion.calcOutcomeHash(eventDb.eventDescriptorTLV,
-                                                    outcome.outcomeString)
+      hash = eventDb.signingVersion
+        .calcOutcomeHash(outcome.outcomeString)
       eventOutcomeOpt <- eventOutcomeDAO.find(nonce, hash)
       eventOutcomeDb <- eventOutcomeOpt match {
         case Some(value) => Future.successful(value)
