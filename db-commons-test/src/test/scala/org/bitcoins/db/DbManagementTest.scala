@@ -83,7 +83,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     val result = dlcDbManagement.migrate()
     dlcAppConfig.driver match {
       case SQLite =>
-        val expected = 8
+        val expected = 9
         assert(result.migrationsExecuted == expected)
         val flywayInfo = dlcAppConfig.info()
         assert(flywayInfo.applied().length == expected)
