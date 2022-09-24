@@ -5,8 +5,11 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.models.{ContractOraclePair, SingleContractInfo}
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
+import org.bitcoins.core.protocol.dlc.models.{
+  ContractOraclePair,
+  SingleContractInfo
+}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
