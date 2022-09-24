@@ -137,7 +137,7 @@ CREATE TABLE "watch_only_tx_table"
     "unsignedTxIdBE" TEXT    NOT NULL,
     "unsignedTx"     TEXT    NOT NULL,
     "wTxIdBE"        TEXT,
-    "totalOutput"    INTEGER NOT NULL,
+    "totalOutput"    bigint NOT NULL,
     "numInputs"      INTEGER NOT NULL,
     "numOutputs"     INTEGER NOT NULL,
     "locktime"       INTEGER NOT NULL,

@@ -786,6 +786,7 @@ abstract class DLCWallet
         offerPrevTxs = offer.fundingInputs.map(funding =>
           TransactionDbHelper.fromTransaction(funding.prevTx,
                                               blockHashOpt = None))
+        _ = logger.info(s"remoteTxDAO.upsertAll offerPrevTxs=${offerPrevTxs}")
         _ <- remoteTxDAO.upsertAll(offerPrevTxs)
 
         fundingPrivKey = getFundingPrivKey(account,
