@@ -339,7 +339,6 @@ object DLCWalletUtil extends Logging {
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
-    logger.info(s"initDLC.createDLCOffer")
     for {
       offer <- walletA.createDLCOffer(
         contractInfo = contractInfo,
@@ -351,12 +350,10 @@ object DLCWalletUtil extends Logging {
         externalPayoutAddressOpt = payoutAddressAOpt,
         externalChangeAddressOpt = changeAddressAOpt
       )
-      _ = logger.info(s"initDLC.acceptDLCOffer")
       accept <- walletB.acceptDLCOffer(offer,
                                        None,
                                        payoutAddressBOpt,
                                        changeAddressBOpt)
-      _ = logger.info(s"initDLC.signDLCOffer")
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
