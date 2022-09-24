@@ -5,11 +5,8 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.models.{
-  ContractOraclePair,
-  SingleContractInfo
-}
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.core.protocol.dlc.models.{ContractOraclePair, SingleContractInfo}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
@@ -26,7 +23,10 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val segwitConfig = BaseWalletTest.segwitWalletConf
-    val randomHex = ECPrivateKey.freshPrivateKey.bytes.toHex.take(8)
+    val randomHex = CryptoUtil.randomBytes(3).toHex
+    //with postgres, we need unique wallet names as postgres wallets
+    //share the same database. They have a unique schema with the database
+    //based on wallet name which is why we set this here.
     val walletNameConfig =
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
     val extraConfig = segwitConfig.withFallback(walletNameConfig)
