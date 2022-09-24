@@ -9,10 +9,10 @@ import org.bitcoins.core.protocol.dlc.models.{
   ContractOraclePair,
   SingleContractInfo
 }
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -26,7 +26,14 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val segwitConfig = BaseWalletTest.segwitWalletConf
-    BitcoinSTestAppConfig.getNeutrinoTestConfig(segwitConfig)
+    val randomHex = CryptoUtil.randomBytes(3).toHex
+    //with postgres, we need unique wallet names as postgres wallets
+    //share the same database. They have a unique schema with the database
+    //based on wallet name which is why we set this here.
+    val walletNameConfig =
+      ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
+    val extraConfig = segwitConfig.withFallback(walletNameConfig)
+    BaseWalletTest.getFreshConfig(pgUrl, Vector(extraConfig))
   }
 
   /** Enables external payout addresses which is needed for some unit tests */

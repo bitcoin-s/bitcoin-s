@@ -339,7 +339,6 @@ object DLCWalletUtil extends Logging {
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
-
     for {
       offer <- walletA.createDLCOffer(
         contractInfo = contractInfo,
