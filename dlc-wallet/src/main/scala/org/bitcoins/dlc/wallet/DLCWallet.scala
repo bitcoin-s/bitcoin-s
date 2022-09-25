@@ -10,7 +10,9 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.dlc.oracle.{
   OracleAnnouncementDataDb,
-  OracleAnnouncementDbHelper
+  OracleAnnouncementDbHelper,
+  OracleNonceDb,
+  OracleNonceDbHelper
 }
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
@@ -537,7 +539,9 @@ abstract class DLCWallet
         dlcOfferDb = dlcOfferDb)
 
       _ <- safeDLCDatabase.run(offerActions)
+      _ = logger.info(s"Done creating offer")
       status <- findDLC(dlcId)
+      _ = logger.info(s"found status=$status")
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield offer
   }

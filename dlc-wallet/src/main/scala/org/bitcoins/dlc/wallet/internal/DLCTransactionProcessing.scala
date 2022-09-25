@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet.internal
 
 import org.bitcoins.core.api.dlc.wallet.db._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.dlc.oracle.NonceSignaturePairDbShim
 import org.bitcoins.core.protocol.dlc.execution.SetupDLC
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
@@ -175,8 +176,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         outcome = sigAndOutcome._2
         oracleInfos = getOutcomeDbInfo(outcome)._2
 
-        noncesByAnnouncement = nonceDbs
-          .groupBy(_.announcementId)
+        noncesByAnnouncement = NonceSignaturePairDbShim.sort(nonceDbs)
 
         announcementsWithId = dlcDataManagement.getOracleAnnouncementsWithId(
           announcements,
@@ -197,26 +197,21 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           usedIds.flatMap { id =>
             outcome match {
               case enum: EnumOracleOutcome =>
-                val nonces = noncesByAnnouncement(id).sortBy(_.index)
-                nonces.map(_.copy(outcomeOpt = Some(enum.outcome.outcome)))
+                NonceSignaturePairDbShim.updateEnumOutcome(id,
+                                                           enumOutcome = enum,
+                                                           noncesByAnnouncement)
               case numeric: NumericOracleOutcome =>
-                numeric.oraclesAndOutcomes.flatMap { case (oracle, outcome) =>
-                  val id = announcementsWithId
-                    .find(_._1 == oracle.announcement)
-                    .map(_._2)
-                    .get
-                  val nonces = noncesByAnnouncement(id).sortBy(_.index)
-                  outcome.digits.zip(nonces).map { case (digit, nonceDb) =>
-                    nonceDb.copy(outcomeOpt = Some(digit.toString))
-                  }
-                }
+                NonceSignaturePairDbShim.updateNumericOutcome(
+                  numeric,
+                  noncesByAnnouncement,
+                  announcementsWithId)
             }
           }
         }
         updatedDlcDbSig = dlcDb.copy(aggregateSignatureOpt = Some(sig))
         //updates the aggregateSignatureOpt along with the state to RemoteClaimed
         updatedDlcDbA = dlcDAO.updateAction(updatedDlcDbSig)
-        updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
+        updateNonceA = dlcDataManagement.updateAllNoncesAction(nonceDbs)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
           updatedAnnouncements)
         actions = {

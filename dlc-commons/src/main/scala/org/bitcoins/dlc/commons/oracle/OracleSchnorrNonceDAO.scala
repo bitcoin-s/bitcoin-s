@@ -41,6 +41,14 @@ case class OracleSchnorrNonceDAO()(implicit
     findByPrimaryKeys(ts.map(_.announcementId))
   }
 
+  def findByIdsAction(ids: Vector[Long]): DBIOAction[
+    Vector[NonceSignaturePairDb],
+    NoStream,
+    Effect.Read] = {
+    findByPrimaryKeys(ids).result
+      .map(_.toVector)
+  }
+
   def findByIdAction(id: Long): DBIOAction[
     Vector[NonceSignaturePairDb],
     NoStream,

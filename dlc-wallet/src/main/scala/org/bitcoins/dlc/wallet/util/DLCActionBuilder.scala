@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.dlc.oracle.OracleNonceDb
 import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
 import org.bitcoins.db.DbCommonsColumnMappers
 import org.bitcoins.dlc.wallet.models._
@@ -168,6 +169,7 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     Vector[OracleNonceDb],
     NoStream,
     Effect.Write with Effect.Read with Effect.Transactional] = {
+    //todo: Comeback and update outcome here?
     val updateAction = for {
       nonceDbs <- oracleNonceDAO.findByNoncesAction(
         outcomeAndSigByNonce.keys.toVector)

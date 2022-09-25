@@ -3,11 +3,14 @@ package org.bitcoins.dlc.wallet.util
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.dlc.accounting.DLCAccounting
+import org.bitcoins.core.dlc.oracle.NonceSignaturePairDbShim
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
+
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
+import org.bitcoins.crypto.{SchnorrDigitalSignature}
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 
@@ -22,7 +25,7 @@ case class IntermediaryDLCStatus(
     contractData: DLCContractDataDb,
     offerDb: DLCOfferDb,
     acceptDbOpt: Option[DLCAcceptDb],
-    nonceDbs: Vector[OracleNonceDb],
+    nonceDbs: Vector[NonceSignaturePairDbShim],
     announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
     announcementIds: Vector[DLCAnnouncementDb]
 ) {
@@ -209,7 +212,7 @@ object DLCStatusBuilder {
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
-      nonceDbs: Vector[OracleNonceDb],
+      nonceDbs: Vector[NonceSignaturePairDbShim],
       announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
       announcementIds: Vector[DLCAnnouncementDb],
       offerDb: DLCOfferDb,
@@ -315,11 +318,11 @@ object DLCStatusBuilder {
   def getOracleOutcomeAndSigs(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
-      nonceDbs: Vector[OracleNonceDb]): (
+      nonceDbs: Vector[NonceSignaturePairDbShim]): (
       OracleOutcome,
       OrderedSchnorrSignatures) = {
-    val noncesByAnnouncement: Map[Long, Vector[OracleNonceDb]] =
-      nonceDbs.sortBy(_.index).groupBy(_.announcementId)
+    val noncesByAnnouncement: Map[Long, Vector[NonceSignaturePairDbShim]] =
+      NonceSignaturePairDbShim.sort(nonceDbs)
     val oracleOutcome = {
       val usedOracleIds = announcementIds.filter(_.used)
       val usedOracles = usedOracleIds.sortBy(_.index).map { used =>
@@ -343,7 +346,7 @@ object DLCStatusBuilder {
             _: UnsignedDigitDecompositionEventDescriptorDLCType =>
           val oraclesAndOutcomes = usedOracles.map { case (announcement, id) =>
             val oracleInfo = NumericSingleOracleInfo(announcement)
-            val nonces = noncesByAnnouncement(id).sortBy(_.index)
+            val nonces = noncesByAnnouncement.values.flatten.toVector
             // need to allow for some Nones because we don't always get
             // all the digits because of prefixing
             val digits = nonces.flatMap(_.outcomeOpt.map(_.toInt))
