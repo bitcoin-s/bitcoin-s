@@ -747,7 +747,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
                  drawStr -> Satoshis(betSize / 2)))
 
       val announcementPrivKey = ECPrivateKey.freshPrivateKey
-      val nonce = ECPrivateKey.freshPrivateKey.schnorrNonce
+      val noncePriv = ECPrivateKey.freshPrivateKey
+      val nonce = noncePriv.schnorrNonce
       val announcement =
         OracleAnnouncementV1TLV.dummyForEventsAndKeys(announcementPrivKey,
                                                       nonce,
@@ -755,11 +756,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
                                                         contractDescriptor.keys)
 
       val oracleInfo = EnumSingleOracleInfo(announcement)
-
+      val contractInfo = SingleContractInfo(contractDescriptor, oracleInfo)
       val offerData = DLCOffer(
         DLCOfferTLV.currentVersionOpt,
         Sha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
-        SingleContractInfo(contractDescriptor, oracleInfo),
+        contractInfo,
         dummyDLCKeys,
         Satoshis(5000),
         Vector(dummyFundingInputs.head),
@@ -771,8 +772,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dummyTimeouts
       )
 
-      val oracleSig = SchnorrDigitalSignature(
-        "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287")
+      val oracleSig = announcementPrivKey.schnorrSignWithNonce(
+        CryptoUtil.sha256DLCAttestation(winStr).bytes,
+        noncePriv)
 
       val sig =
         OracleSignatures(oracleInfo, Vector(oracleSig))

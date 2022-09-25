@@ -138,7 +138,7 @@ sealed trait NumericOracleSignatures extends OracleSignatures {
   lazy val getOutcome: UnsignedNumericOutcome = {
     // cast is safe, NumericSingleOracleInfo enforces this
     val base = oracle.announcement.eventTLV.eventDescriptor
-      .asInstanceOf[NumericEventDescriptorTLV]
+      .asInstanceOf[BaseNumericEventDescriptorTLV]
       .base
       .toInt
 

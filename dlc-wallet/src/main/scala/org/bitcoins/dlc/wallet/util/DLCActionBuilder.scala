@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.util
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.dlc.oracle.{
   NonceSignaturePairDb,
@@ -14,7 +15,8 @@ import scala.concurrent.ExecutionContext
 
 /** Utility class to help build actions to insert things into our DLC tables */
 case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs)(implicit
-    ec: ExecutionContext) {
+    ec: ExecutionContext)
+    extends Logging {
 
   private val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
@@ -192,9 +194,7 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs)(implicit
             o.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
         }
       }
-
       updateNonces <- updateAllNoncesAction(updated)
-
       announcementDbs <- {
         val announcementIds = updateNonces.map(_.announcementId).distinct
         dlcAnnouncementDAO.findByAnnouncementIdsAction(announcementIds)
@@ -222,7 +222,9 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs)(implicit
         oracleNonceDAO.updateAllAction(cast)
       case Some(_: NonceSignaturePairDb) =>
         val cast = nonceShims.map(_.asInstanceOf[NonceSignaturePairDb])
-        oracleSchnorrNonceDAO.updateAllAction(cast)
+        oracleSchnorrNonceDAO
+          .updateNonceSignatureDb(cast)
+          .map(_ => cast)
       case None =>
         DBIO.successful(Vector.empty)
     }

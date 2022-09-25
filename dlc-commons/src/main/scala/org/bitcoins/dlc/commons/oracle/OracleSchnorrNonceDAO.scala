@@ -103,6 +103,14 @@ case class OracleSchnorrNonceDAO()(implicit
       .update(nonceSignatureDb)
   }
 
+  def updateNonceSignatureDb(nonceSignaturePairDbs: Vector[
+    NonceSignaturePairDb]): DBIOAction[Int, NoStream, Effect.Write] = {
+    val nested = nonceSignaturePairDbs.map(updateNonceSignatureDb)
+    DBIO
+      .sequence(nested)
+      .map(_.sum)
+  }
+
   def deleteByAnnouncementId(
       announcementId: Long): DBIOAction[Int, NoStream, Effect.Write] = {
     table.filter(_.announcementId === announcementId).delete
