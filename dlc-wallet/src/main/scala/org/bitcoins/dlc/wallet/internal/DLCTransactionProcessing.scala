@@ -211,7 +211,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         updatedDlcDbSig = dlcDb.copy(aggregateSignatureOpt = Some(sig))
         //updates the aggregateSignatureOpt along with the state to RemoteClaimed
         updatedDlcDbA = dlcDAO.updateAction(updatedDlcDbSig)
-        updateNonceA = dlcDataManagement.updateAllNoncesAction(nonceDbs)
+        updateNonceA = actionBuilder.updateAllNoncesAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
           updatedAnnouncements)
         actions = {

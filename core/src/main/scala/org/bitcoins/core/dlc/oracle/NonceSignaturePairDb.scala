@@ -29,8 +29,8 @@ case class NonceSignaturePairDb(
     attestationOpt: Option[FieldElement],
     outcomeOpt: Option[String])
     extends NonceSignaturePairDbShim {
-  require(attestationOpt.isDefined == outcomeOpt.isDefined,
-          s"Attestation must be present if outcome is present")
+//  require(attestationOpt.isDefined == outcomeOpt.isDefined,
+//          s"Attestation must be present if outcome is present")
 
   val signatureOpt: Option[SchnorrDigitalSignature] = {
     attestationOpt.map { attestation =>

@@ -112,7 +112,7 @@ case class EnumOracleSignature(
   lazy val getOutcome: EnumOutcome = {
     // cast is safe, EnumSingleOracleInfo enforces this
     val potentialOutcomes = oracle.announcement.eventTLV.eventDescriptor
-      .asInstanceOf[EnumEventDescriptorV0TLV]
+      .asInstanceOf[BaseEnumEventDescriptor]
       .outcomes
 
     val outcome = potentialOutcomes

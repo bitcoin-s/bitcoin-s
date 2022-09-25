@@ -36,13 +36,13 @@ object OracleAnnouncementDbHelper {
         )
       case v1: OracleAnnouncementV1TLV =>
         OracleAnnouncementDataDb(
-          None,
-          tlv.announcementSignature,
-          v1.announcementPublicKey,
-          v1.attestationPublicKey,
-          tlv.eventTLV.eventId,
-          tlv.eventTLV.eventDescriptor,
-          tlv.eventTLV.eventMaturityEpoch
+          id = None,
+          announcementSignature = tlv.announcementSignature,
+          announcementPublicKey = v1.announcementPublicKey,
+          attestationPublicKey = v1.attestationPublicKey,
+          eventId = tlv.eventTLV.eventId,
+          eventDescriptor = tlv.eventTLV.eventDescriptor,
+          eventMaturity = tlv.eventTLV.eventMaturityEpoch
         )
     }
 

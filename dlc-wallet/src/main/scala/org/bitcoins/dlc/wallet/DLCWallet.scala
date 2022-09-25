@@ -9,9 +9,9 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.dlc.oracle.{
+  NonceSignaturePairDbShim,
   OracleAnnouncementDataDb,
   OracleAnnouncementDbHelper,
-  OracleNonceDb,
   OracleNonceDbHelper
 }
 import org.bitcoins.core.hd._
@@ -95,7 +95,7 @@ abstract class DLCWallet
 
   private val oracleMetadataDAO: OracleMetadataDAO = OracleMetadataDAO()
 
-  private val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
+  private[bitcoins] val oracleSchnorrNonceDAO: OracleSchnorrNonceDAO =
     OracleSchnorrNonceDAO()
 
   private val outcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
@@ -229,8 +229,8 @@ abstract class DLCWallet
   }
 
   /** Updates the signatures in the oracle nonce database */
-  private def updateDLCOracleSigs(
-      sigs: Vector[OracleSignatures]): Future[Vector[OracleNonceDb]] = {
+  private def updateDLCOracleSigs(sigs: Vector[OracleSignatures]): Future[
+    Vector[NonceSignaturePairDbShim]] = {
     val outcomeAndSigByNonce = sigs.flatMap {
       case enum: EnumOracleSignature =>
         Vector((enum.sig.rx, (enum.getOutcome.outcome, enum.sig)))
@@ -694,9 +694,6 @@ abstract class DLCWallet
               .flatMap(_._1.id)
             (tlv, idOpt.get)
           }
-          nonceDbs = OracleNonceDbHelper.fromAnnouncements(
-            newAnnouncementsWithId)
-          createNonceAction = oracleNonceDAO.createAllAction(nonceDbs)
 
           dlcAnnouncementDbs = announcementDataDbs.zipWithIndex.map {
             case (a, index) =>
@@ -708,8 +705,7 @@ abstract class DLCWallet
           createAnnouncementAction = dlcAnnouncementDAO.createAllAction(
             dlcAnnouncementDbs)
 
-          _ <- safeDLCDatabase.run(
-            DBIOAction.seq(createNonceAction, createAnnouncementAction))
+          _ <- safeDLCDatabase.run(DBIOAction.seq(createAnnouncementAction))
         } yield {
           InitializedAccept(
             dlc = writtenDLC,

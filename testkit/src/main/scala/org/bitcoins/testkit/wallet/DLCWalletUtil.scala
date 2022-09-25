@@ -95,9 +95,14 @@ object DLCWalletUtil extends Logging {
     val info = EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
                                                  rValue,
                                                  sampleOutcomes.map(_._1))
-    val announcement = info.announcement.asInstanceOf[OracleAnnouncementV0TLV]
-    val invalidAnnouncement =
-      announcement.copy(announcementSignature = SchnorrDigitalSignature.dummy)
+    val invalidAnnouncement = {
+      info.announcement match {
+        case v0: OracleAnnouncementV0TLV =>
+          v0.copy(announcementSignature = SchnorrDigitalSignature.dummy)
+        case v1: OracleAnnouncementV1TLV =>
+          v1.copy(announcementSignature = SchnorrDigitalSignature.dummy)
+      }
+    }
     info.copy(announcement = invalidAnnouncement)
   }
 

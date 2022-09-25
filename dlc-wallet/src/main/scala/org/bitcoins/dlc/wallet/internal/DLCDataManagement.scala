@@ -4,11 +4,9 @@ import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.dlc.oracle.{
-  NonceSignaturePairDb,
   NonceSignaturePairDbShim,
   OracleAnnouncementDataDb,
-  OracleMetadataWithId,
-  OracleNonceDb
+  OracleMetadataWithId
 }
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
@@ -21,7 +19,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{SchnorrNonce, Sha256Digest}
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.commons.oracle.{
   EventOutcomeDAO,
@@ -82,18 +80,34 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     dataF.map(data => data.map(_.offer))
   }
 
-  private def getNonceDbs(ids: Vector[Long]): DBIOAction[
+  /** Gets nonce dbs from our two tables
+    * this is needed as a shim for now until we remove v0
+    * for the DLC spec
+    */
+  def getNonceDbsAction(announcementIds: Vector[Long]): DBIOAction[
     Vector[NonceSignaturePairDbShim],
     NoStream,
     Effect.Read] = {
-    val oldA = oracleNonceDAO.findByAnnouncementIdsAction(ids)
+    val oldA = oracleNonceDAO.findByAnnouncementIdsAction(announcementIds)
     val newA = oracleSchnorrNonceDAO
-      .findByIdsAction(ids)
+      .findByIdsAction(announcementIds)
 
     for {
       old <- oldA
       newnonces <- newA
     } yield old ++ newnonces
+  }
+
+  def getNonceDbsByAnnouncementId(announcementIds: Vector[Long]): Future[
+    Vector[NonceSignaturePairDbShim]] = {
+    val action = getNonceDbsAction(announcementIds)
+    safeDatabase.run(action)
+  }
+
+  def getNonceDbsByNonce(nonces: Vector[SchnorrNonce]): Future[
+    Vector[NonceSignaturePairDbShim]] = {
+    val action = actionBuilder.getNonceDbsByNonceAction(nonces)
+    safeDatabase.run(action)
   }
 
   /** @param dlcId
@@ -118,7 +132,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       announcementIdsA.flatMap(ids => announcementDAO.findByIdsAction(ids))
     val noncesDbA =
       announcementIdsA.flatMap { ids =>
-        getNonceDbs(ids)
+        getNonceDbsAction(ids)
       }
     val metadataDbWithIdA = announcementIdsA.flatMap { ids =>
       val actionsNested = ids.map(id => getOracleMetadataAction(id))
@@ -222,8 +236,6 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       nonceDbs: Vector[NonceSignaturePairDbShim],
       metadatas: Vector[Option[OracleMetadataWithId]]): Vector[
     (BaseOracleAnnouncement, Long)] = {
-    logger.info(s"announcementData=$announcementData")
-    logger.info(s"nonceDbs=$nonceDbs")
     val withIds: Vector[(BaseOracleAnnouncement, Long)] = {
       val idNonceVec: Vector[(Long, Vector[NonceSignaturePairDbShim])] =
         nonceDbs.groupBy(_.announcementId).toVector
@@ -271,7 +283,6 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       }
     }
 
-    logger.info(s"withIds=$withIds")
     announcementIds
       .sortBy(_.index)
       .flatMap(a => withIds.find(_._2 == a.announcementId))
@@ -924,27 +935,12 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
-  def updateAllNoncesAction(
-      nonceShims: Vector[NonceSignaturePairDbShim]): DBIOAction[
-    Vector[NonceSignaturePairDbShim],
-    NoStream,
-    Effect.Write] = {
-    require(
-      nonceShims.forall(_.isInstanceOf[OracleNonceDb]) ||
-        nonceShims.forall(_.isInstanceOf[NonceSignaturePairDb]),
-      s"All NonceShims must be of the same type, got=$nonceShims"
-    )
-    nonceShims.headOption match {
-      case Some(_: OracleNonceDb) =>
-        val cast = nonceShims.map(_.asInstanceOf[OracleNonceDb])
-        oracleNonceDAO.updateAllAction(cast)
-      case Some(_: NonceSignaturePairDb) =>
-        val cast = nonceShims.map(_.asInstanceOf[NonceSignaturePairDb])
-        oracleSchnorrNonceDAO.updateAllAction(cast)
-      case None =>
-        DBIOAction.successful(Vector.empty)
-    }
+  def updateAllNonces(nonceShims: Vector[NonceSignaturePairDbShim]): Future[
+    Vector[NonceSignaturePairDbShim]] = {
+    val action = actionBuilder.updateAllNoncesAction(nonceShims)
+    safeDatabase.run(action)
   }
+
 }
 
 object DLCDataManagement {

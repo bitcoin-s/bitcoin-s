@@ -49,6 +49,11 @@ case class OracleSchnorrNonceDAO()(implicit
       .map(_.toVector)
   }
 
+  def findByIds(ids: Vector[Long]): Future[Vector[NonceSignaturePairDb]] = {
+    val action = findByIdsAction(ids)
+    safeDatabase.run(action)
+  }
+
   def findByIdAction(id: Long): DBIOAction[
     Vector[NonceSignaturePairDb],
     NoStream,

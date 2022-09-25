@@ -7,13 +7,10 @@ import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
-  DLCAccept,
-  DLCAcceptWithoutSigs,
-  DLCOffer
-}
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCAcceptWithoutSigs, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.protocol.tlv.{SchnorrAttestationTLV}
 import org.bitcoins.core.protocol.tlv.{
   OracleAttestmentTLV,
   OracleAttestmentV0TLV,
@@ -326,21 +323,20 @@ object DLCUtil {
   def buildOracleSignaturesNaive(
       announcements: OrderedAnnouncements,
       attestments: Vector[OracleAttestmentTLV]): Vector[OracleSignatures] = {
-
     attestments.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
       // Nonces should be unique so searching for the first nonce should be safe
       val firstNonce = sig match {
         case v0: OracleAttestmentV0TLV =>
           v0.unsortedSignatures.head.rx
+        case _: SchnorrAttestationTLV =>
+          sig.sigs.head.rx
       }
-      announcements
+      val announcementOpt = announcements
         .find { ann =>
-          ann.eventTLV match {
-            case v0: OracleEventV0TLV =>
-              v0.nonces.headOption
-                .contains(firstNonce)
-          }
-        } match {
+          ann.nonces.flatten.exists(_ == firstNonce)
+        }
+
+      announcementOpt match {
         case Some(announcement) =>
           acc :+ OracleSignatures(SingleOracleInfo(announcement), sig)
         case None =>

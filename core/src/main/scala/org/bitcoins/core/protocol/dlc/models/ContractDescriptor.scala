@@ -74,6 +74,12 @@ case class EnumContractDescriptor(
       (hash, (totalCollateral - amt).satoshis)
     })
   }
+
+  def toEnumEventDescriptor: EnumEventDescriptorDLCSubType = {
+    EnumEventDescriptorDLCSubType(
+      outcomes = outcomeValueMap.map(e => NormalizedString(e._1.outcome))
+    )
+  }
 }
 
 object EnumContractDescriptor
