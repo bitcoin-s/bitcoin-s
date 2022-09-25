@@ -28,17 +28,18 @@ class IncomingDLCOfferDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
   }
 
   it should "select incoming offers in reverse chronological order" in { daos =>
+    val offer1TLV = DLCWalletUtil.sampleDLCOffer.toTLV
+    val offer2TLV = DLCWalletUtil.sampleMultiNonceDLCOffer.toTLV
     val offer1 =
-      IncomingDLCOfferDbHelper.fromTLV(offerTLV =
-                                         DLCWalletUtil.sampleDLCOffer.toTLV,
+      IncomingDLCOfferDbHelper.fromTLV(offerTLV = offer1TLV,
                                        message = Some("msg"),
                                        peer = Some("peer"),
                                        receivedAt = Instant.ofEpochSecond(0))
-    val offer2 = IncomingDLCOfferDbHelper.fromTLV(
-      offerTLV = DLCWalletUtil.sampleMultiNonceDLCOffer.toTLV,
-      message = Some("msg"),
-      peer = Some("peer"),
-      receivedAt = Instant.ofEpochSecond(1))
+    val offer2 = IncomingDLCOfferDbHelper.fromTLV(offerTLV = offer2TLV,
+                                                  message = Some("msg"),
+                                                  peer = Some("peer"),
+                                                  receivedAt =
+                                                    Instant.ofEpochSecond(1))
 
     val offers = Vector(offer1, offer2)
     for {
