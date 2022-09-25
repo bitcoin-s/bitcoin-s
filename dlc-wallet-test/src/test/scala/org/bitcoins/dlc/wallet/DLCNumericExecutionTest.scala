@@ -214,7 +214,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
         }
 
         val aggS = statusA.oracleSigs
-          .filter(sig => neededNonces.contains(sig.rx))
+          .filter(sig => neededNonces.exists(_ == sig.rx))
           .map(_.sig)
           .reduce(_.add(_))
 

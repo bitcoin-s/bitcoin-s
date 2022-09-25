@@ -50,7 +50,12 @@ trait OracleDataManagementFixture extends BitcoinSFixture with EmbeddedPg {
           .start()
           .map(_ => OracleDataManagement(daos))
       },
-      destroy = () => dropAll()
+      destroy = () => {
+        for {
+          _ <- config.dropTable("flyway_schema_history")
+          _ <- dropAll()
+        } yield ()
+      }
     )(test)
   }
 

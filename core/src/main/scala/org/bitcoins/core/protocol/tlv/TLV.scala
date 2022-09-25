@@ -2837,26 +2837,30 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
       precision = Int32.zero)
     val event = OracleEventV1TLV.buildDummy(eventDescriptor)
 
-    val attestation = SchnorrAttestation.build(privKey,
-                                               privKey.schnorrPublicKey,
-                                               OrderedNonces(nonces))
+    val attestation = SchnorrAttestation.build(announcementPrivKey = privKey,
+                                               attestationPubKey =
+                                                 privKey.schnorrPublicKey,
+                                               nonces = OrderedNonces(nonces))
 
     val metadataSignature = OracleMetadataSignature.buildSignature(
-      privKey,
-      oracleName,
-      oracleDescription,
-      creationTime,
-      attestation)
-    val metadata = OracleMetadata(privKey.schnorrPublicKey,
-                                  oracleName,
-                                  oracleDescription,
-                                  creationTime,
-                                  attestation,
-                                  metadataSignature)
-    val signature = buildAnnouncementSignature(privKey,
-                                               SigningVersion.latest,
-                                               event,
-                                               metadata)
+      announcementPrivKey = privKey,
+      oracleName = oracleName,
+      oracleDescription = oracleDescription,
+      creationTime = creationTime,
+      schnorrAttestation = attestation)
+    val metadata = OracleMetadata(
+      announcementPublicKey = privKey.schnorrPublicKey,
+      oracleName = oracleName,
+      oracleDescription = oracleDescription,
+      creationTime = creationTime,
+      attestations = attestation,
+      metadataSignature = metadataSignature
+    )
+    val signature = buildAnnouncementSignature(announcementPrivKey = privKey,
+                                               signingVersion =
+                                                 SigningVersion.latest,
+                                               eventTLV = event,
+                                               metadata = metadata)
     OracleAnnouncementV1TLV(signature, event, metadata)
   }
 

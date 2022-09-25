@@ -24,13 +24,13 @@ create table "oracle_schnorr_nonces" (
 
 CREATE TABLE "oracle_announcement_data"
 (
-    "id"                     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    "id"                     serial PRIMARY KEY NOT NULL,
     "announcement_signature" VARCHAR(254)                      NOT NULL UNIQUE,
     "pub_key"                VARCHAR(254)                      NOT NULL,
     "signing_pub_key"        VARCHAR(254)                      NOT NULL,
     "event_maturity"         INTEGER                           NOT NULL,
     "event_id"               VARCHAR(254)                      NOT NULL,
-    "event_descriptor"       VARCHAR(254)                      NOT NULL
+    "event_descriptor"       TEXT                              NOT NULL
 );
 
 CREATE
