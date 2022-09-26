@@ -91,44 +91,6 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     safeDatabase.run(getDLCAnnouncementDbsAction(dlcId))
   }
 
-  /** Fetches the oracle announcements of the oracles
-    * that were used for execution in a DLC
-    */
-  private[wallet] def getUsedOracleAnnouncements(
-      dlcAnnouncementDbs: Vector[DLCAnnouncementDb],
-      announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): Vector[
-    (OracleAnnouncementV0TLV, Long)] = {
-    val withIds = nonceDbs
-      .groupBy(_.announcementId)
-      .toVector
-      .flatMap { case (id, nonceDbs) =>
-        announcementData.find(_.id.contains(id)) match {
-          case Some(data) =>
-            val used = dlcAnnouncementDbs
-              .find(_.announcementId == data.id.get)
-              .exists(_.used)
-            if (used) {
-              val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-              val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
-                                              data.eventMaturity,
-                                              data.eventDescriptor,
-                                              data.eventId)
-              Some(
-                (OracleAnnouncementV0TLV(data.announcementSignature,
-                                         data.publicKey,
-                                         eventTLV),
-                 data.id.get))
-            } else None
-          case None =>
-            throw new RuntimeException(s"Error no data for announcement id $id")
-        }
-      }
-    dlcAnnouncementDbs
-      .sortBy(_.index)
-      .flatMap(a => withIds.find(_._2 == a.announcementId))
-  }
-
   private[wallet] def getOracleAnnouncements(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
