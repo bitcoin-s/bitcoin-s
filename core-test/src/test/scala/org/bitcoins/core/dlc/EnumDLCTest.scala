@@ -9,7 +9,7 @@ class EnumDLCTest extends BitcoinSJvmTest with DLCTest {
   val enumOracleSchemesToTest: Vector[(Int, Int)] =
     Vector((1, 1), (1, 2), (2, 2), (2, 3), (3, 5), (5, 8))
 
-  val numEnumOutcomesToTest: Vector[Int] = 2.until(3).toVector
+  val numEnumOutcomesToTest: Vector[Int] = 2.until(10).toVector
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal enum case" in {
     runTestsForParam(numEnumOutcomesToTest) { numOutcomes =>

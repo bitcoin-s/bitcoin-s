@@ -2,7 +2,8 @@ package org.bitcoins.core.util.sorted
 
 import org.bitcoins.crypto.SchnorrDigitalSignature
 
-case class OrderedSchnorrSignatures(vec: Vector[SchnorrDigitalSignature])
+case class OrderedSchnorrSignatures(
+    private val vec: Vector[SchnorrDigitalSignature])
     extends SortedVec[SchnorrDigitalSignature, SchnorrDigitalSignature](
       vec,
       org.bitcoins.core.schnorrSignatureOrdering)
