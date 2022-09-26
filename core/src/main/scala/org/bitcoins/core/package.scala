@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
+import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce}
 import scodec.bits._
 
 import java.math.BigInteger
@@ -87,4 +88,22 @@ package object core {
           x.scriptPubKey.hex.compare(y.scriptPubKey.hex)
         } else x.value.compare(y.value)
     }
+
+  implicit val nonceOrdering: Ordering[SchnorrNonce] = {
+    new Ordering[SchnorrNonce] {
+      override def compare(x: SchnorrNonce, y: SchnorrNonce): Int = {
+        byteVectorOrdering.compare(x.bytes, y.bytes)
+      }
+    }
+  }
+
+  implicit val schnorrSignatureOrdering: Ordering[SchnorrDigitalSignature] = {
+    new Ordering[SchnorrDigitalSignature] {
+      override def compare(
+          x: SchnorrDigitalSignature,
+          y: SchnorrDigitalSignature): Int = {
+        nonceOrdering.compare(x.rx, y.rx)
+      }
+    }
+  }
 }

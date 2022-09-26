@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   OracleAnnouncementV0TLV
 }
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -67,10 +67,12 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
       )
 
     def numericOracleInfo(numDigits: Int): NumericSingleOracleInfo = {
+      val unsorted =
+        Vector.fill(numDigits)(ECPrivateKey.freshPrivateKey.schnorrNonce)
+      val sorted = OrderedNonces.fromUnsorted(unsorted)
       NumericSingleOracleInfo(
-        OracleAnnouncementV0TLV.dummyForKeys(
-          ECPrivateKey.freshPrivateKey,
-          Vector.fill(numDigits)(ECPrivateKey.freshPrivateKey.schnorrNonce)))
+        OracleAnnouncementV0TLV.dummyForKeys(ECPrivateKey.freshPrivateKey,
+                                             sorted))
     }
 
     val oracleInfo1 = numericOracleInfo(1)

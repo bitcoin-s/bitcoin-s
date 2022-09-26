@@ -17,7 +17,7 @@ object OracleNonceDbHelper {
   def fromAnnouncement(
       id: Long,
       tlv: OracleAnnouncementTLV): Vector[OracleNonceDb] = {
-    tlv.eventTLV.nonces.vec.zipWithIndex.map { case (nonce, index) =>
+    tlv.eventTLV.nonces.toVector.zipWithIndex.map { case (nonce, index) =>
       OracleNonceDb(id, index, SchnorrDigitalSignature.dummy, nonce, None, None)
     }
   }

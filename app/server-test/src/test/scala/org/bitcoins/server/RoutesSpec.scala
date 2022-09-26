@@ -29,6 +29,7 @@ import org.bitcoins.core.protocol.{
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.utxo._
@@ -935,7 +936,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val dummyOracleAttestment =
       OracleAttestmentV0TLV("eventId",
                             dummyPubKey.schnorrPublicKey,
-                            Vector(dummyOracleSig),
+                            OrderedSchnorrSignatures(dummyOracleSig),
                             Vector("outcome"))
 
     lazy val winStr: String = "WIN"

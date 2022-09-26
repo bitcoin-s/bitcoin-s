@@ -110,10 +110,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               .exists(_.used)
             if (used) {
               val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-              val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
-                                              data.eventMaturity,
-                                              data.eventDescriptor,
-                                              data.eventId)
+              val eventTLV =
+                OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces),
+                                 data.eventMaturity,
+                                 data.eventDescriptor,
+                                 data.eventId)
               Some(
                 (OracleAnnouncementV0TLV(data.announcementSignature,
                                          data.publicKey,
@@ -151,7 +152,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-            val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
+            val eventTLV = OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces),
                                             data.eventMaturity,
                                             data.eventDescriptor,
                                             data.eventId)

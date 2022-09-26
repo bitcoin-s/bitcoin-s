@@ -522,7 +522,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         val fields = Vector(
           "tpe" -> Element(OracleEventV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "oracleNonces" -> MultiElement(nonces.vec.map(Element(_))),
+          "oracleNonces" -> MultiElement(nonces.toVector.map(Element(_))),
           "eventMaturityEpoch" -> Element(eventMaturity),
           "eventDescriptor" -> Element(descriptor),
           "event_uri" -> Element(CryptoUtil.serializeForHash(uri))
@@ -545,7 +545,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "eventId" -> Element(eventId),
           "oraclePubKey" -> Element(pubkey),
-          "signatures" -> MultiElement(sigs.map(Element(_))),
+          "signatures" -> MultiElement(sigs.toVector.map(Element(_))),
           "outcomes" -> MultiElement(outcomes.map(Element(_)))
         )
 

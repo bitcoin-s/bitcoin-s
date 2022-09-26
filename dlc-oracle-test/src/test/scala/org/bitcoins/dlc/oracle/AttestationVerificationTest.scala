@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
 }
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.crypto.FieldElement
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -22,9 +23,11 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
   val validEnumAttestation: OracleAttestmentV0TLV = OracleAttestmentV0TLV(
     "fdd868690474657374545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a8500013168cb6d4c4e52aeb5bb75ce141cd9e1aa40e1d9123134d9aa390cffb338d51e323d991dadb52f32d0541027f973c363c0b746bb40dd1d42686f172d88ddef380161")
 
-  val invalidEnumAttestation: OracleAttestmentV0TLV =
+  val invalidEnumAttestation: OracleAttestmentV0TLV = {
+    val unsorted = validEnumAttestation.sigs.map(_.copy(sig = FieldElement.one))
     validEnumAttestation.copy(sigs =
-      validEnumAttestation.sigs.map(_.copy(sig = FieldElement.one)))
+      OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector))
+  }
 
   val unsignedDigitDecompAnnouncement: OracleAnnouncementV0TLV =
     OracleAnnouncementV0TLV(
@@ -35,10 +38,12 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
       "fdd868fd01b40564756d6d79545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a850006280b657b9c1cd8de3da2619194e2c71831598be3e60d39a242c232f580451c43050ce8ac95b549bb5fed9e3800cf3c040207071032a5c458485ad1817373c0b7bd61d1a6c395c99202058ddabf851e1c8220f12bd801bbb90efcf45d4a2d769cdaa4e883da6b59cac21fc8f18dae7893997d5d13ac63f33fdb7643bba4c4fc8d57ae1c605b9d36ff8477baa8c216abbfe6c3742236ecfad2415745a7cf7850c6cb6a147a2e2a8875133147055027ed130dec47c6a9f75983d532a5c5940a763546f4835c5b80ca64832a6b9e7526fd575db4913ce0a9686072c5f970f94c3a2e72d0655c541eac15e9caa5af059c1f3e433507f1782e8775c555f1c402509f0c87d4b2e93e52b2283c81185fb8ab14a757ff04b00b821d1aaac0a81e05d15da68e710b25a91bfdacf179d9da3b90dec98844d8ac1ed534922dfa362b9db86c134ca823f9aa4b18525521073096f73fd583205086c7db2b6ac243901e4f1898bc476a311fbcd5d2fb7a355a9032c67dead084fe66eed00f7e9646e6fa83902bc7013001300130013001300130")
 
   // this one was generated with the same public key
-  val invalidUnsignedDigitDecompAttestation: OracleAttestmentV0TLV =
-    validUnsignedDigitDecompAttestation.copy(sigs =
-      validUnsignedDigitDecompAttestation.sigs.map(
-        _.copy(sig = FieldElement.one)))
+  val invalidUnsignedDigitDecompAttestation: OracleAttestmentV0TLV = {
+    val unsorted = validUnsignedDigitDecompAttestation.sigs.map(
+      _.copy(sig = FieldElement.one))
+    val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
+    validUnsignedDigitDecompAttestation.copy(sigs = sorted)
+  }
 
   // this one was generated with a different public key
   val invalidUnsignedDigitDecompAttestation1: OracleAttestmentV0TLV =
@@ -53,10 +58,12 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
     OracleAttestmentV0TLV(
       "fdd868fd01f7067369676e6564545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a8500070652285e89487dc8ce816a81234082394d9602263d35a7322b772990822577670ab288b31d99f56d18d4f34be875c0a4d73aae135c4f50349a1014b686d69841b559c622def4bba15a2ad7fc336edd71ace9b4c366b9eaba22b73df00589e74ba7b82eef2041bf6af1511016cadabe9d52e64d875caf5bfef85903dbc4fc00737ca5b6c7301ef7dc62aeae1823018107868d8956677421e11ffd8f125f2fedf469f40edbb7846274f46a973f5442ece91b5a6e450a8cdcef272058a27176dabba527003355640ee9333cda6c37a92d4989c6ab96eddc9266f0ddce0e2a3ffb7762f10e09f79273ab04d1549c1d60054738fe903575aa732760bd2668530459e9aa9eefa1fe40eddd0fa63f501e9b368eed6ab0cc0d2e5e6da1baa570ed9e857188bae5c59c9ac89bec3fa00c8e1b725789e1af15f7b256ae7f169edfe7f3ef8834bbc8a15dd5949eb1203b1d15ae701fe4b04707a1ea54c10fef16308bf806f2144d3e7aa63705924da607162f59bff757490469c2c8d4e62a1aa0bf27323bcdaa0b17f8673fe785f6b9ff0718e55b621c8e9d92839759a98b88bd6590a0ff85e072b65d258bbfdc653444b08714c2be395b7e645caa214567b22916ffb7ebeb012d013001310130013101300130")
 
-  val invalidSignedDigitDecompAttestation: OracleAttestmentV0TLV =
-    validSignedDigitDecompAttestation.copy(sigs =
-      validSignedDigitDecompAttestation.sigs.map(
-        _.copy(sig = FieldElement.one)))
+  val invalidSignedDigitDecompAttestation: OracleAttestmentV0TLV = {
+    val unsorted =
+      validSignedDigitDecompAttestation.sigs.map(_.copy(sig = FieldElement.one))
+    val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
+    validSignedDigitDecompAttestation.copy(sigs = sorted)
+  }
 
   val invalidSignedDigitDecompAttestation1: OracleAttestmentV0TLV =
     OracleAttestmentV0TLV(
