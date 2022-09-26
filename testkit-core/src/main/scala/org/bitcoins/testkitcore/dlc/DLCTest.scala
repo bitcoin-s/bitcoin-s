@@ -45,11 +45,7 @@ trait DLCTest {
   }
 
   val oraclePrivKeys: Vector[ECPrivateKey] = {
-    val privKeys = (0 until 50).toVector.map(_ => ECPrivateKey.freshPrivateKey)
-    val sortByNonces = privKeys
-      .map(p => (p, p.schnorrNonce))
-      .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
-    sortByNonces.map(_._1)
+    ECPrivateKey.generateNonceOrderedPrivKeys(50)
   }
 
   val oraclePubKeys: Vector[SchnorrPublicKey] =
@@ -59,11 +55,7 @@ trait DLCTest {
 
   val preCommittedKsPerOracle: Vector[Vector[ECPrivateKey]] = {
     oraclePrivKeys.map { _ =>
-      val ks = (0 until 50).toVector.map(_ => ECPrivateKey.freshPrivateKey)
-      val sorted = ks
-        .map(k => (k, k.schnorrNonce))
-        .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
-      sorted.map(_._1)
+      ECPrivateKey.generateNonceOrderedPrivKeys(50)
     }
   }
 

@@ -39,11 +39,7 @@ object DLCWalletUtil extends Logging {
   lazy val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
 
   lazy val kValues: Vector[ECPrivateKey] = {
-    val privKeys = 0.to(10).map(_ => ECPrivateKey.freshPrivateKey).toVector
-    val sortByNonce = privKeys
-      .map(p => (p, p.schnorrNonce))
-      .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
-    sortByNonce.map(_._1)
+    ECPrivateKey.generateNonceOrderedPrivKeys(10)
   }
 
   lazy val rValues: OrderedNonces = {

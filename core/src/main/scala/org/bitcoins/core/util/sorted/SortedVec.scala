@@ -38,3 +38,9 @@ object SortedVec {
     SortedVecImpl(vec)
   }
 }
+
+trait SortedVecFactory[U, T <: SortedVec[U, U]] {
+
+  def apply(t: U): T
+  def fromUnsorted(vec: Vector[U]): T
+}

@@ -141,7 +141,8 @@ val descriptor = NumericContractDescriptor(curve, numDigits = 15, roundTo100)
 val announcements = 0.until(5).toVector.map { _ =>
     val oraclePrivKey = ECPrivateKey.freshPrivateKey
     val nonces = 0.until(15).toVector.map(_ => ECPrivateKey.freshPrivateKey.schnorrNonce)
-  	OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, nonces)
+    val orderedNonces = OrderedNonces.fromUnsorted(nonces)
+  	OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, orderedNonces)
 }
 val oracleInfo = NumericMultiOracleInfo(
     threshold = 3,

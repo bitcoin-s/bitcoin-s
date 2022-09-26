@@ -8,13 +8,13 @@ case class OrderedNonces(private val vec: Vector[SchnorrNonce])
       vec,
       org.bitcoins.core.nonceOrdering)
 
-object OrderedNonces {
+object OrderedNonces extends SortedVecFactory[SchnorrNonce, OrderedNonces] {
 
-  def apply(single: SchnorrNonce): OrderedNonces = {
+  override def apply(single: SchnorrNonce): OrderedNonces = {
     OrderedNonces(Vector(single))
   }
 
-  def fromUnsorted(vec: Vector[SchnorrNonce]): OrderedNonces = {
+  override def fromUnsorted(vec: Vector[SchnorrNonce]): OrderedNonces = {
     val sorted = vec.sorted(org.bitcoins.core.nonceOrdering)
     OrderedNonces(sorted)
   }
