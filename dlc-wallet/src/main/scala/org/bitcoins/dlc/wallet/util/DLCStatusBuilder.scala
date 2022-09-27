@@ -8,9 +8,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
-
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
-import org.bitcoins.crypto.{SchnorrDigitalSignature}
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 

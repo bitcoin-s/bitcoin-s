@@ -35,8 +35,6 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.TimeUtil._
-import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
-import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.util.sorted.{
   OrderedAnnouncements,
   OrderedNonces,
