@@ -147,12 +147,7 @@ case class EnumSingleOracleInfo(announcement: BaseOracleAnnouncement)
     s"Enum OracleInfo requires EnumEventDescriptor, $announcement"
   )
 
-  val nonce: SchnorrNonce = {
-    announcement.eventTLV match {
-      case v0: OracleEventV0TLV =>
-        v0.nonces.head
-    }
-  }
+  val nonce: SchnorrNonce = announcement.nonces.head.toVector.head
 
   /** @inheritdoc */
   override def verifySigs(

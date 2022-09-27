@@ -84,9 +84,9 @@ trait EventDbUtil {
     EventDb] = {
     val nonces = baseOracleAnnouncement match {
       case v0: OracleAnnouncementV0TLV =>
-        v0.eventTLV.nonces.vec
+        v0.eventTLV.nonces.toVector
       case v1: OracleAnnouncementV1TLV =>
-        v1.nonces.flatMap(_.vec)
+        v1.nonces.flatMap(_.toVector)
     }
 
     val publicKey = baseOracleAnnouncement match {

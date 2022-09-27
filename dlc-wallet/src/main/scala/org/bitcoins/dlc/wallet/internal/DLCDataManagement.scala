@@ -177,7 +177,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               .find(_.announcementId == data.id.get)
               .exists(_.used)
             if (used) {
-              val nonces = OrderedNonces(nonceDbs.map(_.nonce)).toVector
+              val nonces =
+                OrderedNonces.fromUnsorted(nonceDbs.map(_.nonce)).toVector
               val result = data.eventDescriptor match {
                 case dlcType: EventDescriptorDLCType =>
                   val metadataOpt = metadatas.find(_.announcementId == id)
@@ -242,7 +243,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       idNonceVec.map { case (id, nonceDbs) =>
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
-            val nonces = OrderedNonces(nonceDbs.map(_.nonce)).toVector
+            val nonces =
+              OrderedNonces.fromUnsorted(nonceDbs.map(_.nonce)).toVector
             val announcemntWithId = data.eventDescriptor match {
               case dlcType: EventDescriptorDLCType =>
                 val metadataOpt = metadatas.find {

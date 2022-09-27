@@ -148,8 +148,8 @@ object DLCWalletUtil extends Logging {
     val unsorted = rValues.take(numDigits).toVector
     val sorted = OrderedNonces.fromUnsorted(unsorted)
     NumericSingleOracleInfo(
-      OracleAnnouncementV1TLV.dummyForKeys(oraclePrivKey,
-        sorted))
+      OracleAnnouncementV1TLV.dummyForKeys(oraclePrivKey, sorted))
+  }
 
   lazy val multiNonceContractOraclePair: ContractOraclePair.NumericPair = {
     ContractOraclePair.NumericPair(multiNonceContractDescriptor,
@@ -160,7 +160,7 @@ object DLCWalletUtil extends Logging {
     SingleContractInfo(total, multiNonceContractOraclePair)
 
   lazy val numericContractInfoV0 =
-    multiNonceContractInfo.toTLV.asInstanceOf[ContractInfoV0TLV]
+    multiNonceContractInfo.toSubType.asInstanceOf[ContractInfoV0TLV]
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(0)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1)

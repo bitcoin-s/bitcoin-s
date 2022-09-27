@@ -319,7 +319,7 @@ object OracleEvent {
           eventDescriptorTLV = decomp,
           metadataOpt = Some(announcementV1.metadata),
           dlcOutcome = numericOutcome,
-          attestations = attestation.sigs.map(_.sig)
+          attestations = attestation.sigs.map(_.sig).toVector
         )
     }
   }
@@ -501,7 +501,7 @@ object OracleEvent {
     verifyAttestationHelper(
       tlvOutcomes = tlvOutcomes,
       attestations = attestations,
-      nonces = nonces.toVector,
+      nonces = nonces,
       announcement = announcement,
       attestationPubKey = announcement.announcementPublicKey,
       signingVersion = signingVersion
@@ -514,7 +514,7 @@ object OracleEvent {
       signingVersion: SigningVersion): Boolean = {
     val tlvOutcomes = schnorrAttestation.outcomes
     val attestations = schnorrAttestation.sigs
-    val nonces = announcementV1TLV.noncesFlattened
+    val nonces = announcementV1TLV.nonces.head
     verifyAttestationHelper(
       tlvOutcomes = tlvOutcomes,
       attestations = attestations,
@@ -527,8 +527,8 @@ object OracleEvent {
 
   private def verifyAttestationHelper(
       tlvOutcomes: Vector[NormalizedString],
-      attestations: Vector[SchnorrDigitalSignature],
-      nonces: Vector[SchnorrNonce],
+      attestations: OrderedSchnorrSignatures,
+      nonces: OrderedNonces,
       announcement: BaseOracleAnnouncement,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {
@@ -572,7 +572,7 @@ object OracleEvent {
 
   private def verifyEnumAttestation(
       tlvOutcomes: Vector[NormalizedString],
-      attestations: Vector[SchnorrDigitalSignature],
+      attestations: OrderedSchnorrSignatures,
       enumEventDescriptor: BaseEnumEventDescriptor,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {
@@ -589,7 +589,7 @@ object OracleEvent {
 
   private def verifyDigitDecompAttestation(
       tlvOutcomes: Vector[NormalizedString],
-      attestations: Vector[SchnorrDigitalSignature],
+      attestations: OrderedSchnorrSignatures,
       dd: BaseNumericEventDescriptorTLV,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {

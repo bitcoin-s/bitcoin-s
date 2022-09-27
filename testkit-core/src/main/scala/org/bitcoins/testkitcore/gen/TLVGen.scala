@@ -183,7 +183,7 @@ trait TLVGen {
       attestationPubkey <- CryptoGenerators.schnorrPublicKey
       numNonces <- numOutcomesOpt.map(Gen.const(_)).getOrElse(Gen.choose(1, 20))
       nonces <- Gen.listOfN(numNonces, CryptoGenerators.schnorrNonce)
-      orderedNonces = OrderedNonces(nonces.toVector)
+      orderedNonces = OrderedNonces.fromUnsorted(nonces.toVector)
       pok <- schnorrProofOfKnowledge(numNonces)
     } yield SchnorrAttestation(attestationPubkey,
                                nonces = orderedNonces,

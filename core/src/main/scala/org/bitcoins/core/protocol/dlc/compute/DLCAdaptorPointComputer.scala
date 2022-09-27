@@ -144,7 +144,7 @@ object DLCAdaptorPointComputer {
         }
 
         val nonces: Vector[ECPublicKey] = announcement.nonces
-          .flatMap(_.vec.map(_.publicKey))
+          .flatMap(_.toVector.map(_.publicKey))
         nonces.map { nonce =>
           possibleOutcomes.map { outcome =>
             computePoint(pubKey, nonce, outcome)

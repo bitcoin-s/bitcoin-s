@@ -823,7 +823,7 @@ case class OracleEventV0TLV(
   }
 
   override val value: ByteVector = {
-    val b = TLVUtil.u16PrefixedList(nonces.vec)
+    val b = TLVUtil.u16PrefixedList(nonces.toVector)
     b ++
       eventMaturityEpoch.bytes ++
       eventDescriptor.bytes ++
@@ -838,9 +838,8 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
   override val typeName: String = "OracleEventV0TLV"
 
   def buildDummy(
-      nonces: Vector[SchnorrNonce],
+      ordered: OrderedNonces,
       eventDescriptorTLV: EventDescriptorTLV): OracleEventV0TLV = {
-    val ordered = OrderedNonces(nonces)
     OracleEventV0TLV(
       nonces = ordered,
       eventMaturityEpoch = UInt32.zero,
@@ -966,7 +965,8 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val eventDescriptor = EnumEventDescriptorV0TLV(
       events.map(outcome => outcome.outcome))
 
-    val event = OracleEventV0TLV.buildDummy(Vector(nonce), eventDescriptor)
+    val event =
+      OracleEventV0TLV.buildDummy(OrderedNonces(nonce), eventDescriptor)
     val sig =
       privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
@@ -1075,7 +1075,7 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
 case class SchnorrAttestationTLV(
     eventId: NormalizedString,
     publicKey: SchnorrPublicKey,
-    sigs: Vector[SchnorrDigitalSignature],
+    sigs: OrderedSchnorrSignatures,
     outcomes: Vector[NormalizedString])
     extends OracleAttestmentTLV {
   require(sigs.nonEmpty, "Cannot have 0 signatures")
@@ -1087,7 +1087,7 @@ case class SchnorrAttestationTLV(
   override val value: ByteVector = {
     strBytes(eventId) ++
       publicKey.bytes ++
-      bigSizePrefixedList(sigs) ++
+      bigSizePrefixedList(sigs.toVector) ++
       TLVUtil.bigSizePrefixedList(outcomes, strBytes)
   }
 }
@@ -1103,9 +1103,11 @@ object SchnorrAttestationTLV extends TLVFactory[SchnorrAttestationTLV] {
     val pubKey = iter.take(SchnorrPublicKey, 32)
     val sigs =
       iter.takeBigSizePrefixedList(() => iter.take(SchnorrDigitalSignature, 64))
+    //note: Purposefully not using fromUnsorted, as we should always serialize / deserialize correctly
+    val ordered = OrderedSchnorrSignatures(sigs)
     val outcomes = iter.takeBigSizePrefixedList(() => iter.takeString())
 
-    SchnorrAttestationTLV(eventId, pubKey, sigs, outcomes)
+    SchnorrAttestationTLV(eventId, pubKey, ordered, outcomes)
   }
 }
 
@@ -2828,7 +2830,7 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
 
   def dummyForKeys(
       privKey: ECPrivateKey,
-      nonces: Vector[SchnorrNonce]): OracleAnnouncementV1TLV = {
+      nonces: OrderedNonces): OracleAnnouncementV1TLV = {
     val eventDescriptor = DigitDecompositionEventDescriptorDLCType(
       UInt8.two,
       isSigned = false,
@@ -2840,7 +2842,7 @@ object OracleAnnouncementV1TLV extends Factory[OracleAnnouncementV1TLV] {
     val attestation = SchnorrAttestation.build(announcementPrivKey = privKey,
                                                attestationPubKey =
                                                  privKey.schnorrPublicKey,
-                                               nonces = OrderedNonces(nonces))
+                                               nonces = nonces)
 
     val metadataSignature = OracleMetadataSignature.buildSignature(
       announcementPrivKey = privKey,
@@ -2973,9 +2975,10 @@ object OracleMetadata extends Factory[OracleMetadata] {
       attestationPubKeySignature = metadataDb.attestationPubKeySignature,
       nonceSignature = nonceSignatureDbs.map(_.nonceProof)
     )
+    val sorted = OrderedNonces.fromUnsorted(nonceSignatureDbs.map(_.nonce))
     val schnorrAttestation: SchnorrAttestation = SchnorrAttestation(
       attestationPublicKey = metadataDb.attestationPublicKey,
-      nonces = OrderedNonces(nonceSignatureDbs.map(_.nonce)),
+      nonces = sorted,
       proofOfKnowledge = pok
     )
     val metadataSignature = OracleMetadataSignature(
@@ -3058,12 +3061,13 @@ object SchnorrAttestation extends Factory[SchnorrAttestation] {
 
     if (nonceSignatures.forall(_.outcomeOpt.isDefined)) {
       val signatures = nonceSignatures.map(_.signatureOpt).flatten
+      val orderedSignatures = OrderedSchnorrSignatures.fromUnsorted(signatures)
       val outcomes = nonceSignatures.map(_.outcomeOpt).flatten
       val attestation =
         SchnorrAttestationTLV(eventId = announcement.eventTLV.eventId,
                               publicKey =
                                 announcement.metadata.attestationPublicKey,
-                              sigs = signatures,
+                              sigs = orderedSignatures,
                               outcomes = outcomes)
       Some(attestation)
     } else if (nonceSignatures.forall(_.outcomeOpt.isEmpty)) {

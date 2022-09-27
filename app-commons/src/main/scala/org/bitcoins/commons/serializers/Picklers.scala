@@ -37,6 +37,11 @@ import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
+import org.bitcoins.core.util.sorted.{
+  OrderedAnnouncements,
+  OrderedNonces,
+  OrderedSchnorrSignatures
+}
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
@@ -1909,7 +1914,7 @@ object Picklers {
   }
 
   def writeOracleEventV0TLV(oracleEvent: OracleEventV0TLV): ujson.Obj = {
-    val noncesJson: Vector[Value] = oracleEvent.nonces.vec.map { n =>
+    val noncesJson: Vector[Value] = oracleEvent.nonces.toVector.map { n =>
       ujson.Str(n.hex)
     }
     val nonceArr = ujson.Arr.from(noncesJson)
@@ -2497,7 +2502,7 @@ object Picklers {
 
     SchnorrAttestationTLV(eventId,
                           oraclePublicKey,
-                          sigs = signatures,
+                          sigs = OrderedSchnorrSignatures(signatures),
                           outcomes = outcomes)
   }
 

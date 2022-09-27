@@ -54,7 +54,7 @@ object NonceSignaturePairDbShim {
       init.map { case (k, v) =>
         //sort the nonces
         val nonces = v.map(shim => shim.nonce)
-        val ordered = OrderedNonces(nonces)
+        val ordered = OrderedNonces.fromUnsorted(nonces)
         val sorted = ordered.toVector.map(n => v.find(_.nonce == n).get)
         (k, sorted)
       }
@@ -120,7 +120,7 @@ object OracleNonceDbHelper {
   def fromAnnouncement(
       id: Long,
       tlv: BaseOracleAnnouncement): Vector[OracleNonceDb] = {
-    tlv.nonces.flatMap(_.vec).zipWithIndex.map { case (nonce, index) =>
+    tlv.nonces.flatMap(_.toVector).zipWithIndex.map { case (nonce, index) =>
       OracleNonceDb(id, index, SchnorrDigitalSignature.dummy, nonce, None, None)
     }
   }
