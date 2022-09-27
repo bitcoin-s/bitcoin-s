@@ -21,7 +21,11 @@ import org.bitcoins.core.protocol.tlv.TLV.{
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
+import org.bitcoins.core.util.sorted.{
+  OrderedAnnouncements,
+  OrderedNonces,
+  OrderedSchnorrSignatures
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -775,14 +779,14 @@ case class OracleEventV0TLV(
 ) extends OracleEventTLV {
 
   require(
-    eventDescriptor.noncesNeeded == nonces.vec.size,
+    eventDescriptor.noncesNeeded == nonces.toVector.size,
     s"Not enough nonces for this event descriptor, noncesNeeded=${eventDescriptor.noncesNeeded} nonces=${nonces.toVector.size}"
   )
 
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(nonces.vec) ++
+    u16PrefixedList(nonces.toVector) ++
       eventMaturityEpoch.bytes ++
       eventDescriptor.bytes ++
       strBytes(eventId)
@@ -805,7 +809,7 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
     val eventDescriptor = iter.take(EventDescriptorTLV)
     val eventId = iter.takeString()
 
-    OracleEventV0TLV(OrderedNonces(nonces),
+    OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces),
                      eventMaturity,
                      eventDescriptor,
                      eventId)
@@ -865,7 +869,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
     val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
       "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
     val event = OracleEventV0TLV(
-      OrderedNonces(Vector(dummyPrivKey.schnorrNonce)),
+      OrderedNonces.fromUnsorted(Vector(dummyPrivKey.schnorrNonce)),
       UInt32.zero,
       EnumEventDescriptorV0TLV.dummy,
       "dummy")
@@ -881,7 +885,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
       nonce: SchnorrNonce,
       events: Vector[EnumOutcome]): OracleAnnouncementTLV = {
     val event = OracleEventV0TLV(
-      OrderedNonces(Vector(nonce)),
+      OrderedNonces.fromUnsorted(Vector(nonce)),
       UInt32.zero,
       EnumEventDescriptorV0TLV(events.map(outcome => outcome.outcome)),
       "dummy")
@@ -893,17 +897,14 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
   def dummyForKeys(
       privKey: ECPrivateKey,
-      nonces: Vector[SchnorrNonce]): OracleAnnouncementTLV = {
+      nonces: OrderedNonces): OracleAnnouncementTLV = {
     val eventDescriptor = DigitDecompositionEventDescriptorV0TLV(UInt16(2),
                                                                  isSigned =
                                                                    false,
                                                                  nonces.length,
                                                                  "dummy",
                                                                  Int32.zero)
-    val event = OracleEventV0TLV(OrderedNonces(nonces),
-                                 UInt32.zero,
-                                 eventDescriptor,
-                                 "dummy")
+    val event = OracleEventV0TLV(nonces, UInt32.zero, eventDescriptor, "dummy")
     val sig =
       privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
@@ -916,7 +917,8 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 sealed trait OracleAttestmentTLV extends DLCOracleTLV {
   def eventId: NormalizedString
   def publicKey: SchnorrPublicKey
-  def sigs: Vector[SchnorrDigitalSignature]
+  def sigs: OrderedSchnorrSignatures
+
   def outcomes: Vector[NormalizedString]
 }
 
@@ -931,7 +933,7 @@ object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
 case class OracleAttestmentV0TLV(
     eventId: NormalizedString,
     publicKey: SchnorrPublicKey,
-    sigs: Vector[SchnorrDigitalSignature],
+    sigs: OrderedSchnorrSignatures,
     outcomes: Vector[NormalizedString])
     extends OracleAttestmentTLV {
   require(sigs.nonEmpty, "Cannot have 0 signatures")
@@ -948,7 +950,7 @@ case class OracleAttestmentV0TLV(
 
     strBytes(eventId) ++
       publicKey.bytes ++
-      u16PrefixedList(sigs) ++
+      u16PrefixedList(sigs.toVector) ++
       outcomesBytes
   }
 }
@@ -967,7 +969,10 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
       iter.takeString()
     }
 
-    OracleAttestmentV0TLV(eventId, pubKey, sigs, outcomes)
+    OracleAttestmentV0TLV(eventId,
+                          pubKey,
+                          OrderedSchnorrSignatures.fromUnsorted(sigs),
+                          outcomes)
   }
 
   lazy val dummy: OracleAttestmentV0TLV = {
@@ -978,7 +983,7 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
 
     OracleAttestmentV0TLV(eventId,
                           key.schnorrPublicKey,
-                          Vector(sig),
+                          OrderedSchnorrSignatures(sig),
                           Vector(outcome))
   }
 

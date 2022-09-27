@@ -70,7 +70,7 @@ trait EventDbUtil {
       eventName: String,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventDb] = {
-    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.vec
+    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.toVector
     nonces.zipWithIndex.map { case (nonce, index) =>
       EventDb(
         nonce = nonce,

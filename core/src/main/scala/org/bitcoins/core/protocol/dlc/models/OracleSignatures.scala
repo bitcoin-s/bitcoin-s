@@ -3,18 +3,19 @@ package org.bitcoins.core.protocol.dlc.models
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 
 /** Corresponds to a set of SchnorrDigitalSignatures given by a single oracle. */
 sealed trait OracleSignatures extends SeqWrapper[SchnorrDigitalSignature] {
 
   /** This oracle's signatures */
-  def sigs: Vector[SchnorrDigitalSignature]
+  def sigs: OrderedSchnorrSignatures
 
   /** The SingleOracleInfo for the oracle whose signatures are stored here. */
   def oracle: SingleOracleInfo
 
-  override def wrapped: Vector[SchnorrDigitalSignature] = sigs
+  override def wrapped: Vector[SchnorrDigitalSignature] = sigs.toVector
 
   /** Verifies the signatures against a given outcome. */
   def verifySignatures(outcome: DLCOutcomeType): Boolean = {
@@ -38,7 +39,7 @@ object OracleSignatures {
 
   def apply(
       oracle: SingleOracleInfo,
-      sigs: Vector[SchnorrDigitalSignature]): OracleSignatures = {
+      sigs: OrderedSchnorrSignatures): OracleSignatures = {
     oracle match {
       case info: EnumSingleOracleInfo =>
         require(sigs.length == 1, s"Expected one signature, got $sigs")
@@ -76,7 +77,7 @@ case class EnumOracleSignature(
     oracle: EnumSingleOracleInfo,
     sig: SchnorrDigitalSignature)
     extends OracleSignatures {
-  override def sigs: Vector[SchnorrDigitalSignature] = Vector(sig)
+  override def sigs: OrderedSchnorrSignatures = OrderedSchnorrSignatures(sig)
 
   lazy val getOutcome: EnumOutcome = {
     // cast is safe, EnumSingleOracleInfo enforces this
@@ -105,7 +106,7 @@ case class EnumOracleSignature(
 /** Wraps a set of oracle signatures of numeric digits. */
 case class NumericOracleSignatures(
     oracle: NumericSingleOracleInfo,
-    sigs: Vector[SchnorrDigitalSignature])
+    sigs: OrderedSchnorrSignatures)
     extends OracleSignatures {
 
   lazy val getOutcome: UnsignedNumericOutcome = {
@@ -127,7 +128,7 @@ case class NumericOracleSignatures(
         .getOrElse(throw new IllegalArgumentException(
           s"Signature $sig does not match any digit 0-${base - 1}"))
     }
-    UnsignedNumericOutcome(digits)
+    UnsignedNumericOutcome(digits.toVector)
   }
 
   /** Computes the NumericOutcome to which these signatures correspond. */

@@ -19,7 +19,7 @@ import org.bitcoins.core.protocol.tlv.{
   OracleAttestmentTLV
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -263,11 +263,14 @@ object DLCUtil {
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
       announcements
         .map(_.eventTLV.nonces)
-        .map(_.vec)
+        .map(_.toVector)
     }
     val resultOpt = oracleSignatures.find { case oracleSignature =>
-      val oracleSigNonces: Vector[SchnorrNonce] = oracleSignature.sigs.map(_.rx)
-      announcementNonces.contains(oracleSigNonces)
+      val oracleSigNonces: Vector[SchnorrNonce] = {
+        val unsorted = oracleSignature.sigs.map(_.rx).toVector
+        OrderedNonces.fromUnsorted(unsorted).toVector
+      }
+      announcementNonces.exists(_ == oracleSigNonces)
     }
     resultOpt
   }

@@ -78,7 +78,7 @@ sealed trait SingleOracleInfo
     * This point is used for adaptor signing.
     */
   def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
-    publicKey.computeSigPoint(outcome.serialized, nonces.vec)
+    publicKey.computeSigPoint(outcome.serialized, nonces.toVector)
   }
 
   /** Computes the sum of all nonces used in a given outcome */
@@ -214,7 +214,7 @@ object NumericSingleOracleInfo {
 
   def dummyForKeys(
       privKey: ECPrivateKey,
-      nonces: Vector[SchnorrNonce]): NumericSingleOracleInfo = {
+      nonces: OrderedNonces): NumericSingleOracleInfo = {
     NumericSingleOracleInfo(
       OracleAnnouncementV0TLV.dummyForKeys(privKey, nonces))
   }

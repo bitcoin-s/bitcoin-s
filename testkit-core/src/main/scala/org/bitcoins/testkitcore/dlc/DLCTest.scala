@@ -14,7 +14,11 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{NumericDLCOutcomeType, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{
+  OrderedAnnouncements,
+  OrderedNonces,
+  OrderedSchnorrSignatures
+}
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, NumberUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
@@ -40,22 +44,27 @@ trait DLCTest {
     }
   }
 
-  val oraclePrivKeys: Vector[ECPrivateKey] =
-    (0 until 50).toVector.map(_ => ECPrivateKey.freshPrivateKey)
+  val oraclePrivKeys: Vector[ECPrivateKey] = {
+    ECPrivateKey.generateNonceOrderedPrivKeys(50)
+  }
 
   val oraclePubKeys: Vector[SchnorrPublicKey] =
     oraclePrivKeys.map(_.schnorrPublicKey)
   val oraclePrivKey: ECPrivateKey = oraclePrivKeys.head
   val oraclePubKey: SchnorrPublicKey = oraclePubKeys.head
 
-  val preCommittedKsPerOracle: Vector[Vector[ECPrivateKey]] =
-    oraclePrivKeys.map(_ =>
-      (0 until 50).toVector.map(_ => ECPrivateKey.freshPrivateKey))
+  val preCommittedKsPerOracle: Vector[Vector[ECPrivateKey]] = {
+    oraclePrivKeys.map { _ =>
+      ECPrivateKey.generateNonceOrderedPrivKeys(50)
+    }
+  }
 
-  val preCommittedRsPerOracle: Vector[Vector[SchnorrNonce]] =
-    preCommittedKsPerOracle.map(_.map(_.schnorrNonce))
+  val preCommittedRsPerOracle: Vector[OrderedNonces] =
+    preCommittedKsPerOracle.map { privKeys =>
+      OrderedNonces.fromUnsorted(privKeys.map(_.schnorrNonce))
+    }
   val preCommittedKs: Vector[ECPrivateKey] = preCommittedKsPerOracle.head
-  val preCommittedRs: Vector[SchnorrNonce] = preCommittedRsPerOracle.head
+  val preCommittedRs: OrderedNonces = preCommittedRsPerOracle.head
   val preCommittedK: ECPrivateKey = preCommittedKs.head
   val preCommittedR: SchnorrNonce = preCommittedRs.head
 
@@ -454,8 +463,9 @@ trait DLCTest {
         .zip(preCommittedRsPerOracle
           .slice(oracleShift, oracleShift + params.numOracles))
         .map { case (privKey, rVals) =>
-          OracleAnnouncementV0TLV.dummyForKeys(privKey,
-                                               rVals.take(params.numDigits))
+          val nonces =
+            OrderedNonces.fromUnsorted(rVals.take(params.numDigits).toVector)
+          OracleAnnouncementV0TLV.dummyForKeys(privKey, nonces)
         }
     val oracleInfo = if (params.numOracles == 1) {
       NumericSingleOracleInfo(announcements.head)
@@ -779,14 +789,17 @@ trait DLCTest {
   def computeNumericOracleSignatures(
       digits: Vector[Int],
       privKey: ECPrivateKey = oraclePrivKey,
-      kVals: Vector[ECPrivateKey] = preCommittedKs): Vector[
-    SchnorrDigitalSignature] = {
-    digits.zip(kVals.take(digits.length)).map { case (digit, kValue) =>
-      privKey.schnorrSignWithNonce(CryptoUtil
-                                     .sha256DLCAttestation(digit.toString)
-                                     .bytes,
-                                   kValue)
-    }
+      kVals: Vector[ECPrivateKey] =
+        preCommittedKs): OrderedSchnorrSignatures = {
+    val unsorted =
+      digits.zip(kVals.take(digits.length)).map { case (digit, kValue) =>
+        privKey.schnorrSignWithNonce(CryptoUtil
+                                       .sha256DLCAttestation(digit.toString)
+                                       .bytes,
+                                     kValue)
+      }
+
+    OrderedSchnorrSignatures.fromUnsorted(unsorted)
   }
 
   /** Deterministically chooses an outcome from the middle third of the interesting possible outcomes. */
@@ -1059,13 +1072,15 @@ trait DLCTest {
         case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
           val testFs = outcomeIndices.map {
             case (contractIndex, outcomeIndex) =>
-              executeForOutcome(outcomeIndex,
-                                dlcOffer,
-                                offerSetup,
-                                dlcAccept,
-                                acceptSetup,
-                                outcomes,
-                                contractIndex)
+              executeForOutcome(
+                outcomeIndex = outcomeIndex,
+                dlcOffer = dlcOffer,
+                offerSetup = offerSetup,
+                dlcAccept = dlcAccept,
+                acceptSetup = acceptSetup,
+                outcomes = outcomes,
+                contractIndex = contractIndex
+              )
           }
 
           Future.sequence(testFs).map(_ => succeed)

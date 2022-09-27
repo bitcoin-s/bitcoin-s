@@ -5,7 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.core.util.sorted.OrderedNonces
+import org.bitcoins.core.util.sorted.{OrderedNonces, OrderedSchnorrSignatures}
 import org.bitcoins.crypto._
 
 import java.time.Instant
@@ -60,10 +60,12 @@ sealed trait CompletedOracleEvent extends OracleEvent {
   require(attestations.size == nonces.size,
           "Must have a signature for every nonce")
 
-  def signatures: Vector[SchnorrDigitalSignature] =
-    nonces.vec
+  def signatures: OrderedSchnorrSignatures = {
+    val unsorted = nonces.toVector
       .zip(attestations)
       .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
+    OrderedSchnorrSignatures.fromUnsorted(unsorted)
+  }
 
   def oracleAttestmentV0TLV: OracleAttestmentV0TLV =
     OracleAttestmentV0TLV(eventName,
@@ -231,7 +233,7 @@ object OracleEvent {
 
         CompletedDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
-          OrderedNonces(sortedEventDbs.map(_.nonce)),
+          OrderedNonces.fromUnsorted(sortedEventDbs.map(_.nonce)),
           eventDb.eventName,
           eventDb.signingVersion,
           eventDb.maturationTime,
@@ -248,7 +250,7 @@ object OracleEvent {
 
         PendingDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
-          OrderedNonces(sortedEventDbs.map(_.nonce)),
+          OrderedNonces.fromUnsorted(sortedEventDbs.map(_.nonce)),
           eventDb.eventName,
           eventDb.signingVersion,
           eventDb.maturationTime,

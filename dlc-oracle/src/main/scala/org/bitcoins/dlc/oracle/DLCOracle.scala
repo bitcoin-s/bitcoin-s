@@ -248,7 +248,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
       nonces = rValueDbs.map(_.nonce)
 
-      eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
+      eventTLV = OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces),
                                   epoch,
                                   descriptor,
                                   eventName)

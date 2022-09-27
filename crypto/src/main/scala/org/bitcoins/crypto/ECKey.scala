@@ -277,6 +277,16 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
   def freshPrivateKey: ECPrivateKey = CryptoUtil.freshPrivateKey
+
+  /** Generates [[num]] private keys that are ordered by [[ECPrivateKey.schnorrNonce]] */
+  def generateNonceOrderedPrivKeys(num: Int): Vector[ECPrivateKey] = {
+    val privKeys = 0.to(num).map(_ => ECPrivateKey.freshPrivateKey).toVector
+    val sortByNonce = privKeys
+      .map(p => (p, p.schnorrNonce))
+      .sortBy(_._2)(CryptoOrdering.nonceOrdering)
+
+    sortByNonce.map(_._1)
+  }
 }
 
 /** Created by chris on 2/16/16.
