@@ -280,7 +280,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
   /** Generates [[num]] private keys that are ordered by [[ECPrivateKey.schnorrNonce]] */
   def generateNonceOrderedPrivKeys(num: Int): Vector[ECPrivateKey] = {
-    val privKeys = 0.to(num).map(_ => ECPrivateKey.freshPrivateKey).toVector
+    val privKeys = 0.until(num).map(_ => ECPrivateKey.freshPrivateKey).toVector
     val sortByNonce = privKeys
       .map(p => (p, p.schnorrNonce))
       .sortBy(_._2)(CryptoOrdering.nonceOrdering)
