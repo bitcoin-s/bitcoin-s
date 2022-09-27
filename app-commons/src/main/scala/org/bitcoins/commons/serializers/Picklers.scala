@@ -36,6 +36,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.util.TimeUtil._
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
 import org.bitcoins.crypto._
@@ -1190,10 +1191,12 @@ object Picklers {
     lazy val contractId = ByteVector.fromValidHex(obj("contractId").str)
     lazy val fundingTxId = DoubleSha256DigestBE(obj("fundingTxId").str)
     lazy val closingTxId = DoubleSha256DigestBE(obj("closingTxId").str)
-    lazy val oracleSigs =
-      obj("oracleSigs").arr
+    lazy val oracleSigs = {
+      val unsorted = obj("oracleSigs").arr
         .map(value => SchnorrDigitalSignature(value.str))
         .toVector
+      OrderedSchnorrSignatures.fromUnsorted(unsorted)
+    }
 
     val payoutAddressJs = obj("payoutAddress")
     lazy val payoutAddress: Option[PayoutAddress] = payoutAddressJs match {

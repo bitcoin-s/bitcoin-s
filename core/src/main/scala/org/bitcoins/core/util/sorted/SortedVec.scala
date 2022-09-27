@@ -11,9 +11,10 @@ abstract class SortedVec[T, B >: T](
     override val wrapped: Vector[T],
     ord: Ordering[B])
     extends SeqWrapper[T] {
-  require(
-    wrapped.init.zip(wrapped.tail).forall { case (x, y) => ord.lteq(x, y) },
-    s"Vector must be sorted. $wrapped")
+  require(wrapped.isEmpty || wrapped.init.zip(wrapped.tail).forall {
+            case (x, y) => ord.lteq(x, y)
+          },
+          s"Vector must be sorted. $wrapped")
 }
 
 object SortedVec {

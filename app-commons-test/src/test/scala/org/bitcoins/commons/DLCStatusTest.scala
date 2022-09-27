@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   PayoutAddress
 }
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
@@ -247,7 +248,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.collateral,
           fundingTxId,
           closingTxId,
-          sigs.toVector,
+          OrderedSchnorrSignatures.fromUnsorted(sigs.toVector),
           outcome,
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
