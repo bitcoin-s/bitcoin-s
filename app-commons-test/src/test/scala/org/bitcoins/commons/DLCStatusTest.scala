@@ -248,7 +248,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.collateral,
           fundingTxId,
           closingTxId,
-          OrderedSchnorrSignatures(sigs.toVector),
+          OrderedSchnorrSignatures.fromUnsorted(sigs.toVector),
           outcome,
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
