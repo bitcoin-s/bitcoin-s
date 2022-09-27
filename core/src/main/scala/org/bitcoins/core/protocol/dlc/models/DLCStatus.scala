@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
 }
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -78,7 +79,7 @@ sealed trait ClosedDLCStatus extends SignedDLCStatus {
 
 sealed trait ClaimedDLCStatus extends ClosedDLCStatus {
   def oracleOutcome: OracleOutcome
-  def oracleSigs: Vector[SchnorrDigitalSignature]
+  def oracleSigs: OrderedSchnorrSignatures
 }
 
 object DLCStatus {
@@ -222,7 +223,7 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
-      oracleSigs: Vector[SchnorrDigitalSignature],
+      oracleSigs: OrderedSchnorrSignatures,
       oracleOutcome: OracleOutcome,
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
@@ -253,7 +254,9 @@ object DLCStatus {
       peer: Option[String])
       extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
-    override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)
+
+    override val oracleSigs: OrderedSchnorrSignatures =
+      OrderedSchnorrSignatures(oracleSig)
   }
 
   case class Refunded(
@@ -306,7 +309,7 @@ object DLCStatus {
   }
 
   def getOracleSignatures(
-      status: DLCStatus): Option[Vector[SchnorrDigitalSignature]] = {
+      status: DLCStatus): Option[OrderedSchnorrSignatures] = {
     status match {
       case claimed: ClaimedDLCStatus =>
         Some(claimed.oracleSigs)
