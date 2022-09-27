@@ -1,14 +1,15 @@
 package org.bitcoins.testkit.wallet
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.{
   ContractOraclePair,
   SingleContractInfo
 }
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -22,7 +23,14 @@ trait DualWalletTestCachedBitcoind
     val config = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
       getBIP39PasswordOpt(),
       Some(BaseWalletTest.segwitWalletConf))
-    BitcoinSTestAppConfig.getNeutrinoTestConfig(config)
+    val randomHex = CryptoUtil.randomBytes(3).toHex
+    //with postgres, we need unique wallet names as postgres wallets
+    //share the same database. They have a unique schema with the database
+    //based on wallet name which is why we set this here.
+    val walletNameConfig =
+      ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
+    val extraConfig = config.withFallback(walletNameConfig)
+    BaseWalletTest.getFreshConfig(pgUrl, Vector(extraConfig))
   }
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {
