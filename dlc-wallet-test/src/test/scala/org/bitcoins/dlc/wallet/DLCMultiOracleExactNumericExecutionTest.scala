@@ -117,7 +117,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
     (Random.shuffle(initiatorWinSigs), Random.shuffle(recipientWinSigs))
   }
 
-  it must "execute as the initiator" in { wallets =>
+  it must "execute as the initiator" ignore { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._1.wallet)
@@ -157,7 +157,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
     }
   }
 
-  it must "execute as the recipient" in { wallets =>
+  it must "execute as the recipient" ignore { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._2.wallet)

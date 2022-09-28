@@ -332,7 +332,7 @@ abstract class DLCWallet
       groupedAnnouncements <- groupByExistingAnnouncements(announcements)
       announcementDataDbsA = createNewAnnouncementsAction(
         groupedAnnouncements.newAnnouncements)
-      announcementDataDbs <- safeDatabase.run(announcementDataDbsA)
+      announcementDataDbs <- safeDLCDatabase.run(announcementDataDbsA)
       allAnnouncementDbs =
         announcementDataDbs ++ groupedAnnouncements.existingAnnouncements
     } yield allAnnouncementDbs.map(_._1)
