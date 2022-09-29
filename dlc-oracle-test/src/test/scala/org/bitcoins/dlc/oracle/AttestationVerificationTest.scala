@@ -132,4 +132,35 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
                                       invalidSignedDigitDecompAttestation1,
                                       signingVersion))
   }
+
+  it must "validate announcement/attesation with out of order nonces" in {
+    val annHex =
+      "fdd824fd01661aabd9bbcae0207aff9510f05099295f32ff72290cf5c494d3869f582f8c4a6cf1b7d832562047f68ce607eb39" +
+        "dcd7ec8ce64432dc51a8853dc5a3acd96a8bc5545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a85fdd822fd010" +
+        "000070652285e89487dc8ce816a81234082394d9602263d35a7322b77299082257767b559c622def4bba15a2ad7fc336edd71ace9b4c366b9" +
+        "eaba22b73df00589e74b7ca5b6c7301ef7dc62aeae1823018107868d8956677421e11ffd8f125f2fedf4a527003355640ee9333cda6c37a92" +
+        "d4989c6ab96eddc9266f0ddce0e2a3ffb77aa9eefa1fe40eddd0fa63f501e9b368eed6ab0cc0d2e5e6da1baa570ed9e857134bbc8a15dd594" +
+        "9eb1203b1d15ae701fe4b04707a1ea54c10fef16308bf806f2aa0b17f8673fe785f6b9ff0718e55b621c8e9d92839759a98b88bd6590a0ff8" +
+        "56011fe80fdd80a0f00020105756e697473000000000006067369676e6564"
+
+    val annV0 = OracleAnnouncementV0TLV.fromHex(annHex)
+    val attestationHex =
+      "fdd868fd01f7067369676e6564545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a8500" +
+        "070652285e89487dc8ce816a81234082394d9602263d35a7322b772990822577670ab288b31d99f56d18d4f34be875c0a4d73aae135c4f503" +
+        "49a1014b686d69841b559c622def4bba15a2ad7fc336edd71ace9b4c366b9eaba22b73df00589e74ba7b82eef2041bf6af1511016cadabe9d" +
+        "52e64d875caf5bfef85903dbc4fc00737ca5b6c7301ef7dc62aeae1823018107868d8956677421e11ffd8f125f2fedf469f40edbb7846274f" +
+        "46a973f5442ece91b5a6e450a8cdcef272058a27176dabba527003355640ee9333cda6c37a92d4989c6ab96eddc9266f0ddce0e2a3ffb7762" +
+        "f10e09f79273ab04d1549c1d60054738fe903575aa732760bd2668530459e9aa9eefa1fe40eddd0fa63f501e9b368eed6ab0cc0d2e5e6da1b" +
+        "aa570ed9e857188bae5c59c9ac89bec3fa00c8e1b725789e1af15f7b256ae7f169edfe7f3ef8834bbc8a15dd5949eb1203b1d15ae701fe4b0" +
+        "4707a1ea54c10fef16308bf806f2144d3e7aa63705924da607162f59bff757490469c2c8d4e62a1aa0bf27323bcdaa0b17f8673fe785f6b9f" +
+        "f0718e55b621c8e9d92839759a98b88bd6590a0ff85e072b65d258bbfdc653444b08714c2be395b7e645caa214567b22916ffb7ebeb012d01" +
+        "3001310130013101300130"
+    val attestationV0 = OracleAttestmentV0TLV.fromHex(attestationHex)
+
+    val result = OracleEvent.verifyAttestations(annV0,
+                                                attestationV0,
+                                                SigningVersion.latest)
+
+    assert(result)
+  }
 }
