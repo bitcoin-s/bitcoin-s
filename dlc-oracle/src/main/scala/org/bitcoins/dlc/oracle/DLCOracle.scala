@@ -458,6 +458,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         metadata = metadata,
         rValueDbs = rValues
       )
+      _ = require(created.announcement.validateSignature,
+                  s"Valid signature must be generated for $eventName")
     } yield created
 
   }

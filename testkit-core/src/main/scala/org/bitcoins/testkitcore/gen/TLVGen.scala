@@ -201,12 +201,18 @@ trait TLVGen {
     */
   def oracleMetadata(numOutcomesOpt: Option[Int]): Gen[OracleMetadata] = {
     for {
-      announcementPublicKey <- CryptoGenerators.schnorrPublicKey
+      announcementPrivKey <- CryptoGenerators.privateKey
+      announcementPublicKey = announcementPrivKey.schnorrPublicKey
       oracleName <- StringGenerators.genString
       description <- StringGenerators.genString
       creationTime <- NumberGenerator.uInt32s
       attestations <- schnorrAttestations(numOutcomesOpt)
-      metadataSignature <- oracleMetadataSignature
+      metadataSignature = OracleMetadataSignature.buildSignature(
+        announcementPrivKey = announcementPrivKey,
+        oracleName = oracleName,
+        oracleDescription = description,
+        creationTime = creationTime,
+        schnorrAttestation = attestations)
     } yield OracleMetadata(
       announcementPublicKey = announcementPublicKey,
       oracleName = oracleName,

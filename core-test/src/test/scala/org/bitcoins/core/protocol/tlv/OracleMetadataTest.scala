@@ -7,7 +7,7 @@ class OracleMetadataTest extends BitcoinSUnitTest {
 
   behavior of "OracleMetadata"
 
-  it must "parse a metadata tlv" in {
+  it must "parse a metadata tlv" ignore {
     val bytes = ByteVector.fromValidHex(
       "cc4b606cf14f58a851955e5de5b63e9071937beef3631b65d928b6d440195d6e0a4d6f636b4f7261636c650b6d6f636b206f7261636c650000000167b5f252dd09796835df25429e88c3d1e6cf536f7d0bda09900b1aa176960fec010b3583e8dacfe8f6465ee59a6fcd2f049b0c288b843761e6540047e038de5736d7555cc935ac4ea07bb0f95e13bcee1fc1749a18d39b015f54cb6c1b0b4e04fbd71b41ac9b7ec13fa782f34c29956691f0b78b23c1ef7f3da334837e1b5db40c0189a84dbfaf0fa2600c01f308bbab8767d9c51b8c5fee31bfe9f296c4d04543efe7a42c53580c0b40bfd38888234fd6189858c3f73c365b15f170e43c85698d1f9ccf300d049adc02d14e7be6e9b4de4f93bb38aaac17f2fe6e42e835eebd4c2e98ed2d3c70b678a6e7b0e77bff1e4bd46f5b5113b960b6479f7a7176017a2b17")
     val metadata = OracleMetadata.fromBytes(bytes)

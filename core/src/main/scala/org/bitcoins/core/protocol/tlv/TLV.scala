@@ -2736,7 +2736,8 @@ case class OracleAnnouncementV1TLV(
   override def validateSignature: Boolean = {
     val hash =
       CryptoUtil.sha256DLCAnnouncementV1(eventTLV.bytes ++ metadata.bytes)
-    announcementPublicKey.verify(hash, announcementSignature)
+    announcementPublicKey.verify(hash, announcementSignature) &&
+    metadata.verifySignature
   }
 
   override val bytes: ByteVector = {
@@ -2927,9 +2928,9 @@ case class OracleMetadata(
     extends DLCPlainType {
   //renable this when we figure out where we and rust-dlc
   //diverge on signatures
-  //require(
-  //  verifyMetadataSignature,
-  //  s"Invalid metadata signature for oracle metadata, oracleName=$oracleName description=$oracleDescription")
+  require(
+    verifySignature,
+    s"Invalid metadata signature for oracle metadata, oracleName=$oracleName description=$oracleDescription")
 
   val attestationPublicKey: SchnorrPublicKey = attestations.attestationPublicKey
 
@@ -2939,7 +2940,7 @@ case class OracleMetadata(
       attestations.bytes ++ metadataSignature.bytes
   }
 
-  def verifyMetadataSignature: Boolean = {
+  def verifySignature: Boolean = {
     val bytes = oracleName.bytes ++
       oracleDescription.bytes ++
       creationTime.bytes ++
