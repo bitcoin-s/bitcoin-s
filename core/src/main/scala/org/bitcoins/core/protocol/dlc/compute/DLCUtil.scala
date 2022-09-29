@@ -7,15 +7,18 @@ import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCAcceptWithoutSigs, DLCOffer}
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
+  DLCAccept,
+  DLCAcceptWithoutSigs,
+  DLCOffer
+}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.tlv.{SchnorrAttestationTLV}
 import org.bitcoins.core.protocol.tlv.{
   OracleAttestmentTLV,
   OracleAttestmentV0TLV,
-  BaseOracleAnnouncement,
-  OracleEventV0TLV
+  BaseOracleAnnouncement
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
@@ -259,15 +262,9 @@ object DLCUtil {
   def matchOracleSignatures(
       announcements: Vector[BaseOracleAnnouncement],
       oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+    //is this right?
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
-      announcements
-        .map { ann =>
-          ann.eventTLV match {
-            case v0: OracleEventV0TLV =>
-              v0.nonces
-          }
-        }
-        .map(_.toVector)
+      announcements.flatMap(_.nonces.map(_.toVector))
     }
     val resultOpt = oracleSignatures.find { case oracleSignature =>
       val oracleSigNonces: Vector[SchnorrNonce] =

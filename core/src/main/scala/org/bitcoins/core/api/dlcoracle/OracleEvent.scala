@@ -49,7 +49,7 @@ sealed trait OracleEvent {
                          timestamps = timestamps)
       case tlv: EventDescriptorTLV =>
         require(eventDbsOpt.isDefined,
-          s"Event dbs must be defined to figure out ordering of nonces")
+                s"Event dbs must be defined to figure out ordering of nonces")
         val v0NonceOrder = eventDbsOpt.get.sortBy(_.nonceIndex).map(_.nonce)
         OracleEventV0TLV(v0NonceOrder,
                          UInt32(maturationTime.getEpochSecond),
@@ -105,7 +105,7 @@ sealed trait CompletedOracleEvent extends OracleEvent {
           .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
         OracleAttestmentV0TLV(eventName,
                               pubkey,
-          unsorted,
+                              unsorted,
                               outcomes.map(_.outcomeString))
       case _: OracleAnnouncementV1TLV =>
         SchnorrAttestationTLV(eventId = eventName,
@@ -262,7 +262,8 @@ object OracleEvent {
           maturationTime = announcementV1.eventTLV.maturation,
           announcementSignature = announcementV1.announcementSignature,
           eventDescriptorTLV = enum,
-          metadataOpt = Some(announcementV1.metadata)
+          metadataOpt = Some(announcementV1.metadata),
+          eventDbsOpt = None
         )
       case numeric: NumericEventDescriptorDLCType =>
         PendingDigitDecompositionV0OracleEvent(
@@ -273,7 +274,8 @@ object OracleEvent {
           maturationTime = announcementV1.eventTLV.maturation,
           announcementSignature = announcementV1.announcementSignature,
           eventDescriptorTLV = numeric,
-          metadataOpt = Some(announcementV1.metadata)
+          metadataOpt = Some(announcementV1.metadata),
+          eventDbsOpt = None
         )
     }
   }
@@ -293,7 +295,8 @@ object OracleEvent {
           eventDescriptorTLV = enum,
           metadataOpt = Some(announcementV1.metadata),
           outcome = EnumAttestation(attestation.outcomes.head),
-          attestation = attestation.sigs.head.sig
+          attestation = attestation.sigs.head.sig,
+          eventDbsOpt = None
         )
       case decomp: NumericEventDescriptorDLCType =>
         val numericOutcome = decomp match {
@@ -319,7 +322,8 @@ object OracleEvent {
           eventDescriptorTLV = decomp,
           metadataOpt = Some(announcementV1.metadata),
           dlcOutcome = numericOutcome,
-          attestations = attestation.sigs.map(_.sig).toVector
+          attestations = attestation.sigs.map(_.sig).toVector,
+          eventDbsOpt = None
         )
     }
   }
@@ -361,15 +365,17 @@ object OracleEvent {
     eventDb.eventDescriptorTLV match {
       case enum: BaseEnumEventDescriptor =>
         require(eventDbs.size == 1, "Enum events may only have one eventDb")
-        PendingEnumV0OracleEvent(eventDb.pubkey,
-                                 eventDb.nonce,
-                                 eventDb.eventName,
-                                 eventDb.signingVersion,
-                                 eventDb.maturationTime,
-                                 eventDb.announcementSignature,
-                                 enum,
-                                 metadataOpt,
-          Some(eventDbs))
+        PendingEnumV0OracleEvent(
+          eventDb.pubkey,
+          eventDb.nonce,
+          eventDb.eventName,
+          eventDb.signingVersion,
+          eventDb.maturationTime,
+          eventDb.announcementSignature,
+          enum,
+          metadataOpt,
+          Some(eventDbs)
+        )
 
       case decomp: BaseNumericEventDescriptorTLV =>
         require(eventDbs.forall(_.attestationOpt.isEmpty),
@@ -517,8 +523,8 @@ object OracleEvent {
     val nonces = announcementV1TLV.nonces.head
     verifyAttestationHelper(
       tlvOutcomes = tlvOutcomes,
-      attestations = attestations,
-      nonces = nonces,
+      attestations = attestations.toVector,
+      nonces = nonces.toVector,
       announcement = announcementV1TLV,
       attestationPubKey = announcementV1TLV.metadata.attestationPublicKey,
       signingVersion = signingVersion
@@ -527,8 +533,8 @@ object OracleEvent {
 
   private def verifyAttestationHelper(
       tlvOutcomes: Vector[NormalizedString],
-      attestations: OrderedSchnorrSignatures,
-      nonces: OrderedNonces,
+      attestations: Vector[SchnorrDigitalSignature],
+      nonces: Vector[SchnorrNonce],
       announcement: BaseOracleAnnouncement,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {
@@ -572,7 +578,7 @@ object OracleEvent {
 
   private def verifyEnumAttestation(
       tlvOutcomes: Vector[NormalizedString],
-      attestations: OrderedSchnorrSignatures,
+      attestations: Vector[SchnorrDigitalSignature],
       enumEventDescriptor: BaseEnumEventDescriptor,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {
@@ -589,7 +595,7 @@ object OracleEvent {
 
   private def verifyDigitDecompAttestation(
       tlvOutcomes: Vector[NormalizedString],
-      attestations: OrderedSchnorrSignatures,
+      attestations: Vector[SchnorrDigitalSignature],
       dd: BaseNumericEventDescriptorTLV,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {

@@ -1942,7 +1942,7 @@ object Picklers {
     val orderedNonces = OrderedNonces(nonces)
 
     OracleEventV0TLV(
-      nonces = orderedNonces,
+      nonces = orderedNonces.toVector,
       eventMaturityEpoch = UInt32(eventMaturityEpoch),
       eventDescriptor = eventDescriptor,
       eventId = eventId

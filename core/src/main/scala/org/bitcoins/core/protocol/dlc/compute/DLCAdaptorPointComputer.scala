@@ -7,7 +7,6 @@ import org.bitcoins.core.protocol.dlc.models.{
 }
 import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
-  OracleEventV0TLV,
   SignedNumericOutcome,
   UnsignedNumericOutcome
 }
@@ -138,10 +137,6 @@ object DLCAdaptorPointComputer {
       contractInfo.oracleInfo.singleOracleInfos.map { info =>
         val announcement = info.announcement
         val pubKey = announcement.announcementPublicKey
-        val nonces = announcement.eventTLV match {
-          case v0: OracleEventV0TLV =>
-            v0.nonces.map(_.publicKey)
-        }
 
         val nonces: Vector[ECPublicKey] = announcement.nonces
           .flatMap(_.toVector.map(_.publicKey))

@@ -10,7 +10,6 @@ import org.bitcoins.core.number.{Int32, UInt8}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.tlv.{
   NormalizedString,
-  OracleAnnouncementV0TLV,
   OracleAnnouncementV1TLV,
   OracleAttestmentTLV
 }
@@ -178,7 +177,7 @@ class OracleRoutesSpec
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"${OracleAnnouncementV0TLV.dummy.hex}","error":null}""")
+          String] == s"""{"result":"${OracleAnnouncementV1TLV.dummy.hex}","error":null}""")
       }
     }
 
@@ -197,7 +196,7 @@ class OracleRoutesSpec
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"${OracleAnnouncementV0TLV.dummy.hex}","error":null}""")
+          String] == s"""{"result":"${OracleAnnouncementV1TLV.dummy.hex}","error":null}""")
       }
     }
 
@@ -232,7 +231,7 @@ class OracleRoutesSpec
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"${OracleAnnouncementV0TLV.dummy.hex}","error":null}""")
+          String] == s"""{"result":"${OracleAnnouncementV1TLV.dummy.hex}","error":null}""")
       }
     }
 
@@ -267,7 +266,7 @@ class OracleRoutesSpec
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"${OracleAnnouncementV0TLV.dummy.hex}","error":null}""")
+          String] == s"""{"result":"${OracleAnnouncementV1TLV.dummy.hex}","error":null}""")
       }
     }
 
@@ -303,7 +302,7 @@ class OracleRoutesSpec
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":"${OracleAnnouncementV0TLV.dummy.hex}","error":null}""")
+          String] == s"""{"result":"${OracleAnnouncementV1TLV.dummy.hex}","error":null}""")
       }
     }
 

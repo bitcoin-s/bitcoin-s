@@ -155,7 +155,7 @@ case class OracleDataManagement(daos: DLCOracleDAOs)(implicit
               //nonces may be out of order for the databases
               val sortedNonceSignatures = sortNonces(
                 nonceSignatureDbs = nonceSignatures,
-                nonces = v1.nonces.head
+                nonces = OrderedNonces(v1.nonces.head)
               )
               SchnorrAttestation.fromAnnouncementAndNonceSignatures(
                 v1,

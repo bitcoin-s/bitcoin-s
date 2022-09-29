@@ -419,7 +419,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
           .toVector
     } yield rValueDbs
 
-
     val metadataF: Future[OracleMetadata] = for {
       rValues <- rValueDbsF
       nonces = OrderedNonces.fromUnsorted(rValues.map(_.nonce))
@@ -690,16 +689,16 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   private def signDigitsV1Announcement(
       announcementV1: OracleAnnouncementV1TLV,
       num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
-    signNumericAnnouncement(announcement = announcementV1,
-                            num = num,
-                            nonces =
-                              announcementV1.metadata.attestations.nonces)
+    signNumericAnnouncement(
+      announcement = announcementV1,
+      num = num,
+      nonces = announcementV1.metadata.attestations.nonces.toVector)
   }
 
   private def signNumericAnnouncement(
       announcement: BaseOracleAnnouncement,
       num: Long,
-      nonces: OrderedNonces): Future[
+      nonces: Vector[SchnorrNonce]): Future[
     CompletedDigitDecompositionV0OracleEvent] = {
     val oracleEventV0TLV = announcement.eventTLV
 
@@ -740,13 +739,13 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                           eventDescriptorTLV.base.toInt,
                                           eventDescriptorTLV.numDigits.toInt)
 
-    val digitNonces: OrderedNonces = eventDescriptorTLV match {
+    val digitNonces: Vector[SchnorrNonce] = eventDescriptorTLV match {
       case _: UnsignedDigitDecompositionEventDescriptor |
           _: UnsignedDigitDecompositionEventDescriptorDLCType =>
         nonces
       case _: SignedDigitDecompositionEventDescriptor |
           _: SignedDigitDecompositionEventDescriptorDLCType =>
-        OrderedNonces(nonces.tail.toVector)
+        nonces.tail
     }
 
     val digitSigAVecF: Future[Vector[
@@ -755,7 +754,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         digitNonces.zipWithIndex.map { case (nonce, index) =>
           val digit = decomposed(index)
           createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
-        }.toVector
+        }
       }
     val digitSigAF: Future[DBIOAction[
       Vector[FieldElement],

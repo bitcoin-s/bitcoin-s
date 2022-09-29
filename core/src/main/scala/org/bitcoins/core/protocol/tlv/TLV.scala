@@ -817,6 +817,7 @@ case class OracleEventV0TLV(
   )
 
   override val tpe: BigSizeUInt = OracleEventV0TLV.tpe
+
   /** Gets the maturation of the event since epoch */
   def maturation: Instant = {
     Instant.ofEpochSecond(eventMaturityEpoch.toLong)
@@ -841,7 +842,7 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
       ordered: OrderedNonces,
       eventDescriptorTLV: EventDescriptorTLV): OracleEventV0TLV = {
     OracleEventV0TLV(
-      nonces = ordered,
+      nonces = ordered.toVector,
       eventMaturityEpoch = UInt32.zero,
       eventDescriptor = eventDescriptorTLV,
       eventId = "dummy"
@@ -852,7 +853,7 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
     val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
       "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
     OracleEventV0TLV(
-      nonces = OrderedNonces(Vector(dummyPrivKey.schnorrNonce)),
+      nonces = Vector(dummyPrivKey.schnorrNonce),
       eventMaturityEpoch = UInt32.zero,
       eventDescriptor = EnumEventDescriptorV0TLV.dummy,
       eventId = "dummy"
@@ -895,7 +896,10 @@ sealed trait BaseOracleAnnouncement extends NetworkElement {
 
   def validateSignature: Boolean
 
-  def nonces: Vector[OrderedNonces]
+  /** Unfortuantely we cannot used [[OrderedNonces]] here because v0 announcements
+    * may not have their nonces sorted.
+    */
+  def nonces: Vector[Vector[SchnorrNonce]]
 
   def sha256: Sha256Digest
 }
@@ -930,7 +934,7 @@ case class OracleAnnouncementV0TLV(
                                  announcementSignature)
   }
 
-  override val nonces: Vector[OrderedNonces] = {
+  override val nonces: Vector[Vector[SchnorrNonce]] = {
     Vector(eventTLV.nonces)
   }
 }
@@ -982,7 +986,9 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
                                                                  nonces.length,
                                                                  "dummy",
                                                                  Int32.zero)
-    val event = OracleEventV0TLV.buildDummy(nonces.toVector, eventDescriptor)
+    val event = OracleEventV0TLV.buildDummy(
+      OrderedNonces.fromUnsorted(nonces.toVector),
+      eventDescriptor)
     val sig =
       privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
@@ -2737,9 +2743,8 @@ case class OracleAnnouncementV1TLV(
     announcementSignature.bytes ++ metadata.bytes ++ eventTLV.bytes
   }
 
-  override val nonces: Vector[OrderedNonces] = {
-    //is this right? Comeback and look at this
-    Vector(metadata.attestations.nonces)
+  override val nonces: Vector[Vector[SchnorrNonce]] = {
+    Vector(metadata.attestations.nonces.toVector)
   }
 
   /** Flattened nonces, no longer distinguished based on announcement */

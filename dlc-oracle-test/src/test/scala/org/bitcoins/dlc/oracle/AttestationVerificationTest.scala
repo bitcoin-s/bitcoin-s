@@ -58,20 +58,6 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
     OracleAttestmentV0TLV(
       "fdd868fd012f0474657374c22db0a9b26f825ccff38cd776103c952c5ede3fc5da3a69770d446011ac126f00049ef0f2b1e7befd3840b4ae6b9f690c6ed42ba9fcddbcde1a7ee91732d63b802ec8230d8b4f0c926fa79dd4d24dcda5487c6e4957f4b208811baa11fde9849dddc1e88c69f414e1b47db730ccd4ec1f6e2049e5ce7d569b9dc42263503efb85ed08bfb84dab00ad7f1d1c07eb8e1559ba0c700e88f7387e936883fe77b406efb560cbb1d5d42b28d571ef9cb37dba9927a65c819742267862d88acd50a276ad9a1b25f23a7c49150f83f6b241a5b6b0f91951f285853452ae05ea5f7e8f3846a5624b05aa3829dc181f785f31a0450299a972cc0eb44384529ef30a9a17c0f2aa593b017b084ea40c7f364e5235c9a27f659dc2cfa689e0aa80f4a4cacd4d4de10131013101300130")
 
-  val unsignedDigitDecompAnnouncement: OracleAnnouncementV0TLV =
-    signedDigitDecompAnnouncement
-
-  val validUnsignedDigitDecompAttestation: OracleAttestmentV0TLV =
-    validSignedDigitDecompAttestation
-
-  // this one was generated with the same public key
-  val invalidUnsignedDigitDecompAttestation: OracleAttestmentV0TLV = {
-    val unsorted = validUnsignedDigitDecompAttestation.sigs.map(
-      _.copy(sig = FieldElement.one))
-    val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
-    validUnsignedDigitDecompAttestation.copy(sigs = sorted)
-  }
-
   val invalidSignedDigitDecompAttestation: OracleAttestmentV0TLV = {
     val unsorted =
       validSignedDigitDecompAttestation.sigs.map(_.copy(sig = FieldElement.one))

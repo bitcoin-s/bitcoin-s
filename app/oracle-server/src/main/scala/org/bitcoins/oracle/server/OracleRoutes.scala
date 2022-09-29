@@ -22,8 +22,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
   import system.dispatcher
 
   override def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
-    //change from 'getpublickey' -> 'getannouncementpublickey'
-    case ServerCommand("getpublickey", _) =>
+    case ServerCommand("getannouncementpublickey", _) =>
       complete {
         Server.httpSuccess(oracle.announcementPublicKey().hex)
       }
