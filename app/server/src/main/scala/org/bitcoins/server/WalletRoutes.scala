@@ -400,7 +400,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             }
 
             offerF.map { offer =>
-              Server.httpSuccess(offer.toMessage.hex)
+              val msg = offer.toMessage
+              Server.httpSuccess(msg.hex)
             }
           }
       }

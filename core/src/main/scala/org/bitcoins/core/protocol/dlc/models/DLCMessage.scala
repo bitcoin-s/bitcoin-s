@@ -119,7 +119,7 @@ object DLCMessage {
       val chainHash =
         changeAddress.networkParameters.chainParams.genesisBlock.blockHeader.hash
 
-      DLCOfferTLV(
+      val tlv = DLCOfferTLV(
         protocolVersionOpt = protocolVersionOpt,
         contractFlags = 0x00,
         chainHash = chainHash,
@@ -146,6 +146,8 @@ object DLCMessage {
         contractMaturityBound = timeouts.contractMaturity,
         contractTimeout = timeouts.contractTimeout
       )
+
+      tlv
     }
 
     def toMessage: LnMessage[DLCOfferTLV] = {

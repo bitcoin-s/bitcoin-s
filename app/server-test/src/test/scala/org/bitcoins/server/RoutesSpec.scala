@@ -960,8 +960,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val fundingInput: DLCFundingInputP2WPKHV0 =
       DLCFundingInputP2WPKHV0(UInt64.zero, wtx, UInt32.zero, UInt32.zero)
 
-    val announcementTLV = OracleAnnouncementV0TLV(
-      "fdd824fd0118c6a52b0901a23fe7d2febbb492e66d4cd4783483aeec1cae374c3e8e6bf779dc471104aa249f7904732d0a87e9c6aa51ff5705cf46b41bc2d55d83ad1fac998ae096a7f99df21b4a43eb92b07110dbab3aa53c81b9ba08755653512ac5246a09fdd822b40001aec3c6498dfedb0db322644e97be338417f5a552c4487b037130bf19f01a069b00000000fdd806840002406666626263646538333663656534333761326661346566376462316561336437396361373163306338323164326131393764646135316263363533346635363240653737306634326335373830383461346130393663653130383566376665353038663864393038643263356536653330346232633365616239626339373365610564756d6d79")
+    val announcementTLV: OracleAnnouncementV1TLV = {
+      OracleAnnouncementV1TLV.dummyForEventsAndKeys(
+        privKey = dummyKey,
+        nonce = ECPrivateKey.freshPrivateKey.schnorrNonce,
+        events = Vector(contractInfoDigests.head, contractInfoDigests.last).map(
+          EnumOutcome(_)))
+    }
 
     val oracleInfo = EnumSingleOracleInfo(announcementTLV)
 
@@ -1021,7 +1026,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           None
         )
         .returning(Future.successful(offer))
-
       val route = walletRoutes.handleCommand(
         ServerCommand(
           "createdlcoffer",
@@ -1033,7 +1037,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Num(contractTimeout)
           )
         ))
-
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] == s"""{"result":"${LnMessage(
