@@ -134,7 +134,7 @@ trait TLVGen {
         Gen
           .listOfN(desc.noncesNeeded, CryptoGenerators.schnorrNonce)
           .map(_.toVector)
-    } yield OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces),
+    } yield OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces).toVector,
                              maturity,
                              desc,
                              uri)
@@ -162,7 +162,7 @@ trait TLVGen {
         Gen
           .listOfN(numSigs, StringGenerators.genUTF8String)
           .map(_.toVector)
-    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes)
+    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs.toVector, outcomes)
   }
 
   def contractDescriptorV0TLVWithTotalCollateral: Gen[

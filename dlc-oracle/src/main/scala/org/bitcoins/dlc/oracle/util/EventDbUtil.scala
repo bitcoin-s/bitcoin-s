@@ -2,9 +2,9 @@ package org.bitcoins.dlc.oracle.util
 
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
-import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.OrderedNonces
+import org.bitcoins.crypto.SchnorrNonce
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 
 trait EventDbUtil {
 
@@ -13,7 +13,9 @@ trait EventDbUtil {
     */
   def toEventOutcomeDbs(
       descriptor: EventDescriptorTLV,
-      nonces: OrderedNonces,
+      nonces: Vector[
+        SchnorrNonce
+      ], //ugh, can we enforce some sort of invariant here? can i make this method private?
       signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
     descriptor match {
       case enum: EnumEventDescriptorV0TLV =>
@@ -59,9 +61,12 @@ trait EventDbUtil {
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventOutcomeDb] = {
+    val oracleEventV0 = oracleAnnouncementV0TLV.eventTLV match {
+      case v0: OracleEventV0TLV => v0
+    }
     toEventOutcomeDbs(descriptor =
                         oracleAnnouncementV0TLV.eventTLV.eventDescriptor,
-                      nonces = oracleAnnouncementV0TLV.eventTLV.nonces,
+                      nonces = oracleEventV0.nonces,
                       signingVersion = signingVersion)
   }
 

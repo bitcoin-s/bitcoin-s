@@ -37,7 +37,7 @@ sealed trait OracleEvent {
   def eventDescriptorTLV: EventDescriptorTLV
 
   def eventTLV: OracleEventTLV =
-    OracleEventV0TLV(nonces,
+    OracleEventV0TLV(nonces.toVector,
                      UInt32(maturationTime.getEpochSecond),
                      eventDescriptorTLV,
                      eventName)
@@ -67,11 +67,22 @@ sealed trait CompletedOracleEvent extends OracleEvent {
     OrderedSchnorrSignatures.fromUnsorted(unsorted)
   }
 
-  def oracleAttestmentV0TLV: OracleAttestmentV0TLV =
-    OracleAttestmentV0TLV(eventName,
-                          pubkey,
-                          signatures,
-                          outcomes.map(_.outcomeString))
+  def oracleAttestmentV0TLV: OracleAttestmentV0TLV = {
+
+    announcementTLV match {
+      case _: OracleAnnouncementV0TLV =>
+        //v0 announcements do not have a invariant stating that nonces neeed to be sorted
+        //a specific way, so we need to use the unsorted variant to make sure
+        //announcementSignatures evaluate to true
+        val unsorted = nonces.toVector
+          .zip(attestations)
+          .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
+        OracleAttestmentV0TLV(eventName,
+                              pubkey,
+                              unsorted,
+                              outcomes.map(_.outcomeString))
+    }
+  }
 
   def outcomes: Vector[DLCAttestationType]
 
@@ -148,10 +159,12 @@ case class CompletedDigitDecompositionV0OracleEvent(
     extends CompletedOracleEvent
     with DigitDecompositionV0OracleEvent {
 
-  require(OracleEvent.verifyAttestations(announcementTLV,
-                                         oracleAttestmentV0TLV,
-                                         signingVersion),
-          "Signatures given are invalid")
+  require(
+    OracleEvent.verifyAttestations(announcementTLV,
+                                   oracleAttestmentV0TLV,
+                                   signingVersion),
+    s"Signatures given are invalid for eventId=${announcementTLV.eventTLV.eventId}"
+  )
 
   val outcomeBase10: Long = {
     val (digits, positive) = dlcOutcome match {
@@ -230,7 +243,6 @@ object OracleEvent {
             }
             UnsignedNumericOutcome(digits)
         }
-
         CompletedDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
           OrderedNonces.fromUnsorted(sortedEventDbs.map(_.nonce)),
@@ -267,8 +279,14 @@ object OracleEvent {
       attestationTLV: OracleAttestmentTLV,
       signingVersion: SigningVersion): Boolean = {
     val tlvOutcomes = attestationTLV.outcomes
-    val attestations = attestationTLV.sigs
-    val nonces = announcement.eventTLV.nonces
+    val attestations = attestationTLV match {
+      case v0: OracleAttestmentV0TLV =>
+        v0.unsortedSignatures
+    }
+    val nonces = announcement.eventTLV match {
+      case v0: OracleEventV0TLV =>
+        v0.nonces
+    }
     if (
       announcement.publicKey != attestationTLV.publicKey ||
       nonces.size != attestations.size ||

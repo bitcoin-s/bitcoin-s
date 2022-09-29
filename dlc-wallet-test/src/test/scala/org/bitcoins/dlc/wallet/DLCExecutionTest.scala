@@ -16,7 +16,6 @@ import org.bitcoins.core.protocol.dlc.models.{
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -458,11 +457,12 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         //of invariants in OracleAttestmentV0TLV
         badSigs = goodAttestment.sigs.dropRight(1)
         badOutcomes = goodAttestment.outcomes.dropRight(1)
-        badAttestment = OracleAttestmentV0TLV(
-          eventId = goodAttestment.eventId,
-          publicKey = goodAttestment.publicKey,
-          sigs = OrderedSchnorrSignatures.fromUnsorted(badSigs.toVector),
-          outcomes = badOutcomes)
+        badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
+                                              publicKey =
+                                                goodAttestment.publicKey,
+                                              unsortedSignatures =
+                                                badSigs.toVector,
+                                              outcomes = badOutcomes)
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, badAttestment).map(_.get)
 

@@ -138,8 +138,7 @@ object DLCExecutor {
   ): ExecutedDLCOutcome = {
     require(
       DLCUtil.checkOracleSignaturesAgainstContract(contractInfo, oracleSigs),
-      s"Incorrect oracle signatures and contract combination, got=${oracleSigs} contractInfo.announcement=${contractInfo.oracleInfos
-        .map(_.singleOracleInfos.map(_.announcement.eventTLV.nonces))}"
+      s"Incorrect oracle signatures and contract combination, got=${oracleSigs}"
     )
     val sigOracles = oracleSigs.map(_.oracle)
 

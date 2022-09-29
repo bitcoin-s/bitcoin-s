@@ -25,8 +25,7 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
 
   val invalidEnumAttestation: OracleAttestmentV0TLV = {
     val unsorted = validEnumAttestation.sigs.map(_.copy(sig = FieldElement.one))
-    validEnumAttestation.copy(sigs =
-      OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector))
+    validEnumAttestation.copy(unsortedSignatures = unsorted.toVector)
   }
 
   val unsignedDigitDecompAnnouncement: OracleAnnouncementV0TLV =
@@ -42,7 +41,8 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
     val unsorted = validUnsignedDigitDecompAttestation.sigs.map(
       _.copy(sig = FieldElement.one))
     val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
-    validUnsignedDigitDecompAttestation.copy(sigs = sorted)
+    validUnsignedDigitDecompAttestation.copy(unsortedSignatures =
+      sorted.toVector)
   }
 
   // this one was generated with a different public key
@@ -62,7 +62,7 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
     val unsorted =
       validSignedDigitDecompAttestation.sigs.map(_.copy(sig = FieldElement.one))
     val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
-    validSignedDigitDecompAttestation.copy(sigs = sorted)
+    validSignedDigitDecompAttestation.copy(unsortedSignatures = sorted.toVector)
   }
 
   val invalidSignedDigitDecompAttestation1: OracleAttestmentV0TLV =

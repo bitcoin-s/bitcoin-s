@@ -253,10 +253,11 @@ class DLCMultiOracleNumericExecutionTest
 
         require(kValues.length == sigs.length,
                 s"kValues.length=${kValues.length} sigs.length=${sigs.length}")
-        OracleAttestmentV0TLV(eventId,
-                              priv.schnorrPublicKey,
-                              OrderedSchnorrSignatures.fromUnsorted(sigs),
-                              digitsPadded.map(_.toString))
+        OracleAttestmentV0TLV(
+          eventId,
+          priv.schnorrPublicKey,
+          OrderedSchnorrSignatures.fromUnsorted(sigs).toVector,
+          digitsPadded.map(_.toString))
       }
     }
   }
