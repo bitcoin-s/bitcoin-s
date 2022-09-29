@@ -191,26 +191,13 @@ object TLV extends TLVParentFactory[TLV] {
       PaymentDataTLV,
       PingTLV,
       PongTLV,
-      //OracleEventV0TLV,
-//      RoundingIntervalsV0TLV,
-//      PayoutFunctionV0TLV,
-//      OracleParamsV0TLV,
-      //ContractInfoV0TLV,
-      //FundingInputV0TLV,
-      //CETSignaturesV0TLV,
-//      FundingSignaturesV0TLV,
       DLCOfferTLV,
       DLCAcceptTLV,
       DLCSignTLV,
       SendOfferTLV
     ) ++ EventDescriptorTLV.allFactories ++
-      //PayoutCurvePieceTLV.allFactories ++
-      //ContractDescriptorTLV.allFactories ++
-      //ContractDescriptorTLV.allFactories ++
-      //OracleInfoTLV.allFactories ++
       OracleAnnouncementTLV.allFactories ++
-      OracleAttestmentTLV.allFactories //++
-//      NegotiationFieldsTLV.allFactories
+      OracleAttestmentTLV.allFactories
   }
 
   def getTypeName(tpe: BigSizeUInt): String = {

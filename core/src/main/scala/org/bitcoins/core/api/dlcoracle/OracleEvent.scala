@@ -538,7 +538,17 @@ object OracleEvent {
       announcement: BaseOracleAnnouncement,
       attestationPubKey: SchnorrPublicKey,
       signingVersion: SigningVersion): Boolean = {
+    val isCorrectAttestationPubKey = {
+      announcement match {
+        case v0: OracleAnnouncementV0TLV =>
+          v0.announcementPublicKey == attestationPubKey
+        case v1: OracleAnnouncementV1TLV =>
+          v1.metadata.attestationPublicKey == attestationPubKey
+      }
+    }
+
     if (
+      !isCorrectAttestationPubKey ||
       nonces.size != attestations.size ||
       nonces != attestations.map(_.rx)
     ) {

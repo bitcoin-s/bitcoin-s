@@ -176,7 +176,6 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs)(implicit
     Vector[NonceSignaturePairDbShim],
     NoStream,
     Effect.Write with Effect.Read] = {
-    //todo: Comeback and update outcome here?
     val updateAction: DBIOAction[
       Vector[NonceSignaturePairDbShim],
       NoStream,

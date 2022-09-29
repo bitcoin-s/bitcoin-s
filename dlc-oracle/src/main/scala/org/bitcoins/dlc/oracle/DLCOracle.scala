@@ -343,8 +343,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
           }
         }
 
-        //note: this only gets the first name for now
-        //probably should come back and get rid of this
+        //fine to only grab 1 as we enforce database
+        //invariants that say announcements are unique by event name
         oracleEventOptF.map(_.headOption)
       }
     }
