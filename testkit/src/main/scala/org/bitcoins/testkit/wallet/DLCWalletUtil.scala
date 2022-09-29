@@ -21,7 +21,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.core.util.sorted.{OrderedNonces, OrderedSchnorrSignatures}
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -514,11 +514,11 @@ object DLCWalletUtil extends Logging {
 
     (OracleAttestmentV0TLV(eventId,
                            publicKey,
-                           OrderedSchnorrSignatures(initiatorWinSig),
+                           Vector(initiatorWinSig),
                            Vector(initiatorWinStr)),
      OracleAttestmentV0TLV(eventId,
                            publicKey,
-                           OrderedSchnorrSignatures(recipientWinSig),
+                           Vector(recipientWinSig),
                            Vector(recipientWinStr)))
   }
 

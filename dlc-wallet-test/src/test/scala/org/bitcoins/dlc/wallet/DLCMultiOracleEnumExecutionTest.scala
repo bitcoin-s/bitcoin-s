@@ -80,7 +80,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       val initiatorWinSig = priv.schnorrSignWithNonce(hash, kValue)
       OracleAttestmentV0TLV(eventId,
                             priv.schnorrPublicKey,
-                            OrderedSchnorrSignatures(initiatorWinSig),
+                            OrderedSchnorrSignatures(initiatorWinSig).toVector,
                             Vector(initiatorWinStr))
     }
 
@@ -101,7 +101,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       val recipientWinSig = priv.schnorrSignWithNonce(hash, kValue)
       OracleAttestmentV0TLV(eventId,
                             priv.schnorrPublicKey,
-                            OrderedSchnorrSignatures(recipientWinSig),
+                            OrderedSchnorrSignatures(recipientWinSig).toVector,
                             Vector(recipientWinStr))
     }
 

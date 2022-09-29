@@ -79,11 +79,11 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
 
     (OracleAttestmentV0TLV(eventId,
                            publicKey,
-                           OrderedSchnorrSignatures(initiatorWinSigs),
+                           OrderedSchnorrSignatures(initiatorWinSigs).toVector,
                            initiatorWinVec.map(_.toString)),
      OracleAttestmentV0TLV(eventId,
                            publicKey,
-                           OrderedSchnorrSignatures(recipientWinSigs),
+                           OrderedSchnorrSignatures(recipientWinSigs).toVector,
                            recipientWinVec.map(_.toString)))
   }
 
@@ -182,7 +182,8 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
         badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
                                               publicKey =
                                                 goodAttestment.publicKey,
-                                              sigs = badSigs,
+                                              unsortedSignatures =
+                                                badSigs.toVector,
                                               outcomes = badOutcomes)
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, badAttestment).map(_.get)

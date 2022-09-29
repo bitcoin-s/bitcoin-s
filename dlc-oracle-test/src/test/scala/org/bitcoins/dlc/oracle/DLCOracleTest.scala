@@ -11,7 +11,6 @@ import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
 import org.bitcoins.testkitcore.Implicits._
@@ -242,7 +241,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.maturationTime.getEpochSecond == time.getEpochSecond)
 
         val expectedEventTLV =
-          OracleEventV0TLV(OrderedNonces(event.nonces.head),
+          OracleEventV0TLV(event.nonces.toVector,
                            UInt32(event.maturationTime.getEpochSecond),
                            testDescriptor,
                            eventName)
@@ -560,7 +559,11 @@ class DLCOracleTest extends DLCOracleFixture {
       _ = assert(beforeEvents.size == 1)
       _ = assert(beforeEvents.head.isInstanceOf[PendingOracleEvent])
 
-      nonce = announcement.eventTLV.nonces.head
+      nonce = {
+        announcement.eventTLV match {
+          case v0: OracleEventV0TLV => v0.nonces.head
+        }
+      }
 
       _ <- dlcOracle.createAttestation(nonce, EnumAttestation(outcome))
       afterPending <- dlcOracle.listPendingEventDbs()
@@ -589,7 +592,9 @@ class DLCOracleTest extends DLCOracleFixture {
                                                 futureTime,
                                                 enumOutcomes)
 
-          nonce = announcement.eventTLV.nonces.head
+          nonce = announcement.eventTLV match {
+            case v0: OracleEventV0TLV => v0.nonces.head
+          }
 
           _ <- dlcOracle.createAttestation(
             nonce,

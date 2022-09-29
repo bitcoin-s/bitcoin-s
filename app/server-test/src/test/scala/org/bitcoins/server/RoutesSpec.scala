@@ -936,7 +936,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val dummyOracleAttestment =
       OracleAttestmentV0TLV("eventId",
                             dummyPubKey.schnorrPublicKey,
-                            OrderedSchnorrSignatures(dummyOracleSig),
+                            OrderedSchnorrSignatures(dummyOracleSig).toVector,
                             Vector("outcome"))
 
     lazy val winStr: String = "WIN"
