@@ -103,7 +103,9 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     }
 
     f.failed.foreach { err =>
-      logger.error(s"Failed to send offer.tempContractId=${offerTLV.tempContractId}",err)
+      logger.error(
+        s"Failed to send offer.tempContractId=${offerTLV.tempContractId}",
+        err)
       config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId)
     }
 
@@ -195,7 +197,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       case Success(_) =>
         config.callBacks.executeOnPeerConnectionEstablished(peerAddress)
       case Failure(err) =>
-        logger.error(s"Failed to establish connect to peer=$peerAddress",err)
+        logger.error(s"Failed to establish connect to peer=$peerAddress", err)
         config.callBacks.executeOnPeerConnectionFailed(peerAddress)
     }
 
