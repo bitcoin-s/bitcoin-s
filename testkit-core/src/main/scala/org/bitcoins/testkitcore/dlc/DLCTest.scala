@@ -900,7 +900,7 @@ trait DLCTest {
                                        oraclePrivKeys(index),
                                        preCommittedKsPerOracle(index))
 
-      NumericOracleSignatures(singleOracleInfo, sigs)
+      NumericOracleSignaturesSorted(singleOracleInfo, sigs)
     }
   }
 
@@ -1191,7 +1191,9 @@ trait DLCTest {
         assert(oraclesAndOutcomes.length == oracleSigs.length)
 
         val sVals = oracleSigs.map {
-          case NumericOracleSignatures(oracle, sigs) =>
+          case numeric: NumericOracleSignatures =>
+            val oracle = numeric.oracle
+            val sigs = numeric.sigs
             val oracleAndOutcomeOpt = oraclesAndOutcomes.find(_._1 == oracle)
             assert(oracleAndOutcomeOpt.isDefined)
             val outcome = oracleAndOutcomeOpt.get._2
