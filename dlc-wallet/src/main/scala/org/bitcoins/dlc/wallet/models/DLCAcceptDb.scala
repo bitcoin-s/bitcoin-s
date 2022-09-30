@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.NegotiationFieldsTLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 case class DLCAcceptDb(
     dlcId: Sha256Digest,
@@ -18,7 +19,8 @@ case class DLCAcceptDb(
     collateral: CurrencyUnit,
     changeAddress: BitcoinAddress,
     changeSerialId: UInt64,
-    negotiationFieldsTLV: NegotiationFieldsTLV) {
+    negotiationFieldsTLV: NegotiationFieldsTLV,
+    contractId: ByteVector) {
 
   lazy val negotiationFields: NegotiationFields =
     NegotiationFields.fromTLV(negotiationFieldsTLV)
@@ -66,7 +68,10 @@ case class DLCAcceptDb(
 
 object DLCAcceptDbHelper {
 
-  def fromDLCAccept(id: Sha256Digest, accept: DLCAccept): DLCAcceptDb = {
+  def fromDLCAccept(
+      id: Sha256Digest,
+      accept: DLCAccept,
+      contractId: ByteVector): DLCAcceptDb = {
     DLCAcceptDb(
       id,
       accept.pubKeys.fundingKey,
@@ -75,7 +80,8 @@ object DLCAcceptDbHelper {
       accept.collateral,
       accept.changeAddress,
       accept.changeSerialId,
-      accept.negotiationFields.toTLV
+      accept.negotiationFields.toTLV,
+      contractId = contractId
     )
   }
 }

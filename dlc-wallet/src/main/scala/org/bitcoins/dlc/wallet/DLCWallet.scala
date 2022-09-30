@@ -577,7 +577,8 @@ abstract class DLCWallet
                                                  acceptWithoutSigs =
                                                    dlcAcceptWithoutSigs,
                                                  dlcPubKeys = dlcPubKeys,
-                                                 collateral = collateral)
+                                                 collateral = collateral,
+                                                 contractId = contractId)
           acceptInputs = fundRawTxHelper.scriptSigParams
             .zip(dlcAcceptWithoutSigs.fundingInputs)
             .zipWithIndex
@@ -910,7 +911,6 @@ abstract class DLCWallet
           s"DLC Offer contractId=${dlc.contractIdOpt.map(_.toHex)} dlcId=(${dlc.dlcId.hex}) found, adding accept data")
 
         val dlcId = dlc.dlcId
-        lazy val dlcAcceptDb = DLCAcceptDbHelper.fromDLCAccept(dlcId, accept)
         lazy val acceptInputs = accept.fundingInputs.zipWithIndex.map {
           case (funding, idx) =>
             DLCFundingInputDb(
@@ -955,27 +955,12 @@ abstract class DLCWallet
           _ = logger.debug(
             s"CET Signatures for tempContractId ${accept.tempContractId.hex} were valid, adding to database")
 
-          remoteTxUpsertAction = remoteTxDAO.upsertAllAction(acceptPrevTxs)
-          inputAction = dlcInputsDAO.upsertAllAction(acceptInputs)
-          sigsAction = dlcSigsDAO.upsertAllAction(sigsDbs)
-          refundSigAction = dlcRefundSigDAO.upsertAction(refundSigsDb)
-          acceptDbAction = dlcAcceptDAO.upsertAction(dlcAcceptDb)
-
-          actions = DBIO.sequence(
-            Vector(remoteTxUpsertAction,
-                   inputAction,
-                   sigsAction,
-                   refundSigAction,
-                   acceptDbAction))
-          _ <- safeDLCDatabase.run(actions)
-
           // .get is safe here because we must have an offer if we have a dlcDAO
           offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.head)
           offerInputs <-
             dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = true)
           prevTxs <-
             transactionDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
-
           contractData <- contractDataDAO.read(dlcId).map(_.get)
           (announcements, announcementData, nonceDbs) <- dlcDataManagement
             .getDLCAnnouncementDbs(dlcId)
@@ -991,8 +976,25 @@ abstract class DLCWallet
               DLCTxUtil.matchPrevTxsWithInputs(offerInputs, prevTxs),
               dlc,
               contractData)
-
           dlcDb <- updateDLCContractIds(offer, accept)
+
+          //safe since we updated the contractId above
+          dlcAcceptDb = DLCAcceptDbHelper.fromDLCAccept(dlcId,
+                                                        accept,
+                                                        dlcDb.contractIdOpt.get)
+          remoteTxUpsertAction = remoteTxDAO.upsertAllAction(acceptPrevTxs)
+          inputAction = dlcInputsDAO.upsertAllAction(acceptInputs)
+          sigsAction = dlcSigsDAO.upsertAllAction(sigsDbs)
+          refundSigAction = dlcRefundSigDAO.upsertAction(refundSigsDb)
+          acceptDbAction = dlcAcceptDAO.upsertAction(dlcAcceptDb)
+
+          actions = DBIO.sequence(
+            Vector(remoteTxUpsertAction,
+                   inputAction,
+                   sigsAction,
+                   refundSigAction,
+                   acceptDbAction))
+          _ <- safeDLCDatabase.run(actions)
 
           builder = DLCTxBuilder(offer, accept.withoutSigs)
           fundingTx = builder.buildFundingTx

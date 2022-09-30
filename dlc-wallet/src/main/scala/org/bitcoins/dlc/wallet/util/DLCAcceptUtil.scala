@@ -143,7 +143,8 @@ object DLCAcceptUtil extends Logging {
       dlc: DLCDb,
       acceptWithoutSigs: DLCAcceptWithoutSigs,
       dlcPubKeys: DLCPublicKeys,
-      collateral: CurrencyUnit): DLCAcceptDb = {
+      collateral: CurrencyUnit,
+      contractId: ByteVector): DLCAcceptDb = {
     DLCAcceptDb(
       dlcId = dlc.dlcId,
       fundingKey = dlcPubKeys.fundingKey,
@@ -152,7 +153,8 @@ object DLCAcceptUtil extends Logging {
       collateral = collateral,
       changeAddress = acceptWithoutSigs.changeAddress,
       changeSerialId = acceptWithoutSigs.changeSerialId,
-      negotiationFieldsTLV = NoNegotiationFields.toTLV
+      negotiationFieldsTLV = NoNegotiationFields.toTLV,
+      contractId = contractId
     )
   }
 
@@ -163,11 +165,11 @@ object DLCAcceptUtil extends Logging {
       dlcWalletDAOs: DLCWalletDAOs,
       transactionDAO: TransactionDAO)(implicit
       ec: ExecutionContext): Future[Option[DLCAccept]] = {
-    val resultNestedF: Future[Option[Future[DLCAccept]]] = for {
+    val resultNestedF: Future[Option[Future[Option[DLCAccept]]]] = for {
       dlcAcceptDbs <- dlcWalletDAOs.dlcAcceptDAO.findByDLCId(dlcId)
       dlcAcceptFOpt = {
         dlcAcceptDbs.headOption.map { case dlcAcceptDb =>
-          logger.debug(
+          logger.info(
             s"DLC Accept (${dlcId.hex}) has already been made, returning accept")
           for {
             fundingInputs <-
@@ -180,12 +182,19 @@ object DLCAcceptUtil extends Logging {
             val inputRefs =
               DLCTxUtil.matchPrevTxsWithInputs(fundingInputs, prevTxs)
 
-            dlcAcceptDb.toDLCAccept(offer.tempContractId,
-                                    inputRefs,
-                                    outcomeSigsDbs.map { db =>
-                                      db.sigPoint -> db.accepterSig
-                                    },
-                                    refundSigsDb.get.accepterSig)
+            val accept = dlcAcceptDb.toDLCAccept(offer.tempContractId,
+                                                 inputRefs,
+                                                 outcomeSigsDbs.map { db =>
+                                                   db.sigPoint -> db.accepterSig
+                                                 },
+                                                 refundSigsDb.get.accepterSig)
+
+            val recomputedContractId = DLCUtil.calcContractId(offer, accept)
+            if (recomputedContractId == dlcAcceptDb.contractId) {
+              Some(accept)
+            } else {
+              None
+            }
           }
         }
       }
@@ -194,7 +203,7 @@ object DLCAcceptUtil extends Logging {
     }
 
     resultNestedF.flatMap {
-      case Some(f) => f.map(Some(_))
+      case Some(f) => f
       case None    => Future.successful(None)
     }
   }

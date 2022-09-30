@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.tlv.NegotiationFieldsTLV
 import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
+import scodec.bits.ByteVector
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,6 +46,19 @@ case class DLCAcceptDAO()(implicit
       dlcs: Vector[DLCAcceptDb]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
+  def findByContractIdAction(contractId: ByteVector): DBIOAction[
+    Option[DLCAcceptDb],
+    NoStream,
+    Effect.Read] = {
+    val query = table.filter(_.contractId === contractId)
+    query.result.map(_.headOption)
+  }
+
+  def findByContractId(contractId: ByteVector): Future[Option[DLCAcceptDb]] = {
+    val action = findByContractIdAction(contractId)
+    safeDatabase.run(action)
+  }
+
   override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
     Vector[DLCAcceptDb],
     profile.api.NoStream,
@@ -81,6 +95,8 @@ case class DLCAcceptDAO()(implicit
     def negotiationFields: Rep[NegotiationFieldsTLV] = column(
       "negotiation_fields")
 
+    def contractId: Rep[ByteVector] = column("contract_id")
+
     def * : ProvenShape[DLCAcceptDb] =
       (dlcId,
        fundingPubKey,
@@ -89,7 +105,8 @@ case class DLCAcceptDAO()(implicit
        collateral,
        changeAddress,
        changeSerialId,
-       negotiationFields).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
+       negotiationFields,
+       contractId).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
       foreignKey("fk_dlc_id",
