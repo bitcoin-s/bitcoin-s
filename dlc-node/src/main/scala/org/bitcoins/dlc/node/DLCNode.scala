@@ -102,8 +102,10 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       offerTLV.tempContractId
     }
 
-    f.failed.foreach(_ =>
-      config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId))
+    f.failed.foreach { err =>
+      logger.error(s"Failed to send offer.tempContractId=${offerTLV.tempContractId}",err)
+      config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId)
+    }
 
     f
   }
@@ -173,13 +175,14 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   private def connectToPeer(
       peerAddress: InetSocketAddress): Future[ActorRef] = {
-    config.callBacks.executeOnPeerConnectionInitiated(peerAddress)
+
     val peer =
       Peer(socket = peerAddress, socks5ProxyParams = config.socks5ProxyParams)
 
     val handlerP = Promise[ActorRef]()
 
     val f = for {
+      _ <- config.callBacks.executeOnPeerConnectionInitiated(peerAddress)
       _ <- DLCClient.connect(peer,
                              wallet,
                              Some(handlerP),
@@ -191,7 +194,8 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     f.onComplete {
       case Success(_) =>
         config.callBacks.executeOnPeerConnectionEstablished(peerAddress)
-      case Failure(_) =>
+      case Failure(err) =>
+        logger.error(s"Failed to establish connect to peer=$peerAddress",err)
         config.callBacks.executeOnPeerConnectionFailed(peerAddress)
     }
 
