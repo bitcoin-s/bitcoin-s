@@ -134,7 +134,10 @@ trait TLVGen {
         Gen
           .listOfN(desc.noncesNeeded, CryptoGenerators.schnorrNonce)
           .map(_.toVector)
-    } yield OracleEventV0TLV(OrderedNonces(nonces), maturity, desc, uri)
+    } yield OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces).toVector,
+                             maturity,
+                             desc,
+                             uri)
   }
 
   def oracleAnnouncementV0TLV: Gen[OracleAnnouncementV0TLV] = {
@@ -150,15 +153,16 @@ trait TLVGen {
       eventId <- StringGenerators.genUTF8String
       pubkey <- CryptoGenerators.schnorrPublicKey
       numSigs <- Gen.choose(1, 10)
-      sigs <-
+      unsorted <-
         Gen
           .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignature)
           .map(_.toVector)
+      sigs = OrderedSchnorrSignatures.fromUnsorted(unsorted)
       outcomes <-
         Gen
           .listOfN(numSigs, StringGenerators.genUTF8String)
           .map(_.toVector)
-    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs, outcomes)
+    } yield OracleAttestmentV0TLV(eventId, pubkey, sigs.toVector, outcomes)
   }
 
   def contractDescriptorV0TLVWithTotalCollateral: Gen[
@@ -237,10 +241,10 @@ trait TLVGen {
   def oracleInfoV0TLV(numDigits: Int): Gen[OracleInfoV0TLV] = {
     for {
       privKey <- CryptoGenerators.privateKey
-      rValues <- Gen.listOfN(numDigits, CryptoGenerators.schnorrNonce)
+      unsorted <- Gen.listOfN(numDigits, CryptoGenerators.schnorrNonce)
+      rValues = OrderedNonces.fromUnsorted(unsorted.toVector)
     } yield {
-      OracleInfoV0TLV(
-        OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues.toVector))
+      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues))
     }
   }
 

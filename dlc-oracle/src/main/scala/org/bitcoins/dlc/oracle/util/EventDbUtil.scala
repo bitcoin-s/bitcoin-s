@@ -2,9 +2,9 @@ package org.bitcoins.dlc.oracle.util
 
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
-import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.OrderedNonces
+import org.bitcoins.crypto.SchnorrNonce
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 
 trait EventDbUtil {
 
@@ -13,7 +13,9 @@ trait EventDbUtil {
     */
   def toEventOutcomeDbs(
       descriptor: EventDescriptorTLV,
-      nonces: OrderedNonces,
+      nonces: Vector[
+        SchnorrNonce
+      ], //ugh, can we enforce some sort of invariant here? can i make this method private?
       signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
     descriptor match {
       case enum: EnumEventDescriptorV0TLV =>
@@ -22,14 +24,14 @@ trait EventDbUtil {
         enum.outcomes.map { outcome =>
           val attestationType = EnumAttestation(outcome)
           val hash =
-            signingVersion.calcOutcomeHash(enum, attestationType.bytes)
+            signingVersion.calcOutcomeHash(attestationType.bytes)
           EventOutcomeDb(nonce, outcome, hash)
         }
       case decomp: DigitDecompositionEventDescriptorV0TLV =>
         val signDbs = decomp match {
           case _: SignedDigitDecompositionEventDescriptor =>
-            val plusHash = signingVersion.calcOutcomeHash(decomp, "+")
-            val minusHash = signingVersion.calcOutcomeHash(decomp, "-")
+            val plusHash = signingVersion.calcOutcomeHash("+")
+            val minusHash = signingVersion.calcOutcomeHash("-")
             Vector(EventOutcomeDb(nonces.head, "+", plusHash),
                    EventOutcomeDb(nonces.head, "-", minusHash))
           case _: UnsignedDigitDecompositionEventDescriptor =>
@@ -47,7 +49,7 @@ trait EventDbUtil {
           0.until(decomp.base.toInt).map { num =>
             val attestationType = DigitDecompositionAttestation(num)
             val hash =
-              signingVersion.calcOutcomeHash(decomp, attestationType.bytes)
+              signingVersion.calcOutcomeHash(attestationType.bytes)
             EventOutcomeDb(nonce, num.toString, hash)
           }
         }
@@ -59,9 +61,12 @@ trait EventDbUtil {
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventOutcomeDb] = {
+    val oracleEventV0 = oracleAnnouncementV0TLV.eventTLV match {
+      case v0: OracleEventV0TLV => v0
+    }
     toEventOutcomeDbs(descriptor =
                         oracleAnnouncementV0TLV.eventTLV.eventDescriptor,
-                      nonces = oracleAnnouncementV0TLV.eventTLV.nonces,
+                      nonces = oracleEventV0.nonces,
                       signingVersion = signingVersion)
   }
 
@@ -70,7 +75,7 @@ trait EventDbUtil {
       eventName: String,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventDb] = {
-    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.vec
+    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.toVector
     nonces.zipWithIndex.map { case (nonce, index) =>
       EventDb(
         nonce = nonce,

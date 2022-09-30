@@ -5,10 +5,14 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
+import org.bitcoins.crypto.{
+  CryptoOrdering,
+  SchnorrDigitalSignature,
+  SchnorrNonce
+}
 import scodec.bits._
 
 import java.math.BigInteger
-import scala.annotation.tailrec
 import scala.math.Ordering
 
 package object core {
@@ -54,23 +58,7 @@ package object core {
     }
 
   implicit val byteVectorOrdering: Ordering[ByteVector] =
-    new Ordering[ByteVector] {
-
-      @tailrec
-      override def compare(x: ByteVector, y: ByteVector): Int = {
-        if (x == y) {
-          0
-        } else if (x.isEmpty) {
-          -1
-        } else if (y.isEmpty) {
-          1
-        } else if (x.head != y.head) {
-          x.head.compare(y.head)
-        } else {
-          compare(x.tail, y.tail)
-        }
-      }
-    }
+    CryptoOrdering.byteVectorOrdering
 
   implicit val transactionInputOrder: Ordering[TransactionInput] =
     new Ordering[TransactionInput] {
@@ -87,4 +75,17 @@ package object core {
           x.scriptPubKey.hex.compare(y.scriptPubKey.hex)
         } else x.value.compare(y.value)
     }
+
+  implicit val nonceOrdering: Ordering[SchnorrNonce] =
+    CryptoOrdering.nonceOrdering
+
+  implicit val schnorrSignatureOrdering: Ordering[SchnorrDigitalSignature] = {
+    new Ordering[SchnorrDigitalSignature] {
+      override def compare(
+          x: SchnorrDigitalSignature,
+          y: SchnorrDigitalSignature): Int = {
+        nonceOrdering.compare(x.rx, y.rx)
+      }
+    }
+  }
 }

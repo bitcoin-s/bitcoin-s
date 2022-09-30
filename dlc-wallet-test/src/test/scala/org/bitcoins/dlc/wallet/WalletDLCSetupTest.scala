@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto._
@@ -763,7 +764,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val oracleSig = SchnorrDigitalSignature(
         "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287")
 
-      val sig = OracleSignatures(oracleInfo, Vector(oracleSig))
+      val sig =
+        OracleSignatures(oracleInfo, OrderedSchnorrSignatures(oracleSig))
 
       for {
         offer <- walletA.createDLCOffer(
@@ -887,24 +889,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     } yield succeed
   }
 
-  //https://test.oracle.suredbits.com/contract/numeric/022428196c6a60673d1f2b90e7be14ac615986dce5571246e8bcc9d2d689d57b
-  private val numericContractInfo = ContractInfoV0TLV.fromHex(
-    """fdd82efd033f00000000000186a0fda720540012fda72648000501000000000000000000000001fd88b80000000000000000000001
-      |fdafc8000000000000c350000001fdd6d800000000000186a0000001fe0003ffff00000000000186a00000fda724020000fda712fd
-      |02d9fdd824fd02d391177fd623a72d56e7bc12e3903f8d6bce7f07a25226d54009cd7e670f5e7a7320b0704286580d8b6a7f31ab7b
-      |f71356a13c28aa609a021111b2e3d2b2db26bc120bd29248895b81f76b07d85a21b86021f22352d6376d19bbf5c93f918828f1fdd8
-      |22fd026d0012fad0cde50a2258efa25cbba60ef0b6677cd29654802937c112097edb64bd205beea02263d6461e60a9ca8e08209c8b
-      |d5552863156014d5418cad91ac590bbf13a847f105db9899d560e5040f9565c043c9e7fdf3782ad2708c5b99646c722b4118547472
-      |48fb52e6486cce3eca5ddf9d64ecbe0864501a446efd378863f9a4055fab50d2112320ff14d8747a72467589822103f197063b49e7
-      |7b90d82d3a8d49b63c3ceb9bd3328398a53989d4237216a24a1d12364efa2d2aec59cdc87909b115dca5b07106b70032ff78072f82
-      |ceeaf2e20db55086e9a2e5e5cac864992d747fd40f4b26bc3d7de958ee02460d1199ff81438c9b76b3934cbc4566d10f242563b95e
-      |7df79c28d52c9c46b617676a4ee84a549ee1f0f53865c9ef4d0ff825e2f438384c5f6238d0734beb570a1a49d035d9f86ee31c23f1
-      |e97bd34fba3f586c0fdf29997530e528b3200a0d7e34f865dc4ca7bfd722bf77c0478ddd25bfa2dc6a4ab973d0c1b7a9ff38283b7c
-      |19bbe02677a9b628f3ee3d5198d66c1623c9608293093c126d4124a445bb6412f720493b6ffa411db53923895fd50c9563d50a97a8
-      |6188084fe4c0f15ce50438ff0b00e1a9470185fd7c96296ae2be12056f61ceaeee7ced48314a3b6855bc9aa3b446b9dfad68553f53
-      |02c60670a95fb9bdc5e72db7f1e9d42e4f4baca1bcbb22612db6417b45cc3d78b1ef33fc362a68db56df00ab1ee0700bd900200f6a
-      |24882101e71de7e18a7fb0d7da27b340de52f97d96239f359cfe31afcaf69cc9ddfcbfbdb2267e673ad728a29dd22d31d1a1187162
-      |037480fdd80a100002000642544355534400000000001212446572696269742d4254432d394645423232""".stripMargin)
+  private val numericContractInfo =
+    DLCWalletUtil.numericContractInfoV0
 
   it must "fail accepting an offer twice simultaneously" in { wallets =>
     val walletA = wallets._1.wallet

@@ -8,7 +8,10 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
   lazy val pgEnabled: Boolean = {
     val config = ConfigFactory.load()
-    val isEnv = sys.env.contains("PG_ENABLED")
+    val isEnv = sys.env
+      .get("PG_ENABLED")
+      .exists(s => s.equalsIgnoreCase("true") || s == "1")
+
     val isConfig = {
       if (config.hasPath("bitcoin-s.testkit.pg.enabled")) {
         config.getBoolean("bitcoin-s.testkit.pg.enabled")

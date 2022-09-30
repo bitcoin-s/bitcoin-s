@@ -201,7 +201,6 @@ lazy val `bitcoin-s` = project
     esploraTest,
     dlcOracle,
     dlcOracleTest,
-    dlcTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -263,7 +262,6 @@ lazy val `bitcoin-s` = project
     esploraTest,
     dlcOracle,
     dlcOracleTest,
-    dlcTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -786,8 +784,7 @@ lazy val dlcWalletTest = project
   .dependsOn(coreJVM % testAndCompile,
              dlcWallet,
              testkit,
-             testkitCoreJVM,
-             dlcTest)
+             testkitCoreJVM)
 
 lazy val dlcNode = project
   .in(file("dlc-node"))
@@ -844,15 +841,3 @@ lazy val scripts = project
   )
   .dependsOn(appServer)
   .enablePlugins(JavaAppPackaging)
-
-lazy val dlcTest = project
-  .in(file("dlc-test"))
-  .settings(CommonSettings.testSettings: _*)
-  .settings(
-    name := "bitcoin-s-dlc-test",
-    libraryDependencies ++= Deps.dlcTest
-  )
-  .dependsOn(
-    coreJVM % testAndCompile,
-    testkitCoreJVM
-  )

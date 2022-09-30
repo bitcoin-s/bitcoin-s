@@ -2,10 +2,14 @@ package org.bitcoins.core.protocol.ln.node
 
 import org.bitcoins.crypto.StringFactory
 
+import java.net.InetSocketAddress
 import scala.util.{Failure, Success, Try}
 
 case class NodeUri(nodeId: NodeId, host: String, port: Int) {
   override def toString = s"$nodeId@$host:$port"
+
+  val socketAddress: InetSocketAddress =
+    InetSocketAddress.createUnresolved(host, port)
 }
 
 object NodeUri extends StringFactory[NodeUri] {

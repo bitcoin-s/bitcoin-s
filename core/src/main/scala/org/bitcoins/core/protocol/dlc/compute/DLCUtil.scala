@@ -16,10 +16,11 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementTLV,
-  OracleAttestmentTLV
+  OracleAttestmentTLV,
+  OracleEventV0TLV
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -262,12 +263,20 @@ object DLCUtil {
       oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
       announcements
-        .map(_.eventTLV.nonces)
-        .map(_.vec)
+        .map { ann =>
+          ann.eventTLV match {
+            case v0: OracleEventV0TLV =>
+              v0.nonces
+          }
+        }
+        .map(_.toVector)
     }
     val resultOpt = oracleSignatures.find { case oracleSignature =>
-      val oracleSigNonces: Vector[SchnorrNonce] = oracleSignature.sigs.map(_.rx)
-      announcementNonces.contains(oracleSigNonces)
+      val oracleSigNonces: Vector[SchnorrNonce] = {
+        val unsorted = oracleSignature.sigs.map(_.rx).toVector
+        OrderedNonces.fromUnsorted(unsorted).toVector
+      }
+      announcementNonces.exists(_ == oracleSigNonces)
     }
     resultOpt
   }
@@ -321,9 +330,13 @@ object DLCUtil {
       // Nonces should be unique so searching for the first nonce should be safe
       val firstNonce = sig.sigs.head.rx
       announcements
-        .find(
-          _.eventTLV.nonces.headOption
-            .contains(firstNonce)) match {
+        .find { ann =>
+          ann.eventTLV match {
+            case v0: OracleEventV0TLV =>
+              v0.nonces.headOption
+                .contains(firstNonce)
+          }
+        } match {
         case Some(announcement) =>
           acc :+ OracleSignatures(SingleOracleInfo(announcement), sig.sigs)
         case None =>

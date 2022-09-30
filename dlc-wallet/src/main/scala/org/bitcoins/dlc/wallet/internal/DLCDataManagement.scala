@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.SafeDatabase
@@ -110,10 +110,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               .exists(_.used)
             if (used) {
               val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-              val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
-                                              data.eventMaturity,
-                                              data.eventDescriptor,
-                                              data.eventId)
+              val eventTLV =
+                OracleEventV0TLV(nonces,
+                                 data.eventMaturity,
+                                 data.eventDescriptor,
+                                 data.eventId)
               Some(
                 (OracleAnnouncementV0TLV(data.announcementSignature,
                                          data.publicKey,
@@ -151,7 +152,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-            val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
+            val eventTLV = OracleEventV0TLV(nonces,
                                             data.eventMaturity,
                                             data.eventDescriptor,
                                             data.eventId)
