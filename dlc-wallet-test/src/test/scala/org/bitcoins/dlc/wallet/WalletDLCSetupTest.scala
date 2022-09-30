@@ -7,7 +7,6 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto._
@@ -765,7 +764,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287")
 
       val sig =
-        OracleSignatures(oracleInfo, OrderedSchnorrSignatures(oracleSig))
+        OracleSignatures(oracleInfo, Vector(oracleSig))
 
       for {
         offer <- walletA.createDLCOffer(
