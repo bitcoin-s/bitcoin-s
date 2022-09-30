@@ -20,8 +20,8 @@ class DLCClient(
     connectedAddress: Option[Promise[InetSocketAddress]],
     handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory,
-    handleWrite: (BigSizeUInt, ByteVector) => Unit,
-    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit)
+    handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
     extends Actor
     with ActorLogging {
 
@@ -131,8 +131,11 @@ object DLCClient {
       connectedAddress: Option[Promise[InetSocketAddress]],
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
-      handleWrite: (BigSizeUInt, ByteVector) => Unit,
-      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit): Props =
+      handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+      handleWriteError: (
+          BigSizeUInt,
+          ByteVector,
+          Throwable) => Future[Unit]): Props =
     Props(
       new DLCClient(dlcWalletApi,
                     connectedAddress,
@@ -147,11 +150,9 @@ object DLCClient {
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory =
         DLCDataHandler.defaultFactory,
-      handleWrite: (BigSizeUInt, ByteVector) => Unit = { (_, _) => () },
-      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit = {
-        (_, _, _) =>
-          ()
-      })(implicit system: ActorSystem): Future[InetSocketAddress] = {
+      handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])(
+      implicit system: ActorSystem): Future[InetSocketAddress] = {
     val promise = Promise[InetSocketAddress]()
     val actor =
       system.actorOf(

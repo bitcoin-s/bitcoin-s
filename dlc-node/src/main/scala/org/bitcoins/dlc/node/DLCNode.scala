@@ -137,7 +137,8 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
   private def handleTLVSendFailed(
       tlvType: BigSizeUInt,
       tlvId: ByteVector,
-      error: Throwable): Unit = {
+      error: Throwable): Future[Unit] = {
+    logger.info("TLV send error ", error)
     tlvType match {
       case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
         config.callBacks.executeOnOfferSendFailed(Sha256Digest.fromBytes(tlvId))
@@ -145,14 +146,16 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
         config.callBacks.executeOnAcceptFailed(Sha256Digest.fromBytes(tlvId))
       case DLCSignTLV.tpe =>
         config.callBacks.executeOnSignFailed(Sha256Digest.fromBytes(tlvId))
-      case _ => // ignore
+      case unknown =>
+        val exn = new RuntimeException(
+          s"Unknown tpe=$unknown inside of handleTLVSendFailed")
+        Future.failed(exn)
     }
-    logger.debug("TLV send error ", error)
   }
 
   private def handleTLVSendSucceed(
       tlvType: BigSizeUInt,
-      tlvId: ByteVector): Unit = {
+      tlvId: ByteVector): Future[Unit] = {
     tlvType match {
       case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
         config.callBacks.executeOnOfferSendSucceed(
@@ -161,9 +164,11 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
         config.callBacks.executeOnAcceptSucceed(Sha256Digest.fromBytes(tlvId))
       case DLCSignTLV.tpe =>
         config.callBacks.executeOnSignSucceed(Sha256Digest.fromBytes(tlvId))
-      case _ => // ignore
+      case unknown =>
+        val exn = new RuntimeException(
+          s"Unknown tpe=$unknown inside of handleTLVSendSucceed")
+        Future.failed(exn)
     }
-    ()
   }
 
   private def connectToPeer(

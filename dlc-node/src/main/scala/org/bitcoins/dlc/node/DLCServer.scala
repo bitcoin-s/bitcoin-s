@@ -18,8 +18,8 @@ class DLCServer(
     bindAddress: InetSocketAddress,
     boundAddress: Option[Promise[InetSocketAddress]],
     dataHandlerFactory: DLCDataHandler.Factory,
-    handleWrite: (BigSizeUInt, ByteVector) => Unit,
-    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit)
+    handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
     extends Actor
     with ActorLogging {
 
@@ -79,8 +79,11 @@ object DLCServer extends Logging {
       bindAddress: InetSocketAddress,
       boundAddress: Option[Promise[InetSocketAddress]] = None,
       dataHandlerFactory: DLCDataHandler.Factory,
-      handleWrite: (BigSizeUInt, ByteVector) => Unit,
-      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit): Props =
+      handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+      handleWriteError: (
+          BigSizeUInt,
+          ByteVector,
+          Throwable) => Future[Unit]): Props =
     Props(
       new DLCServer(dlcWalletApi,
                     bindAddress,
@@ -94,13 +97,10 @@ object DLCServer extends Logging {
       bindAddress: InetSocketAddress,
       targets: Vector[InetSocketAddress],
       torParams: Option[TorParams],
+      handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit],
       dataHandlerFactory: DLCDataHandler.Factory =
-        DLCDataHandler.defaultFactory,
-      handleWrite: (BigSizeUInt, ByteVector) => Unit = { (_, _) => () },
-      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit = {
-        (_, _, _) =>
-          ()
-      })(implicit
+        DLCDataHandler.defaultFactory)(implicit
       system: ActorSystem): Future[(InetSocketAddress, ActorRef)] = {
     import system.dispatcher
 

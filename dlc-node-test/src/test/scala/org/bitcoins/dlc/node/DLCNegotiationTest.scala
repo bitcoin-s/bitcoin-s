@@ -2,6 +2,7 @@ package org.bitcoins.dlc.node
 
 import akka.actor.ActorRef
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.dlc.models.DLCState
 import org.bitcoins.core.protocol.tlv.{LnMessage, SendOfferTLV}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -15,7 +16,7 @@ import org.scalatest.FutureOutcome
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.DurationInt
 
 class DLCNegotiationTest extends BitcoinSDualWalletTest {
@@ -23,6 +24,19 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withDualFundedDLCWallets(test)
+  }
+
+  private val handleWriteFn: (BigSizeUInt, ByteVector) => Future[Unit] = {
+    case (_: BigSizeUInt, _: ByteVector) =>
+      Future.unit
+  }
+
+  private val handleWriteErrorFn: (
+      BigSizeUInt,
+      ByteVector,
+      Throwable) => Future[Unit] = {
+    case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
+      Future.unit
   }
 
   it must "setup a DLC" in {
@@ -38,10 +52,17 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val handlerP = Promise[ActorRef]()
 
       for {
-        _ <- DLCServer.bind(walletA, bindAddress, Vector(), None)
+        _ <- DLCServer.bind(dlcWalletApi = walletA,
+                            bindAddress = bindAddress,
+                            targets = Vector(),
+                            torParams = None,
+                            handleWrite = handleWriteFn,
+                            handleWriteError = handleWriteErrorFn)
         _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
                                walletB,
-                               Some(handlerP))
+                               Some(handlerP),
+                               handleWrite = handleWriteFn,
+                               handleWriteError = handleWriteErrorFn)
 
         handler <- handlerP.future
 
@@ -94,15 +115,23 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val errorP = Promise[ByteVector]()
 
       for {
-        _ <- DLCServer.bind(walletA, bindAddress, Vector(), None)
+        _ <- DLCServer.bind(walletA,
+                            bindAddress,
+                            Vector(),
+                            None,
+                            handleWrite = handleWriteFn,
+                            handleWriteError = handleWriteErrorFn)
         _ <- DLCClient.connect(
           Peer(connectAddress, socks5ProxyParams = None),
           walletB,
           Some(handlerP),
-          handleWrite = { (_, tlvId) => okP.success(tlvId) },
+          handleWrite = { (_, tlvId) =>
+            okP.success(tlvId)
+            Future.unit
+          },
           handleWriteError = { (_, tlvId, ex) =>
             errorP.success(tlvId)
-            ex.printStackTrace()
+            Future.failed(ex)
           }
         )
 

@@ -13,7 +13,7 @@ import scodec.bits.ByteVector
 
 import java.io.IOException
 import scala.annotation.tailrec
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 class DLCConnectionHandler(
@@ -21,8 +21,8 @@ class DLCConnectionHandler(
     connection: ActorRef,
     handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory,
-    handleWrite: (BigSizeUInt, ByteVector) => Unit,
-    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit)
+    handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
     extends Actor
     with ActorLogging {
 
@@ -95,8 +95,10 @@ class DLCConnectionHandler(
 
     case Tcp.PeerClosed => context.stop(self)
 
-    case DLCConnectionHandler.Ack(tlvType, tlvId) => handleWrite(tlvType, tlvId)
-
+    case DLCConnectionHandler.Ack(tlvType, tlvId) =>
+      //is this right? do i need to block here (or not block?)
+      val _ = handleWrite(tlvType, tlvId)
+      ()
     case c @ Tcp.CommandFailed(write: Tcp.Write) =>
       val ex = c.cause match {
         case Some(ex) => ex
@@ -118,7 +120,7 @@ class DLCConnectionHandler(
       context.stop(self)
   }
 
-  private def tlvId(lnMessage: LnMessage[TLV]) = {
+  private def tlvId(lnMessage: LnMessage[TLV]): ByteVector = {
     lnMessage.tlv match {
       case acceptTLV: DLCAcceptTLV => acceptTLV.tempContractId.bytes
       case offerTLV: DLCOfferTLV   => offerTLV.tempContractId.bytes
@@ -141,8 +143,11 @@ object DLCConnectionHandler extends Logging {
       connection: ActorRef,
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
-      handleWrite: (BigSizeUInt, ByteVector) => Unit,
-      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Unit): Props = {
+      handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
+      handleWriteError: (
+          BigSizeUInt,
+          ByteVector,
+          Throwable) => Future[Unit]): Props = {
     Props(
       new DLCConnectionHandler(dlcWalletApi,
                                connection,
