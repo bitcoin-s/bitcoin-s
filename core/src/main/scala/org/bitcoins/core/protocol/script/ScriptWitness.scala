@@ -19,6 +19,14 @@ sealed abstract class ScriptWitness extends NetworkElement {
   /** The byte vectors that are placed on to the stack when evaluating a witness program */
   val stack: Seq[ByteVector]
 
+  // When comparing two witnesses we should compare the
+  // serialization as our types can have overlap
+  override def equals(other: Any): Boolean =
+    other match {
+      case p: ScriptWitness => this.bytes == p.bytes
+      case _                => other.equals(this)
+    }
+
 }
 
 case object EmptyScriptWitness extends ScriptWitness {
