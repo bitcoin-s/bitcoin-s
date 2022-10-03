@@ -1194,9 +1194,9 @@ trait DLCTest {
 
         val sVals = oracleSigs.map {
           case numeric: NumericOracleSignatures =>
-            val oracle = numeric.oracle
             val sigs = numeric.sigs
-            val oracleAndOutcomeOpt = oraclesAndOutcomes.find(_._1 == oracle)
+            val oracleAndOutcomeOpt =
+              oraclesAndOutcomes.find(_._1 == numeric.oracle)
             assert(oracleAndOutcomeOpt.isDefined)
             val outcome = oracleAndOutcomeOpt.get._2
             val sVals = sigs.take(outcome.digits.length).map(_.sig)

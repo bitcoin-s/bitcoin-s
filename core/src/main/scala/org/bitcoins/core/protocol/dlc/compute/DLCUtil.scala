@@ -337,7 +337,8 @@ object DLCUtil {
 
       announcementOpt match {
         case Some(announcement) =>
-          acc :+ OracleSignatures(SingleOracleInfo(announcement), sig)
+          acc :+ OracleSignatures(SingleOracleInfo(announcement),
+                                  sig.sigs.toVector)
         case None =>
           throw new RuntimeException(
             s"Cannot find announcement for associated public key, pubKey=${sig.publicKey.hex} nonce=$firstNonce announcements=$announcements attestments=$attestments")
