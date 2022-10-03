@@ -91,48 +91,48 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     succeed
   }
 
-  it must "conform to the enum single test vector" ignore {
+  it must "conform to the enum single test vector" in {
     val url = getClass.getResource("/enum_single_oracle_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the single oracle numerical test" ignore {
+  it must "conform to the single oracle numerical test" in {
 
     val url = getClass.getResource("/single_oracle_numerical_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the single oracle numerical hyperbola test" ignore {
+  it must "conform to the single oracle numerical hyperbola test" in {
     val url =
       getClass.getResource("/single_oracle_numerical_hyperbola_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the enum_3_of_3_test.json test" ignore {
+  it must "conform to the enum_3_of_3_test.json test" in {
     val url =
       getClass.getResource("/enum_3_of_3_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the enum_3_of_5_test.json test" ignore {
+  it must "conform to the enum_3_of_5_test.json test" in {
     val url =
       getClass.getResource("/enum_3_of_5_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the three_of_three_oracle_numerical_test.json test" ignore {
+  it must "conform to the three_of_three_oracle_numerical_test.json test" in {
     val url =
       getClass.getResource("/three_of_three_oracle_numerical_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the three_of_three_oracle_numerical_with_diff_test.json test" ignore {
+  it must "conform to the three_of_three_oracle_numerical_with_diff_test.json test" in {
     val url =
       getClass.getResource(
         "/three_of_three_oracle_numerical_with_diff_test.json")
@@ -140,49 +140,49 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_five_oracle_numerical_test.json test" ignore {
+  it must "conform to the two_of_five_oracle_numerical_test.json test" in {
     val url =
       getClass.getResource("/two_of_five_oracle_numerical_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_five_oracle_numerical_with_diff_test.json test" ignore {
+  it must "conform to the two_of_five_oracle_numerical_with_diff_test.json test" in {
     val url =
       getClass.getResource("/two_of_five_oracle_numerical_with_diff_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the enum_and_numerical_3_of_5_test.json test" ignore {
+  it must "conform to the enum_and_numerical_3_of_5_test.json test" in {
     val url =
       getClass.getResource("/enum_and_numerical_3_of_5_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the enum_and_numerical_5_of_5_test.json test" ignore {
+  it must "conform to the enum_and_numerical_5_of_5_test.json test" in {
     val url =
       getClass.getResource("/enum_and_numerical_5_of_5_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the enum_and_numerical_with_diff_3_of_5_test.json test" ignore {
+  it must "conform to the enum_and_numerical_with_diff_3_of_5_test.json test" in {
     val url =
       getClass.getResource("/enum_and_numerical_with_diff_3_of_5_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the enum_and_numerical_with_diff_5_of_5_test.json test" ignore {
+  it must "conform to the enum_and_numerical_with_diff_5_of_5_test.json test" in {
     val url =
       getClass.getResource("/enum_and_numerical_with_diff_5_of_5_test.json")
     val jsonString: String = Source.fromURL(url).getLines().mkString
     runTest(jsonString)
   }
 
-  it must "conform to the three_of_three_oracle_numerical_with_diff_diff_nb_digits_test.json test" ignore {
+  it must "conform to the three_of_three_oracle_numerical_with_diff_diff_nb_digits_test.json test" in {
     val url =
       getClass.getResource(
         "/three_of_three_oracle_numerical_with_diff_diff_nb_digits_test.json")
@@ -190,7 +190,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_five_oracle_numerical_diff_nb_digits_max_value_test.json test" ignore {
+  it must "conform to the two_of_five_oracle_numerical_diff_nb_digits_max_value_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_five_oracle_numerical_diff_nb_digits_max_value_test.json")
@@ -198,7 +198,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_five_oracle_numerical_diff_nb_digits_test.json test" ignore {
+  it must "conform to the two_of_five_oracle_numerical_diff_nb_digits_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_five_oracle_numerical_diff_nb_digits_test.json")
@@ -206,7 +206,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_five_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json test" ignore {
+  it must "conform to the two_of_five_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_five_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json")
@@ -214,7 +214,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_five_oracle_numerical_with_diff_diff_nb_digits_test.json test" ignore {
+  it must "conform to the two_of_five_oracle_numerical_with_diff_diff_nb_digits_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_five_oracle_numerical_with_diff_diff_nb_digits_test.json")
@@ -222,7 +222,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_three_oracle_numerical_diff_nb_digits_max_value_test.json test" ignore {
+  it must "conform to the two_of_three_oracle_numerical_diff_nb_digits_max_value_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_three_oracle_numerical_diff_nb_digits_max_value_test.json")
@@ -230,7 +230,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_three_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json test" ignore {
+  it must "conform to the two_of_three_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_three_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json")
@@ -238,7 +238,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_two_oracle_numerical_diff_nb_digits_max_value_test.json test" ignore {
+  it must "conform to the two_of_two_oracle_numerical_diff_nb_digits_max_value_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_two_oracle_numerical_diff_nb_digits_max_value_test.json")
@@ -246,7 +246,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_two_oracle_numerical_diff_nb_digits_test.json test" ignore {
+  it must "conform to the two_of_two_oracle_numerical_diff_nb_digits_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_two_oracle_numerical_diff_nb_digits_test.json")
@@ -254,7 +254,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_two_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json test" ignore {
+  it must "conform to the two_of_two_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_two_oracle_numerical_with_diff_diff_nb_digits_max_value_test.json")
@@ -262,7 +262,7 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
     runTest(jsonString)
   }
 
-  it must "conform to the two_of_two_oracle_numerical_with_diff_diff_nb_digits_test.json test" ignore {
+  it must "conform to the two_of_two_oracle_numerical_with_diff_diff_nb_digits_test.json test" in {
     val url =
       getClass.getResource(
         "/two_of_two_oracle_numerical_with_diff_diff_nb_digits_test.json")
