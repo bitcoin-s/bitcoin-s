@@ -330,8 +330,8 @@ object DLCNodeNotification {
       upickle.default.writeJs(this)(WsPicklers.dlcNodeConnectionFailedPickler)
   }
 
-  case class DLCAcceptFailed(payload: Sha256Digest)
-      extends DLCNodeNotification[Sha256Digest] {
+  case class DLCAcceptFailed(payload: (Sha256Digest, String))
+      extends DLCNodeNotification[(Sha256Digest, String)] {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCAcceptFailed
 
     override def json: Value =
@@ -346,8 +346,8 @@ object DLCNodeNotification {
       upickle.default.writeJs(this)(WsPicklers.dlcAcceptSucceedPickler)
   }
 
-  case class DLCOfferSendFailed(payload: Sha256Digest)
-      extends DLCNodeNotification[Sha256Digest] {
+  case class DLCOfferSendFailed(payload: (Sha256Digest, String))
+      extends DLCNodeNotification[(Sha256Digest, String)] {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCOfferSendFailed
 
     override def json: Value =
@@ -362,8 +362,8 @@ object DLCNodeNotification {
       upickle.default.writeJs(this)(WsPicklers.dlcOfferSendSucceedPickler)
   }
 
-  case class DLCSignFailed(payload: Sha256Digest)
-      extends DLCNodeNotification[Sha256Digest] {
+  case class DLCSignFailed(payload: (Sha256Digest, String))
+      extends DLCNodeNotification[(Sha256Digest, String)] {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCSignFailed
 
     override def json: Value =

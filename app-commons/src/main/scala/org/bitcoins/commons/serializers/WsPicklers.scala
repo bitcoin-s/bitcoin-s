@@ -209,6 +209,10 @@ object WsPicklers {
       notification: DLCNodeNotification[_]): ujson.Obj = {
     def addr2str(address: InetSocketAddress) =
       address.getHostName + ":" + address.getPort
+    def failure2obj(payload: (Sha256Digest, String)): ujson.Obj = {
+      ujson.Obj(PicklerKeys.idKey -> writeJs(payload._1.hex),
+                PicklerKeys.errorKey -> writeJs(payload._2))
+    }
     val payloadJson: ujson.Value = notification match {
       case DLCNodeConnectionInitiated(address) =>
         upickle.default.writeJs(addr2str(address))
@@ -216,16 +220,13 @@ object WsPicklers {
         upickle.default.writeJs(addr2str(address))
       case DLCNodeConnectionFailed(address) =>
         upickle.default.writeJs(addr2str(address))
-      case DLCAcceptFailed(id) =>
-        upickle.default.writeJs(id.hex)
+      case DLCAcceptFailed(payload) => failure2obj(payload)
       case DLCAcceptSucceed(id) =>
         upickle.default.writeJs(id.hex)
-      case DLCOfferSendFailed(id) =>
-        upickle.default.writeJs(id.hex)
+      case DLCOfferSendFailed(payload) => failure2obj(payload)
       case DLCOfferSendSucceed(id) =>
         upickle.default.writeJs(id.hex)
-      case DLCSignFailed(id) =>
-        upickle.default.writeJs(id.hex)
+      case DLCSignFailed(payload) => failure2obj(payload)
       case DLCSignSucceed(id) =>
         upickle.default.writeJs(id.hex)
     }
@@ -241,6 +242,11 @@ object WsPicklers {
     val typeObj = read[DLCNodeWsType](obj(PicklerKeys.typeKey))
     val payloadObj = obj(PicklerKeys.payloadKey)
 
+    def obj2failure(payload: ujson.Value): (Sha256Digest, String) = {
+      (Sha256Digest.fromHex(payload.obj(PicklerKeys.idKey).str),
+       payload.obj(PicklerKeys.errorKey).str)
+    }
+
     typeObj match {
       case DLCNodeWsType.DLCConnectionInitiated =>
         val address: InetSocketAddress =
@@ -255,15 +261,15 @@ object WsPicklers {
           NetworkUtil.parseInetSocketAddress(payloadObj.str, DLC.DefaultPort)
         DLCNodeConnectionFailed(address)
       case DLCNodeWsType.DLCAcceptFailed =>
-        DLCAcceptFailed(Sha256Digest.fromHex(payloadObj.str))
+        DLCAcceptFailed(obj2failure(payloadObj))
       case DLCNodeWsType.DLCAcceptSucceed =>
         DLCAcceptSucceed(Sha256Digest.fromHex(payloadObj.str))
       case DLCNodeWsType.DLCOfferSendFailed =>
-        DLCOfferSendFailed(Sha256Digest.fromHex(payloadObj.str))
+        DLCOfferSendFailed(obj2failure(payloadObj))
       case DLCNodeWsType.DLCOfferSendSucceed =>
         DLCOfferSendSucceed(Sha256Digest.fromHex(payloadObj.str))
       case DLCNodeWsType.DLCSignFailed =>
-        DLCSignFailed(Sha256Digest.fromHex(payloadObj.str))
+        DLCSignFailed(obj2failure(payloadObj))
       case DLCNodeWsType.DLCSignSucceed =>
         DLCSignSucceed(Sha256Digest.fromHex(payloadObj.str))
     }

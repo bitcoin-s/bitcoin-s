@@ -169,4 +169,6 @@ object PicklerKeys {
   final val typeKey: String = "type"
   final val payloadKey: String = "payload"
 
+  val errorKey: String = "error"
+
 }

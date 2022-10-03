@@ -25,15 +25,17 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
 
   def onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed]
 
-  def onOfferSendFailed: CallbackHandler[Sha256Digest, OnOfferSendFailed]
+  def onOfferSendFailed: CallbackHandler[
+    (Sha256Digest, String),
+    OnOfferSendFailed]
 
   def onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed]
 
-  def onAcceptFailed: CallbackHandler[Sha256Digest, OnAcceptFailed]
+  def onAcceptFailed: CallbackHandler[(Sha256Digest, String), OnAcceptFailed]
 
   def onSignSucceed: CallbackHandler[Sha256Digest, OnSignSucceed]
 
-  def onSignFailed: CallbackHandler[Sha256Digest, OnSignFailed]
+  def onSignFailed: CallbackHandler[(Sha256Digest, String), OnSignFailed]
 
   override def +(other: DLCNodeCallbacks): DLCNodeCallbacks
 
@@ -76,10 +78,11 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
                      err))
   }
 
-  def executeOnOfferSendFailed(tempContractId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnOfferSendFailed(
+      tempContractId: Sha256Digest,
+      errorMessage: String)(implicit ec: ExecutionContext): Future[Unit] = {
     onOfferSendFailed.execute(
-      tempContractId,
+      (tempContractId, errorMessage),
       (err: Throwable) =>
         logger.error(s"${onOfferSendFailed.name} Callback failed with error: ",
                      err))
@@ -94,10 +97,10 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
                      err))
   }
 
-  def executeOnAcceptFailed(tempContractId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnAcceptFailed(tempContractId: Sha256Digest, errorMessage: String)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     onAcceptFailed.execute(
-      tempContractId,
+      (tempContractId, errorMessage),
       (err: Throwable) =>
         logger.error(s"${onAcceptFailed.name} Callback failed with error: ",
                      err))
@@ -112,10 +115,10 @@ trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
                      err))
   }
 
-  def executeOnSignFailed(tempContractId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnSignFailed(tempContractId: Sha256Digest, errorMessage: String)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     onSignFailed.execute(
-      tempContractId,
+      (tempContractId, errorMessage),
       (err: Throwable) =>
         logger.error(s"${onSignFailed.name} Callback failed with error: ", err))
   }
@@ -129,15 +132,15 @@ trait OnPeerConnectionFailed extends Callback[InetSocketAddress]
 
 trait OnOfferSendSucceed extends Callback[Sha256Digest]
 
-trait OnOfferSendFailed extends Callback[Sha256Digest]
+trait OnOfferSendFailed extends Callback[(Sha256Digest, String)]
 
 trait OnAcceptSucceed extends Callback[Sha256Digest]
 
-trait OnAcceptFailed extends Callback[Sha256Digest]
+trait OnAcceptFailed extends Callback[(Sha256Digest, String)]
 
 trait OnSignSucceed extends Callback[Sha256Digest]
 
-trait OnSignFailed extends Callback[Sha256Digest]
+trait OnSignFailed extends Callback[(Sha256Digest, String)]
 
 object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
 
@@ -153,11 +156,13 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
         InetSocketAddress,
         OnPeerConnectionFailed],
       onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed],
-      onOfferSendFailed: CallbackHandler[Sha256Digest, OnOfferSendFailed],
+      onOfferSendFailed: CallbackHandler[
+        (Sha256Digest, String),
+        OnOfferSendFailed],
       onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed],
-      onAcceptFailed: CallbackHandler[Sha256Digest, OnAcceptFailed],
+      onAcceptFailed: CallbackHandler[(Sha256Digest, String), OnAcceptFailed],
       onSignSucceed: CallbackHandler[Sha256Digest, OnSignSucceed],
-      onSignFailed: CallbackHandler[Sha256Digest, OnSignFailed])
+      onSignFailed: CallbackHandler[(Sha256Digest, String), OnSignFailed])
       extends DLCNodeCallbacks {
 
     override def +(other: DLCNodeCallbacks): DLCNodeCallbacks =
@@ -222,19 +227,21 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
         CallbackHandler[Sha256Digest, OnOfferSendSucceed]("onOfferSendSucceed",
                                                           onOfferSendSucceed),
       onOfferSendFailed =
-        CallbackHandler[Sha256Digest, OnOfferSendFailed]("onOfferSendFailed",
-                                                         onOfferSendFailed),
+        CallbackHandler[(Sha256Digest, String), OnOfferSendFailed](
+          "onOfferSendFailed",
+          onOfferSendFailed),
       onAcceptSucceed =
         CallbackHandler[Sha256Digest, OnAcceptSucceed]("onAcceptSucceed",
                                                        onAcceptSucceed),
-      onAcceptFailed =
-        CallbackHandler[Sha256Digest, OnAcceptFailed]("onAcceptFailed",
-                                                      onAcceptFailed),
+      onAcceptFailed = CallbackHandler[(Sha256Digest, String), OnAcceptFailed](
+        "onAcceptFailed",
+        onAcceptFailed),
       onSignSucceed =
         CallbackHandler[Sha256Digest, OnSignSucceed]("onSignSucceed",
                                                      onSignSucceed),
-      onSignFailed = CallbackHandler[Sha256Digest, OnSignFailed]("onSignFailed",
-                                                                 onSignFailed)
+      onSignFailed =
+        CallbackHandler[(Sha256Digest, String), OnSignFailed]("onSignFailed",
+                                                              onSignFailed)
     )
   }
 }

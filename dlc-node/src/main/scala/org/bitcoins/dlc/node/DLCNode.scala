@@ -79,8 +79,9 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       accept
     }
 
-    f.failed.foreach(_ =>
-      config.callBacks.executeOnAcceptFailed(dlcOffer.tlv.tempContractId))
+    f.failed.foreach(err =>
+      config.callBacks.executeOnAcceptFailed(dlcOffer.tlv.tempContractId,
+                                             err.getMessage))
 
     f
   }
@@ -106,7 +107,8 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       logger.error(
         s"Failed to send offer.tempContractId=${offerTLV.tempContractId}",
         err)
-      config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId)
+      config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId,
+                                                err.getMessage)
     }
 
     f
@@ -145,11 +147,14 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     logger.info("TLV send error ", error)
     tlvType match {
       case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
-        config.callBacks.executeOnOfferSendFailed(Sha256Digest.fromBytes(tlvId))
+        config.callBacks.executeOnOfferSendFailed(Sha256Digest.fromBytes(tlvId),
+                                                  error.getMessage)
       case DLCAcceptTLV.tpe =>
-        config.callBacks.executeOnAcceptFailed(Sha256Digest.fromBytes(tlvId))
+        config.callBacks.executeOnAcceptFailed(Sha256Digest.fromBytes(tlvId),
+                                               error.getMessage)
       case DLCSignTLV.tpe =>
-        config.callBacks.executeOnSignFailed(Sha256Digest.fromBytes(tlvId))
+        config.callBacks.executeOnSignFailed(Sha256Digest.fromBytes(tlvId),
+                                             error.getMessage)
       case unknown =>
         val exn = new RuntimeException(
           s"Unknown tpe=$unknown inside of handleTLVSendFailed")
