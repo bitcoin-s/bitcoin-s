@@ -86,6 +86,7 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## App server
 
+73200b64bf re-order RPC command order to have commands first that do not depend on tor (#4811)
 7b7847885e Attempt to reduce redundant work on startup to speed up start up time (#4764)
 7460dcd255 Parallelize running of individual migrations (#4761)
 6b432ea509 Emit 2000th header received during IBD (#4719)
@@ -113,6 +114,7 @@ d2fb3fc150 Revert "Make electron build use bitcoin-s-ts latest tag (#4701)" (#47
 
 ## Core
 
+6d0c768975 Compare bytes when comparing ScriptWitnesses (#4521)
 2f18f622ab Give BitcoinNetworks.knownNetworks proper type (#4766)
 
 ## Crypto
@@ -165,7 +167,11 @@ fae1a53579 Bump `bitcoin-s.node.query-wait-time=120 seconds` (#4759)
 
 ## Website
 
+12f35ddad3 Add initial release notes for 1.9.5 (#4810)
+
 ## Dependencies
+
+
 
 2d83210ba3 Update flyway-core to 9.2.3 (#4744)
 12326c7f33 Update sqlite-jdbc to 3.39.3.0 (#4755)
