@@ -300,6 +300,8 @@ object DLCUtil {
             val oracleSig = attestment match {
               case v0: OracleAttestmentV0TLV =>
                 OracleSignatures(SingleOracleInfo(ann), v0)
+              case v1: SchnorrAttestationTLV =>
+                OracleSignatures(SingleOracleInfo(ann), v1)
             }
             val isMatch = matchOracleSignaturesForAnnouncements(ann, oracleSig)
             isMatch match {

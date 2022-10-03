@@ -56,6 +56,8 @@ object OracleSignatures {
             } else {
               NumericOracleSignaturesUnsorted(info, v0.unsortedSignatures)
             }
+          case v1: SchnorrAttestationTLV =>
+            NumericOracleSignaturesSorted(info, v1.sigs)
         }
     }
   }
