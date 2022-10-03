@@ -109,6 +109,8 @@ fecb9902ec 2022 09 20 rm dlc test (#4792)
 
 ## Crypto
 
+eb5310f312 Use ByteVector.compare rather than rolling our own (#4814)
+
 ## db commons
 
 cf9f48c221 Set db auth in slick db config (#4781)
