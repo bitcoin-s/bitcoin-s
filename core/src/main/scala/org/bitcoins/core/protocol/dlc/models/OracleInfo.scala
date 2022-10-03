@@ -80,7 +80,7 @@ sealed trait SingleOracleInfo
       case v0: OracleEventV0TLV =>
         v0.nonces
       case _: OracleEventV1TLV =>
-        OrderedNonces(announcement.nonces.head)
+        announcement.nonces.head
     }
   }
 

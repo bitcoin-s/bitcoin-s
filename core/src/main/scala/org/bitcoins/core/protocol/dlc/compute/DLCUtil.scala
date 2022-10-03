@@ -16,9 +16,9 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.tlv.{SchnorrAttestationTLV}
 import org.bitcoins.core.protocol.tlv.{
+  BaseOracleAnnouncement,
   OracleAttestmentTLV,
-  OracleAttestmentV0TLV,
-  BaseOracleAnnouncement
+  OracleAttestmentV0TLV
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
@@ -337,8 +337,11 @@ object DLCUtil {
 
       announcementOpt match {
         case Some(announcement) =>
-          acc :+ OracleSignatures(SingleOracleInfo(announcement),
-                                  sig.sigs.toVector)
+          val sigs = sig match {
+            case v0: OracleAttestmentV0TLV => v0.unsortedSignatures
+            case v1: SchnorrAttestationTLV => v1.sigs.toVector
+          }
+          acc :+ OracleSignatures(SingleOracleInfo(announcement), sigs)
         case None =>
           throw new RuntimeException(
             s"Cannot find announcement for associated public key, pubKey=${sig.publicKey.hex} nonce=$firstNonce announcements=$announcements attestments=$attestments")
