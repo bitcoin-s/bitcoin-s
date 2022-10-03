@@ -10,6 +10,8 @@ If you are a typescript developer, [you can access the backend via our typescrip
 
 # Executive Summary
 
+This release includes a well defined ordering for nonces. This also fixes some bugs in the postgres backend for the dlc wallet.
+
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
@@ -88,6 +90,7 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## Build
 
+65c7c6102c Bump versions
 87664a3824 Error on invalid download of binaries (#4798)
 
 ## chain
@@ -105,6 +108,8 @@ ecf2d2ba2c Fix bug where we were generating too many nonces (#4805)
 fecb9902ec 2022 09 20 rm dlc test (#4792)
 
 ## Crypto
+
+eb5310f312 Use ByteVector.compare rather than rolling our own (#4814)
 
 ## db commons
 
@@ -150,6 +155,8 @@ c0443a972d Have EmbeddedPg check PG_ENABLED value (#4791)
 ## tor
 
 ## Website
+
+712bb50f88 1.9.5 of the website (#4812)
 
 ## Dependencies
 
