@@ -20,10 +20,10 @@ object OracleTestUtil {
   val testAddress: Bech32Address = Bech32Address.fromString(testAddressStr)
 
   val kVal: ECPrivateKey = ECPrivateKey.fromHex(
-    "447d4457dfff21354d56cb1b62b2ab6e5964c5ef93e6d74ae3b30dc83b89b6a5")
+    "828dd2143f1d9bab2b077649a14c290cdadf2531c03351da0294643827f69690")
 
   val kVal1: ECPrivateKey = ECPrivateKey.fromHex(
-    "828dd2143f1d9bab2b077649a14c290cdadf2531c03351da0294643827f69690")
+    "447d4457dfff21354d56cb1b62b2ab6e5964c5ef93e6d74ae3b30dc83b89b6a5")
 
   val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
     "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")

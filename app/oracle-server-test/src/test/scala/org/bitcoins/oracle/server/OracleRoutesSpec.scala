@@ -129,7 +129,7 @@ class OracleRoutesSpec
            |{
            |  "result": {
            |    "nonces": [
-           |      "a0a482a38702146446a1929bebd2c6e15bf9f5e237e58693f457a9405c2b0cb0"
+           |      "51281477044dc5e505b4c9ea4a11bf0fe7416470506185c73a4c094d2f45f4c6"
            |    ],
            |    "eventName": "id",
            |    "signingVersion": "DLCOracleV0SigningVersion",
@@ -137,14 +137,14 @@ class OracleRoutesSpec
            |    "maturationTimeEpoch": 0,
            |    "announcementSignature": "1efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937e",
            |    "eventDescriptorTLV": "fdd8060800010564756d6d79",
-           |    "eventTLV": "fdd822350001a0a482a38702146446a1929bebd2c6e15bf9f5e237e58693f457a9405c2b0cb000000000fdd8060800010564756d6d79026964",
-           |    "announcementTLV": "fdd824991efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937edc2d72aee6e89cfc58eb8bdf7091df7b2c7c0039c715940e6cd3d4d522277dbffdd822350001a0a482a38702146446a1929bebd2c6e15bf9f5e237e58693f457a9405c2b0cb000000000fdd8060800010564756d6d79026964",
-           |    "attestations": "fdd8686b026964dc2d72aee6e89cfc58eb8bdf7091df7b2c7c0039c715940e6cd3d4d522277dbf0001a0a482a38702146446a1929bebd2c6e15bf9f5e237e58693f457a9405c2b0cb023c6d746f868209b28169cdbb25287dc076525cb1a4dbd34179cfedcc673a0ef0564756d6d79",
+           |    "eventTLV": "fdd82235000151281477044dc5e505b4c9ea4a11bf0fe7416470506185c73a4c094d2f45f4c600000000fdd8060800010564756d6d79026964",
+           |    "announcementTLV": "fdd824991efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937edc2d72aee6e89cfc58eb8bdf7091df7b2c7c0039c715940e6cd3d4d522277dbffdd82235000151281477044dc5e505b4c9ea4a11bf0fe7416470506185c73a4c094d2f45f4c600000000fdd8060800010564756d6d79026964",
+           |    "attestations": "fdd8686b026964dc2d72aee6e89cfc58eb8bdf7091df7b2c7c0039c715940e6cd3d4d522277dbf000151281477044dc5e505b4c9ea4a11bf0fe7416470506185c73a4c094d2f45f4c6bf202bb2f2588036f51d112810f5f78c8a6ab4fb29e6e23ecd680e393c2bbed30564756d6d79",
            |    "outcomes": [
            |      "dummy"
            |    ],
            |    "signedOutcome": "dummy",
-           |    "announcementTLVsha256": "91287c551e1bb7685c87f6e613792b6e898ef51a88c588333e62b211e12b6d43",
+           |    "announcementTLVsha256": "84643b108b95ad973eb08f218fee12f3ffcf9a0cb146adb8af1b26a8f702ddd1",
            |    "eventDescriptorTLVsha256": "f51ad245094355b2194d6dfb3fff429c320ba3119ce35b879e5f29c0f402a3fd"
            |  },
            |  "error": null
