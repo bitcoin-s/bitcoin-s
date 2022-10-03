@@ -481,9 +481,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     } yield {
       assert(notifications.contains(DLCNodeConnectionInitiated(peerAddr)))
       assert(notifications.contains(DLCNodeConnectionFailed(peerAddr)))
-      assert(
-        notifications.contains(
-          DLCAcceptFailed((offer.tlv.tempContractId, "Connection refused"))))
+      assert(notifications.exists(n =>
+        n match {
+          case DLCAcceptFailed((id, error)) =>
+            id == offer.tlv.tempContractId && error.startsWith(
+              "Connection refused")
+          case _ => false
+        }))
     }
   }
 

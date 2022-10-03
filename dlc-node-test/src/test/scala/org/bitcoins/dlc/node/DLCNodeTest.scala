@@ -70,7 +70,7 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
       _ = assert(!errorP.isCompleted)
       invalidAddr = InetSocketAddress.createUnresolved(addrB.getHostString,
                                                        NetworkUtil.randomPort())
-      _ <- recoverToSucceededIf[java.net.ConnectException](
+      _ <- recoverToSucceededIf[Exception](
         nodeA.checkPeerConnection(invalidAddr))
       error <- errorP.future
     } yield {
