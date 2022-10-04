@@ -2913,11 +2913,9 @@ case class OracleMetadata(
     attestations: SchnorrAttestation,
     metadataSignature: OracleMetadataSignature)
     extends DLCPlainType {
-  //renable this when we figure out where we and rust-dlc
-  //diverge on signatures
-  //require(
-  //verifySignature,
-  //s"Invalid metadata signature for oracle metadata, oracleName=$oracleName description=$oracleDescription")
+  require(
+    verifySignature,
+    s"Invalid metadata signature for oracle metadata, oracleName=$oracleName description=$oracleDescription")
 
   val attestationPublicKey: SchnorrPublicKey = attestations.attestationPublicKey
 

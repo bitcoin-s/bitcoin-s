@@ -120,12 +120,8 @@ trait CryptoRuntime {
     sha256(dlcAttestationTagBytes ++ bytes)
   }
 
-  private val metadataSignatureBytes: Sha256Digest = {
-    CryptoUtil.sha256("oraclemetadata/v0")
-  }
-
   def sha256MetadataSignature(bytes: ByteVector): Sha256Digest = {
-    sha256(metadataSignatureBytes.bytes ++ bytes)
+    CryptoUtil.taggedSha256(bytes, "oraclemetadata/v0")
   }
 
   def sha256DLCAttestation(str: String): Sha256Digest = {
