@@ -2928,8 +2928,8 @@ case class OracleMetadata(
   }
 
   def verifySignature: Boolean = {
-    val bytes = oracleName.bytes ++
-      oracleDescription.bytes ++
+    val bytes = TLVUtil.strBytes(oracleName) ++
+      TLVUtil.strBytes(oracleDescription) ++
       creationTime.bytes ++
       attestations.bytes
     val hash = CryptoUtil.sha256MetadataSignature(bytes)
