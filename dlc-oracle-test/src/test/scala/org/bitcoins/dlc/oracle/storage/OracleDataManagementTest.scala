@@ -58,8 +58,7 @@ class OracleDataManagementTest extends OracleDataManagementFixture {
       OracleAnnouncementV1TLV.buildAnnouncementSignature(
         announcementPrivKey,
         signingVersion = SigningVersion.latest,
-        eventTLV = oracleEventV1,
-        metadata = metadata
+        eventTLV = oracleEventV1
       )
 
     val announcement = OracleAnnouncementV1TLV(

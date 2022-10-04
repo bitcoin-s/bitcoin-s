@@ -140,11 +140,8 @@ trait CryptoRuntime {
     sha256(dlcAnnouncementTagBytes ++ bytes)
   }
 
-  private val dlcAnnouncementV1TagBytes =
-    CryptoUtil.sha256("announcement/v1").bytes
-
   def sha256DLCAnnouncementV1(bytes: ByteVector): Sha256Digest = {
-    sha256(dlcAnnouncementV1TagBytes ++ bytes)
+    CryptoUtil.taggedSha256(bytes, "announcement/v1")
   }
 
   /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature

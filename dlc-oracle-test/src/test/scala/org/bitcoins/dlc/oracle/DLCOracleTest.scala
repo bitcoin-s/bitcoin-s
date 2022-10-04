@@ -236,8 +236,6 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(eventOpt.isDefined)
         val event = eventOpt.get
 
-        val announcementV1 = announcement.asInstanceOf[OracleAnnouncementV1TLV]
-
         assert(event.isInstanceOf[PendingEnumV0OracleEvent])
         assert(event.eventName == eventName)
         assert(event.eventDescriptorTLV == testDescriptor)
@@ -264,9 +262,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
         val announceBytes =
           SigningVersion.latest.calcAnnouncementHash(announcement =
-                                                       event.eventTLV,
-                                                     metadata =
-                                                       announcementV1.metadata)
+            event.eventTLV)
 
         assert(
           dlcOracle.announcementPublicKey.verify(announceBytes,

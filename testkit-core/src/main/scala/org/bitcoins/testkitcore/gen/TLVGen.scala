@@ -4,6 +4,7 @@ import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{UInt32, UInt64, UInt8}
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
@@ -199,10 +200,12 @@ trait TLVGen {
   /** @param numOutcomes the number of nonces needed to represent all outcomes in this DLC
     * @return
     */
-  def oracleMetadata(numOutcomesOpt: Option[Int]): Gen[OracleMetadata] = {
+  def oracleMetadata(
+      numOutcomesOpt: Option[Int],
+      announcementPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey): Gen[
+    OracleMetadata] = {
+    val announcementPublicKey = announcementPrivKey.schnorrPublicKey
     for {
-      announcementPrivKey <- CryptoGenerators.privateKey
-      announcementPublicKey = announcementPrivKey.schnorrPublicKey
       oracleName <- StringGenerators.genString
       description <- StringGenerators.genString
       creationTime <- NumberGenerator.uInt32s
@@ -226,10 +229,14 @@ trait TLVGen {
   def oracleAnnouncementV1TLV(
       numDigitsOpt: Option[Int]): Gen[OracleAnnouncementV1TLV] = {
     for {
-      sig <- CryptoGenerators.schnorrDigitalSignature
-      metadata <- oracleMetadata(numDigitsOpt)
+      announcementPrivKey <- CryptoGenerators.privateKey
+      metadata <- oracleMetadata(numDigitsOpt, announcementPrivKey)
       eventTLV <- oracleEventV1TLV
-    } yield OracleAnnouncementV1TLV(sig, eventTLV, metadata)
+      announcementSignature = OracleAnnouncementV1TLV
+        .buildAnnouncementSignature(announcementPrivKey = announcementPrivKey,
+                                    signingVersion = SigningVersion.latest,
+                                    eventTLV = eventTLV)
+    } yield OracleAnnouncementV1TLV(announcementSignature, eventTLV, metadata)
   }
 
   def oracleAttestmentV0TLV: Gen[OracleAttestmentV0TLV] = {
@@ -298,13 +305,19 @@ trait TLVGen {
 
   def oracleInfoV0TLV(outcomes: Vector[String]): Gen[OracleInfoV0TLV] = {
     for {
-      announcementSignature <- CryptoGenerators.schnorrDigitalSignature
-      metadata <- oracleMetadata(Some(outcomes.length))
+      announcementPrivKey <- CryptoGenerators.privateKey
+      metadata <- oracleMetadata(Some(outcomes.length), announcementPrivKey)
       eventId <- StringGenerators.genString
       timestamps <- oracleEventTimestamp
     } yield {
+
       val enumEvent = EnumEventDescriptorDLCSubType(outcomes)
       val event = OracleEventV1TLV(enumEvent, eventId, timestamps)
+      val announcementSignature =
+        OracleAnnouncementV1TLV.buildAnnouncementSignature(
+          announcementPrivKey = announcementPrivKey,
+          signingVersion = SigningVersion.latest,
+          eventTLV = event)
       val announcement = OracleAnnouncementV1TLV(announcementSignature,
                                                  eventTLV = event,
                                                  metadata = metadata)
@@ -338,13 +351,17 @@ trait TLVGen {
     */
   def numericAnnouncement(
       numDigitsOpt: Option[Int]): Gen[OracleAnnouncementV1TLV] = {
+    val announcementPrivKey = ECPrivateKey.freshPrivateKey
     for {
-      metadata <- oracleMetadata(numDigitsOpt)
-      announcementSignature <- CryptoGenerators.schnorrDigitalSignature
-      numericOraclEvent <- numericOracleEventV1TLV(numDigitsOpt)
+      metadata <- oracleMetadata(numDigitsOpt, announcementPrivKey)
+      numericOracleEvent <- numericOracleEventV1TLV(numDigitsOpt)
+      announcementSignature = OracleAnnouncementV1TLV
+        .buildAnnouncementSignature(announcementPrivKey = announcementPrivKey,
+                                    signingVersion = SigningVersion.latest,
+                                    eventTLV = numericOracleEvent)
     } yield OracleAnnouncementV1TLV(announcementSignature =
                                       announcementSignature,
-                                    eventTLV = numericOraclEvent,
+                                    eventTLV = numericOracleEvent,
                                     metadata = metadata)
   }
 

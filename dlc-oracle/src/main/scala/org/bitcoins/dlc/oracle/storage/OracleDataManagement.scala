@@ -68,8 +68,7 @@ case class OracleDataManagement(daos: DLCOracleDAOs)(implicit
       announcementSignature = OracleAnnouncementV1TLV
         .buildAnnouncementSignature(announcementPrivKey = announcementPrivKey,
                                     signingVersion = signingVersion,
-                                    eventTLV = eventTLV,
-                                    metadata = metadata)
+                                    eventTLV = eventTLV)
 
       oracleAnnouncement = OracleAnnouncementV1TLV(announcementSignature =
                                                      announcementSignature,

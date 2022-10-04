@@ -34,26 +34,38 @@ object OracleTestUtil {
 
   val dummyKey: ECPublicKey = dummyPrivKey.publicKey
 
-  val outcome: NormalizedString = EnumEventDescriptorV0TLV.dummy.outcomes.head
+  val timestamp = FixedOracleEventTimestamp(UInt32.zero)
+  val eventId = NormalizedString("id")
+  val enumEvent = EnumEventDescriptorDLCSubType(Vector("WIN", "LOSE"))
+
+  val outcome: NormalizedString = enumEvent.outcomes.head
 
   val hash: Sha256Digest = CryptoUtil.sha256DLCAttestation(outcome)
 
   val sig: SchnorrDigitalSignature =
     attestationPrivKey.schnorrSignWithNonce(hash.bytes, kVal)
 
+  val oracleEventV1TLV = OracleEventV1TLV(enumEvent, eventId, timestamp)
+
+  val announcementSignature = {
+    OracleAnnouncementV1TLV.buildAnnouncementSignature(
+      announcementPrivKey = dummyPrivKey,
+      signingVersion = SigningVersion.latest,
+      eventTLV = oracleEventV1TLV)
+  }
+
   val dummyEventDb: EventDb = EventDb(
     nonce = kVal.schnorrNonce,
     pubkey = attesatationPubKey,
     nonceIndex = 0,
-    eventName = "id",
+    eventName = eventId.normStr,
     numOutcomes = 2,
     signingVersion = SigningVersion.latest,
-    maturationTime = Instant.ofEpochSecond(0),
+    maturationTime = Instant.ofEpochSecond(timestamp.maturationTime.toLong),
     attestationOpt = Some(sig.sig),
     outcomeOpt = Some(outcome),
-    announcementSignature = SchnorrDigitalSignature(
-      "1efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937e"),
-    eventDescriptorTLV = EnumEventDescriptorV0TLV.dummy
+    announcementSignature = announcementSignature,
+    eventDescriptorTLV = enumEvent
   )
 
   val numericOutcome = "0"
@@ -73,14 +85,28 @@ object OracleTestUtil {
     precision = Int32.zero
   )
 
+  val numericOracleEventV1: OracleEventV1TLV = {
+    OracleEventV1TLV(dummyDigitDecomp, eventId, timestamp)
+  }
+
   private val orderedNonces = OrderedNonces(
     Vector(kVal.schnorrNonce, kVal1.schnorrNonce))
 
+  val numericAnnouncementSignature: SchnorrDigitalSignature = {
+    OracleAnnouncementV1TLV.buildAnnouncementSignature(
+      announcementPrivKey = dummyPrivKey,
+      signingVersion = SigningVersion.latest,
+      eventTLV = numericOracleEventV1)
+  }
+
   val dummyNumericEventDb0: EventDb = {
-    dummyEventDb.copy(nonce = orderedNonces.toVector.head,
-                      eventDescriptorTLV = dummyDigitDecomp,
-                      outcomeOpt = Some(numericOutcome),
-                      attestationOpt = Some(signNumeric0.sig))
+    dummyEventDb.copy(
+      nonce = orderedNonces.toVector.head,
+      eventDescriptorTLV = dummyDigitDecomp,
+      outcomeOpt = Some(numericOutcome),
+      attestationOpt = Some(signNumeric0.sig),
+      announcementSignature = numericAnnouncementSignature
+    )
   }
 
   val dummyNumericEventDb1: EventDb = {
@@ -89,17 +115,47 @@ object OracleTestUtil {
       nonceIndex = 1,
       eventDescriptorTLV = dummyDigitDecomp,
       outcomeOpt = Some(numericOutcome),
-      attestationOpt = Some(signNumeric1.sig)
+      attestationOpt = Some(signNumeric1.sig),
+      announcementSignature = numericAnnouncementSignature
     )
   }
 
-  val dummyMetadata: OracleMetadata = {
-    val announcementPrivKey = ECPrivateKey.freshPrivateKey
+  val dummyEnumMetadata: OracleMetadata = {
+    val announcementPrivKey = dummyPrivKey
     val announcementPubKey = announcementPrivKey.schnorrPublicKey
 
     val name = NormalizedString("oracle_name")
     val description = NormalizedString("oracle_description")
-    val creationTime: UInt32 = UInt32(Instant.now.getEpochSecond)
+    val creationTime: UInt32 = timestamp.maturationTime
+    val schnorrAttestation: SchnorrAttestation =
+      SchnorrAttestation.build(announcementPrivKey,
+                               attesatationPubKey,
+                               OrderedNonces(dummyEventDb.nonce))
+    val metadataSignature: OracleMetadataSignature = OracleMetadataSignature
+      .buildSignature(announcementPrivKey = announcementPrivKey,
+                      oracleName = name,
+                      oracleDescription = description,
+                      creationTime = creationTime,
+                      schnorrAttestation = schnorrAttestation)
+
+    val metadata = OracleMetadata(
+      announcementPublicKey = announcementPubKey,
+      oracleName = name,
+      oracleDescription = description,
+      creationTime = creationTime,
+      attestations = schnorrAttestation,
+      metadataSignature = metadataSignature
+    )
+    metadata
+  }
+
+  val dummyNumericMetadata: OracleMetadata = {
+    val announcementPrivKey = dummyPrivKey
+    val announcementPubKey = announcementPrivKey.schnorrPublicKey
+
+    val name = NormalizedString("oracle_name")
+    val description = NormalizedString("oracle_description")
+    val creationTime: UInt32 = timestamp.maturationTime
     val schnorrAttestation: SchnorrAttestation =
       SchnorrAttestation.build(announcementPrivKey,
                                attesatationPubKey,
@@ -111,24 +167,26 @@ object OracleTestUtil {
                       creationTime = creationTime,
                       schnorrAttestation = schnorrAttestation)
 
-    val metadata = OracleMetadata(announcementPubKey,
-                                  name,
-                                  description,
-                                  creationTime = creationTime,
-                                  attestations = schnorrAttestation,
-                                  metadataSignature = metadataSignature)
+    val metadata = OracleMetadata(
+      announcementPublicKey = announcementPubKey,
+      oracleName = name,
+      oracleDescription = description,
+      creationTime = creationTime,
+      attestations = schnorrAttestation,
+      metadataSignature = metadataSignature
+    )
     metadata
   }
 
   val dummyEnumOracleEventCompleted: CompletedEnumV0OracleEvent = OracleEvent
-    .fromCompletedEventDbs(Vector(dummyEventDb), Some(dummyMetadata))
+    .fromCompletedEventDbs(Vector(dummyEventDb), Some(dummyEnumMetadata))
     .asInstanceOf[CompletedEnumV0OracleEvent]
 
   val dummyNumericOracleEventCompleted: CompletedDigitDecompositionV0OracleEvent = {
 
     OracleEvent
       .fromCompletedEventDbs(Vector(dummyNumericEventDb0, dummyNumericEventDb1),
-                             Some(dummyMetadata))
+                             Some(dummyNumericMetadata))
       .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
   }
 
