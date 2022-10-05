@@ -308,7 +308,7 @@ object DLCWalletUtil extends Logging {
   lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(
     dlcId = sampleDLCDb.dlcId,
     oracleThreshold = 1,
-    oracleParamsTLVOpt = NoneDLCType,
+    oracleParamsTLVOpt = None,
     contractDescriptorTLV = sampleContractDescriptor.toSubType,
     contractMaturity = BlockTimeStamp(0),
     contractTimeout = BlockTimeStamp(1),

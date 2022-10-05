@@ -3,11 +3,7 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.tlv.{
-  ContractDescriptorTLV,
-  OptionDLCType,
-  OracleParamsV0TLV
-}
+import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
 import org.bitcoins.crypto._
 
 /** This table contains all the meta information about a DLC.
@@ -16,7 +12,7 @@ import org.bitcoins.crypto._
 case class DLCContractDataDb(
     dlcId: Sha256Digest,
     oracleThreshold: Int,
-    oracleParamsTLVOpt: OptionDLCType[OracleParamsV0TLV],
+    oracleParamsTLVOpt: Option[OracleParamsV0TLV],
     contractDescriptorTLV: ContractDescriptorTLV,
     contractMaturity: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
@@ -41,7 +37,7 @@ object DLCContractDataDbHelper {
     DLCContractDataDb(
       dlcId = dlcId,
       oracleThreshold = oracleThreshold,
-      oracleParamsTLVOpt = OptionDLCType(oracleParamsTLVOpt),
+      oracleParamsTLVOpt = oracleParamsTLVOpt,
       contractDescriptorTLV = contractDescriptorTLV,
       contractMaturity = contractMaturity,
       contractTimeout = contractTimeout,
