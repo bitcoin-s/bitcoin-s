@@ -96,6 +96,172 @@ class UTXOLifeCycleTest
     }
   }
 
+  it should "track multiple utxos state change to confirmed spent" in { param =>
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
+    for {
+      addr1 <- wallet.getNewAddress()
+      addr2 <- wallet.getNewAddress()
+      addr3 <- wallet.getNewAddress()
+
+      oldUtxos <- wallet.listUtxos()
+
+      txid1 <- bitcoind.sendToAddress(addr1, Satoshis(1000))
+      txid2 <- bitcoind.sendToAddress(addr2, Satoshis(2000))
+      txid3 <- bitcoind.sendToAddress(addr3, Satoshis(3000))
+
+      tx1 <- wallet.findByTxId(txid1)
+      _ = assert(tx1.isEmpty)
+      tx2 <- wallet.findByTxId(txid2)
+      _ = assert(tx2.isEmpty)
+      tx3 <- wallet.findByTxId(txid3)
+      _ = assert(tx3.isEmpty)
+
+      tx1 <- bitcoind.getRawTransactionRaw(txid1).map(Option.apply).recover {
+        case _: Throwable => None
+      }
+      _ = assert(tx1.nonEmpty)
+      tx2 <- bitcoind.getRawTransactionRaw(txid2).map(Option.apply).recover {
+        case _: Throwable => None
+      }
+      _ = assert(tx2.nonEmpty)
+      tx3 <- bitcoind.getRawTransactionRaw(txid3).map(Option.apply).recover {
+        case _: Throwable => None
+      }
+      _ = assert(tx3.nonEmpty)
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos == utxos)
+
+      // process the transactions from mempool
+      _ <- wallet.processTransaction(tx1.get, None)
+      _ <- wallet.processTransaction(tx2.get, None)
+      _ <- wallet.processTransaction(tx3.get, None)
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      _ = assert(utxo1.state == BroadcastReceived)
+      utxo2 = utxos.find(_.txid == txid2).get
+      _ = assert(utxo2.state == BroadcastReceived)
+      utxo3 = utxos.find(_.txid == txid3).get
+      _ = assert(utxo3.state == BroadcastReceived)
+
+      minerAddr <- bitcoind.getNewAddress
+
+      // confirm the transactions
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      _ = assert(utxo1.state == PendingConfirmationsReceived)
+      utxo2 = utxos.find(_.txid == txid2).get
+      _ = assert(utxo2.state == PendingConfirmationsReceived)
+      utxo3 = utxos.find(_.txid == txid3).get
+      _ = assert(utxo3.state == PendingConfirmationsReceived)
+
+      // mine the second block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      _ = assert(utxo1.state == PendingConfirmationsReceived)
+      utxo2 = utxos.find(_.txid == txid2).get
+      _ = assert(utxo2.state == PendingConfirmationsReceived)
+      utxo3 = utxos.find(_.txid == txid3).get
+      _ = assert(utxo3.state == PendingConfirmationsReceived)
+
+      // mine the third block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      _ = assert(utxo1.state == PendingConfirmationsReceived)
+      utxo2 = utxos.find(_.txid == txid2).get
+      _ = assert(utxo2.state == PendingConfirmationsReceived)
+      utxo3 = utxos.find(_.txid == txid3).get
+      _ = assert(utxo3.state == PendingConfirmationsReceived)
+
+      // mine the fourth block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      _ = assert(utxo1.state == PendingConfirmationsReceived)
+      utxo2 = utxos.find(_.txid == txid2).get
+      _ = assert(utxo2.state == PendingConfirmationsReceived)
+      utxo3 = utxos.find(_.txid == txid3).get
+      _ = assert(utxo3.state == PendingConfirmationsReceived)
+
+      // mine the fifth block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      _ = assert(utxo1.state == PendingConfirmationsReceived)
+      utxo2 = utxos.find(_.txid == txid2).get
+      _ = assert(utxo2.state == PendingConfirmationsReceived)
+      utxo3 = utxos.find(_.txid == txid3).get
+      _ = assert(utxo3.state == PendingConfirmationsReceived)
+
+      // mine the sixth block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      utxo2 = utxos.find(_.txid == txid2).get
+      utxo3 = utxos.find(_.txid == txid3).get
+
+    } yield {
+      assert(utxo1.state == ConfirmedReceived)
+      assert(utxo2.state == ConfirmedReceived)
+      assert(utxo3.state == ConfirmedReceived)
+    }
+  }
+
   it should "handle an RBF transaction on unconfirmed coins" in { param =>
     val wallet = param.wallet
 
