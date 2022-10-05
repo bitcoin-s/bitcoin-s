@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.dlc.oracle.{
   NonceSignaturePair,
   NonceSignaturePairDb,
+  NonceSignaturePairDbShim,
   OracleAnnouncementDataDb,
   OracleMetadataDb,
   OracleMetadataWithId
@@ -2958,14 +2959,16 @@ object OracleMetadata extends Factory[OracleMetadata] {
   def fromDbs(
       metadataDb: OracleMetadataDb,
       nonceSignatureDbs: Vector[NonceSignaturePairDb]): OracleMetadataWithId = {
+    val sorted: Vector[NonceSignaturePairDb] =
+      NonceSignaturePairDbShim.sort(nonceSignatureDbs).values.flatten.toVector
     val pok: SchnorrProofOfKnowledge = SchnorrProofOfKnowledge(
       attestationPubKeySignature = metadataDb.attestationPubKeySignature,
-      nonceSignature = nonceSignatureDbs.map(_.nonceProof)
+      nonceSignature = sorted.map(_.nonceProof)
     )
-    val sorted = OrderedNonces.fromUnsorted(nonceSignatureDbs.map(_.nonce))
+    val orderedNonces = OrderedNonces(sorted.map(_.nonce))
     val schnorrAttestation: SchnorrAttestation = SchnorrAttestation(
       attestationPublicKey = metadataDb.attestationPublicKey,
-      nonces = sorted,
+      nonces = orderedNonces,
       proofOfKnowledge = pok
     )
     val metadataSignature = OracleMetadataSignature(

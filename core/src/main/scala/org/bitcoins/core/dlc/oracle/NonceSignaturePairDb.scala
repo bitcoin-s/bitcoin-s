@@ -45,10 +45,9 @@ case class NonceSignaturePairDb(
 
 object NonceSignaturePairDbShim {
 
-  def sort(nonceDbs: Vector[NonceSignaturePairDbShim]): Map[
-    Long,
-    Vector[NonceSignaturePairDbShim]] = {
-    val noncesByAnnouncement: Map[Long, Vector[NonceSignaturePairDbShim]] = {
+  def sort[T <: NonceSignaturePairDbShim](
+      nonceDbs: Vector[T]): Map[Long, Vector[T]] = {
+    val noncesByAnnouncement: Map[Long, Vector[T]] = {
 
       val init = nonceDbs.groupBy(_.announcementId)
       init.map { case (k, v) =>
