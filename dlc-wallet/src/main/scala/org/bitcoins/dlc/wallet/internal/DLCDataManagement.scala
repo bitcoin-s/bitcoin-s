@@ -775,6 +775,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     safeDatabase.run(action)
   }
 
+  def deleteByDLCId(dlcId: Sha256Digest): Future[Unit] = {
+    val action = actionBuilder.deleteDLCAction(dlcId)
+    safeDatabase.run(action)
+  }
+
   /** Retrieves the transaction(s) used to fund the offer message */
   private def getOfferPrevTxs(
       dlcDb: DLCDb,
