@@ -1087,6 +1087,96 @@
       },
       "version-1.9.2/wallet/version-1.9.2-wallet-sports-betting-example": {
         "title": "Wallet Sports Betting Example"
+      },
+      "version-1.9.3/applications/version-1.9.3-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.3/chain/version-1.9.3-chain-query-api": {
+        "title": "Chain Query API"
+      },
+      "version-1.9.3/chain/version-1.9.3-chain": {
+        "title": "Blockchain Verification"
+      },
+      "version-1.9.3/config/version-1.9.3-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.9.3/core/version-1.9.3-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.3/core/version-1.9.3-core-intro": {
+        "title": "Core Module"
+      },
+      "version-1.9.3/core/version-1.9.3-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.3/core/version-1.9.3-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.3/core/version-1.9.3-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.3/crypto/version-1.9.3-musig": {
+        "title": "MuSig"
+      },
+      "version-1.9.3/crypto/version-1.9.3-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.3/version-1.9.3-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.3/key-manager/version-1.9.3-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.3/node/version-1.9.3-node-api title: Node API": {
+        "title": "node-api title: Node API"
+      },
+      "version-1.9.3/node/version-1.9.3-node": {
+        "title": "Light Client"
+      },
+      "version-1.9.3/rpc/version-1.9.3-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-1.9.3/secp256k1/version-1.9.3-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.3/version-1.9.3-ui-setup": {
+        "title": "Installing the DLC Wallet UI"
+      },
+      "version-1.9.3/wallet/version-1.9.3-wallet-callbacks": {
+        "title": "Wallet Callbacks"
+      },
+      "version-1.9.3/wallet/version-1.9.3-wallet-sync": {
+        "title": "Wallet Sync"
+      },
+      "version-1.9.3/wallet/version-1.9.3-wallet": {
+        "title": "Wallet"
+      },
+      "version-1.9.4/core/version-1.9.4-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.4/core/version-1.9.4-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.4/core/version-1.9.4-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.4/core/version-1.9.4-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.4/crypto/version-1.9.4-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.4/version-1.9.4-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.4/key-manager/version-1.9.4-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.4/secp256k1/version-1.9.4-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.4/wallet/version-1.9.4-wallet-sync": {
+        "title": "Wallet Sync"
       }
     },
     "links": {
