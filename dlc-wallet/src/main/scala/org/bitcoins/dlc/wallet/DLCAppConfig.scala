@@ -60,7 +60,7 @@ case class DLCAppConfig(
       migrate()
     }
 
-    val f = if (initMigrations != 0 && initMigrations <= 8) {
+    val f = if (initMigrations != 0 && initMigrations <= 9) {
       //means we have an old wallet that we need to migrate
       logger.info(s"Deleting alpha version DLCs")
       deleteAlphaVersionDLCs()
@@ -70,7 +70,8 @@ case class DLCAppConfig(
       Future.unit
     }
 
-    logger.info(s"Applied $numMigrations to the dlc project")
+    logger.info(
+      s"Applied ${numMigrations.migrationsExecuted} to the dlc project. Started with initMigrations=$initMigrations")
 
     f
   }
@@ -129,14 +130,17 @@ case class DLCAppConfig(
     val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
     val dlcDAO = dlcManagement.dlcDAO
     val alphaDLCsF =
-      dlcDAO.findByDLCSerializationVersion(DLCSerializationVersion.Alpha)
+      dlcDAO
+        .findAll()
+        .map(_.filter(_.serializationVersion == DLCSerializationVersion.Alpha))
     for {
       alphaDLCs <- alphaDLCsF
       _ <- Future.traverse(alphaDLCs) { dlc =>
         dlc.state match {
           case _: ClosedState | DLCState.Offered | DLCState.Accepted |
               _: AdaptorSigComputationState | DLCState.Signed =>
-            logger.info(s"Deleting alpha version of a dlc=$dlc")
+            logger.info(
+              s"Deleting alpha version of a dlcId=${dlc.dlcId.hex} dlc=$dlc")
             dlcManagement.deleteByDLCId(dlc.dlcId)
           case DLCState.Broadcasted | DLCState.Confirmed =>
             sys.error(
