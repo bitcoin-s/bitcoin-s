@@ -5,6 +5,7 @@ import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionOutPoint,
@@ -259,6 +260,18 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       assert(created.peerOpt.isEmpty)
       assert(updated.get.peerOpt == Some("127.0.0.1:1"))
       assert(deleted.get.peerOpt.isEmpty)
+    }
+  }
+
+  it must "read an alpha version of a DLC from the database" in { daos =>
+    val alphaDLCDb =
+      dlcDb.copy(serializationVersion = DLCSerializationVersion.Alpha)
+    for {
+      _ <- daos.dlcDAO.create(alphaDLCDb)
+      foundOpt <- daos.dlcDAO.findByDLCSerializationVersion(
+        DLCSerializationVersion.Alpha)
+    } yield {
+      assert(foundOpt.nonEmpty)
     }
   }
 }
