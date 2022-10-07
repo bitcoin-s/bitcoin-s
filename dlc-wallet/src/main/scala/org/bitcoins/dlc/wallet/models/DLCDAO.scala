@@ -173,7 +173,12 @@ case class DLCDAO()(implicit
     safeDatabase.run(action).map(_ => ())
   }
 
-  private def updatePeerAction(dlcId: Sha256Digest, peerOpt: Option[String]) = {
+  private def updatePeerAction(
+      dlcId: Sha256Digest,
+      peerOpt: Option[String]): DBIOAction[
+    Int,
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val dlcQuery = table.filter(_.dlcId === dlcId)
 
     for {
@@ -184,6 +189,14 @@ case class DLCDAO()(implicit
           dlcQuery.update(dlc.copy(peerOpt = peerOpt))
       }
     } yield res
+  }
+
+  def findByDLCSerializationVersion(
+      version: DLCSerializationVersion): Future[Vector[DLCDb]] = {
+    val action = table.filter(_.serializationVersion === version).result
+    safeDatabase
+      .run(action)
+      .map(_.toVector)
   }
 
   class DLCTable(tag: Tag)
