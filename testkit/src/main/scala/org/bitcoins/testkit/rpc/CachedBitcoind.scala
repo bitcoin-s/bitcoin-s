@@ -291,6 +291,25 @@ trait CachedBitcoindPairV22
   }
 }
 
+trait CachedBitcoindPairNewest
+    extends CachedBitcoindCollection[BitcoindRpcClient] {
+  _: BitcoinSAkkaAsyncTest =>
+
+  override val version: BitcoindVersion = BitcoindVersion.newest
+
+  lazy val clientsF: Future[NodePair[BitcoindV22RpcClient]] = {
+    BitcoindRpcTestUtil
+      .createNodePair[BitcoindV22RpcClient](version)
+      .map(NodePair.fromTuple)
+      .map { tuple =>
+        isClientsUsed.set(true)
+        val clients = cachedClients.get()
+        cachedClients.set(clients ++ tuple.toVector)
+        tuple
+      }
+  }
+}
+
 trait CachedBitcoindTriple[T <: BitcoindRpcClient]
     extends CachedBitcoindCollection[T] {
   _: BitcoinSAkkaAsyncTest =>
