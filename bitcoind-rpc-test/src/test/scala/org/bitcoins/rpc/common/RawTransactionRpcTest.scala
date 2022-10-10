@@ -175,7 +175,8 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
             vout = output.n,
             scriptPubKey = ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
             redeemScript = Some(multisig.redeemScript),
-            amount = Some(Bitcoins(1.2))))
+            amount = Some(Bitcoins(1.2))
+          ))
         BitcoindRpcTestUtil.signRawTransaction(
           client,
           rawCreatedTx,
@@ -192,11 +193,11 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       address2 <- otherClient.getNewAddress
       pub1 <- BitcoindRpcTestUtil.getPubkey(client, address1)
       pub2 <- BitcoindRpcTestUtil.getPubkey(otherClient, address2)
-      keys = Vector(Left(pub1.get), Left(pub2.get))
+      keys = Vector(pub1.get, pub2.get)
 
-      multisig <- client.addMultiSigAddress(2, keys)
+      multisig <- client.createMultiSig(2, keys)
 
-      _ <- otherClient.addMultiSigAddress(2, keys)
+      _ <- otherClient.createMultiSig(2, keys)
 
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
                                                             otherClient,
@@ -253,7 +254,6 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       assert(!partialTx2.complete)
       assert(partialTx2.hex != ctx)
     }
-
   }
 
   it should "fail to abandon a transaction which has not been sent" in {

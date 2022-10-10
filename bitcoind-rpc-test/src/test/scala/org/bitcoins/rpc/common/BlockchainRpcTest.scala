@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPreV19
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockChainInfoResultPostV23}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
@@ -16,12 +16,14 @@ import scala.concurrent.{Await, Future}
 class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
   lazy val pruneClientF: Future[BitcoindRpcClient] = {
+    val instance = BitcoindRpcTestUtil
+      .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.newest))
     val pruneClient =
-      BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil
-        .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.newest)))
+      BitcoindRpcClient.withActorSystem(instance)
 
     for {
       _ <- pruneClient.start()
+      _ <- pruneClient.createWallet("prune-wallet")
       _ <- pruneClient.getNewAddress.flatMap(
         pruneClient.generateToAddress(1000, _))
     } yield pruneClient
@@ -45,12 +47,10 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       info <- client.getBlockChainInfo
       bestHash <- client.getBestBlockHash
     } yield {
-      assert(info.isInstanceOf[GetBlockChainInfoResultPreV19])
-      val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPreV19]
-      assert(preV19Info.chain == RegTest)
-      assert(preV19Info.softforks.length >= 3)
-      assert(preV19Info.bip9_softforks.keySet.size >= 2)
-      assert(preV19Info.bestblockhash == bestHash)
+      assert(info.isInstanceOf[GetBlockChainInfoResultPostV23])
+      val postV23 = info.asInstanceOf[GetBlockChainInfoResultPostV23]
+      assert(postV23.chain == RegTest)
+      assert(postV23.bestblockhash == bestHash)
     }
   }
 
