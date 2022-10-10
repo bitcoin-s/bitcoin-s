@@ -3,11 +3,11 @@ package org.bitcoins.rpc.common
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV17,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 
-class PreciousBlockRpcTest extends BitcoindFixturesCachedPairV17 {
+class PreciousBlockRpcTest extends BitcoindFixturesCachedPairNewest {
 
   it should "be able to mark a block as precious" in { nodePair =>
     val freshClient = nodePair.node1

@@ -30,7 +30,6 @@ import org.bitcoins.crypto.{
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
@@ -176,7 +175,7 @@ trait BitcoindRpcTestUtil extends Logging {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V17 | V18 | V19 | V20 | V21 | V22 | V23) =>
+      case known @ (V18 | V19 | V20 | V21 | V22 | V23) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -221,7 +220,7 @@ trait BitcoindRpcTestUtil extends Logging {
         false
       } else {
         versionOpt match {
-          case Some(V17) | Some(V18) =>
+          case Some(V18) =>
             false
           case Some(V19) | Some(V20) | Some(V21) | Some(V22) | Some(V23) | Some(
                 Unknown) | None =>
@@ -251,20 +250,6 @@ trait BitcoindRpcTestUtil extends Logging {
 
     BitcoindInstanceLocal.fromConfig(conf, binary)
   }
-
-  def v17Instance(
-      port: Int = RpcUtil.randomPort,
-      rpcPort: Int = RpcUtil.randomPort,
-      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V17),
-             binaryDirectory = binaryDirectory)
 
   def v18Instance(
       port: Int = RpcUtil.randomPort,
@@ -360,12 +345,6 @@ trait BitcoindRpcTestUtil extends Logging {
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     bitcoindVersion match {
-      case BitcoindVersion.V17 =>
-        BitcoindRpcTestUtil.v17Instance(port,
-                                        rpcPort,
-                                        zmqConfig,
-                                        pruneMode,
-                                        binaryDirectory = binaryDirectory)
       case BitcoindVersion.V18 =>
         BitcoindRpcTestUtil.v18Instance(port,
                                         rpcPort,
@@ -415,7 +394,7 @@ trait BitcoindRpcTestUtil extends Logging {
         val createWalletF = for {
           version <- server.version
           descriptors = version match {
-            case V17 | V18 | V19 | V20 | V21 | V22 | Unknown =>
+            case V18 | V19 | V20 | V21 | V22 | Unknown =>
               false
             case V23 => true
           }
@@ -717,9 +696,6 @@ trait BitcoindRpcTestUtil extends Logging {
       val rpc = version match {
         case BitcoindVersion.Unknown =>
           BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
-        case BitcoindVersion.V17 =>
-          BitcoindV17RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v17Instance())
         case BitcoindVersion.V18 =>
           BitcoindV18RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v18Instance())
@@ -819,13 +795,6 @@ trait BitcoindRpcTestUtil extends Logging {
     }
   }
 
-  /** Returns a pair of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
-    * that are connected with some blocks in the chain
-    */
-  def createNodePairV17(clientAccum: RpcClientAccum)(implicit
-  system: ActorSystem): Future[(BitcoindV17RpcClient, BitcoindV17RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V17, clientAccum)
-
   /** Returns a pair of [[org.bitcoins.rpc.client.v18.BitcoindV18RpcClient BitcoindV18RpcClient]]
     * that are connected with some blocks in the chain
     */
@@ -917,16 +886,6 @@ trait BitcoindRpcTestUtil extends Logging {
     createNodeTripleInternal(version)
   }
 
-  /** @return a triple of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
-    * that are connected with some blocks in the chain
-    */
-  def createNodeTripleV17(
-      clientAccum: RpcClientAccum
-  )(implicit system: ActorSystem): Future[
-    (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
-    createNodeTripleInternal(BitcoindVersion.V17, clientAccum)
-  }
-
   def createNodeTripleV18(
       clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
@@ -983,26 +942,21 @@ trait BitcoindRpcTestUtil extends Logging {
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
   ): Future[SignRawTransactionResult] =
     signer match {
-      case v17: BitcoindV17RpcClient =>
-        v17.signRawTransactionWithWallet(transaction, utxoDeps)
       case v20: BitcoindV20RpcClient =>
         v20.signRawTransactionWithWallet(transaction)
       case v21: BitcoindV21RpcClient =>
         v21.signRawTransactionWithWallet(transaction)
       case unknown: BitcoindRpcClient =>
-        val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
         val v18T = BitcoindV18RpcClient.fromUnknownVersion(unknown)
         val v19T = BitcoindV19RpcClient.fromUnknownVersion(unknown)
-        (v17T, v18T, v19T) match {
-          case (Failure(_), Failure(_), Failure(_)) =>
+        (v18T, v19T) match {
+          case (Failure(_), Failure(_)) =>
             throw new RuntimeException(
               "Could not figure out version of provided bitcoind RPC client!" +
                 "This should not happen, managed to construct different versioned RPC clients from one single client")
-          case (Success(v17), _, _) =>
-            v17.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, Success(v18), _) =>
+          case (Success(v18), _) =>
             v18.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _, Success(v19)) =>
+          case (_, Success(v19)) =>
             v19.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
@@ -1015,16 +969,9 @@ trait BitcoindRpcTestUtil extends Logging {
     import system.dispatcher
 
     client match {
-      case v17: BitcoindV17RpcClient =>
-        v17.getAddressInfo(address).map(_.pubkey)
       case other: BitcoindRpcClient =>
-        other.version.flatMap { v =>
-          if (v.toString >= BitcoindVersion.V17.toString) {
-            val v17 = new BitcoindV17RpcClient(other.instance)
-            v17.getAddressInfo(address).map(_.pubkey)
-          } else {
-            other.getAddressInfo(address).map(_.pubkey)
-          }
+        other.version.flatMap { _ =>
+          other.getAddressInfo(address).map(_.pubkey)
         }
     }
   }

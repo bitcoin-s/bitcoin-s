@@ -7,19 +7,18 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV17,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 
 import scala.concurrent.{Await, Future}
 
-class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
+class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
   lazy val pruneClientF: Future[BitcoindRpcClient] = {
     val pruneClient =
-      BitcoindRpcClient.withActorSystem(
-        BitcoindRpcTestUtil
-          .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
+      BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil
+        .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.newest)))
 
     for {
       _ <- pruneClient.start()

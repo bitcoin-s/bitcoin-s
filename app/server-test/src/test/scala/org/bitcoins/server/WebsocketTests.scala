@@ -479,8 +479,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       _ = promise.success(None)
       notifications <- walletNotificationsF
     } yield {
-      assert(notifications.contains(DLCNodeConnectionInitiated(peerAddr)))
-      assert(notifications.contains(DLCNodeConnectionFailed(peerAddr)))
+      assert(notifications.exists(_ == DLCNodeConnectionInitiated(peerAddr)))
+      assert(notifications.exists(_ == DLCNodeConnectionFailed(peerAddr)))
       assert(notifications.exists(n =>
         n match {
           case DLCAcceptFailed((id, error)) =>
