@@ -1,5 +1,7 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -16,7 +18,13 @@ class MiningRpcTest extends BitcoindRpcTest {
 
   it should "be able to get a block template" in {
     clientsF.flatMap { case (client, _) =>
-      val getBlockF = client.getBlockTemplate()
+      val opts =
+        RpcOpts.BlockTemplateRequest(
+          mode = "template",
+          capabilities = Vector.empty,
+          rules = Vector("segwit")
+        )
+      val getBlockF = client.getBlockTemplate(Some(opts))
       getBlockF
         .recover {
           // getblocktemplate is having a bad time on regtest
@@ -54,7 +62,7 @@ class MiningRpcTest extends BitcoindRpcTest {
     } yield {
       assert(blocks.length == 3)
       assert(blocks.length == 3)
-      foundBlocks.foreach { found =>
+      foundBlocks.foreach { case found: Block =>
         assert(
           found.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
       }
