@@ -143,7 +143,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
       multisig <-
         client
-          .addMultiSigAddress(1, Vector(Left(pubkey.get)))
+          .createMultiSig(1, Vector(pubkey.get))
       txid <-
         BitcoindRpcTestUtil
           .fundBlockChainTransaction(client,
@@ -171,10 +171,10 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       result <- {
         val utxoDeps = Vector(
           RpcOpts.SignRawTransactionOutputParameter(
-            txid,
-            output.n,
-            ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
-            Some(multisig.redeemScript),
+            txid = txid,
+            vout = output.n,
+            scriptPubKey = ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
+            redeemScript = Some(multisig.redeemScript),
             amount = Some(Bitcoins(1.2))))
         BitcoindRpcTestUtil.signRawTransaction(
           client,
