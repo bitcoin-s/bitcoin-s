@@ -79,7 +79,7 @@ object EmptyWitness {
 
 object TransactionWitness {
 
-  val empty: EmptyWitness.type = EmptyWitness
+  val empty: EmptyWitness = EmptyWitness(Vector.empty)
 
   private case class TransactionWitnessImpl(witnesses: Vector[ScriptWitness])
       extends TransactionWitness
