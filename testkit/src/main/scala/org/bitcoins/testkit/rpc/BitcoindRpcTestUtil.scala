@@ -102,6 +102,7 @@ trait BitcoindRpcTestUtil extends Logging {
     val isDebug = if (isDaemon == 1) 1 else 0
     val conf = s"""
                   |regtest=1
+                  |addresstype=p2sh-segwit
                   |server=1
                   |daemon=$isDaemon
                   |[regtest]
@@ -942,10 +943,14 @@ trait BitcoindRpcTestUtil extends Logging {
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
   ): Future[SignRawTransactionResult] =
     signer match {
+      case v23: BitcoindV23RpcClient =>
+        v23.signRawTransactionWithWallet(transaction, utxoDeps)
+      case v22: BitcoindV22RpcClient =>
+        v22.signRawTransactionWithWallet(transaction, utxoDeps)
       case v20: BitcoindV20RpcClient =>
-        v20.signRawTransactionWithWallet(transaction)
+        v20.signRawTransactionWithWallet(transaction, utxoDeps)
       case v21: BitcoindV21RpcClient =>
-        v21.signRawTransactionWithWallet(transaction)
+        v21.signRawTransactionWithWallet(transaction, utxoDeps)
       case unknown: BitcoindRpcClient =>
         val v18T = BitcoindV18RpcClient.fromUnknownVersion(unknown)
         val v19T = BitcoindV19RpcClient.fromUnknownVersion(unknown)
@@ -1042,6 +1047,8 @@ trait BitcoindRpcTestUtil extends Logging {
             .getBlockRaw(blockHash)
             .flatMap(receiver.submitBlock)
         }
+      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+        sender.getTransaction(txid).map(_.confirmations == 1))
     } yield {
       txid
     }

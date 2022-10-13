@@ -4,13 +4,17 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
+  EmptyScriptSignature,
   P2SHScriptSignature,
   ScriptPubKey,
   ScriptSignature
 }
 import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  TransactionConstants,
   TransactionInput,
-  TransactionOutPoint
+  TransactionOutPoint,
+  TransactionOutput
 }
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -196,7 +200,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       keys = Vector(pub1.get, pub2.get)
 
       multisig <- client.createMultiSig(2, keys)
-
+      _ = println(s"@@#multiSig=$multisig address=${multisig.address}")
       _ <- otherClient.createMultiSig(2, keys)
 
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
@@ -213,39 +217,54 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
           .get
 
       address3 <- client.getNewAddress
-
-      ctx <- {
+      _ = println(s"address3=$address3")
+      _ = println(s"multisig.redeemScript=${multisig.redeemScript}")
+      ctx = {
         val input =
           TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
-                           P2SHScriptSignature(multisig.redeemScript.hex),
+                           EmptyScriptSignature,
                            UInt32.max - UInt32.one)
-        otherClient
-          .createRawTransaction(Vector(input), Map(address3 -> Bitcoins(1.1)))
+        BaseTransaction(
+          TransactionConstants.validLockVersion,
+          Vector(input),
+          Vector(TransactionOutput(Bitcoins(1.1), address3.scriptPubKey)),
+          TransactionConstants.lockTime
+        )
       }
+
+      _ = println(s"ctx.hex=$ctx")
 
       txOpts = {
         val scriptPubKey =
           ScriptPubKey.fromAsmHex(output.scriptPubKey.hex)
         val utxoDep =
-          RpcOpts.SignRawTransactionOutputParameter(txid,
-                                                    output.n,
-                                                    scriptPubKey,
-                                                    Some(multisig.redeemScript),
-                                                    amount =
-                                                      Some(Bitcoins(1.2)))
+          RpcOpts.SignRawTransactionOutputParameter(
+            txid = txid,
+            vout = output.n,
+            scriptPubKey = scriptPubKey,
+            redeemScript = Some(multisig.redeemScript),
+            amount = Some(Bitcoins(1.2)))
         Vector(utxoDep)
       }
 
-      partialTx1 <- BitcoindRpcTestUtil.signRawTransaction(client, ctx, txOpts)
+      partialTx1 <- BitcoindRpcTestUtil.signRawTransaction(signer = client,
+                                                           transaction = ctx,
+                                                           utxoDeps = txOpts)
 
       partialTx2 <-
-        BitcoindRpcTestUtil.signRawTransaction(otherClient, ctx, txOpts)
-
+        BitcoindRpcTestUtil.signRawTransaction(signer = otherClient,
+                                               transaction = ctx,
+                                               utxoDeps = txOpts)
+      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+      _ = println(s"partialTx1=${partialTx1}")
+      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+      _ = println(s"partialTx2=${partialTx2}")
+      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
       combinedTx <- {
         val txs = Vector(partialTx1.hex, partialTx2.hex)
         client.combineRawTransaction(txs)
       }
-
+      _ = println(s"combinedTx.after.hex=${combinedTx.hex}")
       _ <- client.sendRawTransaction(combinedTx)
 
     } yield {

@@ -17,7 +17,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
   lazy val pruneClientF: Future[BitcoindRpcClient] = {
     val instance = BitcoindRpcTestUtil
-      .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.newest))
+      .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V22))
     val pruneClient =
       BitcoindRpcClient.withActorSystem(instance)
 
@@ -229,6 +229,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       pruneClient <- pruneClientF
       count <- pruneClient.getBlockCount
+      _ = println(s"getBlockCount=$count")
+      _ = assert(count != 0)
       pruned <- pruneClient.pruneBlockChain(count)
     } yield {
       assert(pruned > 0)
