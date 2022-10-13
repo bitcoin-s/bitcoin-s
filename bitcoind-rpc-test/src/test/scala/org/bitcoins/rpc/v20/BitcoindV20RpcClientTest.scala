@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.v20
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  WalletFlag
+}
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
@@ -129,7 +132,9 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
       val pubKey2 = ECPublicKey.freshPublicKey
 
       for {
-        multiSigResult <- client.createMultiSig(2, Vector(pubKey1, pubKey2))
+        multiSigResult <- client.createMultiSig(2,
+                                                Vector(pubKey1, pubKey2),
+                                                AddressType.Bech32)
       } yield {
         // just validate we are able to receive a sane descriptor
         // no need to check checksum

@@ -81,13 +81,17 @@ trait MultisigRpc { self: Client =>
   def createMultiSig(
       minSignatures: Int,
       keys: Vector[ECPublicKey],
+      addressType: AddressType,
       walletNameOpt: Option[String] = None): Future[MultiSigResult] = {
     self.version.flatMap {
       case V23 | V22 | V21 | V20 | Unknown =>
         bitcoindCall[MultiSigResultPostV20](
           "createmultisig",
-          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))),
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
+          List(JsNumber(minSignatures),
+               Json.toJson(keys.map(_.hex)),
+               Json.toJson(addressType)),
+          uriExtensionOpt = walletNameOpt.map(walletExtension)
+        )
       case V17 | V18 | V19 =>
         bitcoindCall[MultiSigResultPreV20](
           "createmultisig",
