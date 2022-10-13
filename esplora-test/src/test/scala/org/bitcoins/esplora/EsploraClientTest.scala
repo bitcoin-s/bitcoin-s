@@ -37,9 +37,9 @@ class EsploraClientTest extends BitcoinSAsyncTest {
         assert(details.locktime == UInt32.zero)
         assert(details.txid == txId)
         assert(details.status.confirmed)
-        assert(details.status.block_height.contains(720542))
-        assert(details.status.block_time.contains(1643245253))
-        assert(details.status.block_hash.contains(DoubleSha256DigestBE(
+        assert(details.status.block_height.exists(_ == 720542))
+        assert(details.status.block_time.exists(_ == 1643245253))
+        assert(details.status.block_hash.exists(_ == DoubleSha256DigestBE(
           "000000000000000000074110fd51c9e34b9ea10ea88ce7fa43bf2cf80a3c2185")))
       }
   }
@@ -50,9 +50,9 @@ class EsploraClientTest extends BitcoinSAsyncTest {
     client
       .getTransactionStatus(txId)
       .map { status =>
-        assert(status.block_height.contains(720542))
-        assert(status.block_time.contains(1643245253))
-        assert(status.block_hash.contains(DoubleSha256DigestBE(
+        assert(status.block_height.exists(_ == 720542))
+        assert(status.block_time.exists(_ == 1643245253))
+        assert(status.block_hash.exists(_ == DoubleSha256DigestBE(
           "000000000000000000074110fd51c9e34b9ea10ea88ce7fa43bf2cf80a3c2185")))
       }
   }

@@ -9,7 +9,6 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
-import org.bitcoins.rpc.BitcoindP2PException.NotConnected
 
 class MiningRpcTest extends BitcoindRpcTest {
 
@@ -28,12 +27,6 @@ class MiningRpcTest extends BitcoindRpcTest {
         )
       val getBlockF = client.getBlockTemplate(Some(opts))
       getBlockF
-        .recover {
-          // getblocktemplate is having a bad time on regtest
-          // https://github.com/bitcoin/bitcoin/issues/11379
-          case NotConnected(_)  => succeed
-          case other: Throwable => throw other
-        }
         .map(_ => succeed)
     }
   }
