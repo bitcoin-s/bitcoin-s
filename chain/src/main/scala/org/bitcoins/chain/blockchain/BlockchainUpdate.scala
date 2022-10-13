@@ -52,7 +52,7 @@ object BlockchainUpdate {
       tipUpdateFailure: TipUpdateResult.Failure)
       extends BlockchainUpdate {
     require(
-      !blockchain.contains(failedHeader),
+      !blockchain.exists(_.blockHeader == failedHeader),
       s"Our blockchain should not contain the failed header=${failedHeader}")
 
     if (successfulHeaders.nonEmpty) {

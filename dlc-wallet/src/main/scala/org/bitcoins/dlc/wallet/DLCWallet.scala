@@ -267,7 +267,9 @@ abstract class DLCWallet
       inputs <- dlcInputsDAO.findByDLCId(dlcId, dlcDb.isInitiator)
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
-      _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
+      _ <- unmarkUTXOsAsReserved(dbs).recoverWith {
+        case scala.util.control.NonFatal(_) => Future.successful(Vector.empty)
+      }
       action = actionBuilder.deleteDLCAction(dlcId)
       _ <- safeDLCDatabase.run(action)
     } yield ()
