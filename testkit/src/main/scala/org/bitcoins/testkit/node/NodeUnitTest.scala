@@ -528,7 +528,7 @@ object NodeUnitTest extends P2PLogger {
           }
         },
         interval = 1.second,
-        maxTries = 5
+        maxTries = 10
       )
     } yield node
   }
