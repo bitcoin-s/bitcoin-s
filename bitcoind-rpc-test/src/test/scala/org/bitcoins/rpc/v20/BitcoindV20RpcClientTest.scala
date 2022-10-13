@@ -140,7 +140,7 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
         // no need to check checksum
         assert(
           multiSigResult.descriptor.startsWith(
-            s"sh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
+            s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
       }
   }
 
