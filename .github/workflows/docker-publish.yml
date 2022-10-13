@@ -25,4 +25,4 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Build and push
-        run: sbt ++2.13.8 "oracleServer/docker:publish;appServer/docker:publish"
+        run: sbt "oracleServer/docker:publish;appServer/docker:publish"
