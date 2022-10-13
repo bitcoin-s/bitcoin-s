@@ -477,7 +477,9 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       for {
         firstResult <-
           client
-            .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
+            .createMultiSig(2,
+                            Vector(privKey1.publicKey, privKey2.publicKey),
+                            AddressType.Bech32)
         address2 = firstResult.address
 
         secondResult <-
