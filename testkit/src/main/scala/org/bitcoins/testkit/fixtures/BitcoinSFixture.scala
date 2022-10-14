@@ -2,6 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest._
@@ -91,6 +92,18 @@ object BitcoinSFixture {
       address <- bitcoind.getNewAddress
       _ <- bitcoind.generateToAddress(blocks = 101, address)
     } yield bitcoind
+  }
+
+  def createBitcoindBlockFilterRpcWithFunds(
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem): Future[BitcoindRpcClient with V19BlockFilterRpc] = {
+    import system.dispatcher
+    for {
+      bitcoind <- createBitcoindWithFunds(versionOpt)
+      _ = require(
+        bitcoind.isInstanceOf[V19BlockFilterRpc],
+        s"Given version does not support block filter rpc, got=$versionOpt")
+    } yield bitcoind.asInstanceOf[BitcoindRpcClient with V19BlockFilterRpc]
   }
 
   /** Creates a new bitcoind instance */
