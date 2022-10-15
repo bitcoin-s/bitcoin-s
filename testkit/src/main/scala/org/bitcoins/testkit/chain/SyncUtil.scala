@@ -18,11 +18,11 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.testkit.chain.fixture.{
   BitcoindBaseVersionChainHandlerViaRpc,
-  BitcoindChainHandlerViaRpc,
-  BitcoindV19ChainHandler
+  BitcoindBlockFilterRpcChainHandler,
+  BitcoindChainHandlerViaRpc
 }
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.sync.WalletSync
@@ -47,7 +47,7 @@ abstract class SyncUtil extends Logging {
 
   /** Creates a function that you can pass a block header to and it's return's it's [[GolombFilter]] */
   def getFilterFunc(
-      bitcoind: BitcoindV19RpcClient,
+      bitcoind: V19BlockFilterRpc,
       filterType: FilterType)(implicit
       ec: ExecutionContext): BlockHeader => Future[FilterWithHeaderHash] = {
     case header: BlockHeader =>
@@ -220,9 +220,10 @@ abstract class SyncUtil extends Logging {
     * since we know a bitcoind v19 node has block filter capability
     */
   def syncBitcoindV19WithChainHandler(
-      bitcoindWithChainHandler: BitcoindV19ChainHandler)(implicit
+      bitcoindWithChainHandler: BitcoindBlockFilterRpcChainHandler)(implicit
       ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
+      chainAppConfig: ChainAppConfig): Future[
+    BitcoindBlockFilterRpcChainHandler] = {
     val bitcoindV19 = bitcoindWithChainHandler.bitcoindRpc
     val chainApiF = syncBitcoindWithChainHandler(bitcoindWithChainHandler)
       .map(_.chainHandler)
@@ -240,7 +241,7 @@ abstract class SyncUtil extends Logging {
         bestBlockHash == ourBestFilter.get.blockHashBE,
         s"We did not sync filter's in our fixture bitcoindBestBlockHash=$bestBlockHash our best filter's blockHash=${ourBestFilter.get.blockHashBE}"
       )
-    } yield BitcoindV19ChainHandler(
+    } yield BitcoindBlockFilterRpcChainHandler(
       bitcoindRpc = bitcoindWithChainHandler.bitcoindRpc,
       chainHandler = filterSyncChainApi.asInstanceOf[ChainHandler])
   }

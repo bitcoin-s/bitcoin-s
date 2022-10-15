@@ -30,7 +30,7 @@ import org.bitcoins.chain.blockchain.sync._
 
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain._
-import org.bitcoins.testkit.chain.fixture.BitcoindV19ChainHandler
+import org.bitcoins.testkit.chain.fixture.BitcoindBlockFilterRpcChainHandler
 
 ```
 
@@ -57,7 +57,7 @@ implicit val chainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chai
 
 //let's use a helper method to get a v19 bitcoind
 //instance and a chainApi
-val bitcoindWithChainApiF: Future[BitcoindV19ChainHandler] = {
+val bitcoindWithChainApiF: Future[BitcoindBlockFilterRpcChainHandler] = {
   ChainUnitTest.createBitcoindV19ChainHandler()
 }
 val bitcoindF = bitcoindWithChainApiF.map(_.bitcoindRpc)

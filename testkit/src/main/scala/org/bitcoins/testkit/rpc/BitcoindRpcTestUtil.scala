@@ -208,16 +208,26 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       versionOpt: Option[BitcoindVersion] = None,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory,
+      enableNeutrino: Boolean = true)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val hasNeutrinoSupport = versionOpt match {
-      case Some(V17) | Some(V18) =>
+    val hasNeutrinoSupport = {
+      if (enableNeutrino == false) {
+        logger.warn(s"Neutrino is disabled")
+        //don't enable neutrino, this is useful for certain test cases
+        //like NeutrinoUnsupportedPeerTest
         false
-      case Some(V19) | Some(V20) | Some(V21) | Some(V22) | Some(V23) | Some(
-            Unknown) | None =>
-        true
+      } else {
+        versionOpt match {
+          case Some(V17) | Some(V18) =>
+            false
+          case Some(V19) | Some(V20) | Some(V21) | Some(V22) | Some(V23) | Some(
+                Unknown) | None =>
+            true
+        }
+      }
     }
     val configFile =
       writtenConfig(uri,
