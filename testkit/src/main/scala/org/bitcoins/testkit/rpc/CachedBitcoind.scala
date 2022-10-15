@@ -111,6 +111,17 @@ trait CachedBitcoindNewest extends CachedBitcoindFunded[BitcoindRpcClient] {
   }
 }
 
+trait CachedBitcoindNewestNoP2pBlockFilters extends CachedBitcoindNewest {
+  _: BitcoinSAkkaAsyncTest =>
+
+  override protected lazy val cachedBitcoindWithFundsF: Future[
+    BitcoindRpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoind(Some(BitcoindVersion.newest), enableNeutrino = false)
+  }
+}
+
 trait CachedBitcoindBlockFilterRpcNewest
     extends CachedBitcoindFunded[BitcoindRpcClient with V19BlockFilterRpc] {
   _: BitcoinSAkkaAsyncTest =>

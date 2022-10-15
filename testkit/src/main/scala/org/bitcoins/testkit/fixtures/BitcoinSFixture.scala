@@ -106,11 +106,17 @@ object BitcoinSFixture {
     } yield bitcoind.asInstanceOf[BitcoindRpcClient with V19BlockFilterRpc]
   }
 
-  /** Creates a new bitcoind instance */
-  def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(implicit
+  /** Creates a new bitcoind instance
+    * @param versionOpt the version of bitcoind ot use
+    * @param enableNeutrinoOpt whether neutrino should be enabled or not, if param not given it is default enabled
+    */
+  def createBitcoind(
+      versionOpt: Option[BitcoindVersion] = None,
+      enableNeutrino: Boolean = true)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
-    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
+    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt,
+                                                enableNeutrino = enableNeutrino)
     val bitcoind = versionOpt match {
       case Some(v) => BitcoindRpcClient.fromVersion(v, instance)
       case None    => new BitcoindRpcClient(instance)
