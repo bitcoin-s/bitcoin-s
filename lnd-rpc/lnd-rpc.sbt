@@ -74,13 +74,13 @@ TaskKeys.downloadLnd := {
 
     val expectedHash =
       if (Properties.isLinux)
-        "60511b4717a82c303e164f7d1048fd52f965c5fcb7aefaa11678be48e81a9dcc"
+        "dcac95349c658c9194d754b4ffa101507867d2ab064c0364a7db8d3fd9802993"
       else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
-        "c1e1452dd2f4cf6bca248cc6b63d2f1b8f64b82ae0f81dcf669575bc4b359f84"
+        "7befe3497041e784334a4dca1387b53883e479d3c7917d2cd082f1a4d802c476"
       else if (Properties.isMac)
-        "eacf6e8f19de942fb23f481c85541342d3248bd545616822a172da3d23c03c9d"
+        "fa451b24af0e4373c9ccb7b4b4065b179b3ecbf200fcc8d0bc883268623450a6"
       else if (Properties.isWin)
-        "74c16854292ca27b335309d7b37a44baec4df402e16b203df393ebece6570ad3"
+        "1853009ca9e072c4b236a0700c3e7bdb9ac1f6c8ac574236dacec6dbec44be0d"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val success = hash.equalsIgnoreCase(expectedHash)
