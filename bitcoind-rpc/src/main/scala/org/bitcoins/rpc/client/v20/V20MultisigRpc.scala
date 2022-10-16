@@ -39,7 +39,7 @@ trait V20MultisigRpc extends MultisigRpc { self: Client =>
     self.version.flatMap {
       case V20 | V21 | V22 | V23 | Unknown =>
         bitcoindCall[MultiSigResultPostV20]("addmultisigaddress", params)
-      case version @ (V18 | V19) =>
+      case version @ V19 =>
         throw new RuntimeException(
           s"Cannot use v20MultisigRpc on an older version, got $version")
     }
@@ -84,7 +84,7 @@ trait V20MultisigRpc extends MultisigRpc { self: Client =>
                Json.toJson(addressType)),
           uriExtensionOpt = walletNameOpt.map(walletExtension)
         )
-      case version @ (V18 | V19) =>
+      case version @ V19 =>
         throw new RuntimeException(
           s"Cannot use v20MultisigRpc on an older version, got $version")
     }

@@ -33,8 +33,7 @@ trait V18AssortedRpc {
         bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
           "getnodeaddresses",
           List(Json.toJson(count)))
-      case BitcoindVersion.V18 | BitcoindVersion.V19 | BitcoindVersion.V20 |
-          BitcoindVersion.V21 =>
+      case BitcoindVersion.V19 | BitcoindVersion.V20 | BitcoindVersion.V21 =>
         bitcoindCall[Vector[GetNodeAddressesResultPreV22]](
           "getnodeaddresses",
           List(Json.toJson(count)))

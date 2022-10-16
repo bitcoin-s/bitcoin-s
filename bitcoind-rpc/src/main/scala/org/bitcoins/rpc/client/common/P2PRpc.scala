@@ -68,7 +68,7 @@ trait P2PRpc { self: Client =>
         bitcoindCall[Vector[PeerPostV21]]("getpeerinfo")
       case V20 =>
         bitcoindCall[Vector[PeerV20]]("getpeerinfo")
-      case V18 | V19 =>
+      case V19 =>
         bitcoindCall[Vector[PeerPreV20]]("getpeerinfo")
     }
   }
@@ -79,7 +79,7 @@ trait P2PRpc { self: Client =>
         bitcoindCall[Vector[NodeBanPostV22]]("listbanned")
       case V21 | V20 =>
         bitcoindCall[Vector[NodeBanPostV20]]("listbanned")
-      case V18 | V19 =>
+      case V19 =>
         bitcoindCall[Vector[NodeBanPreV20]]("listbanned")
     }
   }
