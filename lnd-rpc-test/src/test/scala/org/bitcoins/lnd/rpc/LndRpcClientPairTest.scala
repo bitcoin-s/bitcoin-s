@@ -17,13 +17,13 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DualLndFixture
-import scodec.bits.HexStringSyntax
+import scodec.bits.{ByteVector, HexStringSyntax}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-class LndRpcClientPairTest extends DualLndFixture {
+class LndRpcClientPairTest extends DualLndFixture with LndUtils {
 
   it must "get info from both lnds" in { param =>
     val (_, lndA, lndB) = param
@@ -196,7 +196,15 @@ class LndRpcClientPairTest extends DualLndFixture {
 
       tx <- lndA.sendOutputs(Vector(output), feeRate, spendUnconfirmed = false)
       _ <- lndA.publishTransaction(tx)
+      height <- bitcoind.getBlockCount
+      confirmedF = lndB.subscribeTxConfirmation(txId = tx.txId,
+                                                script = addr.scriptPubKey,
+                                                requiredConfs = 6,
+                                                heightHint = height)
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+
+      // await so if this fails the test doesn't hang forever
+      conf = Await.result(confirmedF, 10.seconds)
 
       detailsOpt <- lndB.getTransaction(tx.txIdBE)
       _ = assert(detailsOpt.isDefined)
@@ -213,6 +221,8 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(details.txId == tx.txIdBE)
       assert(details.outputDetails.flatMap(_.addressOpt).contains(addr))
       assert(details.amount == sendAmt)
+
+      assert(ByteVector(conf.rawTx.toByteArray) == tx.bytes)
     }
   }
 
