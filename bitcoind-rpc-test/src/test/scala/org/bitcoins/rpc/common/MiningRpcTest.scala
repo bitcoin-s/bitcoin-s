@@ -1,7 +1,9 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetBlockWithTransactionsResultV22,
+  RpcOpts
+}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -62,9 +64,10 @@ class MiningRpcTest extends BitcoindRpcTest {
     } yield {
       assert(blocks.length == 3)
       assert(blocks.length == 3)
-      foundBlocks.foreach { case found: Block =>
+      foundBlocks.foreach { case found: GetBlockWithTransactionsResultV22 =>
         assert(
-          found.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
+          found.tx.exists(
+            _.vout.exists(_.scriptPubKey.address == Some(address))))
       }
       succeed
     }
