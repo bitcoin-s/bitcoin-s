@@ -229,7 +229,6 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       pruneClient <- pruneClientF
       count <- pruneClient.getBlockCount
-      _ = println(s"getBlockCount=$count")
       _ = assert(count != 0)
       pruned <- pruneClient.pruneBlockChain(count)
     } yield {
