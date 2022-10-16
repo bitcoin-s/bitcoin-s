@@ -1,7 +1,8 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -26,7 +27,7 @@ import scala.concurrent.Future
 class RawTransactionRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV21(clientAccum = clientAccum)
 
   behavior of "RawTransactionRpc"
 
@@ -141,25 +142,24 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to sign a raw transaction" in {
+    val fundAmt = Bitcoins(1.2)
+    val sendAmt = fundAmt.satoshis - Satoshis(1000)
     for {
       (client, server) <- clientsF
       address <- client.getNewAddress
       pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
       multisig <-
         client
-          .createMultiSig(1, Vector(pubkey.get))
+          .addMultiSigAddress(1, Vector(Left(pubkey.get)), AddressType.Bech32)
       txid <-
         BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client,
-                                     server,
-                                     multisig.address,
-                                     Bitcoins(1.2))
+          .fundBlockChainTransaction(client, server, multisig.address, fundAmt)
       rawTx <- client.getTransaction(txid)
 
       tx <- client.decodeRawTransaction(rawTx.hex)
       output =
         tx.vout
-          .find(output => output.value == Bitcoins(1.2))
+          .find(output => output.value == fundAmt)
           .get
 
       newAddress <- client.getNewAddress
@@ -169,7 +169,8 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
                            P2SHScriptSignature(multisig.redeemScript.hex),
                            UInt32.max - UInt32.one)
         client
-          .createRawTransaction(Vector(input), Map(newAddress -> Bitcoins(1.1)))
+          .createRawTransaction(Vector(input),
+                                Map(newAddress -> Bitcoins(sendAmt.satoshis)))
       }
 
       result <- {
@@ -179,7 +180,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
             vout = output.n,
             scriptPubKey = ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
             redeemScript = Some(multisig.redeemScript),
-            amount = Some(Bitcoins(1.2))
+            amount = Some(fundAmt)
           ))
         BitcoindRpcTestUtil.signRawTransaction(
           client,
@@ -191,48 +192,46 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to combine raw transactions" in {
+    val fundAmt = Bitcoins(1.2)
+    val sendAmt = fundAmt.satoshis - Satoshis(1000)
     for {
       (client, otherClient) <- clientsF
       address1 <- client.getNewAddress
       address2 <- otherClient.getNewAddress
       pub1 <- BitcoindRpcTestUtil.getPubkey(client, address1)
       pub2 <- BitcoindRpcTestUtil.getPubkey(otherClient, address2)
-      keys = Vector(pub1.get, pub2.get)
+      keys = Vector(pub1.get, pub2.get).map(Left(_))
 
-      multisig <- client.createMultiSig(2, keys)
-      _ = println(s"@@#multiSig=$multisig address=${multisig.address}")
-      _ <- otherClient.createMultiSig(2, keys)
+      multisig <- client.addMultiSigAddress(2, keys, AddressType.Bech32)
+      _ <- otherClient.addMultiSigAddress(2, keys, AddressType.Bech32)
 
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
                                                             otherClient,
                                                             multisig.address,
-                                                            Bitcoins(1.2))
+                                                            fundAmt)
 
       rawTx <- client.getTransaction(txid)
       tx <- client.decodeRawTransaction(rawTx.hex)
 
       output =
         tx.vout
-          .find(output => output.value == Bitcoins(1.2))
+          .find(output => output.value == fundAmt)
           .get
 
       address3 <- client.getNewAddress
-      _ = println(s"address3=$address3")
-      _ = println(s"multisig.redeemScript=${multisig.redeemScript}")
       ctx = {
         val input =
           TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
                            EmptyScriptSignature,
                            UInt32.max - UInt32.one)
+
         BaseTransaction(
           TransactionConstants.validLockVersion,
           Vector(input),
-          Vector(TransactionOutput(Bitcoins(1.1), address3.scriptPubKey)),
+          Vector(TransactionOutput(sendAmt, address3.scriptPubKey)),
           TransactionConstants.lockTime
         )
       }
-
-      _ = println(s"ctx.hex=$ctx")
 
       txOpts = {
         val scriptPubKey =
@@ -255,16 +254,10 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
         BitcoindRpcTestUtil.signRawTransaction(signer = otherClient,
                                                transaction = ctx,
                                                utxoDeps = txOpts)
-      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-      _ = println(s"partialTx1=${partialTx1}")
-      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-      _ = println(s"partialTx2=${partialTx2}")
-      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
       combinedTx <- {
         val txs = Vector(partialTx1.hex, partialTx2.hex)
         client.combineRawTransaction(txs)
       }
-      _ = println(s"combinedTx.after.hex=${combinedTx.hex}")
       _ <- client.sendRawTransaction(combinedTx)
 
     } yield {

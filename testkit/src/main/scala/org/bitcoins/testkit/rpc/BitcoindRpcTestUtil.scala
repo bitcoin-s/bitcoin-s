@@ -102,7 +102,6 @@ trait BitcoindRpcTestUtil extends Logging {
     val isDebug = if (isDaemon == 1) 1 else 0
     val conf = s"""
                   |regtest=1
-                  |addresstype=p2sh-segwit
                   |server=1
                   |daemon=$isDaemon
                   |[regtest]
