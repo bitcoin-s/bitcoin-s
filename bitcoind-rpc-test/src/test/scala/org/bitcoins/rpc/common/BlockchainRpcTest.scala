@@ -5,29 +5,12 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 
-import scala.concurrent.{Await, Future}
-
 class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
-
-  lazy val pruneClientF: Future[BitcoindRpcClient] = {
-    val instance = BitcoindRpcTestUtil
-      .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V22))
-    val pruneClient =
-      BitcoindRpcClient.withActorSystem(instance)
-
-    for {
-      _ <- pruneClient.start()
-      _ <- pruneClient.createWallet("prune-wallet")
-      _ <- pruneClient.getNewAddress.flatMap(
-        pruneClient.generateToAddress(1000, _))
-    } yield pruneClient
-  }
 
   behavior of "BlockchainRpc"
 
@@ -225,17 +208,6 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to prune the blockchain" in { _ =>
-    for {
-      pruneClient <- pruneClientF
-      count <- pruneClient.getBlockCount
-      _ = assert(count != 0)
-      pruned <- pruneClient.pruneBlockChain(count)
-    } yield {
-      assert(pruned > 0)
-    }
-  }
-
   it should "calculate median time past" in { nodePair =>
     val client = nodePair.node1
     for {
@@ -244,11 +216,5 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       val oneHourAgo = (System.currentTimeMillis() / 1000) - 60 * 60
       assert(medianTime > oneHourAgo)
     }
-  }
-
-  override def afterAll(): Unit = {
-    val stoppedF = pruneClientF.flatMap(BitcoindRpcTestUtil.stopServer)
-    val _ = Await.result(stoppedF, duration)
-    super.afterAll()
   }
 }
