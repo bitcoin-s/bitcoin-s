@@ -88,8 +88,7 @@ class BitcoindV21RpcClient(override val instance: BitcoindInstance)(implicit
     */
   def signRawTransactionWithWallet(
       transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] =
-        Vector.empty,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter],
       sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",

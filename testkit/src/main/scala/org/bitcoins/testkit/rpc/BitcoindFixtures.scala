@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
@@ -299,29 +298,6 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
   }
 }
 
-/** Bitcoind fixtures with two cached [[BitcoindV17RpcClient]] that are connected via p2p */
-trait BitcoindFixturesCachedPairV17
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair[BitcoindV17RpcClient] {
-  override type FixtureParam = NodePair[BitcoindV17RpcClient]
-
-  override val version: BitcoindVersion = BitcoindVersion.V17
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val futOutcome = for {
-      pair <- clientsF
-      futOutcome = with2BitcoindsCached(test, pair)
-      f <- futOutcome.toFuture
-    } yield f
-    new FutureOutcome(futOutcome)
-  }
-
-  override def afterAll(): Unit = {
-    super[BitcoindFixturesCachedPair].afterAll()
-    super[BitcoinSAsyncFixtureTest].afterAll()
-  }
-}
-
 /** Bitcoind fixtures with two cached [[BitcoindV18RpcClient]] that are connected via p2p */
 trait BitcoindFixturesCachedPairV18
     extends BitcoinSAsyncFixtureTest
@@ -387,6 +363,27 @@ trait BitcoindFixturesCachedPairV22
   override type FixtureParam = NodePair[BitcoindV22RpcClient]
 
   override val version: BitcoindVersion = BitcoindVersion.V22
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val futOutcome = for {
+      pair <- clientsF
+      futOutcome = with2BitcoindsCached(test, pair)
+      f <- futOutcome.toFuture
+    } yield f
+    new FutureOutcome(futOutcome)
+  }
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
+trait BitcoindFixturesCachedPairNewest
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindRpcClient] {
+  override type FixtureParam = NodePair[BitcoindRpcClient]
+  override val version: BitcoindVersion = BitcoindVersion.newest
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val futOutcome = for {

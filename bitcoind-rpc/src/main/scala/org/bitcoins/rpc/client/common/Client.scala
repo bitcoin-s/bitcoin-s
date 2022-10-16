@@ -337,7 +337,6 @@ trait Client
       printError: Boolean = true,
       uriExtensionOpt: Option[String] = None
   )(implicit reader: Reads[T]): Future[T] = {
-
     val request =
       buildRequest(instance, command, JsArray(parameters), uriExtensionOpt)
     val responseF = sendRequest(request)
