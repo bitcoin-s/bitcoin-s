@@ -113,10 +113,7 @@ case class PeerFinder(
 
   val maxPeerSearchCount: Int = 1000
 
-  def initialDelay: FiniteDuration = {
-    if (getPeersFromConfig.isEmpty && getPeersFromParam.isEmpty) 0.seconds
-    else nodeAppConfig.tryNextPeersInterval
-  }
+  private val initialDelay: FiniteDuration = 1.minute
 
   private val isConnectionSchedulerRunning = AtomicBoolean(false)
 
@@ -129,6 +126,7 @@ case class PeerFinder(
           isConnectionSchedulerRunning.compareAndSet(expect = false,
                                                      update = true)
         ) {
+          logger.info(s"Querying p2p network for peers...")
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
           if (_peersToTry.size < 32)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -137,7 +135,7 @@ case class PeerFinder(
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
-          val peersF = Future.sequence(peers.map(tryPeer))
+          val peersF = Future.traverse(peers)(tryPeer)
           peersF.onComplete {
             case Success(_) =>
               isConnectionSchedulerRunning.set(false)
