@@ -3,12 +3,12 @@ package org.bitcoins.rpc.v18
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.{BitcoindFixturesFundedCachedNewest}
+import org.bitcoins.testkit.rpc.{BitcoindFixturesFundedCachedV22}
 
 /** Tests for PSBT for RPC calls specific to V18 new PSBT calls
   * @see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PsbtRpcTest extends BitcoindFixturesFundedCachedNewest {
+class PsbtRpcTest extends BitcoindFixturesFundedCachedV22 {
 
   behavior of "PsbtRpc"
 
@@ -88,7 +88,7 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedNewest {
     * together the resulting PSBT represented as a string is very different so we can't just search for parts of either
     * PSBT.
     */
-  it should "joinpsbts " in { client: BitcoindRpcClient =>
+  it should "joinpsbts" in { client: BitcoindRpcClient =>
     val seqofpsbts = Vector(
       PSBT.fromBase64(
         "cHNidP8BAHUCAAAAASaBcTce3/KF6Tet7qSze3gADAVmy7OtZGQXE8pCFxv2AAAAAAD+////AtPf9QUAAAAAGXapFNDFmQPFusKGh2DpD9UhpGZap2UgiKwA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHh7MuEwAAAQD9pQEBAAAAAAECiaPHHqtNIOA3G7ukzGmPopXJRjr6Ljl/hTPMti+VZ+UBAAAAFxYAFL4Y0VKpsBIDna89p95PUzSe7LmF/////4b4qkOnHf8USIk6UwpyN+9rRgi7st0tAXHmOuxqSJC0AQAAABcWABT+Pp7xp0XpdNkCxDVZQ6vLNL1TU/////8CAMLrCwAAAAAZdqkUhc/xCX/Z4Ai7NK9wnGIZeziXikiIrHL++E4sAAAAF6kUM5cluiHv1irHU6m80GfWx6ajnQWHAkcwRAIgJxK+IuAnDzlPVoMR3HyppolwuAJf3TskAinwf4pfOiQCIAGLONfc0xTnNMkna9b7QPZzMlvEuqFEyADS8vAtsnZcASED0uFWdJQbrUqZY3LLh+GFbTZSYG2YVi/jnF6efkE/IQUCSDBFAiEA0SuFLYXc2WHS9fSrZgZU327tzHlMDDPOXMMJ/7X85Y0CIGczio4OFyXBl/saiK9Z9R5E5CVbIBZ8hoQDHAXR8lkqASECI7cr7vCWXRC+B3jv7NYfysb3mk6haTkzgHNEZPhPKrMAAAAAAAAA"),
@@ -101,6 +101,7 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedNewest {
     val joinedF = client.joinPsbts(seqofpsbts)
 
     joinedF.map { result =>
+      logger.info(s"result=$result")
       assert(
         result ==
           //the expected joined version of these 2 psbts

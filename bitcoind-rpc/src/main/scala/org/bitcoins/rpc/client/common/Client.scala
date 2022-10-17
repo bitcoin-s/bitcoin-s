@@ -372,6 +372,7 @@ trait Client
                                       "id" -> JsString(uuid))
 
     val jsObject = JsObject(m)
+    logger.info(s"rpc.request=$jsObject")
 
     val uriExtension = uriExtensionOpt.getOrElse("")
 
