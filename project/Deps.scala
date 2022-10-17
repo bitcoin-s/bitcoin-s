@@ -13,7 +13,7 @@ object Deps {
     val avalonLoggingV = "4.1.5"
 
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.17.0"
+    val scalacheck = "1.16.0"
     val scalaTest = "3.2.13" //https://www.scalatest.org/
 
     val scalaTestPlus =
