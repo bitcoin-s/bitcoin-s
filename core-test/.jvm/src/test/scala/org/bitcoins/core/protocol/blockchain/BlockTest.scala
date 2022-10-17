@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.testkitcore.gen.BlockchainElementsGenerator
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
@@ -41,6 +42,14 @@ class BlockTest extends BitcoinSJvmTest {
     val lines = Source.fromURL(getClass.getResource(fileName)).mkString
     val time = timeBlockParsing(Block.fromHex(lines))
     assert(time <= 15000)
+  }
+
+  it must "parse a large transaction 7393096d97bfee8660f4100ffd61874d62f9a65de9fb6acf740c4c386990ef73" in {
+    val fileName =
+      "/7393096d97bfee8660f4100ffd61874d62f9a65de9fb6acf740c4c386990ef73.txt"
+    val lines = Source.fromURL(getClass.getResource(fileName)).mkString.trim
+    val tx = Transaction.fromHex(lines)
+    assert(tx.hex == lines)
   }
 
   it must "have serialization symmetry" in {
