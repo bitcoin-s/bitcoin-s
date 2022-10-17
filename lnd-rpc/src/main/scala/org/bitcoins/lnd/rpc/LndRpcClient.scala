@@ -950,6 +950,52 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .map(_.transactions.toVector.map(LndTransactionToTxDetails))
   }
 
+  def subscribeTxConfirmation(
+      script: ScriptPubKey,
+      requiredConfs: Int,
+      heightHint: Int): Future[ConfDetails] = {
+    require(heightHint > 0,
+            s"heightHint must be greater than 0, got $heightHint")
+
+    val request =
+      ConfRequest(txid = DoubleSha256Digest.empty.bytes,
+                  script = script.asmBytes,
+                  numConfs = UInt32(requiredConfs),
+                  heightHint = UInt32(heightHint))
+
+    registerConfirmationsNotification(request)
+      .filter(_.event.isConf)
+      .runWith(Sink.head)
+      .map(_.getConf)
+  }
+
+  def subscribeTxConfirmation(
+      txId: DoubleSha256Digest,
+      script: ScriptPubKey,
+      requiredConfs: Int,
+      heightHint: Int): Future[ConfDetails] = {
+    require(heightHint > 0,
+            s"heightHint must be greater than 0, got $heightHint")
+
+    val request =
+      ConfRequest(txid = txId.bytes,
+                  script = script.asmBytes,
+                  numConfs = UInt32(requiredConfs),
+                  heightHint = UInt32(heightHint))
+
+    registerConfirmationsNotification(request)
+      .filter(_.event.isConf)
+      .runWith(Sink.head)
+      .map(_.getConf)
+  }
+
+  def registerConfirmationsNotification(
+      request: ConfRequest): Source[ConfEvent, NotUsed] = {
+    logger.trace("lnd calling RegisterConfirmationsNtfn")
+
+    chainClient.registerConfirmationsNtfn(request)
+  }
+
   def monitorInvoice(
       rHash: PaymentHashTag,
       interval: FiniteDuration = 1.second,
