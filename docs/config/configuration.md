@@ -169,7 +169,7 @@ bitcoin-s {
         # initialization timeout once connected, reconnections resets this
         initialization-timeout = 10s
         # time interval for trying next set of peers in peer discovery
-        try-peers-interval = 12s
+        try-peers-interval = 1 hour
         
         # wait time for queries like getheaders etc before switching to another
         query-wait-time = 120s
