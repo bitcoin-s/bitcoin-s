@@ -763,6 +763,26 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def computeInputScript(
       tx: Tx,
       inputIdx: Int,
+      hashType: HashType,
+      output: TransactionOutput,
+      signMethod: SignMethod,
+      prevOuts: Vector[TransactionOutput]): Future[
+    (ScriptSignature, ScriptWitness)] = {
+    val signDescriptor =
+      SignDescriptor(output = Some(output),
+                     sighash = UInt32(hashType.num),
+                     inputIndex = inputIdx,
+                     signMethod = signMethod)
+
+    val request: SignReq =
+      SignReq(tx.bytes, Vector(signDescriptor), prevOuts)
+
+    computeInputScript(request).map(_.head)
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      inputIdx: Int,
       output: TransactionOutput,
       signMethod: SignMethod): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
