@@ -69,7 +69,12 @@ sealed trait SingleOracleInfo
   def publicKey: SchnorrPublicKey = announcement.publicKey
 
   /** The oracle's pre-committed nonces, in the correct order */
-  def nonces: OrderedNonces = announcement.eventTLV.nonces
+  def nonces: Vector[SchnorrNonce] = {
+    announcement.eventTLV match {
+      case v0: OracleEventV0TLV =>
+        v0.nonces
+    }
+  }
 
   /** The order of the given sigs should correspond to the given outcome. */
   def verifySigs(outcome: DLCOutcomeType, sigs: OracleSignatures): Boolean
@@ -78,7 +83,7 @@ sealed trait SingleOracleInfo
     * This point is used for adaptor signing.
     */
   def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
-    publicKey.computeSigPoint(outcome.serialized, nonces.vec)
+    publicKey.computeSigPoint(outcome.serialized, nonces.toVector)
   }
 
   /** Computes the sum of all nonces used in a given outcome */
@@ -125,7 +130,12 @@ case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
             .isInstanceOf[EnumEventDescriptorV0TLV],
           s"Enum OracleInfo requires EnumEventDescriptor, $announcement")
 
-  val nonce: SchnorrNonce = announcement.eventTLV.nonces.head
+  val nonce: SchnorrNonce = {
+    announcement.eventTLV match {
+      case v0: OracleEventV0TLV =>
+        v0.nonces.head
+    }
+  }
 
   /** @inheritdoc */
   override def verifySigs(
@@ -184,17 +194,26 @@ case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
   /** @inheritdoc */
   override def verifySigs(
       outcome: DLCOutcomeType,
-      sigs: OracleSignatures): Boolean = {
-    require(sigs.nonEmpty, "At least one signature is required")
+      oracleSignatures: OracleSignatures): Boolean = {
+    require(oracleSignatures.nonEmpty, "At least one signature is required")
     require(
-      sigs.length <= nonces.length,
-      s"Too many signatures (expected at most ${nonces.length}), got $sigs")
+      oracleSignatures.length <= nonces.length,
+      s"Too many signatures (expected at most ${nonces.length}), got $oracleSignatures")
 
     outcome match {
       case EnumOutcome(_) | _: SignedNumericOutcome =>
         throw new IllegalArgumentException(
           s"Expected numeric outcome, got $outcome")
       case UnsignedNumericOutcome(digits) =>
+        val sigs: Vector[SchnorrDigitalSignature] = oracleSignatures match {
+          case unsorted: NumericOracleSignaturesUnsorted =>
+            unsorted.sigs
+          case sorted: NumericOracleSignaturesSorted =>
+            sorted.sigs
+          case e: EnumOracleSignature =>
+            sys.error(s"Cannot have enum oracle for numeric outcome, enum=$e")
+        }
+
         digits
           .zip(sigs.take(digits.length).zip(nonces.take(digits.length)))
           .foldLeft(digits.length <= sigs.length) {
@@ -214,7 +233,7 @@ object NumericSingleOracleInfo {
 
   def dummyForKeys(
       privKey: ECPrivateKey,
-      nonces: Vector[SchnorrNonce]): NumericSingleOracleInfo = {
+      nonces: OrderedNonces): NumericSingleOracleInfo = {
     NumericSingleOracleInfo(
       OracleAnnouncementV0TLV.dummyForKeys(privKey, nonces))
   }

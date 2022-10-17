@@ -23,13 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("23.0",
-         "22.0",
-         "0.21.1",
-         "0.20.1",
-         "0.19.0.1",
-         "0.18.1",
-         "0.17.0.1")
+    List("23.0", "22.0", "0.21.1", "0.20.1", "0.19.0.1", "0.18.1")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -38,7 +32,8 @@ TaskKeys.downloadBitcoind := {
     if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
     else if (Properties.isMac)
       version match {
-        case "23.0" if System.getProperty("os.arch") == "aarch64" => ("arm64-apple-darwin", "tar.gz")
+        case "23.0" if System.getProperty("os.arch") == "aarch64" =>
+          ("arm64-apple-darwin", "tar.gz")
         case "23.0" => ("x86_64-apple-darwin", "tar.gz")
         case _      => ("osx64", "tar.gz")
       }
@@ -105,22 +100,19 @@ TaskKeys.downloadBitcoind := {
               "0.21.1" -> "366eb44a7a0aa5bd342deea215ec19a184a11f2ca22220304ebb20b9c8917e2b",
               "0.20.1" -> "376194f06596ecfa40331167c39bc70c355f960280bd2a645fdbf18f66527397",
               "0.19.0.1" -> "732cc96ae2e5e25603edf76b8c8af976fe518dd925f7e674710c6c8ee5189204",
-              "0.18.1" -> "600d1db5e751fa85903e935a01a74f5cc57e1e7473c15fd3e17ed21e202cfe5a",
-              "0.17.0.1" -> "6ccc675ee91522eee5785457e922d8a155e4eb7d5524bd130eb0ef0f0c4a6008"
+              "0.18.1" -> "600d1db5e751fa85903e935a01a74f5cc57e1e7473c15fd3e17ed21e202cfe5a"
             )
           else if (Properties.isMac)
             Map(
-              "23.0" -> (
-                if (System.getProperty("os.arch") == "aarch64")
-                  "7c8bc63731aa872b7b334a8a7d96e33536ad77d49029bad179b09dca32cd77ac"
-                else
-                  "c816780583009a9dad426dc0c183c89be9da98906e1e2c7ebae91041c1aaaaf3"),
+              "23.0" -> (if (System.getProperty("os.arch") == "aarch64")
+                           "7c8bc63731aa872b7b334a8a7d96e33536ad77d49029bad179b09dca32cd77ac"
+                         else
+                           "c816780583009a9dad426dc0c183c89be9da98906e1e2c7ebae91041c1aaaaf3"),
               "22.0" -> "2744d199c3343b2d94faffdfb2c94d75a630ba27301a70e47b0ad30a7e0155e9",
               "0.21.1" -> "1ea5cedb64318e9868a66d3ab65de14516f9ada53143e460d50af428b5aec3c7",
               "0.20.1" -> "b9024dde373ea7dad707363e07ec7e265383204127539ae0c234bff3a61da0d1",
               "0.19.0.1" -> "a64e4174e400f3a389abd76f4d6b1853788730013ab1dedc0e64b0a0025a0923",
-              "0.18.1" -> "b7bbcee7a7540f711b171d6981f939ca8482005fde22689bc016596d80548bb1",
-              "0.17.0.1" -> "3b1fb3dd596edb656bbc0c11630392e201c1a4483a0e1a9f5dd22b6556cbae12"
+              "0.18.1" -> "b7bbcee7a7540f711b171d6981f939ca8482005fde22689bc016596d80548bb1"
             )
           else if (Properties.isWin)
             Map(
@@ -129,12 +121,12 @@ TaskKeys.downloadBitcoind := {
               "0.21.1" -> "94c80f90184cdc7e7e75988a55b38384de262336abd80b1b30121c6e965dc74e",
               "0.20.1" -> "e59fba67afce011d32b5d723a3a0be12da1b8a34f5d7966e504520c48d64716d",
               "0.19.0.1" -> "7706593de727d893e4b1e750dc296ea682ccee79acdd08bbc81eaacf3b3173cf",
-              "0.18.1" -> "b0f94ab43c068bac9c10a59cb3f1b595817256a00b84f0b724f8504b44e1314f",
-              "0.17.0.1" -> "2d0a0aafe5a963beb965b7645f70f973a17f4fa4ddf245b61d532f2a58449f3e"
+              "0.18.1" -> "b0f94ab43c068bac9c10a59cb3f1b595817256a00b84f0b724f8504b44e1314f"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
-        if (hash.equalsIgnoreCase(expectedHash(version))) {
+        val success = hash.equalsIgnoreCase(expectedHash(version))
+        if (success) {
           logger.info(s"Download complete and verified, unzipping result")
 
           val extractCommand =
@@ -148,6 +140,9 @@ TaskKeys.downloadBitcoind := {
 
         logger.info(s"Deleting archive")
         Files.delete(archiveLocation)
+
+        if (!success)
+          throw new RuntimeException(s"Failed to download bitcoind v$version")
       }
 
     }

@@ -4,7 +4,11 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{
+  OrderedAnnouncements,
+  OrderedNonces,
+  OrderedSchnorrSignatures
+}
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.dlc.DLCTest.genNumericOracleOutcome
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -18,19 +22,32 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  val privateKeys: Vector[ECPrivateKey] =
-    0.until(5).map(_ => ECPrivateKey.freshPrivateKey).toVector
+  val privateKeys: Vector[ECPrivateKey] = {
+    val unsorted = 0.until(5).map(_ => ECPrivateKey.freshPrivateKey).toVector
+    val nonces = unsorted
+      .map(u => (u, u.schnorrNonce))
+      .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
+    nonces.map(_._1)
+  }
 
-  val kValues: Vector[Vector[ECPrivateKey]] =
-    privateKeys.map(_ =>
-      0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector)
+  val kValues: Vector[Vector[ECPrivateKey]] = {
+    privateKeys.map { _ =>
+      val unsorted =
+        0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector
+      val sorted = unsorted
+        .map(u => (u, u.schnorrNonce))
+        .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
+      sorted.map(_._1)
+    }
+  }
 
   val contractDescriptor: NumericContractDescriptor =
     DLCWalletUtil.multiNonceContractDescriptor
 
   val announcements: Vector[OracleAnnouncementTLV] =
     privateKeys.zip(kValues).map { case (priv, ks) =>
-      OracleAnnouncementV0TLV.dummyForKeys(priv, ks.map(_.schnorrNonce))
+      val ordered = OrderedNonces.fromUnsorted(ks.map(_.schnorrNonce))
+      OracleAnnouncementV0TLV.dummyForKeys(priv, ordered)
     }
 
   val threshold = 3
@@ -226,10 +243,11 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
 
         require(kValues.length == sigs.length,
                 s"kValues.length=${kValues.length} sigs.length=${sigs.length}")
-        OracleAttestmentV0TLV(eventId,
-                              priv.schnorrPublicKey,
-                              sigs,
-                              digitsPadded.map(_.toString))
+        OracleAttestmentV0TLV(
+          eventId,
+          priv.schnorrPublicKey,
+          OrderedSchnorrSignatures.fromUnsorted(sigs).toVector,
+          digitsPadded.map(_.toString))
       }
     }
   }

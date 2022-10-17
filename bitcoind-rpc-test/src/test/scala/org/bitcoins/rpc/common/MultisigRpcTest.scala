@@ -30,7 +30,9 @@ class MultisigRpcTest extends BitcoindRpcTest {
 
     for {
       client <- clientF
-      _ <- client.createMultiSig(2, Vector(pubKey1, pubKey2))
+      _ <- client.createMultiSig(2,
+                                 Vector(pubKey1, pubKey2),
+                                 AddressType.Bech32)
     } yield succeed
   }
 

@@ -13,15 +13,11 @@ sealed abstract class SigningVersion {
   def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector
 
   /** Calculates the bytes to sign for an event outcome */
-  def calcOutcomeHash(
-      descriptor: EventDescriptorTLV,
-      bytes: ByteVector): ByteVector
+  def calcOutcomeHash(bytes: ByteVector): ByteVector
 
   /** Calculates the bytes to sign for an event outcome */
-  final def calcOutcomeHash(
-      descriptor: EventDescriptorTLV,
-      string: String): ByteVector = {
-    calcOutcomeHash(descriptor, CryptoUtil.serializeForHash(string))
+  final def calcOutcomeHash(string: String): ByteVector = {
+    calcOutcomeHash(CryptoUtil.serializeForHash(string))
   }
 }
 
@@ -41,9 +37,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
       CryptoUtil.taggedSha256(eventTLV.bytes, "DLCv0/Announcement").bytes
 
-    override def calcOutcomeHash(
-        descriptor: EventDescriptorTLV,
-        byteVector: ByteVector): ByteVector =
+    override def calcOutcomeHash(byteVector: ByteVector): ByteVector =
       CryptoUtil.taggedSha256(byteVector, "DLCv0/Outcome").bytes
   }
 
@@ -61,14 +55,8 @@ object SigningVersion extends StringFactory[SigningVersion] {
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
       CryptoUtil.sha256(eventTLV.bytes).bytes
 
-    override def calcOutcomeHash(
-        descriptor: EventDescriptorTLV,
-        byteVector: ByteVector): ByteVector = {
-      descriptor match {
-        case _: EnumEventDescriptorV0TLV |
-            _: DigitDecompositionEventDescriptorV0TLV =>
-          CryptoUtil.sha256(byteVector).bytes
-      }
+    override def calcOutcomeHash(byteVector: ByteVector): ByteVector = {
+      CryptoUtil.sha256(byteVector).bytes
     }
   }
 
@@ -86,14 +74,8 @@ object SigningVersion extends StringFactory[SigningVersion] {
     override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
       CryptoUtil.sha256DLCAnnouncement(eventTLV.bytes).bytes
 
-    override def calcOutcomeHash(
-        descriptor: EventDescriptorTLV,
-        byteVector: ByteVector): ByteVector = {
-      descriptor match {
-        case _: EnumEventDescriptorV0TLV |
-            _: DigitDecompositionEventDescriptorV0TLV =>
-          CryptoUtil.sha256DLCAttestation(byteVector).bytes
-      }
+    override def calcOutcomeHash(byteVector: ByteVector): ByteVector = {
+      CryptoUtil.sha256DLCAttestation(byteVector).bytes
     }
   }
 

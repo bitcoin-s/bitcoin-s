@@ -348,6 +348,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
           client
             .createMultiSig(2,
                             Vector(privKey1.publicKey, privKey2.publicKey),
+                            AddressType.Bech32,
                             walletNameOpt = Some(walletName))
         address2 = firstResult.address
 

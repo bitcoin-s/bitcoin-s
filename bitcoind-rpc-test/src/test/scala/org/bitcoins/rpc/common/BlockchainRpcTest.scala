@@ -1,32 +1,16 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPreV19
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockChainInfoResultPostV23}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV17,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 
-import scala.concurrent.{Await, Future}
-
-class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
-
-  lazy val pruneClientF: Future[BitcoindRpcClient] = {
-    val pruneClient =
-      BitcoindRpcClient.withActorSystem(
-        BitcoindRpcTestUtil
-          .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
-
-    for {
-      _ <- pruneClient.start()
-      _ <- pruneClient.getNewAddress.flatMap(
-        pruneClient.generateToAddress(1000, _))
-    } yield pruneClient
-  }
+class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
   behavior of "BlockchainRpc"
 
@@ -46,12 +30,10 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
       info <- client.getBlockChainInfo
       bestHash <- client.getBestBlockHash
     } yield {
-      assert(info.isInstanceOf[GetBlockChainInfoResultPreV19])
-      val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPreV19]
-      assert(preV19Info.chain == RegTest)
-      assert(preV19Info.softforks.length >= 3)
-      assert(preV19Info.bip9_softforks.keySet.size >= 2)
-      assert(preV19Info.bestblockhash == bestHash)
+      assert(info.isInstanceOf[GetBlockChainInfoResultPostV23])
+      val postV23 = info.asInstanceOf[GetBlockChainInfoResultPostV23]
+      assert(postV23.chain == RegTest)
+      assert(postV23.bestblockhash == bestHash)
     }
   }
 
@@ -226,16 +208,6 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
     }
   }
 
-  it should "be able to prune the blockchain" in { _ =>
-    for {
-      pruneClient <- pruneClientF
-      count <- pruneClient.getBlockCount
-      pruned <- pruneClient.pruneBlockChain(count)
-    } yield {
-      assert(pruned > 0)
-    }
-  }
-
   it should "calculate median time past" in { nodePair =>
     val client = nodePair.node1
     for {
@@ -244,11 +216,5 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
       val oneHourAgo = (System.currentTimeMillis() / 1000) - 60 * 60
       assert(medianTime > oneHourAgo)
     }
-  }
-
-  override def afterAll(): Unit = {
-    val stoppedF = pruneClientF.flatMap(BitcoindRpcTestUtil.stopServer)
-    val _ = Await.result(stoppedF, duration)
-    super.afterAll()
   }
 }

@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.number.UInt16
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
 import org.bitcoins.dlc.node.DLCDataHandler.Received
 import org.bitcoins.dlc.node.peer.Peer
@@ -36,6 +37,19 @@ class DLCServerTorTest
     } else FutureOutcome.succeeded
   }
 
+  private val handleWriteFn: (BigSizeUInt, ByteVector) => Future[Unit] = {
+    case (_: BigSizeUInt, _: ByteVector) =>
+      Future.unit
+  }
+
+  private val handleWriteErrorFn: (
+      BigSizeUInt,
+      ByteVector,
+      Throwable) => Future[Unit] = {
+    case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
+      Future.unit
+  }
+
   it must "send/receive Ping and Pong TLVs over Tor" in { fundedDLCWallet =>
     val timeout = 30.seconds
 
@@ -65,7 +79,9 @@ class DLCServerTorTest
             { (_, _, connectionHandler) =>
               serverConnectionHandlerOpt = Some(connectionHandler)
               serverProbe.ref
-            }
+            },
+            handleWriteFn,
+            handleWriteErrorFn
           ))
 
         val resultF: Future[Future[Assertion]] = for {
@@ -83,7 +99,9 @@ class DLCServerTorTest
               { (_, _, connectionHandler) =>
                 clientConnectionHandlerOpt = Some(connectionHandler)
                 clientProbe.ref
-              }
+              },
+              handleWriteFn,
+              handleWriteErrorFn
             ))
 
           client ! DLCClient.Connect(

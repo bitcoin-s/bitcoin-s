@@ -21,6 +21,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.util.PreviousOutputMap
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -37,9 +38,14 @@ import scala.concurrent.{ExecutionContext, Future}
 object DLCWalletUtil extends Logging {
   lazy val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
 
-  lazy val kValues: Vector[ECPrivateKey] =
-    0.to(10).map(_ => ECPrivateKey.freshPrivateKey).toVector
-  lazy val rValues: Vector[SchnorrNonce] = kValues.map(_.schnorrNonce)
+  lazy val kValues: Vector[ECPrivateKey] = {
+    ECPrivateKey.generateNonceOrderedPrivKeys(10)
+  }
+
+  lazy val rValues: OrderedNonces = {
+    val nonces = kValues.map(_.schnorrNonce)
+    OrderedNonces.fromUnsorted(nonces)
+  }
 
   lazy val kValue: ECPrivateKey = kValues.head
   lazy val rValue: SchnorrNonce = rValues.head
@@ -133,10 +139,12 @@ object DLCWalletUtil extends Logging {
   lazy val multiNonceContractDescriptor: NumericContractDescriptor =
     DLCTestUtil.genMultiDigitContractInfo(numDigits, total)._1
 
-  lazy val multiNonceOracleInfo: NumericSingleOracleInfo =
+  lazy val multiNonceOracleInfo: NumericSingleOracleInfo = {
+    val unsorted = rValues.take(numDigits).toVector
+    val sorted = OrderedNonces.fromUnsorted(unsorted)
     NumericSingleOracleInfo(
-      OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey,
-                                           rValues.take(numDigits)))
+      OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, sorted))
+  }
 
   lazy val multiNonceContractOraclePair: ContractOraclePair.NumericPair = {
     ContractOraclePair.NumericPair(multiNonceContractDescriptor,
@@ -145,6 +153,9 @@ object DLCWalletUtil extends Logging {
 
   lazy val multiNonceContractInfo: ContractInfo =
     SingleContractInfo(total, multiNonceContractOraclePair)
+
+  lazy val numericContractInfoV0 =
+    multiNonceContractInfo.toTLV.asInstanceOf[ContractInfoV0TLV]
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(0)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1)
@@ -339,7 +350,6 @@ object DLCWalletUtil extends Logging {
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
-
     for {
       offer <- walletA.createDLCOffer(
         contractInfo = contractInfo,

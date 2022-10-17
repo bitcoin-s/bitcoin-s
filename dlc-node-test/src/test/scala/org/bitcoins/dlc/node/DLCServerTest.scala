@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.number.UInt16
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
@@ -21,6 +22,19 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withFundedDLCWallet(test)(getFreshConfig)
+  }
+
+  private val handleWriteFn: (BigSizeUInt, ByteVector) => Future[Unit] = {
+    case (_: BigSizeUInt, _: ByteVector) =>
+      Future.unit
+  }
+
+  private val handleWriteErrorFn: (
+      BigSizeUInt,
+      ByteVector,
+      Throwable) => Future[Unit] = {
+    case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
+      Future.unit
   }
 
   it must "send/receive Ping and Pong TLVs over clearnet" in { dlcWalletApi =>
@@ -43,7 +57,9 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
         { (_, _, connectionHandler) =>
           serverConnectionHandlerOpt = Some(connectionHandler)
           serverProbe.ref
-        }
+        },
+        handleWriteFn,
+        handleWriteErrorFn
       ))
 
     val resultF: Future[Future[Assertion]] = for {
@@ -53,13 +69,17 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
       var clientConnectionHandlerOpt = Option.empty[ActorRef]
       val clientProbe = TestProbe()
       val client = TestActorRef(
-        DLCClient.props(dlcWalletApi.wallet,
-                        Some(connectedAddressPromise),
-                        None,
-                        { (_, _, connectionHandler) =>
-                          clientConnectionHandlerOpt = Some(connectionHandler)
-                          clientProbe.ref
-                        }))
+        DLCClient.props(
+          dlcWalletApi.wallet,
+          Some(connectedAddressPromise),
+          None,
+          { (_, _, connectionHandler) =>
+            clientConnectionHandlerOpt = Some(connectionHandler)
+            clientProbe.ref
+          },
+          handleWriteFn,
+          handleWriteErrorFn
+        ))
       client ! DLCClient.Connect(Peer(connectAddress, socks5ProxyParams = None))
 
       for {

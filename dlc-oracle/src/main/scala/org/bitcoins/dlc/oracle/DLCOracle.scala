@@ -248,7 +248,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
       nonces = rValueDbs.map(_.nonce)
 
-      eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
+      eventTLV = OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces).toVector,
                                   epoch,
                                   descriptor,
                                   eventName)
@@ -334,8 +334,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
               s"No event saved with nonce ${nonce.hex} $outcome"))
       }
 
-      hash = eventDb.signingVersion.calcOutcomeHash(eventDb.eventDescriptorTLV,
-                                                    outcome.outcomeString)
+      hash = eventDb.signingVersion
+        .calcOutcomeHash(outcome.outcomeString)
       eventOutcomeOpt <- eventOutcomeDAO.find(nonce, hash)
       eventOutcomeDb <- eventOutcomeOpt match {
         case Some(value) => Future.successful(value)
@@ -400,8 +400,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventDescriptorTLV match {
         case _: SignedDigitDecompositionEventDescriptor =>
           val signOutcome = DigitDecompositionSignAttestation(num >= 0)
-          createAttestation(oracleEventTLV.nonces.head, signOutcome).map(db =>
-            Vector(db))
+          val signNonce = oracleEventTLV match {
+            case v0: OracleEventV0TLV => v0.nonces.head
+          }
+          createAttestation(signNonce, signOutcome).map(db => Vector(db))
         case _: UnsignedDigitDecompositionEventDescriptor =>
           FutureUtil.emptyVec[EventDb]
       }
@@ -420,11 +422,15 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                           eventDescriptorTLV.base.toInt,
                                           eventDescriptorTLV.numDigits.toInt)
 
+    val oracleEventNonces = oracleEventTLV match {
+      case v0: OracleEventV0TLV =>
+        v0.nonces
+    }
     val nonces = eventDescriptorTLV match {
       case _: UnsignedDigitDecompositionEventDescriptor =>
-        oracleEventTLV.nonces
+        oracleEventNonces
       case _: SignedDigitDecompositionEventDescriptor =>
-        oracleEventTLV.nonces.tail
+        oracleEventNonces.tail
     }
 
     val digitSigAVecF: Future[

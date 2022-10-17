@@ -3,14 +3,15 @@ package org.bitcoins.node
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
+import org.bitcoins.testkit.node.{NodeTestWithCachedBitcoindNoP2pBlockFilters}
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
+class NeutrinoUnsupportedPeerTest
+    extends NodeTestWithCachedBitcoindNoP2pBlockFilters {
 
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val config = ConfigFactory.parseString(

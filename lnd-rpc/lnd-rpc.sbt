@@ -83,7 +83,8 @@ TaskKeys.downloadLnd := {
         "74c16854292ca27b335309d7b37a44baec4df402e16b203df393ebece6570ad3"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
-    if (hash.equalsIgnoreCase(expectedHash)) {
+    val success = hash.equalsIgnoreCase(expectedHash)
+    if (success) {
       logger.info(s"Download complete and verified, unzipping result")
 
       val extractCommand = s"tar -xzf $archiveLocation --directory $binaryDir"
@@ -96,5 +97,9 @@ TaskKeys.downloadLnd := {
 
     logger.info(s"Deleting archive")
     Files.delete(archiveLocation)
+
+    if (!success) {
+      throw new RuntimeException(s"Failed to lnd eclair v$version")
+    }
   }
 }

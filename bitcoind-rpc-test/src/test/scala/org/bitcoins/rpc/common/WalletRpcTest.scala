@@ -358,6 +358,24 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       }
   }
 
+  it should "be able to list transactions" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      address <- otherClient.getNewAddress
+      txid <-
+        BitcoindRpcTestUtil
+          .fundBlockChainTransaction(client,
+                                     otherClient,
+                                     address,
+                                     Bitcoins(1.5))
+      txs <- otherClient.listTransactions()
+    } yield {
+      assert(txs.nonEmpty)
+      assert(txs.exists(_.txid.contains(txid)))
+    }
+  }
+
   it should "be able to import an address" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
@@ -459,7 +477,9 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       for {
         firstResult <-
           client
-            .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
+            .createMultiSig(2,
+                            Vector(privKey1.publicKey, privKey2.publicKey),
+                            AddressType.Bech32)
         address2 = firstResult.address
 
         secondResult <-

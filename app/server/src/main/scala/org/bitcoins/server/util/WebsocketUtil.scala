@@ -33,9 +33,15 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.dlc.node.{
   DLCNodeCallbacks,
+  OnAcceptFailed,
+  OnAcceptSucceed,
+  OnOfferSendFailed,
+  OnOfferSendSucceed,
   OnPeerConnectionEstablished,
   OnPeerConnectionFailed,
-  OnPeerConnectionInitiated
+  OnPeerConnectionInitiated,
+  OnSignFailed,
+  OnSignSucceed
 }
 import org.bitcoins.dlc.wallet.{
   DLCWalletCallbacks,
@@ -285,10 +291,52 @@ object WebsocketUtil extends Logging {
       offerF.map(_ => ())
     }
 
-    import DLCNodeCallbacks._
+    val onAcceptSucceed: OnAcceptSucceed = { payload =>
+      val notification = DLCNodeNotification.DLCAcceptSucceed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
 
-    onPeerConnectionInitiated(
-      onConnectionInitiated) + onPeerConnectionEstablished(
-      onConnectionEstablished) + onPeerConnectionFailed(onConnectionFailed)
+    val onAcceptFailed: OnAcceptFailed = { payload =>
+      val notification = DLCNodeNotification.DLCAcceptFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onOfferSendSucceed: OnOfferSendSucceed = { payload =>
+      val notification = DLCNodeNotification.DLCOfferSendSucceed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onOfferSendFailed: OnOfferSendFailed = { payload =>
+      val notification = DLCNodeNotification.DLCOfferSendFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onSignSucceed: OnSignSucceed = { payload =>
+      val notification = DLCNodeNotification.DLCSignSucceed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onSignFailed: OnSignFailed = { payload =>
+      val notification = DLCNodeNotification.DLCSignFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    DLCNodeCallbacks(
+      onPeerConnectionInitiated = Vector(onConnectionInitiated),
+      onPeerConnectionEstablished = Vector(onConnectionEstablished),
+      onPeerConnectionFailed = Vector(onConnectionFailed),
+      onOfferSendSucceed = Vector(onOfferSendSucceed),
+      onOfferSendFailed = Vector(onOfferSendFailed),
+      onAcceptSucceed = Vector(onAcceptSucceed),
+      onAcceptFailed = Vector(onAcceptFailed),
+      onSignSucceed = Vector(onSignSucceed),
+      onSignFailed = Vector(onSignFailed)
+    )
   }
 }

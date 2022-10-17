@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindVersion.{
   Unknown,
-  V17,
   V18,
   V19,
   V20,
@@ -87,7 +86,7 @@ trait TransactionRpc { self: Client =>
 
   def getTxOut(
       txid: DoubleSha256DigestBE,
-      vout: Int,
+      vout: Long,
       includeMemPool: Boolean = true): Future[GetTxOutResult] = {
     self.version.flatMap {
       case V22 | V23 | Unknown =>
@@ -95,11 +94,31 @@ trait TransactionRpc { self: Client =>
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
 
-      case V17 | V18 | V19 | V20 | V21 =>
+      case V18 | V19 | V20 | V21 =>
         bitcoindCall[GetTxOutResultPreV22](
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
     }
+  }
+
+  def getTxOutOpt(
+      txid: DoubleSha256DigestBE,
+      vout: Long,
+      includeMemPool: Boolean = true): Future[Option[GetTxOutResult]] = {
+    self.version
+      .flatMap {
+        case V22 | V23 | Unknown =>
+          bitcoindCall[GetTxOutResultV22](
+            "gettxout",
+            List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+
+        case V18 | V19 | V20 | V21 =>
+          bitcoindCall[GetTxOutResultPreV22](
+            "gettxout",
+            List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+      }
+      .map(Some(_))
+      .recover(_ => None)
   }
 
   private def getTxOutProof(

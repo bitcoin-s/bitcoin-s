@@ -111,10 +111,24 @@ object DLCNodeWsType extends StringFactory[DLCNodeWsType] {
   case object DLCConnectionInitiated extends DLCNodeWsType
   case object DLCConnectionEstablished extends DLCNodeWsType
   case object DLCConnectionFailed extends DLCNodeWsType
+  case object DLCOfferSendSucceed extends DLCNodeWsType
+  case object DLCOfferSendFailed extends DLCNodeWsType
+  case object DLCAcceptSucceed extends DLCNodeWsType
+  case object DLCAcceptFailed extends DLCNodeWsType
+  case object DLCSignSucceed extends DLCNodeWsType
+  case object DLCSignFailed extends DLCNodeWsType
 
-  private val all = Vector(DLCConnectionInitiated,
-                           DLCConnectionEstablished,
-                           DLCConnectionFailed)
+  private val all = Vector(
+    DLCConnectionInitiated,
+    DLCConnectionEstablished,
+    DLCConnectionFailed,
+    DLCOfferSendSucceed,
+    DLCOfferSendFailed,
+    DLCAcceptSucceed,
+    DLCAcceptFailed,
+    DLCSignSucceed,
+    DLCSignFailed
+  )
 
   override def fromStringOpt(string: String): Option[DLCNodeWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -314,5 +328,53 @@ object DLCNodeNotification {
 
     override def json: Value =
       upickle.default.writeJs(this)(WsPicklers.dlcNodeConnectionFailedPickler)
+  }
+
+  case class DLCAcceptFailed(payload: (Sha256Digest, String))
+      extends DLCNodeNotification[(Sha256Digest, String)] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCAcceptFailed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcAcceptFailedPickler)
+  }
+
+  case class DLCAcceptSucceed(payload: Sha256Digest)
+      extends DLCNodeNotification[Sha256Digest] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCAcceptSucceed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcAcceptSucceedPickler)
+  }
+
+  case class DLCOfferSendFailed(payload: (Sha256Digest, String))
+      extends DLCNodeNotification[(Sha256Digest, String)] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCOfferSendFailed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcOfferSendFailedPickler)
+  }
+
+  case class DLCOfferSendSucceed(payload: Sha256Digest)
+      extends DLCNodeNotification[Sha256Digest] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCOfferSendSucceed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcOfferSendSucceedPickler)
+  }
+
+  case class DLCSignFailed(payload: (Sha256Digest, String))
+      extends DLCNodeNotification[(Sha256Digest, String)] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCSignFailed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcSignFailedPickler)
+  }
+
+  case class DLCSignSucceed(payload: Sha256Digest)
+      extends DLCNodeNotification[Sha256Digest] {
+    override def `type`: DLCNodeWsType = DLCNodeWsType.DLCSignSucceed
+
+    override def json: Value =
+      upickle.default.writeJs(this)(WsPicklers.dlcSignSucceedPickler)
   }
 }

@@ -2,6 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest._
@@ -93,11 +94,29 @@ object BitcoinSFixture {
     } yield bitcoind
   }
 
-  /** Creates a new bitcoind instance */
-  def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(implicit
+  def createBitcoindBlockFilterRpcWithFunds(
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem): Future[BitcoindRpcClient with V19BlockFilterRpc] = {
+    import system.dispatcher
+    for {
+      bitcoind <- createBitcoindWithFunds(versionOpt)
+      _ = require(
+        bitcoind.isInstanceOf[V19BlockFilterRpc],
+        s"Given version does not support block filter rpc, got=$versionOpt")
+    } yield bitcoind.asInstanceOf[BitcoindRpcClient with V19BlockFilterRpc]
+  }
+
+  /** Creates a new bitcoind instance
+    * @param versionOpt the version of bitcoind ot use
+    * @param enableNeutrinoOpt whether neutrino should be enabled or not, if param not given it is default enabled
+    */
+  def createBitcoind(
+      versionOpt: Option[BitcoindVersion] = None,
+      enableNeutrino: Boolean = true)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
-    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
+    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt,
+                                                enableNeutrino = enableNeutrino)
     val bitcoind = versionOpt match {
       case Some(v) => BitcoindRpcClient.fromVersion(v, instance)
       case None    => new BitcoindRpcClient(instance)
