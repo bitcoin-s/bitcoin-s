@@ -763,6 +763,26 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def computeInputScript(
       tx: Tx,
       inputIdx: Int,
+      hashType: HashType,
+      output: TransactionOutput,
+      signMethod: SignMethod,
+      prevOuts: Vector[TransactionOutput]): Future[
+    (ScriptSignature, ScriptWitness)] = {
+    val signDescriptor =
+      SignDescriptor(output = Some(output),
+                     sighash = UInt32(hashType.num),
+                     inputIndex = inputIdx,
+                     signMethod = signMethod)
+
+    val request: SignReq =
+      SignReq(tx.bytes, Vector(signDescriptor), prevOuts)
+
+    computeInputScript(request).map(_.head)
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      inputIdx: Int,
       output: TransactionOutput,
       signMethod: SignMethod): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
@@ -1113,7 +1133,7 @@ object LndRpcClient {
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "v0.15.0-beta"
+  private[bitcoins] val version = "v0.15.3-beta"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"
