@@ -1,7 +1,10 @@
 package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels._
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  LabelPurpose
+}
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.eclair._
@@ -234,6 +237,12 @@ object JsonReaders {
         case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
           SerializerUtil.buildJsErrorMsg("jsnumber", err)
       }
+  }
+
+  implicit object AddressTypeReads extends Reads[AddressType] {
+
+    override def reads(json: JsValue): JsResult[AddressType] =
+      SerializerUtil.processJsStringOpt(AddressType.fromStringOpt)(json)
   }
 
   implicit object LabelPurposeReads extends Reads[LabelPurpose] {
