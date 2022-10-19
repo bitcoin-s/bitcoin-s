@@ -46,7 +46,7 @@ class CLightningClientPairTest extends DualCLightningFixture {
       _ = assert(channel.active)
 
       closeResult <- clightning.closeChannel(channel.short_channel_id)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
       tx <- bitcoind.getRawTransaction(closeResult.txid.get)
       find <- clightning.findChannel(channel.short_channel_id)
     } yield {
@@ -148,7 +148,7 @@ class CLightningClientPairTest extends DualCLightningFixture {
 
       tx <- clightningA.sendToAddress(addr, sendAmt, feeRate).map(_.tx)
       _ <- bitcoind.broadcastTransaction(tx)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
 
       // wait for them to sync the new blocks
       _ <- CLightningRpcTestUtil.awaitInSync(clightningA, bitcoind)

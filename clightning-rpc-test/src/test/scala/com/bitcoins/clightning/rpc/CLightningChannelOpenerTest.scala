@@ -60,7 +60,7 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       res <- bitcoind.walletProcessPSBT(psbt)
       tx <- Future.fromTry(res.psbt.extractTransactionAndValidate)
       _ <- bitcoind.sendRawTransaction(tx)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
 
       // await for clightnings to see channel
       _ <- TestAsyncUtil.awaitConditionF(
@@ -109,7 +109,7 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       res <- bitcoind.walletProcessPSBT(psbt)
       tx <- Future.fromTry(res.psbt.extractTransactionAndValidate)
       _ <- bitcoind.sendRawTransaction(tx)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
 
       // await for clightning to see channel
       _ <- TestAsyncUtil.awaitConditionF(

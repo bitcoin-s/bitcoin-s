@@ -103,7 +103,7 @@ trait FundWalletUtil extends Logging {
       addressAmountMap = addresses.zip(amts).toMap
       txId <- bitcoind.sendMany(addressAmountMap)
       tx <- bitcoind.getRawTransactionRaw(txId)
-      hashes <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      hashes <- bitcoind.generate(6)
       _ <- wallet.processTransaction(tx, hashes.headOption)
     } yield (tx, hashes.head)
 

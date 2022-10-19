@@ -18,9 +18,8 @@ class PreciousBlockRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
 
       blocks1 <-
-        freshClient.getNewAddress.flatMap(freshClient.generateToAddress(1, _))
-      blocks2 <- otherFreshClient.getNewAddress.flatMap(
-        otherFreshClient.generateToAddress(1, _))
+        freshClient.generate(1)
+      blocks2 <- otherFreshClient.generate(1)
 
       bestHash1 <- freshClient.getBestBlockHash
       _ = assert(bestHash1 == blocks1.head)

@@ -58,7 +58,7 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     val genBlock = new Runnable {
       override def run(): Unit = {
         if (counter < desiredBlocks) {
-          bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+          bitcoind.generate(1)
           counter = counter + 1
         }
       }

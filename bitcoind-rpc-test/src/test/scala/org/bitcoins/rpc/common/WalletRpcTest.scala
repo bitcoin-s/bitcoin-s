@@ -54,8 +54,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
     for {
       _ <- startClient(walletClient)
-      _ <- walletClient.getNewAddress.flatMap(
-        walletClient.generateToAddress(101, _))
+      _ <- walletClient.generate(101)
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
@@ -405,7 +404,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
     val client = nodePair.node1
     for {
       balance <- client.getBalance
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      _ <- client.generate(1)
       newBalance <- client.getBalance
     } yield {
       assert(balance.toBigDecimal > 0)

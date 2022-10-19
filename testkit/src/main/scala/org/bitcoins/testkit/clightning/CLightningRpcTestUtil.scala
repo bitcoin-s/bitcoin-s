@@ -191,7 +191,7 @@ trait CLightningRpcTestUtil extends Logging {
       addrB <- otherClient.getNewAddress
 
       _ <- bitcoind.sendMany(Map(addrA -> Bitcoins(1), addrB -> Bitcoins(1)))
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      _ <- bitcoind.generate(6)
     } yield ()
   }
 

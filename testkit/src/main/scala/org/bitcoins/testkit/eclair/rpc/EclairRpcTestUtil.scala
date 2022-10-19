@@ -403,8 +403,7 @@ trait EclairRpcTestUtil extends Logging {
     }
 
     val genBlocksF = openChannelsF.flatMap { _ =>
-      internalBitcoindF.flatMap(client =>
-        client.getNewAddress.flatMap(client.generateToAddress(3, _)))
+      internalBitcoindF.flatMap(client => client.generate(3))
     }
 
     genBlocksF.flatMap { _ =>

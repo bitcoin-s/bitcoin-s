@@ -85,8 +85,7 @@ class UTXOLifeCycleTest
       _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
-      _ <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(walletConfig.requiredConfirmations, _))
+      _ <- bitcoind.generate(walletConfig.requiredConfirmations)
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <- wallet.findOutputsBeingSpent(tx)
@@ -331,8 +330,7 @@ class UTXOLifeCycleTest
       _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
-      _ <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(walletConfig.requiredConfirmations, _))
+      _ <- bitcoind.generate(walletConfig.requiredConfirmations)
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <- wallet.findOutputsBeingSpent(tx)
@@ -447,8 +445,7 @@ class UTXOLifeCycleTest
       _ = assert(newTransactions.map(_.transaction).contains(tx))
 
       // Put confirmations on top of the tx's block
-      _ <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(walletConfig.requiredConfirmations, _))
+      _ <- bitcoind.generate(walletConfig.requiredConfirmations)
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <-
@@ -799,8 +796,7 @@ class UTXOLifeCycleTest
         _ = assert(receivedUtxo.head.state == BroadcastSpent)
 
         // confirm receive and spend
-        blockHashes <- bitcoind.getNewAddress.flatMap(
-          bitcoind.generateToAddress(1, _))
+        blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
         _ <- wallet.processBlock(block)
 
@@ -850,8 +846,7 @@ class UTXOLifeCycleTest
         _ = assert(receivedUtxo.head.state == BroadcastSpent)
 
         // confirm receive
-        blockHashes <- bitcoind.getNewAddress.flatMap(
-          bitcoind.generateToAddress(1, _))
+        blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
         _ <- wallet.processBlock(block)
 
@@ -861,8 +856,7 @@ class UTXOLifeCycleTest
 
         // broadcast and confirm spend
         _ <- wallet.broadcastTransaction(sendTx)
-        blockHashes <- bitcoind.getNewAddress.flatMap(
-          bitcoind.generateToAddress(1, _))
+        blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
         _ <- wallet.processBlock(block)
 

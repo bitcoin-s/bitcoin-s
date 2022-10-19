@@ -275,6 +275,13 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     }
   }
 
+  def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
+    for {
+      addr <- getNewAddress
+      blocks <- generateToAddress(numBlocks, addr)
+    } yield blocks
+  }
+
   override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
 
   override def isIBD(): Future[Boolean] = {

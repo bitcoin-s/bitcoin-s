@@ -45,15 +45,15 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       txid <-
         BitcoindRpcTestUtil
           .fundMemPoolTransaction(client, address, Bitcoins(1))
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      blocks <- client.generate(1)
       mostRecentBlock <- client.getBlock(blocks.head)
       _ <- client.invalidateBlock(blocks.head)
       mempool <- client.getRawMemPool
       count1 <- client.getBlockCount
       count2 <- otherClient.getBlockCount
 
-      _ <- client.getNewAddress.flatMap(
-        client.generateToAddress(2, _)
+      _ <- client.generate(
+        2
       ) // Ensure client and otherClient have the same blockchain
     } yield {
       assert(mostRecentBlock.tx.contains(txid))
@@ -65,7 +65,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to get block hash by height" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       count <- client.getBlockCount
       hash <- client.getBlockHash(count)
       prevhash <- client.getBlockHash(count - 1)
@@ -113,7 +113,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to get a raw block" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      blocks <- client.generate(1)
       block <- client.getBlockRaw(blocks.head)
       blockHeader <- client.getBlockHeaderRaw(blocks.head)
     } yield assert(block.blockHeader == blockHeader)
@@ -122,7 +122,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to get a block" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      blocks <- client.generate(1)
       block <- client.getBlock(blocks.head)
     } yield {
       assert(block.hash == blocks(0))
@@ -153,7 +153,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to get a block with verbose transactions" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       block <- client.getBlockWithTransactions(blocks(1))
     } yield {
       assert(block.hash == blocks(1))
@@ -180,7 +180,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to list all blocks since a given block" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(3, _))
+      blocks <- client.generate(3)
       list <- client.listSinceBlock(blocks(0))
     } yield {
       assert(list.transactions.length >= 2)
