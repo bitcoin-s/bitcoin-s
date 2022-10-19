@@ -216,7 +216,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //when it believes itself, or it's peer is in IBD
       val gen1F = for {
         _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
-        x <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+        x <- bitcoind.generate(1)
       } yield x
 
       //this needs to be called to get our peer to send us headers

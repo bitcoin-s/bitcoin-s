@@ -87,7 +87,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       _ = assert(incomingTx.isDefined)
       _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind)
 
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
       rawTx <- bitcoind.getRawTransaction(txId)
 
       // after this, tx should be confirmed
@@ -122,7 +122,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         wallet.feeRateApi.asInstanceOf[RandomFeeProvider].lastFeeRate.get
 
       txid <- bitcoind.sendRawTransaction(signedTx)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      _ <- bitcoind.generate(1)
       tx <- bitcoind.getRawTransaction(txid)
 
       utxos <- wallet.listUtxos()
@@ -170,7 +170,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       rawTx <- bitcoind.getRawTransaction(txId)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
       _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
 
       // Verify we funded the wallet
@@ -211,7 +211,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       walletBal2 <- wallet.getBalance()
       _ = assert(walletBal1 > walletBal2)
 
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
 
       replacementInfo <- bitcoind.getRawTransaction(replacementTx.txIdBE)
 
@@ -231,7 +231,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       // Fund wallet
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
       rawTx <- bitcoind.getRawTransaction(txId)
       _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
 
@@ -246,7 +246,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       _ <- bitcoind.sendRawTransaction(rbf)
 
       // Confirm transaction
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      _ <- bitcoind.generate(1)
       rawTx1 <- bitcoind.getRawTransaction(rbf.txIdBE)
       _ = require(rawTx1.blockhash.isDefined)
       _ <- wallet.processTransaction(rbf, rawTx1.blockhash)
@@ -267,7 +267,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       rawTx <- bitcoind.getRawTransaction(txId)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
       _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
 
       // Verify we funded the wallet

@@ -36,8 +36,7 @@ class BitcoindV18RpcClientTest extends BitcoindFixturesFundedCachedV18 {
   }
 
   it should "return active rpc commands" in { client =>
-    val generatedF =
-      client.getNewAddress.flatMap(addr => client.generateToAddress(100, addr))
+    val generatedF = client.generate(100)
     val rpcinfoF =
       generatedF.flatMap(_ => client.getRpcInfo())
 

@@ -107,7 +107,7 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       channelPoint = TransactionOutPoint(txId, vout)
 
       txIdBE <- lnd.closeChannel(channelPoint)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
       tx <- bitcoind.getRawTransaction(txIdBE)
       find <- lnd.findChannel(channelPoint)
     } yield {
@@ -201,7 +201,7 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
                                                 script = addr.scriptPubKey,
                                                 requiredConfs = 6,
                                                 heightHint = height)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- bitcoind.generate(6)
 
       // await so if this fails the test doesn't hang forever
       conf = Await.result(confirmedF, 10.seconds)

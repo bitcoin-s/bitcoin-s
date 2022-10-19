@@ -1129,7 +1129,7 @@ trait BitcoindRpcTestUtil extends Logging {
     //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
     val generatedF = startedF.flatMap { _ =>
       clientAccum += rpc
-      rpc.getNewAddress.flatMap(rpc.generateToAddress(blocksToGenerate, _))
+      rpc.generate(blocksToGenerate)
     }
 
     def areBlocksGenerated(): Future[Boolean] = {

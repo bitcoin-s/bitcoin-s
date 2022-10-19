@@ -41,7 +41,7 @@ class MiningRpcTest extends BitcoindRpcTest {
   it should "be able to generate blocks" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(3, _))
+      blocks <- client.generate(3)
     } yield assert(blocks.length == 3)
   }
 
@@ -76,7 +76,7 @@ class MiningRpcTest extends BitcoindRpcTest {
   it should "be able to generate blocks and then get their serialized headers" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       header <- client.getBlockHeaderRaw(blocks(1))
     } yield assert(header.previousBlockHashBE == blocks(0))
   }
@@ -84,7 +84,7 @@ class MiningRpcTest extends BitcoindRpcTest {
   it should "be able to generate blocks and then get their headers" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       firstHeader <- client.getBlockHeader(blocks(0))
       secondHeader <- client.getBlockHeader(blocks(1))
     } yield {

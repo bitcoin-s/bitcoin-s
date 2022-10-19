@@ -100,7 +100,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      _ <- client.generate(1)
       info <- client.getMemPoolInfo
       _ <-
         BitcoindRpcTestUtil
@@ -140,7 +140,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
     nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
-        _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+        _ <- client.generate(1)
         address1 <- client.getNewAddress
         txid1 <- BitcoindRpcTestUtil.fundMemPoolTransaction(client,
                                                             address1,

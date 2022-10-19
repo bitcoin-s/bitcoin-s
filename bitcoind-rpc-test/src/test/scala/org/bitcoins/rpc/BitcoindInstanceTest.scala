@@ -138,7 +138,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
     for {
       _ <- startClient(client)
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(101, _))
+      _ <- client.generate(101)
       balance <- client.getBalance
       _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
       _ <-

@@ -31,7 +31,7 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
   it should "get a block filter given a block hash" in {
     client: BitcoindV20RpcClient =>
       for {
-        blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+        blocks <- client.generate(1)
         blockFilter <- client.getBlockFilter(blocks.head, FilterType.Basic)
 
         block <- client.getBlockRaw(blocks.head)
@@ -58,7 +58,7 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
   it should "be able to get the balances" in { client: BitcoindV20RpcClient =>
     for {
       immatureBalance <- client.getBalances
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      _ <- client.generate(1)
       newImmatureBalance <- client.getBalances
     } yield {
       val blockReward = 50
