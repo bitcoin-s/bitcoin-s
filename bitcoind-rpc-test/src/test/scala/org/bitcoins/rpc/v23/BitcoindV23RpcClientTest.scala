@@ -49,10 +49,10 @@ class BitcoindV23RpcClientTest extends BitcoindFixturesFundedCachedV23 {
       info <- client.getAddressInfo(address)
     } yield {
       info match {
-        case _: AddressInfoResultPreV18 | _: AddressInfoResultPostV21 =>
-          fail("Was expecting AddressInfoResultPostV18")
-        case postV18Info: AddressInfoResultPostV18 =>
-          assert(postV18Info.address == address)
+        case _: AddressInfoResultPreV18 | _: AddressInfoResultPostV18 =>
+          fail("Was expecting AddressInfoResultPostV21")
+        case postV21Info: AddressInfoResultPostV21 =>
+          assert(postV21Info.address == address)
       }
     }
   }
