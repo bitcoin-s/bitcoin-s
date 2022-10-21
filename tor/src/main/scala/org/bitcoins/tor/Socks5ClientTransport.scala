@@ -12,6 +12,7 @@ import akka.stream.scaladsl.{BidiFlow, Flow, Keep}
 import akka.stream.stage._
 import akka.stream.{Attributes, BidiShape, Inlet, Outlet}
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.core.util.NetworkUtil
 
 import java.net.{InetSocketAddress, URI}
@@ -113,7 +114,8 @@ class Socks5ProxyGraphStage(
     targetPort: Int,
     proxyParams: Socks5ProxyParams)
     extends GraphStage[
-      BidiShape[ByteString, ByteString, ByteString, ByteString]] {
+      BidiShape[ByteString, ByteString, ByteString, ByteString]]
+    with Logging {
 
   val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")
   val bytesOut: Outlet[ByteString] = Outlet("OutgoingTCP.out")
@@ -140,7 +142,7 @@ class Socks5ProxyGraphStage(
   private val connectMessage = socks5ConnectionRequest(
     InetSocketAddress.createUnresolved(targetHostName, targetPort))
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with StageLogging {
       private var state: State = Greeting
 
@@ -201,6 +203,9 @@ class Socks5ProxyGraphStage(
                 passAlong(socks5In, bytesOut, doFinish = false, doPull = true)
                 pull(bytesIn)
               case Failure(ex) =>
+                logger.error(
+                  s"Failed to connect $targetHostName:$targetPort via tor",
+                  ex)
                 failStage(ex)
             }
           case _ =>
@@ -225,5 +230,6 @@ class Socks5ProxyGraphStage(
       setHandler(bytesOut, eagerTerminateOutput)
       setHandler(socks5Out, eagerTerminateOutput)
     }
+  }
 
 }
