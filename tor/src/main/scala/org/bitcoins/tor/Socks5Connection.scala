@@ -3,11 +3,12 @@ package org.bitcoins.tor
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.tor.Socks5Connection.{Credentials, Socks5Connect}
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** Simple socks 5 client. It should be given a new connection, and will
   *
@@ -19,9 +20,10 @@ import scala.util.Try
 class Socks5Connection(
     connection: ActorRef,
     credentialsOpt: Option[Credentials],
-    command: Socks5Connect)
+    target: Socks5Connect)
     extends Actor
-    with ActorLogging {
+    with ActorLogging
+    with Logging {
 
   import Socks5Connection._
 
@@ -48,7 +50,7 @@ class Socks5Connection(
       connection ! Tcp.ResumeReading
     } else {
       context become connectionRequest
-      connection ! Tcp.Write(socks5ConnectionRequest(command.address))
+      connection ! Tcp.Write(socks5ConnectionRequest(target.address))
       connection ! Tcp.ResumeReading
     }
   }
@@ -56,16 +58,24 @@ class Socks5Connection(
   def authenticate: Receive = { case Tcp.Received(data) =>
     if (parseAuth(data)) {
       context become connectionRequest
-      connection ! Tcp.Write(socks5ConnectionRequest(command.address))
+      connection ! Tcp.Write(socks5ConnectionRequest(target.address))
       connection ! Tcp.ResumeReading
     }
   }
 
   def connectionRequest: Receive = { case Tcp.Received(data) =>
-    val connectedAddress = parseConnectedAddress(data)
-    context become connected
-    context.parent ! Socks5Connected(connectedAddress)
-    isConnected = true
+    val connectedAddressT = tryParseConnectedAddress(data)
+    connectedAddressT match {
+      case Success(connectedAddress) =>
+        logger.info(
+          s"Tor connection request succeeded. target=$target connectedAddress=$connectedAddress")
+        context become connected
+        context.parent ! Socks5Connected(connectedAddress)
+        isConnected = true
+      case Failure(err) =>
+        logger.error(s"Tor connection request failed to $target", err)
+    }
+
   }
 
   def connected: Receive = { case Tcp.Register(handler, _, _) =>
@@ -87,7 +97,7 @@ class Socks5Connection(
     super.postStop()
     connection ! Tcp.Close
     if (!isConnected) {
-      context.parent ! command.failureMessage
+      context.parent ! target.failureMessage
     }
   }
 
@@ -209,8 +219,9 @@ object Socks5Connection {
     } else {
       val status = data(1)
       if (status != 0) {
-        throw Socks5Error(
-          connectErrors.getOrElse(status, s"Unknown SOCKS5 error $status"))
+        val errMsg =
+          connectErrors.getOrElse(status, s"Unknown SOCKS5 error $status")
+        throw Socks5Error(errMsg + s" data=$data")
       }
       data(3) match {
         case 0x01 =>
