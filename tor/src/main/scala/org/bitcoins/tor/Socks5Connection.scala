@@ -67,11 +67,13 @@ class Socks5Connection(
     val connectedAddressT = tryParseConnectedAddress(data)
     connectedAddressT match {
       case Success(connectedAddress) =>
+        logger.info(
+          s"Tor connection request succeeded. target=$target connectedAddress=$connectedAddress")
         context become connected
         context.parent ! Socks5Connected(connectedAddress)
         isConnected = true
       case Failure(err) =>
-        logger.error(s"Connection request failed to $target", err)
+        logger.error(s"Tor connection request failed to $target", err)
     }
 
   }
