@@ -3,12 +3,12 @@ package org.bitcoins.rpc.v18
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.{BitcoindFixturesFundedCachedV22}
+import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedNewest
 
 /** Tests for PSBT for RPC calls specific to V18 new PSBT calls
   * @see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PsbtRpcTest extends BitcoindFixturesFundedCachedV22 {
+class PsbtRpcTest extends BitcoindFixturesFundedCachedNewest {
 
   behavior of "PsbtRpc"
 
@@ -101,12 +101,11 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedV22 {
     val joinedF = client.joinPsbts(seqofpsbts)
 
     joinedF.map { result =>
-      logger.info(s"result=$result")
-      assert(
-        result ==
-          //the expected joined version of these 2 psbts
-          PSBT.fromBase64(
-            "cHNidP8BAP0LAQIAAAADJoFxNx7f8oXpN63upLN7eAAMBWbLs61kZBcTykIXG/YAAAAAAP7///+rCUmgjFr3xJuCEvQX4vFas/XDPc8VOCGoE5+Helt75AAAAAAA/v///6sJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAQAAAAD+////BNPf9QUAAAAAGXapFNDFmQPFusKGh2DpD9UhpGZap2UgiKwA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHh2A76gsAAAAAGXapFHaKQLvXQMvoHZiOcd4qTVxxOWsdiKyOJAAAAAAAABl2qRRvRiC1U/oJXnIbnuDv6foDnMpFl4isAAAAAAABAMwBAAAAAomjxx6rTSDgNxu7pMxpj6KVyUY6+i45f4UzzLYvlWflAQAAABcWABS+GNFSqbASA52vPafeT1M0nuy5hf////+G+KpDpx3/FEiJOlMKcjfva0YIu7LdLQFx5jrsakiQtAEAAAAXFgAU/j6e8adF6XTZAsQ1WUOryzS9U1P/////AgDC6wsAAAAAGXapFIXP8Ql/2eAIuzSvcJxiGXs4l4pIiKxy/vhOLAAAABepFDOXJboh79Yqx1OpvNBn1semo50FhwAAAAAAAQDfAgAAAAEmgXE3Ht/yhek3re6ks3t4AAwFZsuzrWRkFxPKQhcb9gAAAABqRzBEAiBwsiRRI+a/R01gxbUMBD1MaRpdJDXwmjSnZiqdwlF5CgIgATKcqdrPKAvfMHQOwDkEIkIsgctFg5RXrrdvwS7dlbMBIQJlfRGNM1e44PTCzUbbezn22cONmnCry5st5dyNv+TOMf7///8C09/1BQAAAAAZdqkU0MWZA8W6woaHYOkP1SGkZlqnZSCIrADh9QUAAAAAF6kUNUXm4zuDLEcFDyTT7rk8nAOUi8eHsy4TAAABASAA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHhwEEFgAUhdE1N/LiZUBaNNuvqePdoB+4IwgAAAAiAgLq1ZZofKgGBD7cPeEWzfKdXpJXwZbNBVz2mMjQK/JOmRC0prpnAAAAgAAAAIACAACAACICA5T2K+nfGZUsVYd2iut2mAYa0sSiXIlPR9jBYrTXIT0FELSmumcAAACAAQAAgAIAAIAA"))
+      logger.info(s"result=${result.base64}")
+      val allInputs = seqofpsbts.flatMap(_.transaction.inputs).distinct
+      val allOutputs = seqofpsbts.flatMap(_.transaction.outputs).distinct
+      assert(allInputs.forall(i => result.transaction.inputs.contains(i)))
+      assert(allOutputs.forall(i => result.transaction.outputs.contains(i)))
     }
   }
 
