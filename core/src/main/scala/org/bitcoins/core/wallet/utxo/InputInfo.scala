@@ -363,7 +363,6 @@ object RawInputInfo {
       case p2pk: P2PKScriptPubKey =>
         P2PKInputInfo(outPoint, amount, p2pk)
       case p2pkh: P2PKHScriptPubKey =>
-        println(s"hashPreImages=$hashPreImages")
         hashPreImages.collectFirst {
           case pubKey: ECPublicKey =>
             pubKey
@@ -373,7 +372,6 @@ object RawInputInfo {
             throw new IllegalArgumentException(
               s"P2PKH pre-image must be specified for P2PKH ScriptPubKey, got $hashPreImages")
           case Some(p2pkhPreImage) =>
-            println(s"p2pkh=${P2PKHScriptPubKey(p2pkhPreImage)}")
             require(
               P2PKHScriptPubKey(p2pkhPreImage) == p2pkh,
               s"Specified P2PKH pre-image ($p2pkhPreImage) does not match $p2pkh")
