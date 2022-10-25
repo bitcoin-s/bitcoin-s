@@ -27,7 +27,7 @@ object Deps {
     val playv = "2.9.3" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.20"
     val jUnixSocketV = "2.5.2"
-    val scodecV = "1.1.30"
+    val scodecV = "1.1.34"
     val junitV = "0.13.3"
     val nativeLoaderV = "2.4.0"
     val typesafeConfigV = "1.4.2"
