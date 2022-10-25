@@ -4,7 +4,10 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{
+  OrderedAnnouncements,
+  OrderedSchnorrSignatures
+}
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 import org.bitcoins.testkit.wallet.BitcoinSDualWalletTest
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -77,7 +80,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       val initiatorWinSig = priv.schnorrSignWithNonce(hash, kValue)
       OracleAttestmentV0TLV(eventId,
                             priv.schnorrPublicKey,
-                            Vector(initiatorWinSig),
+                            OrderedSchnorrSignatures(initiatorWinSig).toVector,
                             Vector(initiatorWinStr))
     }
 
@@ -98,7 +101,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       val recipientWinSig = priv.schnorrSignWithNonce(hash, kValue)
       OracleAttestmentV0TLV(eventId,
                             priv.schnorrPublicKey,
-                            Vector(recipientWinSig),
+                            OrderedSchnorrSignatures(recipientWinSig).toVector,
                             Vector(recipientWinStr))
     }
 

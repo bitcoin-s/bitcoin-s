@@ -16,10 +16,12 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementTLV,
-  OracleAttestmentTLV
+  OracleAttestmentTLV,
+  OracleAttestmentV0TLV,
+  OracleEventV0TLV
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.core.util.sorted.OrderedAnnouncements
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -262,12 +264,18 @@ object DLCUtil {
       oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
       announcements
-        .map(_.eventTLV.nonces)
-        .map(_.vec)
+        .map { ann =>
+          ann.eventTLV match {
+            case v0: OracleEventV0TLV =>
+              v0.nonces
+          }
+        }
+        .map(_.toVector)
     }
     val resultOpt = oracleSignatures.find { case oracleSignature =>
-      val oracleSigNonces: Vector[SchnorrNonce] = oracleSignature.sigs.map(_.rx)
-      announcementNonces.contains(oracleSigNonces)
+      val oracleSigNonces: Vector[SchnorrNonce] =
+        oracleSignature.sigs.map(_.rx)
+      announcementNonces.exists(_ == oracleSigNonces)
     }
     resultOpt
   }
@@ -295,8 +303,10 @@ object DLCUtil {
       attestments
         .foldLeft(init) { (acc, attestment) =>
           val r: Vector[OracleSignatures] = announcements.flatMap { ann =>
-            val oracleSig =
-              OracleSignatures(SingleOracleInfo(ann), attestment.sigs)
+            val oracleSig = attestment match {
+              case v0: OracleAttestmentV0TLV =>
+                OracleSignatures(SingleOracleInfo(ann), v0)
+            }
             val isMatch = matchOracleSignaturesForAnnouncements(ann, oracleSig)
             isMatch match {
               case Some(matchedSig) =>
@@ -319,13 +329,20 @@ object DLCUtil {
 
     attestments.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
       // Nonces should be unique so searching for the first nonce should be safe
-      val firstNonce = sig.sigs.head.rx
+      val firstNonce = sig match {
+        case v0: OracleAttestmentV0TLV =>
+          v0.unsortedSignatures.head.rx
+      }
       announcements
-        .find(
-          _.eventTLV.nonces.headOption
-            .contains(firstNonce)) match {
+        .find { ann =>
+          ann.eventTLV match {
+            case v0: OracleEventV0TLV =>
+              v0.nonces.headOption
+                .contains(firstNonce)
+          }
+        } match {
         case Some(announcement) =>
-          acc :+ OracleSignatures(SingleOracleInfo(announcement), sig.sigs)
+          acc :+ OracleSignatures(SingleOracleInfo(announcement), sig)
         case None =>
           throw new RuntimeException(
             s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")

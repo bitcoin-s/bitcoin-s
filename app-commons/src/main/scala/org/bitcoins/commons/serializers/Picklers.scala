@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.RescanComplete
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
@@ -11,6 +12,7 @@ import org.bitcoins.core.config.DLC
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
+import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd.{AddressType, HDPath}
 import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.Block
@@ -34,6 +36,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.util.TimeUtil._
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
 import org.bitcoins.crypto._
@@ -1188,10 +1191,12 @@ object Picklers {
     lazy val contractId = ByteVector.fromValidHex(obj("contractId").str)
     lazy val fundingTxId = DoubleSha256DigestBE(obj("fundingTxId").str)
     lazy val closingTxId = DoubleSha256DigestBE(obj("closingTxId").str)
-    lazy val oracleSigs =
-      obj("oracleSigs").arr
+    lazy val oracleSigs = {
+      val unsorted = obj("oracleSigs").arr
         .map(value => SchnorrDigitalSignature(value.str))
         .toVector
+      OrderedSchnorrSignatures.fromUnsorted(unsorted)
+    }
 
     val payoutAddressJs = obj("payoutAddress")
     lazy val payoutAddress: Option[PayoutAddress] = payoutAddressJs match {
@@ -1541,6 +1546,76 @@ object Picklers {
   implicit val getBlockHeaderResultPickler: ReadWriter[GetBlockHeaderResult] = {
     readwriter[ujson.Obj]
       .bimap(writeBlockHeaderResult(_), readBlockHeaderResult(_))
+  }
+
+  implicit val compactFilterHeaderPickler: ReadWriter[CompactFilterHeaderDb] = {
+    readwriter[ujson.Obj]
+      .bimap(writeCompactFilterHeaderDb(_), readCompactFilterHeaderDb(_))
+  }
+
+  implicit val compactFilterDbPickler: ReadWriter[CompactFilterDb] = {
+    readwriter[ujson.Obj]
+      .bimap(writeCompactFilterDb(_), readCompactFilterDb(_))
+  }
+
+  private def writeCompactFilterDb(
+      compactFilterDb: CompactFilterDb): ujson.Obj = {
+    ujson.Obj(
+      PicklerKeys.hashKey -> ujson.Str(compactFilterDb.hashBE.hex),
+      PicklerKeys.filterTypeKey -> ujson.Str(
+        compactFilterDb.filterType.toString),
+      PicklerKeys.compactFilterBytesKey -> ujson.Str(
+        compactFilterDb.bytes.toHex),
+      PicklerKeys.heightKey -> ujson.Num(compactFilterDb.height),
+      PicklerKeys.blockHashKey -> ujson.Str(compactFilterDb.blockHashBE.hex)
+    )
+  }
+
+  private def readCompactFilterDb(obj: ujson.Obj): CompactFilterDb = {
+    val hash = DoubleSha256DigestBE.fromHex(obj(PicklerKeys.hashKey).str)
+    val filterType = FilterType.fromString(obj(PicklerKeys.filterTypeKey).str)
+    val bytes =
+      ByteVector.fromValidHex(obj(PicklerKeys.compactFilterBytesKey).str)
+    val height = obj(PicklerKeys.heightKey).num.toInt
+    val blockHash =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.blockHashKey).str)
+
+    CompactFilterDb(
+      hashBE = hash,
+      filterType = filterType,
+      bytes = bytes,
+      height = height,
+      blockHashBE = blockHash
+    )
+  }
+
+  private def writeCompactFilterHeaderDb(
+      filterHeaderDb: CompactFilterHeaderDb): ujson.Obj = {
+    ujson.Obj(
+      PicklerKeys.hashKey -> ujson.Str(filterHeaderDb.hashBE.hex),
+      PicklerKeys.filterHashKey -> ujson.Str(filterHeaderDb.filterHashBE.hex),
+      PicklerKeys.previousFilterHeaderKey ->
+        ujson.Str(filterHeaderDb.previousFilterHeaderBE.hex),
+      PicklerKeys.blockHashKey -> ujson.Str(filterHeaderDb.blockHashBE.hex),
+      PicklerKeys.heightKey -> ujson.Num(filterHeaderDb.height)
+    )
+  }
+
+  private def readCompactFilterHeaderDb(
+      obj: ujson.Obj): CompactFilterHeaderDb = {
+    val hash = DoubleSha256DigestBE.fromHex(obj(PicklerKeys.hashKey).str)
+    val filterHash =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.filterHashKey).str)
+    val previousFilterHeader =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.previousFilterHeaderKey).str)
+    val blockHash =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.blockHashKey).str)
+    val height = obj(PicklerKeys.heightKey).num
+    CompactFilterHeaderDb(hashBE = hash,
+                          filterHashBE = filterHash,
+                          previousFilterHeaderBE = previousFilterHeader,
+                          blockHashBE = blockHash,
+                          height = height.toInt)
   }
 
   private def writeContactDb(contact: DLCContactDb): ujson.Obj = {

@@ -194,7 +194,7 @@ object Networks extends StringFactory[NetworkParameters] {
 
 object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
 
-  val knownNetworks: Seq[NetworkParameters] =
+  val knownNetworks: Seq[BitcoinNetwork] =
     Seq(MainNet, TestNet3, RegTest, SigNet)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)

@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.SchnorrDigitalSignature
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 
@@ -317,7 +317,7 @@ object DLCStatusBuilder {
       announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
       nonceDbs: Vector[OracleNonceDb]): (
       OracleOutcome,
-      Vector[SchnorrDigitalSignature]) = {
+      OrderedSchnorrSignatures) = {
     val noncesByAnnouncement: Map[Long, Vector[OracleNonceDb]] =
       nonceDbs.sortBy(_.index).groupBy(_.announcementId)
     val oracleOutcome = {
@@ -357,6 +357,7 @@ object DLCStatusBuilder {
     }
 
     val sigs = nonceDbs.flatMap(_.signatureOpt)
-    (oracleOutcome, sigs)
+    val ordered = OrderedSchnorrSignatures.fromUnsorted(sigs)
+    (oracleOutcome, ordered)
   }
 }

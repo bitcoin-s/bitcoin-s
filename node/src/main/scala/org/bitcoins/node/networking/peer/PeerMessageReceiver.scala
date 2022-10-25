@@ -262,7 +262,7 @@ class PeerMessageReceiver(
   def onResponseTimeout(
       networkPayload: NetworkPayload): Future[PeerMessageReceiver] = {
     assert(networkPayload.isInstanceOf[ExpectsResponse])
-    logger.debug(
+    logger.info(
       s"Handling response timeout for ${networkPayload.commandName} from $peer")
 
     //isn't this redundant? No, on response timeout may be called when not cancel timeout
@@ -273,7 +273,7 @@ class PeerMessageReceiver(
 
     networkPayload match {
       case payload: ExpectsResponse =>
-        logger.debug(
+        logger.info(
           s"Response for ${payload.commandName} from $peer timed out in state $state")
         node.peerManager.onQueryTimeout(payload, peer).map { _ =>
           state match {

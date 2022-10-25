@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.grpc.{GrpcClientSettings, SSLContextUtils}
 import akka.stream.scaladsl.{Sink, Source}
+import chainrpc._
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
 import invoicesrpc.LookupInvoiceMsg.InvoiceRef
@@ -12,7 +13,6 @@ import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
 import lnrpc._
-import chainrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._
@@ -33,7 +33,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
@@ -57,8 +57,8 @@ import java.net.InetSocketAddress
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.util.Try
 
 /** @param binaryOpt Path to lnd executable
   */
@@ -763,6 +763,26 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def computeInputScript(
       tx: Tx,
       inputIdx: Int,
+      hashType: HashType,
+      output: TransactionOutput,
+      signMethod: SignMethod,
+      prevOuts: Vector[TransactionOutput]): Future[
+    (ScriptSignature, ScriptWitness)] = {
+    val signDescriptor =
+      SignDescriptor(output = Some(output),
+                     sighash = UInt32(hashType.num),
+                     inputIndex = inputIdx,
+                     signMethod = signMethod)
+
+    val request: SignReq =
+      SignReq(tx.bytes, Vector(signDescriptor), prevOuts)
+
+    computeInputScript(request).map(_.head)
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      inputIdx: Int,
       output: TransactionOutput,
       signMethod: SignMethod): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
@@ -950,6 +970,52 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .map(_.transactions.toVector.map(LndTransactionToTxDetails))
   }
 
+  def subscribeTxConfirmation(
+      script: ScriptPubKey,
+      requiredConfs: Int,
+      heightHint: Int): Future[ConfDetails] = {
+    require(heightHint > 0,
+            s"heightHint must be greater than 0, got $heightHint")
+
+    val request =
+      ConfRequest(txid = DoubleSha256Digest.empty.bytes,
+                  script = script.asmBytes,
+                  numConfs = UInt32(requiredConfs),
+                  heightHint = UInt32(heightHint))
+
+    registerConfirmationsNotification(request)
+      .filter(_.event.isConf)
+      .runWith(Sink.head)
+      .map(_.getConf)
+  }
+
+  def subscribeTxConfirmation(
+      txId: DoubleSha256Digest,
+      script: ScriptPubKey,
+      requiredConfs: Int,
+      heightHint: Int): Future[ConfDetails] = {
+    require(heightHint > 0,
+            s"heightHint must be greater than 0, got $heightHint")
+
+    val request =
+      ConfRequest(txid = txId.bytes,
+                  script = script.asmBytes,
+                  numConfs = UInt32(requiredConfs),
+                  heightHint = UInt32(heightHint))
+
+    registerConfirmationsNotification(request)
+      .filter(_.event.isConf)
+      .runWith(Sink.head)
+      .map(_.getConf)
+  }
+
+  def registerConfirmationsNotification(
+      request: ConfRequest): Source[ConfEvent, NotUsed] = {
+    logger.trace("lnd calling RegisterConfirmationsNtfn")
+
+    chainClient.registerConfirmationsNtfn(request)
+  }
+
   def monitorInvoice(
       rHash: PaymentHashTag,
       interval: FiniteDuration = 1.second,
@@ -1006,22 +1072,22 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    val t = Try(stateClient.getState(GetStateRequest()).onComplete {
-      case Success(state) =>
-        state.state match {
-          case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
-            p.success(true)
-          case _: WalletState.Unrecognized |
-              WalletState.WAITING_TO_START | WalletState.UNLOCKED |
-              WalletState.LOCKED | WalletState.NON_EXISTING =>
-            p.success(false)
-        }
-      case Failure(_) =>
-        p.success(false)
-    })
+    val t = Try {
+      val getStateF = stateClient.getState(GetStateRequest())
+      val state = Await.result(getStateF, 5.seconds)
+
+      state.state match {
+        case WalletState.SERVER_ACTIVE =>
+          p.trySuccess(true)
+        case _: WalletState.Unrecognized | WalletState.WAITING_TO_START |
+            WalletState.UNLOCKED | WalletState.LOCKED |
+            WalletState.NON_EXISTING | WalletState.RPC_ACTIVE =>
+          p.trySuccess(false)
+      }
+    }
 
     t.failed.foreach { _ =>
-      p.success(false)
+      p.trySuccess(false)
     }
 
     p.future
@@ -1067,7 +1133,7 @@ object LndRpcClient {
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "v0.15.0-beta"
+  private[bitcoins] val version = "v0.15.3-beta"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"

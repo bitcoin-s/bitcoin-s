@@ -156,7 +156,7 @@ trait Client
     *         cannot be started
     */
   override def start(): Future[BitcoindRpcClient] = {
-
+    logger.info(s"Client.start() instance=$instance")
     // if we're doing cookie based authentication, we might attempt
     // to read the cookie file before it's written. this ensures
     // we avoid that
@@ -337,7 +337,6 @@ trait Client
       printError: Boolean = true,
       uriExtensionOpt: Option[String] = None
   )(implicit reader: Reads[T]): Future[T] = {
-
     val request =
       buildRequest(instance, command, JsArray(parameters), uriExtensionOpt)
     val responseF = sendRequest(request)

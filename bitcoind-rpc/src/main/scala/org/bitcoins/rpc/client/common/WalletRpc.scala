@@ -169,8 +169,7 @@ trait WalletRpc { self: Client =>
         bitcoindCall[GetWalletInfoResultPostV22](
           "getwalletinfo",
           uriExtensionOpt = walletName.map(walletExtension))
-      case BitcoindVersion.V17 | BitcoindVersion.V18 | BitcoindVersion.V19 |
-          BitcoindVersion.V20 | BitcoindVersion.V21 =>
+      case BitcoindVersion.V19 | BitcoindVersion.V20 | BitcoindVersion.V21 =>
         bitcoindCall[GetWalletInfoResultPreV22](
           "getwalletinfo",
           uriExtensionOpt = walletName.map(walletExtension))
@@ -316,40 +315,25 @@ trait WalletRpc { self: Client =>
       walletNameOpt: Option[String] = None
   ): Future[SetWalletFlagResult] = {
 
-    self.version.flatMap {
-      case V23 | V22 | V21 | V20 | V19 | Unknown =>
-        bitcoindCall[SetWalletFlagResult](
-          "setwalletflag",
-          List(JsString(flag.toString), Json.toJson(value)),
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V17 | V18 =>
-        Future.failed(
-          new UnsupportedOperationException(
-            "setwalletflag is not available for versions before 0.19"))
+    self.version.flatMap { case V23 | V22 | V21 | V20 | V19 | Unknown =>
+      bitcoindCall[SetWalletFlagResult](
+        "setwalletflag",
+        List(JsString(flag.toString), Json.toJson(value)),
+        uriExtensionOpt = walletNameOpt.map(walletExtension))
     }
   }
 
   def getBalances: Future[GetBalancesResult] = {
-    self.version.flatMap {
-      case V23 | V22 | V21 | V20 | V19 | Unknown =>
-        bitcoindCall[GetBalancesResult]("getbalances")
-      case V17 | V18 =>
-        Future.failed(
-          new UnsupportedOperationException(
-            "getbalances is not available for versions before 0.19"))
+    self.version.flatMap { case V23 | V22 | V21 | V20 | V19 | Unknown =>
+      bitcoindCall[GetBalancesResult]("getbalances")
     }
   }
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {
-    self.version.flatMap {
-      case V23 | V22 | V21 | V20 | V19 | Unknown =>
-        bitcoindCall[GetBalancesResult]("getbalances",
-                                        uriExtensionOpt =
-                                          Some(walletExtension(walletName)))
-      case V17 | V18 =>
-        Future.failed(
-          new UnsupportedOperationException(
-            "getbalances is not available for versions before 0.19"))
+    self.version.flatMap { case V23 | V22 | V21 | V20 | V19 | Unknown =>
+      bitcoindCall[GetBalancesResult]("getbalances",
+                                      uriExtensionOpt =
+                                        Some(walletExtension(walletName)))
     }
   }
 
@@ -436,24 +420,13 @@ trait WalletRpc { self: Client =>
                JsString(passphrase),
                JsBoolean(avoidReuse))
         )
-      case V17 | V18 =>
-        require(passphrase.isEmpty,
-                "passphrase should not be set for versions before v19")
-        bitcoindCall[CreateWalletResult](
-          "createwallet",
-          List(JsString(walletName), JsBoolean(disablePrivateKeys)))
     }
 
   def getAddressInfo(
       address: BitcoinAddress,
       walletNameOpt: Option[String] = None): Future[AddressInfoResult] = {
     self.version.flatMap {
-      case V17 =>
-        bitcoindCall[AddressInfoResultPreV18](
-          "getaddressinfo",
-          List(JsString(address.value)),
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V18 | V19 | V20 | Unknown =>
+      case V19 | V20 | Unknown =>
         bitcoindCall[AddressInfoResultPostV18](
           "getaddressinfo",
           List(JsString(address.value)),

@@ -18,15 +18,6 @@ import scala.concurrent.Future
   */
 trait MiningRpc { self: Client =>
 
-  @deprecated("use generateToAddress instead", since = "0.18.0")
-  def generate(
-      blocks: Int,
-      maxTries: Int = 1000000): Future[Vector[DoubleSha256DigestBE]] = {
-    bitcoindCall[Vector[DoubleSha256DigestBE]](
-      "generate",
-      List(JsNumber(blocks), JsNumber(maxTries)))
-  }
-
   def generateToAddress(
       blocks: Int,
       address: BitcoinAddress,

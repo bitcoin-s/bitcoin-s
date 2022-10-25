@@ -10,7 +10,7 @@ import org.scalatest.FutureOutcome
 import scala.io.Source
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
-trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait LndFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam = LndRpcClient
 
@@ -38,7 +38,7 @@ trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
 }
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
-trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait DualLndFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam = (BitcoindRpcClient, LndRpcClient, LndRpcClient)
 
@@ -66,7 +66,7 @@ trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
   }
 }
 
-trait RemoteLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait RemoteLndFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam = LndRpcClient
 

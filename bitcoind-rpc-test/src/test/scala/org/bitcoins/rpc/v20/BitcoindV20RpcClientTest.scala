@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.v20
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  WalletFlag
+}
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
@@ -28,7 +31,7 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
   it should "get a block filter given a block hash" in {
     client: BitcoindV20RpcClient =>
       for {
-        blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+        blocks <- client.generate(1)
         blockFilter <- client.getBlockFilter(blocks.head, FilterType.Basic)
 
         block <- client.getBlockRaw(blocks.head)
@@ -55,7 +58,7 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
   it should "be able to get the balances" in { client: BitcoindV20RpcClient =>
     for {
       immatureBalance <- client.getBalances
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      _ <- client.generate(1)
       newImmatureBalance <- client.getBalances
     } yield {
       val blockReward = 50
@@ -129,13 +132,15 @@ class BitcoindV20RpcClientTest extends BitcoindFixturesFundedCachedV20 {
       val pubKey2 = ECPublicKey.freshPublicKey
 
       for {
-        multiSigResult <- client.createMultiSig(2, Vector(pubKey1, pubKey2))
+        multiSigResult <- client.createMultiSig(2,
+                                                Vector(pubKey1, pubKey2),
+                                                AddressType.Bech32)
       } yield {
         // just validate we are able to receive a sane descriptor
         // no need to check checksum
         assert(
           multiSigResult.descriptor.startsWith(
-            s"sh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
+            s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
       }
   }
 

@@ -2,18 +2,18 @@ package org.bitcoins.rpc.v18
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
-import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV18
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedNewest
 
 /** Tests for PSBT for RPC calls specific to V18 new PSBT calls
   * @see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
+class PsbtRpcTest extends BitcoindFixturesFundedCachedNewest {
 
   behavior of "PsbtRpc"
 
   it should "return something when analyzePsbt is called" in {
-    client: BitcoindV18RpcClient =>
+    client: BitcoindRpcClient =>
       //PSBT with one P2PKH input and one P2SH-P2WPKH input both with non-final scriptSigs. P2SH-P2WPKH input's redeemScript is available. Outputs filled.
       val psbt =
         "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEA3wIAAAABJoFxNx7f8oXpN63upLN7eAAMBWbLs61kZBcTykIXG/YAAAAAakcwRAIgcLIkUSPmv0dNYMW1DAQ9TGkaXSQ18Jo0p2YqncJReQoCIAEynKnazygL3zB0DsA5BCJCLIHLRYOUV663b8Eu3ZWzASECZX0RjTNXuOD0ws1G23s59tnDjZpwq8ubLeXcjb/kzjH+////AtPf9QUAAAAAGXapFNDFmQPFusKGh2DpD9UhpGZap2UgiKwA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHh7MuEwAAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIACICAurVlmh8qAYEPtw94RbN8p1eklfBls0FXPaYyNAr8k6ZELSmumcAAACAAAAAgAIAAIAAIgIDlPYr6d8ZlSxVh3aK63aYBhrSxKJciU9H2MFitNchPQUQtKa6ZwAAAIABAACAAgAAgAA="
@@ -25,7 +25,7 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
       }
   }
   it should "analyze a PSBT and return a non-empty result" in {
-    client: BitcoindV18RpcClient =>
+    client: BitcoindRpcClient =>
       //PSBT with one P2PKH input and one P2SH-P2WPKH input both with non-final scriptSigs. P2SH-P2WPKH input's redeemScript is available. Outputs filled.
 
       val psbt =
@@ -45,7 +45,7 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
         assert(result.next.nonEmpty)
       }
   }
-  it should "correctly analyze a psbt " in { client: BitcoindV18RpcClient =>
+  it should "correctly analyze a psbt " in { client: BitcoindRpcClient =>
     val psbt =
       //PSBT with one P2PKH input and one P2SH-P2WPKH input both with non-final scriptSigs. P2SH-P2WPKH input's redeemScript is available. Outputs filled.
       "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEA3wIAAAABJoFxNx7f8oXpN63upLN7eAAMBWbLs61kZBcTykIXG/YAAAAAakcwRAIgcLIkUSPmv0dNYMW1DAQ9TGkaXSQ18Jo0p2YqncJReQoCIAEynKnazygL3zB0DsA5BCJCLIHLRYOUV663b8Eu3ZWzASECZX0RjTNXuOD0ws1G23s59tnDjZpwq8ubLeXcjb/kzjH+////AtPf9QUAAAAAGXapFNDFmQPFusKGh2DpD9UhpGZap2UgiKwA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHh7MuEwAAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIACICAurVlmh8qAYEPtw94RbN8p1eklfBls0FXPaYyNAr8k6ZELSmumcAAACAAAAAgAIAAIAAIgIDlPYr6d8ZlSxVh3aK63aYBhrSxKJciU9H2MFitNchPQUQtKa6ZwAAAIABAACAAgAAgAA="
@@ -72,7 +72,7 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
 
   //Todo: figure out how to implement a test here
   it should "check to see if the utxoUpdate input has been updated" in {
-    client: BitcoindV18RpcClient =>
+    client: BitcoindRpcClient =>
       val psbt =
         PSBT.fromBase64(
           "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
@@ -88,7 +88,7 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
     * together the resulting PSBT represented as a string is very different so we can't just search for parts of either
     * PSBT.
     */
-  it should "joinpsbts " in { client: BitcoindV18RpcClient =>
+  it should "joinpsbts" in { client: BitcoindRpcClient =>
     val seqofpsbts = Vector(
       PSBT.fromBase64(
         "cHNidP8BAHUCAAAAASaBcTce3/KF6Tet7qSze3gADAVmy7OtZGQXE8pCFxv2AAAAAAD+////AtPf9QUAAAAAGXapFNDFmQPFusKGh2DpD9UhpGZap2UgiKwA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHh7MuEwAAAQD9pQEBAAAAAAECiaPHHqtNIOA3G7ukzGmPopXJRjr6Ljl/hTPMti+VZ+UBAAAAFxYAFL4Y0VKpsBIDna89p95PUzSe7LmF/////4b4qkOnHf8USIk6UwpyN+9rRgi7st0tAXHmOuxqSJC0AQAAABcWABT+Pp7xp0XpdNkCxDVZQ6vLNL1TU/////8CAMLrCwAAAAAZdqkUhc/xCX/Z4Ai7NK9wnGIZeziXikiIrHL++E4sAAAAF6kUM5cluiHv1irHU6m80GfWx6ajnQWHAkcwRAIgJxK+IuAnDzlPVoMR3HyppolwuAJf3TskAinwf4pfOiQCIAGLONfc0xTnNMkna9b7QPZzMlvEuqFEyADS8vAtsnZcASED0uFWdJQbrUqZY3LLh+GFbTZSYG2YVi/jnF6efkE/IQUCSDBFAiEA0SuFLYXc2WHS9fSrZgZU327tzHlMDDPOXMMJ/7X85Y0CIGczio4OFyXBl/saiK9Z9R5E5CVbIBZ8hoQDHAXR8lkqASECI7cr7vCWXRC+B3jv7NYfysb3mk6haTkzgHNEZPhPKrMAAAAAAAAA"),
@@ -101,11 +101,11 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
     val joinedF = client.joinPsbts(seqofpsbts)
 
     joinedF.map { result =>
-      assert(
-        result ==
-          //the expected joined version of these 2 psbts
-          PSBT.fromBase64(
-            "cHNidP8BAP0LAQIAAAADJoFxNx7f8oXpN63upLN7eAAMBWbLs61kZBcTykIXG/YAAAAAAP7///+rCUmgjFr3xJuCEvQX4vFas/XDPc8VOCGoE5+Helt75AAAAAAA/v///6sJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAQAAAAD+////BNPf9QUAAAAAGXapFNDFmQPFusKGh2DpD9UhpGZap2UgiKwA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHh2A76gsAAAAAGXapFHaKQLvXQMvoHZiOcd4qTVxxOWsdiKyOJAAAAAAAABl2qRRvRiC1U/oJXnIbnuDv6foDnMpFl4isAAAAAAABAMwBAAAAAomjxx6rTSDgNxu7pMxpj6KVyUY6+i45f4UzzLYvlWflAQAAABcWABS+GNFSqbASA52vPafeT1M0nuy5hf////+G+KpDpx3/FEiJOlMKcjfva0YIu7LdLQFx5jrsakiQtAEAAAAXFgAU/j6e8adF6XTZAsQ1WUOryzS9U1P/////AgDC6wsAAAAAGXapFIXP8Ql/2eAIuzSvcJxiGXs4l4pIiKxy/vhOLAAAABepFDOXJboh79Yqx1OpvNBn1semo50FhwAAAAAAAQDfAgAAAAEmgXE3Ht/yhek3re6ks3t4AAwFZsuzrWRkFxPKQhcb9gAAAABqRzBEAiBwsiRRI+a/R01gxbUMBD1MaRpdJDXwmjSnZiqdwlF5CgIgATKcqdrPKAvfMHQOwDkEIkIsgctFg5RXrrdvwS7dlbMBIQJlfRGNM1e44PTCzUbbezn22cONmnCry5st5dyNv+TOMf7///8C09/1BQAAAAAZdqkU0MWZA8W6woaHYOkP1SGkZlqnZSCIrADh9QUAAAAAF6kUNUXm4zuDLEcFDyTT7rk8nAOUi8eHsy4TAAABASAA4fUFAAAAABepFDVF5uM7gyxHBQ8k0+65PJwDlIvHhwEEFgAUhdE1N/LiZUBaNNuvqePdoB+4IwgAAAAiAgLq1ZZofKgGBD7cPeEWzfKdXpJXwZbNBVz2mMjQK/JOmRC0prpnAAAAgAAAAIACAACAACICA5T2K+nfGZUsVYd2iut2mAYa0sSiXIlPR9jBYrTXIT0FELSmumcAAACAAQAAgAIAAIAA"))
+      logger.info(s"result=${result.base64}")
+      val allInputs = seqofpsbts.flatMap(_.transaction.inputs).distinct
+      val allOutputs = seqofpsbts.flatMap(_.transaction.outputs).distinct
+      assert(allInputs.forall(i => result.transaction.inputs.contains(i)))
+      assert(allOutputs.forall(i => result.transaction.outputs.contains(i)))
     }
   }
 

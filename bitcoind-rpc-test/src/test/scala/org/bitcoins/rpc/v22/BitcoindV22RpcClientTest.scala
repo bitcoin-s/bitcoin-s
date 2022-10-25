@@ -113,7 +113,7 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
-        blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+        blocks <- client.generate(2)
         block <- client.getBlockWithTransactions(blocks(1))
       } yield {
         assert(block.hash == blocks(1))
@@ -263,7 +263,7 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
   it should "output more than one txid" in { nodePair: FixtureParam =>
     val NodePair(client, otherClient) = nodePair
     for {
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
       secondBlock <- client.getBlock(blocks(1))
@@ -288,7 +288,7 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         client,
         fundedTransactionOne.hex)
 
-      blocksTwo <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocksTwo <- client.generate(2)
       firstBlockTwo <- client.getBlock(blocksTwo(0))
       transaction2 <- client.getTransaction(firstBlockTwo.tx(0))
       secondBlockTwo <- client.getBlock(blocksTwo(1))
@@ -311,9 +311,7 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         client,
         fundedTransactionTwo.hex)
 
-      _ <- client.getNewAddress.flatMap(
-        client.generateToAddress(100, _)
-      ) // Can't spend until depth 100
+      _ <- client.generate(100) // Can't spend until depth 100
 
       mempoolAccept <- client.testMempoolAccept(
         Vector(signedTransactionOne.hex, signedTransactionTwo.hex))

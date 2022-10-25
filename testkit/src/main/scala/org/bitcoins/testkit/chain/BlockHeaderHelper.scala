@@ -114,7 +114,7 @@ abstract class BlockHeaderHelper {
     val prevHash = prevHeader.blockHeader.hash
     val blockHeader = {
       BlockHeader(
-        version = Int32.one,
+        version = Int32(5),
         previousBlockHash = prevHash,
         //get random 32 bytes
         merkleRootHash =

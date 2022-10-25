@@ -1,5 +1,9 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetBlockWithTransactionsResultV22,
+  RpcOpts
+}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -10,13 +14,19 @@ import org.bitcoins.rpc.BitcoindP2PException.NotConnected
 class MiningRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
 
   behavior of "MiningRpc"
 
   it should "be able to get a block template" in {
     clientsF.flatMap { case (client, _) =>
-      val getBlockF = client.getBlockTemplate()
+      val opts =
+        RpcOpts.BlockTemplateRequest(
+          mode = "template",
+          capabilities = Vector.empty,
+          rules = Vector("segwit")
+        )
+      val getBlockF = client.getBlockTemplate(Some(opts))
       getBlockF
         .recover {
           // getblocktemplate is having a bad time on regtest
@@ -31,7 +41,7 @@ class MiningRpcTest extends BitcoindRpcTest {
   it should "be able to generate blocks" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(3, _))
+      blocks <- client.generate(3)
     } yield assert(blocks.length == 3)
   }
 
@@ -54,9 +64,10 @@ class MiningRpcTest extends BitcoindRpcTest {
     } yield {
       assert(blocks.length == 3)
       assert(blocks.length == 3)
-      foundBlocks.foreach { found =>
+      foundBlocks.foreach { case found: GetBlockWithTransactionsResultV22 =>
         assert(
-          found.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
+          found.tx.exists(
+            _.vout.exists(_.scriptPubKey.address == Some(address))))
       }
       succeed
     }
@@ -65,7 +76,7 @@ class MiningRpcTest extends BitcoindRpcTest {
   it should "be able to generate blocks and then get their serialized headers" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       header <- client.getBlockHeaderRaw(blocks(1))
     } yield assert(header.previousBlockHashBE == blocks(0))
   }
@@ -73,7 +84,7 @@ class MiningRpcTest extends BitcoindRpcTest {
   it should "be able to generate blocks and then get their headers" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       firstHeader <- client.getBlockHeader(blocks(0))
       secondHeader <- client.getBlockHeader(blocks(1))
     } yield {

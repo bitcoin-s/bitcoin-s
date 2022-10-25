@@ -89,7 +89,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 9
+        val expected = 10
         assert(result.migrationsExecuted == expected)
         val flywayInfo = dlcAppConfig.info()
 

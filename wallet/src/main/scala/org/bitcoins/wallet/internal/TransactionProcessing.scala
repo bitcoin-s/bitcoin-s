@@ -159,6 +159,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           (walletF, transaction) =>
             for {
               wallet <- walletF
+              relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
+                .getOrElse(transaction.txIdBE, Vector.empty)
               processTxResult <- {
                 wallet.processTransactionImpl(
                   transaction = transaction,
@@ -166,7 +168,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
                   newTags = Vector.empty,
                   receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
                   spentSpendingInfoDbsOpt = cachedSpentOpt,
-                  relevantReceivedOutputs = relevantReceivedOutputsForBlock
+                  relevantReceivedOutputs = relevantReceivedOutputsForTx
                 )
               }
               _ = {
@@ -673,21 +675,19 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     }.toVector
   }
 
-  private def getRelevantOutputsForBlock(
-      block: Block): Future[Vector[OutputWithIndex]] = {
+  private def getRelevantOutputsForBlock(block: Block): Future[
+    Map[DoubleSha256DigestBE, Vector[OutputWithIndex]]] = {
     val spksInBlock: Vector[ScriptPubKey] = block.transactions
       .flatMap(tx => tx.outputs.map(o => o.scriptPubKey))
       .toVector
     val spksInDbF = scriptPubKeyDAO.findScriptPubKeys(spksInBlock)
 
-    val result = spksInDbF.map { addrs =>
-      block.transactions.flatMap { tx =>
-        val m = matchReceivedTx(addrs, tx)
-        m
+    spksInDbF.map { addrs =>
+      block.transactions.foldLeft(
+        Map.empty[DoubleSha256DigestBE, Vector[OutputWithIndex]]) { (acc, tx) =>
+        acc.updated(tx.txIdBE, matchReceivedTx(addrs, tx))
       }
     }
-
-    result.map(_.toVector)
   }
 
   /** Processes an incoming transaction that's new to us

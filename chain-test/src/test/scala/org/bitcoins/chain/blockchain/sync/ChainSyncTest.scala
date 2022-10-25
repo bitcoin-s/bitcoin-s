@@ -26,7 +26,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
 
       //let's generate a block on bitcoind
       val block1F =
-        bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+        bitcoind.generate(1)
       val newChainHandlerF: Future[ChainApi] = block1F.flatMap { _ =>
         ChainSync.sync(chainHandler = chainHandler,
                        getBlockHeaderFunc = getBlockHeaderFunc,

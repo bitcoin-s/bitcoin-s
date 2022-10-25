@@ -56,6 +56,7 @@ TaskKeys.downloadCLightning := {
         "de61bb1dec0f656e192f896de7dcb08f4b07cf9c2bdaef8c78d860cd80ea6776"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
+    val success = hash.equalsIgnoreCase(expectedHash)
     if (hash.equalsIgnoreCase(expectedHash)) {
       logger.info(s"Download complete and verified, unzipping result")
 
@@ -69,5 +70,10 @@ TaskKeys.downloadCLightning := {
 
     logger.info(s"Deleting archive")
     Files.delete(archiveLocation)
+
+    if (!success) {
+      throw new RuntimeException(
+        s"Failed to download and verify clightning v$version")
+    }
   }
 }

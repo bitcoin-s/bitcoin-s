@@ -13,13 +13,13 @@ import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoindRpc
 }
 import org.bitcoins.wallet.models.SpendingInfoDAO
-import org.scalatest.{FutureOutcome, Outcome}
+import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
@@ -85,14 +85,178 @@ class UTXOLifeCycleTest
       _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
-      _ <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(walletConfig.requiredConfirmations, _))
+      _ <- bitcoind.generate(walletConfig.requiredConfirmations)
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <- wallet.findOutputsBeingSpent(tx)
     } yield {
       assert(confirmedCoins.forall(_.state == ConfirmedSpent))
       assert(confirmedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
+    }
+  }
+
+  it should "track multiple utxos state change to confirmed spent" in { param =>
+    val wallet = param.wallet
+    val bitcoind = param.bitcoind
+
+    def checkState(
+        utxos: Vector[SpendingInfoDb],
+        txid1: DoubleSha256DigestBE,
+        txid2: DoubleSha256DigestBE,
+        txid3: DoubleSha256DigestBE,
+        state: TxoState): Assertion = {
+      val utxo1 = utxos.find(_.txid == txid1).get
+      assert(utxo1.state == state)
+      val utxo2 = utxos.find(_.txid == txid2).get
+      assert(utxo2.state == state)
+      val utxo3 = utxos.find(_.txid == txid3).get
+      assert(utxo3.state == state)
+    }
+
+    for {
+      addr1 <- wallet.getNewAddress()
+      addr2 <- wallet.getNewAddress()
+      addr3 <- wallet.getNewAddress()
+
+      oldUtxos <- wallet.listUtxos()
+
+      txid1 <- bitcoind.sendToAddress(addr1, Satoshis(1000))
+      txid2 <- bitcoind.sendToAddress(addr2, Satoshis(2000))
+      txid3 <- bitcoind.sendToAddress(addr3, Satoshis(3000))
+
+      tx1 <- wallet.findByTxId(txid1)
+      _ = assert(tx1.isEmpty)
+      tx2 <- wallet.findByTxId(txid2)
+      _ = assert(tx2.isEmpty)
+      tx3 <- wallet.findByTxId(txid3)
+      _ = assert(tx3.isEmpty)
+
+      tx1 <- bitcoind.getRawTransactionRaw(txid1).map(Option.apply).recover {
+        case _: Throwable => None
+      }
+      _ = assert(tx1.nonEmpty)
+      tx2 <- bitcoind.getRawTransactionRaw(txid2).map(Option.apply).recover {
+        case _: Throwable => None
+      }
+      _ = assert(tx2.nonEmpty)
+      tx3 <- bitcoind.getRawTransactionRaw(txid3).map(Option.apply).recover {
+        case _: Throwable => None
+      }
+      _ = assert(tx3.nonEmpty)
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos == utxos)
+
+      // process the transactions from mempool
+      _ <- wallet.processTransaction(tx1.get, None)
+      _ <- wallet.processTransaction(tx2.get, None)
+      _ <- wallet.processTransaction(tx3.get, None)
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      _ = checkState(utxos, txid1, txid2, txid3, TxoState.BroadcastReceived)
+
+      minerAddr <- bitcoind.getNewAddress
+
+      // confirm the transactions
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      // mine the second block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      _ = checkState(utxos,
+                     txid1,
+                     txid2,
+                     txid3,
+                     TxoState.PendingConfirmationsReceived)
+
+      // mine the third block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      _ = checkState(utxos,
+                     txid1,
+                     txid2,
+                     txid3,
+                     TxoState.PendingConfirmationsReceived)
+
+      // mine the fourth block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      _ = checkState(utxos,
+                     txid1,
+                     txid2,
+                     txid3,
+                     TxoState.PendingConfirmationsReceived)
+
+      // mine the fifth block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      _ = checkState(utxos,
+                     txid1,
+                     txid2,
+                     txid3,
+                     TxoState.PendingConfirmationsReceived)
+
+      // mine the sixth block
+      blockHashes <- bitcoind.generateToAddress(1, minerAddr)
+      _ = assert(blockHashes.size == 1)
+      blockHash = blockHashes.head
+      block <- bitcoind.getBlockRaw(blockHash)
+      _ <- wallet.processBlock(block)
+      _ <- wallet.updateUtxoPendingStates()
+
+      utxos <- wallet.listUtxos()
+      _ = assert(oldUtxos.size + 3 == utxos.size)
+
+      utxo1 = utxos.find(_.txid == txid1).get
+      utxo2 = utxos.find(_.txid == txid2).get
+      utxo3 = utxos.find(_.txid == txid3).get
+
+    } yield {
+      assert(utxo1.state == ConfirmedReceived)
+      assert(utxo2.state == ConfirmedReceived)
+      assert(utxo3.state == ConfirmedReceived)
     }
   }
 
@@ -166,8 +330,7 @@ class UTXOLifeCycleTest
       _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
-      _ <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(walletConfig.requiredConfirmations, _))
+      _ <- bitcoind.generate(walletConfig.requiredConfirmations)
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <- wallet.findOutputsBeingSpent(tx)
@@ -282,8 +445,7 @@ class UTXOLifeCycleTest
       _ = assert(newTransactions.map(_.transaction).contains(tx))
 
       // Put confirmations on top of the tx's block
-      _ <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(walletConfig.requiredConfirmations, _))
+      _ <- bitcoind.generate(walletConfig.requiredConfirmations)
       // Need to call this to actually update the state, normally a node callback would do this
       _ <- wallet.updateUtxoPendingStates()
       confirmedCoins <-
@@ -634,8 +796,7 @@ class UTXOLifeCycleTest
         _ = assert(receivedUtxo.head.state == BroadcastSpent)
 
         // confirm receive and spend
-        blockHashes <- bitcoind.getNewAddress.flatMap(
-          bitcoind.generateToAddress(1, _))
+        blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
         _ <- wallet.processBlock(block)
 
@@ -685,8 +846,7 @@ class UTXOLifeCycleTest
         _ = assert(receivedUtxo.head.state == BroadcastSpent)
 
         // confirm receive
-        blockHashes <- bitcoind.getNewAddress.flatMap(
-          bitcoind.generateToAddress(1, _))
+        blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
         _ <- wallet.processBlock(block)
 
@@ -696,8 +856,7 @@ class UTXOLifeCycleTest
 
         // broadcast and confirm spend
         _ <- wallet.broadcastTransaction(sendTx)
-        blockHashes <- bitcoind.getNewAddress.flatMap(
-          bitcoind.generateToAddress(1, _))
+        blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
         _ <- wallet.processBlock(block)
 

@@ -54,8 +54,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
     for {
       _ <- startClient(walletClient)
-      _ <- walletClient.getNewAddress.flatMap(
-        walletClient.generateToAddress(101, _))
+      _ <- walletClient.generate(101)
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
@@ -358,6 +357,24 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       }
   }
 
+  it should "be able to list transactions" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      address <- otherClient.getNewAddress
+      txid <-
+        BitcoindRpcTestUtil
+          .fundBlockChainTransaction(client,
+                                     otherClient,
+                                     address,
+                                     Bitcoins(1.5))
+      txs <- otherClient.listTransactions()
+    } yield {
+      assert(txs.nonEmpty)
+      assert(txs.exists(_.txid.contains(txid)))
+    }
+  }
+
   it should "be able to import an address" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
@@ -387,7 +404,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
     val client = nodePair.node1
     for {
       balance <- client.getBalance
-      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
+      _ <- client.generate(1)
       newBalance <- client.getBalance
     } yield {
       assert(balance.toBigDecimal > 0)
@@ -459,7 +476,9 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       for {
         firstResult <-
           client
-            .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
+            .createMultiSig(2,
+                            Vector(privKey1.publicKey, privKey2.publicKey),
+                            AddressType.Bech32)
         address2 = firstResult.address
 
         secondResult <-

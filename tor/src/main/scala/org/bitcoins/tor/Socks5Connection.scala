@@ -3,11 +3,12 @@ package org.bitcoins.tor
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.tor.Socks5Connection.{Credentials, Socks5Connect}
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** Simple socks 5 client. It should be given a new connection, and will
   *
@@ -19,9 +20,10 @@ import scala.util.Try
 class Socks5Connection(
     connection: ActorRef,
     credentialsOpt: Option[Credentials],
-    command: Socks5Connect)
+    target: Socks5Connect)
     extends Actor
-    with ActorLogging {
+    with ActorLogging
+    with Logging {
 
   import Socks5Connection._
 
@@ -48,7 +50,7 @@ class Socks5Connection(
       connection ! Tcp.ResumeReading
     } else {
       context become connectionRequest
-      connection ! Tcp.Write(socks5ConnectionRequest(command.address))
+      connection ! Tcp.Write(socks5ConnectionRequest(target.address))
       connection ! Tcp.ResumeReading
     }
   }
@@ -56,16 +58,25 @@ class Socks5Connection(
   def authenticate: Receive = { case Tcp.Received(data) =>
     if (parseAuth(data)) {
       context become connectionRequest
-      connection ! Tcp.Write(socks5ConnectionRequest(command.address))
+      connection ! Tcp.Write(socks5ConnectionRequest(target.address))
       connection ! Tcp.ResumeReading
     }
   }
 
   def connectionRequest: Receive = { case Tcp.Received(data) =>
-    val connectedAddress = parseConnectedAddress(data)
-    context become connected
-    context.parent ! Socks5Connected(connectedAddress)
-    isConnected = true
+    val connectedAddressT = tryParseConnectedAddress(data)
+    connectedAddressT match {
+      case Success(connectedAddress) =>
+        logger.info(
+          s"Tor connection request succeeded. target=$target connectedAddress=$connectedAddress")
+        context become connected
+        context.parent ! Socks5Connected(connectedAddress)
+        isConnected = true
+      case Failure(err) =>
+        logger.error(
+          s"Tor connection request failed to $target errMsg=${err.toString}")
+    }
+
   }
 
   def connected: Receive = { case Tcp.Register(handler, _, _) =>
@@ -87,7 +98,7 @@ class Socks5Connection(
     super.postStop()
     connection ! Tcp.Close
     if (!isConnected) {
-      context.parent ! command.failureMessage
+      context.parent ! target.failureMessage
     }
   }
 
@@ -114,18 +125,6 @@ object Socks5Connection {
 
   val NoAuth: Byte = 0x00
   val PasswordAuth: Byte = 0x02
-
-  val connectErrors: Map[Byte, String] = Map[Byte, String](
-    (0x00, "Request granted"),
-    (0x01, "General failure"),
-    (0x02, "Connection not allowed by ruleset"),
-    (0x03, "Network unreachable"),
-    (0x04, "Host unreachable"),
-    (0x05, "Connection refused by destination host"),
-    (0x06, "TTL expired"),
-    (0x07, "Command not supported / protocol error"),
-    (0x08, "Address type not supported")
-  )
 
   def socks5Greeting(passwordAuth: Boolean): ByteString = ByteString(
     0x05, // SOCKS version
@@ -203,33 +202,39 @@ object Socks5Connection {
     }
   }
 
-  def parseConnectedAddress(data: ByteString): InetSocketAddress = {
+  def tryParseConnectedAddress(data: ByteString): Try[InetSocketAddress] = {
     if (data(0) != 0x05) {
       throw Socks5Error("Invalid proxy version")
     } else {
       val status = data(1)
       if (status != 0) {
-        throw Socks5Error(
-          connectErrors.getOrElse(status, s"Unknown SOCKS5 error $status"))
-      }
-      data(3) match {
-        case 0x01 =>
-          val ip = Array(data(4), data(5), data(6), data(7))
-          val port = data(8).toInt << 8 | data(9)
-          new InetSocketAddress(InetAddress.getByAddress(ip), port)
-        case 0x03 =>
-          val len = data(4)
-          val start = 5
-          val end = start + len
-          val domain = data.slice(start, end).utf8String
-          val port = data(end).toInt << 8 | data(end + 1)
-          new InetSocketAddress(domain, port)
-        case 0x04 =>
-          val ip = Array.ofDim[Byte](16)
-          data.copyToArray(ip, 4, 4 + ip.length)
-          val port = data(4 + ip.length).toInt << 8 | data(4 + ip.length + 1)
-          new InetSocketAddress(InetAddress.getByAddress(ip), port)
-        case b => throw Socks5Error(s"Unrecognized address type $b")
+        val connectionError = TorConnectionError.fromByte(status)
+        Failure(connectionError.exn)
+      } else {
+        data(3) match {
+          case 0x01 =>
+            val ip = Array(data(4), data(5), data(6), data(7))
+            val port = data(8).toInt << 8 | data(9)
+            val socket =
+              new InetSocketAddress(InetAddress.getByAddress(ip), port)
+            Success(socket)
+          case 0x03 =>
+            val len = data(4)
+            val start = 5
+            val end = start + len
+            val domain = data.slice(start, end).utf8String
+            val port = data(end).toInt << 8 | data(end + 1)
+            val socket = new InetSocketAddress(domain, port)
+            Success(socket)
+          case 0x04 =>
+            val ip = Array.ofDim[Byte](16)
+            data.copyToArray(ip, 4, 4 + ip.length)
+            val port = data(4 + ip.length).toInt << 8 | data(4 + ip.length + 1)
+            val socket =
+              new InetSocketAddress(InetAddress.getByAddress(ip), port)
+            Success(socket)
+          case b => Failure(Socks5Error(s"Unrecognized address type $b"))
+        }
       }
     }
   }
@@ -238,9 +243,6 @@ object Socks5Connection {
     Try(parseGreetings(data, passwordAuth))
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
-
-  def tryParseConnectedAddress(data: ByteString): Try[InetSocketAddress] = Try(
-    parseConnectedAddress(data))
 
 }
 

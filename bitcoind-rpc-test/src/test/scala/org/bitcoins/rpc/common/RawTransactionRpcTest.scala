@@ -1,16 +1,21 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
+  EmptyScriptSignature,
   P2SHScriptSignature,
   ScriptPubKey,
   ScriptSignature
 }
 import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  TransactionConstants,
   TransactionInput,
-  TransactionOutPoint
+  TransactionOutPoint,
+  TransactionOutput
 }
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -22,7 +27,7 @@ import scala.concurrent.Future
 class RawTransactionRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV21(clientAccum = clientAccum)
 
   behavior of "RawTransactionRpc"
 
@@ -93,7 +98,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   it should "be able to create a raw transaction" in {
     for {
       (client, otherClient) <- clientsF
-      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
+      blocks <- client.generate(2)
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
       secondBlock <- client.getBlock(blocks(1))
@@ -128,34 +133,31 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
         BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
       signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
 
-      _ <- client.getNewAddress.flatMap(
-        client.generateToAddress(100, _)
-      ) // Can't spend coinbase until depth 100
+      _ <- client.generate(101) // Can't spend coinbase until depth 100
 
       _ <- client.sendRawTransaction(signedTransaction.hex, maxfeerate = 0)
     } yield succeed
   }
 
   it should "be able to sign a raw transaction" in {
+    val fundAmt = Bitcoins(1.2)
+    val sendAmt = fundAmt.satoshis - Satoshis(1000)
     for {
       (client, server) <- clientsF
       address <- client.getNewAddress
       pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
       multisig <-
         client
-          .addMultiSigAddress(1, Vector(Left(pubkey.get)))
+          .addMultiSigAddress(1, Vector(Left(pubkey.get)), AddressType.Bech32)
       txid <-
         BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client,
-                                     server,
-                                     multisig.address,
-                                     Bitcoins(1.2))
+          .fundBlockChainTransaction(client, server, multisig.address, fundAmt)
       rawTx <- client.getTransaction(txid)
 
       tx <- client.decodeRawTransaction(rawTx.hex)
       output =
         tx.vout
-          .find(output => output.value == Bitcoins(1.2))
+          .find(output => output.value == fundAmt)
           .get
 
       newAddress <- client.getNewAddress
@@ -165,17 +167,19 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
                            P2SHScriptSignature(multisig.redeemScript.hex),
                            UInt32.max - UInt32.one)
         client
-          .createRawTransaction(Vector(input), Map(newAddress -> Bitcoins(1.1)))
+          .createRawTransaction(Vector(input),
+                                Map(newAddress -> Bitcoins(sendAmt.satoshis)))
       }
 
       result <- {
         val utxoDeps = Vector(
           RpcOpts.SignRawTransactionOutputParameter(
-            txid,
-            output.n,
-            ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
-            Some(multisig.redeemScript),
-            amount = Some(Bitcoins(1.2))))
+            txid = txid,
+            vout = output.n,
+            scriptPubKey = ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
+            redeemScript = Some(multisig.redeemScript),
+            amount = Some(fundAmt)
+          ))
         BitcoindRpcTestUtil.signRawTransaction(
           client,
           rawCreatedTx,
@@ -186,65 +190,72 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to combine raw transactions" in {
+    val fundAmt = Bitcoins(1.2)
+    val sendAmt = fundAmt.satoshis - Satoshis(1000)
     for {
       (client, otherClient) <- clientsF
       address1 <- client.getNewAddress
       address2 <- otherClient.getNewAddress
       pub1 <- BitcoindRpcTestUtil.getPubkey(client, address1)
       pub2 <- BitcoindRpcTestUtil.getPubkey(otherClient, address2)
-      keys = Vector(Left(pub1.get), Left(pub2.get))
+      keys = Vector(pub1.get, pub2.get).map(Left(_))
 
-      multisig <- client.addMultiSigAddress(2, keys)
-
-      _ <- otherClient.addMultiSigAddress(2, keys)
+      multisig <- client.addMultiSigAddress(2, keys, AddressType.Bech32)
+      _ <- otherClient.addMultiSigAddress(2, keys, AddressType.Bech32)
 
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
                                                             otherClient,
                                                             multisig.address,
-                                                            Bitcoins(1.2))
+                                                            fundAmt)
 
       rawTx <- client.getTransaction(txid)
       tx <- client.decodeRawTransaction(rawTx.hex)
 
       output =
         tx.vout
-          .find(output => output.value == Bitcoins(1.2))
+          .find(output => output.value == fundAmt)
           .get
 
       address3 <- client.getNewAddress
-
-      ctx <- {
+      ctx = {
         val input =
           TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
-                           P2SHScriptSignature(multisig.redeemScript.hex),
+                           EmptyScriptSignature,
                            UInt32.max - UInt32.one)
-        otherClient
-          .createRawTransaction(Vector(input), Map(address3 -> Bitcoins(1.1)))
+
+        BaseTransaction(
+          TransactionConstants.validLockVersion,
+          Vector(input),
+          Vector(TransactionOutput(sendAmt, address3.scriptPubKey)),
+          TransactionConstants.lockTime
+        )
       }
 
       txOpts = {
         val scriptPubKey =
           ScriptPubKey.fromAsmHex(output.scriptPubKey.hex)
         val utxoDep =
-          RpcOpts.SignRawTransactionOutputParameter(txid,
-                                                    output.n,
-                                                    scriptPubKey,
-                                                    Some(multisig.redeemScript),
-                                                    amount =
-                                                      Some(Bitcoins(1.2)))
+          RpcOpts.SignRawTransactionOutputParameter(
+            txid = txid,
+            vout = output.n,
+            scriptPubKey = scriptPubKey,
+            redeemScript = Some(multisig.redeemScript),
+            amount = Some(Bitcoins(1.2)))
         Vector(utxoDep)
       }
 
-      partialTx1 <- BitcoindRpcTestUtil.signRawTransaction(client, ctx, txOpts)
+      partialTx1 <- BitcoindRpcTestUtil.signRawTransaction(signer = client,
+                                                           transaction = ctx,
+                                                           utxoDeps = txOpts)
 
       partialTx2 <-
-        BitcoindRpcTestUtil.signRawTransaction(otherClient, ctx, txOpts)
-
+        BitcoindRpcTestUtil.signRawTransaction(signer = otherClient,
+                                               transaction = ctx,
+                                               utxoDeps = txOpts)
       combinedTx <- {
         val txs = Vector(partialTx1.hex, partialTx2.hex)
         client.combineRawTransaction(txs)
       }
-
       _ <- client.sendRawTransaction(combinedTx)
 
     } yield {
@@ -253,7 +264,6 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       assert(!partialTx2.complete)
       assert(partialTx2.hex != ctx)
     }
-
   }
 
   it should "fail to abandon a transaction which has not been sent" in {

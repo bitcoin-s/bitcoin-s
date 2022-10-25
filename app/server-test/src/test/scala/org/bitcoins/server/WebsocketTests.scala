@@ -16,26 +16,20 @@ import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
   BlockProcessedNotification,
   SyncFlagChangedNotification
 }
+import org.bitcoins.commons.jsonmodels.ws.DLCNodeNotification.{
+  DLCAcceptFailed,
+  DLCNodeConnectionFailed,
+  DLCNodeConnectionInitiated
+}
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification._
-import org.bitcoins.commons.jsonmodels.ws.{
-  ChainNotification,
-  WalletNotification,
-  WalletWsType,
-  WsNotification
-}
-import org.bitcoins.commons.rpc.{
-  GetBlockHeader,
-  GetNewAddress,
-  GetTransaction,
-  LockUnspent,
-  Rescan,
-  SendToAddress
-}
+import org.bitcoins.commons.jsonmodels.ws._
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
+import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 import org.bitcoins.testkit.server.{
@@ -44,6 +38,7 @@ import org.bitcoins.testkit.server.{
 }
 import org.bitcoins.testkit.util.AkkaUtil
 
+import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
@@ -60,13 +55,17 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       case message: TextMessage.Strict =>
         //we should be able to parse the address message
         val text = message.text
+        val dlcNodeNotificationOpt: Option[DLCNodeNotification[_]] = Try(
+          upickle.default.read[DLCNodeNotification[_]](text)(
+            WsPicklers.dlcNodeNotificationPickler)).toOption
         val walletNotificationOpt: Option[WalletNotification[_]] = Try(
           upickle.default.read[WalletNotification[_]](text)(
             WsPicklers.walletNotificationPickler)).toOption
         val chainNotificationOpt: Option[ChainNotification[_]] = Try(
           upickle.default.read[ChainNotification[_]](text)(
             WsPicklers.chainNotificationPickler)).toOption
-        walletNotificationOpt.getOrElse(chainNotificationOpt.get)
+        walletNotificationOpt.getOrElse(
+          chainNotificationOpt.getOrElse(dlcNodeNotificationOpt.get))
       case msg =>
         fail(s"Unexpected msg type received in the sink, msg=$msg")
     }
@@ -90,6 +89,36 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     Flow
       .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
   }
+
+  val str =
+    "fda71afd055b0006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910ffdd82efd041f000000000bebc200" +
+      "fda7103a02142d31363937383430313332313833343638303037000000000bebc20013343138353935353634383832353636383630" +
+      "380000000000000000fda722fd03d300030005fdd824bfaf6c09039d5f8cc720c387e5c303d0205c27da418e690e62577b5e9c896a" +
+      "ed76d91fe5df45b1082ee2c6367439f8120f1294d28658f1f4511319ba3da57e5f64cf8beaab25b9f3b9d15c4344cf6600dee69565" +
+      "30d05923f219f3bab3b1960b61fdd8225b000195c368ccd9b6b45755bbd11e58f1376b78657f4d159a683350a9ab2cf7da10f40000" +
+      "0000fdd8062b0002142d3136393738343031333231383334363830303713343138353935353634383832353636383630380564756d" +
+      "6d79fdd824bf4ee2503496cb46026da419c5cef4d2647531f7b3356b0736821e2f73162f6b01d0879369762fa0eedb112a1a02e36f" +
+      "86e035c3137b7ef5ba253f810464bde41165219eae4eec1d880e00d04c6d48cb6912b644c7a6b1094e7d82b36cfdce0f71fdd8225b" +
+      "00012808ee563361556fb9a4949b278c27c27056191102db5e9a977c5c82d623871d00000000fdd8062b0002142d31363937383430" +
+      "31333231383334363830303713343138353935353634383832353636383630380564756d6d79fdd824bf576589cd0d8e7fe996b049" +
+      "d180d002a0c75b510960847478225eba4e39f13284edb45c5f035998dfc8166f64b8b0c159dc3d909a742d0422148f85cb3fe8f016" +
+      "03433d626590b30351ceb2f0eae0b150b16d044f886c980f78b6c00eaa048979fdd8225b0001891f1c695bb10f4769608b36e703e6" +
+      "78428f36cdb2611e4e2fa70ad56f37532900000000fdd8062b0002142d313639373834303133323138333436383030371334313835" +
+      "3935353634383832353636383630380564756d6d79fdd824bfcee4dfa15d24db06fc145218d33df368198e426e876a98d351d83dc0" +
+      "04b8b428aec0674493b0e765f2ead36dd575cb24e37d791e3e18c69ed28a0865b169444ad0861afa1b22c38c465f0acbd140ce3de4" +
+      "85c22247164fad7daf7162b44d4901fdd8225b00013f340ca103eca4a6a1c49ccf8319ba9fbc6d9f31c7592586e87e3e7f0cb74f30" +
+      "00000000fdd8062b0002142d3136393738343031333231383334363830303713343138353935353634383832353636383630380564" +
+      "756d6d79fdd824bfdec152276ec26f0cbfb49e55f40e3a11ff1e305dde9481cc94832141a8102d9c861481796bf65b2205d75a1bd1" +
+      "62be4ef2e4f1ae01e22ce6318743b4b4cf628c4c19449df7997504313270546943decf3b71ffc3068e8a5c80320c8b91e62159fdd8" +
+      "225b0001ef88acc46190bb105a15827333e212b4f1bf5e437c8ae1f638a65a9d8ff0126000000000fdd8062b0002142d3136393738" +
+      "343031333231383334363830303713343138353935353634383832353636383630380564756d6d79036dc06b5ba0d4957f38e9cc28" +
+      "859e6ea88676c4453441e866605eed63181c164b001600149b1589d0bf8635c1f5662036200a4e1454966449000000000000000000" +
+      "00000005f5e1000002fda7143f0000000000000000002902000000000100e1f505000000001600141c50c646c3818f6f4d0229715e" +
+      "ae262ae4be69340000000000000000fffffffd006b0000fda7144b0000000000000001003502000000000100e1f505000000002200" +
+      "20ddcc4b14b4fe91e90e0b9afb090feb892f4f4e6268c5a342e6f48715bc2303e10000000000000000fffffffd0095000000160014" +
+      "2fc55cee805d4112a653e18d84cb405cb188b83000000000000000010000000000000000000000000000000a6320d4106320d411"
+
+  val offer: LnMessage[DLCOfferTLV] = LnMessage(DLCOfferTLV.fromHex(str))
 
   it must "fail if RPC password is incorrect" in { serverWithBitcoind =>
     val ServerWithBitcoind(_, server) = serverWithBitcoind
@@ -311,44 +340,6 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
 
-      val str =
-        "a71a006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000fdd82efd033900000000000186a0fda7204e" +
-          "0012fda72642000400000000fda728020000fd88b8000000fda728020000fdafc8fdc3500000fda728020000fdd6d8fe000186a000" +
-          "00fda728020000fe0003fffffe000186a00000fda724020000fda712fd02d9fdd824fd02d391177fd623a72d56e7bc12e3903f8d6b" +
-          "ce7f07a25226d54009cd7e670f5e7a7320b0704286580d8b6a7f31ab7bf71356a13c28aa609a021111b2e3d2b2db26bc120bd29248" +
-          "895b81f76b07d85a21b86021f22352d6376d19bbf5c93f918828f1fdd822fd026d0012fad0cde50a2258efa25cbba60ef0b6677cd2" +
-          "9654802937c112097edb64bd205beea02263d6461e60a9ca8e08209c8bd5552863156014d5418cad91ac590bbf13a847f105db9899" +
-          "d560e5040f9565c043c9e7fdf3782ad2708c5b99646c722b411854747248fb52e6486cce3eca5ddf9d64ecbe0864501a446efd3788" +
-          "63f9a4055fab50d2112320ff14d8747a72467589822103f197063b49e77b90d82d3a8d49b63c3ceb9bd3328398a53989d4237216a2" +
-          "4a1d12364efa2d2aec59cdc87909b115dca5b07106b70032ff78072f82ceeaf2e20db55086e9a2e5e5cac864992d747fd40f4b26bc" +
-          "3d7de958ee02460d1199ff81438c9b76b3934cbc4566d10f242563b95e7df79c28d52c9c46b617676a4ee84a549ee1f0f53865c9ef" +
-          "4d0ff825e2f438384c5f6238d0734beb570a1a49d035d9f86ee31c23f1e97bd34fba3f586c0fdf29997530e528b3200a0d7e34f865" +
-          "dc4ca7bfd722bf77c0478ddd25bfa2dc6a4ab973d0c1b7a9ff38283b7c19bbe02677a9b628f3ee3d5198d66c1623c9608293093c12" +
-          "6d4124a445bb6412f720493b6ffa411db53923895fd50c9563d50a97a86188084fe4c0f15ce50438ff0b00e1a9470185fd7c96296a" +
-          "e2be12056f61ceaeee7ced48314a3b6855bc9aa3b446b9dfad68553f5302c60670a95fb9bdc5e72db7f1e9d42e4f4baca1bcbb2261" +
-          "2db6417b45cc3d78b1ef33fc362a68db56df00ab1ee0700bd900200f6a24882101e71de7e18a7fb0d7da27b340de52f97d96239f35" +
-          "9cfe31afcaf69cc9ddfcbfbdb2267e673ad728a29dd22d31d1a1187162037480fdd80a100002000642544355534400000000001212" +
-          "446572696269742d4254432d394645423232036585c2349d728229d82c82b4d4e28d9889ccd430bbca1c949c042b93950f211f0016" +
-          "00147e54f6d4148c0c0b4571c51cf624bf010e87418145a4e91696acf94e000000000000c3500002fda714fd0163876e1274389fa6" +
-          "61014d02000000000101f798dcf8a5c9b0dca5d771ca5a0f9d882f0c7d2776925b3819e00f46daf699690000000000feffffff0220" +
-          "02010000000000160014c799807edca63a977eeddd66d0fe07d147fefe4b808400000000000016001490222a528db0f1d8a1056286" +
-          "b3b20c35c27c3b8704004730440220753db76fe9abafb01b141a36314abf530d7afd6365378c5bc036e0a735fe287402202f8f18cf" +
-          "c1675d918d03a6de2855275aa3e4305e8f6e1b4cad1ae5dd31b9d5be014730440220221d4e91113ed01c3d4519c84efd11f51c543f" +
-          "1efb4f658cd4e6ad69950dc44902206f3d9bfeae593c84975e27ba87d91ff0ed36bd15e0bc2d002d1370a51a61f89e01475221022b" +
-          "8d44f97a4ecd80b33db307fc4874654c27e9812e0079d3f5c806a054ca756321039b921e070bc3ae42e73d8fb091ddf18c8f59b923" +
-          "bdfa870347e83bc263ee4ea652ae003afa6100000000fffffffd006b0000fda714fd01635f8026cb666a3490014d02000000000101" +
-          "9c66c927a1736790803e65167f9cfd618e4383cff635fd0af30d6a9af6897a3e0200000000feffffff02b7a7000000000000160014" +
-          "c2d981b59e0374eeb1d9fca524e62e69170bd002e9de0000000000001600145f990a2987d844b3d5ff391c41b079f3935866b60400" +
-          "4730440220735f325169ddd1a8e8828d3dd75386503055d5802156c07733a5d07d18a7219502204c7bab4e8b957fa95cc048205628" +
-          "e9bd7f15f46df52306a39f596ae8df9d7e9c0147304402206cbbcea5def1ad4c937c2c6ac63346aef7e292974aa234890bd4c26eea" +
-          "302dbe022019099e153c4000f46d75bd65ac769d3a1058b8d6c34953ec6804aa71e7f2132b0147522102b51a93f2196916782166e5" +
-          "40260cb889b89e787256fd4d282ea25026abedb14a2103a8e77c9778e3ac62d2764668491f1febe0e92e5b270995d64e5aa39f64af" +
-          "bd8252ae8074036200000000fffffffd006b0000001600145333b7c568cba36b5f53c24d05d36c076e741e9022edb0610ecaac5010" +
-          "30b89bbde232b1000000000000000362037480620caf00"
-
-      val offer: LnMessage[DLCOfferTLV] =
-        LnMessageFactory(DLCOfferTLV).fromHex(str)
-
       val expectedHash = CryptoUtil.sha256(offer.tlv.bytes)
 
       ConsoleCli
@@ -453,6 +444,50 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val feeRateNotifications =
         notifications.filter(_.isInstanceOf[FeeRateChange])
       assert(feeRateNotifications.nonEmpty)
+    }
+  }
+
+  it must "receive dlc node updates" in { serverWithBitcoind =>
+    val ServerWithBitcoind(_, server) = serverWithBitcoind
+    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                           rpcPassword = server.conf.rpcPassword)
+
+    val req = buildReq(server.conf)
+    val notificationsF: (
+        Future[WebSocketUpgradeResponse],
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      Http()
+        .singleWebSocketRequest(req, websocketFlow)
+    }
+
+    val walletNotificationsF: Future[Seq[WsNotification[_]]] =
+      notificationsF._2._1
+
+    val promise: Promise[Option[Message]] = notificationsF._2._2
+
+    val peerAddr =
+      InetSocketAddress.createUnresolved("127.0.0.1", NetworkUtil.randomPort())
+
+    exec(AcceptDLC(offer = offer,
+                   externalPayoutAddressOpt = None,
+                   externalChangeAddressOpt = None,
+                   peerAddr = peerAddr),
+         cliConfig)
+
+    for {
+      _ <- AkkaUtil.nonBlockingSleep(500.millis)
+      _ = promise.success(None)
+      notifications <- walletNotificationsF
+    } yield {
+      assert(notifications.exists(_ == DLCNodeConnectionInitiated(peerAddr)))
+      assert(notifications.exists(_ == DLCNodeConnectionFailed(peerAddr)))
+      assert(notifications.exists(n =>
+        n match {
+          case DLCAcceptFailed((id, error)) =>
+            id == offer.tlv.tempContractId && error.startsWith(
+              "Connection refused")
+          case _ => false
+        }))
     }
   }
 

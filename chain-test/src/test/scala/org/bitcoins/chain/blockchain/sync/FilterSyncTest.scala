@@ -6,18 +6,18 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.chain.fixture.{
-  BitcoindV19ChainHandler,
-  ChainWithBitcoindV19CachedUnitTest
+  BitcoindBlockFilterRpcChainHandler,
+  ChainWithBitcoindBlockFilterRpcCachedUnitTest
 }
 
 import scala.concurrent.Future
 
-class FilterSyncTest extends ChainWithBitcoindV19CachedUnitTest {
+class FilterSyncTest extends ChainWithBitcoindBlockFilterRpcCachedUnitTest {
 
   behavior of "FilterSync"
 
   it must "sync 1 filter header from an external data source" in { fixture =>
-    val BitcoindV19ChainHandler(bitcoind, chainHandler) = fixture
+    val BitcoindBlockFilterRpcChainHandler(bitcoind, chainHandler) = fixture
 
     val initFilterCountF = chainHandler.getFilterCount()
     val initFilterHeaderCountF = chainHandler.getFilterHeaderCount()
@@ -56,7 +56,7 @@ class FilterSyncTest extends ChainWithBitcoindV19CachedUnitTest {
 
   it must "sync a bunch of filter headers from an external data source" in {
     fixture =>
-      val BitcoindV19ChainHandler(bitcoind, _) = fixture
+      val BitcoindBlockFilterRpcChainHandler(bitcoind, _) = fixture
 
       val numBlocks = 100
       val generatedBlocksF = for {
@@ -79,7 +79,7 @@ class FilterSyncTest extends ChainWithBitcoindV19CachedUnitTest {
 
   it must "be able to call filterSync() and not fail when nothing has happened" in {
     fixture =>
-      val BitcoindV19ChainHandler(bitcoind, _) = fixture
+      val BitcoindBlockFilterRpcChainHandler(bitcoind, _) = fixture
 
       val generated1BlockF = for {
         addr <- bitcoind.getNewAddress
@@ -105,9 +105,10 @@ class FilterSyncTest extends ChainWithBitcoindV19CachedUnitTest {
   }
 
   private def syncHelper(
-      bitcoindV19ChainHandler: BitcoindV19ChainHandler): Future[ChainApi] = {
+      bitcoindV19ChainHandler: BitcoindBlockFilterRpcChainHandler): Future[
+    ChainApi] = {
     val filterType = FilterType.Basic
-    val BitcoindV19ChainHandler(bitcoind, chainHandler) =
+    val BitcoindBlockFilterRpcChainHandler(bitcoind, chainHandler) =
       bitcoindV19ChainHandler
     val getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind)
     val getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind)

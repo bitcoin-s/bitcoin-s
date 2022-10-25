@@ -460,7 +460,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
                                               publicKey =
                                                 goodAttestment.publicKey,
-                                              sigs = badSigs,
+                                              unsortedSignatures =
+                                                badSigs.toVector,
                                               outcomes = badOutcomes)
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, badAttestment).map(_.get)

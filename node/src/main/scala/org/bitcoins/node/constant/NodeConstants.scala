@@ -1,5 +1,5 @@
 package org.bitcoins.node.constant
 
 case object NodeConstants {
-  val userAgent = "/bitcoin-s:1.9.3/"
+  val userAgent = "/bitcoin-s:1.9.6/"
 }

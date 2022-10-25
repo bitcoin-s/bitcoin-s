@@ -6,23 +6,43 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.{
   ChainCallbacks,
   OnBlockHeaderConnected,
+  OnCompactFilterConnected,
+  OnCompactFilterHeaderConnected,
   OnSyncFlagChanged
 }
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
+  BlockProcessedNotification,
+  CompactFilterHeaderProcessedNotification,
+  CompactFilterProcessedNotification
+}
 import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
+  DLCNodeNotification,
   WalletNotification,
   WalletWsType,
   WsNotification
 }
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
+import org.bitcoins.dlc.node.{
+  DLCNodeCallbacks,
+  OnAcceptFailed,
+  OnAcceptSucceed,
+  OnOfferSendFailed,
+  OnOfferSendSucceed,
+  OnPeerConnectionEstablished,
+  OnPeerConnectionFailed,
+  OnPeerConnectionInitiated,
+  OnSignFailed,
+  OnSignSucceed
+}
 import org.bitcoins.dlc.wallet.{
   DLCWalletCallbacks,
   OnDLCOfferAdd,
@@ -37,12 +57,9 @@ import scala.concurrent.{ExecutionContext, Future}
 object WebsocketUtil extends Logging {
 
   private def sendHeadersToWs(
-      results: Vector[GetBlockHeaderResult],
+      notifications: Vector[ChainNotification[_]],
       queue: SourceQueueWithComplete[WsNotification[_]])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val notifications =
-      results.map(result =>
-        ChainNotification.BlockProcessedNotification(result))
     for {
       _ <- FutureUtil.sequentially(notifications) { case msg =>
         val x: Future[Unit] = queue
@@ -73,16 +90,53 @@ object WebsocketUtil extends Logging {
             //only emit the last header so that we don't overwhelm the UI
             for {
               results <- resultsF
-              _ <- sendHeadersToWs(Vector(results.last), queue)
+              notification = BlockProcessedNotification(results.last)
+              _ <- sendHeadersToWs(Vector(notification), queue)
             } yield ()
           } else {
             val f = for {
               results <- resultsF
-              _ <- sendHeadersToWs(results, queue)
+              notifications = results.map(BlockProcessedNotification(_))
+              _ <- sendHeadersToWs(notifications, queue)
             } yield {
               ()
             }
             f
+          }
+        }
+    }
+
+    val onCompactFilterHeaderProcessed: OnCompactFilterHeaderConnected = {
+      case filterHeaders: Vector[CompactFilterHeaderDb] =>
+        val isIBDF = chainApi.isIBD()
+        val emitBlockProccessedWhileIBDOnGoing =
+          chainAppConfig.ibdBlockProcessedEvents
+        isIBDF.flatMap { isIBD =>
+          if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
+            val notifications =
+              CompactFilterHeaderProcessedNotification(filterHeaders.last)
+            sendHeadersToWs(Vector(notifications), queue)
+          } else {
+            val notifications =
+              filterHeaders.map(CompactFilterHeaderProcessedNotification(_))
+            sendHeadersToWs(notifications, queue)
+          }
+        }
+    }
+
+    val onCompactFilterProcessed: OnCompactFilterConnected = {
+      case filters: Vector[CompactFilterDb] =>
+        val isIBDF = chainApi.isIBD()
+        val emitBlockProccessedWhileIBDOnGoing =
+          chainAppConfig.ibdBlockProcessedEvents
+        isIBDF.flatMap { isIBD =>
+          if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
+            val notifications = CompactFilterProcessedNotification(filters.last)
+            sendHeadersToWs(Vector(notifications), queue)
+          } else {
+            val notifications =
+              filters.map(CompactFilterProcessedNotification(_))
+            sendHeadersToWs(notifications, queue)
           }
         }
     }
@@ -95,7 +149,10 @@ object WebsocketUtil extends Logging {
     }
 
     ChainCallbacks.onBlockHeaderConnected(onBlockProcessed) +
-      ChainCallbacks.onOnSyncFlagChanged(onSyncFlagChanged)
+      ChainCallbacks.onOnSyncFlagChanged(onSyncFlagChanged) +
+      ChainCallbacks.onCompactFilterHeaderConnected(
+        onCompactFilterHeaderProcessed) +
+      ChainCallbacks.onCompactFilterConnected(onCompactFilterProcessed)
   }
 
   /** Builds websocket callbacks for the wallet */
@@ -208,5 +265,78 @@ object WebsocketUtil extends Logging {
 
     onDLCStateChange(onStateChange) + onDLCOfferAdd(
       onOfferAdd) + onDLCOfferRemove(onOfferRemove)
+  }
+
+  def buildDLCNodeCallbacks(
+      walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
+      ec: ExecutionContext): DLCNodeCallbacks = {
+
+    val onConnectionInitiated: OnPeerConnectionInitiated = { payload =>
+      val notification =
+        DLCNodeNotification.DLCNodeConnectionInitiated(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onConnectionEstablished: OnPeerConnectionEstablished = { payload =>
+      val notification =
+        DLCNodeNotification.DLCNodeConnectionEstablished(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onConnectionFailed: OnPeerConnectionFailed = { payload =>
+      val notification = DLCNodeNotification.DLCNodeConnectionFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onAcceptSucceed: OnAcceptSucceed = { payload =>
+      val notification = DLCNodeNotification.DLCAcceptSucceed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onAcceptFailed: OnAcceptFailed = { payload =>
+      val notification = DLCNodeNotification.DLCAcceptFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onOfferSendSucceed: OnOfferSendSucceed = { payload =>
+      val notification = DLCNodeNotification.DLCOfferSendSucceed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onOfferSendFailed: OnOfferSendFailed = { payload =>
+      val notification = DLCNodeNotification.DLCOfferSendFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onSignSucceed: OnSignSucceed = { payload =>
+      val notification = DLCNodeNotification.DLCSignSucceed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    val onSignFailed: OnSignFailed = { payload =>
+      val notification = DLCNodeNotification.DLCSignFailed(payload)
+      val offerF = walletQueue.offer(notification)
+      offerF.map(_ => ())
+    }
+
+    DLCNodeCallbacks(
+      onPeerConnectionInitiated = Vector(onConnectionInitiated),
+      onPeerConnectionEstablished = Vector(onConnectionEstablished),
+      onPeerConnectionFailed = Vector(onConnectionFailed),
+      onOfferSendSucceed = Vector(onOfferSendSucceed),
+      onOfferSendFailed = Vector(onOfferSendFailed),
+      onAcceptSucceed = Vector(onAcceptSucceed),
+      onAcceptFailed = Vector(onAcceptFailed),
+      onSignSucceed = Vector(onSignSucceed),
+      onSignFailed = Vector(onSignFailed)
+    )
   }
 }

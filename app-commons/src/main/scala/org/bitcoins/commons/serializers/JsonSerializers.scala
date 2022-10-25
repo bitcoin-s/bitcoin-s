@@ -495,28 +495,58 @@ object JsonSerializers {
     Json.reads[ListSinceBlockResult]
 
   implicit val listTransactionsResultReads: Reads[ListTransactionsResult] =
-    ((__ \ "account").readNullable[String] and
-      (__ \ "address").readNullable[BitcoinAddress] and
-      (__ \ "category").read[String] and
-      (__ \ "amount").read[Bitcoins] and
-      (__ \ "label").readNullable[String] and
-      (__ \ "vout").readNullable[Int] and
-      (__ \ "fee").readNullable[Bitcoins] and
-      (__ \ "confirmations").readNullable[Int] and
-      (__ \ "trusted").readNullable[Boolean] and
-      (__ \ "generated").readNullable[Boolean] and
-      (__ \ "blockhash").readNullable[DoubleSha256DigestBE] and
-      (__ \ "blockindex").readNullable[Int] and
-      (__ \ "blocktime").readNullable[UInt32] and
-      (__ \ "txid").readNullable[DoubleSha256DigestBE] and
-      (__ \ "walletconflicts").readNullable[Vector[DoubleSha256DigestBE]] and
-      (__ \ "time").read[UInt32] and
-      (__ \ "timereceived").readNullable[UInt32] and
-      (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String] and
-      (__ \ "otheraccount").readNullable[String] and
-      (__ \ "bip125-replaceable").read[String] and
-      (__ \ "abandoned").readNullable[Boolean])(ListTransactionsResult)
+    Reads[ListTransactionsResult] { js =>
+      for {
+        account <- (js \ "account").validateOpt[String]
+        address <- (js \ "address").validateOpt[BitcoinAddress]
+        category <- (js \ "category").validate[String]
+        amount <- (js \ "amount").validate[Bitcoins]
+        label <- (js \ "label").validateOpt[String]
+        vout <- (js \ "vout").validateOpt[Int]
+        fee <- (js \ "fee").validateOpt[Bitcoins]
+        confirmations <- (js \ "confirmations").validateOpt[Int]
+        trusted <- (js \ "trusted").validateOpt[Boolean]
+        generated <- (js \ "generated").validateOpt[Boolean]
+        blockhash <- (js \ "blockhash").validateOpt[DoubleSha256DigestBE]
+        blockheight <- (js \ "blockheight").validateOpt[Int]
+        blockindex <- (js \ "blockindex").validateOpt[Int]
+        blocktime <- (js \ "blocktime").validateOpt[UInt32]
+        txid <- (js \ "txid").validateOpt[DoubleSha256DigestBE]
+        walletconflicts <- (js \ "walletconflicts")
+          .validateOpt[Vector[DoubleSha256DigestBE]]
+        time <- (js \ "time").validate[UInt32]
+        timereceived <- (js \ "timereceived").validateOpt[UInt32]
+        comment <- (js \ "comment").validateOpt[String]
+        to <- (js \ "to").validateOpt[String]
+        otheraccount <- (js \ "otheraccount").validateOpt[String]
+        bip125_replaceable <- (js \ "bip125-replaceable").validate[String]
+        abandoned <- (js \ "abandoned").validateOpt[Boolean]
+      } yield ListTransactionsResult(
+        account = account,
+        address = address,
+        category = category,
+        amount = amount,
+        label = label,
+        vout = vout,
+        fee = fee,
+        confirmations = confirmations,
+        trusted = trusted,
+        generated = generated,
+        blockhash = blockhash,
+        blockheight = blockheight,
+        blockindex = blockindex,
+        blocktime = blocktime,
+        txid = txid,
+        walletconflicts = walletconflicts,
+        time = time,
+        timereceived = timereceived,
+        comment = comment,
+        to = to,
+        otheraccount = otheraccount,
+        bip125_replaceable = bip125_replaceable,
+        abandoned = abandoned
+      )
+    }
 
   implicit val descriptorsResultReads: Reads[descriptorsResult] =
     Json.reads[descriptorsResult]

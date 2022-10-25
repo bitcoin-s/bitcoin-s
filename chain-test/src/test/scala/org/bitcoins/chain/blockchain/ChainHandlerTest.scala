@@ -2,11 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.chain.{
-  ChainCallbacks,
-  OnBlockHeaderConnected,
-  OnSyncFlagChanged
-}
+import org.bitcoins.chain.{ChainCallbacks, OnSyncFlagChanged}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{
@@ -36,7 +32,7 @@ import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 class ChainHandlerTest extends ChainDbUnitTest {
 
@@ -671,31 +667,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
         _ <- chainHandler.blockHeaderDAO.create(noWork)
         isMissingLast100 <- chainHandler.isMissingChainWork
       } yield assert(isMissingLast100)
-  }
-
-  it must "process a new valid block header with a callback" in {
-    chainHandler: ChainHandler =>
-      val resultP: Promise[Boolean] = Promise()
-
-      val callback: OnBlockHeaderConnected = {
-        case _: Vector[(Int, BlockHeader)] => {
-          Future {
-            resultP.success(true)
-            ()
-          }
-        }
-      }
-
-      val callbacks = ChainCallbacks.onBlockHeaderConnected(callback)
-      chainHandler.chainConfig.addCallbacks(callbacks)
-
-      val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
-
-      for {
-        _ <- chainHandler.processHeader(newValidHeader.blockHeader)
-        result <- resultP.future
-      } yield assert(result)
   }
 
   it must "get best filter" in { chainHandler: ChainHandler =>

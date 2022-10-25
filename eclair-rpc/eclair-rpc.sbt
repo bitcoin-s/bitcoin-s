@@ -50,7 +50,8 @@ TaskKeys.downloadEclair := {
     val expectedHash =
       "482a00cc597fd4cc471a1b4035c72a440a9ab336ef5b9006629d2fd717b223b4"
 
-    if (hash.equalsIgnoreCase(expectedHash)) {
+    val success = hash.equalsIgnoreCase(expectedHash)
+    if (success) {
       logger.info(s"Download complete and verified, unzipping result")
 
       val extractCommand = s"unzip $archiveLocation -d $versionDir"
@@ -63,6 +64,10 @@ TaskKeys.downloadEclair := {
 
     logger.info(s"Deleting archive")
     Files.delete(archiveLocation)
+
+    if (!success) {
+      throw new RuntimeException(s"Failed to download eclair v$version")
+    }
 
     logger.info(s"Download complete")
   }

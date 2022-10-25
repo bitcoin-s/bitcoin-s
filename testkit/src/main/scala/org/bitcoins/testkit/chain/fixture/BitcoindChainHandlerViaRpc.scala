@@ -2,7 +2,7 @@ package org.bitcoins.testkit.chain.fixture
 
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v19.{V19BlockFilterRpc}
 
 sealed trait BitcoindChainHandlerViaRpc {
   def bitcoindRpc: BitcoindRpcClient
@@ -18,7 +18,7 @@ case class BitcoindBaseVersionChainHandlerViaRpc(
     chainHandler: ChainHandler)
     extends BitcoindChainHandlerViaRpc
 
-case class BitcoindV19ChainHandler(
-    override val bitcoindRpc: BitcoindV19RpcClient,
+case class BitcoindBlockFilterRpcChainHandler(
+    override val bitcoindRpc: BitcoindRpcClient with V19BlockFilterRpc,
     chainHandler: ChainHandler)
     extends BitcoindChainHandlerViaRpc

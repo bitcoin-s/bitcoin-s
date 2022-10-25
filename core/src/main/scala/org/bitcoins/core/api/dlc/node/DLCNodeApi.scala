@@ -31,5 +31,7 @@ trait DLCNodeApi extends StartStopAsync[Unit] {
       message: String,
       tempContractId: Sha256Digest): Future[Sha256Digest]
 
+  def checkPeerConnection(peerAddress: InetSocketAddress): Future[Unit]
+
   def getHostAddress: Future[InetSocketAddress]
 }

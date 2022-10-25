@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -78,11 +79,11 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
 
     (OracleAttestmentV0TLV(eventId,
                            publicKey,
-                           initiatorWinSigs,
+                           OrderedSchnorrSignatures(initiatorWinSigs).toVector,
                            initiatorWinVec.map(_.toString)),
      OracleAttestmentV0TLV(eventId,
                            publicKey,
-                           recipientWinSigs,
+                           OrderedSchnorrSignatures(recipientWinSigs).toVector,
                            recipientWinVec.map(_.toString)))
   }
 
@@ -175,12 +176,14 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
         //purposefully drop these
         //we cannot drop just a sig, or just an outcome because
         //of invariants in OracleAttestmentV0TLV
-        badSigs = goodAttestment.sigs.dropRight(1)
+        badSigs = OrderedSchnorrSignatures.fromUnsorted(
+          goodAttestment.sigs.dropRight(1).toVector)
         badOutcomes = goodAttestment.outcomes.dropRight(1)
         badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
                                               publicKey =
                                                 goodAttestment.publicKey,
-                                              sigs = badSigs,
+                                              unsortedSignatures =
+                                                badSigs.toVector,
                                               outcomes = badOutcomes)
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, badAttestment).map(_.get)

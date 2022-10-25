@@ -22,8 +22,6 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   StringFactory
 }
-import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
-import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
@@ -39,9 +37,6 @@ import scala.concurrent.Future
   * version of Bitcoin Core. It implements RPC calls that are similar
   * across different versions. If you need RPC calls specific to a
   * version, check out
-  * [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
-  * or
-  * [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]].
   *
   * If a RPC call fails for any reason, a
   * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown.
@@ -70,7 +65,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   private val syncing = new AtomicBoolean(false)
 
-  override lazy val version: Future[BitcoindVersion] = {
+  override def version: Future[BitcoindVersion] = {
     instance match {
       case _: BitcoindInstanceRemote =>
         getNetworkInfo.map(info =>
@@ -279,6 +274,13 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     }
   }
 
+  def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
+    for {
+      addr <- getNewAddress
+      blocks <- generateToAddress(numBlocks, addr)
+    } yield blocks
+  }
+
   override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
 
   override def isIBD(): Future[Boolean] = {
@@ -341,8 +343,6 @@ object BitcoindRpcClient {
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V17 => BitcoindV17RpcClient.withActorSystem(instance)
-      case BitcoindVersion.V18 => BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
       case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
@@ -371,17 +371,9 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   val newest: BitcoindVersion = V23
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V17, V18, V19, V20, V21, V22, V23)
+    Vector(V19, V20, V21, V22, V23)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V17 extends BitcoindVersion {
-    override def toString: String = "v0.17"
-  }
-
-  case object V18 extends BitcoindVersion {
-    override def toString: String = "v0.18"
-  }
 
   case object V19 extends BitcoindVersion {
     override def toString: String = "v0.19"
@@ -421,8 +413,6 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     //need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "17" => V17
-      case "18" => V18
       case "19" => V19
       case "20" => V20
       case "21" => V21

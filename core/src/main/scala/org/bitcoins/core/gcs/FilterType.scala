@@ -1,7 +1,7 @@
 package org.bitcoins.core.gcs
 
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto.{Factory, NetworkElement, StringFactory}
 import scodec.bits._
 
 /** Filter types for BIP158 block content filters
@@ -13,7 +13,7 @@ sealed abstract class FilterType extends NetworkElement {
   val P: UInt8
 }
 
-object FilterType extends Factory[FilterType] {
+object FilterType extends Factory[FilterType] with StringFactory[FilterType] {
 
   val knownFilterTypes: Map[FilterType, Short] = Map(Basic -> 0.toShort)
 
@@ -49,5 +49,19 @@ object FilterType extends Factory[FilterType] {
       case None =>
         throw new IllegalArgumentException(s"Unknown filter type code: ${code}")
     }
+
+  override def fromString(string: String): FilterType = {
+    fromStringOpt(string) match {
+      case Some(filterType) => filterType
+      case None =>
+        sys.error(s"Could not parse string=$string to known filter type")
+    }
+  }
+
+  override def fromStringOpt(string: String): Option[FilterType] = {
+    knownFilterTypes
+      .map(_._1)
+      .find(_.toString.toLowerCase == string.toLowerCase)
+  }
 
 }

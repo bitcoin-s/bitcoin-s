@@ -35,8 +35,7 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
     val loader = walletHolderWithLoader.loaderApi
     val bitcoind = walletHolderWithLoader.bitcoind
     //need some blocks to make rescans last longer for the test case
-    val blocksF = bitcoind.getNewAddress.flatMap(addr =>
-      bitcoind.generateToAddress(250, addr))
+    val blocksF = bitcoind.generate(250)
 
     val loadedWalletF = loader.load(walletNameOpt = None, aesPasswordOpt = None)
 

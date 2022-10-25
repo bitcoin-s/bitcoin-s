@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -55,5 +56,17 @@ class UTXORpcTest extends BitcoindRpcTest {
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
       info1 <- client.getTxOut(block.tx.head.txid, 0)
     } yield assert(info1.coinbase)
+  }
+
+  it should "be able to fail to get utxo info" in {
+    for {
+      client <- clientF
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
+      info1 <- client.getTxOutOpt(block.tx.head.txid, 0)
+      info2 <- client.getTxOutOpt(DoubleSha256DigestBE.empty, 0)
+    } yield {
+      assert(info1.exists(_.coinbase))
+      assert(info2.isEmpty)
+    }
   }
 }

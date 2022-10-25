@@ -9,7 +9,11 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKeyBytes}
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPrivateKeyBytes,
+  StringFactory
+}
 import play.api.libs.json.{Json, Writes}
 import ujson.{Num, Str, Value}
 
@@ -183,7 +187,7 @@ object RpcOpts {
 
   sealed trait AddressType
 
-  object AddressType {
+  object AddressType extends StringFactory[AddressType] {
 
     case object Legacy extends AddressType {
       override def toString: String = "legacy"
@@ -199,6 +203,20 @@ object RpcOpts {
 
     case object Bech32m extends AddressType {
       override def toString: String = "bech32m"
+    }
+
+    lazy val all: Vector[AddressType] =
+      Vector(Legacy, P2SHSegwit, Bech32, Bech32m)
+
+    override def fromStringOpt(string: String): Option[AddressType] = {
+      val searchString = string.toLowerCase.trim
+      all.find(_.toString.toLowerCase == searchString)
+    }
+
+    override def fromString(string: String): AddressType = {
+      fromStringOpt(string).getOrElse(
+        throw new IllegalArgumentException(
+          s"Could not find AddressType for string: $string"))
     }
   }
 

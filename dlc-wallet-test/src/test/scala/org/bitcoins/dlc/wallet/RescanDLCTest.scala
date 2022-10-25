@@ -50,8 +50,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       _ = assert(result)
 
-      Vector(hash) <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(1, _))
+      Vector(hash) <- bitcoind.generate(1)
 
       _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                        endOpt = Some(BlockHash(hash)),
@@ -91,8 +90,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       _ = assert(result)
 
-      Vector(hash) <- bitcoind.getNewAddress.flatMap(
-        bitcoind.generateToAddress(1, _))
+      Vector(hash) <- bitcoind.generate(1)
 
       _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                        endOpt = Some(BlockHash(hash)),

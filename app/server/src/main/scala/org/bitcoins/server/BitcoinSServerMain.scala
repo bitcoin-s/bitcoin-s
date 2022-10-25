@@ -298,6 +298,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     torConf.addCallbacks(torCallbacks)
 
+    val dlcNodeCallbacks = WebsocketUtil.buildDLCNodeCallbacks(wsQueue)
+    dlcNodeConf.addCallbacks(dlcNodeCallbacks)
+
     ()
   }
 
@@ -459,6 +462,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         }
         dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
         _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
+        dlcNodeCallbacks = WebsocketUtil.buildDLCNodeCallbacks(wsQueue)
+        _ = dlcNodeConf.addCallbacks(dlcNodeCallbacks)
         _ <- startedTorConfigF
       } yield {
         logger.info(s"Done starting Main!")
@@ -501,12 +506,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val commonRoutes = CommonRoutes(conf.baseDatadir)
 
     val handlers =
-      Seq(walletRoutesF,
-          nodeRoutesF,
-          Future.successful(chainRoutes),
-          Future.successful(coreRoutes),
-          dlcRoutesF,
-          Future.successful(commonRoutes))
+      Seq(
+        Future.successful(commonRoutes),
+        Future.successful(coreRoutes),
+        Future.successful(chainRoutes),
+        //dependent on tor, slow start up
+        walletRoutesF,
+        nodeRoutesF,
+        dlcRoutesF
+      )
 
     val rpcBindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
