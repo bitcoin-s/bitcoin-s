@@ -158,7 +158,7 @@ bitcoin-s {
         use-default-peers = true
         
         # try to connect to peers from dns seeds, database, addr messages etc
-        enable-peer-discovery = false
+        enable-peer-discovery = true
         
         # number of persistent peer connections to maintain for node use
         maxConnectedPeers = 1
