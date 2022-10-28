@@ -214,10 +214,6 @@ object PicklerKeys {
   val witnessKey = "witness"
   val serializedKey = "serialized"
 
-  //ws types
-  final val typeKey: String = "type"
-  final val payloadKey: String = "payload"
-
   val errorKey: String = "error"
 
   final val attestationsKey: String = "attestations"

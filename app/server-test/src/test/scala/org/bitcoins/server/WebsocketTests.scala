@@ -27,7 +27,7 @@ import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage}
+import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
