@@ -118,7 +118,6 @@ object TorController extends Logging {
     val promiseConnected = Promise[Done]()
 
     val protocolHandlerProps = TorProtocolHandler.props(
-      version = TorProtocolHandler.V3,
       authentication = authentication,
       privateKeyPath = privateKeyPath,
       virtualPort = virtualPort,
