@@ -14,8 +14,7 @@ ThisBuild / crossScalaVersions := List(scala2_13)
 //https://github.com/bitcoin-s/bitcoin-s/pull/2194
 Global / excludeLintKeys ++= Set(
   com.typesafe.sbt.packager.Keys.maintainer,
-  Keys.mainClass,
-  com.typesafe.sbt.SbtGit.GitKeys.gitRemoteRepo
+  Keys.mainClass
 )
 
 //needed so that we can use our versions with docker
