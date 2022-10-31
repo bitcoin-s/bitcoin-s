@@ -1,19 +1,11 @@
 package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.dlc.oracle.{
-  NonceSignaturePair,
-  NonceSignaturePairDb,
-  NonceSignaturePairDbShim,
-  OracleAnnouncementDataDb,
-  OracleMetadataDb,
-  OracleMetadataWithId
-}
+import org.bitcoins.core.dlc.oracle._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion.DLCOracleV0SigningVersion
 import org.bitcoins.core.protocol.dlc.models.{
-  DLCPayoutCurve,
   OutcomePayoutPoint,
   PiecewisePolynomialEndpoint
 }
@@ -26,14 +18,7 @@ import org.bitcoins.core.protocol.tlv.TLV.{
   FALSE_BYTE,
   TRUE_BYTE
 }
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
-  OutputReference,
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.sorted.{
@@ -1145,32 +1130,33 @@ case class TLVPoint(
   }
 }
 
-object TLVPoint extends Factory[TLVPoint] {
+object TLVPoint {
 
   /** We broke TLVPoint serialization in this commit
     * @see https://github.com/discreetlogcontracts/dlcspecs/pull/163/commits/44afd6153e35cff61e48fed0f7fb047407dff09c
     */
-  private def fromOldBytes(bytes: ByteVector): TLVPoint = {
-    val outcome = BigSizeUInt(bytes)
-    val value = BigSizeUInt(bytes.drop(outcome.byteSize))
-    val extraPrecision = UInt16(
-      bytes.drop(outcome.byteSize + value.byteSize).take(2)).toInt
+  def fromOldBytes(bytes: ByteVector): TLVPoint = {
+    val iter = ValueIterator(bytes)
+    val outcome = iter.takeBigSize()
+    val value = iter.takeBigSize()
+    val extraPrecision = iter.takeU16()
     TLVPoint(outcome = outcome.toLong,
              value = Satoshis(value.toLong),
-             extraPrecision = extraPrecision,
+             extraPrecision = extraPrecision.toInt,
              DLCSerializationVersion.Beta)
   }
 
-  override def fromBytes(bytes: ByteVector): TLVPoint = {
+  def fromBytes(bytes: ByteVector): TLVPoint = {
     val t = Try {
       val iter = ValueIterator(bytes)
       val outcome = iter.takeU64()
       val value = iter.takeU64()
       val extraPrecision = iter.takeU16()
-      TLVPoint(outcome = outcome.toBigInt.toLong,
-               value = Satoshis(value),
-               extraPrecision = extraPrecision.toInt,
-               DLCSerializationVersion.Gamma)
+      val point = TLVPoint(outcome = outcome.toBigInt.toLong,
+                           value = Satoshis(value),
+                           extraPrecision = extraPrecision.toInt,
+                           DLCSerializationVersion.Gamma)
+      point
     }
     t.getOrElse(fromOldBytes(bytes))
   }
@@ -2206,7 +2192,8 @@ object PolynomialPayoutCurvePieceTLV
 
     val iter = ValueIterator(value)
 
-    val points = iter.takeU16PrefixedList(() => iter.take(TLVPoint))
+    val points = iter.takeU16PrefixedList(() =>
+      iter.takeTLVPoint(DLCSerializationVersion.Beta))
     PolynomialPayoutCurvePieceTLV(points, DLCSerializationVersion.Beta)
 
   }
@@ -2218,7 +2205,8 @@ object PolynomialPayoutCurvePieceTLV
         s"Required subtype is $subType for ContractDescriptorV0TLV, got=${bytes.head}")
       val iter = ValueIterator(bytes.drop(1))
 
-      val points = iter.takeBigSizePrefixedList(() => iter.take(TLVPoint))
+      val points = iter.takeBigSizePrefixedList(() =>
+        iter.takeTLVPoint(DLCSerializationVersion.Gamma))
 
       PolynomialPayoutCurvePieceTLV(points, DLCSerializationVersion.Gamma)
     }
@@ -2386,39 +2374,35 @@ case class PayoutFunctionV0TLV(
 object PayoutFunctionV0TLV extends Factory[PayoutFunctionV0TLV] {
   val oldTpe: BigSizeUInt = BigSizeUInt(42790)
 
-  private def fromTLVValue(bytes: ByteVector): PayoutFunctionV0TLV = {
-    val t = Try {
-      val TLV.DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
-      require(tpe == oldTpe,
-              s"Incorrect tpe for PayoutFunctionV0TLV, got=$tpe, expected=$tpe")
+  def fromTLVValue(bytes: ByteVector): PayoutFunctionV0TLV = {
+    val TLV.DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
+    require(tpe == oldTpe,
+            s"Incorrect tpe for PayoutFunctionV0TLV, got=$tpe, expected=$tpe")
 
-      val iter = ValueIterator(value)
-
-      val endpointsAndPieces = iter.takeU16PrefixedList { () =>
-        val leftEndpoint = iter.take(TLVPoint)
-        val piece = iter.take(PayoutCurvePieceTLV)
-        (leftEndpoint, piece)
-      }
-      val rightEndpoint = iter.take(TLVPoint)
-      val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
-      val pieces = endpointsAndPieces.map(_._2)
-      PayoutFunctionV0TLV(endpoints,
-                          pieces,
-                          serializationVersion = DLCSerializationVersion.Beta)
+    val iter = ValueIterator(value)
+    val endpointsAndPieces = iter.takeU16PrefixedList { () =>
+      val leftEndpoint = iter.takeTLVPoint(DLCSerializationVersion.Beta)
+      val piece = iter.take(PayoutCurvePieceTLV)
+      (leftEndpoint, piece)
     }
+    val rightEndpoint = iter.takeTLVPoint(DLCSerializationVersion.Beta)
+    val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
+    val pieces = endpointsAndPieces.map(_._2)
+    PayoutFunctionV0TLV(endpoints,
+                        pieces,
+                        serializationVersion = DLCSerializationVersion.Beta)
 
-    t.getOrElse(fromAlphaTLVValue(bytes))
   }
 
   override def fromBytes(bytes: ByteVector): PayoutFunctionV0TLV = {
     val iter = ValueIterator(bytes)
     val t = Try {
       val endpointsAndPieces = iter.takeBigSizePrefixedList { () =>
-        val leftEndpoint = iter.take(TLVPoint)
+        val leftEndpoint = iter.takeTLVPoint(DLCSerializationVersion.Gamma)
         val piece = iter.take(PayoutCurvePieceTLV)
         (leftEndpoint, piece)
       }
-      val rightEndpoint = iter.take(TLVPoint)
+      val rightEndpoint = iter.takeTLVPoint(DLCSerializationVersion.Gamma)
       val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
       val pieces = endpointsAndPieces.map(_._2)
 
@@ -2429,15 +2413,6 @@ object PayoutFunctionV0TLV extends Factory[PayoutFunctionV0TLV] {
       p
     }
     t.getOrElse(fromTLVValue(bytes))
-  }
-
-  private def fromAlphaTLVValue(bytes: ByteVector): PayoutFunctionV0TLV = {
-    val TLV.DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
-    require(tpe == oldTpe,
-            s"Incorrect tpe for PayoutFunctionV0TLV, got=$tpe, expected=$tpe")
-    val iter = ValueIterator(value)
-    val points = iter.takeU16PrefixedList(() => iter.take(OldTLVPoint))
-    DLCPayoutCurve.fromPointsPre144(points).toSubType
   }
 }
 

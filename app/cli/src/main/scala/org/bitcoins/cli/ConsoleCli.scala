@@ -906,7 +906,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = DecodeAnnouncement(null)))
         .text("Decodes an oracle announcement message into json")
         .children(
-          arg[OracleAnnouncementV0TLV]("announcement")
+          arg[OracleAnnouncementV1TLV]("announcement")
             .text("Hex encoded oracle announcement message")
             .required()
             .action((ann, conf) =>
@@ -1324,7 +1324,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = CreateContractInfo.empty))
         .text("Create a contract info from an announcement, total collateral, and contract descriptor")
         .children(
-          arg[OracleAnnouncementTLV]("announcement")
+          arg[OracleAnnouncementV1TLV]("announcement")
             .text("The announcement we are creating a contract info for")
             .required()
             .action((ann, conf) =>

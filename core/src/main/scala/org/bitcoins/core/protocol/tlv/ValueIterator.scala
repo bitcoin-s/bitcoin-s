@@ -141,4 +141,23 @@ case class ValueIterator(value: ByteVector) {
     val len = takeU16().toInt
     ScriptPubKey.fromAsmBytes(take(len))
   }
+
+  private def takeFn[T <: NetworkElement](fn: ByteVector => T): T = {
+    val t = fn(current)
+    skip(t)
+    t
+  }
+
+  def takeTLVPoint(serializationVersion: DLCSerializationVersion): TLVPoint = {
+    val point = serializationVersion match {
+      case DLCSerializationVersion.Alpha =>
+        sys.error(
+          s"Cannot take tlv point for alpha version of dlc, this is deprecated")
+      case DLCSerializationVersion.Beta =>
+        takeFn(TLVPoint.fromOldBytes)
+      case DLCSerializationVersion.Gamma =>
+        takeFn(TLVPoint.fromBytes)
+    }
+    point
+  }
 }

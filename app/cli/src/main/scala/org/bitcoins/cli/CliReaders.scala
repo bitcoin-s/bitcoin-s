@@ -216,12 +216,12 @@ object CliReaders {
       val reads: String => ContractInfoV0TLV = ContractInfoV0TLV.fromHex
     }
 
-  implicit val announcementReads: Read[OracleAnnouncementV0TLV] =
-    new Read[OracleAnnouncementV0TLV] {
+  implicit val announcementReads: Read[OracleAnnouncementV1TLV] =
+    new Read[OracleAnnouncementV1TLV] {
       val arity: Int = 1
 
-      val reads: String => OracleAnnouncementV0TLV =
-        OracleAnnouncementV0TLV.fromHex
+      val reads: String => OracleAnnouncementV1TLV =
+        OracleAnnouncementV1TLV.fromHex
     }
 
   implicit val attestmentReads: Read[OracleAttestmentV0TLV] =

@@ -3,12 +3,12 @@ package org.bitcoins.commons.jsonmodels.cli
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.protocol.dlc.models.DLCPayoutCurve
 import org.bitcoins.core.protocol.tlv.{
+  BaseNumericEventDescriptorTLV,
   ContractDescriptorTLV,
   ContractDescriptorV0TLV,
   ContractDescriptorV1TLV,
   DLCSerializationVersion,
-  DigitDecompositionEventDescriptorV0TLV,
-  OracleAnnouncementTLV,
+  OracleAnnouncementV1TLV,
   RoundingIntervalsV0TLV,
   TLVPoint
 }
@@ -18,7 +18,7 @@ object ContractDescriptorParser {
 
   def parseCmdLine(
       value: ujson.Value,
-      announcementTLV: OracleAnnouncementTLV): ContractDescriptorTLV = {
+      announcementTLV: OracleAnnouncementV1TLV): ContractDescriptorTLV = {
     value match {
       case obj: Obj =>
         upickle.default
@@ -37,7 +37,7 @@ object ContractDescriptorParser {
                       serializationVersion = DLCSerializationVersion.Beta)
           .toSubType
         val numDigits = announcementTLV.eventTLV.eventDescriptor
-          .asInstanceOf[DigitDecompositionEventDescriptorV0TLV]
+          .asInstanceOf[BaseNumericEventDescriptorTLV]
           .numDigits
           .toInt
         ContractDescriptorV1TLV(numDigits,

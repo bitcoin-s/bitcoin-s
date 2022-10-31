@@ -1448,7 +1448,7 @@ object BumpFee extends ServerJsonModels {
 }
 
 case class CreateContractInfo(
-    announcementTLV: OracleAnnouncementTLV,
+    announcementTLV: OracleAnnouncementV1TLV,
     totalCollateral: Satoshis,
     contractDescriptor: ContractDescriptorTLV)
     extends CommandRpc
@@ -1463,7 +1463,7 @@ case class CreateContractInfo(
 object CreateContractInfo extends ServerJsonModels {
 
   lazy val empty: CreateContractInfo = {
-    CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
+    CreateContractInfo(announcementTLV = OracleAnnouncementV1TLV.dummy,
                        totalCollateral = Satoshis.zero,
                        contractDescriptor = ContractDescriptorTLV.empty)
   }
@@ -1473,7 +1473,7 @@ object CreateContractInfo extends ServerJsonModels {
       case announcementVal +: totalCollateralVal +: payoutsVal +: Vector() =>
         Try {
           val announcementTLV =
-            OracleAnnouncementTLV.fromHex(announcementVal.str)
+            OracleAnnouncementV1TLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
           //validate that these are part of the announcement?
           val contractDescriptor =
