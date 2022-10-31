@@ -460,6 +460,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         .singleWebSocketRequest(req, websocketFlow)
     }
 
+    val setupF = notificationsF._1
     val walletNotificationsF: Future[Seq[WsNotification[_]]] =
       notificationsF._2._1
 
@@ -468,13 +469,15 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val peerAddr =
       InetSocketAddress.createUnresolved("127.0.0.1", NetworkUtil.randomPort())
 
-    exec(AcceptDLC(offer = offer,
-                   externalPayoutAddressOpt = None,
-                   externalChangeAddressOpt = None,
-                   peerAddr = peerAddr),
-         cliConfig)
-
+    val acceptMsg = {
+      AcceptDLC(offer = offer,
+                externalPayoutAddressOpt = None,
+                externalChangeAddressOpt = None,
+                peerAddr = peerAddr)
+    }
     for {
+      _ <- setupF
+      _ = ConsoleCli.exec(acceptMsg, cliConfig)
       _ <- AkkaUtil.nonBlockingSleep(500.millis)
       _ = promise.success(None)
       notifications <- walletNotificationsF
