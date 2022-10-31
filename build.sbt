@@ -1,3 +1,4 @@
+import com.github.sbt.git.SbtGit.GitKeys._
 import sbt.Keys.{publish, publishLocal}
 
 import scala.util.Properties
@@ -305,6 +306,7 @@ lazy val `bitcoin-s` = project
   )
   .settings(
     name := "bitcoin-s",
+    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git",
     publish / skip := true
   )
 
