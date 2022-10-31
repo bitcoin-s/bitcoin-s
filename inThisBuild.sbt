@@ -15,7 +15,7 @@ ThisBuild / crossScalaVersions := List(scala2_13)
 Global / excludeLintKeys ++= Set(
   com.typesafe.sbt.packager.Keys.maintainer,
   Keys.mainClass,
-  com.typesafe.sbt.SbtGit.GitKeys.gitRemoteRepo
+  com.github.sbt.git.SbtGit.GitKeys.gitRemoteRepo
 )
 
 //needed so that we can use our versions with docker

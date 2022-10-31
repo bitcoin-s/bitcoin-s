@@ -1,4 +1,4 @@
-import com.typesafe.sbt.SbtGit.GitKeys._
+import com.github.sbt.git.SbtGit.GitKeys._
 import sbt.Keys.{publish, publishLocal}
 
 import scala.util.Properties
