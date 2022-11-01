@@ -13,7 +13,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
-import scala.util.Properties
+import scala.util.{Failure, Properties, Success, Try}
 
 /** Created by chris on 4/29/17.
   */
@@ -49,25 +49,39 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
 
     val binaryPath = binary.getAbsolutePath
 
-    val foundVersion =
-      Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
-        .split(" ")
-        .last
+    val versionT = Try {
+      val foundVersion =
+        Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
+          .split(" ")
+          .last
 
-    foundVersion match {
-      case _: String if foundVersion.startsWith(BitcoindVersion.V19.toString) =>
-        BitcoindVersion.V19
-      case _: String if foundVersion.startsWith(BitcoindVersion.V20.toString) =>
-        BitcoindVersion.V20
-      case _: String if foundVersion.startsWith(BitcoindVersion.V21.toString) =>
-        BitcoindVersion.V21
-      case _: String if foundVersion.startsWith(BitcoindVersion.V22.toString) =>
-        BitcoindVersion.V22
-      case _: String if foundVersion.startsWith(BitcoindVersion.V23.toString) =>
-        BitcoindVersion.V23
-      case _: String =>
-        logger.warn(
-          s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}")
+      foundVersion match {
+        case _: String
+            if foundVersion.startsWith(BitcoindVersion.V19.toString) =>
+          BitcoindVersion.V19
+        case _: String
+            if foundVersion.startsWith(BitcoindVersion.V20.toString) =>
+          BitcoindVersion.V20
+        case _: String
+            if foundVersion.startsWith(BitcoindVersion.V21.toString) =>
+          BitcoindVersion.V21
+        case _: String
+            if foundVersion.startsWith(BitcoindVersion.V22.toString) =>
+          BitcoindVersion.V22
+        case _: String
+            if foundVersion.startsWith(BitcoindVersion.V23.toString) =>
+          BitcoindVersion.V23
+        case _: String =>
+          logger.warn(
+            s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}")
+          BitcoindVersion.newest
+      }
+    }
+
+    versionT match {
+      case Success(value) => value
+      case Failure(exception) =>
+        logger.error("Error getting bitcoind version", exception)
         BitcoindVersion.newest
     }
   }
