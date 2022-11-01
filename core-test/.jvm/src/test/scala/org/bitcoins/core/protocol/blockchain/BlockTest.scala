@@ -52,6 +52,14 @@ class BlockTest extends BitcoinSJvmTest {
     assert(tx.hex == lines)
   }
 
+  it must "parse a large transaction 73be398c4bdc43709db7398106609eea2a7841aaf3a4fa2000dc18184faa2a7e" in {
+    val fileName =
+      "/73be398c4bdc43709db7398106609eea2a7841aaf3a4fa2000dc18184faa2a7e.txt"
+    val lines = Source.fromURL(getClass.getResource(fileName)).mkString.trim
+    val tx = Transaction.fromHex(lines)
+    assert(tx.hex == lines)
+  }
+
   it must "have serialization symmetry" in {
     forAllParallel(BlockchainElementsGenerator.block) { block =>
       assert(Block(block.hex) == block)
