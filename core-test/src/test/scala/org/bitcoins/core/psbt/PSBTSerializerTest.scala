@@ -236,7 +236,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "fail to serialize invalid PSBTs" in {
     invalidPsbts.foreach(invalidPsbt =>
-      assertThrows[IllegalArgumentException](PSBT(invalidPsbt)))
+      assertThrows[RuntimeException](PSBT(invalidPsbt)))
 
     succeed
   }
