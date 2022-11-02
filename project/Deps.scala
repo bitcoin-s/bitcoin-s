@@ -14,7 +14,7 @@ object Deps {
     val avalonLoggingV = "20020627"
 
     val grizzledSlf4j = "1.3.4"
-    val scalacheck = "1.16.0"
+    val scalacheck = "1.17.0"
     val scalaTest = "3.2.14" //https://www.scalatest.org/
 
     val scalaTestPlus =
@@ -27,7 +27,7 @@ object Deps {
     val playv = "2.9.3" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.20"
     val jUnixSocketV = "2.6.0"
-    val scodecV = "1.1.30"
+    val scodecV = "1.1.34"
     val junitV = "0.13.3"
     val nativeLoaderV = "2.4.0"
     val typesafeConfigV = "1.4.2"
@@ -73,10 +73,10 @@ object Deps {
     val scoptV = "4.1.0"
     val sttpV = "3.8.3" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.8"
-    val scalaJsTimeV = "2.3.0"
+    val scalaJsTimeV = "2.4.0"
     val zxingV = "3.5.0"
 
-    val monixV = "3.4.0"
+    val monixV = "3.4.1"
 
     val javaxServletV = "4.0.1"
     val javaxJmsV = "2.0.1"
