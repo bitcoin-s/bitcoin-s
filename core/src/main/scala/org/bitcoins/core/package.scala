@@ -1,5 +1,6 @@
 package org.bitcoins
 
+import org.bitcoins.core.protocol.tlv.TLVPoint
 import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutput
@@ -85,6 +86,14 @@ package object core {
           x: SchnorrDigitalSignature,
           y: SchnorrDigitalSignature): Int = {
         nonceOrdering.compare(x.rx, y.rx)
+      }
+    }
+  }
+
+  implicit val tlvPointOrdering: Ordering[TLVPoint] = {
+    new Ordering[TLVPoint] {
+      override def compare(point1: TLVPoint, point2: TLVPoint): Int = {
+        point1.outcome.compare(point2.outcome)
       }
     }
   }

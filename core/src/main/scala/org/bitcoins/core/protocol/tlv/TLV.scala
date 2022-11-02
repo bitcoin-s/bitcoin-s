@@ -24,7 +24,8 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.sorted.{
   OrderedAnnouncements,
   OrderedNonces,
-  OrderedSchnorrSignatures
+  OrderedSchnorrSignatures,
+  OrderedTLVPoints
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -1293,7 +1294,7 @@ case class OldPayoutFunctionV0TLV(points: Vector[OldTLVPoint])
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
 case class PayoutFunctionV0TLV(
-    endpoints: Vector[TLVPoint],
+    endpoints: OrderedTLVPoints,
     pieces: Vector[PayoutCurvePieceTLV],
     serializationVersion: DLCSerializationVersion)
     extends DLCSetupPieceTLV {
@@ -1305,20 +1306,20 @@ case class PayoutFunctionV0TLV(
 
   override val value: ByteVector = {
     u16PrefixedList[(TLVPoint, PayoutCurvePieceTLV)](
-      endpoints.init.zip(pieces),
+      endpoints.toVector.init.zip(pieces),
       { case (leftEndpoint: TLVPoint, piece: PayoutCurvePieceTLV) =>
         leftEndpoint.bytes ++ piece.bytes
-      }) ++ endpoints.last.bytes
+      }) ++ endpoints.toVector.last.bytes
   }
 
   def piecewisePolynomialEndpoints: Vector[PiecewisePolynomialEndpoint] = {
-    endpoints.map(e => PiecewisePolynomialEndpoint(e.outcome, e.value))
+    endpoints.toVector.map(e => PiecewisePolynomialEndpoint(e.outcome, e.value))
   }
 
   override val byteSize: Long = {
     serializationVersion match {
       case DLCSerializationVersion.Alpha =>
-        val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
+        val old = OldPayoutFunctionV0TLV(endpoints.toVector.map(p =>
           OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
         old.byteSize
       case DLCSerializationVersion.Beta =>
@@ -1340,10 +1341,14 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
         (leftEndpoint, piece)
       }
       val rightEndpoint = iter.take(TLVPoint)
+      //we assume that points are in ordered when they are serialized
+      //if they are not, the person that serialized them is not following
+      //the spec
       val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
+      val orderedEndpoints = OrderedTLVPoints(endpoints)
       val pieces = endpointsAndPieces.map(_._2)
 
-      PayoutFunctionV0TLV(endpoints,
+      PayoutFunctionV0TLV(orderedEndpoints,
                           pieces,
                           serializationVersion = DLCSerializationVersion.Beta)
     }
