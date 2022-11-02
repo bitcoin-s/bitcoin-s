@@ -32,9 +32,6 @@ object Deps {
     val nativeLoaderV = "2.4.0"
     val typesafeConfigV = "1.4.2"
 
-    val scalaFxV = "18.0.2-R29"
-    val javaFxV = "20-ea+2"
-
     val asyncNewScalaV = "1.0.1"
 
     val flywayV =
@@ -132,9 +129,6 @@ object Deps {
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
 
-    val scalaFx =
-      "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
-
     lazy val arch = System.getProperty("os.arch")
 
     lazy val osName = System.getProperty("os.name") match {
@@ -151,22 +145,6 @@ object Deps {
       case x                            => throw new Exception(s"Unknown platform $x!")
     }
 
-    // Not sure if all of these are needed, some might be possible to remove
-    lazy val javaFxBase =
-      "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxControls =
-      "org.openjfx" % s"javafx-controls" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxGraphics =
-      "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxMedia =
-      "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxDeps =
-      List(javaFxBase, javaFxControls, javaFxGraphics, javaFxMedia)
-
     val javaxServlet =
       "javax.servlet" % "javax.servlet-api" % V.javaxServletV // https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api
     val javaxJms =
@@ -176,10 +154,6 @@ object Deps {
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
-
-    val breezeViz =
-      ("org.scalanlp" %% "breeze-viz" % V.breezeV withSources () withJavadoc ())
-        .exclude("bouncycastle", "bcprov-jdk14")
 
     val playJson =
       "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
@@ -265,11 +239,6 @@ object Deps {
     val dropwizardMetricsJvm =
       "io.dropwizard.metrics" % "metrics-jvm" % V.dropwizardMetricsV // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm
 
-    val zxingCore =
-      "com.google.zxing" % "core" % V.zxingV withSources () withJavadoc ()
-
-    val zxingJ2SE =
-      "com.google.zxing" % "javase" % V.zxingV withSources () withJavadoc ()
 
     val monixExecution =
       Def.setting(
@@ -477,12 +446,6 @@ object Deps {
       Compile.scopt
     )
   }
-
-  val gui = List(Compile.akkaActor,
-                 Compile.breezeViz,
-                 Compile.scalaFx,
-                 Compile.zxingCore,
-                 Compile.zxingJ2SE) ++ Compile.javaFxDeps
 
   val server = Def.setting {
     Vector(
