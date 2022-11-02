@@ -149,7 +149,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "length" -> Element(tlv.length),
           "numPieces" -> Element(UInt16(pieces.length)),
           "endpointsAndPieces" -> MultiElement(
-            endpoints
+            endpoints.toVector
               .zip(pieces)
               .flatMap { case (leftEndpoint, piece) =>
                 Vector(leftEndpoint, piece)

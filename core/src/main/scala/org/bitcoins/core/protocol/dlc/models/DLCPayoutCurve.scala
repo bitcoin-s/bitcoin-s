@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedTLVPoints
 import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.math.BigDecimal.RoundingMode
@@ -22,9 +23,10 @@ case class DLCPayoutCurve(
 
   override def toTLV: PayoutFunctionV0TLV = {
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
+    val orderedTlvPoints = OrderedTLVPoints(tlvEndpoints)
     val tlvPieces = pieces.map(_.toTLV)
 
-    PayoutFunctionV0TLV(tlvEndpoints, tlvPieces, serializationVersion)
+    PayoutFunctionV0TLV(orderedTlvPoints, tlvPieces, serializationVersion)
   }
 
   private lazy val endpointOutcomes = endpoints.map(_.outcome)
@@ -84,7 +86,7 @@ object DLCPayoutCurve
 
   override def fromTLV(tlv: PayoutFunctionV0TLV): DLCPayoutCurve = {
     val pieces =
-      tlv.endpoints.init.zip(tlv.endpoints.tail).zip(tlv.pieces).map {
+      tlv.endpoints.toVector.init.zip(tlv.endpoints.tail).zip(tlv.pieces).map {
         case ((leftEndpoint, rightEndpoint), tlvPiece) =>
           DLCPayoutCurvePiece.fromTLV(leftEndpoint, tlvPiece, rightEndpoint)
       }
