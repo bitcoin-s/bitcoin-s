@@ -1,5 +1,9 @@
 package org.bitcoins
 
+import org.bitcoins.core.protocol.dlc.models.{
+  DLCPayoutCurvePiece,
+  OutcomePayoutPoint
+}
 import org.bitcoins.core.protocol.tlv.TLVPoint
 import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
@@ -94,6 +98,26 @@ package object core {
     new Ordering[TLVPoint] {
       override def compare(point1: TLVPoint, point2: TLVPoint): Int = {
         point1.outcome.compare(point2.outcome)
+      }
+    }
+  }
+
+  implicit val outcomePayoutPointOrdering: Ordering[OutcomePayoutPoint] = {
+    new Ordering[OutcomePayoutPoint] {
+      override def compare(
+          x: OutcomePayoutPoint,
+          y: OutcomePayoutPoint): Int = {
+        x.outcome.compare(y.outcome)
+      }
+    }
+  }
+
+  implicit val dlcPayoutCurvePieceOrdering: Ordering[DLCPayoutCurvePiece] = {
+    new Ordering[DLCPayoutCurvePiece] {
+      override def compare(
+          x: DLCPayoutCurvePiece,
+          y: DLCPayoutCurvePiece): Int = {
+        outcomePayoutPointOrdering.compare(x.leftEndpoint, y.leftEndpoint)
       }
     }
   }

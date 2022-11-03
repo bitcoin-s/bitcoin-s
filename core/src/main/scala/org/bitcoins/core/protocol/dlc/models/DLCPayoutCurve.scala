@@ -2,7 +2,10 @@ package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.OrderedTLVPoints
+import org.bitcoins.core.util.sorted.{
+  OrderedDLCPayoutCurvePieces,
+  OrderedTLVPoints
+}
 import org.bitcoins.core.util.{Indexed, NumberUtil}
 
 import scala.math.BigDecimal.RoundingMode
@@ -10,12 +13,12 @@ import scala.util.{Failure, Success, Try}
 
 /** A DLC payout curve defined by piecewise interpolating points */
 case class DLCPayoutCurve(
-    pieces: Vector[DLCPayoutCurvePiece],
+    pieces: OrderedDLCPayoutCurvePieces,
     serializationVersion: DLCSerializationVersion)
     extends TLVSerializable[PayoutFunctionV0TLV] {
 
   val endpoints: Vector[OutcomePayoutPoint] = {
-    pieces.map(_.leftEndpoint).:+(pieces.last.rightEndpoint)
+    pieces.toVector.map(_.leftEndpoint).:+(pieces.last.rightEndpoint)
   }
 
   require(pieces.map(_.rightEndpoint) == endpoints.tail,
@@ -24,7 +27,7 @@ case class DLCPayoutCurve(
   override def toTLV: PayoutFunctionV0TLV = {
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
     val orderedTlvPoints = OrderedTLVPoints(tlvEndpoints)
-    val tlvPieces = pieces.map(_.toTLV)
+    val tlvPieces = pieces.map(_.toTLV).toVector
 
     PayoutFunctionV0TLV(orderedTlvPoints, tlvPieces, serializationVersion)
   }
@@ -75,8 +78,9 @@ case class DLCPayoutCurve(
     getPayout(outcome, rounding, totalCollateral)
 
   def flip(totalCollateral: Satoshis): DLCPayoutCurve = {
-    DLCPayoutCurve(pieces.map(_.flip(totalCollateral)),
-                   serializationVersion = serializationVersion)
+    val flip = pieces.map(_.flip(totalCollateral)).toVector
+    val sorted = OrderedDLCPayoutCurvePieces(flip)
+    DLCPayoutCurve(sorted, serializationVersion = serializationVersion)
   }
 }
 
@@ -90,8 +94,8 @@ object DLCPayoutCurve
         case ((leftEndpoint, rightEndpoint), tlvPiece) =>
           DLCPayoutCurvePiece.fromTLV(leftEndpoint, tlvPiece, rightEndpoint)
       }
-
-    DLCPayoutCurve(pieces, tlv.serializationVersion)
+    val sorted = OrderedDLCPayoutCurvePieces(pieces)
+    DLCPayoutCurve(sorted, tlv.serializationVersion)
   }
 
   def polynomialInterpolate(
@@ -118,7 +122,9 @@ object DLCPayoutCurve
                piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points)))
           }
       }
-    DLCPayoutCurve(pieces, serializationVersion)
+
+    val sorted = OrderedDLCPayoutCurvePieces(pieces)
+    DLCPayoutCurve(sorted, serializationVersion)
   }
 
   def fromPoints(
