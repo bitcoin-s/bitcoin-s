@@ -22,7 +22,7 @@ object Deps {
     val slf4j = "2.0.3"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
-    val scalapb = "0.11.11"
+    val scalapb = "0.11.12"
     val akkav = "10.2.10"
     val playv = "2.9.3" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.20"
@@ -238,7 +238,6 @@ object Deps {
 
     val dropwizardMetricsJvm =
       "io.dropwizard.metrics" % "metrics-jvm" % V.dropwizardMetricsV // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm
-
 
     val monixExecution =
       Def.setting(
