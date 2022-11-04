@@ -37,6 +37,7 @@ import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.util.sorted.{
   OrderedAnnouncements,
+  OrderedDLCPayoutCurvePieces,
   OrderedNonces,
   OrderedSchnorrSignatures
 }
@@ -2175,7 +2176,9 @@ object Picklers {
       }
     }
 
-    DLCPayoutCurve(pieces = dlcCurvePieces,
+    val orderedCurvePieces = OrderedDLCPayoutCurvePieces(dlcCurvePieces)
+
+    DLCPayoutCurve(pieces = orderedCurvePieces,
                    serializationVersion = DLCSerializationVersion.current)
   }
 

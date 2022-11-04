@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
+import org.bitcoins.core.util.sorted.OrderedTLVPoints
 import org.bitcoins.testkitcore.gen.TLVGen
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -270,12 +271,13 @@ class TLVTest extends BitcoinSUnitTest {
       ContractDescriptorV1TLV(
         18,
         PayoutFunctionV0TLV(
-          Vector(
-            TLVPoint(0, Satoshis.zero, 0, DLCSerializationVersion.Beta),
-            TLVPoint(38000, Satoshis.zero, 0, DLCSerializationVersion.Beta),
-            TLVPoint(38001, Satoshis(40000), 0, DLCSerializationVersion.Beta),
-            TLVPoint(262143, Satoshis(40000), 0, DLCSerializationVersion.Beta)
-          ),
+          OrderedTLVPoints(
+            Vector(
+              TLVPoint(0, Satoshis.zero, 0, DLCSerializationVersion.Beta),
+              TLVPoint(38000, Satoshis.zero, 0, DLCSerializationVersion.Beta),
+              TLVPoint(38001, Satoshis(40000), 0, DLCSerializationVersion.Beta),
+              TLVPoint(262143, Satoshis(40000), 0, DLCSerializationVersion.Beta)
+            )),
           Vector(
             PolynomialPayoutCurvePieceTLV(Vector.empty,
                                           DLCSerializationVersion.Beta),
@@ -307,12 +309,13 @@ class TLVTest extends BitcoinSUnitTest {
     val bytes = ByteVector.fromValidHex(hex)
     val actual = PayoutFunctionV0TLV.fromBytes(bytes)
     val expected = PayoutFunctionV0TLV(
-      Vector(
-        TLVPoint(0, Satoshis.zero, 0, DLCSerializationVersion.Beta),
-        TLVPoint(38000, Satoshis.zero, 0, DLCSerializationVersion.Beta),
-        TLVPoint(38001, Satoshis(40000), 0, DLCSerializationVersion.Beta),
-        TLVPoint(262143, Satoshis(40000), 0, DLCSerializationVersion.Beta)
-      ),
+      OrderedTLVPoints(
+        Vector(
+          TLVPoint(0, Satoshis.zero, 0, DLCSerializationVersion.Beta),
+          TLVPoint(38000, Satoshis.zero, 0, DLCSerializationVersion.Beta),
+          TLVPoint(38001, Satoshis(40000), 0, DLCSerializationVersion.Beta),
+          TLVPoint(262143, Satoshis(40000), 0, DLCSerializationVersion.Beta)
+        )),
       Vector(
         PolynomialPayoutCurvePieceTLV(Vector.empty,
                                       DLCSerializationVersion.Beta),

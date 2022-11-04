@@ -2319,7 +2319,7 @@ object HyperbolaPayoutCurvePieceTLV
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
 case class PayoutFunctionV0TLV(
-    endpoints: Vector[TLVPoint],
+    endpoints: OrderedTLVPoints,
     pieces: Vector[PayoutCurvePieceTLV],
     serializationVersion: DLCSerializationVersion)
     extends DLCPlainType {
@@ -2329,26 +2329,26 @@ case class PayoutFunctionV0TLV(
 
   override val bytes: ByteVector = {
     TLVUtil.bigSizePrefixedList[(TLVPoint, PayoutCurvePieceTLV)](
-      endpoints.init.zip(pieces),
+      endpoints.toVector.init.zip(pieces),
       { case (leftEndpoint: TLVPoint, piece: PayoutCurvePieceTLV) =>
         leftEndpoint.bytes ++ piece.bytes
       }) ++ endpoints.last.bytes
   }
 
   def piecesWithLeftEndpoints: Vector[(TLVPoint, PayoutCurvePieceTLV)] = {
-    endpoints.dropRight(1).zip(pieces)
+    endpoints.toVector.dropRight(1).zip(pieces)
   }
 
   def lastEndpoint: TLVPoint = endpoints.last
 
   def piecewisePolynomialEndpoints: Vector[PiecewisePolynomialEndpoint] = {
-    endpoints.map(e => PiecewisePolynomialEndpoint(e.outcome, e.value))
+    endpoints.toVector.map(e => PiecewisePolynomialEndpoint(e.outcome, e.value))
   }
 
   override val byteSize: Long = {
     serializationVersion match {
       case DLCSerializationVersion.Alpha =>
-        val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
+        val old = OldPayoutFunctionV0TLV(endpoints.toVector.map(p =>
           OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
         old.byteSize
       case DLCSerializationVersion.Beta =>
@@ -2388,7 +2388,8 @@ object PayoutFunctionV0TLV extends Factory[PayoutFunctionV0TLV] {
     val rightEndpoint = iter.takeTLVPoint(DLCSerializationVersion.Beta)
     val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
     val pieces = endpointsAndPieces.map(_._2)
-    PayoutFunctionV0TLV(endpoints,
+    val orderedTLVPoints = OrderedTLVPoints(endpoints)
+    PayoutFunctionV0TLV(orderedTLVPoints,
                         pieces,
                         serializationVersion = DLCSerializationVersion.Beta)
 
@@ -2405,8 +2406,8 @@ object PayoutFunctionV0TLV extends Factory[PayoutFunctionV0TLV] {
       val rightEndpoint = iter.takeTLVPoint(DLCSerializationVersion.Gamma)
       val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
       val pieces = endpointsAndPieces.map(_._2)
-
-      val p = PayoutFunctionV0TLV(endpoints,
+      val orderedTLVPoints = OrderedTLVPoints(endpoints)
+      val p = PayoutFunctionV0TLV(orderedTLVPoints,
                                   pieces,
                                   serializationVersion =
                                     DLCSerializationVersion.Gamma)
