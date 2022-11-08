@@ -1,7 +1,7 @@
 // bundle up Scala applications into packaging formats such as Docker,
 // GraalVM native-image, executable JARs etc
 // https://github.com/sbt/sbt-native-packager
-addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.9")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.11")
 
 // collect code coverage when executing tests
 //https://github.com/scoverage/sbt-scoverage
