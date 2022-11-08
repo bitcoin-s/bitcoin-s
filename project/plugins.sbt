@@ -5,7 +5,7 @@ addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.9")
 
 // collect code coverage when executing tests
 //https://github.com/scoverage/sbt-scoverage
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.3")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.6")
 
 // report code coverage to Coveralls
 //https://github.com/scoverage/sbt-coveralls
