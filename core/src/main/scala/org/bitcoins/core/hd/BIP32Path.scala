@@ -136,7 +136,7 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
 
     val path = rest.map { str =>
       val (index: String, hardened: Boolean) =
-        if (str.endsWith("'")) {
+        if (str.endsWith("'") || str.endsWith("h")) {
           (str.dropRight(1), true)
         } else {
           (str, false)
