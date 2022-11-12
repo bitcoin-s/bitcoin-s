@@ -1,3 +1,5 @@
+ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+
 // bundle up Scala applications into packaging formats such as Docker,
 // GraalVM native-image, executable JARs etc
 // https://github.com/sbt/sbt-native-packager
