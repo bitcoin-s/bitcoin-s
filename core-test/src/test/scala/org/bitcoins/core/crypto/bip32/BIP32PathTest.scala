@@ -90,6 +90,12 @@ class BIP32PathTest extends BitcoinSUnitTest {
     assert(fromString.path.head.toUInt32 == ExtKey.hardenedIdx)
   }
 
+  it must "parse a hardened path without an apostrophe" in {
+    val fromString = BIP32Path.fromString("m/0h")
+    assert(fromString.path.length == 1)
+    assert(fromString.path.head.toUInt32 == ExtKey.hardenedIdx)
+  }
+
   it must "parse a hardened path from bytes" in {
     val fromString = BIP32Path.fromBytes(hex"0x80000000")
     assert(fromString.path.length == 1)
