@@ -1,4 +1,4 @@
-# 1.9.6
+# 1.9.7
 
 This release is backwards compatible with the 1.9.x series of bitcoin-s
 
@@ -21,11 +21,11 @@ This release also fixes a bug in the wallet where utxos would be stuck in an unc
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
-can `unzip bitcoin-s-server-1.9.6.zip` and then run it with `chmod +x ./bin/bitcoin-s-server && ./bin/bitcoin-s-server` to start the node. You will need to
+can `unzip bitcoin-s-server-1.9.7.zip` and then run it with `chmod +x ./bin/bitcoin-s-server && ./bin/bitcoin-s-server` to start the node. You will need to
 configure the node properly first, you can find example
 configurations [here](https://bitcoin-s.org/docs/config/configuration#example-configuration-file).
 
-You can then unzip the `bitcoin-s-cli-1.9.6.zip` folder and start using the `bitcoin-s-cli` like this:
+You can then unzip the `bitcoin-s-cli-1.9.7.zip` folder and start using the `bitcoin-s-cli` like this:
 
 ```bashrc
 ./bin/bitcoin-s-cli --help
@@ -88,7 +88,7 @@ d0dac09ce2 Add AddressType json reader (#4851)
 ## App server
 
 Fixes a bug where we did not categorize `Alpha` version DLCs correctly.
-The intent with the 1.9.6 release was to delete these DLCs for ease of upgrading
+The intent with the 1.9.7 release was to delete these DLCs for ease of upgrading
 to the new DLC protocol. This release fixes this categorization bug, and then deletes the DLCs
 that were not previously flagged as `Alpha`.
 
