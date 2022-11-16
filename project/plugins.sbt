@@ -53,7 +53,7 @@ addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.6")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.11.0")
 
 //https://github.com/scalacenter/scalajs-bundler
-addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.0")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.1")
 
 //https://github.com/portable-scala/sbt-crossproject
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.2.0")
