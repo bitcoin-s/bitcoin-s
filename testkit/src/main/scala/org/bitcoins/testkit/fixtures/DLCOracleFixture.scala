@@ -35,6 +35,6 @@ trait DLCOracleFixture extends BitcoinSFixture with EmbeddedPg {
   }
 
   protected def generateOracleName: String = {
-    Gen.asciiStr.sample.get
+    Gen.asciiPrintableStr.sample.get
   }
 }
