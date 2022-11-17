@@ -113,40 +113,41 @@ class DLCOracleTest extends DLCOracleFixture {
       val newConf = oracleA.conf.newConfigOfType(
         Vector(ConfigFactory.parseString("bitcoin-s.network = mainnet"),
                ConfigFactory.parseString("bitcoin-s.oracle.db.name = oracle1")))
-
-      newConf.start().flatMap { _ =>
-        val oracleB = new DLCOracle()(newConf)
-        assert(oracleA.announcementPublicKey == oracleB.announcementPublicKey)
-
-        val eventName = "test"
-        val descriptorTLV =
+      for {
+        _ <- newConf.start()
+        oracleB = new DLCOracle()(newConf)
+        oracleName = generateOracleName
+        _ = assert(
+          oracleA.announcementPublicKey == oracleB.announcementPublicKey)
+        _ <- oracleB.setOracleName(oracleName)
+        eventName = "test"
+        descriptorTLV =
           DigitDecompositionEventDescriptorDLCType(base = UInt8.two,
                                                    isSigned = false,
                                                    numDigits = 3,
                                                    unit = "units",
                                                    precision = Int32.zero)
+        announcementAWithId <- oracleA.createNewAnnouncement(eventName =
+                                                               eventName,
+                                                             maturationTime =
+                                                               futureTime,
+                                                             descriptorTLV)
+        announcementA = announcementAWithId.announcement
+        announcementBWithId <- oracleB.createNewAnnouncement(eventName =
+                                                               eventName,
+                                                             maturationTime =
+                                                               futureTime,
+                                                             descriptorTLV)
+        announcementB = announcementBWithId.announcement
+        // Can't compare announcementTLV because different nonces might be used for signature
+        _ = assert(
+          announcementA.announcementPublicKey == announcementB.announcementPublicKey)
+        _ = assert(announcementA.eventTLV == announcementB.eventTLV)
 
-        for {
-          announcementAWithId <- oracleA.createNewAnnouncement(
-            eventName = eventName,
-            maturationTime = futureTime,
-            descriptorTLV)
-          announcementA = announcementAWithId.announcement
-          announcementBWithId <- oracleB.createNewAnnouncement(
-            eventName = eventName,
-            maturationTime = futureTime,
-            descriptorTLV)
-          announcementB = announcementBWithId.announcement
-          // Can't compare announcementTLV because different nonces might be used for signature
-          _ = assert(
-            announcementA.announcementPublicKey == announcementB.announcementPublicKey)
-          _ = assert(announcementA.eventTLV == announcementB.eventTLV)
-
-          eventA <- oracleA.signDigits(eventName, 1)
-          eventB <- oracleB.signDigits(eventName, 1)
-        } yield {
-          assert(eventA.oracleAttestmentV0TLV == eventB.oracleAttestmentV0TLV)
-        }
+        eventA <- oracleA.signDigits(eventName, 1)
+        eventB <- oracleB.signDigits(eventName, 1)
+      } yield {
+        assert(eventA.oracleAttestmentV0TLV == eventB.oracleAttestmentV0TLV)
       }
   }
 
@@ -996,11 +997,9 @@ class DLCOracleTest extends DLCOracleFixture {
 
   it must "set and retrieve oracle name" in { dlcOracle: DLCOracle =>
     for {
-      emptyNameOpt <- dlcOracle.oracleName()
       _ <- dlcOracle.setOracleName("test name")
       testNameOpt <- dlcOracle.oracleName()
     } yield {
-      assert(emptyNameOpt.isEmpty)
       assert(testNameOpt.contains("test name"))
     }
   }

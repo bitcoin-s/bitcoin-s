@@ -257,6 +257,7 @@ case class NormalizedString(private val str: String) extends NetworkElement {
 }
 
 object NormalizedString extends StringFactory[NormalizedString] {
+  val empty: NormalizedString = NormalizedString("")
 
   def apply(bytes: ByteVector): NormalizedString = {
     NormalizedString(new String(bytes.toArray, StandardCharsets.UTF_8))

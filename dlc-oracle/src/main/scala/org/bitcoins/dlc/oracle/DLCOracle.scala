@@ -421,13 +421,16 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     val metadataF: Future[OracleMetadata] = for {
       rValues <- rValueDbsF
+      oracleNameOpt <- oracleName()
+      _ = require(oracleNameOpt.isDefined,
+                  s"Oracle name needs to be defined to create an announcement")
       nonces = OrderedNonces.fromUnsorted(rValues.map(_.nonce))
       attestations = SchnorrAttestation.build(
         announcementPrivKey,
         attestationPrivKey.schnorrPublicKey,
         nonces)
-      oracleName = NormalizedString("Oracle_name") //how do i get this?
-      oracleDescription = NormalizedString("oracle description")
+      oracleName = oracleNameOpt.get
+      oracleDescription = NormalizedString.empty
       creationTime = UInt32(Instant.now().getEpochSecond)
       metadataSignature = OracleMetadataSignature.buildSignature(
         announcementPrivKey = announcementPrivKey,
