@@ -203,4 +203,6 @@ object DLCTestUtil {
   }
 
   val expectedSign: ujson.Value = ujson.read(expectedSignJsonString)
+
+  val expectedContractInfo = ujson.Null
 }
