@@ -19,6 +19,7 @@ import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
+import grizzled.slf4j.Logging
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
@@ -73,7 +74,7 @@ case class Server(
           Server.httpError(s"'$method' is not a valid method",
                            StatusCodes.BadRequest))
       case err: Throwable =>
-        logger.info(s"Unhandled error in server:", err)
+        logger.error(s"Unhandled error in server:", err)
         complete(Server.httpError(err.getMessage))
     }
 
@@ -226,7 +227,7 @@ case class Server(
 
 }
 
-object Server {
+object Server extends Logging {
 
   // TODO id parameter
   case class Response(
@@ -278,18 +279,14 @@ object Server {
   }
 
   def httpBadRequest(ex: Throwable): HttpResponse = {
-    httpBadRequest(ex.getMessage)
-  }
-
-  def httpBadRequest(msg: String): HttpResponse = {
+    logger.error(s"Http bad request", ex)
+    val msg = ex.getMessage
     val entity = httpError(msg)
     HttpResponse(status = StatusCodes.BadRequest, entity = entity)
   }
 
-  def httpError(
-      msg: String,
-      status: StatusCode = StatusCodes.InternalServerError): HttpResponse = {
-
+  def httpError(msg: String, status: StatusCode): HttpResponse = {
+    logger.error(s"Http error msg=$msg statusCode=$status")
     val entity = {
       val response = Response(error = Some(msg))
       HttpEntity(
