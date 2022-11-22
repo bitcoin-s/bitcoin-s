@@ -40,7 +40,7 @@ object Deps {
     val akkaActorV = akkaStreamv
 
     val slickV = "3.4.1"
-    val sqliteV = "3.39.4.1" //https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.40.0.0" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
