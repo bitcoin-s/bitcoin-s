@@ -35,7 +35,7 @@ import java.nio.charset.StandardCharsets
 import java.time.Instant
 import scala.annotation.tailrec
 import scala.math.BigDecimal.RoundingMode
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 sealed trait TLV extends NetworkElement with TLVUtil {
   def tpe: BigSizeUInt
@@ -2590,9 +2590,16 @@ object OracleInfoV0TLV extends Factory[OracleInfoV0TLV] {
       //note this cannot be OracleAnnouncementV1TLV
       //because we need to parse beta version announcements inside of
       //v0 contract infos for backwards compatability reasons
-      val announcement = iter.take(OracleAnnouncementTLV)
-
-      OracleInfoV0TLV(announcement, DLCSerializationVersion.Gamma)
+      val announcementV1T = iter.takeT(OracleAnnouncementV1TLV)
+      announcementV1T match {
+        case Success(v1) =>
+          OracleInfoV0TLV(v1, DLCSerializationVersion.Gamma)
+        case Failure(_) =>
+          val announcementV0 = iter.take(OracleAnnouncementV0TLV)
+          //weird versioning here, the outer contract info if gamma
+          //but the inner announcement is beta
+          OracleInfoV0TLV(announcementV0, DLCSerializationVersion.Gamma)
+      }
     }
 
     t.getOrElse(fromOldTLVValue(bytes))

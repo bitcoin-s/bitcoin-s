@@ -8,6 +8,8 @@ import org.bitcoins.core.protocol.tlv.TLV.{FALSE_BYTE, TRUE_BYTE}
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
+import scala.util.{Try}
+
 case class ValueIterator(value: ByteVector) {
 
   private var index: Int = 0
@@ -44,6 +46,10 @@ case class ValueIterator(value: ByteVector) {
     val elem = factory(current)
     skip(elem)
     elem
+  }
+
+  def takeT[E <: NetworkElement](factory: Factory[E]): Try[E] = {
+    Try(take(factory))
   }
 
   def takeOpt[E <: NetworkElement](
