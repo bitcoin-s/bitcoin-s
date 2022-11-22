@@ -2587,7 +2587,10 @@ object OracleInfoV0TLV extends Factory[OracleInfoV0TLV] {
         s"Required subtype is $subType for OracleInfoV0TLV, got=${bytes.head}")
       val iter = ValueIterator(bytes.drop(1))
 
-      val announcement = iter.take(OracleAnnouncementV1TLV)
+      //note this cannot be OracleAnnouncementV1TLV
+      //because we need to parse beta version announcements inside of
+      //v0 contract infos for backwards compatability reasons
+      val announcement = iter.take(OracleAnnouncementTLV)
 
       OracleInfoV0TLV(announcement, DLCSerializationVersion.Gamma)
     }

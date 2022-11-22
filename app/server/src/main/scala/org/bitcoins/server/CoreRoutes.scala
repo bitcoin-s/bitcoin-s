@@ -172,8 +172,7 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
       withValidServerCommand(DecodeContractInfo.fromJsArr(arr)) {
         case DecodeContractInfo(contractInfo) =>
           complete {
-            Server.httpSuccess(
-              writeJs(contractInfo)(contractInfoV0TLVJsonWriter))
+            Server.httpSuccess(writeJs(contractInfo)(contractInfoTLVPickler))
           }
       }
 

@@ -204,5 +204,64 @@ object DLCTestUtil {
 
   val expectedSign: ujson.Value = ujson.read(expectedSignJsonString)
 
-  val expectedContractInfo = ujson.Null
+  //this is needed for backwards compatability, this is a gamma contract info
+  //with a beta version announcement inside of it.
+  val expectedGammaContractInfoWithV0AnnString =
+    s"""
+       |{
+       |  "result": {
+       |    "singleContractInfo": {
+       |      "totalCollateral": 20000,
+       |      "contractInfo": {
+       |        "contractDescriptor": {
+       |          "enumeratedContractDescriptor": {
+       |            "payouts": [
+       |              {
+       |                "outcome": "yes",
+       |                "offerPayout": 20000
+       |              },
+       |              {
+       |                "outcome": "no",
+       |                "offerPayout": 10000
+       |              },
+       |              {
+       |                "outcome": "other",
+       |                "offerPayout": 10000
+       |              }
+       |            ]
+       |          }
+       |        },
+       |        "oracleInfo": {
+       |          "single": {
+       |            "oracleAnnouncement": {
+       |              "announcementSignature": "396910627321be0648931b2c1ce24bec294a997e717b5a606c2635b930927a5845c80e802bb8203b1eb77c3794466d68216b3548ef32b99e998640c3af6fbbe3",
+       |              "publicKey": "3a46bbd9eab0646b12d2fc402373b4886931e9fcb74dcf8a95e9cc2c620ef3e4",
+       |              "event": {
+       |                "nonces": [
+       |                  "f7952d601997eb68cc281b53ed0b34959f781fd82d947740fadb2735ca49c91a"
+       |                ],
+       |                "maturity": "2022-09-21T05:00:00Z",
+       |                "descriptor": {
+       |                  "outcomes": [
+       |                    "yes",
+       |                    "no",
+       |                    "other"
+       |                  ],
+       |                  "hex": "fdd8060f000303796573026e6f056f74686572"
+       |                },
+       |                "eventId": "Will the Ethereum merge cause 15 minutes of no block production"
+       |              },
+       |              "hex": "fdd824dd396910627321be0648931b2c1ce24bec294a997e717b5a606c2635b930927a5845c80e802bb8203b1eb77c3794466d68216b3548ef32b99e998640c3af6fbbe33a46bbd9eab0646b12d2fc402373b4886931e9fcb74dcf8a95e9cc2c620ef3e4fdd822790001f7952d601997eb68cc281b53ed0b34959f781fd82d947740fadb2735ca49c91a632a9a50fdd8060f000303796573026e6f056f746865723f57696c6c2074686520457468657265756d206d65726765206361757365203135206d696e75746573206f66206e6f20626c6f636b2070726f64756374696f6e"
+       |            }
+       |          }
+       |        }
+       |      }
+       |    }
+       |  },
+       |  "error": null
+       |}
+       |""".stripMargin
+
+  val expectedGammaContractInfoWithV0Ann: ujson.Value =
+    ujson.read(expectedGammaContractInfoWithV0AnnString)
 }

@@ -909,7 +909,7 @@ object CreateDLCOffer extends ServerJsonModels {
   }
 }
 
-case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+case class DecodeContractInfo(contractInfo: ContractInfoTLV)
     extends CliCommand
     with AppServerCliCommand
 
@@ -919,7 +919,7 @@ object DecodeContractInfo extends ServerJsonModels {
     jsArr.arr.toList match {
       case contractInfoJs :: Nil =>
         Try {
-          val contractInfo = ContractInfoV0TLV(contractInfoJs.str)
+          val contractInfo = ContractInfoTLV.fromHex(contractInfoJs.str)
           DecodeContractInfo(contractInfo)
         }
       case Nil =>
