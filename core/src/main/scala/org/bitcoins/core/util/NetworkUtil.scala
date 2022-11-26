@@ -74,7 +74,7 @@ abstract class NetworkUtil {
   }
 
   def isLocalhost(hostName: String): Boolean = {
-    hostName == "127.0.0.0" || hostName == "localhost"
+    hostName == "127.0.0.1" || hostName == "localhost"
   }
 
   /** Checks if the [[java.net.InetSocketAddress]] is a loopback address.
