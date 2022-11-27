@@ -23,21 +23,21 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("23.0", "22.0", "0.21.1", "0.20.1", "0.19.0.1")
+    List("24.0", "23.0", "22.0", "0.21.1", "0.20.1", "0.19.0.1")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
 
+  val arm64MacVersions = List("24.0", "23.0")
   def getPlatformAndSuffix(version: String): (String, String) = {
     if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
-    else if (Properties.isMac)
-      version match {
-        case "23.0" if System.getProperty("os.arch") == "aarch64" =>
+    else if (Properties.isMac) {
+      if (arm64MacVersions.contains(version)) {
+        if (System.getProperty("os.arch") == "aarch64")
           ("arm64-apple-darwin", "tar.gz")
-        case "23.0" => ("x86_64-apple-darwin", "tar.gz")
-        case _      => ("osx64", "tar.gz")
-      }
-    else if (Properties.isWin) ("win64", "zip")
+        else ("x86_64-apple-darwin", "tar.gz")
+      } else ("osx64", "tar.gz")
+    } else if (Properties.isWin) ("win64", "zip")
     else sys.error(s"Unsupported OS: ${Properties.osName}")
   }
 
@@ -95,6 +95,7 @@ TaskKeys.downloadBitcoind := {
         val expectedHash =
           if (Properties.isLinux)
             Map(
+              "24.0" -> "fb86cf6af7a10bc5f3ae6cd6a5b0348854e1462102fe71e755d30b51b6e317d1",
               "23.0" -> "2cca490c1f2842884a3c5b0606f179f9f937177da4eadd628e3f7fd7e25d26d0",
               "22.0" -> "59ebd25dd82a51638b7a6bb914586201e67db67b919b2a1ff08925a7936d1b16",
               "0.21.1" -> "366eb44a7a0aa5bd342deea215ec19a184a11f2ca22220304ebb20b9c8917e2b",
@@ -103,6 +104,10 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isMac)
             Map(
+              "24.0" -> (if (System.getProperty("os.arch") == "aarch64")
+                "03cbad3118ead19de6664ab80c43b6ee97302109e8789ca9a7e261bdc0aa6937"
+              else
+                "a2b7ba863e5536249a8e97b464bc9a91ad73a0b6340434bf1c09aa912ac52f29"),
               "23.0" -> (if (System.getProperty("os.arch") == "aarch64")
                            "7c8bc63731aa872b7b334a8a7d96e33536ad77d49029bad179b09dca32cd77ac"
                          else
@@ -114,6 +119,7 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
+              "24.0" -> "09fa27956f2884434eee2ca1a9d2822712e8405c096e82ecedf64a638f42ca1a",
               "23.0" -> "004b2e25b21e0f14cbcce6acec37f221447abbb3ea7931c689e508054bfc6cf6",
               "22.0" -> "9485e4b52ed6cebfe474ab4d7d0c1be6d0bb879ba7246a8239326b2230a77eb1",
               "0.21.1" -> "94c80f90184cdc7e7e75988a55b38384de262336abd80b1b30121c6e965dc74e",

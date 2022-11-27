@@ -43,7 +43,7 @@ trait RawTransactionRpc { self: Client =>
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
 
     self.version.flatMap {
-      case V22 | V23 | Unknown =>
+      case V22 | V23 | V24 | Unknown =>
         bitcoindCall[RpcTransactionV22]("decoderawtransaction",
                                         List(JsString(transaction.hex)))
 
@@ -102,7 +102,7 @@ trait RawTransactionRpc { self: Client =>
     }
     val params = List(JsString(txid.hex), JsBoolean(true)) ++ lastParam
     self.version.flatMap {
-      case V22 | V23 | Unknown =>
+      case V22 | V23 | V24 | Unknown =>
         bitcoindCall[GetRawTransactionResultV22]("getrawtransaction", params)
       case V19 | V20 | V21 =>
         bitcoindCall[GetRawTransactionResultPreV22]("getrawtransaction", params)
@@ -128,16 +128,8 @@ trait RawTransactionRpc { self: Client =>
       transaction: Transaction,
       maxfeerate: Double = 0.10): Future[DoubleSha256DigestBE] = {
 
-    val feeParameterF = self.version.map {
-      case V23 | V22 | V21 | V20 | V19 | Unknown =>
-        JsNumber(maxfeerate)
-    }
-
-    feeParameterF.flatMap { feeParameter =>
-      bitcoindCall[DoubleSha256DigestBE](
-        "sendrawtransaction",
-        List(JsString(transaction.hex), feeParameter))
-    }
+    bitcoindCall[DoubleSha256DigestBE](
+      "sendrawtransaction",
+      List(JsString(transaction.hex), JsNumber(maxfeerate)))
   }
-
 }

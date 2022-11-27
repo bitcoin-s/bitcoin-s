@@ -22,7 +22,7 @@ trait UtilRpc { self: Client =>
 
   def decodeScript(script: ScriptPubKey): Future[DecodeScriptResult] = {
     self.version.flatMap {
-      case V22 | V23 | Unknown =>
+      case V22 | V23 | V24 | Unknown =>
         bitcoindCall[DecodeScriptResultV22]("decodescript",
                                             List(Json.toJson(script)))
       case V19 | V20 | V21 =>
@@ -34,7 +34,7 @@ trait UtilRpc { self: Client =>
 
   def getIndexInfo: Future[Map[String, IndexInfoResult]] = {
     version.flatMap {
-      case V23 | V22 | V21 | Unknown =>
+      case V24 | V23 | V22 | V21 | Unknown =>
         bitcoindCall[Map[String, IndexInfoResult]]("getindexinfo")
       case V19 | V20 =>
         Future.failed(
@@ -45,7 +45,7 @@ trait UtilRpc { self: Client =>
 
   def getIndexInfo(indexName: String): Future[IndexInfoResult] = {
     version.flatMap {
-      case V23 | V22 | V21 | Unknown =>
+      case V24 | V23 | V22 | V21 | Unknown =>
         bitcoindCall[Map[String, IndexInfoResult]](
           "getindexinfo",
           List(JsString(indexName))).map(_.head._2)

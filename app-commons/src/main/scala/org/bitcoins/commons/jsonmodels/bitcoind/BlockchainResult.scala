@@ -11,6 +11,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
@@ -468,3 +469,12 @@ case class GetBlockFilterResult(
     CompactFilterDbHelper.fromGolombFilter(filter, header, height)
   }
 }
+
+case class GetTxSpendingPrevOutResult(
+    txid: DoubleSha256DigestBE,
+    vout: Int,
+    spendingtxid: Option[DoubleSha256DigestBE]) {
+  def outpoint: TransactionOutPoint = TransactionOutPoint(txid, UInt32(vout))
+}
+
+case class SimulateRawTransactionResult(balance_change: Bitcoins)

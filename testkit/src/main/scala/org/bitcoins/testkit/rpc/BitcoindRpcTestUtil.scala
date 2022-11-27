@@ -35,6 +35,7 @@ import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
+import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil, TorUtil}
@@ -110,6 +111,7 @@ trait BitcoindRpcTestUtil extends Logging {
                   |port=${uri.getPort}
                   |debug=$isDebug
                   |walletbroadcast=1
+                  |mempoolfullrbf=1
                   |peerbloomfilters=1
                   |fallbackfee=0.0002
                   |txindex=$txindex
@@ -174,7 +176,7 @@ trait BitcoindRpcTestUtil extends Logging {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V19 | V20 | V21 | V22 | V23) =>
+      case known @ (V19 | V20 | V21 | V22 | V23 | V24) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -211,26 +213,12 @@ trait BitcoindRpcTestUtil extends Logging {
       system: ActorSystem): BitcoindInstanceLocal = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val hasNeutrinoSupport = {
-      if (enableNeutrino == false) {
-        logger.warn(s"Neutrino is disabled")
-        //don't enable neutrino, this is useful for certain test cases
-        //like NeutrinoUnsupportedPeerTest
-        false
-      } else {
-        versionOpt match {
-          case Some(V19) | Some(V20) | Some(V21) | Some(V22) | Some(V23) | Some(
-                Unknown) | None =>
-            true
-        }
-      }
-    }
     val configFile =
       writtenConfig(uri,
                     rpcUri,
                     zmqConfig,
                     pruneMode,
-                    blockFilterIndex = hasNeutrinoSupport)
+                    blockFilterIndex = enableNeutrino)
     val conf = BitcoindConfig(configFile)
     val binary: File = versionOpt match {
       case Some(version) => getBinary(version)
@@ -318,6 +306,20 @@ trait BitcoindRpcTestUtil extends Logging {
              versionOpt = Some(BitcoindVersion.V23),
              binaryDirectory = binaryDirectory)
 
+  def v24Instance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
+      pruneMode: Boolean = false,
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqConfig = zmqConfig,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.V24),
+             binaryDirectory = binaryDirectory)
+
   /** Gets an instance of bitcoind with the given version */
   def getInstance(
       bitcoindVersion: BitcoindVersion,
@@ -358,6 +360,12 @@ trait BitcoindRpcTestUtil extends Logging {
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
+      case BitcoindVersion.V24 =>
+        BitcoindRpcTestUtil.v24Instance(port,
+                                        rpcPort,
+                                        zmqConfig,
+                                        pruneMode,
+                                        binaryDirectory = binaryDirectory)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Could not create a bitcoind version with version=${BitcoindVersion.Unknown}")
@@ -373,7 +381,7 @@ trait BitcoindRpcTestUtil extends Logging {
           descriptors = version match {
             case V19 | V20 | V21 | V22 | Unknown =>
               false
-            case V23 => true
+            case V23 | V24 => true
           }
           _ <- res.createWallet("", descriptors = true)
         } yield res
@@ -688,6 +696,9 @@ trait BitcoindRpcTestUtil extends Logging {
         case BitcoindVersion.V23 =>
           BitcoindV23RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v23Instance())
+        case BitcoindVersion.V24 =>
+          BitcoindV24RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v24Instance())
       }
 
       // this is safe as long as this method is never

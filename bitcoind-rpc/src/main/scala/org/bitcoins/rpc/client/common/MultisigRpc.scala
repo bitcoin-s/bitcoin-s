@@ -41,7 +41,7 @@ trait MultisigRpc { self: Client =>
            JsString(account)) ++ addressType.map(Json.toJson(_)).toList
 
     self.version.flatMap {
-      case V23 | V22 | V21 | V20 | Unknown =>
+      case V24 | V23 | V22 | V21 | V20 | Unknown =>
         bitcoindCall[MultiSigResultPostV20](
           "addmultisigaddress",
           params,
@@ -84,7 +84,7 @@ trait MultisigRpc { self: Client =>
       addressType: AddressType,
       walletNameOpt: Option[String] = None): Future[MultiSigResult] = {
     self.version.flatMap {
-      case V23 | V22 | V21 | V20 | Unknown =>
+      case V24 | V23 | V22 | V21 | V20 | Unknown =>
         bitcoindCall[MultiSigResultPostV20](
           "createmultisig",
           List(JsNumber(minSignatures),
