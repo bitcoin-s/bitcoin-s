@@ -27,6 +27,7 @@ import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
+import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.config._
 
 import java.io.File
@@ -348,6 +349,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
       case BitcoindVersion.V23 => BitcoindV23RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V24 => BitcoindV24RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version")
@@ -368,10 +370,10 @@ sealed trait BitcoindVersion
 object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V23
+  val newest: BitcoindVersion = V23 // todo make v24
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V19, V20, V21, V22, V23)
+    Vector(V19, V20, V21, V22, V23, V24)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -393,6 +395,10 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
 
   case object V23 extends BitcoindVersion {
     override def toString: String = "v23"
+  }
+
+  case object V24 extends BitcoindVersion {
+    override def toString: String = "v24"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -418,6 +424,7 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
       case "21" => V21
       case "22" => V22
       case "23" => V23
+      case "24" => V24
       case _ =>
         logger.warn(
           s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}")

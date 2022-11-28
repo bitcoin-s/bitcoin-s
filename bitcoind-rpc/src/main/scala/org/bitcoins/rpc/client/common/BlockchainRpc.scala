@@ -31,7 +31,7 @@ trait BlockchainRpc { self: Client =>
     self.version.flatMap {
       case V22 | V21 | V20 | V19 =>
         bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
-      case V23 | Unknown =>
+      case V23 | V24 | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
     }
   }
@@ -78,7 +78,7 @@ trait BlockchainRpc { self: Client =>
     GetBlockWithTransactionsResult] = {
     val isVerboseJsonObject = JsNumber(2)
     self.version.flatMap {
-      case V22 | V23 | Unknown =>
+      case V22 | V23 | V24 | Unknown =>
         bitcoindCall[GetBlockWithTransactionsResultV22](
           "getblock",
           List(JsString(headerHash.hex), isVerboseJsonObject))

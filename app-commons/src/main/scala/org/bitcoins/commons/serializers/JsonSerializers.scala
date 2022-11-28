@@ -387,6 +387,14 @@ object JsonSerializers {
   implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] =
     Json.reads[GetTxOutSetInfoResult]
 
+  implicit val GetTxSpendingPrevOutResultReads: Reads[
+    GetTxSpendingPrevOutResult] =
+    Json.reads[GetTxSpendingPrevOutResult]
+
+  implicit val SimulateRawTransactionResultReads: Reads[
+    SimulateRawTransactionResult] =
+    Json.reads[SimulateRawTransactionResult]
+
   implicit object Bip32PathFormats extends Format[BIP32Path] {
 
     override def reads(json: JsValue): JsResult[BIP32Path] =

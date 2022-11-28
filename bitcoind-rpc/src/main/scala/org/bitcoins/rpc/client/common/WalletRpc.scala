@@ -164,7 +164,7 @@ trait WalletRpc { self: Client =>
   private def getWalletInfo(
       walletName: Option[String]): Future[GetWalletInfoResult] = {
     self.version.flatMap {
-      case BitcoindVersion.V22 | BitcoindVersion.V23 |
+      case BitcoindVersion.V22 | BitcoindVersion.V23 | BitcoindVersion.V24 |
           BitcoindVersion.Unknown =>
         bitcoindCall[GetWalletInfoResultPostV22](
           "getwalletinfo",
@@ -314,27 +314,20 @@ trait WalletRpc { self: Client =>
       value: Boolean,
       walletNameOpt: Option[String] = None
   ): Future[SetWalletFlagResult] = {
-
-    self.version.flatMap { case V23 | V22 | V21 | V20 | V19 | Unknown =>
-      bitcoindCall[SetWalletFlagResult](
-        "setwalletflag",
-        List(JsString(flag.toString), Json.toJson(value)),
-        uriExtensionOpt = walletNameOpt.map(walletExtension))
-    }
+    bitcoindCall[SetWalletFlagResult](
+      "setwalletflag",
+      List(JsString(flag.toString), Json.toJson(value)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension))
   }
 
   def getBalances: Future[GetBalancesResult] = {
-    self.version.flatMap { case V23 | V22 | V21 | V20 | V19 | Unknown =>
-      bitcoindCall[GetBalancesResult]("getbalances")
-    }
+    bitcoindCall[GetBalancesResult]("getbalances")
   }
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {
-    self.version.flatMap { case V23 | V22 | V21 | V20 | V19 | Unknown =>
-      bitcoindCall[GetBalancesResult]("getbalances",
-                                      uriExtensionOpt =
-                                        Some(walletExtension(walletName)))
-    }
+    bitcoindCall[GetBalancesResult]("getbalances",
+                                    uriExtensionOpt =
+                                      Some(walletExtension(walletName)))
   }
 
   // TODO: Should be BitcoinFeeUnit
@@ -401,7 +394,7 @@ trait WalletRpc { self: Client =>
       avoidReuse: Boolean = false,
       descriptors: Boolean = false): Future[CreateWalletResult] =
     self.version.flatMap {
-      case V23 | V22 =>
+      case V24 | V23 | V22 =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(JsString(walletName),
@@ -431,7 +424,7 @@ trait WalletRpc { self: Client =>
           "getaddressinfo",
           List(JsString(address.value)),
           uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V23 | V22 | V21 | Unknown =>
+      case V24 | V23 | V22 | V21 | Unknown =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),

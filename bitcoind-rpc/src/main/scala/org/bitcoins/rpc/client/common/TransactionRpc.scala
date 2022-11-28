@@ -12,7 +12,8 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.{
   V20,
   V21,
   V22,
-  V23
+  V23,
+  V24
 }
 import play.api.libs.json._
 
@@ -88,7 +89,7 @@ trait TransactionRpc { self: Client =>
       vout: Long,
       includeMemPool: Boolean = true): Future[GetTxOutResult] = {
     self.version.flatMap {
-      case V22 | V23 | Unknown =>
+      case V22 | V23 | V24 | Unknown =>
         bitcoindCall[GetTxOutResultV22](
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
@@ -106,7 +107,7 @@ trait TransactionRpc { self: Client =>
       includeMemPool: Boolean = true): Future[Option[GetTxOutResult]] = {
     self.version
       .flatMap {
-        case V22 | V23 | Unknown =>
+        case V22 | V23 | V24 | Unknown =>
           bitcoindCall[GetTxOutResultV22](
             "gettxout",
             List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
