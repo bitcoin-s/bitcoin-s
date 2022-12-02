@@ -29,8 +29,8 @@ case class NonceSignaturePairDb(
     attestationOpt: Option[FieldElement],
     outcomeOpt: Option[String])
     extends NonceSignaturePairDbShim {
-//  require(attestationOpt.isDefined == outcomeOpt.isDefined,
-//          s"Attestation must be present if outcome is present")
+  require(attestationOpt.isDefined == outcomeOpt.isDefined,
+          s"Attestation must be present if outcome is present")
 
   val signatureOpt: Option[SchnorrDigitalSignature] = {
     attestationOpt.map { attestation =>
@@ -64,13 +64,15 @@ object NonceSignaturePairDbShim {
   def updateEnumOutcome(
       id: Long,
       enumOutcome: EnumOracleOutcome,
+      attestation: FieldElement,
       noncesByAnnouncement: Map[
         Long,
         Vector[NonceSignaturePairDbShim]]): Vector[NonceSignaturePairDbShim] = {
     val nonces = noncesByAnnouncement(id)
     nonces.map {
       case n: NonceSignaturePairDb =>
-        n.copy(outcomeOpt = Some(enumOutcome.outcome.outcome))
+        n.copy(outcomeOpt = Some(enumOutcome.outcome.outcome),
+               attestationOpt = Some(attestation))
       case o: OracleNonceDb =>
         o.copy(outcomeOpt = Some(enumOutcome.outcome.outcome))
 
@@ -79,6 +81,7 @@ object NonceSignaturePairDbShim {
 
   def updateNumericOutcome(
       numericOutcome: NumericOracleOutcome,
+      attestation: FieldElement,
       noncesByAnnouncement: Map[Long, Vector[NonceSignaturePairDbShim]],
       announcementsWithIds: Vector[(BaseOracleAnnouncement, Long)]): Vector[
     NonceSignaturePairDbShim] = {
@@ -93,7 +96,8 @@ object NonceSignaturePairDbShim {
           case o: OracleNonceDb =>
             o.copy(outcomeOpt = Some(digit.toString))
           case n: NonceSignaturePairDb =>
-            n.copy(outcomeOpt = Some(digit.toString))
+            n.copy(outcomeOpt = Some(digit.toString),
+                   attestationOpt = Some(attestation))
         }
       }
     }

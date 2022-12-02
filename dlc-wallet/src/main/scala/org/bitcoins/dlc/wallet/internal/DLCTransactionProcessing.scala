@@ -197,14 +197,19 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           usedIds.flatMap { id =>
             outcome match {
               case enum: EnumOracleOutcome =>
-                NonceSignaturePairDbShim.updateEnumOutcome(id,
-                                                           enumOutcome = enum,
-                                                           noncesByAnnouncement)
+                NonceSignaturePairDbShim.updateEnumOutcome(
+                  id = id,
+                  enumOutcome = enum,
+                  attestation = sig.sig,
+                  noncesByAnnouncement = noncesByAnnouncement)
               case numeric: NumericOracleOutcome =>
                 NonceSignaturePairDbShim.updateNumericOutcome(
-                  numeric,
-                  noncesByAnnouncement,
-                  announcementsWithId)
+                  numericOutcome = numeric,
+                  //this is the aggregate signature, not the specific signature for the nonce
+                  //is this right? can i get the specific field element for the nonce?
+                  attestation = sig.sig,
+                  noncesByAnnouncement = noncesByAnnouncement,
+                  announcementsWithIds = announcementsWithId)
             }
           }
         }

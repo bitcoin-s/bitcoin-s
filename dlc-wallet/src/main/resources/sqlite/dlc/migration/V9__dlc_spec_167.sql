@@ -13,7 +13,10 @@ create table "oracle_metadata" (
 create table "oracle_schnorr_nonces" (
     "id" INTEGER NOT NULL,
     "nonce" VARCHAR(32) NOT NULL UNIQUE,
-    "attestation" VARCHAR(32) UNIQUE,
+    -- this should be set to unique as done in the oracle project
+    -- for now i'm not sure how to recover the origin attestation
+    -- for this _specific_ nonce. Right now we just store the aggregate attestation
+    "attestation" VARCHAR(32),
     "nonce_proof" VARCHAR(64) NOT NULL UNIQUE,
     "outcome" VARCHAR(254),
     constraint "fk_metadata_id" foreign key("id") references "oracle_metadata"("id") on update NO ACTION on delete NO ACTION

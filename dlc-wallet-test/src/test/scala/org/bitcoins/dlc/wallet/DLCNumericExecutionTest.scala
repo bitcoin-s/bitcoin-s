@@ -95,12 +95,10 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       (sigs, _) = getSigs(status.contractInfo)
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sigs).map(_.get)
-
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 1)
-
       _ = assert(result)
 
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)

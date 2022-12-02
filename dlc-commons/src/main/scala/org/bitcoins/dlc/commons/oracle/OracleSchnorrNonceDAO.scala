@@ -125,7 +125,8 @@ case class OracleSchnorrNonceDAO()(implicit
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.Unique)
 
-    def attestationOpt: Rep[Option[FieldElement]] = column("attestation")
+    def attestationOpt: Rep[Option[FieldElement]] =
+      column("attestation")
 
     def nonceProof: Rep[SchnorrDigitalSignature] =
       column("nonce_proof", O.Unique)
