@@ -2122,8 +2122,6 @@ object RoundingIntervalsV0TLV extends Factory[RoundingIntervalsV0TLV] {
     }
     roundingIntervalsT.getOrElse(fromTLVValue(bytes))
   }
-
-  //override val typeName: String = "RoundingIntervalsV0TLV"
 }
 
 sealed trait PayoutCurvePieceTLV extends DLCSubType
@@ -2214,8 +2212,6 @@ object PolynomialPayoutCurvePieceTLV
 
     t.getOrElse(fromOldTLVValue(bytes))
   }
-
-  //override val typeName: String = "PolynomialPayoutCurvePieceTLV"
 }
 
 case class HyperbolaPayoutCurvePieceTLV(
