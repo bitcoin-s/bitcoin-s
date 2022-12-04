@@ -66,6 +66,8 @@ case class GetMiningInfoResult(
 
 case class GetMemoryInfoResult(locked: MemoryManager) extends OtherResult
 
+case class GenerateBlockResult(hash: DoubleSha256DigestBE) extends OtherResult
+
 case class MemoryManager(
     used: Int,
     free: Int,
