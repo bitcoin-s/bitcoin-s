@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GenerateBlockResult,
   GetBlockTemplateResult,
   GetMiningInfoResult,
   RpcOpts
@@ -9,8 +10,9 @@ import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import play.api.libs.json.{JsNumber, JsString, Json}
+import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
@@ -25,6 +27,16 @@ trait MiningRpc { self: Client =>
     bitcoindCall[Vector[DoubleSha256DigestBE]](
       "generatetoaddress",
       List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
+  }
+
+  def generateBlock(
+      address: BitcoinAddress,
+      transactions: Vector[Transaction]
+  ): Future[DoubleSha256DigestBE] = {
+    val txsJs = JsArray(transactions.map(t => JsString(t.hex)))
+    bitcoindCall[GenerateBlockResult](
+      "generateblock",
+      List(JsString(address.toString), txsJs)).map(_.hash)
   }
 
   def getBlockTemplate(request: Option[RpcOpts.BlockTemplateRequest] =

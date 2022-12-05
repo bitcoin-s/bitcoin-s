@@ -4,6 +4,11 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetBlockWithTransactionsResultV22,
   RpcOpts
 }
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -36,6 +41,38 @@ class MiningRpcTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       blocks <- client.generate(3)
     } yield assert(blocks.length == 3)
+  }
+
+  it should "be able to generate a block" in {
+    for {
+      (client, _) <- clientsF
+      address <- client.getNewAddress
+      unspent <- client.listUnspent
+      changeAddress <- client.getRawChangeAddress
+      rawTx <- {
+        val output =
+          unspent.find(output => output.amount.toBigDecimal > 1).get
+        val input =
+          TransactionInput(
+            TransactionOutPoint(output.txid.flip, UInt32(output.vout)),
+            ScriptSignature.empty,
+            UInt32.max - UInt32(2))
+        val inputs = Vector(input)
+
+        val outputs =
+          Map(address -> Bitcoins(0.5),
+              changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55))
+
+        client.createRawTransaction(inputs, outputs)
+      }
+      stx <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
+      address2 <- client.getNewAddress
+      block <- client.generateBlock(address2, Vector(stx.hex))
+      tx <- client.getRawTransaction(stx.hex.txIdBE, Some(block))
+    } yield {
+      assert(block != DoubleSha256DigestBE.empty)
+      assert(tx.hex == stx.hex)
+    }
   }
 
   it should "be able to get the mining info" in {
