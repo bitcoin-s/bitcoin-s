@@ -21,7 +21,7 @@ object Deps {
       "3.2.12.0-RC2" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "2.0.5"
     val spray = "1.3.6"
-    val zeromq = "0.5.2"
+    val zeromq = "0.5.3"
     val scalapb = "0.11.12"
     val akkav = "10.2.10"
     val playv = "2.9.3" //https://github.com/playframework/play-json/releases
