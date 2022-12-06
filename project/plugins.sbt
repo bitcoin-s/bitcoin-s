@@ -11,7 +11,7 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.6")
 
 // report code coverage to Coveralls
 //https://github.com/scoverage/sbt-coveralls
-addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.2")
+addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.3")
 
 // sbt plugin to unify scaladoc/javadoc across multiple projects
 //https://github.com/sbt/sbt-unidoc
