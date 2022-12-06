@@ -68,7 +68,7 @@ object Deps {
     val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.1.0"
-    val sttpV = "3.8.3" // https://github.com/softwaremill/sttp
+    val sttpV = "3.8.5" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.9"
     val scalaJsTimeV = "2.5.0"
     val zxingV = "3.5.0"
