@@ -44,7 +44,7 @@ object Deps {
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
-    val scalaCollectionCompatV = "2.8.1"
+    val scalaCollectionCompatV = "2.9.0"
     val pgEmbeddedV = "1.0.1"
 
     val breezeV = "1.3"
