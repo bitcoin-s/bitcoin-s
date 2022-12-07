@@ -12,22 +12,22 @@ object DescriptorType extends StringFactory[DescriptorType] {
 
   case object PK extends DescriptorType {
     override val scriptType = ScriptType.PUBKEY
-    override def toString: String = "pk"
+    override val toString: String = "pk"
   }
 
   case object PKH extends DescriptorType {
     override val scriptType = ScriptType.PUBKEYHASH
-    override def toString: String = "pkh"
+    override val toString: String = "pkh"
   }
 
   case object SH extends DescriptorType {
     override val scriptType = ScriptType.SCRIPTHASH
-    override def toString: String = "sh"
+    override val toString: String = "sh"
   }
 
   case object WPKH extends DescriptorType {
     override val scriptType = ScriptType.WITNESS_V0_KEYHASH
-    override def toString: String = "wpkh"
+    override val toString: String = "wpkh"
   }
 
   case object WSH extends DescriptorType {
@@ -61,7 +61,7 @@ object DescriptorType extends StringFactory[DescriptorType] {
   )
 
   override def fromStringOpt(string: String): Option[DescriptorType] = {
-    all.find(_.toString.toLowerCase == string.toLowerCase)
+    all.find(d => string.startsWith(d.toString))
   }
 
   override def fromString(string: String): DescriptorType = {
