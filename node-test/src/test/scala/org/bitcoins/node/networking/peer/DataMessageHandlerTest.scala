@@ -38,14 +38,18 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
       val senderF = node.peerMsgSenders(0)
       for {
         chainApi <- node.chainApiFromDb()
-        dataMessageHandler = DataMessageHandler(chainApi,
-                                                None,
-                                                node,
-                                                HeaderSync,
-                                                syncPeer = Some(peer))(
-          node.executionContext,
-          node.nodeAppConfig,
-          node.chainConfig)
+        dataMessageHandler = DataMessageHandler(
+          chainApi = chainApi,
+          walletCreationTimeOpt = None,
+          node = node,
+          state = HeaderSync,
+          initialSyncDone = None,
+          currentFilterBatch = Vector.empty,
+          filterHeaderHeightOpt = None,
+          filterHeightOpt = None,
+          syncing = true,
+          syncPeer = Some(peer)
+        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
         invalidPayload =
@@ -86,13 +90,18 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi,
-                             None,
-                             node,
-                             HeaderSync,
-                             syncPeer = Some(peer))(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(
+            chainApi = genesisChainApi,
+            walletCreationTimeOpt = None,
+            node = node,
+            state = HeaderSync,
+            initialSyncDone = None,
+            currentFilterBatch = Vector.empty,
+            filterHeaderHeightOpt = None,
+            filterHeightOpt = None,
+            syncing = true,
+            syncPeer = Some(peer)
+          )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
@@ -126,13 +135,18 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         _ = node.nodeAppConfig.addCallbacks(callbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi,
-                             None,
-                             node,
-                             HeaderSync,
-                             syncPeer = Some(peer))(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(
+            chainApi = genesisChainApi,
+            walletCreationTimeOpt = None,
+            node = node,
+            state = HeaderSync,
+            initialSyncDone = None,
+            currentFilterBatch = Vector.empty,
+            filterHeaderHeightOpt = None,
+            filterHeightOpt = None,
+            syncing = true,
+            syncPeer = Some(peer)
+          )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
@@ -164,13 +178,18 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi,
-                             None,
-                             node,
-                             HeaderSync,
-                             syncPeer = Some(peer))(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(
+            chainApi = genesisChainApi,
+            walletCreationTimeOpt = None,
+            node = node,
+            state = HeaderSync,
+            initialSyncDone = None,
+            currentFilterBatch = Vector.empty,
+            filterHeaderHeightOpt = None,
+            filterHeightOpt = None,
+            syncing = true,
+            syncPeer = Some(peer)
+          )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
@@ -203,13 +222,18 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi,
-                             None,
-                             node,
-                             HeaderSync,
-                             syncPeer = Some(peer))(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(
+            chainApi = genesisChainApi,
+            walletCreationTimeOpt = None,
+            node = node,
+            state = HeaderSync,
+            initialSyncDone = None,
+            currentFilterBatch = Vector.empty,
+            filterHeaderHeightOpt = None,
+            filterHeightOpt = None,
+            syncing = true,
+            syncPeer = Some(peer)
+          )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
