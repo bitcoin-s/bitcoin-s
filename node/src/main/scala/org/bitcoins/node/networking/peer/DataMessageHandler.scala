@@ -37,7 +37,7 @@ case class DataMessageHandler(
     filterHeaderHeightOpt: Option[Int],
     filterHeightOpt: Option[Int],
     syncing: Boolean,
-    syncPeer: Option[Peer] = None)(implicit
+    syncPeer: Option[Peer])(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
