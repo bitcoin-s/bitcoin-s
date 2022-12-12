@@ -125,7 +125,7 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi)
         }
       case filterHeader: CompactFilterHeadersMessage =>
-        logger.debug(
+        logger.info(
           s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = filterHeader.filterHeaders
         for {
@@ -172,7 +172,7 @@ case class DataMessageHandler(
                     syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.debug(s"Received ${filter.commandName}, $filter")
+        logger.info(s"Received ${filter.commandName}, $filter")
         val batchSizeFull: Boolean =
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
@@ -339,7 +339,7 @@ case class DataMessageHandler(
                   }
 
                 } else {
-                  logger.debug(
+                  logger.info(
                     List(s"Received headers=${count.toInt} in one message,",
                          "which is less than max. This means we are synced,",
                          s"not requesting more. state=$state")
@@ -399,6 +399,8 @@ case class DataMessageHandler(
 
                     case PostHeaderSync =>
                       //send further requests to the same one that sent this
+                      logger.info(
+                        s"!syncing=${!syncing} filterHeaderHeightOpt=${filterHeaderHeightOpt.isEmpty} filterHeight=${filterHeightOpt}")
                       if (
                         !syncing ||
                         (filterHeaderHeightOpt.isEmpty &&
@@ -662,6 +664,7 @@ case class DataMessageHandler(
       bestFilterHeaderOpt <-
         chainApi
           .getBestFilterHeader()
+      filterCount <- chainApi.getFilterCount()
       blockHash = bestFilterHeaderOpt match {
         case Some(filterHeaderDb) =>
           filterHeaderDb.blockHashBE
@@ -678,7 +681,7 @@ case class DataMessageHandler(
             .map(_ => true)
         case None =>
           sys.error(
-            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt")
+            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt filterCount=$filterCount")
       }
     } yield res
   }

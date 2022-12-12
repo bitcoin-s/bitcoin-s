@@ -51,7 +51,7 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
     <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="WARN"/>
@@ -60,10 +60,10 @@
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
     <!-- See exceptions thrown in actor-->
-    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->

@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.SigNet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
@@ -17,6 +18,7 @@ import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoindV22
 import org.bitcoins.testkit.tor.CachedTor
 import org.scalatest.FutureOutcome
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
 class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
@@ -87,10 +89,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
-
+        chainApi <- node.chainApiFromDb()
         dataMessageHandler =
           DataMessageHandler(
-            chainApi = genesisChainApi,
+            chainApi = chainApi,
             walletCreationTimeOpt = None,
             node = node,
             state = HeaderSync,
@@ -132,9 +134,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
 
         _ = node.nodeAppConfig.addCallbacks(callbacks)
+        chainApi <- node.chainApiFromDb()
         dataMessageHandler =
           DataMessageHandler(
-            chainApi = genesisChainApi,
+            chainApi = chainApi,
             walletCreationTimeOpt = None,
             node = node,
             state = HeaderSync,
@@ -145,9 +148,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
-        _ = logger.info(s"handling data payload")
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
-        _ = logger.info(s"done handling data payload")
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
@@ -155,7 +156,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   it must "verify OnCompactFilterReceived callbacks are executed" in {
     param: FixtureParam =>
       val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
-      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
@@ -166,30 +166,13 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             ()
           }
       }
-      val senderF = node.peerMsgSenders(0)
+      val nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
+      val _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
       for {
+        _ <- AsyncUtil.nonBlockingSleep(2.seconds)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
+        _ <- node.sync()
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
-
-        payload =
-          CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
-
-        nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
-        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
-        dataMessageHandler =
-          DataMessageHandler(
-            chainApi = genesisChainApi,
-            walletCreationTimeOpt = None,
-            node = node,
-            state = HeaderSync,
-            initialSyncDone = None,
-            currentFilterBatch = Vector.empty,
-            filterHeaderHeightOpt = None,
-            filterHeightOpt = None,
-            syncPeer = Some(peer)
-          )(node.executionContext, node.nodeAppConfig, node.chainConfig)
-        sender <- senderF
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
   }
@@ -218,10 +201,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         nodeCallbacks = NodeCallbacks.onTxReceived(callback)
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
-
+        chainApi <- node.chainApiFromDb()
         dataMessageHandler =
           DataMessageHandler(
-            chainApi = genesisChainApi,
+            chainApi = chainApi,
             walletCreationTimeOpt = None,
             node = node,
             state = HeaderSync,
