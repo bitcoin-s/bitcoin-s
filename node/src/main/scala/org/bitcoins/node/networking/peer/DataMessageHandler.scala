@@ -107,7 +107,7 @@ case class DataMessageHandler(
                   peerMsgSender,
                   startHeightOpt).map { synced =>
                   if (!synced) logger.info("We are synced")
-                  syncing
+                  synced
                 }
               } yield (syncing, startHeightOpt)
             }
