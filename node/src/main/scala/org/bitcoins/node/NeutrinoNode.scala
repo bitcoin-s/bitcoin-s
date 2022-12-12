@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -23,7 +22,7 @@ import org.bitcoins.node.networking.peer.{
 }
 
 import java.time.Instant
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Future}
 
 case class NeutrinoNode(
     chainApi: ChainApi,
@@ -51,11 +50,10 @@ case class NeutrinoNode(
       walletCreationTimeOpt = walletCreationTimeOpt,
       node = this,
       state = HeaderSync,
-      initialSyncDone = Some(Promise[Done]()),
+      initialSyncDone = None,
       currentFilterBatch = Vector.empty,
       filterHeaderHeightOpt = None,
       filterHeightOpt = None,
-      syncing = false,
       syncPeer = None
     )
   }

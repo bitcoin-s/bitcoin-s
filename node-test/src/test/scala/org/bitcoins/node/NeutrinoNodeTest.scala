@@ -224,7 +224,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
       //at this point so no actual syncing is happening
       val initSyncF = gen1F.flatMap { hashes =>
+        logger.info(s"bitcoin generate hash=$hashes")
         for {
+          _ <- AsyncUtil.nonBlockingSleep(5.second)
           _ <- NodeTestUtil.awaitBestHash(hashes.head, node)
         } yield ()
       }

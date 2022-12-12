@@ -36,7 +36,6 @@ case class DataMessageHandler(
     currentFilterBatch: Vector[CompactFilterMessage],
     filterHeaderHeightOpt: Option[Int],
     filterHeightOpt: Option[Int],
-    syncing: Boolean,
     syncPeer: Option[Peer])(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -47,13 +46,13 @@ case class DataMessageHandler(
           "DataMessageHandler is meant to be used with NeutrinoNode")
 
   private val txDAO = BroadcastAbleTransactionDAO()
+  private val syncing: Boolean = syncPeer.isDefined
 
   def reset: DataMessageHandler = copy(initialSyncDone = None,
                                        currentFilterBatch = Vector.empty,
                                        filterHeaderHeightOpt = None,
                                        filterHeightOpt = None,
                                        syncPeer = None,
-                                       syncing = false,
                                        state = HeaderSync)
 
   def manager: PeerManager = node.peerManager
@@ -162,10 +161,15 @@ case class DataMessageHandler(
           }
           newChainApi <- newChainApi.setSyncing(newSyncing)
         } yield {
+          val syncPeerOpt = if (newSyncing) {
+            syncPeer
+          } else {
+            None
+          }
           this.copy(chainApi = newChainApi,
-                    syncing = newSyncing,
                     filterHeaderHeightOpt = Some(newFilterHeaderHeight),
-                    filterHeightOpt = startFilterHeightOpt)
+                    filterHeightOpt = startFilterHeightOpt,
+                    syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
@@ -217,12 +221,17 @@ case class DataMessageHandler(
           newChainApi <- newChainApi.setSyncing(newSyncing2)
           _ <- checkIBD(newChainApi)
         } yield {
+          val syncPeerOpt = if (newSyncing2) {
+            syncPeer
+          } else {
+            None
+          }
           this.copy(
             chainApi = newChainApi,
             currentFilterBatch = newBatch,
-            syncing = newSyncing2,
             filterHeaderHeightOpt = Some(newFilterHeaderHeight),
-            filterHeightOpt = Some(newFilterHeight)
+            filterHeightOpt = Some(newFilterHeight),
+            syncPeer = syncPeerOpt
           )
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
@@ -317,9 +326,12 @@ case class DataMessageHandler(
                         _ <- Future.sequence(removeFs)
                         newSyncing <- askF
                       } yield {
-                        newDmh.copy(syncing = newSyncing,
-                                    state = HeaderSync,
-                                    syncPeer = newSyncPeer)
+                        val syncPeerOpt = if (newSyncing) {
+                          newSyncPeer
+                        } else {
+                          None
+                        }
+                        newDmh.copy(state = HeaderSync, syncPeer = syncPeerOpt)
                       }
 
                     case _: DataMessageHandlerState =>
@@ -397,7 +409,12 @@ case class DataMessageHandler(
                         val newSyncingF =
                           sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                         newSyncingF.map { newSyncing =>
-                          newDmh.copy(syncing = newSyncing)
+                          val syncPeerOpt = if (newSyncing) {
+                            syncPeer
+                          } else {
+                            None
+                          }
+                          newDmh.copy(syncPeer = syncPeerOpt)
                         }
                       } else {
                         Try(initialSyncDone.map(_.success(Done)))
@@ -597,7 +614,14 @@ case class DataMessageHandler(
         _ = logger.info(s"Now syncing filters from $peer")
         sender <- manager.peerData(peer).peerMessageSender
         newSyncing <- sendFirstGetCompactFilterHeadersCommand(sender)
-      } yield newDmh.copy(syncing = newSyncing)
+      } yield {
+        val syncPeerOpt = if (newSyncing) {
+          Some(peer)
+        } else {
+          None
+        }
+        newDmh.copy(syncPeer = syncPeerOpt)
+      }
 
     } else {
       Try(initialSyncDone.map(_.success(Done)))
@@ -654,7 +678,7 @@ case class DataMessageHandler(
             .map(_ => true)
         case None =>
           sys.error(
-            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted")
+            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt")
       }
     } yield res
   }

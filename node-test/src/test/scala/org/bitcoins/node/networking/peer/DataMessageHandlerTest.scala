@@ -47,7 +47,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           currentFilterBatch = Vector.empty,
           filterHeaderHeightOpt = None,
           filterHeightOpt = None,
-          syncing = true,
           syncPeer = Some(peer)
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
@@ -99,7 +98,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             currentFilterBatch = Vector.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
-            syncing = true,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
@@ -144,11 +142,12 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             currentFilterBatch = Vector.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
-            syncing = true,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
+        _ = logger.info(s"handling data payload")
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
+        _ = logger.info(s"done handling data payload")
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
@@ -187,7 +186,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             currentFilterBatch = Vector.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
-            syncing = true,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
@@ -231,7 +229,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             currentFilterBatch = Vector.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
-            syncing = true,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF

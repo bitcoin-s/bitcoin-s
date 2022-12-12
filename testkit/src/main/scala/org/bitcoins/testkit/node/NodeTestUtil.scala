@@ -174,7 +174,11 @@ abstract class NodeTestUtil extends P2PLogger {
     def bestHashF: Future[DoubleSha256DigestBE] = {
       node.chainApiFromDb().flatMap(_.getBestBlockHash())
     }
-    TestAsyncUtil.retryUntilSatisfiedF(() => bestHashF.map(_ == hash))
+    TestAsyncUtil.retryUntilSatisfiedF(() =>
+      bestHashF.map { case bestHash =>
+        logger.info(s"bitcoindHash=$hash bitcoinSHash=$bestHash")
+        bestHash == hash
+      })
   }
 
   /** Awaits header, filter header and filter sync between the neutrino node and rpc client */
