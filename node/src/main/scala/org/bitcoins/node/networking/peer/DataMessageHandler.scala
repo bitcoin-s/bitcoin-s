@@ -162,15 +162,10 @@ case class DataMessageHandler(
           }
           newChainApi <- newChainApi.setSyncing(newSyncing)
         } yield {
-          val syncPeerOpt = if (newSyncing) {
-            syncPeer
-          } else {
-            None
-          }
           this.copy(chainApi = newChainApi,
+                    syncing = newSyncing,
                     filterHeaderHeightOpt = Some(newFilterHeaderHeight),
-                    filterHeightOpt = startFilterHeightOpt,
-                    syncPeer = syncPeerOpt)
+                    filterHeightOpt = startFilterHeightOpt)
         }
       case filter: CompactFilterMessage =>
         logger.trace(s"Received ${filter.commandName}, $filter")
@@ -222,17 +217,12 @@ case class DataMessageHandler(
           newChainApi <- newChainApi.setSyncing(newSyncing2)
           _ <- checkIBD(newChainApi)
         } yield {
-          val syncPeerOpt = if (newSyncing2) {
-            syncPeer
-          } else {
-            None
-          }
           this.copy(
             chainApi = newChainApi,
             currentFilterBatch = newBatch,
+            syncing = newSyncing2,
             filterHeaderHeightOpt = Some(newFilterHeaderHeight),
-            filterHeightOpt = Some(newFilterHeight),
-            syncPeer = syncPeerOpt
+            filterHeightOpt = Some(newFilterHeight)
           )
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
@@ -327,12 +317,9 @@ case class DataMessageHandler(
                         _ <- Future.sequence(removeFs)
                         newSyncing <- askF
                       } yield {
-                        val syncPeerOpt = if (newSyncing) {
-                          newSyncPeer
-                        } else {
-                          None
-                        }
-                        newDmh.copy(state = HeaderSync, syncPeer = syncPeerOpt)
+                        newDmh.copy(syncing = newSyncing,
+                                    state = HeaderSync,
+                                    syncPeer = newSyncPeer)
                       }
 
                     case _: DataMessageHandlerState =>
@@ -400,8 +387,6 @@ case class DataMessageHandler(
 
                     case PostHeaderSync =>
                       //send further requests to the same one that sent this
-                      logger.info(
-                        s"!syncing=${!syncing} filterHeaderHeightOpt=${filterHeaderHeightOpt.isEmpty} filterHeight=${filterHeightOpt}")
                       if (
                         !syncing ||
                         (filterHeaderHeightOpt.isEmpty &&
@@ -412,12 +397,7 @@ case class DataMessageHandler(
                         val newSyncingF =
                           sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                         newSyncingF.map { newSyncing =>
-                          val syncPeerOpt = if (newSyncing) {
-                            syncPeer
-                          } else {
-                            None
-                          }
-                          newDmh.copy(syncPeer = syncPeerOpt)
+                          newDmh.copy(syncing = newSyncing)
                         }
                       } else {
                         Try(initialSyncDone.map(_.success(Done)))
