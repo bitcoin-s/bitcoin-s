@@ -196,6 +196,8 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
+  /** @return a flag indicating if we are syncing or not
+    */
   private[node] def sendNextGetCompactFilterCommand(
       chainApi: ChainApi,
       filterBatchSize: Int,

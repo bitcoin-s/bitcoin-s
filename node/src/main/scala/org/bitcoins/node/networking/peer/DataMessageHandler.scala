@@ -105,8 +105,8 @@ case class DataMessageHandler(
                   s"Done syncing filter headers, beginning to sync filters from startHeightOpt=$startHeightOpt")
                 syncing <- sendFirstGetCompactFilterCommand(
                   peerMsgSender,
-                  startHeightOpt).map { synced =>
-                  if (!synced) logger.info("We are synced")
+                  startHeightOpt).map { syncing =>
+                  if (!syncing) logger.info("We are synced")
                   syncing
                 }
               } yield (syncing, startHeightOpt)
