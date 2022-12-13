@@ -126,7 +126,7 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi)
         }
       case filterHeader: CompactFilterHeadersMessage =>
-        logger.info(
+        logger.debug(
           s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = filterHeader.filterHeaders
         for {
@@ -168,7 +168,7 @@ case class DataMessageHandler(
                     filterHeightOpt = startFilterHeightOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.trace(s"Received ${filter.commandName}, $filter")
+        logger.debug(s"Received ${filter.commandName}, $filter")
         val batchSizeFull: Boolean =
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
@@ -327,7 +327,7 @@ case class DataMessageHandler(
                   }
 
                 } else {
-                  logger.info(
+                  logger.debug(
                     List(s"Received headers=${count.toInt} in one message,",
                          "which is less than max. This means we are synced,",
                          s"not requesting more. state=$state")
