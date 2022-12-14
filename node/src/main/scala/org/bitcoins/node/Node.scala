@@ -193,7 +193,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   /** Helper method to download blocks.
     * If our node is in IBD, we will only download only from our peer we are doing IBD with.
-    * If we are not in IBD, we will download from a random peer. */
+    * If we are not in IBD, we will download from a random peer.
+    */
   private def downloadBlocksBasedOnIBD(
       isIBD: Boolean,
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
