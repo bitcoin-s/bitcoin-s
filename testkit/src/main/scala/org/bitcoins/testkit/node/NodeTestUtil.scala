@@ -135,6 +135,8 @@ abstract class NodeTestUtil extends P2PLogger {
     }
   }
 
+  private val syncTries: Int = 15
+
   /** Awaits sync between the given node and bitcoind client */
   def awaitSync(node: Node, rpc: BitcoindRpcClient)(implicit
       sys: ActorSystem): Future[Unit] = {
@@ -142,7 +144,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
                             1.second,
-                            maxTries = 200)
+                            maxTries = syncTries)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -152,7 +154,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeaderHeight(node, rpc),
                             1.second,
-                            maxTries = 200)
+                            maxTries = syncTries)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -162,7 +164,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeight(node, rpc),
                             1.second,
-                            maxTries = 200)
+                            maxTries = syncTries)
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */
