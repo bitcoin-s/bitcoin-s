@@ -172,7 +172,7 @@ case class DataMessageHandler(
                     syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.info(s"Received ${filter.commandName}, $filter")
+        logger.debug(s"Received ${filter.commandName}, $filter")
         val batchSizeFull: Boolean =
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {

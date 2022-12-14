@@ -171,7 +171,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
       for {
         _ <- AsyncUtil.nonBlockingSleep(2.seconds)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
-        _ <- node.sync()
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
