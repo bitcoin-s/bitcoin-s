@@ -183,6 +183,22 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
+      for {
+        chainApi <- chainApiFromDb()
+        isIBD <- chainApi.isIBD()
+        _ <- downloadBlocksBasedOnIBD(isIBD, blockHashes)
+      } yield ()
+    }
+  }
+
+  /** Helper method to download blocks.
+    * If our node is in IBD, we will only download only from our peer we are doing IBD with.
+    * If we are not in IBD, we will download from a random peer.
+    */
+  private def downloadBlocksBasedOnIBD(
+      isIBD: Boolean,
+      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+    if (isIBD) {
       val syncPeerOpt = getDataMessageHandler.syncPeer
       syncPeerOpt match {
         case Some(peer) =>
@@ -195,6 +211,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           throw new RuntimeException(
             "IBD not started yet. Cannot query for blocks.")
       }
+    } else {
+      val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(
+        ServiceIdentifier.NODE_NETWORK)
+      peerMsgSenderF.flatMap(
+        _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
     }
   }
 
