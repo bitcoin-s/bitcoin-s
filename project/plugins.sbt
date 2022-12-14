@@ -27,7 +27,7 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 
 // bloop is a build server, enabling faster builds and more rapid dev feedback
 //https://github.com/scalacenter/bloop
-addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.5.4")
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.5.6")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
