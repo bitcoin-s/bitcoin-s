@@ -400,29 +400,17 @@ case class DataMessageHandler(
                     case PostHeaderSync =>
                       //send further requests to the same one that sent this
                       logger.info(
-                        s"!syncing=${!syncing} filterHeaderHeightOpt=${filterHeaderHeightOpt.isEmpty} filterHeight=${filterHeightOpt}")
-                      if (
-                        !syncing ||
-                        (filterHeaderHeightOpt.isEmpty &&
-                          filterHeightOpt.isEmpty)
-                      ) {
-                        logger.info(
-                          s"Starting to fetch filter headers in data message handler")
-                        val newSyncingF =
-                          sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
-                        newSyncingF.map { newSyncing =>
-                          val syncPeerOpt = if (newSyncing) {
-                            syncPeer
-                          } else {
-                            None
-                          }
-                          newDmh.copy(syncPeer = syncPeerOpt)
+                        s"Starting to fetch filter headers in data message handler")
+                      val newSyncingF =
+                        sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                      newSyncingF.map { newSyncing =>
+                        val syncPeerOpt = if (newSyncing) {
+                          syncPeer
+                        } else {
+                          None
                         }
-                      } else {
-                        Try(initialSyncDone.map(_.success(Done)))
-                        Future.successful(newDmh)
+                        newDmh.copy(syncPeer = syncPeerOpt)
                       }
-
                   }
                 }
               } else {
