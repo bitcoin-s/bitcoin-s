@@ -115,13 +115,13 @@ println(<span class="hljs-string">s"Verified with NativeSecp256k1 again=<span cl
 <span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKey)</span>
 <span class="hljs-comment">// calls bouncy castle indirectly via CryptoContext</span>
 <span class="hljs-keyword">val</span> publicKey = privKey.publicKey
-<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(02e280ee6e8bd00c1ed9dfefecbd6efa3e59a42d54876c56bce67eae75accd7b6a)</span>
+<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(03871bff781f371c8a02497dba36d00786e3e052c30debe2d3a1aea9ffa1bf3e86)</span>
 <span class="hljs-keyword">val</span> dataToSign = <span class="hljs-type">DoubleSha256Digest</span>.empty
 <span class="hljs-comment">// dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)</span>
 
 <span class="hljs-comment">// calls bouncy castle indirectly via CryptoContext</span>
 <span class="hljs-keyword">val</span> signature = privKey.sign(dataToSign.bytes)
-<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3045022100dec3962a32df5ad3db3eeba30ab046cbfcd07efcdbcbaed970c9cc2009460c270220418073ef60668882ba391188c1878ace505bab8f9e683cb7f5c8ab50926c0db9)</span>
+<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(3045022100fe926ff01d8d15578d6657d6804a20a62afa5d2f394ffb89572db544b2a49d8a022007e2ebd4e9e25d4101191ceeddec901674c5ed50005c310259e192ef98dbca12)</span>
 
 <span class="hljs-comment">// calls bouncy castle indirectly via CryptoContext</span>
 <span class="hljs-keyword">val</span> verified = publicKey.verify(dataToSign.bytes, signature)
