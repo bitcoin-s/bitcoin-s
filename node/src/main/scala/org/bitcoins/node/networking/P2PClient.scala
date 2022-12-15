@@ -389,6 +389,7 @@ case class P2PClientActor(
           s"An error occurred in our connection with $peer, cause=$cause state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv =
           Await.result(currentPeerMsgHandlerRecv.disconnect(), timeout)
+        context.stop(self)
         unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
@@ -396,6 +397,8 @@ case class P2PClientActor(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv =
           Await.result(currentPeerMsgHandlerRecv.disconnect(), timeout)
+
+        context.stop(self)
         unalignedBytes
 
       case Tcp.Received(byteString: ByteString) =>
