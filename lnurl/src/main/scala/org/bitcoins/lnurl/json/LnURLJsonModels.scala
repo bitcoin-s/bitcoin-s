@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.lnurl.json.LnURLTag._
 import play.api.libs.json._
 import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.protocol.ln.LnInvoice
 
 import java.net._
@@ -22,6 +23,9 @@ object LnURLJsonModels {
 
   implicit val LnURLStatusReads: Reads[LnURLStatus] = Json.reads[LnURLStatus]
 
+  implicit val LnURLStatusWrites: OWrites[LnURLStatus] =
+    Json.writes[LnURLStatus]
+
   case class LnURLSuccessAction(
       tag: SuccessActionTag,
       message: Option[String],
@@ -32,6 +36,9 @@ object LnURLJsonModels {
 
   implicit val LnURLSuccessActionReads: Reads[LnURLSuccessAction] =
     Json.reads[LnURLSuccessAction]
+
+  implicit val LnURLSuccessActionWrites: OWrites[LnURLSuccessAction] =
+    Json.writes[LnURLSuccessAction]
 
   case class LnURLPayResponse(
       callback: URL,
@@ -46,6 +53,10 @@ object LnURLJsonModels {
   implicit val LnURLPayResponseReads: Reads[LnURLPayResponse] =
     Json.reads[LnURLPayResponse]
 
+  implicit val LnURLPayResponseWrites: OWrites[LnURLPayResponse] = { o =>
+    Json.writes[LnURLPayResponse].writes(o) ++ Json.obj("tag" -> "payRequest")
+  }
+
   case class LnURLPayInvoice(
       pr: LnInvoice,
       successAction: Option[LnURLSuccessAction])
@@ -53,6 +64,11 @@ object LnURLJsonModels {
 
   implicit val LnURLPayInvoiceReads: Reads[LnURLPayInvoice] =
     Json.reads[LnURLPayInvoice]
+
+  implicit val LnURLPayInvoiceWrites: OWrites[LnURLPayInvoice] = { o =>
+    Json.writes[LnURLPayInvoice].writes(o) ++ Json.obj(
+      "routes" -> JsArray.empty)
+  }
 
   case class LnURLWithdrawResponse(
       callback: URL,
@@ -66,6 +82,12 @@ object LnURLJsonModels {
 
   implicit val LnURLWithdrawResponseReads: Reads[LnURLWithdrawResponse] =
     Json.reads[LnURLWithdrawResponse]
+
+  implicit val LnURLWithdrawResponseWrites: OWrites[LnURLWithdrawResponse] = {
+    o =>
+      Json.writes[LnURLWithdrawResponse].writes(o) ++ Json.obj(
+        "tag" -> "withdrawRequest")
+  }
 
   implicit val LnURLResponseReads: Reads[LnURLResponse] = {
     case other @ (JsNull | _: JsBoolean | JsNumber(_) | JsString(_) | JsArray(
