@@ -16,12 +16,15 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
+import java.net.URL
 import scala.collection.mutable
 
 // for mapWrites below
 import scala.language.implicitConversions
 
 object JsonWriters {
+
+  implicit val urlWrites: Writes[URL] = (url: URL) => JsString(url.toString)
 
   implicit object HashTypeWrites extends Writes[HashType] {
 
