@@ -82,12 +82,17 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ = client.actor ! expectHeaders
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)
-        //should now sync from bitcoinds(1)
+        _ = logger.info(s"Disconnected $nodeUri from bitcoind")
+        //old peer we were syncing with that just disconnected us
+        oldSyncPeer = node.getDataMessageHandler.syncPeer.get
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
-        newSyncPeer = node.getDataMessageHandler.syncPeer.get
-        peer2 = bitcoindPeers(1)
+        expectedSyncPeer = bitcoindPeers(1)
       } yield {
-        assert(newSyncPeer == peer2)
+        //can't check the peer directly because we reset
+        //dataMessageSyncPeer = None when done syncing.
+        //awaitAllSync requires us to be done syncing before
+        //continuing code execution
+        assert(oldSyncPeer != expectedSyncPeer)
       }
   }
 

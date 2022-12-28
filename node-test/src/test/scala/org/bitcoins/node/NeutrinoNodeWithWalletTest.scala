@@ -234,7 +234,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         _ <- bitcoind.sendToAddress(receiveAddr, sendAmt)
         //generate a block to confirm the tx
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
-        _ <- AkkaUtil.nonBlockingSleep(3.seconds)
         //restart the node now that we have received funds
         startedNode <- stoppedNode.start()
         _ <- startedNode.sync()

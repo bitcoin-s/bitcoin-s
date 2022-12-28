@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -23,7 +22,8 @@ import org.bitcoins.node.networking.peer.{
 }
 
 import java.time.Instant
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 case class NeutrinoNode(
     chainApi: ChainApi,
@@ -46,18 +46,35 @@ case class NeutrinoNode(
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
   private var dataMessageHandler: DataMessageHandler = {
-    DataMessageHandler(
-      chainApi = chainApi,
-      walletCreationTimeOpt = walletCreationTimeOpt,
-      node = this,
-      state = HeaderSync,
-      initialSyncDone = Some(Promise[Done]()),
-      currentFilterBatch = Vector.empty,
-      filterHeaderHeightOpt = None,
-      filterHeightOpt = None,
-      syncing = false,
-      syncPeer = None
-    )
+    val result = for {
+      chainApi <- chainApiFromDb()
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
+      filterCount <- chainApi.getFilterCount()
+    } yield {
+      val filterHeaderCountOpt = if (filterHeaderCount == 0) {
+        None
+      } else {
+        Some(filterHeaderCount)
+      }
+      val filterCountOpt = if (filterCount == 0) {
+        None
+      } else {
+        Some(filterCount)
+      }
+      DataMessageHandler(
+        chainApi = chainApi,
+        walletCreationTimeOpt = walletCreationTimeOpt,
+        node = this,
+        state = HeaderSync,
+        initialSyncDone = None,
+        currentFilterBatch = Vector.empty,
+        filterHeaderHeightOpt = filterHeaderCountOpt,
+        filterHeightOpt = filterCountOpt,
+        syncPeer = None
+      )
+    }
+
+    Await.result(result, 10.seconds)
   }
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler

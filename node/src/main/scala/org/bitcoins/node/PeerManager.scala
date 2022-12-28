@@ -306,7 +306,7 @@ case class PeerManager(
     assert(!finder.hasPeer(peer) || !peerData.contains(peer),
            s"$peer cannot be both a test and a persistent peer")
 
-    logger.debug(s"Client stopped for $peer")
+    logger.info(s"Client stopped for $peer")
 
     if (finder.hasPeer(peer)) {
       //client actor for one of the test peers stopped, can remove it from map now
@@ -317,9 +317,10 @@ case class PeerManager(
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerData.remove(peer)
       val syncPeer = node.getDataMessageHandler.syncPeer
-      if (syncPeer.isDefined && syncPeer.get == peer)
+      if (syncPeer.isDefined && syncPeer.get == peer) {
+
         syncFromNewPeer().map(_ => ())
-      else Future.unit
+      } else Future.unit
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
       _waitingForDeletion.remove(peer)
@@ -380,7 +381,7 @@ case class PeerManager(
   }
 
   def syncFromNewPeer(): Future[DataMessageHandler] = {
-    logger.debug(s"Trying to sync from new peer")
+    logger.info(s"Trying to sync from new peer")
     val newNode =
       node.updateDataMessageHandler(node.getDataMessageHandler.reset)
     newNode.sync().map(_ => node.getDataMessageHandler)
