@@ -176,7 +176,6 @@ abstract class NodeTestUtil extends P2PLogger {
     }
     TestAsyncUtil.retryUntilSatisfiedF(() =>
       bestHashF.map { case bestHash =>
-        logger.info(s"bitcoindHash=$hash bitcoinSHash=$bestHash")
         bestHash == hash
       })
   }

@@ -65,6 +65,10 @@ case class DataMessageHandler(
     manager.dataMessageStream.offer(msg).map(_ => ())
   }
 
+  private def isChainIBD: Future[Boolean] = {
+    chainApi.isIBD()
+  }
+
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender,
@@ -472,19 +476,23 @@ case class DataMessageHandler(
                 val headersMessage =
                   HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
                 for {
+                  isIBD <- isChainIBD
                   newMsgHandler <- {
                     // if in IBD, do not process this header, just execute callbacks
-                    if (
-                      initialSyncDone.isDefined && initialSyncDone.get.isCompleted
-                    ) handleDataPayload(headersMessage, peerMsgSender, peer)
-                    else {
+                    if (!isIBD) {
+                      handleDataPayload(payload = headersMessage,
+                                        peerMsgSender = peerMsgSender,
+                                        peer = peer)
+                    } else {
                       appConfig.callBacks
                         .executeOnBlockHeadersReceivedCallbacks(
                           Vector(block.blockHeader))
                         .map(_ => this)
                     }
                   }
-                } yield newMsgHandler
+                } yield {
+                  newMsgHandler
+                }
               } else Future.successful(this)
             }
         }
