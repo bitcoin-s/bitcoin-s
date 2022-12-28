@@ -6,6 +6,8 @@ import play.api.libs.json._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 import java.net._
 
@@ -48,6 +50,9 @@ object LnURLJsonModels {
       extends LnURLResponse {
     override val tag: LnURLTag = PayRequest
     lazy val metadataJs: JsValue = Json.parse(metadata)
+
+    lazy val metadataHash: Sha256Digest =
+      CryptoUtil.sha256(ByteVector(metadata.getBytes))
   }
 
   implicit val LnURLPayResponseReads: Reads[LnURLPayResponse] =

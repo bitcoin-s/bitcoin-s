@@ -30,6 +30,7 @@ class LnURLClientTest extends BitcoinSAsyncTest {
         val amt = pay.minSendable.toLnCurrencyUnit
         client.getInvoice(pay, amt).map { inv =>
           assert(inv.amount.contains(amt))
+          assert(inv.lnTags.descriptionHash.exists(_.hash == pay.metadataHash))
         }
       case _: LnURLWithdrawResponse =>
         fail("Incorrect response parsed")
