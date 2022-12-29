@@ -138,13 +138,9 @@ abstract class NodeTestUtil extends P2PLogger {
   private val syncTries: Int = 15
 
   /** Awaits sync between the given node and bitcoind client */
-  def awaitSync(node: Node, rpc: BitcoindRpcClient)(implicit
+  def awaitSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(implicit
       sys: ActorSystem): Future[Unit] = {
-    import sys.dispatcher
-    TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
-                            1.second,
-                            maxTries = syncTries)
+    awaitAllSync(node, rpc)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -185,7 +181,8 @@ abstract class NodeTestUtil extends P2PLogger {
       system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     for {
-      _ <- NodeTestUtil.awaitSync(node, bitcoind)
+      bitcoindBestHash <- bitcoind.getBestBlockHash
+      _ <- NodeTestUtil.awaitBestHash(bitcoindBestHash, node)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
     } yield ()
