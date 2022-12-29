@@ -273,7 +273,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       }
   }
 
-  it must "sync compact filter headers / compact filters when block headers are fully synced" in {
+  it must "start syncing compact filter headers / compact filters when block header is seen" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/4933
       val node = nodeConnectedWithBitcoind.node
@@ -286,9 +286,13 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- CompactFilterHeaderDAO()(executionContext, node.chainConfig)
           .deleteAll()
         _ <- CompactFilterDAO()(executionContext, node.chainConfig).deleteAll()
+        _ <- bitcoind.generate(1)
         //restart the node
         _ <- node.start()
+        _ <- node.sync()
         //await for us to sync compact filter headers filters
+        //the sync process should get kicked off after we see the
+        //newly mined block header
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
         succeed
