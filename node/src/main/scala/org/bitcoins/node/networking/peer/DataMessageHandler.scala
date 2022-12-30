@@ -78,8 +78,8 @@ case class DataMessageHandler(
         val resultF = handleDataPayloadValidState(payload, peerMsgSender, peer)
         //process messages from all peers
         resultF.failed.foreach { err =>
-          logger.error(s"Failed to handle data payload=${payload} from $peer",
-                       err)
+          logger.error(
+            s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
         }
         resultF.recoverWith { case NonFatal(_) =>
           Future.successful(this)
@@ -94,8 +94,8 @@ case class DataMessageHandler(
           val resultF =
             handleDataPayloadValidState(payload, peerMsgSender, peer)
           resultF.failed.foreach { err =>
-            logger.error(s"Failed to handle data payload=${payload} from $peer",
-                         err)
+            logger.error(
+              s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
           }
           resultF.recoverWith { case NonFatal(_) =>
             Future.successful(this)
@@ -451,7 +451,8 @@ case class DataMessageHandler(
         }
 
         getHeadersF.failed.map { err =>
-          logger.error(s"Error when processing headers message", err)
+          logger.error(
+            s"Error when processing headers message: ${err.getMessage}")
         }
 
         for {
