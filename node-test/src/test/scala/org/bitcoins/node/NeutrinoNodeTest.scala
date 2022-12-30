@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import akka.actor.Cancellable
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.models.{CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
@@ -270,5 +271,32 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       } yield {
         succeed
       }
+  }
+
+  it must "start syncing compact filter headers / compact filters when block header is seen" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4933
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
+
+      for {
+        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- node.stop()
+        //drop all compact filter headers / filters
+        _ <- CompactFilterHeaderDAO()(executionContext, node.chainConfig)
+          .deleteAll()
+        _ <- CompactFilterDAO()(executionContext, node.chainConfig).deleteAll()
+        _ <- bitcoind.generate(1)
+        //restart the node
+        _ <- node.start()
+        _ <- node.sync()
+        //await for us to sync compact filter headers filters
+        //the sync process should get kicked off after we see the
+        //newly mined block header
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+      } yield {
+        succeed
+      }
+
   }
 }
