@@ -148,6 +148,7 @@ case class PeerManager(
     //remove the cancellable from the peerServicesQueries
     //when our promise is completed from the scheduled job
     promise.future.onComplete { _ =>
+      val _: Boolean = cancellable.cancel()
       val idx = peerServicesQueries.indexOf(cancellable)
       if (idx >= 0) {
         peerServicesQueries = peerServicesQueries.zipWithIndex
