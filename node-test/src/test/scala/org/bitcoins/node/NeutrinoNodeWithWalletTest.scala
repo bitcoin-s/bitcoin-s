@@ -5,6 +5,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.rescan.RescanState.RescanStarted
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -196,9 +197,14 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <-
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
+      bitcoindHeight <- bitcoind.getBlockCount
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+        // wait until the block is processed by the wallet
+        wallet
+          .getSyncDescriptorOpt()
+          .map(_.get.height == bitcoindHeight)
+      })
       _ <- wallet.clearAllUtxos()
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()
@@ -207,11 +213,12 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
       rescan <- wallet.isRescanning()
       _ = assert(!rescan)
-      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
+      rescanState <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
       _ <- AsyncUtil.awaitConditionF(condition,
                                      maxTries = 200,
                                      interval = 200.millis)
+      _ <- rescanState.asInstanceOf[RescanStarted].stop()
     } yield succeed
   }
 

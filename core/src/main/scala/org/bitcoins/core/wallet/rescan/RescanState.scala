@@ -37,8 +37,9 @@ object RescanState {
       _isCompletedEarly.set(false)
     }
 
-    completeRescanEarlyP.future.failed.foreach { case RescanTerminatedEarly =>
-      _isCompletedEarly.set(true)
+    completeRescanEarlyP.future.failed.foreach {
+      case RescanTerminatedEarly          => _isCompletedEarly.set(true)
+      case scala.util.control.NonFatal(_) => //do nothing
     }
 
     /** Useful for determining if the rescan was completed
