@@ -18,11 +18,6 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.NodeUnitTest.{
-  createPeer,
-  emptyPeer,
-  syncNeutrinoNode
-}
 import org.bitcoins.testkit.node.fixture._
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.wallet.WalletCallbacks
@@ -42,7 +37,7 @@ trait NodeUnitTest extends BaseNodeTest {
     val nodeBuilder: () => Future[NeutrinoNode] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNode(emptyPeer, None)(
+        node <- NodeUnitTest.createNeutrinoNode(NodeUnitTest.emptyPeer, None)(
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
@@ -76,7 +71,7 @@ trait NodeUnitTest extends BaseNodeTest {
           BitcoinSFixture
             .createBitcoindWithFunds(Some(V22))
             .map(_.asInstanceOf[BitcoindV22RpcClient])
-        peer <- createPeer(bitcoind)
+        peer <- NodeUnitTest.createPeer(bitcoind)
         node <- NodeUnitTest.createNeutrinoNode(peer, None)(system,
                                                             appConfig.chainConf,
                                                             appConfig.nodeConf)
@@ -107,7 +102,7 @@ trait NodeUnitTest extends BaseNodeTest {
           appConfig.chainConf,
           appConfig.nodeConf)
         startedNode <- node.start()
-        syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+        syncedNode <- NodeUnitTest.syncNeutrinoNode(startedNode, bitcoind)
       } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
     }
     makeDependentFixture(
@@ -508,10 +503,12 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     for {
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
-      _ = assert(!syncing)
+      _ = require(
+        !syncing,
+        s"Cannot start syncing neutrino node when previous sync is ongoing")
       _ <- node.sync()
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
-      _ = assert(syncing)
+      _ = require(syncing)
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)

@@ -39,7 +39,7 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
   override def afterAll(): Unit = {
     super[EmbeddedPg].afterAll()
-    super.afterAll()
+    super[BitcoinSFixture].afterAll()
   }
 
   lazy val junkAddress: BitcoinAddress =
