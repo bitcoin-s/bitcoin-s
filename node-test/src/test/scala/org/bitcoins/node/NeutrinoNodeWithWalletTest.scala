@@ -103,7 +103,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       _ <- AsyncUtil.awaitConditionF(condition1, maxTries = 100) //10 seconds
       // receive
       address <- wallet.getNewAddress()
@@ -114,8 +113,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       _ <- TestAsyncUtil.awaitConditionF(condition2,
                                          interval = 1.second,
                                          maxTries = 30)
@@ -133,7 +130,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           bitcoind.getNewAddress
             .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       } yield ()
 
     val pk1 = ECPublicKey.freshPublicKey
@@ -244,7 +240,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         //restart the node now that we have received funds
         startedNode <- stoppedNode.start()
         _ <- startedNode.sync()
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node = node, rpc = bitcoind)
+        _ <- NodeTestUtil.awaitSync(node = node, rpc = bitcoind)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => {
           for {
             balance <- wallet.getBalance()
@@ -283,7 +279,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       //bring node back online
       startedNode <- stoppedNode.start()
       _ <- startedNode.sync()
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitSync(node, bitcoind)
       balanceAfterSpend <- wallet.getBalance()
     } yield {
       assert(balanceAfterSpend < initBalance)

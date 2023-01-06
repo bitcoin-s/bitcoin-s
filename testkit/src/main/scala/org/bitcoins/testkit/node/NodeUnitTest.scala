@@ -513,8 +513,6 @@ object NodeUnitTest extends P2PLogger {
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
       _ = assert(syncing)
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       _ <- AsyncUtil.retryUntilSatisfiedF(
         () => {
           val chainApi = node.chainApiFromDb()
