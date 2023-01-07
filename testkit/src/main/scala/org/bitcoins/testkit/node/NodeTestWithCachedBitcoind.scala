@@ -6,7 +6,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
+import org.bitcoins.testkit.node.NodeUnitTest
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NeutrinoNodeConnectedWithBitcoinds
@@ -41,7 +41,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
-        peer <- createPeer(bitcoind)
+        peer <- NodeUnitTest.createPeer(bitcoind)
         node <- NodeUnitTest.createNeutrinoNode(peer, None)(system,
                                                             appConfig.chainConf,
                                                             appConfig.nodeConf)
@@ -95,7 +95,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
           appConfig.chainConf,
           appConfig.nodeConf)
         startedNode <- node.start()
-        syncedNode <- syncNeutrinoNode(startedNode, bitcoinds(0))
+        syncedNode <- NodeUnitTest.syncNeutrinoNode(startedNode, bitcoinds(0))
       } yield NeutrinoNodeConnectedWithBitcoinds(syncedNode, bitcoinds)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
