@@ -10,7 +10,7 @@ import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.networking.{P2PClient, P2PClientSupervisor}
+import org.bitcoins.node.networking.{P2PClientSupervisor}
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
@@ -42,7 +42,10 @@ case class PeerManager(
                      BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
 
   val finder: PeerFinder =
-    PeerFinder(paramPeers, node, skipPeers = () => peers, supervisor)
+    PeerFinder(paramPeers = paramPeers,
+               node = node,
+               skipPeers = () => peers,
+               supervisor = supervisor)
 
   def connectedPeerCount: Int = _peerData.size
 
@@ -64,9 +67,6 @@ case class PeerManager(
     _peerData.values
       .map(_.peerMessageSender)
       .toVector
-
-  def clients: Vector[Future[P2PClient]] =
-    _peerData.values.map(_.client).toVector
 
   def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
     //wait when requested
@@ -173,14 +173,14 @@ case class PeerManager(
 
   def removePeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Removing persistent peer $peer")
-    val client = peerData(peer).client
+    val client: PeerData = peerData(peer)
     _peerData.remove(peer)
     //so we need to remove if from the map for connected peers so no more request could be sent to it but we before
     //the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
     //leading to a memory leak may happen
     _waitingForDeletion.add(peer)
     //now send request to stop actor which will be completed some time in future
-    client.map(_.close())
+    client.stop()
   }
 
   def isReconnection(peer: Peer): Boolean = {
@@ -249,11 +249,11 @@ case class PeerManager(
 
     if (finder.hasPeer(peer)) {
       //one of the peers that we tried, failed to init within time, disconnect
-      finder.getData(peer).client.map(_.close())
+      finder.getData(peer).stop()
     } else if (peerData.contains(peer)) {
       //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
       //a reconnection attempt, meaning it got connected but failed to initialize, disconnect
-      peerData(peer).client.map(_.close())
+      peerData(peer).stop()
     } else {
       //this should never happen
       logger.warn(s"onInitializationTimeout called for unknown $peer")
@@ -298,7 +298,7 @@ case class PeerManager(
               .flatMap { _ =>
                 //could have already been deleted in case of connection issues
                 if (finder.hasPeer(peer))
-                  finder.getData(peer).client.map(_.close())
+                  finder.getData(peer).stop()
                 else Future.unit
               }
           }
@@ -392,7 +392,8 @@ case class PeerManager(
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
     if (peerData.contains(peer)) {
-      peerData(peer).client.map(_.actor ! ResponseTimeout(payload))
+      peerData(peer).peerMessageSender.map(
+        _.client.actor ! ResponseTimeout(payload))
     } else {
       logger.debug(s"Requested to send response timeout for unknown $peer")
       Future.unit

@@ -25,12 +25,14 @@ abstract class NodeTestUtil extends P2PLogger {
       conf: NodeAppConfig,
       system: ActorSystem
   ): Future[P2PClient] = {
-    P2PClient.apply(peer,
-                    peerMsgReceiver,
-                    (_: Peer) => Future.unit,
-                    (_: Peer) => Future.unit,
-                    16,
-                    supervisor)
+    P2PClient.apply(
+      peer = peer,
+      peerMessageReceiver = peerMsgReceiver,
+      onReconnect = (_: Peer) => Future.unit,
+      onStop = (_: Peer) => Future.unit,
+      maxReconnectionTries = 16,
+      supervisor = supervisor
+    )
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]

@@ -650,7 +650,6 @@ object P2PClient extends P2PLogger {
       supervisor: ActorRef)(implicit
       config: NodeAppConfig,
       system: ActorSystem): Future[P2PClient] = {
-
     val clientProps = props(peer,
                             peerMessageReceiver,
                             onReconnect,
