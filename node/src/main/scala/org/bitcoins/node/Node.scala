@@ -16,7 +16,6 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   DataMessageHandler,
@@ -67,12 +66,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     CompactFilterDAO(),
                                     ChainStateDescriptorDAO())
   }
-
-  /** Unlike our chain api, this is cached inside our node
-    * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
-    * the [[ChainApi chain api]] is updated inside of the p2p client
-    */
-  def clients: Vector[Future[P2PClient]] = peerManager.clients
 
   def peerMsgSenders: Vector[Future[PeerMessageSender]] =
     peerManager.peerMsgSenders

@@ -78,7 +78,10 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         expectHeaders = ExpectResponseCommand(
           GetHeadersMessage(node.chainConfig.chain.genesisHash))
         //waiting for response to header query now
-        client <- peerManager.peerData(bitcoindPeers(0)).client
+        client <- peerManager
+          .peerData(bitcoindPeers(0))
+          .peerMessageSender
+          .map(_.client)
         _ = client.actor ! expectHeaders
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)

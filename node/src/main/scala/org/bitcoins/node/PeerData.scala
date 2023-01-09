@@ -26,7 +26,7 @@ case class PeerData(
     client.map(PeerMessageSender(_))
   }
 
-  lazy val client: Future[P2PClient] = {
+  private lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
       PeerMessageReceiver.newReceiver(node = node, peer = peer)
     P2PClient(
@@ -39,6 +39,9 @@ case class PeerData(
     )
   }
 
+  def stop(): Future[Unit] = {
+    client.map(_.close())
+  }
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
 
   def serviceIdentifier: ServiceIdentifier = {

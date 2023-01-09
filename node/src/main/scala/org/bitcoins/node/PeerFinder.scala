@@ -184,7 +184,7 @@ case class PeerFinder(
     //delete try queue
     _peersToTry.clear()
 
-    val closeFs = _peerData.map(_._2.client.map(_.close()))
+    val closeFs = _peerData.map(_._2.stop())
     val closeF = Future.sequence(closeFs)
 
     val waitStopF = AsyncUtil
