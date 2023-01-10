@@ -41,11 +41,15 @@ case class PeerManager(
                    name =
                      BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
 
-  val finder: PeerFinder =
+  private val finder: PeerFinder =
     PeerFinder(paramPeers = paramPeers,
                node = node,
                skipPeers = () => peers,
                supervisor = supervisor)
+
+  def addPeerToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
+    finder.addToTry(peers, priority)
+  }
 
   def connectedPeerCount: Int = _peerData.size
 
