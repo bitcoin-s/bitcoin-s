@@ -221,14 +221,10 @@ object NodeUnitTest extends P2PLogger {
     //that can handle the handshake
     val peerHandlerF = for {
       node <- nodeF
-      peerMsgReceiver = PeerMessageReceiver.preConnection(peer, node)
-      supervisor = node.peerManager.supervisor
-      client <- NodeTestUtil.client(peer, peerMsgReceiver, supervisor)
-      peerMsgSender = PeerMessageSender(client)
-    } yield PeerHandler(client, peerMsgSender)
+      peerHandler <- node.peerManager.getPeerHandler(peer)
+    } yield peerHandler.get
 
     peerHandlerF
-
   }
 
   def destroyNode(node: Node, appConfig: BitcoinSAppConfig)(implicit

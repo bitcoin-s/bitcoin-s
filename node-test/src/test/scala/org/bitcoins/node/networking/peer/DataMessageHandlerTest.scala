@@ -37,7 +37,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
       val NeutrinoNodeConnectedWithBitcoindV22(node, _) = param
       val peer = node.peerManager.peers.head
 
-      val senderF = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSendersF.map(_.head)
       for {
         chainApi <- node.chainApiFromDb()
         dataMessageHandler = DataMessageHandler(
@@ -79,7 +79,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           ()
         }
       }
-      val senderF = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSendersF.map(_.head)
 
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
@@ -124,7 +124,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         }
       }
 
-      val senderF = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSendersF.map(_.head)
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
@@ -189,7 +189,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           ()
         }
       }
-      val senderF = node.peerMsgSenders(0)
+      val senderF = node.peerMsgSendersF.map(_.head)
 
       for {
 
