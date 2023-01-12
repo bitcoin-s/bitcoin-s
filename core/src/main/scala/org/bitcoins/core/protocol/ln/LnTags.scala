@@ -6,9 +6,10 @@ import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
-import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0}
-import org.bitcoins.core.util.{Bech32, SeqWrapper}
-import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.util.{Bech32, BitcoinScriptUtil, SeqWrapper}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import java.nio.charset.Charset
@@ -103,9 +104,18 @@ object LnTag {
           val hash = Sha256Hash160Digest(bytes)
           P2SHAddress(hash, np)
         case WitSPK.u8 => witnessFromU8(bytes, np)
-        case _: UInt8 =>
-          throw new IllegalArgumentException(
-            s"Illegal version to create a fallback address from, got $version")
+        case uint8: UInt8 =>
+          WitnessVersion(uint8.toInt) match {
+            case Some(witV) =>
+              val asm = witV.version +: BitcoinScriptUtil.calculatePushOp(
+                bytes) :+ ScriptConstant(bytes)
+
+              val scriptPubKey = WitnessScriptPubKey(asm.toVector)
+              Bech32mAddress(scriptPubKey, np)
+            case None =>
+              throw new IllegalArgumentException(
+                s"Illegal version to create a fallback address from, got $version")
+          }
       }
       LnTag.FallbackAddressTag(address)
     }
