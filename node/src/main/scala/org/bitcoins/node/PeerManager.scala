@@ -213,7 +213,9 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
+    println(s"Starting PeerManager")
     finder.start().map { _ =>
+      println(s"Done starting PeerManager")
       logger.info("Done starting PeerManager")
       this
     }
