@@ -201,7 +201,6 @@ case class PeerFinder(
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
-    println(s"trying peer=$peer")
     _peerData.put(peer, PeerData(peer, node, supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
   }

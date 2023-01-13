@@ -12,7 +12,6 @@ import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
 
@@ -41,21 +40,19 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
       val node = nodeConnectedWithBitcoinds.node
       val bitcoind = nodeConnectedWithBitcoinds.bitcoind
       val peerF = NodeTestUtil.getBitcoindPeer(bitcoind)
-      val peerManagerF = for {
-        peer <- peerF
-        manager = PeerManager(Vector(peer), node)(node.executionContext,
-                                                  node.system,
-                                                  node.nodeAppConfig)
-      } yield manager
 
       for {
-        peerManager <- peerManagerF
+        _ <- node.start()
         peer <- peerF
-        _ <- peerManager.start()
-        peerHandlerOpt <- peerManager.getPeerHandler(peer)
-        //_ <- peerManager.stop()
+        peerManager = node.peerManager
+        //wait until the initialization of the peer is done
+        _ <- AsyncUtil.retryUntilSatisfiedF { () =>
+          peerManager.getPeerMsgSender(peer).map(_.isDefined)
+        }
       } yield {
-        assert(peerHandlerOpt.isDefined)
+        assert(
+          peerManager.paramPeers.nonEmpty
+        ) //make sure we had a peer passed as a param
       }
   }
 }
