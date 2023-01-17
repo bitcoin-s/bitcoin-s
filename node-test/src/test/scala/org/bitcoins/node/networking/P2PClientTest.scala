@@ -156,8 +156,11 @@ class P2PClientTest
   it must "establish a tcp connection with a bitcoin node" in {
     for {
       peer <- bitcoindPeerF
+      _ = println(s"@@@ 11 @@@")
       client <- buildP2PClient(peer)
+      _ = println(s"@@@ 12 @@@")
       res <- connectAndDisconnect(client)
+      _ = println(s"@@@ 13 @@@")
     } yield res
   }
 
