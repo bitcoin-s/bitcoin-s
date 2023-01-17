@@ -182,10 +182,15 @@ class P2PClientTest
   it must "close actor on disconnect" in {
     for {
       peer <- bitcoindPeerF
+      _ = println(s"@@@ 1 @@@")
       client <- buildP2PClient(peer)
-      _ = probe watch client.actor
+      _ = println(s"@@@ 2 @@@")
+      _ = probe.watch(client.actor)
+      _ = println(s"@@@ 3 @@@")
       _ <- connectAndDisconnect(client)
+      _ = println(s"@@@ 4 @@@")
       term = probe.expectTerminated(client.actor)
+      _ = println(s"@@@ 5 @@@")
     } yield {
       assert(term.actor == client.actor)
     }
