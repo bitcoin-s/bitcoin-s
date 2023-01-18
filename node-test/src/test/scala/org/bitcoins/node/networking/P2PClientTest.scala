@@ -226,7 +226,6 @@ class P2PClientTest
     * connection to the specified port
     */
   private def connectAndDisconnect(p2pClient: P2PClient): Future[Assertion] = {
-
     p2pClient.actor ! ConnectCommand
 
     val isConnectedF = for {
@@ -234,12 +233,14 @@ class P2PClientTest
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
+      println(s"connectAndDisconnect.1")
       p2pClient.actor ! P2PClient.CloseCommand
       val isDisconnectedF = for {
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
                                              interval = 1.second,
                                              maxTries = 100)
+        _ = println(s"connectAndDisconnect.2")
       } yield isDisconnected
 
       isDisconnectedF.map { _ =>
