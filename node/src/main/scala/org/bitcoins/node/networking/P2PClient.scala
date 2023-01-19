@@ -572,7 +572,8 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
       timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isConnectedF = actor.ask(P2PClient.IsConnected).mapTo[Boolean]
-    isConnectedF.recoverWith { case _: Throwable =>
+    isConnectedF.recoverWith { case err: Throwable =>
+      logger.error(s"P2PClient.isConnected err",err)
       Future.successful(false)
     }
   }

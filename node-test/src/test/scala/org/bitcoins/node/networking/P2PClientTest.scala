@@ -207,12 +207,14 @@ class P2PClientTest
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(P2PClient.props(peer,
-                                     peerMsgRecv,
-                                     (_: Peer) => Future.unit,
-                                     (_: Peer) => Future.unit,
-                                     16),
-                     probe.ref)
+        TestActorRef(
+          P2PClient.props(peer = peer,
+                          peerMsgHandlerReceiver = peerMsgRecv,
+                          onReconnect = (_: Peer) => Future.unit,
+                          onStop = (_: Peer) => Future.unit,
+                          maxReconnectionTries = 16),
+          probe.ref
+        )
       }
     val p2pClientF: Future[P2PClient] = clientActorF.map {
       client: TestActorRef[P2PClientActor] =>
