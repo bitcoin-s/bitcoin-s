@@ -252,8 +252,13 @@ class PeerMessageReceiver(
       payload: ControlPayload,
       sender: PeerMessageSender,
       curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
-    node.controlMessageHandler
+    val f = node.controlMessageHandler
       .handleControlPayload(payload, sender, peer, curReceiver)
+    f.map { a =>
+      logger.error(
+        s"Done handling control payload=${payload.commandName} newState=${a.state}")
+      a
+    }
   }
 
   private def onInitTimeout(): Future[Unit] = {
