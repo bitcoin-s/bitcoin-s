@@ -58,7 +58,10 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
         }
 
       case ping: PingMessage =>
-        sender.sendPong(ping).map(_ => peerMessageReceiver)
+        sender.sendPong(ping).map { _ =>
+          logger.error(s"Done sending pong message, returning peerMessageReceiver.state=${peerMessageReceiver.state}")
+          peerMessageReceiver
+        }
       case SendHeadersMessage =>
         //we want peers to just send us headers
         //we don't want to have to request them manually
