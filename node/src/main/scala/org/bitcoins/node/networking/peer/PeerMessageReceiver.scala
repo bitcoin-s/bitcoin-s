@@ -46,8 +46,11 @@ class PeerMessageReceiver(
         logger.debug(s"Connection established with peer=${peer}")
 
         val initializationTimeoutCancellable =
-          system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout)(
-            Await.result(onInitTimeout(), 10.seconds))
+          system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
+            val timeoutF = onInitTimeout()
+            timeoutF.failed.foreach(err =>
+              logger.error(s"Failed to initialize timeout for peer=$peer", err))
+          }
 
         val newState =
           Preconnection.toInitializing(client, initializationTimeoutCancellable)
@@ -254,7 +257,7 @@ class PeerMessageReceiver(
       .handleControlPayload(payload, sender, peer, curReceiver)
   }
 
-  def onInitTimeout(): Future[Unit] = {
+  private def onInitTimeout(): Future[Unit] = {
     logger.debug(s"Init timeout for peer $peer")
     node.peerManager.onInitializationTimeout(peer)
   }
