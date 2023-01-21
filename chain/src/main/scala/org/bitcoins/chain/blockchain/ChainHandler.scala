@@ -46,9 +46,7 @@ class ChainHandler(
 
   /** @inheritdoc */
   override def getBlockCount(): Future[Int] = {
-    logger.debug(s"Querying for block count")
     blockHeaderDAO.bestHeight.map { height =>
-      logger.debug(s"getBlockCount result: count=$height")
       height
     }
   }
@@ -56,7 +54,7 @@ class ChainHandler(
   /** Given a set of blockchains, determines which one has the best header */
   protected def getBestBlockHeaderHelper(
       chains: Vector[Blockchain]): BlockHeaderDb = {
-    logger.debug(
+    logger.trace(
       s"Finding best block hash out of chains.length=${chains.length}")
     //https://bitcoin.org/en/glossary/block-chain
     val groupedChains = chains.groupBy(_.tip.chainWork)

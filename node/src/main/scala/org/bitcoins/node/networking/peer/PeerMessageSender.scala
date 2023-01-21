@@ -244,7 +244,8 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     //as they are need  ed to complete our handshake with our peer
     logger.error(s"Sending msg=${msg.commandName} to peer=${socket}")
     val networkMsg = NetworkMessage(conf.network, msg)
-    logger.error(s"networkMsg=${networkMsg.header.commandName}")
+    logger.error(
+      s"networkMsg=${networkMsg.header.commandName} actor=${client.actor}")
     client.actor.tell(networkMsg, ActorRef.noSender)
     logger.error(s"Sent networkMsg=${msg.commandName}")
     Future.unit

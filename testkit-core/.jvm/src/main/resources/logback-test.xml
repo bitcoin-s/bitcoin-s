@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="ERROR">
+    <root level="DEBUG">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -51,19 +51,19 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="DEBUG"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="DEBUG"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="DEBUG"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="DEBUG"/>
 
     <!-- See exceptions thrown in actor-->
-    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="DEBUG"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
@@ -96,6 +96,8 @@
     <!-- see what slick is compiling to in sql -->
     <logger name="slick.compiler" level="OFF"/>
 
+    <logger name="slick" level="OFF"/>
+
     <!-- see what's returned by Slick -->
     <logger name="slick.jdbc.StatementInvoker.result" level="OFF"/>
 
@@ -105,10 +107,10 @@
     <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
 
     <!-- get rid of "Slf4jLogger started" messages -->
-    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
-    <logger name="akka.event.event.EventStream" level="OFF"/>
+    <logger name="akka.event.slf4j.Slf4jLogger" level="DEBUG"/>
+    <logger name="akka.event.event.EventStream" level="DEBUG"/>
 
     <!-- get rid of "Setting level of logger" messages -->
-    <logger name="ch.qos.logback" level="OFF"/>
+    <logger name="ch.qos.logback" level="DEBUG"/>
 
 </configuration>
