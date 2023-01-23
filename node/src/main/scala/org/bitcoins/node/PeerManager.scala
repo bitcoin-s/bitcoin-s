@@ -244,8 +244,8 @@ case class PeerManager(
   }
 
   def onInitializationTimeout(peer: Peer): Future[Unit] = {
-    assert(!finder.hasPeer(peer) || !peerData.contains(peer),
-           s"$peer cannot be both a test and a persistent peer")
+    require(!finder.hasPeer(peer) || !peerData.contains(peer),
+            s"$peer cannot be both a test and a persistent peer")
 
     if (finder.hasPeer(peer)) {
       //one of the peers that we tried, failed to init within time, disconnect
