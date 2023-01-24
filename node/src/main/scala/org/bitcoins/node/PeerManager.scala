@@ -52,6 +52,7 @@ case class PeerManager(
   def addPeerToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
     finder.addToTry(peers, priority)
   }
+
   def addPeer(peer: Peer): Future[Unit] = {
     require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
     val curPeerData = finder.popFromCache(peer).get

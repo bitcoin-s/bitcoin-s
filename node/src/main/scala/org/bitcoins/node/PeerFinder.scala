@@ -228,7 +228,8 @@ case class PeerFinder(
   }
 
   def getData(peer: Peer): PeerData = {
-    require(hasPeer(peer), s"finder.getData called without any data on peer=$peer")
+    require(hasPeer(peer),
+            s"finder.getData called without any data on peer=$peer")
     _peerData(peer)
   }
 
