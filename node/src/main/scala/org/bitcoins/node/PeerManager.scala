@@ -49,6 +49,9 @@ case class PeerManager(
 
   def connectedPeerCount: Int = _peerData.size
 
+  def addPeerToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
+    finder.addToTry(peers, priority)
+  }
   def addPeer(peer: Peer): Future[Unit] = {
     require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
     val curPeerData = finder.popFromCache(peer).get
@@ -80,7 +83,7 @@ case class PeerManager(
           .filter(p => p._2.serviceIdentifier.hasServicesOf(services))
           .keys
           .toVector
-      assert(filteredPeers.nonEmpty)
+      require(filteredPeers.nonEmpty)
       val (good, failedRecently) =
         filteredPeers.partition(p => !peerData(p).hasFailedRecently)
 

@@ -546,11 +546,7 @@ class ChainHandler(
 
   /** @inheritdoc */
   override def getFilterHeaderCount(): Future[Int] = {
-    logger.debug(s"Querying for filter header count")
-    filterHeaderDAO.getBestFilterHeaderHeight.map { height =>
-      logger.debug(s"getFilterHeaderCount result: count=$height")
-      height
-    }
+    filterHeaderDAO.getBestFilterHeaderHeight
   }
 
   /** @inheritdoc */
@@ -659,11 +655,7 @@ class ChainHandler(
 
   /** @inheritdoc */
   override def getFilterCount(): Future[Int] = {
-    logger.debug(s"Querying for filter count")
-    filterDAO.getBestFilterHeight.map { height =>
-      logger.debug(s"getFilterCount result: count=$height")
-      height
-    }
+    filterDAO.getBestFilterHeight
   }
 
   /** @inheritdoc */
