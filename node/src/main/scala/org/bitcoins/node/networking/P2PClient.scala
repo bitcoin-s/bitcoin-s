@@ -94,7 +94,7 @@ case class P2PClientActor(
     */
   private val network: NetworkParameters = config.network
 
-  private val timeout = 1000.seconds
+  private val timeout = 60.seconds
 
   /** The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
     * and instantiates workers for specific tasks, such as listening to incoming connections.
