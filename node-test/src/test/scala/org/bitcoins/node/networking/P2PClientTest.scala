@@ -156,11 +156,8 @@ class P2PClientTest
   it must "establish a tcp connection with a bitcoin node" in {
     for {
       peer <- bitcoindPeerF
-      _ = println(s"@@@ 11 @@@")
       client <- buildP2PClient(peer)
-      _ = println(s"@@@ 12 @@@")
       res <- connectAndDisconnect(client)
-      _ = println(s"@@@ 13 @@@")
     } yield res
   }
 
@@ -185,15 +182,10 @@ class P2PClientTest
   it must "close actor on disconnect" in {
     for {
       peer <- bitcoindPeerF
-      _ = println(s"@@@ 1 @@@")
       client <- buildP2PClient(peer)
-      _ = println(s"@@@ 2 @@@")
       _ = probe.watch(client.actor)
-      _ = println(s"@@@ 3 @@@")
       _ <- connectAndDisconnect(client)
-      _ = println(s"@@@ 4 @@@")
       term = probe.expectTerminated(client.actor)
-      _ = println(s"@@@ 5 @@@")
     } yield {
       assert(term.actor == client.actor)
     }
@@ -235,14 +227,12 @@ class P2PClientTest
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
-      println(s"connectAndDisconnect.1")
       p2pClient.actor ! P2PClient.CloseCommand
       val isDisconnectedF = for {
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
                                              interval = 1.second,
                                              maxTries = 100)
-        _ = println(s"connectAndDisconnect.2")
       } yield isDisconnected
 
       isDisconnectedF.map { _ =>
