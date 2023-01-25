@@ -467,7 +467,6 @@ case class P2PClientActor(
       PeerMessageReceiver,
       NetworkMessageReceived) => Future[PeerMessageReceiver] = {
     case (peerMsgRecv: PeerMessageReceiver, msg: NetworkMessageReceived) =>
-      logger.error(s"Processing message=${msg.msg.header.commandName}")
       val resultF = if (peerMsgRecv.isConnected) {
         currentPeerMsgHandlerRecv.state match {
           case _ @(_: Normal | _: Waiting | Preconnection | _: Initializing) =>
@@ -481,10 +480,7 @@ case class P2PClientActor(
       } else {
         Future.successful(peerMsgRecv)
       }
-      resultF.map { r =>
-        logger.error(s"Done processing message=${msg.msg.header.commandName}")
-        r
-      }
+      resultF
   }
 
   /** Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
