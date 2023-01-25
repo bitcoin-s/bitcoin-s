@@ -217,14 +217,12 @@ class P2PClientTest
     * remote node and bind our local
     * connection to the specified port
     */
-  def connectAndDisconnect(p2pClient: P2PClient): Future[Assertion] = {
+  private def connectAndDisconnect(p2pClient: P2PClient): Future[Assertion] = {
 
     p2pClient.actor ! ConnectCommand
 
     val isConnectedF = for {
-      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
-                                                        interval = 1.second,
-                                                        maxTries = 100)
+      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>

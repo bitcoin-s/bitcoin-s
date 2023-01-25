@@ -141,7 +141,7 @@ case class PeerFinder(
               isConnectionSchedulerRunning.set(false)
             case Failure(err) =>
               isConnectionSchedulerRunning.set(false)
-              logger.error(s"Failed to connect to peers", err)
+              logger.error(s"Failed to connect to peers=$peers", err)
           }
         } else {
           logger.warn(
@@ -153,8 +153,8 @@ case class PeerFinder(
   override def start(): Future[PeerFinder] = {
     logger.debug(s"Starting PeerFinder")
 
-    val initPeerF = Future.sequence(
-      (getPeersFromParam ++ getPeersFromConfig).distinct.map(tryPeer))
+    val peersToTry = (getPeersFromParam ++ getPeersFromConfig).distinct
+    val initPeerF = Future.traverse(peersToTry)(tryPeer)
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
@@ -228,7 +228,8 @@ case class PeerFinder(
   }
 
   def getData(peer: Peer): PeerData = {
-    assert(hasPeer(peer), "finder.getData called without any data on peer")
+    require(hasPeer(peer),
+            s"finder.getData called without any data on peer=$peer")
     _peerData(peer)
   }
 
