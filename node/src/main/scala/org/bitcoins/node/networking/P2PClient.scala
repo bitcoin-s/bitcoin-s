@@ -145,8 +145,8 @@ case class P2PClientActor(
         reconnect()
 
       case networkMessageReceived: NetworkMessageReceived =>
-        val newMsgReceiverF = handleReceivedMsgFn(currentPeerMsgHandlerRecv,
-                                                  networkMessageReceived.msg)
+        val newMsgReceiverF =
+          handleReceivedMsgFn(currentPeerMsgHandlerRecv, networkMessageReceived)
         val newMsgReceiver =
           try {
             Await.result(newMsgReceiverF, timeout)
@@ -456,7 +456,8 @@ case class P2PClientActor(
         }
 
         logger.trace(s"About to process ${messages.length} messages")
-        messages.foreach(m => self ! m)
+        messages.foreach(m =>
+          self ! NetworkMessageReceived(m, P2PClient(self, peer)))
         peerConnection ! Tcp.ResumeReading
         newUnalignedBytes
     }
@@ -464,10 +465,9 @@ case class P2PClientActor(
 
   private val handleReceivedMsgFn: (
       PeerMessageReceiver,
-      NetworkMessage) => Future[PeerMessageReceiver] = {
-    case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
-      logger.error(s"Processing message=${m.header.commandName}")
-      val msg = NetworkMessageReceived(m, P2PClient(self, peer))
+      NetworkMessageReceived) => Future[PeerMessageReceiver] = {
+    case (peerMsgRecv: PeerMessageReceiver, msg: NetworkMessageReceived) =>
+      logger.error(s"Processing message=${msg.msg.header.commandName}")
       val resultF = if (peerMsgRecv.isConnected) {
         currentPeerMsgHandlerRecv.state match {
           case _ @(_: Normal | _: Waiting | Preconnection | _: Initializing) =>
@@ -482,7 +482,7 @@ case class P2PClientActor(
         Future.successful(peerMsgRecv)
       }
       resultF.map { r =>
-        logger.error(s"Done processing message=${m.header.commandName}")
+        logger.error(s"Done processing message=${msg.msg.header.commandName}")
         r
       }
   }
