@@ -13,7 +13,7 @@ import org.bitcoins.core.p2p.{
   NetworkMessage,
   NetworkPayload
 }
-import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
+import org.bitcoins.core.util.{NetworkUtil}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.{
@@ -138,10 +138,31 @@ case class P2PClientActor(
                           peerConnectionOpt = Some(peerConnection))
       case metaMsg: P2PClient.MetaMsg =>
         sender() ! handleMetaMsg(metaMsg)
+
       case ExpectResponseCommand(msg) =>
         Await.result(handleExpectResponse(msg), timeout)
       case Terminated(actor) if actor == peerConnection =>
         reconnect()
+
+      case networkMessageReceived: NetworkMessageReceived =>
+        val newMsgReceiverF = handleReceivedMsgFn(currentPeerMsgHandlerRecv,
+                                                  networkMessageReceived.msg)
+        val newMsgReceiver =
+          try {
+            Await.result(newMsgReceiverF, timeout)
+          } catch {
+            case scala.util.control.NonFatal(err) =>
+              logger.error(
+                s"Failed to process message in time state=${currentPeerMsgHandlerRecv.state}, msgs=${networkMessageReceived.msg.header.commandName}",
+                err)
+              throw err
+          }
+        currentPeerMsgHandlerRecv = newMsgReceiver
+        if (currentPeerMsgHandlerRecv.isInitialized) {
+          curReconnectionTry = 0
+          reconnectHandlerOpt.foreach(_.apply(peer))
+          reconnectHandlerOpt = None
+        }
     }
 
   /** Behavior to ignore network messages. Used only when the peer is being disconnected by us as we would not want to
@@ -434,42 +455,36 @@ case class P2PClientActor(
           logger.trace(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
         }
 
-        def f: (
-            PeerMessageReceiver,
-            NetworkMessage) => Future[PeerMessageReceiver] = {
-          case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
-            logger.trace(s"Processing message=${m}")
-            val msg = NetworkMessageReceived(m, P2PClient(self, peer))
-            if (peerMsgRecv.isConnected) {
-              currentPeerMsgHandlerRecv.state match {
-                case _ @(_: Normal | _: Waiting | Preconnection |
-                    _: Initializing) =>
-                  peerMsgRecv.handleNetworkMessageReceived(msg)
-                case _: PeerMessageReceiverState =>
-                  logger.debug(
-                    s"Ignoring ${msg.msg.payload.commandName} from $peer as in state=${currentPeerMsgHandlerRecv.state}")
-                  Future.successful(peerMsgRecv)
-              }
-            } else {
-              Future.successful(peerMsgRecv)
-            }
-        }
-
         logger.trace(s"About to process ${messages.length} messages")
-        val newMsgReceiverF =
-          FutureUtil.foldLeftAsync(currentPeerMsgHandlerRecv, messages)(f)(
-            context.dispatcher)
-
-        val newMsgReceiver = Await.result(newMsgReceiverF, timeout)
-        currentPeerMsgHandlerRecv = newMsgReceiver
-        if (currentPeerMsgHandlerRecv.isInitialized) {
-          curReconnectionTry = 0
-          reconnectHandlerOpt.foreach(_(peer))
-          reconnectHandlerOpt = None
-        }
+        messages.foreach(m => self ! m)
         peerConnection ! Tcp.ResumeReading
         newUnalignedBytes
     }
+  }
+
+  private val handleReceivedMsgFn: (
+      PeerMessageReceiver,
+      NetworkMessage) => Future[PeerMessageReceiver] = {
+    case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
+      logger.error(s"Processing message=${m.header.commandName}")
+      val msg = NetworkMessageReceived(m, P2PClient(self, peer))
+      val resultF = if (peerMsgRecv.isConnected) {
+        currentPeerMsgHandlerRecv.state match {
+          case _ @(_: Normal | _: Waiting | Preconnection | _: Initializing) =>
+            peerMsgRecv.handleNetworkMessageReceived(msg)
+          case _: Disconnected | _: InitializedDisconnectDone |
+              _: InitializedDisconnect | _: StoppedReconnect =>
+            logger.debug(
+              s"Ignoring ${msg.msg.payload.commandName} from $peer as in state=${currentPeerMsgHandlerRecv.state}")
+            Future.successful(peerMsgRecv)
+        }
+      } else {
+        Future.successful(peerMsgRecv)
+      }
+      resultF.map { r =>
+        logger.error(s"Done processing message=${m.header.commandName}")
+        r
+      }
   }
 
   /** Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
