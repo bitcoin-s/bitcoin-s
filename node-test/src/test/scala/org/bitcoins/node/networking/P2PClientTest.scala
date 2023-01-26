@@ -223,7 +223,9 @@ class P2PClientTest
     p2pClient.actor ! ConnectCommand
 
     val isConnectedF = for {
-      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected)
+      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
+                                                        1.second,
+                                                        10)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
