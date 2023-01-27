@@ -241,10 +241,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   private[node] def sendMsg(msg: NetworkPayload): Future[Unit] = {
     //version or verack messages are the only messages that
     //can be sent before we are fully initialized
-    //as they are need  ed to complete our handshake with our peer
+    //as they are needed to complete our handshake with our peer
     logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
     val networkMsg = NetworkMessage(conf.network, msg)
-    client.actor.tell(networkMsg, ActorRef.noSender)
+    client.actor ! networkMsg
     Future.unit
   }
 }

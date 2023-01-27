@@ -458,7 +458,6 @@ case class P2PClientActor(
         logger.trace(s"About to process ${messages.length} messages")
         messages.foreach(m =>
           self ! NetworkMessageReceived(m, P2PClient(self, peer)))
-
         peerConnection ! Tcp.ResumeReading
         newUnalignedBytes
     }
@@ -573,8 +572,7 @@ case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
       timeout: Timeout,
       ec: ExecutionContext): Future[Boolean] = {
     val isConnectedF = actor.ask(P2PClient.IsConnected).mapTo[Boolean]
-    isConnectedF.recoverWith { case err: Throwable =>
-      logger.error(s"P2PClient.isConnected err", err)
+    isConnectedF.recoverWith { case _: Throwable =>
       Future.successful(false)
     }
   }

@@ -59,8 +59,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
 
       case ping: PingMessage =>
         sender.sendPong(ping).map { _ =>
-          logger.error(
-            s"Done sending pong message, returning peerMessageReceiver.state=${peerMessageReceiver.state}")
           peerMessageReceiver
         }
       case SendHeadersMessage =>
