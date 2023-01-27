@@ -36,22 +36,22 @@ case class PeerManager(
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
-  val supervisor: ActorRef =
+  private val supervisor: ActorRef =
     system.actorOf(Props[P2PClientSupervisor](),
                    name =
                      BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
 
-  val finder: PeerFinder =
+  private val finder: PeerFinder =
     PeerFinder(paramPeers = paramPeers,
                node = node,
                skipPeers = () => peers,
                supervisor = supervisor)
 
-  def connectedPeerCount: Int = _peerData.size
-
   def addPeerToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
     finder.addToTry(peers, priority)
   }
+
+  def connectedPeerCount: Int = _peerData.size
 
   def addPeer(peer: Peer): Future[Unit] = {
     require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
@@ -67,10 +67,26 @@ case class PeerManager(
 
   def peers: Vector[Peer] = _peerData.keys.toVector
 
-  def peerMsgSenders: Vector[Future[PeerMessageSender]] =
-    _peerData.values
-      .map(_.peerMessageSender)
-      .toVector
+  def peerMsgSendersF: Future[Vector[PeerMessageSender]] = {
+    Future
+      .traverse(_peerData.values)(_.peerMessageSender)
+      .map(_.toVector)
+  }
+
+  def getPeerMsgSender(peer: Peer): Future[Option[PeerMessageSender]] = {
+    _peerData.find(_._1 == peer).map(_._2.peerMessageSender) match {
+      case Some(peerMsgSender) => peerMsgSender.map(Some(_))
+      case None                => Future.successful(None)
+    }
+  }
+
+  def getPeerHandler(peer: Peer): Future[Option[PeerHandler]] = {
+    for {
+      peerMsgSenderOpt <- getPeerMsgSender(peer)
+    } yield {
+      peerMsgSenderOpt.map(p => PeerHandler(p.client, p))
+    }
+  }
 
   def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
     //wait when requested

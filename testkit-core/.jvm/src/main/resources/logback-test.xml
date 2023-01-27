@@ -105,10 +105,10 @@
     <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
 
     <!-- get rid of "Slf4jLogger started" messages -->
-    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
-    <logger name="akka.event.event.EventStream" level="OFF"/>
+    <logger name="akka.event.slf4j.Slf4jLogger" level="DEBUG"/>
+    <logger name="akka.event.event.EventStream" level="DEBUG"/>
 
     <!-- get rid of "Setting level of logger" messages -->
-    <logger name="ch.qos.logback" level="OFF"/>
+    <logger name="ch.qos.logback" level="DEBUG"/>
 
 </configuration>

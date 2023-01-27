@@ -67,8 +67,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     ChainStateDescriptorDAO())
   }
 
-  def peerMsgSenders: Vector[Future[PeerMessageSender]] =
-    peerManager.peerMsgSenders
+  def peerMsgSendersF: Future[Vector[PeerMessageSender]] =
+    peerManager.peerMsgSendersF
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -157,9 +157,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         val connected = peerManager.peers.nonEmpty
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
-          Future.sequence(
-            peerMsgSenders.map(
-              _.flatMap(_.sendInventoryMessage(transactions: _*))))
+          peerMsgSendersF.flatMap { peerMsgSenders =>
+            Future.traverse(peerMsgSenders)(
+              _.sendInventoryMessage(transactions: _*))
+          }
         } else {
           Future.failed(
             new RuntimeException(

@@ -166,15 +166,23 @@ object NodeUnitTest extends P2PLogger {
     val filterDAO = CompactFilterDAO()
     val stateDAO = ChainStateDescriptorDAO()
 
-    val chainApiF = ChainHandlerCached
-      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
+    val chainApiF = {
+      for {
+        _ <- chainConf.start()
+        chainApi <- ChainHandlerCached
+          .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
+      } yield {
+        chainApi
+      }
+    }
 
     val nodeF = chainApiF.map(buildNode(peer, _, walletCreationTimeOpt))
     for {
       node <- nodeF
       _ <- node.nodeConfig.start()
+      startedNode <- node.start()
     } yield {
-      node
+      startedNode
     }
   }
 
@@ -221,14 +229,16 @@ object NodeUnitTest extends P2PLogger {
     //that can handle the handshake
     val peerHandlerF = for {
       node <- nodeF
-      peerMsgReceiver = PeerMessageReceiver.preConnection(peer, node)
-      supervisor = node.peerManager.supervisor
-      client <- NodeTestUtil.client(peer, peerMsgReceiver, supervisor)
-      peerMsgSender = PeerMessageSender(client)
-    } yield PeerHandler(client, peerMsgSender)
+      //wait until peer is fully initialized
+      _ <- AsyncUtil.awaitConditionF(
+        () => {
+          node.peerManager.getPeerHandler(peer).map(_.isDefined)
+        },
+        interval = 1.second)
+      peerHandler <- node.peerManager.getPeerHandler(peer)
+    } yield peerHandler.get
 
     peerHandlerF
-
   }
 
   def destroyNode(node: Node, appConfig: BitcoinSAppConfig)(implicit

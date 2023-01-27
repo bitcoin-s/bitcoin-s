@@ -183,7 +183,7 @@ class P2PClientTest
     for {
       peer <- bitcoindPeerF
       client <- buildP2PClient(peer)
-      _ = probe watch client.actor
+      _ = probe.watch(client.actor)
       _ <- connectAndDisconnect(client)
       term = probe.expectTerminated(client.actor)
     } yield {
@@ -199,12 +199,14 @@ class P2PClientTest
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(P2PClient.props(peer,
-                                     peerMsgRecv,
-                                     (_: Peer) => Future.unit,
-                                     (_: Peer) => Future.unit,
-                                     16),
-                     probe.ref)
+        TestActorRef(
+          P2PClient.props(peer = peer,
+                          peerMsgHandlerReceiver = peerMsgRecv,
+                          onReconnect = (_: Peer) => Future.unit,
+                          onStop = (_: Peer) => Future.unit,
+                          maxReconnectionTries = 16),
+          probe.ref
+        )
       }
     val p2pClientF: Future[P2PClient] = clientActorF.map {
       client: TestActorRef[P2PClientActor] =>
@@ -218,11 +220,12 @@ class P2PClientTest
     * connection to the specified port
     */
   private def connectAndDisconnect(p2pClient: P2PClient): Future[Assertion] = {
-
     p2pClient.actor ! ConnectCommand
 
     val isConnectedF = for {
-      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected)
+      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
+                                                        1.second,
+                                                        10)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>

@@ -107,7 +107,9 @@ case class PeerFinder(
   }
 
   //for the peers we try
-  private val _peerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
+  private val _peerData: mutable.Map[Peer, PeerData] = {
+    mutable.Map.empty
+  }
 
   private val _peersToTry: PeerStack = PeerStack()
 
@@ -158,6 +160,7 @@ case class PeerFinder(
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
+        _ <- initPeerF
         (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
         _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -172,7 +175,7 @@ case class PeerFinder(
       startedF
     } else {
       logger.info("Peer discovery disabled.")
-      Future.successful(this)
+      initPeerF.map(_ => this)
     }
 
     initPeerF.flatMap(_ => peerDiscoveryF)
@@ -197,7 +200,7 @@ case class PeerFinder(
   }
 
   /** creates and initialises a new test peer */
-  def tryPeer(peer: Peer): Future[Unit] = {
+  private def tryPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer, PeerData(peer, node, supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
   }
