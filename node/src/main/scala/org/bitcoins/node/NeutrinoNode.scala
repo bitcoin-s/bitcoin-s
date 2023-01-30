@@ -183,15 +183,21 @@ case class NeutrinoNode(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
-    val syncPeer = dataMessageHandler.syncPeer.getOrElse(
-      throw new RuntimeException("Sync peer not set"))
-    val syncPeerMsgSenderF = peerManager.peerData(syncPeer).peerMessageSender
-    val sendCompactFilterHeaderMsgF = syncPeerMsgSenderF.flatMap(
-      _.sendNextGetCompactFilterHeadersCommand(
-        chainApi = chainApi,
-        filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-        prevStopHash = bestFilterHeader.blockHashBE)
-    )
+    val syncPeerMsgSenderOptF = {
+      dataMessageHandler.syncPeer.map { peer =>
+        peerManager.peerData(peer).peerMessageSender
+      }
+    }
+    val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
+      case Some(syncPeerMsgSenderF) =>
+        syncPeerMsgSenderF.flatMap(
+          _.sendNextGetCompactFilterHeadersCommand(
+            chainApi = chainApi,
+            filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
+            prevStopHash = bestFilterHeader.blockHashBE)
+        )
+      case None => Future.successful(false)
+    }
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
       // If we have started syncing filters
       if (
@@ -199,16 +205,23 @@ case class NeutrinoNode(
         bestFilterOpt.isDefined &&
         bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
       ) {
-        //means we are not syncing filter headers, and our filters are NOT
-        //in sync with our compact filter headers
-        syncPeerMsgSenderF.flatMap { sender =>
-          sender
-            .sendNextGetCompactFilterCommand(chainApi = chainApi,
-                                             filterBatchSize =
-                                               chainConfig.filterBatchSize,
-                                             startHeight =
-                                               bestFilterOpt.get.height)
-            .map(_ => ())
+        syncPeerMsgSenderOptF match {
+          case Some(syncPeerMsgSenderF) =>
+            //means we are not syncing filter headers, and our filters are NOT
+            //in sync with our compact filter headers
+            syncPeerMsgSenderF.flatMap { sender =>
+              sender
+                .sendNextGetCompactFilterCommand(chainApi = chainApi,
+                                                 filterBatchSize =
+                                                   chainConfig.filterBatchSize,
+                                                 startHeight =
+                                                   bestFilterOpt.get.height)
+                .map(_ => ())
+            }
+          case None =>
+            logger.warn(
+              s"Not syncing compact filters since we do not have a syncPeer set, bestFilterOpt=$bestFilterOpt")
+            Future.unit
         }
       } else {
         Future.unit
