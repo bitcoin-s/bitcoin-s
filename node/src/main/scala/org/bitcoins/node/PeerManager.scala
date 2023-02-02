@@ -358,10 +358,12 @@ case class PeerManager(
       val syncPeer = node.getDataMessageHandler.syncPeer
       if (peers.length > 1 && syncPeer.isDefined && syncPeer.get == peer) {
         syncFromNewPeer().map(_ => ())
-      } else {
-        logger.error(
-          s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeer")
+      } else if (syncPeer.isEmpty) {
         Future.unit
+      } else {
+        val exn = new RuntimeException(
+          s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeer")
+        Future.failed(exn)
       }
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted

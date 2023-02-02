@@ -65,6 +65,7 @@
     <!-- See exceptions thrown in actor-->
     <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
 
+    <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->
