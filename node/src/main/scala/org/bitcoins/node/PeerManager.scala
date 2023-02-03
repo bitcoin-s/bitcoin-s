@@ -356,10 +356,15 @@ case class PeerManager(
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerData.remove(peer)
       val syncPeer = node.getDataMessageHandler.syncPeer
-      if (syncPeer.isDefined && syncPeer.get == peer) {
-
+      if (peers.length > 1 && syncPeer.isDefined && syncPeer.get == peer) {
         syncFromNewPeer().map(_ => ())
-      } else Future.unit
+      } else if (syncPeer.isEmpty) {
+        Future.unit
+      } else {
+        val exn = new RuntimeException(
+          s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeer")
+        Future.failed(exn)
+      }
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
       _waitingForDeletion.remove(peer)
@@ -371,13 +376,13 @@ case class PeerManager(
   }
 
   def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Unit = {
-    assert(!finder.hasPeer(peer) || !peerData.contains(peer),
-           s"$peer cannot be both a test and a persistent peer")
+    require(!finder.hasPeer(peer) || !peerData.contains(peer),
+            s"$peer cannot be both a test and a persistent peer")
 
     if (finder.hasPeer(peer)) {
       finder.getData(peer).setServiceIdentifier(versionMsg.services)
     } else if (peerData.contains(peer)) {
-      assert(
+      require(
         peerData(peer).serviceIdentifier.bytes == versionMsg.services.bytes)
     } else {
       logger.warn(s"onVersionMessage called for unknown $peer")
