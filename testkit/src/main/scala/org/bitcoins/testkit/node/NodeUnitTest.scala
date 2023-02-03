@@ -520,13 +520,13 @@ object NodeUnitTest extends P2PLogger {
             s"Node is already syncing, skipping initiating a new sync.")
           Future.successful(node)
         } else {
-          startNeutrinoNodeSync(node, bitcoind)
+          neutrinoNodeSyncHelper(node, bitcoind)
         }
       }
     } yield newNode
   }
 
-  private def startNeutrinoNodeSync(
+  private def neutrinoNodeSyncHelper(
       node: NeutrinoNode,
       bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[NeutrinoNode] = {
