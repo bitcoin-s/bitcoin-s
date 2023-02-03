@@ -513,9 +513,25 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     for {
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
-      _ = require(
-        !syncing,
-        s"Cannot start syncing neutrino node when previous sync is ongoing")
+      newNode <- {
+        if (syncing) {
+          //do nothing as we are already syncing
+          logger.info(
+            s"Node is already syncing, skipping initiating a new sync.")
+          Future.successful(node)
+        } else {
+          neutrinoNodeSyncHelper(node, bitcoind)
+        }
+      }
+    } yield newNode
+  }
+
+  private def neutrinoNodeSyncHelper(
+      node: NeutrinoNode,
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Future[NeutrinoNode] = {
+    import system.dispatcher
+    for {
       _ <- node.sync()
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
       _ = require(syncing)
