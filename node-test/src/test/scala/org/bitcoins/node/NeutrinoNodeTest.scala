@@ -224,9 +224,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //as they happen with the 'sendheaders' message
       //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
       //at this point so no actual syncing is happening
-      val initSyncF = gen1F.flatMap { hashes =>
+      val initSyncF = gen1F.flatMap { _ =>
         for {
-          _ <- NodeTestUtil.awaitBestHash(hashes.head, node)
+          _ <- NodeTestUtil.awaitBestHash(node, bitcoind)
         } yield ()
       }
 
