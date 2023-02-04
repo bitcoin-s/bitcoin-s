@@ -30,7 +30,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeFundedWalletBitcoind(
@@ -39,7 +39,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       )(system, getFreshConfig)
       f <- outcome.toFuture
     } yield f
-
     new FutureOutcome(outcomeF)
   }
 
