@@ -173,9 +173,11 @@ abstract class NodeTestUtil extends P2PLogger {
       node.chainApiFromDb().flatMap(_.getBestBlockHash())
     }
     TestAsyncUtil.retryUntilSatisfiedF(() =>
-      bestHashF.map { case bestHash =>
-        bestHash == hash
-      })
+                                         bestHashF.map { case bestHash =>
+                                           bestHash == hash
+                                         },
+                                       interval = 1.second,
+                                       maxTries = syncTries)
   }
 
   /** Awaits header, filter header and filter sync between the neutrino node and rpc client */

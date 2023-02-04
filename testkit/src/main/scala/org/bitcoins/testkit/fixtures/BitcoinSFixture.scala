@@ -29,9 +29,6 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       .flatMap { fixture =>
         test(fixture.asInstanceOf[FixtureParam]).toFuture
       }
-      .recoverWith { case err =>
-        FutureOutcome.failed(err).toFuture
-      }
 
     val destructedF: Future[Outcome] = outcomeF.transformWith {
       case Success(o) =>
@@ -40,11 +37,16 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
           _ <- destroy(t)
         } yield o
       case Failure(exn) =>
-        for {
-          t <- fixtureF
-          _ <- destroy(t)
-        } yield {
-          throw exn
+        fixtureF.transformWith {
+          case Success(t) =>
+            //means fixture setup successfully, something in test case code failed
+            //so we should destroy the fixture
+            destroy(t).flatMap(_ => Future.failed(exn))
+          case Failure(fixtureExn) =>
+            //means setting up the fixture, NOT the test case, failed
+            //since the fixture failed, we cannot destroy the fixture
+            logger.error(s"Failed to setup test fixture", fixtureExn)
+            Future.failed(fixtureExn)
         }
     }
     new FutureOutcome(destructedF)
