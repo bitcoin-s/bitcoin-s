@@ -45,6 +45,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
           case Failure(fixtureExn) =>
             //means setting up the fixture, NOT the test case, failed
             //since the fixture failed, we cannot destroy the fixture
+            logger.error(s"Failed to setup test fixture", fixtureExn)
             Future.failed(fixtureExn)
         }
     }
