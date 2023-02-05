@@ -82,4 +82,9 @@ trait BitcoinSAppConfigBitcoinFixtureStarted
     makeDependentFixture[(BitcoinSAppConfig, BitcoinSAppConfig)](builder,
                                                                  destroyF)(test)
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[BitcoinSAppConfigFixture].afterAll()
+  }
 }
