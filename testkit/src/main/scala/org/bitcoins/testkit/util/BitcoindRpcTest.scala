@@ -52,4 +52,10 @@ trait BitcoindRpcBaseTest extends Logging { this: BitcoinSAkkaAsyncTest =>
 
 abstract class BitcoindRpcTest
     extends BitcoinSAsyncTest
-    with BitcoindRpcBaseTest
+    with BitcoindRpcBaseTest {
+
+  override def afterAll(): Unit = {
+    super[BitcoindRpcBaseTest].afterAll()
+    super[BitcoinSAsyncTest].afterAll()
+  }
+}

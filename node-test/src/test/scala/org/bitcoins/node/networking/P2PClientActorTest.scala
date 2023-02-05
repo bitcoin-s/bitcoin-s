@@ -43,6 +43,12 @@ class P2PClientActorTest
   }
 
   lazy val probe: TestProbe = TestProbe()
+
+  override def afterAll(): Unit = {
+    super[BitcoindRpcBaseTest].afterAll()
+    super[BitcoinSAppConfigBitcoinFixtureStarted].afterAll()
+  }
+
   behavior of "P2PClientActorTest"
 
   it must "establish a tcp connection with a bitcoin node" in { tuple =>

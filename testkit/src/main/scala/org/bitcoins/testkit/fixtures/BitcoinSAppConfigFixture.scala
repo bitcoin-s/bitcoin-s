@@ -57,7 +57,7 @@ trait BitcoinSAppConfigBitcoinFixtureStarted
       test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[(BitcoinSAppConfig, BitcoinSAppConfig)] = () => {
       for {
-        bitcoind <- cachedBitcoindWithFundsF
+        _ <- cachedBitcoindWithFundsF
         bitcoinSAppConfig1 = BitcoinSTestAppConfig
           .getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
         bitcoinSAppConfig2 = BitcoinSTestAppConfig
