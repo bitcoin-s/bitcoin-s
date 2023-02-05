@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.testkit.server.BitcoinSServerMainUtil
 import org.scalatest.FutureOutcome
@@ -9,7 +9,6 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.Future
 
 sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
-  override type FixtureParam = BitcoinSAppConfig
 
   override def afterAll(): Unit = {
     super[EmbeddedPg].afterAll()
@@ -47,5 +46,40 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
     super[BitcoinSAppConfigFixture].afterAll()
+  }
+}
+
+trait BitcoinSAppConfigBitcoinFixtureStarted
+    extends BitcoinSAppConfigFixture
+    with CachedBitcoindNewest {
+
+  def withTwoBitcoinSAppConfigNotStarted(
+      test: OneArgAsyncTest): FutureOutcome = {
+    val builder: () => Future[(BitcoinSAppConfig, BitcoinSAppConfig)] = () => {
+      for {
+        bitcoind <- cachedBitcoindWithFundsF
+        bitcoinSAppConfig1 = BitcoinSTestAppConfig
+          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+        bitcoinSAppConfig2 = BitcoinSTestAppConfig
+          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+        _ <- bitcoinSAppConfig1.start()
+        _ <- bitcoinSAppConfig2.start()
+      } yield (bitcoinSAppConfig1, bitcoinSAppConfig2)
+    }
+
+    val destroyF: ((BitcoinSAppConfig, BitcoinSAppConfig)) => Future[Unit] = {
+      case (appConfig1, appConfig2) =>
+        val destroy1F =
+          BitcoinSServerMainUtil.destroyBitcoinSAppConfig(appConfig1)
+        val destroy2F =
+          BitcoinSServerMainUtil.destroyBitcoinSAppConfig(appConfig2)
+        for {
+          _ <- destroy1F
+          _ <- destroy2F
+        } yield ()
+    }
+
+    makeDependentFixture[(BitcoinSAppConfig, BitcoinSAppConfig)](builder,
+                                                                 destroyF)(test)
   }
 }
