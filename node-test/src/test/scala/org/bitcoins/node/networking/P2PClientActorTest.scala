@@ -70,17 +70,12 @@ class P2PClientActorTest
 
     val try2 = for {
       peer <- bitcoindPeer2F
-      _ <-
-        try1 //wait for the first node to get connected to avoid a race condition
       client <- buildP2PClient(peer)(tuple._2.chainConf, tuple._2.nodeConf)
       res <- connectAndDisconnect(client)
     } yield res
 
     try1.flatMap { _ =>
-      try2.map { a =>
-        logger.error(s"Done with connect to two nodes")
-        a
-      }
+      try2
     }
   }
 
