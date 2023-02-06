@@ -47,7 +47,7 @@ object BaseWalletTest {
 
   def getFreshConfig(pgUrl: () => Option[String], config: Vector[Config])(
       implicit system: ActorSystem): BitcoinSAppConfig = {
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config: _*)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config)
   }
 
   def getFreshWalletAppConfig(

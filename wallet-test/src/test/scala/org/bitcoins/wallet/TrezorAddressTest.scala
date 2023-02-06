@@ -221,7 +221,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     val confOverride = configForPurposeAndSeed(purpose)
     implicit val conf: WalletAppConfig =
       BitcoinSTestAppConfig
-        .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(), confOverride)
+        .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
+                                             Vector(confOverride))
         .walletConf
 
     val testVectors = purpose match {

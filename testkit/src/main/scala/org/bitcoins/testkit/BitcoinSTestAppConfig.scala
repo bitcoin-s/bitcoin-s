@@ -24,10 +24,11 @@ object BitcoinSTestAppConfig {
   /** Generates a temp directory with the prefix 'bitcoin-s- */
   def tmpDir(): Path = Files.createTempDirectory("bitcoin-s-")
 
-  def genWalletNameConf: Config = {
-    val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
-      Some(UUID.randomUUID().toString.replace("-", ""))
-    } else None
+  def genWalletNameConf(forceNamedWallet: Boolean): Config = {
+    val walletNameOpt =
+      if (forceNamedWallet || NumberGenerator.bool.sampleSome) {
+        Some(UUID.randomUUID().toString.replace("-", ""))
+      } else None
 
     walletNameOpt match {
       case Some(walletName) =>
@@ -61,9 +62,16 @@ object BitcoinSTestAppConfig {
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
   }
 
+  /** @param pgUrl
+    * @param config
+    * @param forceNamedWallet forces a wallet to have a name, if false there is a 50% chance the wallet will have a name
+    * @return
+    */
   def getNeutrinoWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Config*)(implicit system: ActorSystem): BitcoinSAppConfig = {
+      config: Vector[Config],
+      forceNamedWallet: Boolean = false)(implicit
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -79,7 +87,7 @@ object BitcoinSTestAppConfig {
            |}
       """.stripMargin
       }
-      .withFallback(genWalletNameConf)
+      .withFallback(genWalletNameConf(forceNamedWallet))
 
     BitcoinSAppConfig(
       tmpDir(),
@@ -87,9 +95,16 @@ object BitcoinSTestAppConfig {
                                             pgUrl) +: config).toVector)
   }
 
+  /** @param pgUrl
+    * @param config
+    * @param forceNamedWallet forces a wallet to have a name, if false there is a 50% chance the wallet will have a name
+    * @return
+    */
   def getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Config*)(implicit system: ActorSystem): BitcoinSAppConfig = {
+      config: Vector[Config],
+      forceNamedWallet: Boolean = false)(implicit
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -106,7 +121,7 @@ object BitcoinSTestAppConfig {
            |}
       """.stripMargin
       }
-      .withFallback(genWalletNameConf)
+      .withFallback(genWalletNameConf(forceNamedWallet))
 
     BitcoinSAppConfig(
       tmpDir(),

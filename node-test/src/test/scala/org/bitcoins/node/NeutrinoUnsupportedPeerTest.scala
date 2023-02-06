@@ -19,7 +19,8 @@ class NeutrinoUnsupportedPeerTest
         |bitcoin-s.node.peer-discovery-timeout = 10s
       """.stripMargin
     )
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
+                                                              Vector(config))
   }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
