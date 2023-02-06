@@ -11,7 +11,6 @@ import org.bitcoins.rpc.config.{
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest
 import org.bitcoins.testkit.util.{FileUtil, TorUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,7 +58,6 @@ object BitcoinSServerMainUtil {
 
   def destroyBitcoinSAppConfig(appConfig: BitcoinSAppConfig)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    NodeUnitTest.cleanTables(appConfig)
     val stopF = appConfig
       .stop()
       .map(_ => BitcoinSTestAppConfig.deleteAppConfig(appConfig))

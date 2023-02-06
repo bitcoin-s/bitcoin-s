@@ -560,7 +560,7 @@ object NodeUnitTest extends P2PLogger {
     * the setup phase for the next test.
     * @param appConfig
     */
-  def cleanTables(appConfig: BitcoinSAppConfig): Unit = {
+  private def cleanTables(appConfig: BitcoinSAppConfig): Unit = {
     appConfig.nodeConf.clean()
     appConfig.walletConf.clean()
     appConfig.chainConf.clean()
