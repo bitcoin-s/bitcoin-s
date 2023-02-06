@@ -1,50 +1,17 @@
 package org.bitcoins.node.networking
 
-import akka.testkit.{TestActorRef, TestProbe}
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config.{RegTest, TestNet3}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
-import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient.ConnectCommand
-import org.bitcoins.node.networking.peer.PeerMessageReceiver
-import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.{
-  CachedBitcoinSAppConfig,
-  NodeTestUtil,
-  NodeUnitTest
-}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.tor.CachedTor
-import org.bitcoins.testkit.util.BitcoindRpcTest
-import org.scalatest._
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+class P2PClientTest extends BitcoinSUnitTest {
 
-class P2PClientTest
-    extends BitcoindRpcTest
-    with CachedBitcoinSAppConfig
-    with CachedTor {
-
-  lazy val bitcoindRpcF =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
-
-  lazy val bitcoindPeerF = bitcoindRpcF.flatMap { bitcoind =>
-    NodeTestUtil.getBitcoindPeer(bitcoind)
-  }
-
-  lazy val bitcoindRpc2F =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
-
-  lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
-    NodeTestUtil.getBitcoindPeer(bitcoind)
-  }
-
-  lazy val probe: TestProbe = TestProbe()
+  private val np = RegTest
 
   behavior of "parseIndividualMessages"
 
@@ -128,119 +95,6 @@ class P2PClientTest
     val (messages, leftover) = P2PClient.parseIndividualMessages(header.bytes)
     assert(messages.isEmpty)
     assert(leftover.isEmpty)
-  }
-
-  behavior of "P2PClient"
-
-  override def beforeAll(): Unit = {
-    implicit val chainConf = cachedConfig.chainConf
-    chainConf.migrate()
-    ()
-  }
-
-  override def afterAll(): Unit = {
-    implicit val chainConf = cachedConfig.chainConf
-    val shutdownConfigF = for {
-      _ <- chainConf.dropTable("flyway_schema_history")
-      _ <- chainConf.dropAll()
-    } yield {
-      super[CachedBitcoinSAppConfig].afterAll()
-    }
-
-    shutdownConfigF.onComplete { _ =>
-      super[BitcoindRpcTest].afterAll()
-    }
-
-  }
-
-  it must "establish a tcp connection with a bitcoin node" in {
-    for {
-      peer <- bitcoindPeerF
-      client <- buildP2PClient(peer)
-      res <- connectAndDisconnect(client)
-    } yield res
-  }
-
-  it must "connect to two nodes" in {
-    val try1 = for {
-      peer <- bitcoindPeerF
-      client <- buildP2PClient(peer)
-      res <- connectAndDisconnect(client)
-    } yield res
-
-    val try2 = for {
-      peer <- bitcoindPeer2F
-      client <- buildP2PClient(peer)
-      res <- connectAndDisconnect(client)
-    } yield res
-
-    try1.flatMap { _ =>
-      try2
-    }
-  }
-
-  it must "close actor on disconnect" in {
-    for {
-      peer <- bitcoindPeerF
-      client <- buildP2PClient(peer)
-      _ = probe.watch(client.actor)
-      _ <- connectAndDisconnect(client)
-      term = probe.expectTerminated(client.actor)
-    } yield {
-      assert(term.actor == client.actor)
-    }
-  }
-
-  def buildP2PClient(peer: Peer): Future[P2PClient] = {
-    val peerMessageReceiverF =
-      for {
-        node <- NodeUnitTest.buildNode(peer, None)
-      } yield PeerMessageReceiver.preConnection(peer, node)
-
-    val clientActorF: Future[TestActorRef[P2PClientActor]] =
-      peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(
-          P2PClient.props(peer = peer,
-                          peerMsgHandlerReceiver = peerMsgRecv,
-                          onReconnect = (_: Peer) => Future.unit,
-                          onStop = (_: Peer) => Future.unit,
-                          maxReconnectionTries = 16),
-          probe.ref
-        )
-      }
-    val p2pClientF: Future[P2PClient] = clientActorF.map {
-      client: TestActorRef[P2PClientActor] =>
-        P2PClient(client, peer)
-    }
-    p2pClientF
-  }
-
-  /** Helper method to connect to the
-    * remote node and bind our local
-    * connection to the specified port
-    */
-  private def connectAndDisconnect(p2pClient: P2PClient): Future[Assertion] = {
-    p2pClient.actor ! ConnectCommand
-
-    val isConnectedF = for {
-      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
-                                                        1.second,
-                                                        10)
-    } yield isConnected
-
-    isConnectedF.flatMap { _ =>
-      p2pClient.actor ! P2PClient.CloseCommand
-      val isDisconnectedF = for {
-        isDisconnected <-
-          TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
-                                             interval = 1.second,
-                                             maxTries = 100)
-      } yield isDisconnected
-
-      isDisconnectedF.map { _ =>
-        succeed
-      }
-    }
   }
 
 }

@@ -36,7 +36,9 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
     s"0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f2003000000")
 
   override protected def getFreshConfig: BitcoinSAppConfig = {
-    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
+      pgUrl,
+      Vector.empty)
   }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds

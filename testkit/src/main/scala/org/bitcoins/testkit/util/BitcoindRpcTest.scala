@@ -9,7 +9,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 
-abstract class BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
+trait BitcoindRpcBaseTest extends Logging { this: BitcoinSAkkaAsyncTest =>
 
   private val dirExists =
     Files.exists(BitcoindRpcTestClient.sbtBinaryDirectory)
@@ -25,7 +25,7 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
     printerr(s"Run 'sbt downloadBitcoind' to fetch needed binaries")
     sys.error {
       val msg =
-        s""""bitcoind binary directory (${BitcoindRpcTestClient.sbtBinaryDirectory}) is empty. 
+        s""""bitcoind binary directory (${BitcoindRpcTestClient.sbtBinaryDirectory}) is empty.
            |Run 'sbt downloadBitcoind' to fetch needed binaries""".stripMargin
       msg
     }
@@ -43,10 +43,19 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
   override def afterAll(): Unit = {
     val stopF = BitcoindRpcTestUtil.stopServers(clientAccum.result())
     Await.result(stopF, duration)
-    super.afterAll()
   }
 
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
+  }
+}
+
+abstract class BitcoindRpcTest
+    extends BitcoinSAsyncTest
+    with BitcoindRpcBaseTest {
+
+  override def afterAll(): Unit = {
+    super[BitcoindRpcBaseTest].afterAll()
+    super[BitcoinSAsyncTest].afterAll()
   }
 }
