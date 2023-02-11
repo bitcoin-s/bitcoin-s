@@ -253,4 +253,12 @@ trait BlockchainRpc { self: Client =>
     bitcoindCall[Boolean]("verifychain",
                           List(JsNumber(level), JsNumber(blocks)))
   }
+
+  /** Waits for the validation interface queue to catch up on everything that was there when we entered this function
+    * @see [[https://github.com/bitcoin/bitcoin/issues/27085]]
+    * @return
+    */
+  def syncWithValidationInterfaceQueue(): Future[Unit] = {
+    bitcoindCall[Unit](command = "syncwithvalidationinterfacequeue", List.empty)
+  }
 }
