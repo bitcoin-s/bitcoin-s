@@ -3,7 +3,7 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 // bundle up Scala applications into packaging formats such as Docker,
 // GraalVM native-image, executable JARs etc
 // https://github.com/sbt/sbt-native-packager
-addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.13")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.14")
 
 // collect code coverage when executing tests
 //https://github.com/scoverage/sbt-scoverage
@@ -52,7 +52,7 @@ addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.6")
 
 // Scala.js
 //https://www.scala-js.org/doc/project/
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.12.0")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.13.0")
 
 //https://github.com/scalacenter/scalajs-bundler
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.1")

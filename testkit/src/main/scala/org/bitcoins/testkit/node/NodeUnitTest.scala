@@ -532,6 +532,10 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[NeutrinoNode] = {
     import system.dispatcher
     for {
+      //wait for bitcoind to be synced internally
+      //see: https://github.com/bitcoin/bitcoin/issues/27085
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4976
+      _ <- bitcoind.syncWithValidationInterfaceQueue()
       _ <- node.sync()
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
       _ = require(syncing)

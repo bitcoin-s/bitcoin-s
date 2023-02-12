@@ -22,11 +22,11 @@ object Deps {
     val slf4j = "2.0.6"
     val spray = "1.3.6"
     val zeromq = "0.5.3"
-    val scalapb = "0.11.12"
+    val scalapb = "0.11.13"
     val akkav = "10.2.10"
     val playv = "2.9.4" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.20"
-    val jUnixSocketV = "2.6.1"
+    val jUnixSocketV = "2.6.2"
     val scodecV = "1.1.34"
     val junitV = "0.13.3"
     val nativeLoaderV = "2.4.0"
@@ -36,11 +36,11 @@ object Deps {
 
     val flywayV =
       "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
-    val postgresV = "42.5.1" //https://jdbc.postgresql.org/
+    val postgresV = "42.5.3" //https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
     val slickV = "3.4.1"
-    val sqliteV = "3.40.0.0" //https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.40.1.0" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
@@ -68,7 +68,7 @@ object Deps {
     val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.1.0"
-    val sttpV = "3.8.8" // https://github.com/softwaremill/sttp
+    val sttpV = "3.8.11" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.9"
     val scalaJsTimeV = "2.5.0"
     val zxingV = "3.5.0"
