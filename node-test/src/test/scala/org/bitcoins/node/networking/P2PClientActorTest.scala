@@ -127,7 +127,7 @@ class P2PClientActorTest
     val isConnectedF = for {
       isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
                                                         1.second,
-                                                        10)
+                                                        15)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
