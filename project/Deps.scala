@@ -53,7 +53,7 @@ object Deps {
     val newMicroJsonV = newMicroPickleV
 
     val osgiFrameworkV = "1.10.0"
-    val osgiJdbcV = "1.0.1"
+    val osgiJdbcV = "1.1.0"
     val osgiCoreV = "8.0.0"
 
     // akka-http-upickle is not yet published
