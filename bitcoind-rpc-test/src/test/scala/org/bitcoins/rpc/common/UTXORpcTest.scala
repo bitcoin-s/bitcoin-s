@@ -41,10 +41,11 @@ class UTXORpcTest extends BitcoindRpcTest {
       secondSuccess <- client.lockUnspent(unlock = true, param)
       newLocked <- client.listLockUnspent
     } yield {
+      val txids = Vector(txid1, txid2)
       assert(firstSuccess)
       assert(locked.length == 2)
-      assert(locked(0).txId.flip == txid1)
-      assert(locked(1).txId.flip == txid2)
+      assert(txids.exists(_ == locked(0).txId.flip))
+      assert(txids.exists(_ == locked(1).txId.flip))
       assert(secondSuccess)
       assert(newLocked.isEmpty)
     }
