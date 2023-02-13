@@ -18,15 +18,20 @@ import scala.concurrent.Future
 
 /** RPC calls related to mining
   */
-trait MiningRpc { self: Client =>
+trait MiningRpc { self: Client with BlockchainRpc =>
 
   def generateToAddress(
       blocks: Int,
       address: BitcoinAddress,
       maxTries: Int = 1000000): Future[Vector[DoubleSha256DigestBE]] = {
-    bitcoindCall[Vector[DoubleSha256DigestBE]](
+    val hashesF = bitcoindCall[Vector[DoubleSha256DigestBE]](
       "generatetoaddress",
       List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
+
+    for {
+      hashes <- hashesF
+      _ <- syncWithValidationInterfaceQueue()
+    } yield hashes
   }
 
   def generateBlock(
@@ -34,9 +39,13 @@ trait MiningRpc { self: Client =>
       transactions: Vector[Transaction]
   ): Future[DoubleSha256DigestBE] = {
     val txsJs = JsArray(transactions.map(t => JsString(t.hex)))
-    bitcoindCall[GenerateBlockResult](
+    val hashesF = bitcoindCall[GenerateBlockResult](
       "generateblock",
       List(JsString(address.toString), txsJs)).map(_.hash)
+    for {
+      hash <- hashesF
+      _ <- syncWithValidationInterfaceQueue()
+    } yield hash
   }
 
   def getBlockTemplate(request: Option[RpcOpts.BlockTemplateRequest] =
