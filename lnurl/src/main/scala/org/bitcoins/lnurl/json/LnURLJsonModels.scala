@@ -46,7 +46,9 @@ object LnURLJsonModels {
       callback: URL,
       maxSendable: MilliSatoshis,
       minSendable: MilliSatoshis,
-      private val metadata: String)
+      private val metadata: String,
+      nostrPubkey: Option[SchnorrPublicKey],
+      allowsNostr: Option[Boolean])
       extends LnURLResponse {
     override val tag: LnURLTag = PayRequest
     lazy val metadataJs: JsValue = Json.parse(metadata)
