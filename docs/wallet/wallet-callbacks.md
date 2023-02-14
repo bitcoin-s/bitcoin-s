@@ -37,7 +37,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet._
@@ -52,10 +52,7 @@ implicit val ec: ExecutionContextExecutor = system.dispatcher
 implicit val walletConf: WalletAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig().walletConf
 
-// let's use a helper method to get a v19 bitcoind
-// and a ChainApi
-
-val bitcoind = BitcoindV19RpcClient(BitcoindInstanceLocal.fromConfFile())
+val bitcoind = BitcoindRpcClient(BitcoindInstanceLocal.fromConfFile())
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
 // Here is a super simple example of a callback, this could be replaced with anything, from

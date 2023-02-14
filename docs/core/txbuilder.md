@@ -12,7 +12,6 @@ import org.bitcoins.core._
 import number._
 import currency._
 import org.bitcoins.crypto._
-import script.crypto._
 import protocol.transaction._
 import protocol.script._
 

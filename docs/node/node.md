@@ -44,7 +44,6 @@ For your node to be able to service these filters you will need set
 import akka.actor.ActorSystem
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.node._
-import org.bitcoins.node.networking.peer._
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.node._
 import org.bitcoins.testkit.node.fixture._

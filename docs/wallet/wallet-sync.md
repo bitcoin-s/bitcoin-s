@@ -77,9 +77,6 @@ import org.bitcoins.crypto._
 
 import org.bitcoins.feeprovider._
 
-import org.bitcoins.keymanager.config._
-import org.bitcoins.keymanager.bip39._
-
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config._
 import org.bitcoins.wallet.sync._
