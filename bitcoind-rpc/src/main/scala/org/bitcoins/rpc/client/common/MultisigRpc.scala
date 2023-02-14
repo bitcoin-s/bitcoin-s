@@ -3,8 +3,7 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   MultiSigResult,
-  MultiSigResultPostV20,
-  MultiSigResultPreV20
+  MultiSigResultPostV20
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
@@ -40,17 +39,11 @@ trait MultisigRpc { self: Client =>
            JsArray(keys.map(keyToString)),
            JsString(account)) ++ addressType.map(Json.toJson(_)).toList
 
-    self.version.flatMap {
-      case V24 | V23 | V22 | V21 | V20 | Unknown =>
-        bitcoindCall[MultiSigResultPostV20](
-          "addmultisigaddress",
-          params,
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V19 =>
-        bitcoindCall[MultiSigResultPreV20]("addmultisigaddress",
-                                           params,
-                                           uriExtensionOpt =
-                                             walletNameOpt.map(walletExtension))
+    self.version.flatMap { case V24 | V23 | V22 | V21 | V20 | Unknown =>
+      bitcoindCall[MultiSigResultPostV20]("addmultisigaddress",
+                                          params,
+                                          uriExtensionOpt =
+                                            walletNameOpt.map(walletExtension))
     }
   }
 
@@ -83,20 +76,14 @@ trait MultisigRpc { self: Client =>
       keys: Vector[ECPublicKey],
       addressType: AddressType,
       walletNameOpt: Option[String] = None): Future[MultiSigResult] = {
-    self.version.flatMap {
-      case V24 | V23 | V22 | V21 | V20 | Unknown =>
-        bitcoindCall[MultiSigResultPostV20](
-          "createmultisig",
-          List(JsNumber(minSignatures),
-               Json.toJson(keys.map(_.hex)),
-               Json.toJson(addressType)),
-          uriExtensionOpt = walletNameOpt.map(walletExtension)
-        )
-      case V19 =>
-        bitcoindCall[MultiSigResultPreV20](
-          "createmultisig",
-          List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))),
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
+    self.version.flatMap { case V24 | V23 | V22 | V21 | V20 | Unknown =>
+      bitcoindCall[MultiSigResultPostV20](
+        "createmultisig",
+        List(JsNumber(minSignatures),
+             Json.toJson(keys.map(_.hex)),
+             Json.toJson(addressType)),
+        uriExtensionOpt = walletNameOpt.map(walletExtension)
+      )
     }
   }
 }

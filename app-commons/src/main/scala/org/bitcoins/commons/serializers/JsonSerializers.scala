@@ -245,22 +245,6 @@ object JsonSerializers {
   implicit val peerNetworkInfoPostV21Reads: Reads[PeerNetworkInfoPostV21] =
     Json.reads[PeerNetworkInfoPostV21]
 
-  implicit val peerPreV20Reads: Reads[PeerPreV20] = ((__ \ "id").read[Int] and
-    __.read[PeerNetworkInfoPreV21] and
-    (__ \ "version").read[Int] and
-    (__ \ "subver").read[String] and
-    (__ \ "inbound").read[Boolean] and
-    (__ \ "addnode").read[Boolean] and
-    (__ \ "startingheight").read[Int] and
-    (__ \ "banscore").read[Int] and
-    (__ \ "synced_headers").read[Int] and
-    (__ \ "synced_blocks").read[Int] and
-    (__ \ "inflight").read[Vector[Int]] and
-    (__ \ "whitelisted").read[Boolean] and
-    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
-    (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
-    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPreV20)
-
   implicit val peerV20Reads: Reads[PeerV20] = ((__ \ "id").read[Int] and
     __.read[PeerNetworkInfoPreV21] and
     (__ \ "version").read[Int] and
@@ -403,10 +387,6 @@ object JsonSerializers {
     override def writes(o: BIP32Path): JsValue =
       JsString(o.toString)
   }
-
-  // Wallet Models
-  implicit val multiSigPreV20Reads: Reads[MultiSigResultPreV20] =
-    Json.reads[MultiSigResultPreV20]
 
   implicit val multiSigPostV20Reads: Reads[MultiSigResultPostV20] =
     Json.reads[MultiSigResultPostV20]

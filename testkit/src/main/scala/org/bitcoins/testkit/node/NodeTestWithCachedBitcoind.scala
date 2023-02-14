@@ -15,8 +15,7 @@ import org.bitcoins.testkit.rpc.{
   CachedBitcoind,
   CachedBitcoindNewest,
   CachedBitcoindNewestNoP2pBlockFilters,
-  CachedBitcoindPairNewest,
-  CachedBitcoindV19
+  CachedBitcoindPairNewest
 }
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -221,16 +220,6 @@ trait NodeTestWithCachedBitcoindPair
 
   override def afterAll(): Unit = {
     super[CachedBitcoindPairNewest].afterAll()
-    super[NodeTestWithCachedBitcoind].afterAll()
-  }
-}
-
-trait NodeTestWithCachedBitcoindV19
-    extends NodeTestWithCachedBitcoind
-    with CachedBitcoindV19 {
-
-  override def afterAll(): Unit = {
-    super[CachedBitcoindV19].afterAll()
     super[NodeTestWithCachedBitcoind].afterAll()
   }
 }

@@ -88,7 +88,7 @@ trait PsbtRpc {
     self.version.flatMap {
       case V22 | V23 | V24 | Unknown =>
         bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
-      case V19 | V20 | V21 =>
+      case V20 | V21 =>
         bitcoindCall[DecodePsbtResultPreV22]("decodepsbt",
                                              List(Json.toJson(psbt)))
     }

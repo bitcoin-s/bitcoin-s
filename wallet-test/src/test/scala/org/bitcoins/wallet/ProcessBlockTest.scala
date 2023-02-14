@@ -11,22 +11,22 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTestCachedBitcoinV19,
-  WalletWithBitcoindV19
+  BitcoinSWalletTestCachedBitcoindNewest,
+  WalletWithBitcoindRpc
 }
 import org.bitcoins.wallet.models.AccountDAO
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
+class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
-  override type FixtureParam = WalletWithBitcoindV19
+  override type FixtureParam = WalletWithBitcoindRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withNewWalletAndBitcoindCachedV19(test, bitcoind)(
+      futOutcome = withNewWalletAndBitcoindCached(test, bitcoind)(
         getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut

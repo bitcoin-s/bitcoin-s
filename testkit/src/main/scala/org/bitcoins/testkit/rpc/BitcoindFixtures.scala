@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
@@ -47,41 +46,6 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
-  }
-}
-
-/** Test trait that caches a [[BitcoindV19RpcClient]] that is funded
-  * and available to use with fixtures
-  */
-trait BitcoindFixturesFundedCachedV19
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCached
-    with CachedBitcoindV19 {
-
-  override type FixtureParam = BitcoindV19RpcClient
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val f: Future[Outcome] = for {
-      bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withV19FundedBitcoindCached(test, bitcoind)
-      fut <- futOutcome.toFuture
-    } yield fut
-    new FutureOutcome(f)
-  }
-
-  def withV19FundedBitcoindCached(
-      test: OneArgAsyncTest,
-      bitcoind: BitcoindV19RpcClient): FutureOutcome = {
-    makeDependentFixture[BitcoindV19RpcClient](
-      () => Future.successful(bitcoind),
-      { case _ =>
-        Future.unit // don't want to destroy anything since it is cached
-      })(test)
-  }
-
-  override def afterAll(): Unit = {
-    super[CachedBitcoindV19].afterAll()
-    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
 
@@ -291,28 +255,6 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
         Future.unit
       }
     )(test)
-  }
-}
-
-trait BitcoindFixturesCachedPairV19
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair[BitcoindV19RpcClient] {
-  override type FixtureParam = NodePair[BitcoindV19RpcClient]
-
-  override val version: BitcoindVersion = BitcoindVersion.V19
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val futOutcome = for {
-      pair <- clientsF
-      futOutcome = with2BitcoindsCached(test, pair)
-      f <- futOutcome.toFuture
-    } yield f
-    new FutureOutcome(futOutcome)
-  }
-
-  override def afterAll(): Unit = {
-    super[BitcoindFixturesCachedPair].afterAll()
-    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
 
