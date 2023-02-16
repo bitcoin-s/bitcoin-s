@@ -16,8 +16,8 @@ import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v19.{BitcoindV19RpcClient, V19BlockFilterRpc}
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient}
+import org.bitcoins.rpc.client.v19.{V19BlockFilterRpc}
 import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.chain.models.{
@@ -693,18 +693,6 @@ object ChainUnitTest extends ChainVerificationLogger {
     }
 
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
-  }
-
-  def createBitcoindV19ChainHandler()(implicit
-      system: ActorSystem,
-      chainAppConfig: ChainAppConfig): Future[
-    BitcoindBlockFilterRpcChainHandler] = {
-    import system.dispatcher
-    val bitcoindV = BitcoindVersion.V19
-    val bitcoindF = BitcoinSFixture
-      .createBitcoind(Some(bitcoindV))
-      .map(_.asInstanceOf[BitcoindV19RpcClient])
-    bitcoindF.flatMap(b => createBitcoindBlockFilterRpcChainHandler(b))
   }
 
   def createBitcoindBlockFilterRpcChainHandler(

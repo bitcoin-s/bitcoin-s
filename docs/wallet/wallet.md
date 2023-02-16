@@ -60,7 +60,6 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
-import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -69,7 +68,6 @@ import org.bitcoins.wallet.Wallet
 
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Files
-import java.time.Instant
 import scala.concurrent._
 import akka.actor.ActorSystem
 

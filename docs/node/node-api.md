@@ -12,10 +12,9 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.util._
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.testkit.chain.MockChainQueryApi
@@ -55,7 +54,7 @@ implicit val walletConf: WalletAppConfig =
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
-val bitcoind = BitcoindV19RpcClient(instance)
+val bitcoind = BitcoindRpcClient(instance)
 val chainApi = MockChainQueryApi.mock
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 

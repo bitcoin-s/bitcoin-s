@@ -1,14 +1,17 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockChainInfoResultPostV23}
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPostV23
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
+
+import scala.concurrent.Future
 
 class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
@@ -215,6 +218,31 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield {
       val oneHourAgo = (System.currentTimeMillis() / 1000) - 60 * 60
       assert(medianTime > oneHourAgo)
+    }
+  }
+  it should "get a block filter given a block hash" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      blocks <- client.generate(1)
+      blockFilter <- client.getBlockFilter(blocks.head, FilterType.Basic)
+
+      block <- client.getBlockRaw(blocks.head)
+      txs <- Future.sequence(
+        block.transactions
+          .filterNot(_.isCoinbase)
+          .map(tx => client.getTransaction(tx.txIdBE)))
+
+      prevFilter <- client.getBlockFilter(block.blockHeader.previousBlockHashBE,
+                                          FilterType.Basic)
+    } yield {
+      val pubKeys = txs.flatMap(_.hex.outputs.map(_.scriptPubKey)).toVector
+      val filter = BlockFilter(block, pubKeys)
+      assert(filter.hash == blockFilter.filter.hash)
+      assert(
+        blockFilter.header == filter
+          .getHeader(prevFilter.header.flip)
+          .hash
+          .flip)
     }
   }
 }

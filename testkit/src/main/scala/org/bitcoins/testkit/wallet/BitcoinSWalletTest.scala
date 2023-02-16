@@ -13,7 +13,6 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.testkit.EmbeddedPg
@@ -184,53 +183,6 @@ trait BitcoinSWalletTest
     makeDependentFixture(
       builder,
       destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindRpc))(test)
-  }
-
-  def withNewWalletAndBitcoindV19(test: OneArgAsyncTest)(implicit
-      walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoindV19] =
-      BitcoinSFixture.composeBuildersAndWrap(
-        builder = { () =>
-          BitcoinSFixture
-            .createBitcoindWithFunds(Some(BitcoindVersion.V19))
-            .map(_.asInstanceOf[BitcoindV19RpcClient])
-        },
-        dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
-          createWalletWithBitcoindV19(bitcoind)
-        },
-        wrap = (
-            _: BitcoindV19RpcClient,
-            walletWithBitcoind: WalletWithBitcoindV19) => walletWithBitcoind
-      )
-
-    makeDependentFixture(
-      builder,
-      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindV19))(test)
-  }
-
-  def withFundedWalletAndBitcoindV19(test: OneArgAsyncTest)(implicit
-      walletAppConfig: WalletAppConfig): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoindV19] = { () =>
-      for {
-        bitcoind <-
-          BitcoinSFixture
-            .createBitcoindWithFunds(Some(BitcoindVersion.V19))
-            .map(_.asInstanceOf[BitcoindV19RpcClient])
-        wallet <- createWalletWithBitcoindCallbacks(bitcoind)
-        fundedWallet <- FundWalletUtil.fundWalletWithBitcoind(wallet)
-        _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
-                                           bitcoind = bitcoind)
-        _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
-      } yield {
-        WalletWithBitcoindV19(fundedWallet.wallet,
-                              bitcoind,
-                              wallet.walletConfig)
-      }
-    }
-
-    makeDependentFixture(
-      builder,
-      destroy = destroyWalletWithBitcoind(_: WalletWithBitcoindV19))(test)
   }
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
@@ -466,30 +418,6 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem,
       config: WalletAppConfig): Future[WalletWithBitcoindRpc] = {
     createWalletWithBitcoindCallbacks(bitcoind)
-  }
-
-  def createWalletWithBitcoindV19(bitcoind: BitcoindV19RpcClient)(implicit
-      system: ActorSystem,
-      config: WalletAppConfig): Future[WalletWithBitcoindV19] = {
-    import system.dispatcher
-    val resultF = createWalletWithBitcoindCallbacks(bitcoind)
-    resultF.map { result =>
-      WalletWithBitcoindV19(result.wallet, bitcoind, config)
-    }
-
-  }
-
-  def createWalletWithBitcoindV19(wallet: Wallet)(implicit
-      system: ActorSystem): Future[WalletWithBitcoindV19] = {
-    import system.dispatcher
-    val createdF =
-      createWalletWithBitcoind(wallet, versionOpt = Some(BitcoindVersion.V19))
-    for {
-      created <- createdF
-    } yield WalletWithBitcoindV19(
-      created.wallet,
-      created.bitcoind.asInstanceOf[BitcoindV19RpcClient],
-      wallet.walletConfig)
   }
 
   def createWalletWithBitcoind(

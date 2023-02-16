@@ -22,7 +22,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   StringFactory
 }
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
@@ -62,7 +62,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with UTXORpc
     with WalletRpc
     with PsbtRpc
-    with UtilRpc {
+    with UtilRpc
+    with V19BlockFilterRpc {
 
   private val syncing = new AtomicBoolean(false)
 
@@ -344,7 +345,6 @@ object BitcoindRpcClient {
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
       case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
@@ -373,13 +373,9 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   val newest: BitcoindVersion = V24
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V19, V20, V21, V22, V23, V24)
+    Vector(V20, V21, V22, V23, V24)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V19 extends BitcoindVersion {
-    override def toString: String = "v0.19"
-  }
 
   case object V20 extends BitcoindVersion {
     override def toString: String = "v0.20"
@@ -419,7 +415,6 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     //need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "19" => V19
       case "20" => V20
       case "21" => V21
       case "22" => V22

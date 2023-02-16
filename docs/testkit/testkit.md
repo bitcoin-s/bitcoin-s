@@ -38,9 +38,7 @@ implicit val system = ActorSystem("bitcoind-testkit-example")
 implicit val ec = system.dispatcher
 
 //pick our bitcoind version we want to spin up
-//you can pick older versions if you want
-//we support versions 16-19
-val bitcoindV = BitcoindVersion.V19
+val bitcoindV = BitcoindVersion.newest
 
 //create an instance
 val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(bitcoindV))

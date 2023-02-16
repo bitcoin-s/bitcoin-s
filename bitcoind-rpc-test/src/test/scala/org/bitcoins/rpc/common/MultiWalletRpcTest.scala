@@ -11,11 +11,10 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV19,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.AkkaUtil
@@ -27,7 +26,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 /** These tests are all copied over from WalletRpcTest and changed to be for multi-wallet */
-class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
+class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   val walletName = "other"
 
@@ -42,15 +41,15 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
     new FutureOutcome(f)
   }
 
-  private val cachedSetupClientsF: Future[NodePair[BitcoindV19RpcClient]] = {
+  private val cachedSetupClientsF: Future[NodePair[BitcoindRpcClient]] = {
     clientsF.flatMap(setupWalletClient)
   }
 
   /** We need to test bitcoin core's wallet specific features, so we need to set that up */
-  private def setupWalletClient(pair: NodePair[BitcoindV19RpcClient]): Future[
-    NodePair[BitcoindV19RpcClient]] = {
-    val NodePair(client: BitcoindV19RpcClient,
-                 walletClient: BitcoindV19RpcClient) = pair
+  private def setupWalletClient(pair: NodePair[BitcoindRpcClient]): Future[
+    NodePair[BitcoindRpcClient]] = {
+    val NodePair(client: BitcoindRpcClient, walletClient: BitcoindRpcClient) =
+      pair
     for {
       _ <- walletClient.createWallet(walletName)
       _ <- walletClient.encryptWallet(password, Some(walletName))
@@ -73,9 +72,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
       wallets2 <- client.listWallets
       _ = require(wallets.size == 2)
       _ = require(wallets2.size == 2)
-    } yield NodePair[BitcoindV19RpcClient](
-      client,
-      started.asInstanceOf[BitcoindV19RpcClient])
+    } yield NodePair[BitcoindRpcClient](client, started)
   }
 
   behavior of "WalletRpc"

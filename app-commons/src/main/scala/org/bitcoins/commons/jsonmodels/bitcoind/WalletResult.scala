@@ -26,11 +26,6 @@ trait MultiSigResult extends WalletResult {
   def redeemScript: ScriptPubKey
 }
 
-case class MultiSigResultPreV20(
-    address: BitcoinAddress,
-    redeemScript: ScriptPubKey)
-    extends MultiSigResult
-
 case class MultiSigResultPostV20(
     address: BitcoinAddress,
     redeemScript: ScriptPubKey,

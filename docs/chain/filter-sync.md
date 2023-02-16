@@ -27,10 +27,11 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.gcs._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.chain.blockchain.sync._
-
+import org.bitcoins.rpc.config._
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain._
-import org.bitcoins.testkit.chain.fixture.BitcoindBlockFilterRpcChainHandler
+import org.bitcoins.testkit.chain.fixture.BitcoindBaseVersionChainHandlerViaRpc
 
 ```
 
@@ -55,10 +56,10 @@ implicit val system = ActorSystem(s"filter-sync-example")
 implicit val ec = system.dispatcher
 implicit val chainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
 
-//let's use a helper method to get a v19 bitcoind
-//instance and a chainApi
-val bitcoindWithChainApiF: Future[BitcoindBlockFilterRpcChainHandler] = {
-  ChainUnitTest.createBitcoindV19ChainHandler()
+val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
+val bitcoind = BitcoindRpcClient(instance)
+val bitcoindWithChainApiF: Future[BitcoindBaseVersionChainHandlerViaRpc] = {
+  ChainUnitTest.createChainApiWithBitcoindRpc(bitcoind)
 }
 val bitcoindF = bitcoindWithChainApiF.map(_.bitcoindRpc)
 val chainApiF = bitcoindWithChainApiF.map(_.chainHandler)
@@ -114,7 +115,7 @@ val resultF = for {
 resultF.onComplete { _ =>
   for {
     c <- bitcoindWithChainApiF
-    _ <- ChainUnitTest.destroyBitcoindV19ChainApi(c)
+    _ <- ChainUnitTest.destroyBitcoindChainApiViaRpc(c)
     _ <- system.terminate()
   } yield ()
 }

@@ -2,15 +2,15 @@ package org.bitcoins.wallet.sync
 
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTestCachedBitcoinV19,
-  WalletWithBitcoindV19
+  BitcoinSWalletTestCachedBitcoindNewest,
+  WalletWithBitcoindRpc
 }
 
-class WalletSyncTest extends BitcoinSWalletTestCachedBitcoinV19 {
+class WalletSyncTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   behavior of "WalletSync"
 
-  override type FixtureParam = WalletWithBitcoindV19
+  override type FixtureParam = WalletWithBitcoindRpc
 
   it must "sync a wallet with bitcoind" in { param =>
     val wallet = param.wallet

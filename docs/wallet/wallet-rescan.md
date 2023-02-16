@@ -43,7 +43,6 @@ You can download this with bitcoin-s by doing `sbt downloadBitcoind`
 ```scala mdoc:invisible
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.fixtures._
 import org.bitcoins.testkit.wallet._
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig

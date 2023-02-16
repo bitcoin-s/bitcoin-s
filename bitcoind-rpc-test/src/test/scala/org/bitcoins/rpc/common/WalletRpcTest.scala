@@ -1,7 +1,10 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  WalletFlag
+}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
@@ -9,6 +12,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
@@ -654,6 +658,47 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
                 fail("Expected P2WPKH")
             }
         }
+      }
+  }
+
+  it should "be able to set the wallet flag 'avoid_reuse'" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      unspentPre <- client.listUnspent
+      result <- client.setWalletFlag(WalletFlag.AvoidReuse, value = true)
+      unspentPost <- client.listUnspent
+    } yield {
+      assert(result.flag_name == "avoid_reuse")
+      assert(result.flag_state)
+      assert(unspentPre.forall(utxo => utxo.reused.isEmpty))
+      assert(unspentPost.forall(utxo => utxo.reused.isDefined))
+    }
+  }
+
+  it should "create a wallet with a passphrase" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      _ <- client.createWallet("suredbits", passphrase = "stackingsats")
+      wallets <- client.listWallets
+    } yield {
+      assert(wallets.contains("suredbits"))
+    }
+  }
+
+  it should "check to see if the utxoUpdate input has been updated" in {
+    nodePair =>
+      val client = nodePair.node1
+      val descriptor =
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
+
+      val psbt =
+        PSBT.fromBase64(
+          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
+
+      for {
+        result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
+      } yield {
+        assert(result == psbt)
       }
   }
 
