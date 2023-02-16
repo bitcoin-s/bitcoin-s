@@ -88,10 +88,10 @@ data store is NOT associated with our best block header, we attempt to sync our 
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> chainAppConfig = <span class="hljs-type">BitcoinSTestAppConfig</span>.getNeutrinoTestConfig().chainConf
 
-<span class="hljs-comment">//let's use a helper method to get a v19 bitcoind</span>
-<span class="hljs-comment">//instance and a chainApi</span>
-<span class="hljs-keyword">val</span> bitcoindWithChainApiF: <span class="hljs-type">Future</span>[<span class="hljs-type">BitcoindBlockFilterRpcChainHandler</span>] = {
-  <span class="hljs-type">ChainUnitTest</span>.createBitcoindV19ChainHandler()
+<span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindInstanceLocal</span>.fromConfigFile(<span class="hljs-type">BitcoindConfig</span>.<span class="hljs-type">DEFAULT_CONF_FILE</span>)
+<span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindRpcClient</span>(instance)
+<span class="hljs-keyword">val</span> bitcoindWithChainApiF: <span class="hljs-type">Future</span>[<span class="hljs-type">BitcoindBaseVersionChainHandlerViaRpc</span>] = {
+  <span class="hljs-type">ChainUnitTest</span>.createChainApiWithBitcoindRpc(bitcoind)
 }
 <span class="hljs-keyword">val</span> bitcoindF = bitcoindWithChainApiF.map(_.bitcoindRpc)
 <span class="hljs-keyword">val</span> chainApiF = bitcoindWithChainApiF.map(_.chainHandler)
@@ -147,7 +147,7 @@ data store is NOT associated with our best block header, we attempt to sync our 
 resultF.onComplete { _ =&gt;
   <span class="hljs-keyword">for</span> {
     c &lt;- bitcoindWithChainApiF
-    _ &lt;- <span class="hljs-type">ChainUnitTest</span>.destroyBitcoindV19ChainApi(c)
+    _ &lt;- <span class="hljs-type">ChainUnitTest</span>.destroyBitcoindChainApiViaRpc(c)
     _ &lt;- system.terminate()
   } <span class="hljs-keyword">yield</span> ()
 }

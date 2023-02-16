@@ -76,9 +76,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-comment">//pick our bitcoind version we want to spin up</span>
-<span class="hljs-comment">//you can pick older versions if you want</span>
-<span class="hljs-comment">//we support versions 16-19</span>
-<span class="hljs-keyword">val</span> bitcoindV = <span class="hljs-type">BitcoindVersion</span>.<span class="hljs-type">V19</span>
+<span class="hljs-keyword">val</span> bitcoindV = <span class="hljs-type">BitcoindVersion</span>.newest
 
 <span class="hljs-comment">//create an instance</span>
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindRpcTestUtil</span>.instance(versionOpt = <span class="hljs-type">Some</span>(bitcoindV))

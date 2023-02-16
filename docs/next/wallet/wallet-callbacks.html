@@ -91,10 +91,7 @@ that you are notified of the event. For instance, if your DLC transitions from
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> walletConf: <span class="hljs-type">WalletAppConfig</span> =
     <span class="hljs-type">BitcoinSTestAppConfig</span>.getNeutrinoTestConfig().walletConf
 
-<span class="hljs-comment">// let's use a helper method to get a v19 bitcoind</span>
-<span class="hljs-comment">// and a ChainApi</span>
-
-<span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(<span class="hljs-type">BitcoindInstanceLocal</span>.fromConfFile())
+<span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindRpcClient</span>(<span class="hljs-type">BitcoindInstanceLocal</span>.fromConfFile())
 <span class="hljs-keyword">val</span> aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>))
 
 <span class="hljs-comment">// Here is a super simple example of a callback, this could be replaced with anything, from</span>
