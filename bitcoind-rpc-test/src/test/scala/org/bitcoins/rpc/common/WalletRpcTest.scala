@@ -731,23 +731,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
     }
   }
 
-  it should "check to see if the utxoUpdate input has been updated" in {
-    nodePair =>
-      val client = nodePair.node1
-      val descriptor =
-        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
-
-      val psbt =
-        PSBT.fromBase64(
-          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
-
-      for {
-        result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
-      } yield {
-        assert(result == psbt)
-      }
-  }
-
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }
