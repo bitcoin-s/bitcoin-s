@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindVersion.{
   Unknown,
-  V20,
   V21,
   V22,
   V23,
@@ -93,7 +92,7 @@ trait TransactionRpc { self: Client =>
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
 
-      case V20 | V21 =>
+      case V21 =>
         bitcoindCall[GetTxOutResultPreV22](
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
@@ -111,7 +110,7 @@ trait TransactionRpc { self: Client =>
             "gettxout",
             List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
 
-        case V20 | V21 =>
+        case V21 =>
           bitcoindCall[GetTxOutResultPreV22](
             "gettxout",
             List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))

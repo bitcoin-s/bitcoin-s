@@ -6,6 +6,8 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
+import java.io.File
+import java.nio.file.Files
 import scala.concurrent.Future
 
 class UTXORpcTest extends BitcoindRpcTest {
@@ -68,6 +70,23 @@ class UTXORpcTest extends BitcoindRpcTest {
     } yield {
       assert(info1.exists(_.coinbase))
       assert(info2.isEmpty)
+    }
+  }
+
+  it should "correctly dump tx out set" in {
+    for {
+      client <- clientF
+      hash <- client.getBestBlockHash
+      height <- client.getBestHashBlockHeight()
+      result <- client.dumpTxOutSet(new File("utxo.dat").toPath)
+    } yield {
+      assert(Files.exists(result.path))
+      // Mild clean up
+      Files.delete(result.path)
+
+      assert(result.base_hash == hash)
+      assert(result.base_height == height)
+      assert(result.coins_written > 0)
     }
   }
 }

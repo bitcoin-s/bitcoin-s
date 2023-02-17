@@ -30,7 +30,6 @@ import org.bitcoins.crypto.{
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
@@ -175,7 +174,7 @@ trait BitcoindRpcTestUtil extends Logging {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V20 | V21 | V22 | V23 | V24) =>
+      case known @ (V21 | V22 | V23 | V24) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -234,20 +233,6 @@ trait BitcoindRpcTestUtil extends Logging {
 
     BitcoindInstanceLocal.fromConfig(conf, binary)
   }
-
-  def v20Instance(
-      port: Int = RpcUtil.randomPort,
-      rpcPort: Int = RpcUtil.randomPort,
-      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V20),
-             binaryDirectory = binaryDirectory)
 
   def v21Instance(
       port: Int = RpcUtil.randomPort,
@@ -315,12 +300,6 @@ trait BitcoindRpcTestUtil extends Logging {
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     bitcoindVersion match {
-      case BitcoindVersion.V20 =>
-        BitcoindRpcTestUtil.v20Instance(port,
-                                        rpcPort,
-                                        zmqConfig,
-                                        pruneMode,
-                                        binaryDirectory = binaryDirectory)
       case BitcoindVersion.V21 =>
         BitcoindRpcTestUtil.v21Instance(port,
                                         rpcPort,
@@ -358,7 +337,7 @@ trait BitcoindRpcTestUtil extends Logging {
         val createWalletF = for {
           version <- server.version
           descriptors = version match {
-            case V20 | V21 | V22 | Unknown =>
+            case V21 | V22 | Unknown =>
               false
             case V23 | V24 => true
           }
@@ -660,9 +639,6 @@ trait BitcoindRpcTestUtil extends Logging {
       val rpc = version match {
         case BitcoindVersion.Unknown =>
           BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
-        case BitcoindVersion.V20 =>
-          BitcoindV20RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v20Instance())
         case BitcoindVersion.V21 =>
           BitcoindV21RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v21Instance())
@@ -755,13 +731,6 @@ trait BitcoindRpcTestUtil extends Logging {
       (first, second)
     }
   }
-
-  /** Returns a pair of [[org.bitcoins.rpc.client.v20.BitcoindV20RpcClient BitcoindV20RpcClient]]
-    * that are connected with some blocks in the chain
-    */
-  def createNodePairV20(clientAccum: RpcClientAccum)(implicit
-  system: ActorSystem): Future[(BitcoindV20RpcClient, BitcoindV20RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V20, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v21.BitcoindV21RpcClient BitcoindV21RpcClient]]
     * that are connected with some blocks in the chain
@@ -879,8 +848,6 @@ trait BitcoindRpcTestUtil extends Logging {
         v23.signRawTransactionWithWallet(transaction, utxoDeps)
       case v22: BitcoindV22RpcClient =>
         v22.signRawTransactionWithWallet(transaction, utxoDeps)
-      case v20: BitcoindV20RpcClient =>
-        v20.signRawTransactionWithWallet(transaction, utxoDeps)
       case v21: BitcoindV21RpcClient =>
         v21.signRawTransactionWithWallet(transaction, utxoDeps)
       case unknown: BitcoindRpcClient =>

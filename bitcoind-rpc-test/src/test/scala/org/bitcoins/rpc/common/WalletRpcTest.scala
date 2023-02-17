@@ -702,6 +702,52 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       }
   }
 
+  it should "correct generate to a descriptor" in { nodePair =>
+    val client = nodePair.node1
+    // 2-of-2 multisig descriptor
+    val descriptor =
+      "sh(sortedmulti(2,023f720438186fbdfde0c0a403e770a0f32a2d198623a8a982c47b621f8b307640,03ed261094d609d5e02ba6553c2d91e4fd056006ce2fe64aace72b69cb5be3ab9c))#nj9wx7up"
+    val numBlocks = 10
+    for {
+      hashes <- client.generateToDescriptor(numBlocks, descriptor)
+    } yield assert(hashes.size == numBlocks)
+  }
+
+  it should "correct create multisig and get its descriptor" in { nodePair =>
+    val client = nodePair.node1
+    val pubKey1 = ECPublicKey.freshPublicKey
+    val pubKey2 = ECPublicKey.freshPublicKey
+
+    for {
+      multiSigResult <- client.createMultiSig(2,
+                                              Vector(pubKey1, pubKey2),
+                                              AddressType.Bech32)
+    } yield {
+      // just validate we are able to receive a sane descriptor
+      // no need to check checksum
+      assert(
+        multiSigResult.descriptor.startsWith(
+          s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
+    }
+  }
+
+  it should "check to see if the utxoUpdate input has been updated" in {
+    nodePair =>
+      val client = nodePair.node1
+      val descriptor =
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
+
+      val psbt =
+        PSBT.fromBase64(
+          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
+
+      for {
+        result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
+      } yield {
+        assert(result == psbt)
+      }
+  }
+
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }
