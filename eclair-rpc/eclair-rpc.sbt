@@ -19,8 +19,8 @@ TaskKeys.downloadEclair := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.7.0"
-  val commit = "a804905"
+  val version = "0.8.0"
+  val commit = "0077471"
 
   logger.debug(s"(Maybe) downloading Eclair binaries for version: $version")
 
@@ -48,7 +48,7 @@ TaskKeys.downloadEclair := {
       .mkString
 
     val expectedHash =
-      "482a00cc597fd4cc471a1b4035c72a440a9ab336ef5b9006629d2fd717b223b4"
+      "d279317de25ba86b275183160d83acd064647371c446a35601397ae87ee04abb"
 
     val success = hash.equalsIgnoreCase(expectedHash)
     if (success) {

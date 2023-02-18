@@ -272,7 +272,9 @@ trait EclairApi {
 
   def onChainBalance(): Future[OnChainBalance]
 
-  def onChainTransactions(): Future[Vector[WalletTransaction]]
+  def onChainTransactions(
+      count: Int,
+      skip: Int): Future[Vector[WalletTransaction]]
 
   def sendOnChain(
       address: BitcoinAddress,

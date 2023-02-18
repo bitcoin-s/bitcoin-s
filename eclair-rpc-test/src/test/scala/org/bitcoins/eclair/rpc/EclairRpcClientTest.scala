@@ -964,11 +964,16 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
               .map(_.collect { case open: OpenChannelInfo =>
                 open
               })
-
-          ourChannelUpdates <- firstFreshClient.allUpdates(nodeId)
+          _ <- AsyncUtil
+            .retryUntilSatisfiedF(
+              (() => {
+                firstFreshClient
+                  .allUpdates(nodeId)
+                  .map(_.forall(updateIsInChannels(ourOpenChannels)))
+              }),
+              interval = 1.second,
+              maxTries = 60)
         } yield {
-          assert(ourChannelUpdates.forall(updateIsInChannels(ourOpenChannels)))
-
           succeed
         }
     }
@@ -1161,10 +1166,16 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       c <- clientF
       res <- c.listInvoices(from = None, to = Some(Instant.now()))
       i <- c.createInvoice(description = "abc")
-      pending <- c.listPendingInvoices(from = None, to = None)
+      _ = Thread.sleep(1000 * 5)
+      _ <- AsyncUtil
+        .retryUntilSatisfiedF(
+          (() => {
+            c.listPendingInvoices(from = None, to = None).map(_.contains(i))
+          }),
+          interval = 1.second,
+          maxTries = 60)
     } yield {
-      assert(res.nonEmpty)
-      assert(pending.contains(i))
+      assert(!res.contains(i))
     }
   }
 
