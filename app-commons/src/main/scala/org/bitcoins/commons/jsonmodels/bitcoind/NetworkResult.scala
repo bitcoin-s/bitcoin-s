@@ -114,23 +114,6 @@ sealed trait Peer extends NetworkResult {
   def minfeefilter: Option[SatoshisPerKiloByte]
 }
 
-case class PeerV20(
-    id: Int,
-    networkInfo: PeerNetworkInfoPreV21,
-    version: Int,
-    subver: String,
-    inbound: Boolean,
-    addnode: Boolean,
-    startingheight: Int,
-    synced_headers: Int,
-    synced_blocks: Int,
-    inflight: Vector[Int],
-    whitelisted: Boolean,
-    bytessent_per_msg: Map[String, Int],
-    bytesrecv_per_msg: Map[String, Int],
-    minfeefilter: Option[SatoshisPerKiloByte])
-    extends Peer
-
 case class PeerPostV21(
     id: Int,
     networkInfo: PeerNetworkInfoPostV21,

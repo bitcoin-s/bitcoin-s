@@ -245,21 +245,6 @@ object JsonSerializers {
   implicit val peerNetworkInfoPostV21Reads: Reads[PeerNetworkInfoPostV21] =
     Json.reads[PeerNetworkInfoPostV21]
 
-  implicit val peerV20Reads: Reads[PeerV20] = ((__ \ "id").read[Int] and
-    __.read[PeerNetworkInfoPreV21] and
-    (__ \ "version").read[Int] and
-    (__ \ "subver").read[String] and
-    (__ \ "inbound").read[Boolean] and
-    (__ \ "addnode").read[Boolean] and
-    (__ \ "startingheight").read[Int] and
-    (__ \ "synced_headers").read[Int] and
-    (__ \ "synced_blocks").read[Int] and
-    (__ \ "inflight").read[Vector[Int]] and
-    (__ \ "whitelisted").read[Boolean] and
-    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
-    (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
-    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerV20)
-
   implicit val peerPostV21Reads: Reads[PeerPostV21] = ((__ \ "id").read[Int] and
     __.read[PeerNetworkInfoPostV21] and
     (__ \ "version").read[Int] and

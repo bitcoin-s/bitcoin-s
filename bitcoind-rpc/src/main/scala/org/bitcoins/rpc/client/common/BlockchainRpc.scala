@@ -29,7 +29,7 @@ trait BlockchainRpc { self: Client =>
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
     self.version.flatMap {
-      case V22 | V21 | V20 =>
+      case V22 | V21 =>
         bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
       case V23 | V24 | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
@@ -83,7 +83,7 @@ trait BlockchainRpc { self: Client =>
           "getblock",
           List(JsString(headerHash.hex), isVerboseJsonObject))
 
-      case V20 | V21 =>
+      case V21 =>
         bitcoindCall[GetBlockWithTransactionsResultPreV22](
           "getblock",
           List(JsString(headerHash.hex), isVerboseJsonObject))

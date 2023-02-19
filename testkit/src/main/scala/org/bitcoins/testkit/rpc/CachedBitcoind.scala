@@ -2,7 +2,6 @@ package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.{V19BlockFilterRpc}
-import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
@@ -130,18 +129,6 @@ trait CachedBitcoindBlockFilterRpcNewest
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
       .createBitcoindBlockFilterRpcWithFunds(Some(BitcoindVersion.newest))
-  }
-}
-
-trait CachedBitcoindV20 extends CachedBitcoindFunded[BitcoindV20RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
-
-  override protected lazy val cachedBitcoindWithFundsF: Future[
-    BitcoindV20RpcClient] = {
-    val _ = isBitcoindUsed.set(true)
-    BitcoinSFixture
-      .createBitcoindWithFunds(Some(BitcoindVersion.V20))
-      .map(_.asInstanceOf[BitcoindV20RpcClient])
   }
 }
 

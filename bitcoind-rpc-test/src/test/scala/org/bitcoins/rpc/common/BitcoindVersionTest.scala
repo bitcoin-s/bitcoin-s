@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.client.common.BitcoindVersion.{V20, V21}
+import org.bitcoins.rpc.client.common.BitcoindVersion.V21
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 class BitcoindVersionTest extends BitcoindRpcTest {
@@ -10,10 +10,6 @@ class BitcoindVersionTest extends BitcoindRpcTest {
   it should "return version 21" in {
     val version = BitcoindVersion.fromNetworkVersion(210100)
     assert(version.equals(V21))
-  }
-  it should "return version 20" in {
-    val version = BitcoindVersion.fromNetworkVersion(200309)
-    assert(version.equals(V20))
   }
 
 }

@@ -25,7 +25,7 @@ trait UtilRpc { self: Client =>
       case V22 | V23 | V24 | Unknown =>
         bitcoindCall[DecodeScriptResultV22]("decodescript",
                                             List(Json.toJson(script)))
-      case V20 | V21 =>
+      case V21 =>
         bitcoindCall[DecodeScriptResultPreV22]("decodescript",
                                                List(Json.toJson(script)))
     }
@@ -33,26 +33,16 @@ trait UtilRpc { self: Client =>
   }
 
   def getIndexInfo: Future[Map[String, IndexInfoResult]] = {
-    version.flatMap {
-      case V24 | V23 | V22 | V21 | Unknown =>
-        bitcoindCall[Map[String, IndexInfoResult]]("getindexinfo")
-      case V20 =>
-        Future.failed(
-          new RuntimeException(
-            s"getIndexInfo is only for version V21+, got $version"))
+    version.flatMap { case V24 | V23 | V22 | V21 | Unknown =>
+      bitcoindCall[Map[String, IndexInfoResult]]("getindexinfo")
     }
   }
 
   def getIndexInfo(indexName: String): Future[IndexInfoResult] = {
-    version.flatMap {
-      case V24 | V23 | V22 | V21 | Unknown =>
-        bitcoindCall[Map[String, IndexInfoResult]](
-          "getindexinfo",
-          List(JsString(indexName))).map(_.head._2)
-      case V20 =>
-        Future.failed(
-          new RuntimeException(
-            s"getIndexInfo is only for version V21+, got $version"))
+    version.flatMap { case V24 | V23 | V22 | V21 | Unknown =>
+      bitcoindCall[Map[String, IndexInfoResult]](
+        "getindexinfo",
+        List(JsString(indexName))).map(_.head._2)
     }
 
   }
