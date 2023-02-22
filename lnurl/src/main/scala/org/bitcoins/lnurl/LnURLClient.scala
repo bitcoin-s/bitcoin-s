@@ -72,21 +72,28 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
 
   def getInvoice(
       pay: LnURLPayResponse,
-      amount: LnCurrencyUnit): Future[LnInvoice] = {
-    getInvoice(pay, amount.toMSat)
+      amount: LnCurrencyUnit,
+      extraParams: Map[String, String]): Future[LnInvoice] = {
+    getInvoice(pay, amount.toMSat, extraParams)
   }
 
   def getInvoice(
       pay: LnURLPayResponse,
-      amount: CurrencyUnit): Future[LnInvoice] = {
-    getInvoice(pay, MilliSatoshis(amount))
+      amount: CurrencyUnit,
+      extraParams: Map[String, String]): Future[LnInvoice] = {
+    getInvoice(pay, MilliSatoshis(amount), extraParams)
   }
 
   def getInvoice(
       pay: LnURLPayResponse,
-      amount: MilliSatoshis): Future[LnInvoice] = {
+      amount: MilliSatoshis,
+      extraParams: Map[String, String]): Future[LnInvoice] = {
     val symbol = if (pay.callback.toString.contains("?")) "&" else "?"
-    val url = s"${pay.callback}${symbol}amount=${amount.toLong}"
+    val queryStringParams =
+      extraParams.map(kv => s"${kv._1}=${kv._2}").mkString("&")
+
+    val qsStr = if (queryStringParams.isEmpty) "" else s"&$queryStringParams"
+    val url = s"${pay.callback}${symbol}amount=${amount.toLong}$qsStr"
     sendRequestAndParse[LnURLPayInvoice](Get(url)).map(_.pr)
   }
 
