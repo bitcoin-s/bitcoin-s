@@ -332,7 +332,18 @@ trait InventoryMessage extends DataPayload {
     val invCount = inventoryCount.toInt
     val invList =
       if (invCount > 1) {
-        inventories.take(1).mkString + "..."
+        val txCount = inventories.count { t =>
+          t.typeIdentifier == TypeIdentifier.MsgTx ||
+          t.typeIdentifier == TypeIdentifier.MsgWitnessTx
+        }
+
+        val blockCount = inventories.count { t =>
+          t.typeIdentifier == TypeIdentifier.MsgBlock ||
+          t.typeIdentifier == TypeIdentifier.MsgWitnessBlock
+        }
+        val otherCount = inventories.length - blockCount - txCount
+
+        s"InventoryMessage(txCount=$txCount, blockCount=$blockCount, other=$otherCount)"
       } else {
         inventories.mkString
       }

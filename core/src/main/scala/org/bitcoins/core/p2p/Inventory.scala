@@ -21,12 +21,12 @@ case class Inventory(typeIdentifier: TypeIdentifier, hash: DoubleSha256Digest)
       case TypeIdentifier.MsgTx | TypeIdentifier.MsgWitnessTx =>
         //want to make a better toString here so it is easier to search txids
         s"Inventory($typeIdentifier,txIdBE=${hash.flip.hex})"
-      case TypeIdentifier.MsgBlock | TypeIdentifier.MsgCompactBlock |
-          TypeIdentifier.MsgFilteredBlock | TypeIdentifier.MsgFilteredBlock |
-          TypeIdentifier.MsgCompactBlock |
-          TypeIdentifier.MsgFilteredWitnessBlock |
-          TypeIdentifier.MsgWitnessBlock | _: MsgUnassigned =>
-        super.toString
+      case TypeIdentifier.MsgBlock | TypeIdentifier.MsgFilteredWitnessBlock |
+          TypeIdentifier.MsgWitnessBlock =>
+        s"Inventory($typeIdentifier, blockHashBE=${hash.flip})"
+      case TypeIdentifier.MsgCompactBlock | TypeIdentifier.MsgFilteredBlock |
+          TypeIdentifier.MsgCompactBlock | _: MsgUnassigned =>
+        s"Inventory($typeIdentifier, hash=$hash)"
     }
   }
 }

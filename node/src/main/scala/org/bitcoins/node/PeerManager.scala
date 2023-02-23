@@ -438,7 +438,7 @@ case class PeerManager(
                                        OverflowStrategy.backpressure)
     .mapAsync(1) {
       case msg @ DataMessageWrapper(payload, peerMsgSender, peer) =>
-        logger.debug(s"Got ${payload.commandName} from ${peer} in stream")
+        logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         node.getDataMessageHandler
           .handleDataPayload(payload, peerMsgSender, peer)
           .map { newDmh =>
@@ -457,7 +457,7 @@ case class PeerManager(
   private val dataMessageStreamSink =
     Sink.foreach[StreamDataMessageWrapper] {
       case DataMessageWrapper(payload, _, peer) =>
-        logger.debug(s"Done processing ${payload.commandName} in ${peer}")
+        logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
       case HeaderTimeoutWrapper(_) =>
     }
 
