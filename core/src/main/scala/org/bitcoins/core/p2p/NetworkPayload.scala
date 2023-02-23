@@ -332,7 +332,7 @@ trait InventoryMessage extends DataPayload {
     val invCount = inventoryCount.toInt
     val invList =
       if (invCount > 1) {
-        inventories.take(1).mkString + "..."
+        inventories.map(_.typeIdentifier).mkString
       } else {
         inventories.mkString
       }
