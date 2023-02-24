@@ -126,6 +126,11 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val fieldElementMapper: BaseColumnType[FieldElement] =
     MappedColumnType.base[FieldElement, String](_.hex, FieldElement.fromHex)
 
+  implicit val ecDigitalSignatureMapper: BaseColumnType[ECDigitalSignature] =
+    MappedColumnType.base[ECDigitalSignature, String](
+      _.hex,
+      ECDigitalSignature.fromHex)
+
   implicit val signingVersionMapper: BaseColumnType[SigningVersion] =
     MappedColumnType.base[SigningVersion, String](_.toString,
                                                   SigningVersion.fromString)
