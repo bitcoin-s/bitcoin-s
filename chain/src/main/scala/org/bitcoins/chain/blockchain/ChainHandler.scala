@@ -327,19 +327,31 @@ class ChainHandler(
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
+    //find filter headers we have seen before
+    val duplicateFilterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
+      filterHeaderDAO.findByHashes(filterHeaders.map(_.hash.flip))
+    }
+
+    //only add new filter headers to our database
+    val newFilterHeadersF = for {
+      duplicates <- duplicateFilterHeadersF
+    } yield filterHeaders.filterNot(f =>
+      duplicates.exists(_.hashBE == f.hash.flip))
+
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
+      newFilterHeaders <- newFilterHeadersF
       blockHeaders <-
         blockHeaderDAO
-          .getNAncestors(childHash = stopHash, n = filterHeaders.size - 1)
+          .getNAncestors(childHash = stopHash, n = newFilterHeaders.size - 1)
           .map(_.sortBy(_.height))
     } yield {
-      if (blockHeaders.size != filterHeaders.size) {
+      if (blockHeaders.size != newFilterHeaders.size) {
         throw UnknownBlockHash(
-          s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
+          s"Filter header batch size does not match block header batch size ${newFilterHeaders.size} != ${blockHeaders.size}")
       }
       blockHeaders.indices.toVector.map { i =>
         val blockHeader = blockHeaders(i)
-        val filterHeader = filterHeaders(i)
+        val filterHeader = newFilterHeaders(i)
         CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader,
                                                      blockHeader.hashBE,
                                                      blockHeader.height)

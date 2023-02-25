@@ -268,7 +268,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       for {
         _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
         _ <- AkkaUtil.nonBlockingSleep(3.seconds)
-        _ <- bitcoind.generateToAddress(2, junkAddress)
+        tip <- bitcoind.getBestBlockHash
+        hashes <- bitcoind.generateToAddress(2, junkAddress)
+        _ = logger.error(
+          s"@@@@@@@@@ hashes=${hashes} before.tip=$tip @@@@@@@@@")
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
         succeed
