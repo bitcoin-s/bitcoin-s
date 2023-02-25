@@ -81,6 +81,12 @@ case class CompactFilterHeaderDAO()(implicit
     read(hash)
   }
 
+  def findByHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
+    Vector[CompactFilterHeaderDb]] = {
+    val query = findByPrimaryKeys(hashes).result
+    safeDatabase.runVec(query)
+  }
+
   def findByBlockHash(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
     val query = table.filter(_.blockHash === hash).take(1)
