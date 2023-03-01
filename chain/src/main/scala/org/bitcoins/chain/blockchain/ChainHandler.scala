@@ -413,7 +413,7 @@ class ChainHandler(
         newFilters <- newFiltersF
       } yield {
         newFilters.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
-          if (messages.distinct.size > 1) {
+          if (messages.size > 1) {
             return Future.failed(DuplicateFilters(
               s"Attempt to process ${messages.length} duplicate filters for blockHashBE=$blockHash"))
           }
