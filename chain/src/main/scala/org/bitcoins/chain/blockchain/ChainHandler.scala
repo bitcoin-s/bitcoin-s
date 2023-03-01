@@ -384,47 +384,60 @@ class ChainHandler(
   /** @inheritdoc */
   override def processFilters(
       messages: Vector[CompactFilterMessage]): Future[ChainApi] = {
+    //find filters we have seen before
+    val duplicateFiltersF: Future[Vector[CompactFilterDb]] = {
+      filterDAO.findByBlockHashes(messages.map(_.blockHash.flip))
+    }
 
-    logger.info(
+    //only add new filters to our database
+    val newFiltersF = for {
+      duplicates <- duplicateFiltersF
+    } yield messages.filterNot(f =>
+      duplicates.exists(_.blockHashBE == f.blockHash.flip))
+
+    logger.debug(
       s"processFilters: len=${messages.length} messages.blockHash=${messages
         .map(_.blockHash.flip)}")
-    val filterHeadersF = filterHeaderDAO
-      .findAllByBlockHashes(messages.map(_.blockHash.flip))
-      .map(_.sortBy(_.height))
+    val filterHeadersF = {
+      for {
+        newFilters <- newFiltersF
+        filterHeaders <- filterHeaderDAO
+          .findAllByBlockHashes(newFilters.map(_.blockHash.flip))
+          .map(_.sortBy(_.height))
+      } yield filterHeaders
+    }
 
-    val messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage] =
-      messages.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
-        if (messages.distinct.size > 1) {
-          logger.error(
-            s"Attempting to process ${messages.length} duplicate filters for blockHashBE=$blockHash")
-          return Future.failed(DuplicateFilters(
-            s"Attempt to process ${messages.length} duplicate filters for blockHashBE=$blockHash"))
+    val filtersByBlockHashF: Future[
+      Map[DoubleSha256DigestBE, CompactFilterMessage]] = {
+      for {
+        newFilters <- newFiltersF
+      } yield {
+        newFilters.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
+          if (messages.distinct.size > 1) {
+            return Future.failed(DuplicateFilters(
+              s"Attempt to process ${messages.length} duplicate filters for blockHashBE=$blockHash"))
+          }
+          (blockHash, messages.head)
         }
-        (blockHash, messages.head)
       }
+    }
 
     for {
       filterHeaders <- filterHeadersF
-      _ = logger.info(s"processFilters: filterHeaders=$filterHeaders")
-      _ = logger.info(
-        s"filterHeaders.size=${filterHeaders.size} messagesByBlockHash.values.size=${messagesByBlockHash.values.size}")
+      filtersByBlockHash <- filtersByBlockHashF
       _ = require(
-        filterHeaders.size == messagesByBlockHash.values.size,
-        s"Filter batch size does not match filter header batch size ${messagesByBlockHash.values.size} != ${filterHeaders.size}"
+        filterHeaders.size == filtersByBlockHash.values.size,
+        s"Filter batch size does not match filter header batch size ${filtersByBlockHash.values.size} != ${filterHeaders.size}"
       )
-      _ = logger.info(s"processFilters.require")
       compactFilterDbs <- FutureUtil.makeAsync { () =>
         filterHeaders.map { filterHeader =>
-          findFilterDbFromMessage(filterHeader, messagesByBlockHash)
+          findFilterDbFromMessage(filterHeader, filtersByBlockHash)
         }
       }
-      _ = logger.info(s"createFilterDbs.length=${compactFilterDbs.length}")
       _ <- filterDAO.createAll(compactFilterDbs)
-      _ = logger.info(s"processFilters.createAll")
       _ <- chainConfig.callBacks.executeOnCompactFilterConnectedCallbacks(
         compactFilterDbs)
     } yield {
-      logger.info(s"processFilters.yield")
       val minHeightOpt = compactFilterDbs.minByOption(_.height)
       val maxHeightOpt = compactFilterDbs.maxByOption(_.height)
 
