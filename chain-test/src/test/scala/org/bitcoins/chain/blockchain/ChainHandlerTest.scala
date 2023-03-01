@@ -633,6 +633,22 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
+  it must "not throw an exception when processing a filter we have already  seen" in {
+    chainHandler: ChainHandler =>
+      val filter = ChainUnitTest.genesisFilterMessage
+      val filters = Vector.fill(2)(filter)
+      val filterCountBeforeF = chainHandler.getFilterCount()
+      val processF =
+        filterCountBeforeF.flatMap(_ => chainHandler.processFilters(filters))
+      for {
+        _ <- processF
+        beforeFilterCount <- filterCountBeforeF
+        filterCount <- chainHandler.getFilterCount()
+      } yield {
+        assert(beforeFilterCount == filterCount)
+      }
+  }
+
   it must "process no filters" in { chainHandler: ChainHandler =>
     chainHandler.processFilters(Vector.empty).map { newHandler =>
       assert(chainHandler == newHandler)
