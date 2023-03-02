@@ -47,7 +47,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           node = node,
           state = HeaderSync,
           initialSyncDone = None,
-          currentFilterBatch = Vector.empty,
+          currentFilterBatch = Set.empty,
           filterHeaderHeightOpt = None,
           filterHeightOpt = None,
           syncPeer = Some(peer)
@@ -98,7 +98,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node = node,
             state = HeaderSync,
             initialSyncDone = None,
-            currentFilterBatch = Vector.empty,
+            currentFilterBatch = Set.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
             syncPeer = Some(peer)
@@ -143,7 +143,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node = node,
             state = HeaderSync,
             initialSyncDone = None,
-            currentFilterBatch = Vector.empty,
+            currentFilterBatch = Set.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
             syncPeer = Some(peer)
@@ -209,7 +209,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             node = node,
             state = HeaderSync,
             initialSyncDone = None,
-            currentFilterBatch = Vector.empty,
+            currentFilterBatch = Set.empty,
             filterHeaderHeightOpt = None,
             filterHeightOpt = None,
             syncPeer = Some(peer)

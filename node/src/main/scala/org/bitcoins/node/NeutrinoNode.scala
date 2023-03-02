@@ -67,7 +67,7 @@ case class NeutrinoNode(
         node = this,
         state = HeaderSync,
         initialSyncDone = None,
-        currentFilterBatch = Vector.empty,
+        currentFilterBatch = Set.empty,
         filterHeaderHeightOpt = filterHeaderCountOpt,
         filterHeightOpt = filterCountOpt,
         syncPeer = None

@@ -33,7 +33,7 @@ case class DataMessageHandler(
     node: Node,
     state: DataMessageHandlerState,
     initialSyncDone: Option[Promise[Done]],
-    currentFilterBatch: Vector[CompactFilterMessage],
+    currentFilterBatch: Set[CompactFilterMessage],
     filterHeaderHeightOpt: Option[Int],
     filterHeightOpt: Option[Int],
     syncPeer: Option[Peer])(implicit
@@ -49,7 +49,7 @@ case class DataMessageHandler(
   private val syncing: Boolean = syncPeer.isDefined
 
   def reset: DataMessageHandler = copy(initialSyncDone = None,
-                                       currentFilterBatch = Vector.empty,
+                                       currentFilterBatch = Set.empty,
                                        filterHeaderHeightOpt = None,
                                        filterHeightOpt = None,
                                        syncPeer = None,
@@ -193,8 +193,8 @@ case class DataMessageHandler(
               syncing
             }
           // If we are not syncing or our filter batch is full, process the filters
-          filterBatch = currentFilterBatch :+ filter
-          (newBatch, newChainApi) <- {
+          filterBatch = currentFilterBatch.+(filter)
+          (newBatch: Set[CompactFilterMessage], newChainApi) <- {
             if (!newSyncing || batchSizeFull) {
               val blockFilters = filterBatch.map { filter =>
                 (filter.blockHash,
@@ -202,11 +202,12 @@ case class DataMessageHandler(
               }
               logger.info(s"Processing ${filterBatch.size} filters")
               for {
-                newChainApi <- chainApi.processFilters(filterBatch)
+                newChainApi <- chainApi.processFilters(filterBatch.toVector)
                 _ <-
                   appConfig.callBacks
-                    .executeOnCompactFiltersReceivedCallbacks(blockFilters)
-              } yield (Vector.empty, newChainApi)
+                    .executeOnCompactFiltersReceivedCallbacks(
+                      blockFilters.toVector)
+              } yield (Set.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
           }
           _ <-
