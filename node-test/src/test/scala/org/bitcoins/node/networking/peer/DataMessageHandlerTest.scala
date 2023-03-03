@@ -48,8 +48,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           state = HeaderSync,
           initialSyncDone = None,
           currentFilterBatch = Set.empty,
-          filterHeaderHeightOpt = None,
-          filterHeightOpt = None,
           syncPeer = Some(peer)
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
@@ -99,8 +97,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             state = HeaderSync,
             initialSyncDone = None,
             currentFilterBatch = Set.empty,
-            filterHeaderHeightOpt = None,
-            filterHeightOpt = None,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
@@ -144,8 +140,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             state = HeaderSync,
             initialSyncDone = None,
             currentFilterBatch = Set.empty,
-            filterHeaderHeightOpt = None,
-            filterHeightOpt = None,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
@@ -210,8 +204,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             state = HeaderSync,
             initialSyncDone = None,
             currentFilterBatch = Set.empty,
-            filterHeaderHeightOpt = None,
-            filterHeightOpt = None,
             syncPeer = Some(peer)
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
