@@ -226,13 +226,20 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                                         paymentId,
                                                         duration = 1.second)
 
-      received <- client4.audit()
-      relayed <- client2.audit()
-      sent <- client1.audit()
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(
+        conditionF = () => client4.audit().map(_.received.nonEmpty),
+        interval = 1.second,
+        maxTries = 60)
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(
+        conditionF = () => client2.audit().map(_.relayed.nonEmpty),
+        interval = 1.second,
+        maxTries = 60)
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(
+        conditionF = () => client1.audit().map(_.sent.nonEmpty),
+        interval = 1.second,
+        maxTries = 60)
     } yield {
-      assert(sent.sent.nonEmpty)
-      assert(received.received.nonEmpty)
-      assert(relayed.relayed.nonEmpty)
+      succeed
     }
   }
 
