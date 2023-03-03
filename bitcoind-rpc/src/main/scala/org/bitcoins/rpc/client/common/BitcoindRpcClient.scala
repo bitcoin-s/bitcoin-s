@@ -23,7 +23,7 @@ import org.bitcoins.crypto.{
   StringFactory
 }
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
-import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
+import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
@@ -63,7 +63,9 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with WalletRpc
     with PsbtRpc
     with UtilRpc
-    with V19BlockFilterRpc {
+    with V19BlockFilterRpc
+    with V20MultisigRpc
+    with V20AssortedRpc {
 
   private val syncing = new AtomicBoolean(false)
 
@@ -345,7 +347,6 @@ object BitcoindRpcClient {
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
       case BitcoindVersion.V23 => BitcoindV23RpcClient.withActorSystem(instance)
@@ -373,13 +374,9 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   val newest: BitcoindVersion = V24
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V20, V21, V22, V23, V24)
+    Vector(V21, V22, V23, V24)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V20 extends BitcoindVersion {
-    override def toString: String = "v0.20"
-  }
 
   case object V21 extends BitcoindVersion {
     override def toString: String = "v0.21"
@@ -415,7 +412,6 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     //need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "20" => V20
       case "21" => V21
       case "22" => V22
       case "23" => V23

@@ -327,19 +327,31 @@ class ChainHandler(
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
+    //find filter headers we have seen before
+    val duplicateFilterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
+      filterHeaderDAO.findByHashes(filterHeaders.map(_.hash.flip))
+    }
+
+    //only add new filter headers to our database
+    val newFilterHeadersF = for {
+      duplicates <- duplicateFilterHeadersF
+    } yield filterHeaders.filterNot(f =>
+      duplicates.exists(_.hashBE == f.hash.flip))
+
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
+      newFilterHeaders <- newFilterHeadersF
       blockHeaders <-
         blockHeaderDAO
-          .getNAncestors(childHash = stopHash, n = filterHeaders.size - 1)
+          .getNAncestors(childHash = stopHash, n = newFilterHeaders.size - 1)
           .map(_.sortBy(_.height))
     } yield {
-      if (blockHeaders.size != filterHeaders.size) {
+      if (blockHeaders.size != newFilterHeaders.size) {
         throw UnknownBlockHash(
-          s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
+          s"Filter header batch size does not match block header batch size ${newFilterHeaders.size} != ${blockHeaders.size}")
       }
       blockHeaders.indices.toVector.map { i =>
         val blockHeader = blockHeaders(i)
-        val filterHeader = filterHeaders(i)
+        val filterHeader = newFilterHeaders(i)
         CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader,
                                                      blockHeader.hashBE,
                                                      blockHeader.height)
@@ -372,29 +384,54 @@ class ChainHandler(
   /** @inheritdoc */
   override def processFilters(
       messages: Vector[CompactFilterMessage]): Future[ChainApi] = {
+    //find filters we have seen before
+    val duplicateFiltersF: Future[Vector[CompactFilterDb]] = {
+      filterDAO.findByBlockHashes(messages.map(_.blockHash.flip))
+    }
 
-    logger.debug(s"processFilters: messages=${messages}")
-    val filterHeadersF = filterHeaderDAO
-      .findAllByBlockHashes(messages.map(_.blockHash.flip))
-      .map(_.sortBy(_.height))
+    //only add new filters to our database
+    val newFiltersF = for {
+      duplicates <- duplicateFiltersF
+    } yield messages.filterNot(f =>
+      duplicates.exists(_.blockHashBE == f.blockHash.flip))
 
-    val messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage] =
-      messages.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
-        if (messages.size > 1)
-          return Future.failed(
-            DuplicateFilters("Attempt to process duplicate filters"))
-        (blockHash, messages.head)
+    logger.debug(
+      s"processFilters: len=${messages.length} messages.blockHash=${messages
+        .map(_.blockHash.flip)}")
+    val filterHeadersF = {
+      for {
+        newFilters <- newFiltersF
+        filterHeaders <- filterHeaderDAO
+          .findAllByBlockHashes(newFilters.map(_.blockHash.flip))
+          .map(_.sortBy(_.height))
+      } yield filterHeaders
+    }
+
+    val filtersByBlockHashF: Future[
+      Map[DoubleSha256DigestBE, CompactFilterMessage]] = {
+      for {
+        newFilters <- newFiltersF
+      } yield {
+        newFilters.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
+          if (messages.size > 1) {
+            return Future.failed(DuplicateFilters(
+              s"Attempt to process ${messages.length} duplicate filters for blockHashBE=$blockHash"))
+          }
+          (blockHash, messages.head)
+        }
       }
+    }
 
     for {
       filterHeaders <- filterHeadersF
-      _ = logger.debug(s"processFilters: filterHeaders=$filterHeaders")
+      filtersByBlockHash <- filtersByBlockHashF
       _ = require(
-        filterHeaders.size == messages.size,
-        s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}")
+        filterHeaders.size == filtersByBlockHash.values.size,
+        s"Filter batch size does not match filter header batch size ${filtersByBlockHash.values.size} != ${filterHeaders.size}"
+      )
       compactFilterDbs <- FutureUtil.makeAsync { () =>
         filterHeaders.map { filterHeader =>
-          findFilterDbFromMessage(filterHeader, messagesByBlockHash)
+          findFilterDbFromMessage(filterHeader, filtersByBlockHash)
         }
       }
       _ <- filterDAO.createAll(compactFilterDbs)
@@ -411,7 +448,8 @@ class ChainHandler(
           this
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>
-          logger.warn("Was unable to process any filters")
+          logger.warn(
+            s"Was unable to process any filters minHeightOpt=$minHeightOpt maxHeightOpt=$maxHeightOpt compactFilterDbs.length=${compactFilterDbs.length}")
           this
       }
     }

@@ -633,12 +633,19 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "fail when processing duplicate filters" in {
+  it must "not throw an exception when processing a filter we have already  seen" in {
     chainHandler: ChainHandler =>
-      recoverToSucceededIf[DuplicateFilters] {
-        val filters = Vector.fill(2)(ChainUnitTest.genesisFilterMessage)
-
-        chainHandler.processFilters(filters)
+      val filter = ChainUnitTest.genesisFilterMessage
+      val filters = Vector.fill(2)(filter)
+      val filterCountBeforeF = chainHandler.getFilterCount()
+      val processF =
+        filterCountBeforeF.flatMap(_ => chainHandler.processFilters(filters))
+      for {
+        _ <- processF
+        beforeFilterCount <- filterCountBeforeF
+        filterCount <- chainHandler.getFilterCount()
+      } yield {
+        assert(beforeFilterCount == filterCount)
       }
   }
 

@@ -87,6 +87,12 @@ case class CompactFilterDAO()(implicit
     read(hash)
   }
 
+  def findByBlockHashes(
+      hashes: Vector[DoubleSha256DigestBE]): Future[Vector[CompactFilterDb]] = {
+    val action = findByPrimaryKeys(hashes).result
+    safeDatabase.runVec(action)
+  }
+
   /** Retrieves a [[CompactFilterDb]] at the given height */
   def getAtHeight(height: Int): Future[Vector[CompactFilterDb]] = {
     val query = getAtHeightQuery(height)

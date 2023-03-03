@@ -28,7 +28,7 @@ class LnURLClientTest extends BitcoinSAsyncTest {
     client.makeRequest(lnurl).flatMap {
       case pay: LnURLPayResponse =>
         val amt = pay.minSendable.toLnCurrencyUnit
-        client.getInvoice(pay, amt).map { inv =>
+        client.getInvoice(pay, amt, Map.empty).map { inv =>
           assert(inv.amount.contains(amt))
           assert(inv.lnTags.descriptionHash.exists(_.hash == pay.metadataHash))
         }
