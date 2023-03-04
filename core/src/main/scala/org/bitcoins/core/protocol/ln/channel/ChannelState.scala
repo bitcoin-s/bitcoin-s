@@ -8,13 +8,20 @@ sealed trait ChannelState
 
 object ChannelState extends StringFactory[ChannelState] {
   case object WAIT_FOR_INIT_INTERNAL extends ChannelState
+  case object WAIT_FOR_INIT_SINGLE_FUNDED_CHANNEL extends ChannelState
   case object WAIT_FOR_OPEN_CHANNEL extends ChannelState
   case object WAIT_FOR_ACCEPT_CHANNEL extends ChannelState
   case object WAIT_FOR_FUNDING_INTERNAL extends ChannelState
   case object WAIT_FOR_FUNDING_CREATED extends ChannelState
   case object WAIT_FOR_FUNDING_SIGNED extends ChannelState
   case object WAIT_FOR_FUNDING_CONFIRMED extends ChannelState
-  case object WAIT_FOR_FUNDING_LOCKED extends ChannelState
+  case object WAIT_FOR_CHANNEL_READY extends ChannelState
+  case object WAIT_FOR_INIT_DUAL_FUNDED_CHANNEL extends ChannelState
+  case object WAIT_FOR_OPEN_DUAL_FUNDED_CHANNEL extends ChannelState
+  case object WAIT_FOR_ACCEPT_DUAL_FUNDED_CHANNEL extends ChannelState
+  case object WAIT_FOR_DUAL_FUNDING_CREATED extends ChannelState
+  case object WAIT_FOR_DUAL_FUNDING_CONFIRMED extends ChannelState
+  case object WAIT_FOR_DUAL_FUNDING_READY extends ChannelState
   case object NORMAL extends ChannelState
   case object SHUTDOWN extends ChannelState
   case object NEGOTIATING extends ChannelState
@@ -23,19 +30,24 @@ object ChannelState extends StringFactory[ChannelState] {
   case object OFFLINE extends ChannelState
   case object SYNCING extends ChannelState
   case object WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT extends ChannelState
-  case object ERR_FUNDING_LOST extends ChannelState
-  case object ERR_FUNDING_TIMEOUT extends ChannelState
   case object ERR_INFORMATION_LEAK extends ChannelState
 
   private lazy val all: Map[String, ChannelState] = List(
     WAIT_FOR_INIT_INTERNAL,
+    WAIT_FOR_INIT_SINGLE_FUNDED_CHANNEL,
     WAIT_FOR_OPEN_CHANNEL,
     WAIT_FOR_ACCEPT_CHANNEL,
     WAIT_FOR_FUNDING_INTERNAL,
     WAIT_FOR_FUNDING_CREATED,
     WAIT_FOR_FUNDING_SIGNED,
     WAIT_FOR_FUNDING_CONFIRMED,
-    WAIT_FOR_FUNDING_LOCKED,
+    WAIT_FOR_CHANNEL_READY,
+    WAIT_FOR_INIT_DUAL_FUNDED_CHANNEL,
+    WAIT_FOR_OPEN_DUAL_FUNDED_CHANNEL,
+    WAIT_FOR_ACCEPT_DUAL_FUNDED_CHANNEL,
+    WAIT_FOR_DUAL_FUNDING_CREATED,
+    WAIT_FOR_DUAL_FUNDING_CONFIRMED,
+    WAIT_FOR_DUAL_FUNDING_READY,
     NORMAL,
     SHUTDOWN,
     NEGOTIATING,
@@ -44,8 +56,6 @@ object ChannelState extends StringFactory[ChannelState] {
     OFFLINE,
     SYNCING,
     WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT,
-    ERR_FUNDING_LOST,
-    ERR_FUNDING_TIMEOUT,
     ERR_INFORMATION_LEAK
   ).map(state => state.toString -> state).toMap
 

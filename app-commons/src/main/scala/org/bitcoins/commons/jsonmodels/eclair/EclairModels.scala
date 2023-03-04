@@ -184,12 +184,20 @@ object ChannelStats {
   }
 }
 
+case class RealChannelId(status: String, realScid: ShortChannelId)
+
+case class ShortIds(
+    real: RealChannelId,
+    localAlias: String,
+    remoteAlias: String)
+
 case class UsableBalancesResult(
     remoteNodeId: NodeId,
-    shortChannelId: ShortChannelId,
+    shortIds: ShortIds,
     canSend: MilliSatoshis,
     canReceive: MilliSatoshis,
-    isPublic: Boolean
+    isPublic: Boolean,
+    isEnabled: Boolean
 )
 
 case class ReceivedPayment(
@@ -258,7 +266,7 @@ case class ChannelResult(
     data: JsObject) {
 
   lazy val shortChannelId: Option[ShortChannelId] =
-    (data \ "shortChannelId").validate[ShortChannelId].asOpt
+    (data \ "shortIds" \ "real" \ "realScid").validate[ShortChannelId].asOpt
 }
 
 // ChannelResult ends here

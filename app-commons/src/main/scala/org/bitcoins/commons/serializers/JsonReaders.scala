@@ -952,6 +952,12 @@ object JsonReaders {
     }
   }
 
+  implicit val realChannelIdReads: Reads[RealChannelId] =
+    Json.reads[RealChannelId]
+
+  implicit val shortIdsReads: Reads[ShortIds] =
+    Json.reads[ShortIds]
+
   implicit val nodeInfoReads: Reads[NodeInfo] = {
     Reads { jsValue =>
       for {
@@ -1019,7 +1025,7 @@ object JsonReaders {
   implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>
     for {
       nodeId <- (jsValue \ "nodeId").validate[NodeId]
-      shortChannelId <- (jsValue \ "data" \ "shortChannelId")
+      shortChannelId <- (jsValue \ "data" \ "shortIds" \ "real" \ "realScid")
         .validate[ShortChannelId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState.NORMAL.type]
@@ -1310,7 +1316,7 @@ object JsonReaders {
   implicit val receivedPaymentResultReads: Reads[IncomingPayment] = Reads {
     js =>
       for {
-        paymentRequest <- (js \ "paymentRequest").validate[PaymentRequest]
+        paymentRequest <- (js \ "invoice").validate[PaymentRequest]
         paymentPreimage <- (js \ "paymentPreimage").validate[PaymentPreimage]
         paymentType <- (js \ "paymentType").validate[PaymentType]
         createdAt <- (js \ "createdAt" \ "unix")

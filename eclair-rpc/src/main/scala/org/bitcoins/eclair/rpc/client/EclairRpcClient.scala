@@ -608,8 +608,12 @@ class EclairRpcClient(
     eclairCall[OnChainBalance]("onchainbalance")
   }
 
-  override def onChainTransactions(): Future[Vector[WalletTransaction]] = {
-    eclairCall[Vector[WalletTransaction]]("onchaintransactions")
+  override def onChainTransactions(
+      count: Int = 10,
+      skip: Int = 0): Future[Vector[WalletTransaction]] = {
+    eclairCall[Vector[WalletTransaction]]("onchaintransactions",
+                                          "count" -> count.toString,
+                                          "skip" -> skip.toString)
   }
 
   override def sendOnChain(
@@ -953,13 +957,13 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "a804905"
+  private[bitcoins] val commit = "0077471"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.7.0"
+  private[bitcoins] val version = "0.8.0"
 
   /** The bitcoind version that eclair is officially tested & supported with by ACINQ
-    * @see https://github.com/ACINQ/eclair/releases/tag/v0.6.2
+    * @see https://github.com/ACINQ/eclair/releases/tag/v0.8.0
     */
-  val bitcoindV: BitcoindVersion = BitcoindVersion.V21
+  val bitcoindV: BitcoindVersion = BitcoindVersion.V23
 }

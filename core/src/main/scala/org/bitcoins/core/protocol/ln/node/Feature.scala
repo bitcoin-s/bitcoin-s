@@ -38,7 +38,19 @@ trait NodeFeature extends Feature
 
 /** Feature that should be advertised in invoices. */
 trait InvoiceFeature extends Feature
-// @formatter:on
+
+/** Feature negotiated when opening a channel that will apply for all of the channel's lifetime.
+  * This doesn't include features that can be safely activated/deactivated without impacting the channel's operation such
+  * as option_dataloss_protect or option_shutdown_anysegwit.
+  */
+trait PermanentChannelFeature extends InitFeature // <- not in the spec
+
+/** Permanent channel feature negotiated in the channel type. Those features take precedence over permanent channel
+  * features negotiated in init messages. For example, if the channel type is option_static_remotekey, then even if
+  * the option_anchor_outputs feature is supported by both peers, it won't apply to the channel.
+  */
+
+trait ChannelTypeFeature extends PermanentChannelFeature // @formatter:on
 
 case class UnknownFeature(bitIndex: Int)
 
@@ -153,7 +165,8 @@ object Features {
   case object UpfrontShutdownScript
       extends Feature
       with InitFeature
-      with NodeFeature {
+      with NodeFeature
+      with PermanentChannelFeature {
     val rfcName = "option_upfront_shutdown_script"
     val mandatory = 4
   }
@@ -186,7 +199,8 @@ object Features {
   case object StaticRemoteKey
       extends Feature
       with InitFeature
-      with NodeFeature {
+      with NodeFeature
+      with ChannelTypeFeature {
     val rfcName = "option_static_remotekey"
     val mandatory = 12
   }
@@ -209,12 +223,20 @@ object Features {
     val mandatory = 16
   }
 
-  case object Wumbo extends Feature with InitFeature with NodeFeature {
+  case object Wumbo
+      extends Feature
+      with InitFeature
+      with NodeFeature
+      with PermanentChannelFeature {
     val rfcName = "option_support_large_channel"
     val mandatory = 18
   }
 
-  case object AnchorOutputs extends Feature with InitFeature with NodeFeature {
+  case object AnchorOutputs
+      extends Feature
+      with InitFeature
+      with NodeFeature
+      with ChannelTypeFeature {
     val rfcName = "option_anchor_outputs"
     val mandatory = 20
   }
@@ -222,9 +244,19 @@ object Features {
   case object AnchorOutputsZeroFeeHtlcTx
       extends Feature
       with InitFeature
-      with NodeFeature {
+      with NodeFeature
+      with ChannelTypeFeature {
     val rfcName = "option_anchors_zero_fee_htlc_tx"
     val mandatory = 22
+  }
+
+  case object RouteBlinding
+      extends Feature
+      with InitFeature
+      with NodeFeature
+      with InvoiceFeature {
+    val rfcName = "option_route_blinding"
+    val mandatory = 24
   }
 
   case object ShutdownAnySegwit
@@ -235,7 +267,11 @@ object Features {
     val mandatory = 26
   }
 
-  case object DualFunding extends Feature with InitFeature with NodeFeature {
+  case object DualFunding
+      extends Feature
+      with InitFeature
+      with NodeFeature
+      with PermanentChannelFeature {
     val rfcName = "option_dual_fund"
     val mandatory = 28
   }
@@ -250,9 +286,27 @@ object Features {
     val mandatory = 44
   }
 
+  case object ScidAlias
+      extends Feature
+      with InitFeature
+      with NodeFeature
+      with ChannelTypeFeature {
+    val rfcName = "option_scid_alias"
+    val mandatory = 46
+  }
+
   case object PaymentMetadata extends Feature with InvoiceFeature {
     val rfcName = "option_payment_metadata"
     val mandatory = 48
+  }
+
+  case object ZeroConf
+      extends Feature
+      with InitFeature
+      with NodeFeature
+      with ChannelTypeFeature {
+    val rfcName = "option_zeroconf"
+    val mandatory = 50
   }
 
   case object KeySend extends Feature with NodeFeature {
@@ -275,6 +329,15 @@ object Features {
     val mandatory = 148
   }
 
+  // TODO: @remyers update feature bits once spec-ed (currently reserved here: https://github.com/lightning/bolts/pull/989)
+  case object AsyncPaymentPrototype
+      extends Feature
+      with InitFeature
+      with InvoiceFeature {
+    val rfcName = "async_payment_prototype"
+    val mandatory = 152
+  }
+
   val knownFeatures: Set[Feature] = Set(
     DataLossProtect,
     InitialRoutingSync,
@@ -288,13 +351,17 @@ object Features {
     StaticRemoteKey,
     AnchorOutputs,
     AnchorOutputsZeroFeeHtlcTx,
+    RouteBlinding,
     ShutdownAnySegwit,
     DualFunding,
     OnionMessages,
     ChannelType,
+    ScidAlias,
     PaymentMetadata,
+    ZeroConf,
+    KeySend,
     TrampolinePaymentPrototype,
-    KeySend
+    AsyncPaymentPrototype
   )
 
   // Features may depend on other features, as specified in Bolt 9.
@@ -304,9 +371,10 @@ object Features {
     BasicMultiPartPayment -> (PaymentSecret :: Nil),
     AnchorOutputs -> (StaticRemoteKey :: Nil),
     AnchorOutputsZeroFeeHtlcTx -> (StaticRemoteKey :: Nil),
-    DualFunding -> (AnchorOutputsZeroFeeHtlcTx :: Nil),
+    RouteBlinding -> (VariableLengthOnion :: Nil),
     TrampolinePaymentPrototype -> (PaymentSecret :: Nil),
-    KeySend -> (VariableLengthOnion :: Nil)
+    KeySend -> (VariableLengthOnion :: Nil),
+    AsyncPaymentPrototype -> (TrampolinePaymentPrototype :: Nil)
   )
 
   case class FeatureException(message: String)
