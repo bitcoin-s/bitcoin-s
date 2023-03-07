@@ -211,7 +211,7 @@ case class DataMessageHandler(
             if (isSynced) {
               syncIfHeadersAhead(peerMsgSender)
             } else {
-              Future.successful(isSynced) //is this right?
+              Future.successful(!isSynced) //is this right?
             }
           }
           newChainApi <- newChainApi.setSyncing(newSyncing2)
