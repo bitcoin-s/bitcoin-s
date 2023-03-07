@@ -55,7 +55,7 @@ case class NeutrinoNode(
         node = this,
         state = HeaderSync,
         initialSyncDone = None,
-        currentFilterBatch = Set.empty,
+        filterBatchCache = Set.empty,
         syncPeer = None
       )
     }
