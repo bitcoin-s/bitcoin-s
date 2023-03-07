@@ -1,11 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.Done
-import org.bitcoins.chain.blockchain.{
-  ChainHandler,
-  DuplicateHeaders,
-  InvalidBlockHeader
-}
+import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
@@ -133,7 +129,7 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi)
         }
       case filterHeader: CompactFilterHeadersMessage =>
-        logger.info(
+        logger.debug(
           s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = filterHeader.filterHeaders
         for {
@@ -169,8 +165,8 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi, syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.info(
-          s"Received ${filter.commandName}, blockHash=${filter.blockHash.flip} filterBatchCache.size=${filterBatchCache.size}")
+        logger.debug(
+          s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip}")
         val filterBatch = filterBatchCache.+(filter)
         val batchSizeFull: Boolean =
           filterBatch.size == chainConfig.filterBatchSize
@@ -188,8 +184,6 @@ case class DataMessageHandler(
             }
             isSynced
           }
-          _ = logger.info(
-            s"isSynced=$isSynced newFilterHeight=$newFilterHeight filterBatch.size=${filterBatch.size} newFilterHeaderHeight=$newFilterHeaderHeight")
           // If we are not syncing or our filter batch is full, process the filters
           (newBatch: Set[CompactFilterMessage], newChainApi) <- {
             if (isSynced || batchSizeFull) {
@@ -283,12 +277,7 @@ case class DataMessageHandler(
           newChainApi <- chainApi.setSyncing(count.toInt > 0)
           processed <- newChainApi.processHeaders(headers)
         } yield {
-          logger.info(s"Done chainApiHeaderProcessF")
           copy(chainApi = processed)
-        }
-
-        chainApiHeaderProcessF.failed.foreach { err =>
-          logger.error(s"chainApiHeaderProcessF.failed", err)
         }
 
         val getHeadersF: Future[DataMessageHandler] =
@@ -344,7 +333,7 @@ case class DataMessageHandler(
                   }
 
                 } else {
-                  logger.info(
+                  logger.debug(
                     List(s"Received headers=${count.toInt} in one message,",
                          "which is less than max. This means we are synced,",
                          s"not requesting more. state=$state")
@@ -588,7 +577,7 @@ case class DataMessageHandler(
         val newDmh = copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
-          logger.info(
+          logger.debug(
             s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
           fetchCompactFilterHeaders(newDmh).map(_.copy(state = PostHeaderSync))
         } else {
@@ -602,7 +591,6 @@ case class DataMessageHandler(
 
   private def fetchCompactFilterHeaders(
       currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
-    logger.info(s"fetchCompactFilterHeaders syncing=$syncing")
     for {
       peer <- manager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
@@ -688,7 +676,7 @@ case class DataMessageHandler(
       startHeightOpt: Option[Int]): Future[Boolean] = {
     val startHeightF = startHeightOpt match {
       case Some(startHeight) => Future.successful(startHeight)
-      case None              => ChainHandler.fromDatabase().getFilterCount()
+      case None              => chainApi.getFilterCount()
     }
 
     for {

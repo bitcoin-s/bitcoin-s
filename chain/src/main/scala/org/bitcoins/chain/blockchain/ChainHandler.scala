@@ -434,8 +434,6 @@ class ChainHandler(
           findFilterDbFromMessage(filterHeader, filtersByBlockHash)
         }
       }
-      _ = logger.info(
-        s"filterDAO.createAll.length=${compactFilterDbs.length} last.blockHashBE=${compactFilterDbs.last.blockHashBE} original=${messages.last.blockHash.flip}")
       _ <- filterDAO.createAll(compactFilterDbs)
       _ <- chainConfig.callBacks.executeOnCompactFilterConnectedCallbacks(
         compactFilterDbs)
