@@ -103,6 +103,10 @@ case class DataMessageHandler(
         }
       case PostHeaderSync =>
         val resultF = handleDataPayloadValidState(payload, peerMsgSender, peer)
+        resultF.failed.foreach { err =>
+          logger.error(
+            s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+        }
         resultF.recoverWith { case NonFatal(_) =>
           Future.successful(this)
         }
@@ -165,7 +169,8 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi, syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.debug(s"Received ${filter.commandName}, $filter")
+        logger.info(
+          s"Received ${filter.commandName}, blockHash=${filter.blockHash.flip} filterBatchCache.size=${filterBatchCache.size}")
         val filterBatch = filterBatchCache.+(filter)
         val batchSizeFull: Boolean =
           filterBatch.size == chainConfig.filterBatchSize
@@ -173,13 +178,18 @@ case class DataMessageHandler(
           (newFilterHeaderHeight, newFilterHeight) <-
             calcFilterHeaderFilterHeight(chainApi)
           isSynced = {
-            val isSynced =
+            val isSynced = if (newFilterHeight == 0) {
+              (newFilterHeight + filterBatch.size) == newFilterHeaderHeight + 1
+            } else {
               (newFilterHeight + filterBatch.size) == newFilterHeaderHeight
+            }
             if (isSynced) {
               Try(initialSyncDone.map(_.success(Done)))
             }
             isSynced
           }
+          _ = logger.info(
+            s"isSynced=$isSynced newFilterHeight=$newFilterHeight filterBatch.size=${filterBatch.size} newFilterHeaderHeight=$newFilterHeaderHeight")
           // If we are not syncing or our filter batch is full, process the filters
           (newBatch: Set[CompactFilterMessage], newChainApi) <- {
             if (isSynced || batchSizeFull) {
@@ -528,7 +538,10 @@ case class DataMessageHandler(
           sendFirstGetCompactFilterHeadersCommand(peerMessageSender)
         } else {
           require(
-            headerHeight == filterHeaderCount && headerHeight == filterCount)
+            headerHeight == filterHeaderCount,
+            s"headerHeight=$headerHeight filterHeaderCount=$filterHeaderCount")
+          require(headerHeight == filterCount,
+                  s"heightHeight=$headerHeight filterCount=$filterCount")
           logger.info(s"We are synced")
           Try(initialSyncDone.map(_.success(Done)))
           Future.successful(false)
@@ -736,7 +749,7 @@ case class DataMessageHandler(
     for {
       filterHeaderHeight <- chainApi.getFilterHeaderCount()
       filterHeight <- chainApi.getFilterCount()
-    } yield (filterHeaderHeight, if (filterHeight == 0) 0 else filterHeight + 1)
+    } yield (filterHeaderHeight, filterHeight)
   }
 
   /** Checks if the IBD flag needs to be set from true -> false */
