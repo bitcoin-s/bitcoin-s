@@ -577,7 +577,7 @@ case class DataMessageHandler(
         val newDmh = copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
-          logger.debug(
+          logger.info(
             s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
           fetchCompactFilterHeaders(newDmh).map(_.copy(state = PostHeaderSync))
         } else {
