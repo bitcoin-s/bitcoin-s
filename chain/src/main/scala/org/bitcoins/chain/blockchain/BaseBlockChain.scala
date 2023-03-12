@@ -89,7 +89,7 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   }
 
   override def toString: String = {
-    s"BaseBlockchain(tip=${tip},last=${last},length=${length})"
+    s"BaseBlockchain(tip=${tip},length=${length})"
   }
 }
 
