@@ -24,8 +24,7 @@ class BlockchainTest extends ChainUnitTest {
       BlockHeaderHelper.buildNextHeader(genesis)
     val chain = Blockchain(Vector(headerDb, genesis))
 
-    assert(
-      chain.toString == s"BaseBlockchain(tip=$headerDb,last=$genesis,length=2)")
+    assert(chain.toString == s"BaseBlockchain(tip=$headerDb,length=2)")
   }
 
   it must "connect a new header to the current tip of a blockchain" inFixtured {
