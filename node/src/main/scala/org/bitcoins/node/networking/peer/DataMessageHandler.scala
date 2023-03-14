@@ -165,7 +165,7 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi, syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.debug(
+        logger.info(
           s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip}")
         val filterBatch = filterBatchCache.+(filter)
         val batchSizeFull: Boolean =
@@ -173,20 +173,12 @@ case class DataMessageHandler(
         for {
           (newFilterHeaderHeight, newFilterHeight) <-
             calcFilterHeaderFilterHeight(chainApi)
-          isSynced = {
-            val isSynced = if (newFilterHeight == 0) {
-              (newFilterHeight + filterBatch.size) == newFilterHeaderHeight + 1
-            } else {
-              (newFilterHeight + filterBatch.size) == newFilterHeaderHeight
-            }
-            if (isSynced) {
-              Try(initialSyncDone.map(_.success(Done)))
-            }
-            isSynced
-          }
+          isFiltersSynced <- isFiltersSynced(chainApi, filterBatch)
+          _ = logger.info(
+            s"isFiltersSynced=$isFiltersSynced batchSizeFull=$batchSizeFull filterBatch.size=${filterBatch.size} newFilterHeight=$newFilterHeight newFilterHeaderHeight=$newFilterHeaderHeight")
           // If we are not syncing or our filter batch is full, process the filters
           (newBatch: Set[CompactFilterMessage], newChainApi) <- {
-            if (isSynced || batchSizeFull) {
+            if (isFiltersSynced || batchSizeFull) {
               val blockFilters = filterBatch.map { filter =>
                 (filter.blockHash,
                  BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
@@ -208,10 +200,10 @@ case class DataMessageHandler(
               sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
             } else Future.unit
           newSyncing2 <- {
-            if (isSynced) {
+            if (isFiltersSynced) {
               syncIfHeadersAhead(peerMsgSender)
             } else {
-              Future.successful(!isSynced) //is this right?
+              Future.successful(!isFiltersSynced) //is this right?
             }
           }
           newChainApi <- newChainApi.setSyncing(newSyncing2)
@@ -530,7 +522,7 @@ case class DataMessageHandler(
             headerHeight == filterHeaderCount,
             s"headerHeight=$headerHeight filterHeaderCount=$filterHeaderCount")
           require(headerHeight == filterCount,
-                  s"heightHeight=$headerHeight filterCount=$filterCount")
+                  s"headerHeight=$headerHeight filterCount=$filterCount")
           logger.info(s"We are synced")
           Try(initialSyncDone.map(_.success(Done)))
           Future.successful(false)
@@ -738,6 +730,49 @@ case class DataMessageHandler(
       filterHeaderHeight <- chainApi.getFilterHeaderCount()
       filterHeight <- chainApi.getFilterCount()
     } yield (filterHeaderHeight, filterHeight)
+  }
+
+  /** Helper method to determine if compact filters are synced */
+  private def isFiltersSynced(
+      chainApi: ChainApi,
+      filterBatch: Set[CompactFilterMessage]): Future[Boolean] = {
+    for {
+      (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
+        chainApi)
+      isSynced <-
+        if (newFilterHeight == 0 && walletCreationTimeOpt.isDefined) {
+          //if we have zero filters in our database and are syncing filters after a wallet creation time
+          //we need to calculate the offset of the first filter
+          //and how many compact filter headers we have seen. filter_height = best_filter_header - first_filter_filter_header
+          val firstFilterBlockHash = filterBatch.head.blockHash.flip
+          val filterHeaderOptF = chainApi.getFilterHeader(firstFilterBlockHash)
+          val blockCountF = chainApi.getBlockCount()
+          for {
+            filterHeaderOpt <- filterHeaderOptF
+            blockCount <- blockCountF
+          } yield {
+            filterHeaderOpt match {
+              case Some(filterHeader) =>
+                (blockCount - filterHeader.height) <= chainConfig.filterBatchSize
+              case None =>
+                sys.error(
+                  s"Could not find filter header associated with blockHash=$firstFilterBlockHash")
+            }
+          }
+        } else if (newFilterHeight == 0 && walletCreationTimeOpt.isEmpty) {
+          //fully syncing all filters
+          Future.successful(filterBatch.size == newFilterHeaderHeight + 1)
+        } else {
+          Future.successful(
+            (newFilterHeight + filterBatch.size) == newFilterHeaderHeight)
+        }
+    } yield {
+      if (isSynced) {
+        Try(initialSyncDone.map(_.success(Done)))
+      }
+      isSynced
+    }
+
   }
 
   /** Checks if the IBD flag needs to be set from true -> false */
