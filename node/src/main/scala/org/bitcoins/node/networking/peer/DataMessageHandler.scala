@@ -165,7 +165,7 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi, syncPeer = syncPeerOpt)
         }
       case filter: CompactFilterMessage =>
-        logger.info(
+        logger.debug(
           s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip}")
         val filterBatch = filterBatchCache.+(filter)
         val batchSizeFull: Boolean =
@@ -174,8 +174,6 @@ case class DataMessageHandler(
           (newFilterHeaderHeight, newFilterHeight) <-
             calcFilterHeaderFilterHeight(chainApi)
           isFiltersSynced <- isFiltersSynced(chainApi, filterBatch)
-          _ = logger.info(
-            s"isFiltersSynced=$isFiltersSynced batchSizeFull=$batchSizeFull filterBatch.size=${filterBatch.size} newFilterHeight=$newFilterHeight newFilterHeaderHeight=$newFilterHeaderHeight")
           // If we are not syncing or our filter batch is full, process the filters
           (newBatch: Set[CompactFilterMessage], newChainApi) <- {
             if (isFiltersSynced || batchSizeFull) {
