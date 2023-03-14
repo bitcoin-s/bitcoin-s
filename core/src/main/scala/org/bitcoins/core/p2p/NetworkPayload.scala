@@ -1075,6 +1075,10 @@ case class GetCompactFiltersMessage(
   val commandName: String = NetworkPayload.getCompactFiltersCommandName
 
   def bytes: ByteVector = RawGetCompactFiltersMessageSerializer.write(this)
+
+  override def toString: String = {
+    s"GetCompactFiltersMessage(filterType=$filterType,startHeight=$startHeight,stopHash=${stopHash.flip})"
+  }
 }
 
 object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {

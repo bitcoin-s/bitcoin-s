@@ -48,28 +48,14 @@ case class NeutrinoNode(
   private var dataMessageHandler: DataMessageHandler = {
     val result = for {
       chainApi <- chainApiFromDb()
-      filterHeaderCount <- chainApi.getFilterHeaderCount()
-      filterCount <- chainApi.getFilterCount()
     } yield {
-      val filterHeaderCountOpt = if (filterHeaderCount == 0) {
-        None
-      } else {
-        Some(filterHeaderCount)
-      }
-      val filterCountOpt = if (filterCount == 0) {
-        None
-      } else {
-        Some(filterCount)
-      }
       DataMessageHandler(
         chainApi = chainApi,
         walletCreationTimeOpt = walletCreationTimeOpt,
         node = this,
         state = HeaderSync,
         initialSyncDone = None,
-        currentFilterBatch = Set.empty,
-        filterHeaderHeightOpt = filterHeaderCountOpt,
-        filterHeightOpt = filterCountOpt,
+        filterBatchCache = Set.empty,
         syncPeer = None
       )
     }
