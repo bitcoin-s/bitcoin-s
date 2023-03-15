@@ -268,7 +268,13 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       for {
         _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
         _ <- AkkaUtil.nonBlockingSleep(3.seconds)
-        _ <- bitcoind.generateToAddress(2, junkAddress)
+        //have to generate the block headers independent of one another
+        //rather than just calling generateToAddress(2,junkAddress)
+        //because of this bitcoin core bug: https://github.com/bitcoin-s/bitcoin-s/issues/1098
+        //hopefully they fix it some day...
+        _ <- bitcoind.generateToAddress(1, junkAddress)
+        _ <- AsyncUtil.nonBlockingSleep(500.millis)
+        _ <- bitcoind.generateToAddress(1, junkAddress)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
         succeed
