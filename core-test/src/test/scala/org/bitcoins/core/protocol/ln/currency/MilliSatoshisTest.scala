@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.ln.currency
 
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.testkitcore.gen.ln.LnCurrencyUnitGen
 import org.bitcoins.testkitcore.gen.{CurrencyUnitGenerator, NumberGenerator}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -23,6 +24,18 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
     MilliSatoshis.fromPico(PicoBitcoins(101)) must be(MilliSatoshis(10))
 
     MilliSatoshis.fromPico(PicoBitcoins(110)) must be(MilliSatoshis(11))
+  }
+
+  it must "convert msat to sat correctly" in {
+    MilliSatoshis(0).toSatoshis must be(Satoshis.zero)
+    MilliSatoshis(1).toSatoshis must be(Satoshis.zero)
+    MilliSatoshis(999).toSatoshis must be(Satoshis.zero)
+    MilliSatoshis(1000).toSatoshis must be(Satoshis.one)
+    MilliSatoshis(1001).toSatoshis must be(Satoshis.one)
+    MilliSatoshis(10000).toSatoshis must be(Satoshis(10))
+
+    val max = Satoshis.max
+    MilliSatoshis.fromSatoshis(max).toSatoshis must be(max)
   }
 
   it must "add millisatoshis" in {

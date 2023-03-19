@@ -113,7 +113,7 @@ sealed abstract class MilliSatoshis
   }
 
   def toSatoshis: Satoshis = {
-    toLnCurrencyUnit.toSatoshis
+    Satoshis(underlying / 1000)
   }
 
   override def bytes: ByteVector = toUInt64.bytes.reverse
