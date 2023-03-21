@@ -65,7 +65,7 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
         { () =>
           loadWallet2.isRescanning().map(isRescanning => isRescanning == false)
         },
-        500.millis)
+        1.second)
     } yield {
       assert(loader.isRescanStateEmpty)
     }
