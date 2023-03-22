@@ -112,7 +112,9 @@ object WebsocketUtil extends Logging {
         val emitBlockProccessedWhileIBDOnGoing =
           chainAppConfig.ibdBlockProcessedEvents
         isIBDF.flatMap { isIBD =>
-          if (isIBD && !emitBlockProccessedWhileIBDOnGoing && filterHeaders.nonEmpty) {
+          if (
+            isIBD && !emitBlockProccessedWhileIBDOnGoing && filterHeaders.nonEmpty
+          ) {
             val notifications =
               CompactFilterHeaderProcessedNotification(filterHeaders.last)
             sendHeadersToWs(Vector(notifications), queue)
@@ -132,7 +134,7 @@ object WebsocketUtil extends Logging {
         isIBDF.flatMap { isIBD =>
           if (
             isIBD && !emitBlockProccessedWhileIBDOnGoing && filters.nonEmpty
-            ) {
+          ) {
             val notifications = CompactFilterProcessedNotification(filters.last)
             sendHeadersToWs(Vector(notifications), queue)
           } else {
