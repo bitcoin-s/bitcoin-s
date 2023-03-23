@@ -106,11 +106,6 @@ case class NeutrinoNode(
       _ = updateDataMessageHandler(
         dataMessageHandler.copy(syncPeer = Some(syncPeer)))
       peerMsgSender <- peerManager.peerData(syncPeer).peerMessageSender
-
-      bestHash <- chainApi.getBestBlockHash()
-      _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash =
-        bestHash.flip)
-      chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
       bestFilterOpt <- chainApi.getBestFilter()
