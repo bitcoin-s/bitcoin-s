@@ -155,8 +155,6 @@ abstract class NetworkUtil {
       chainParams: ChainParams): Boolean = {
     val seconds = blockHeader.time.toLong
     val expected: Duration = chainParams.powTargetSpacing * 3
-    println(
-      s"second=$seconds expected=$expected diff=${Instant.now.getEpochSecond - seconds} 30min=${expected.toSeconds}")
     (Instant.now.getEpochSecond - seconds) > expected.toSeconds
   }
 

@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
+import org.bitcoins.core.protocol.blockchain.{BlockHeader, MainNetChainParams}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import scodec.bits.ByteVector
 
@@ -20,15 +20,20 @@ class NetworkUtilTest extends BitcoinSUtilTest {
   }
 
   it must "determine if a block header is stale" in {
-    //val staleHeader = ChainTestUtil.genesisHeaderDb
-    //assert(
-    //  NetworkUtil.isBlockHeaderStale(staleHeader.blockHeader,
-    //                                 MainNetChainParams))
-
-    val nonStale = ChainTestUtil.genesisHeaderDb.copy(time =
-      UInt32(Instant.now.getEpochSecond))
-
+    val staleHeader = ChainTestUtil.genesisHeaderDb
     assert(
-      !NetworkUtil.isBlockHeaderStale(nonStale.blockHeader, MainNetChainParams))
+      NetworkUtil.isBlockHeaderStale(staleHeader.blockHeader,
+                                     MainNetChainParams))
+
+    val nonStale = BlockHeader(
+      ChainTestUtil.genesisHeaderDb.version,
+      ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
+      ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+      time = UInt32(Instant.now.getEpochSecond),
+      nBits = ChainTestUtil.genesisHeaderDb.nBits,
+      nonce = ChainTestUtil.genesisHeaderDb.nonce
+    )
+
+    assert(!NetworkUtil.isBlockHeaderStale(nonStale, MainNetChainParams))
   }
 }
