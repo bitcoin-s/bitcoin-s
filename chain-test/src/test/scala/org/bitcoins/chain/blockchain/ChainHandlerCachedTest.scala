@@ -1,7 +1,8 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkit.chain.ChainDbUnitTest
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 class ChainHandlerCachedTest extends ChainDbUnitTest {
@@ -34,7 +35,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()
       } yield {
         assert(filterHeaderOpt.isDefined)
-        assert(filterHeaderOpt.get == ChainUnitTest.genesisFilterHeaderDb)
+        assert(filterHeaderOpt.get == ChainTestUtil.genesisFilterHeaderDb)
       }
   }
 

@@ -1,6 +1,11 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.blockchain.MainNetChainParams
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import scodec.bits.ByteVector
+
+import java.time.Instant
 
 class NetworkUtilTest extends BitcoinSUtilTest {
   "NetworkUtil" must "convert torV3 pubkey to correct .onion address and vice versa" in {
@@ -12,5 +17,18 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     val pubkeyFromAddress = ByteVector(NetworkUtil.torV3AddressToBytes(address))
     assert(address == addressFromKey)
     assert(pubkey == pubkeyFromAddress)
+  }
+
+  it must "determine if a block header is stale" in {
+    //val staleHeader = ChainTestUtil.genesisHeaderDb
+    //assert(
+    //  NetworkUtil.isBlockHeaderStale(staleHeader.blockHeader,
+    //                                 MainNetChainParams))
+
+    val nonStale = ChainTestUtil.genesisHeaderDb.copy(time =
+      UInt32(Instant.now.getEpochSecond))
+
+    assert(
+      !NetworkUtil.isBlockHeaderStale(nonStale.blockHeader, MainNetChainParams))
   }
 }

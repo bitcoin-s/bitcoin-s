@@ -6,12 +6,8 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.testkit.chain.{
-  BlockHeaderHelper,
-  ChainDbUnitTest,
-  ChainTestUtil,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 import scodec.bits._
 
@@ -28,7 +24,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   behavior of "BlockHeaderDAO"
 
-  private val genesisHeaderDb = ChainUnitTest.genesisHeaderDb
+  private val genesisHeaderDb = ChainTestUtil.genesisHeaderDb
   it should "insert and read the genesis block header back" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val readF = blockHeaderDAO.read(genesisHeaderDb.hashBE)
@@ -326,10 +322,10 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         foundGenesis <- foundGenesisF
       } yield {
         assert(noGenesisAncestors.length == 1)
-        assert(noGenesisAncestors == Vector(ChainUnitTest.genesisHeaderDb))
+        assert(noGenesisAncestors == Vector(ChainTestUtil.genesisHeaderDb))
 
         assert(foundGenesis.length == 1)
-        assert(foundGenesis == Vector(ChainUnitTest.genesisHeaderDb))
+        assert(foundGenesis == Vector(ChainTestUtil.genesisHeaderDb))
       }
 
       val oneChildF = for {

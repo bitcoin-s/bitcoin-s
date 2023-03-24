@@ -4,13 +4,10 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.chain.{
-  ChainDbUnitTest,
-  ChainTestUtil,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 import play.api.libs.json.Json
 
@@ -34,7 +31,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   val headersResult: Vector[BlockHeader] =
     Json.parse(arrStr).validate[Vector[BlockHeader]].get
 
-  val genesis: BlockHeaderDb = ChainUnitTest.genesisHeaderDb
+  val genesis: BlockHeaderDb = ChainTestUtil.genesisHeaderDb
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandlerCached(test)

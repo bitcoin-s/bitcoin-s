@@ -12,7 +12,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 
 import scala.annotation.tailrec
@@ -1079,6 +1079,13 @@ class ChainHandler(
       }
     } yield {
       this
+    }
+  }
+
+  override def isTipStale(): Future[Boolean] = {
+    getBestBlockHeader().map { blockHeaderDb =>
+      NetworkUtil.isBlockHeaderStale(blockHeaderDb.blockHeader,
+                                     chainConfig.chain)
     }
   }
 

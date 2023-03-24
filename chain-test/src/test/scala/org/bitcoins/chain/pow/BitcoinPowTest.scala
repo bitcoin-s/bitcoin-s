@@ -9,11 +9,8 @@ import org.bitcoins.core.protocol.blockchain.{
 }
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.chain.fixture.{ChainFixture, ChainFixtureTag}
-import org.bitcoins.testkit.chain.{
-  ChainDbUnitTest,
-  ChainTestUtil,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future

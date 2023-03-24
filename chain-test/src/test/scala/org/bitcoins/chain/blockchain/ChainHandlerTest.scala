@@ -22,13 +22,9 @@ import org.bitcoins.crypto.{
   ECPrivateKey
 }
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
-import org.bitcoins.testkit.chain.{
-  BlockHeaderHelper,
-  ChainDbUnitTest,
-  ChainTestUtil,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
@@ -44,13 +40,13 @@ class ChainHandlerTest extends ChainDbUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandlerGenesisFilter(test)
 
-  val genesis: BlockHeaderDb = ChainUnitTest.genesisHeaderDb
+  val genesis: BlockHeaderDb = ChainTestUtil.genesisHeaderDb
   behavior of "ChainHandler"
 
   val nextBlockHeader: BlockHeader =
     BlockHeader(
       version = Int32(1),
-      previousBlockHash = ChainUnitTest.genesisHeaderDb.hashBE.flip,
+      previousBlockHash = ChainTestUtil.genesisHeaderDb.hashBE.flip,
       merkleRootHash = DoubleSha256Digest.empty,
       time = UInt32(1231006505),
       nBits = UInt32(545259519),
@@ -60,7 +56,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   it must "process a new valid block header, and then be able to fetch that header" in {
     chainHandler: ChainHandler =>
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
       val processedHeaderF =
         chainHandler.processHeader(newValidHeader.blockHeader)
 
@@ -227,9 +223,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield {
         assert(genesisFilterHeader.size == 1)
         assert(
-          genesisFilterHeader.contains(ChainUnitTest.genesisFilterHeaderDb))
+          genesisFilterHeader.contains(ChainTestUtil.genesisFilterHeaderDb))
         assert(
-          genesisFilterHeader.head.filterHeader == ChainUnitTest.genesisFilterHeaderDb.filterHeader)
+          genesisFilterHeader.head.filterHeader == ChainTestUtil.genesisFilterHeaderDb.filterHeader)
         assert(count == 0)
       }
     }
@@ -251,11 +247,11 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "verify a batch of filter headers" in { chainHandler: ChainHandler =>
     val goodBatch = Vector(
-      ChainUnitTest.genesisFilterHeaderDb,
+      ChainTestUtil.genesisFilterHeaderDb,
       CompactFilterHeaderDb(
         hashBE = DoubleSha256DigestBE.fromHex(
           "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
-        previousFilterHeaderBE = ChainUnitTest.genesisFilterHeaderDb.hashBE,
+        previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
         height = 1,
         filterHashBE = DoubleSha256DigestBE.fromHex(
           "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
@@ -265,18 +261,18 @@ class ChainHandlerTest extends ChainDbUnitTest {
     )
 
     val invalidGenesisFilterHeaderBatch = Vector(
-      ChainUnitTest.genesisFilterHeaderDb.copy(
-        hashBE = ChainUnitTest.genesisFilterHeaderDb.previousFilterHeaderBE,
-        previousFilterHeaderBE = ChainUnitTest.genesisFilterHeaderDb.hashBE
+      ChainTestUtil.genesisFilterHeaderDb.copy(
+        hashBE = ChainTestUtil.genesisFilterHeaderDb.previousFilterHeaderBE,
+        previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE
       )
     )
 
     val invalidFilterHeaderBatch = Vector(
-      ChainUnitTest.genesisFilterHeaderDb.copy(height = 1)
+      ChainTestUtil.genesisFilterHeaderDb.copy(height = 1)
     )
 
     val selfReferenceFilterHeaderBatch = Vector(
-      ChainUnitTest.genesisFilterHeaderDb,
+      ChainTestUtil.genesisFilterHeaderDb,
       CompactFilterHeaderDb(
         hashBE = DoubleSha256DigestBE.fromHex(
           "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
@@ -291,7 +287,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
     )
 
     val unknownFilterHeaderBatch = Vector(
-      ChainUnitTest.genesisFilterHeaderDb,
+      ChainTestUtil.genesisFilterHeaderDb,
       CompactFilterHeaderDb(
         hashBE = DoubleSha256DigestBE.fromHex(
           "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
@@ -325,9 +321,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
         genesisFilter <- chainHandler.getFiltersAtHeight(count)
       } yield {
         assert(count == 0)
-        assert(genesisFilter.contains(ChainUnitTest.genesisFilterDb))
+        assert(genesisFilter.contains(ChainTestUtil.genesisFilterDb))
         assert(
-          genesisFilter.head.golombFilter == ChainUnitTest.genesisFilterDb.golombFilter)
+          genesisFilter.head.golombFilter == ChainTestUtil.genesisFilterDb.golombFilter)
       }
     }
   }
@@ -343,7 +339,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         firstFilterHeader = FilterHeader(
           filterHash =
             DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
-          prevHeaderHash = ChainUnitTest.genesisFilterHeaderDb.hashBE.flip)
+          prevHeaderHash = ChainTestUtil.genesisFilterHeaderDb.hashBE.flip)
         newChainHandler <-
           chainHandler.processFilterHeader(firstFilterHeader, blockHashBE)
         process <- newChainHandler.processFilter(firstFilter)
@@ -614,7 +610,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "find filters between heights" in { chainHandler: ChainHandler =>
     chainHandler.getFiltersBetweenHeights(0, 1).map { filters =>
-      val genesis = ChainUnitTest.genesisFilterDb
+      val genesis = ChainTestUtil.genesisFilterDb
       val genesisFilterResponse = FilterResponse(genesis.golombFilter,
                                                  genesis.blockHashBE,
                                                  genesis.height)
@@ -635,7 +631,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "not throw an exception when processing a filter we have already  seen" in {
     chainHandler: ChainHandler =>
-      val filter = ChainUnitTest.genesisFilterMessage
+      val filter = ChainTestUtil.genesisFilterMessage
       val filters = Vector.fill(2)(filter)
       val filterCountBeforeF = chainHandler.getFilterCount()
       val processF =
@@ -657,7 +653,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "check isMissingChainWork when there is over a 100 headers" in {
     chainHandler: ChainHandler =>
-      val genesis = ChainUnitTest.genesisHeaderDb
+      val genesis = ChainTestUtil.genesisHeaderDb
       val headers = 0.to(101).foldLeft(Vector(genesis)) { (accum, _) =>
         val next = BlockHeaderHelper.buildNextHeader(accum.last)
         accum :+ next

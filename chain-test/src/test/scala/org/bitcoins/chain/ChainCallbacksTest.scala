@@ -6,11 +6,8 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
-import org.bitcoins.testkit.chain.{
-  BlockHeaderHelper,
-  ChainDbUnitTest,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 import scodec.bits.ByteVector
 
@@ -39,7 +36,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
 
       for {
         _ <- chainHandler.processHeader(newValidHeader.blockHeader)
@@ -64,12 +61,12 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
       val nextCompactFilterHeaderDb =
         CompactFilterHeaderDb(
           hashBE = DoubleSha256DigestBE.fromHex(
             "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
-          previousFilterHeaderBE = ChainUnitTest.genesisFilterHeaderDb.hashBE,
+          previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
           height = 1,
           filterHashBE = DoubleSha256DigestBE.fromHex(
             "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
@@ -102,7 +99,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
 
       val bytes = ByteVector(scala.util.Random.nextBytes(32))
       val hashBE = CryptoUtil.doubleSHA256(bytes)
@@ -110,7 +107,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
         CompactFilterHeaderDb(
           hashBE = DoubleSha256DigestBE.fromHex(
             "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
-          previousFilterHeaderBE = ChainUnitTest.genesisFilterHeaderDb.hashBE,
+          previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
           height = 1,
           filterHashBE = hashBE.flip,
           blockHashBE = newValidHeader.hashBE

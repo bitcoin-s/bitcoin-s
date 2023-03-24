@@ -112,6 +112,10 @@ case class NeutrinoNode(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      //need to add a check here to see if our last block header in our
+      //database has a timestamp within a reasonable amount of time on the p2p network
+      //if it does have a reasonable timestamp (within the last 10 minutes), we should sync filters
+      //if it doesn't have a reasonable timestamp we sync headers and not call syncFilter()
       _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,

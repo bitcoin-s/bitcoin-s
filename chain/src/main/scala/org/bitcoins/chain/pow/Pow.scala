@@ -127,13 +127,7 @@ sealed abstract class Pow {
   }
 
   def getBlockProof(header: BlockHeader): BigInt = {
-    val target = NumberUtil.targetExpansion(header.nBits)
-
-    if (target.isNegative || target.isOverflow) {
-      BigInt(0)
-    } else {
-      (BigInt(1) << 256) / (target.difficulty + BigInt(1))
-    }
+    BlockHeader.getBlockProof(header)
   }
 }
 
