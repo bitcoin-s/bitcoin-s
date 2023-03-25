@@ -22,7 +22,17 @@ TaskKeys.downloadCLightning := {
   val version = "23.02.2"
 
   val (platform, suffix) =
-    if (Properties.isLinux) ("Ubuntu-20.04", "tar.xz")
+    if (Properties.isLinux) {
+      //from: https://stackoverflow.com/a/51614324/967713
+      val processBuilder = new java.lang.ProcessBuilder("lsb_release", "-rs")
+      val inputStream = new java.io.InputStreamReader(processBuilder.start().getInputStream())
+      val version = new java.io.BufferedReader(inputStream).readLine()
+      if (version == "22.04")  {
+        ("Ubuntu-22.04", "tar.xz")
+      } else {
+        ("Ubuntu-20.04", "tar.xz")
+      }
+    }
 //    else if (Properties.isMac) ("darwin-amd64", "tar.gz") // todo c-lightning adding in a future release
     else sys.error(s"Unsupported OS: ${Properties.osName}")
 
@@ -52,8 +62,11 @@ TaskKeys.downloadCLightning := {
       .mkString
 
     val expectedHash =
-      if (Properties.isLinux)
+      if (platform == "Ubuntu-20.04") {
         "0068852306bca9df3d213c6a29bb90451eb538be83e413d6838e9e2d2729ff7f"
+      } else if (platform == "Ubuntu-22.04") {
+        "0c0763ff41656e0d76c955e4843894ea0c23c401ccde29e4ae369808862d4c0b"
+      }
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val success = hash.equalsIgnoreCase(expectedHash)
