@@ -53,7 +53,7 @@ TaskKeys.downloadCLightning := {
 
     val expectedHash =
       if (Properties.isLinux)
-        "de61bb1dec0f656e192f896de7dcb08f4b07cf9c2bdaef8c78d860cd80ea6776"
+        "0068852306bca9df3d213c6a29bb90451eb538be83e413d6838e9e2d2729ff7f"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val success = hash.equalsIgnoreCase(expectedHash)
