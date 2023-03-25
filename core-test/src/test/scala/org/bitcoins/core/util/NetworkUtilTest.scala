@@ -6,6 +6,7 @@ import org.bitcoins.testkitcore.chain.ChainTestUtil
 import scodec.bits.ByteVector
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class NetworkUtilTest extends BitcoinSUtilTest {
   "NetworkUtil" must "convert torV3 pubkey to correct .onion address and vice versa" in {
@@ -35,5 +36,35 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     )
 
     assert(!NetworkUtil.isBlockHeaderStale(nonStale, MainNetChainParams))
+
+    val barleyStaleHeader = {
+      val timestamp = Instant.now.minus(31, ChronoUnit.MINUTES).getEpochSecond
+      BlockHeader(
+        ChainTestUtil.genesisHeaderDb.version,
+        ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
+        ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+        time = UInt32(timestamp),
+        nBits = ChainTestUtil.genesisHeaderDb.nBits,
+        nonce = ChainTestUtil.genesisHeaderDb.nonce
+      )
+    }
+
+    assert(
+      NetworkUtil.isBlockHeaderStale(barleyStaleHeader, MainNetChainParams))
+
+    val barleyNotStaleHeader = {
+      val timestamp = Instant.now.minus(29, ChronoUnit.MINUTES).getEpochSecond
+      BlockHeader(
+        ChainTestUtil.genesisHeaderDb.version,
+        ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
+        ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+        time = UInt32(timestamp),
+        nBits = ChainTestUtil.genesisHeaderDb.nBits,
+        nonce = ChainTestUtil.genesisHeaderDb.nonce
+      )
+    }
+
+    assert(
+      !NetworkUtil.isBlockHeaderStale(barleyNotStaleHeader, MainNetChainParams))
   }
 }
