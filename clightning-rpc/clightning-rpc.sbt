@@ -19,7 +19,7 @@ TaskKeys.downloadCLightning := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.10.2"
+  val version = "23.02.2"
 
   val (platform, suffix) =
     if (Properties.isLinux) ("Ubuntu-20.04", "tar.xz")
