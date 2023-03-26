@@ -81,7 +81,7 @@ object Deps {
 
     val gsonV = "2.10.1"
     val jnaV = "5.13.0"
-    val waffleJnaV = "3.2.0"
+    val waffleJnaV = "3.3.0"
   }
 
   object Compile {
