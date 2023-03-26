@@ -59,7 +59,7 @@ case class CLightningRpcTestClient(
           _ <- TestAsyncUtil.awaitCondition(
             () => clightning.instance.rpcFile.exists(),
             interval = 1.second,
-            maxTries = 500)
+            maxTries = 10)
           _ <- TestAsyncUtil.nonBlockingSleep(7.seconds)
         } yield {
           clientOpt = Some(clightning)
