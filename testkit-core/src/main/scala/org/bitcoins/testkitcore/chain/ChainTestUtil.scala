@@ -1,8 +1,8 @@
-package org.bitcoins.testkit.chain
+package org.bitcoins.testkitcore.chain
 
-import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
+import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
   MainNetChainParams,
@@ -19,10 +19,10 @@ sealed abstract class ChainTestUtil {
     regTestChainParams.genesisBlock.blockHeader
 
   lazy val regTestGenesisHeaderDb: BlockHeaderDb = {
-    BlockHeaderDbHelper.fromBlockHeader(height = 0,
-                                        chainWork =
-                                          Pow.getBlockProof(regTestHeader),
-                                        bh = regTestHeader)
+    BlockHeaderDbHelper.fromBlockHeader(
+      height = 0,
+      chainWork = BlockHeader.getBlockProof(regTestHeader),
+      bh = regTestHeader)
   }
 
   lazy val regTestGenesisHeaderCompactFilter: GolombFilter =
@@ -42,6 +42,20 @@ sealed abstract class ChainTestUtil {
       regTestGenesisHeaderCompactFilterHeader,
       regTestHeader.hashBE,
       0)
+
+  val genesisHeaderDb: BlockHeaderDb = regTestGenesisHeaderDb
+
+  val genesisFilterDb: CompactFilterDb =
+    regTestGenesisHeaderCompactFilterDb
+
+  val genesisFilterHeaderDb: CompactFilterHeaderDb =
+    regTestGenesisHeaderCompactFilterHeaderDb
+
+  val genesisFilterMessage: CompactFilterMessage = {
+    CompactFilterMessage(filterType = genesisFilterDb.filterType,
+                         blockHash = genesisFilterDb.blockHashBE.flip,
+                         filterBytes = genesisFilterDb.golombFilter.bytes)
+  }
 
   lazy val mainnetChainParam: MainNetChainParams.type = MainNetChainParams
 
@@ -66,24 +80,27 @@ sealed abstract class ChainTestUtil {
       "000000200cd536b3eb1cd9c028e081f1455006276b293467c3e5170000000000000000007bc1b27489db01c85d38a4bc6d2280611e9804f506d83ad00d2a33ebd663992f76c7725c505b2e174fb90f55")
 
     lazy val blockHeaderDb564480 =
-      BlockHeaderDbHelper.fromBlockHeader(564480,
-                                          Pow.getBlockProof(blockHeader564480),
-                                          blockHeader564480)
+      BlockHeaderDbHelper.fromBlockHeader(
+        564480,
+        BlockHeader.getBlockProof(blockHeader564480),
+        blockHeader564480)
 
     lazy val blockHeader566494 = BlockHeader.fromHex(
       "00000020ea2cb07d670ddb7a158e72ddfcfd9e1b9bf4459278bb240000000000000000004fb33054d79de69bb84b4d5c7dd87d80473c416320427a882c72108f7e43fd0c3d3e855c505b2e178f328fe2")
 
     lazy val blockHeaderDb566494 =
-      BlockHeaderDbHelper.fromBlockHeader(566594,
-                                          Pow.getBlockProof(blockHeader566494),
-                                          blockHeader566494)
+      BlockHeaderDbHelper.fromBlockHeader(
+        566594,
+        BlockHeader.getBlockProof(blockHeader566494),
+        blockHeader566494)
 
     lazy val blockHeader566495 = BlockHeader.fromHex(
       "000000202164d8c4e5246ab003fdebe36c697b9418aa454ec4190d00000000000000000059134ad5aaad38a0e75946c7d4cb09b3ad45b459070195dd564cde193cf0ef29c33e855c505b2e17f61af734")
 
     lazy val blockHeaderDb566495 = {
       val chainWork =
-        blockHeaderDb566494.chainWork + Pow.getBlockProof(blockHeader566495)
+        blockHeaderDb566494.chainWork + BlockHeader.getBlockProof(
+          blockHeader566495)
       BlockHeaderDbHelper.fromBlockHeader(566495, chainWork, blockHeader566495)
     }
 
@@ -93,7 +110,8 @@ sealed abstract class ChainTestUtil {
 
     lazy val blockHeaderDb566496 = {
       val chainWork =
-        blockHeaderDb566495.chainWork + Pow.getBlockProof(blockHeader566496)
+        blockHeaderDb566495.chainWork + BlockHeader.getBlockProof(
+          blockHeader566496)
       BlockHeaderDbHelper.fromBlockHeader(566496, chainWork, blockHeader566496)
     }
   }

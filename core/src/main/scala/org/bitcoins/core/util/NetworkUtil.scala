@@ -1,11 +1,14 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.p2p.AddrV2Message
+import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
 import java.net._
+import java.time.Instant
 import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Random, Success, Try}
 
 abstract class NetworkUtil {
@@ -141,6 +144,18 @@ abstract class NetworkUtil {
       case Success(value) => value
       case Failure(_)     => randomPort()
     }
+  }
+
+  /** Checks if the given block header is stale relative to the given chain parameters
+    *
+    * @see [[https://github.com/bitcoin/bitcoin/blob/664500fc71a32d5066db8cb4a19ddc7005a1c9e9/src/net_processing.cpp#L1235]]
+    */
+  def isBlockHeaderStale(
+      blockHeader: BlockHeader,
+      chainParams: ChainParams): Boolean = {
+    val seconds = blockHeader.time.toLong
+    val expected: Duration = chainParams.powTargetSpacing * 3
+    (Instant.now.getEpochSecond - seconds) > expected.toSeconds
   }
 
 }

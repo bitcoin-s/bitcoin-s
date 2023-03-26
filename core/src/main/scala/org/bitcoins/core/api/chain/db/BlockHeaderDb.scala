@@ -24,6 +24,9 @@ case class BlockHeaderDb(
     require(blockHeader.version == version)
     require(blockHeader.nBits == nBits)
     require(blockHeader.nonce == nonce)
+    require(
+      blockHeader.time == time,
+      s"Inconsistent in memory time=$time vs serialized time=${blockHeader.time}")
 
     blockHeader
   }

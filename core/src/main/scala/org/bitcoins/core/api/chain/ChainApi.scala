@@ -154,6 +154,11 @@ trait ChainApi extends ChainQueryApi {
 
   def isIBD(): Future[Boolean]
 
+  /** Checks if our chain tip is stale
+    * @see [[https://github.com/bitcoin/bitcoin/blob/664500fc71a32d5066db8cb4a19ddc7005a1c9e9/src/net_processing.cpp#L1235]]
+    */
+  def isTipStale(): Future[Boolean]
+
   def setSyncing(value: Boolean): Future[ChainApi]
 
   def setIBD(value: Boolean): Future[ChainApi]

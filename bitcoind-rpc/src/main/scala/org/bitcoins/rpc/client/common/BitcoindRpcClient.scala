@@ -15,7 +15,7 @@ import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
@@ -289,6 +289,13 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def isIBD(): Future[Boolean] = {
     getBlockChainInfo.map(_.initialblockdownload)
+  }
+
+  override def isTipStale(): Future[Boolean] = {
+    getBestBlockHeader().map { blockHeaderDb =>
+      NetworkUtil.isBlockHeaderStale(blockHeaderDb.blockHeader,
+                                     network.chainParams)
+    }
   }
 
   override def setSyncing(value: Boolean): Future[ChainApi] = {

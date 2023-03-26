@@ -1,6 +1,12 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.blockchain.{BlockHeader, MainNetChainParams}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import scodec.bits.ByteVector
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class NetworkUtilTest extends BitcoinSUtilTest {
   "NetworkUtil" must "convert torV3 pubkey to correct .onion address and vice versa" in {
@@ -12,5 +18,53 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     val pubkeyFromAddress = ByteVector(NetworkUtil.torV3AddressToBytes(address))
     assert(address == addressFromKey)
     assert(pubkey == pubkeyFromAddress)
+  }
+
+  it must "determine if a block header is stale" in {
+    val staleHeader = ChainTestUtil.genesisHeaderDb
+    assert(
+      NetworkUtil.isBlockHeaderStale(staleHeader.blockHeader,
+                                     MainNetChainParams))
+
+    val nonStale = BlockHeader(
+      ChainTestUtil.genesisHeaderDb.version,
+      ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
+      ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+      time = UInt32(Instant.now.getEpochSecond),
+      nBits = ChainTestUtil.genesisHeaderDb.nBits,
+      nonce = ChainTestUtil.genesisHeaderDb.nonce
+    )
+
+    assert(!NetworkUtil.isBlockHeaderStale(nonStale, MainNetChainParams))
+
+    val barleyStaleHeader = {
+      val timestamp = Instant.now.minus(31, ChronoUnit.MINUTES).getEpochSecond
+      BlockHeader(
+        ChainTestUtil.genesisHeaderDb.version,
+        ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
+        ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+        time = UInt32(timestamp),
+        nBits = ChainTestUtil.genesisHeaderDb.nBits,
+        nonce = ChainTestUtil.genesisHeaderDb.nonce
+      )
+    }
+
+    assert(
+      NetworkUtil.isBlockHeaderStale(barleyStaleHeader, MainNetChainParams))
+
+    val barleyNotStaleHeader = {
+      val timestamp = Instant.now.minus(29, ChronoUnit.MINUTES).getEpochSecond
+      BlockHeader(
+        ChainTestUtil.genesisHeaderDb.version,
+        ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
+        ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+        time = UInt32(timestamp),
+        nBits = ChainTestUtil.genesisHeaderDb.nBits,
+        nonce = ChainTestUtil.genesisHeaderDb.nonce
+      )
+    }
+
+    assert(
+      !NetworkUtil.isBlockHeaderStale(barleyNotStaleHeader, MainNetChainParams))
   }
 }

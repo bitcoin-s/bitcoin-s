@@ -2,12 +2,12 @@ package org.bitcoins.testkit.node
 
 import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.commons.config.AppConfig
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
+import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -17,9 +17,9 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.EmbeddedPg
-import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -92,7 +92,7 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     override def getBlockCount(): Future[Int] = Future.successful(0)
 
     override def getBestBlockHeader(): Future[BlockHeaderDb] =
-      Future.successful(ChainUnitTest.genesisHeaderDb)
+      Future.successful(ChainTestUtil.genesisHeaderDb)
 
     override def processFilterHeaders(
         filterHeaders: Vector[FilterHeader],
@@ -178,6 +178,10 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     override def isSyncing(): Future[Boolean] = Future.successful(false)
 
     override def isIBD(): Future[Boolean] = Future.successful(false)
+
+    override def isTipStale(): Future[Boolean] = {
+      Future.successful(false)
+    }
 
     override def setSyncing(value: Boolean): Future[ChainApi] =
       Future.successful(this)

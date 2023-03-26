@@ -356,11 +356,11 @@ object RegTestNetChainParams extends BitcoinChainParams {
   override lazy val networkId = "regtest"
 
   override lazy val genesisBlock: Block =
-    createGenesisBlock(UInt32(1296688602),
-                       UInt32(2),
-                       UInt32(0x207fffff),
-                       Int32.one,
-                       Satoshis(5000000000L))
+    createGenesisBlock(time = UInt32(1296688602),
+                       nonce = UInt32(2),
+                       nBits = UInt32(0x207fffff),
+                       version = Int32.one,
+                       amount = Satoshis(5000000000L))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     TestNetChainParams.base58Prefixes

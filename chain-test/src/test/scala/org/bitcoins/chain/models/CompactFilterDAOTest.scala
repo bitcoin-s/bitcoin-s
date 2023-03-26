@@ -3,11 +3,8 @@ package org.bitcoins.chain.models
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterDb}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
-import org.bitcoins.testkit.chain.{
-  BlockHeaderHelper,
-  ChainDbUnitTest,
-  ChainTestUtil
-}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.scalatest.FutureOutcome
 

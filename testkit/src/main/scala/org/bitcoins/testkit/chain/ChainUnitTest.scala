@@ -12,12 +12,11 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
-import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient}
-import org.bitcoins.rpc.client.v19.{V19BlockFilterRpc}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.chain.models.{
@@ -29,6 +28,7 @@ import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
@@ -215,10 +215,10 @@ trait ChainUnitTest
     for {
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
-        ChainUnitTest.genesisFilterHeaderDb.filterHeader,
-        ChainUnitTest.genesisHeaderDb.hashBE)
+        ChainTestUtil.genesisFilterHeaderDb.filterHeader,
+        ChainTestUtil.genesisHeaderDb.hashBE)
       filterChainApi <-
-        filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
+        filterHeaderChainApi.processFilter(ChainTestUtil.genesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandler]
   }
 
@@ -227,10 +227,10 @@ trait ChainUnitTest
     for {
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
-        ChainUnitTest.genesisFilterHeaderDb.filterHeader,
-        ChainUnitTest.genesisHeaderDb.hashBE)
+        ChainTestUtil.genesisFilterHeaderDb.filterHeader,
+        ChainTestUtil.genesisHeaderDb.hashBE)
       filterChainApi <-
-        filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
+        filterHeaderChainApi.processFilter(ChainTestUtil.genesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandlerCached]
   }
 
@@ -447,20 +447,6 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   val FIRST_POW_CHANGE: Int = (FIRST_BLOCK_HEIGHT / 2016 + 1) * 2016
 
-  val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
-
-  val genesisFilterDb: CompactFilterDb =
-    ChainTestUtil.regTestGenesisHeaderCompactFilterDb
-
-  val genesisFilterHeaderDb: CompactFilterHeaderDb =
-    ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
-
-  val genesisFilterMessage: CompactFilterMessage = {
-    CompactFilterMessage(filterType = genesisFilterDb.filterType,
-                         blockHash = genesisFilterDb.blockHashBE.flip,
-                         filterBytes = genesisFilterDb.golombFilter.bytes)
-  }
-
   def createChainHandler()(implicit
       ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[ChainHandler] = {
@@ -654,7 +640,8 @@ object ChainUnitTest extends ChainVerificationLogger {
       val chainHandlerF = makeChainHandler()
       for {
         chainHandler <- chainHandlerF
-        genHeader <- chainHandler.blockHeaderDAO.upsert(genesisHeaderDb)
+        genHeader <- chainHandler.blockHeaderDAO.upsert(
+          ChainTestUtil.genesisHeaderDb)
       } yield genHeader
     }
 
