@@ -270,6 +270,8 @@ trait LndRpcTestUtil extends Logging {
                        n2 = otherClient,
                        amt = channelSize,
                        pushAmt = channelPushAmt)
+
+      _ <- TestAsyncUtil.nonBlockingSleep(2.seconds)
     } yield (client, otherClient)
   }
 
