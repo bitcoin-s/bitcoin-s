@@ -346,7 +346,7 @@ case class PeerManager(
 
   def onP2PClientStopped(peer: Peer): Future[Unit] = {
     require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
-           s"$peer cannot be both a test and a persistent peer")
+            s"$peer cannot be both a test and a persistent peer")
 
     logger.info(s"Client stopped for $peer")
 
