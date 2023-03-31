@@ -81,7 +81,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           GetHeadersMessage(node.chainConfig.chain.genesisHash))
         //waiting for response to header query now
         client <- peerManager
-          .peerData(bitcoindPeers(0))
+          .peerDataMap(bitcoindPeers(0))
           .peerMessageSender
           .map(_.client)
         _ = client.actor ! expectHeaders
@@ -140,7 +140,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
             node.chainConfig))
 
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
-        sender <- node.peerManager.peerData(peer).peerMessageSender
+        sender <- node.peerManager.peerDataMap(peer).peerMessageSender
         _ <- node.getDataMessageHandler.addToStream(invalidHeaderMessage,
                                                     sender,
                                                     peer)
@@ -159,7 +159,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       def sendInvalidHeaders(peer: Peer): Future[Unit] = {
         val invalidHeaderMessage =
           HeadersMessage(headers = Vector(invalidHeader))
-        val senderF = node.peerManager.peerData(peer).peerMessageSender
+        val senderF = node.peerManager.peerDataMap(peer).peerMessageSender
 
         for {
           sender <- senderF

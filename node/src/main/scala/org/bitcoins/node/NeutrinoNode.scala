@@ -105,7 +105,7 @@ case class NeutrinoNode(
       _ = logger.info(s"Syncing with $syncPeer")
       _ = updateDataMessageHandler(
         dataMessageHandler.copy(syncPeer = Some(syncPeer)))
-      peerMsgSender <- peerManager.peerData(syncPeer).peerMessageSender
+      peerMsgSender <- peerManager.peerDataMap(syncPeer).peerMessageSender
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
       bestFilterOpt <- chainApi.getBestFilter()
@@ -166,7 +166,7 @@ case class NeutrinoNode(
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
     val syncPeerMsgSenderOptF = {
       dataMessageHandler.syncPeer.map { peer =>
-        peerManager.peerData(peer).peerMessageSender
+        peerManager.peerDataMap(peer).peerMessageSender
       }
     }
     val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
