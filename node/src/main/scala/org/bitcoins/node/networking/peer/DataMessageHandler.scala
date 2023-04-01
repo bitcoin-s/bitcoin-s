@@ -171,8 +171,6 @@ case class DataMessageHandler(
         val batchSizeFull: Boolean =
           filterBatch.size == chainConfig.filterBatchSize
         for {
-          (newFilterHeaderHeight, newFilterHeight) <-
-            calcFilterHeaderFilterHeight(chainApi)
           isFiltersSynced <- isFiltersSynced(chainApi, filterBatch)
           // If we are not syncing or our filter batch is full, process the filters
           (newBatch: Set[CompactFilterMessage], newChainApi) <- {
@@ -191,6 +189,8 @@ case class DataMessageHandler(
               } yield (Set.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
           }
+          (_, newFilterHeight) <-
+            calcFilterHeaderFilterHeight(chainApi)
           _ <-
             if (batchSizeFull) {
               logger.info(
