@@ -46,6 +46,7 @@ import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -1060,6 +1061,24 @@ object Wallet extends WalletLogger {
         DBIOAction.sequence(actions))
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")
+      }
+      _ <- {
+        //check if creationTime is well in the past, if so generate a pool of addresses
+        //see: https://github.com/bitcoin-s/bitcoin-s/issues/5033
+        val creationTime = wallet.keyManager.creationTime
+        val threshold = Instant.now().minus(1, ChronoUnit.HOURS)
+        val isOldCreationTime = creationTime.compareTo(threshold) <= 0
+        if (isOldCreationTime) {
+          wallet
+            .generateScriptPubKeys(account = walletAppConfig.defaultAccount,
+                                   addressBatchSize =
+                                     walletAppConfig.discoveryBatchSize,
+                                   forceGenerateSpks = true)
+            .map(_ => ())
+        } else {
+          //fresh seed, no need to generate addresses
+          Future.unit
+        }
       }
     } yield {
       logger.debug(s"Created root level accounts for wallet")

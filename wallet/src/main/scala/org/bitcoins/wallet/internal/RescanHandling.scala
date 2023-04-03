@@ -500,7 +500,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  private def generateScriptPubKeys(
+  def generateScriptPubKeys(
       account: HDAccount,
       addressBatchSize: Int,
       forceGenerateSpks: Boolean): Future[Vector[ScriptPubKey]] = {

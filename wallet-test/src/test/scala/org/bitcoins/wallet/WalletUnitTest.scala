@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
+import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.util.TransactionTestUtil._
@@ -16,6 +17,7 @@ import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
 import java.nio.file.Files
+import java.time.Instant
 import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
@@ -316,5 +318,45 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       toBroadcast <- wallet.getTransactionsToBroadcast
     } yield assert(toBroadcast.map(_.txIdBE) == Vector(dummyPrevTx1.txIdBE))
+  }
+
+  it must "generate addresses for a wallet initialized with a old seed" in {
+    wallet: Wallet =>
+      for {
+        isEmpty <- wallet.isEmpty()
+        _ = assert(isEmpty)
+        //manually override the seeds creation time
+        seedPath = wallet.walletConfig.kmConf.seedPath
+        mnemonic = WalletStorage
+          .decryptSeedFromDisk(seedPath = seedPath, passphraseOpt = None)
+          .getOrElse(sys.error(s"failed to decrypt seed for unit test"))
+          .asInstanceOf[DecryptedMnemonic]
+        _ = {
+          //delete old seed file because we do not allow overwriting a seed file
+          Files.delete(wallet.walletConfig.seedPath)
+        }
+        modifiedMnemonic = mnemonic.copy(creationTime =
+          Instant.now.minusSeconds(60 * 60 + 1)) //1 hour and 1 minute
+
+        _ = WalletStorage.writeSeedToDisk(seedPath, modifiedMnemonic)
+        //delete old wallet database
+        _ = {
+          if (pgEnabled) {
+            //cannot delete database file if using postgres
+            ()
+          } else {
+            val path = wallet.walletConfig.datadir
+              .resolve(wallet.walletConfig.walletName)
+              .resolve("walletdb.sqlite")
+            Files.delete(path)
+          }
+
+        }
+        _ = wallet.walletConfig.migrate()
+        //initialize it
+        initOldWallet <- Wallet.initialize(wallet, None)
+        isOldWalletEmpty <- initOldWallet.isEmpty()
+      } yield assert(!isOldWalletEmpty)
+
   }
 }
