@@ -76,7 +76,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * `private[node]`.
     */
   def send(msg: NetworkPayload, peer: Peer): Future[Unit] = {
-    val senderF = peerManager.peerData(peer).peerMessageSender
+    val senderF = peerManager.peerDataMap(peer).peerMessageSender
     senderF.flatMap(_.sendMsg(msg))
   }
 
@@ -197,7 +197,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       syncPeerOpt match {
         case Some(peer) =>
           peerManager
-            .peerData(peer)
+            .peerDataMap(peer)
             .peerMessageSender
             .flatMap(_.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
                                           blockHashes: _*))

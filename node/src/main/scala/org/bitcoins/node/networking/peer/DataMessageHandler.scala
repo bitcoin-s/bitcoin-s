@@ -346,7 +346,7 @@ case class DataMessageHandler(
                         logger.info(
                           s"Starting to validate headers now. Verifying with ${newState.verifyingWith}")
 
-                        val getHeadersAllF = manager.peerData
+                        val getHeadersAllF = manager.peerDataMap
                           .filter(_._1 != peer)
                           .map(
                             _._2.peerMessageSender.flatMap(
@@ -535,10 +535,10 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
     state match {
       case HeaderSync =>
-        manager.peerData(peer).updateInvalidMessageCount()
+        manager.peerDataMap(peer).updateInvalidMessageCount()
         if (
           manager
-            .peerData(peer)
+            .peerDataMap(peer)
             .exceededMaxInvalidMessages && manager.peers.size > 1
         ) {
           logger.info(
@@ -586,7 +586,7 @@ case class DataMessageHandler(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
       newDmh = currentDmh.copy(syncPeer = Some(peer))
       _ = logger.info(s"Now syncing filter headers from $peer")
-      sender <- manager.peerData(peer).peerMessageSender
+      sender <- manager.peerDataMap(peer).peerMessageSender
       newSyncing <- sendFirstGetCompactFilterHeadersCommand(sender)
     } yield {
       val syncPeerOpt = if (newSyncing) {
