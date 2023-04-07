@@ -306,6 +306,42 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       } yield {
         succeed
       }
+  }
 
+  it must "sync block headers that occurred while were syncing compact filters during IBD" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/5017
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
+
+      //start syncing node
+      val numBlocks = 5
+      val startSyncF = node.sync()
+      val genBlocksF = {
+        for {
+          _ <- startSyncF
+          //give a little time for the sync to start
+          _ <- AsyncUtil.nonBlockingSleep(500.milliseconds)
+          //generate blocks while sync is ongoing
+          _ <- bitcoind.generate(numBlocks)
+        } yield {
+          logger.info(
+            s"Done generating block hashes while sync ongoing, numBlocks=$numBlocks")
+          ()
+        }
+      }
+
+      for {
+        _ <- genBlocksF
+        //wait for sync to complete
+        _ = println("1")
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        //generate another block and make sure it syncs it
+        _ <- bitcoind.generate(1)
+        _ = println("2")
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+      } yield {
+        succeed
+      }
   }
 }
