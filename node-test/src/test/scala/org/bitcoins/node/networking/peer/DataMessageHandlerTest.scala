@@ -13,29 +13,36 @@ import org.bitcoins.node._
 import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoindV22
-import org.bitcoins.testkit.tor.CachedTor
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.node.{NodeTestWithCachedBitcoindNewest}
+import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoind}
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
-class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
+class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
                                                               Vector.empty)
 
-  override type FixtureParam = NeutrinoNodeConnectedWithBitcoindV22
+  override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNeutrinoNodeConnectedToBitcoindV22(test)(system, getFreshConfig)
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val outcome: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
+        system,
+        getFreshConfig)
+      f <- outcome.toFuture
+    } yield f
+    new FutureOutcome(outcome)
+  }
 
   it must "catch errors and not fail when processing an invalid payload" in {
-    param: NeutrinoNodeConnectedWithBitcoindV22 =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node, _) = param
+    param: FixtureParam =>
+      val node = param.node
       val peer = node.peerManager.peers.head
 
       val senderF = node.peerMsgSendersF.map(_.head)
@@ -67,7 +74,8 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnBlockReceived callbacks are executed" in {
     param: FixtureParam =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val node = param.node
+      val bitcoind = param.bitcoind
       val peer = node.peerManager.peers.head
 
       val resultP: Promise[Block] = Promise()
@@ -107,7 +115,8 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnBlockHeadersReceived callbacks are executed" in {
     param: FixtureParam =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val node = param.node
+      val bitcoind = param.bitcoind
       val peer = node.peerManager.peers.head
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
@@ -150,7 +159,8 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnCompactFilterReceived callbacks are executed" in {
     param: FixtureParam =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val node = param.node
+      val bitcoind = param.bitcoind
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
@@ -173,7 +183,8 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnTxReceived callbacks are executed" in {
     param: FixtureParam =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val node = param.node
+      val bitcoind = param.bitcoind
       val peer = node.peerManager.peers.head
 
       val resultP: Promise[Transaction] = Promise()
