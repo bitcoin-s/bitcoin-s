@@ -334,11 +334,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       for {
         _ <- genBlocksF
         //wait for sync to complete
-        _ = println("1")
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         //generate another block and make sure it syncs it
         _ <- bitcoind.generate(1)
-        _ = println("2")
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
         succeed
