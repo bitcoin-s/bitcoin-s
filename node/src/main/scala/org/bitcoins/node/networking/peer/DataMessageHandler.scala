@@ -525,7 +525,7 @@ case class DataMessageHandler(
           logger.info(s"We are synced")
           Try(initialSyncDone.map(_.success(Done)))
           //check to see if we had blocks mined while IBD
-          //was ongoing, see:
+          //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
             _ <- peerMessageSender.sendGetHeadersMessage(bestBlockHash.flip)
