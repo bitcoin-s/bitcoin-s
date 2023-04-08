@@ -528,8 +528,15 @@ case class DataMessageHandler(
           //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
-            _ <- peerMessageSender.sendGetHeadersMessage(bestBlockHash.flip)
-          } yield false //is this right?
+            isIBD <- chainApi.isIBD()
+            _ <- {
+              if (isIBD) {
+                peerMessageSender.sendGetHeadersMessage(bestBlockHash.flip)
+              } else {
+                Future.unit
+              }
+            }
+          } yield false
         }
       }
     } yield syncing
