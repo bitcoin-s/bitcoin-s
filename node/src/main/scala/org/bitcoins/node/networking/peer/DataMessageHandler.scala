@@ -136,7 +136,7 @@ case class DataMessageHandler(
           newChainApi <- chainApi.processFilterHeaders(
             filterHeaders,
             filterHeader.stopHash.flip)
-          (newSyncing, startFilterHeightOpt) <-
+          (newSyncing, _) <-
             if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
               logger.debug(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
@@ -150,7 +150,8 @@ case class DataMessageHandler(
                 syncing <- sendFirstGetCompactFilterCommand(
                   peerMsgSender,
                   startHeightOpt).map { syncing =>
-                  if (!syncing) logger.info("We are synced")
+                  if (!syncing)
+                    logger.info("Compact filters are already synced")
                   syncing
                 }
               } yield (syncing, startHeightOpt)
@@ -499,7 +500,7 @@ case class DataMessageHandler(
   }
 
   /** syncs filter headers in case the header chain is still ahead post filter sync */
-  def syncIfHeadersAhead(
+  private def syncIfHeadersAhead(
       peerMessageSender: PeerMessageSender): Future[Boolean] = {
     for {
       headerHeight <- chainApi.getBestHashBlockHeight()
@@ -523,7 +524,19 @@ case class DataMessageHandler(
                   s"headerHeight=$headerHeight filterCount=$filterCount")
           logger.info(s"We are synced")
           Try(initialSyncDone.map(_.success(Done)))
-          Future.successful(false)
+          //check to see if we had blocks mined while IBD
+          //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
+          for {
+            bestBlockHash <- chainApi.getBestBlockHash()
+            isIBD <- chainApi.isIBD()
+            _ <- {
+              if (isIBD) {
+                peerMessageSender.sendGetHeadersMessage(bestBlockHash.flip)
+              } else {
+                Future.unit
+              }
+            }
+          } yield false
         }
       }
     } yield syncing
