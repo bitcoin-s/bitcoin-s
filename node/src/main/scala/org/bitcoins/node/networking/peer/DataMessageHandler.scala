@@ -151,7 +151,7 @@ case class DataMessageHandler(
                   peerMsgSender,
                   startHeightOpt).map { syncing =>
                   if (!syncing)
-                    logger.info("Compact filters are already synced?")
+                    logger.info("Compact filters are already synced")
                   syncing
                 }
               } yield (syncing, startHeightOpt)

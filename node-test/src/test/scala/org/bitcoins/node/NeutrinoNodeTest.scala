@@ -325,8 +325,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           //generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
-          logger.info(
-            s"Done generating block hashes while sync ongoing, numBlocks=$numBlocks")
           ()
         }
       }
