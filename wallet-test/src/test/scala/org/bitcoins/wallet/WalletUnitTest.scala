@@ -354,7 +354,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         }
         _ = wallet.walletConfig.migrate()
         //initialize it
-        initOldWallet <- Wallet.initialize(wallet, None)
+        initOldWallet <- Wallet.initialize(
+          wallet = wallet,
+          bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt)
         isOldWalletEmpty <- initOldWallet.isEmpty()
       } yield assert(!isOldWalletEmpty)
 
