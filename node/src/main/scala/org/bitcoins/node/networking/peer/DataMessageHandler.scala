@@ -181,12 +181,14 @@ case class DataMessageHandler(
               val sortedBlockFiltersF = sortBlockFiltersByBlockHeight(
                 filterBatch)
               for {
-                newChainApi <- chainApi.processFilters(filterBatch.toVector)
                 sortedBlockFilters <- sortedBlockFiltersF
+                sortedFilterMessages = sortedBlockFilters.map(_._2)
+                newChainApi <- chainApi.processFilters(sortedFilterMessages)
+                sortedGolombFilters = sortedBlockFilters.map(x => (x._1, x._3))
                 _ <-
                   appConfig.callBacks
                     .executeOnCompactFiltersReceivedCallbacks(
-                      sortedBlockFilters)
+                      sortedGolombFilters)
               } yield (Set.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
           }
@@ -805,8 +807,9 @@ case class DataMessageHandler(
 
   private def sortBlockFiltersByBlockHeight(
       filterBatch: Set[CompactFilterMessage]): Future[
-    Vector[(DoubleSha256Digest, GolombFilter)]] = {
-    val blockFiltersF: Future[Set[(Int, DoubleSha256Digest, GolombFilter)]] = {
+    Vector[(DoubleSha256Digest, CompactFilterMessage, GolombFilter)]] = {
+    val blockFiltersF: Future[
+      Set[(Int, DoubleSha256Digest, CompactFilterMessage, GolombFilter)]] = {
       Future.traverse(filterBatch) { filter =>
         val blockHeightOptF =
           chainApi.getBlockHeight(filter.blockHash.flip)
@@ -818,17 +821,17 @@ case class DataMessageHandler(
             s"Could not find block height for blockHash=${filter.blockHash.flip}")
           (blockHeightOpt.get,
            filter.blockHash,
+           filter,
            BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
         }
 
         filtersWithBlockHeightF
       }
     }
-    val sortedBlockFiltersF: Future[
-      Vector[(DoubleSha256Digest, GolombFilter)]] = {
+    val sortedBlockFiltersF = {
       blockFiltersF
         .map(_.toVector.sortBy(_._1))
-        .map(f => f.map(x => (x._2, x._3)))
+        .map(set => set.map(tuple => (tuple._2, tuple._3, tuple._4)))
     }
 
     sortedBlockFiltersF
