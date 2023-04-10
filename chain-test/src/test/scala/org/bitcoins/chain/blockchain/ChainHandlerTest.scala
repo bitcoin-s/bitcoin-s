@@ -619,6 +619,16 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
+  it must "return filters in order by block height" in { chainHandler =>
+    val maxHeightF = chainHandler.getBestHashBlockHeight()
+    for {
+      maxHeight <- maxHeightF
+      filters <- chainHandler.getFiltersBetweenHeights(0, maxHeight)
+    } yield {
+      assert(filters.sortBy(_.blockHeight) == filters)
+    }
+  }
+
   it must "get the correct height from an epoch second" in {
     chainHandler: ChainHandler =>
       for {

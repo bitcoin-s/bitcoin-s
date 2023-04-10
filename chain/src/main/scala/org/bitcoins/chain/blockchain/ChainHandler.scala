@@ -403,7 +403,6 @@ class ChainHandler(
         newFilters <- newFiltersF
         filterHeaders <- filterHeaderDAO
           .findAllByBlockHashes(newFilters.map(_.blockHash.flip))
-          .map(_.sortBy(_.height))
       } yield filterHeaders
     }
 
