@@ -95,7 +95,9 @@ case class CompactFilterHeaderDAO()(implicit
 
   def findAllByBlockHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
     Vector[CompactFilterHeaderDb]] = {
-    val query = table.filter(_.blockHash.inSet(hashes))
+    val query = table
+      .filter(_.blockHash.inSet(hashes))
+      .sortBy(_.height)
     safeDatabase.runVec(query.result)
   }
 

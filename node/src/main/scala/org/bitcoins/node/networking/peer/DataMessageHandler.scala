@@ -6,10 +6,10 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
-import org.bitcoins.core.gcs.BlockFilter
+import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
@@ -176,17 +176,19 @@ case class DataMessageHandler(
           // If we are not syncing or our filter batch is full, process the filters
           (newBatch: Set[CompactFilterMessage], newChainApi) <- {
             if (isFiltersSynced || batchSizeFull) {
-              val blockFilters = filterBatch.map { filter =>
-                (filter.blockHash,
-                 BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
-              }
+
               logger.info(s"Processing ${filterBatch.size} filters")
+              val sortedBlockFiltersF = sortBlockFiltersByBlockHeight(
+                filterBatch)
               for {
-                newChainApi <- chainApi.processFilters(filterBatch.toVector)
+                sortedBlockFilters <- sortedBlockFiltersF
+                sortedFilterMessages = sortedBlockFilters.map(_._2)
+                newChainApi <- chainApi.processFilters(sortedFilterMessages)
+                sortedGolombFilters = sortedBlockFilters.map(x => (x._1, x._3))
                 _ <-
                   appConfig.callBacks
                     .executeOnCompactFiltersReceivedCallbacks(
-                      blockFilters.toVector)
+                      sortedGolombFilters)
               } yield (Set.empty, newChainApi)
             } else Future.successful((filterBatch, chainApi))
           }
@@ -801,6 +803,38 @@ case class DataMessageHandler(
         }
       }
     } yield ()
+  }
+
+  private def sortBlockFiltersByBlockHeight(
+      filterBatch: Set[CompactFilterMessage]): Future[
+    Vector[(DoubleSha256Digest, CompactFilterMessage, GolombFilter)]] = {
+    val blockFiltersF: Future[
+      Set[(Int, DoubleSha256Digest, CompactFilterMessage, GolombFilter)]] = {
+      Future.traverse(filterBatch) { filter =>
+        val blockHeightOptF =
+          chainApi.getBlockHeight(filter.blockHash.flip)
+        val filtersWithBlockHeightF = for {
+          blockHeightOpt <- blockHeightOptF
+        } yield {
+          require(
+            blockHeightOpt.isDefined,
+            s"Could not find block height for blockHash=${filter.blockHash.flip}")
+          (blockHeightOpt.get,
+           filter.blockHash,
+           filter,
+           BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
+        }
+
+        filtersWithBlockHeightF
+      }
+    }
+    val sortedBlockFiltersF = {
+      blockFiltersF
+        .map(_.toVector.sortBy(_._1))
+        .map(set => set.map(tuple => (tuple._2, tuple._3, tuple._4)))
+    }
+
+    sortedBlockFiltersF
   }
 }
 

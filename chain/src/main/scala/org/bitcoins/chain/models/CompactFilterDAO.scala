@@ -133,7 +133,10 @@ case class CompactFilterDAO()(implicit
     Seq[CompactFilterDb],
     CompactFilterDb,
     Effect.Read] = {
-    table.filter(header => header.height >= from && header.height <= to).result
+    table
+      .filter(header => header.height >= from && header.height <= to)
+      .sortBy(_.height)
+      .result
   }
 
   private val bestFilterQuery = {

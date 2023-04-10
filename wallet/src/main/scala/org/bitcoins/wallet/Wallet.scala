@@ -179,8 +179,8 @@ abstract class Wallet
         } else {
           FutureUtil
             .batchAndParallelExecute(
-              blockFilters,
-              searchFilterMatches(scriptPubKeys.toVector)
+              elements = blockFilters,
+              f = searchFilterMatches(scriptPubKeys.toVector)
             )
             .map(_.flatten)
         }
