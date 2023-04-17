@@ -44,8 +44,7 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
   behavior of "PeerMessageReceiverTest"
 
   it must "change a peer message receiver to be disconnected" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
-      val node = nodeConnectedWithBitcoind.node
+    _: NeutrinoNodeConnectedWithBitcoind =>
       val socket = InetSocketAddress.createUnresolved("google.com", 12345)
       val peer = Peer(socket, None, None)
       val client = P2PClient(ActorRef.noSender, peer)
@@ -71,23 +70,19 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
                                                    versionMsgP = versionMsgP,
                                                    verackMsgP = verackMsgP)
 
-      val peerMsgReceiver =
-        PeerMessageReceiver(normal, node, peer)(system, node.nodeAppConfig)
+      val newMsgReceiverStateF = normal.disconnect(peer, (_, _) => Future.unit)
 
-      val newMsgReceiverF = peerMsgReceiver.disconnect()
-
-      newMsgReceiverF.map { newMsgReceiver =>
+      newMsgReceiverStateF.map { newMsgReceiverState =>
         assert(
-          newMsgReceiver.state
+          newMsgReceiverState
             .isInstanceOf[PeerMessageReceiverState.Disconnected])
-        assert(newMsgReceiver.isDisconnected)
+        assert(newMsgReceiverState.isDisconnected)
       }
 
   }
 
   it must "change a peer message receiver to be initializing disconnect" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
-      val node = nodeConnectedWithBitcoind.node
+    _: NeutrinoNodeConnectedWithBitcoind =>
       val socket = InetSocketAddress.createUnresolved("google.com", 12345)
       val peer = Peer(socket, None, None)
       val client = P2PClient(ActorRef.noSender, peer)
@@ -113,22 +108,20 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
                                                    versionMsgP = versionMsgP,
                                                    verackMsgP = verackMsgP)
 
-      val peerMsgReceiver =
-        PeerMessageReceiver(normal, node, peer)(system, node.nodeAppConfig)
-
-      val newMsgReceiver = peerMsgReceiver.initializeDisconnect()
+      val newMsgReceiverState = normal.initializeDisconnect(peer)
 
       assert(
-        newMsgReceiver.state
+        newMsgReceiverState
           .isInstanceOf[PeerMessageReceiverState.InitializedDisconnect])
-      assert(!newMsgReceiver.isDisconnected)
+      assert(!newMsgReceiverState.isDisconnected)
 
-      newMsgReceiver.disconnect().map { disconnectRecv =>
-        assert(
-          disconnectRecv.state
-            .isInstanceOf[PeerMessageReceiverState.InitializedDisconnectDone])
-        assert(disconnectRecv.isDisconnected)
-        assert(disconnectRecv.state.clientDisconnectP.isCompleted)
+      newMsgReceiverState.disconnect(peer, (_, _) => Future.unit).map {
+        disconnectRecv =>
+          assert(
+            disconnectRecv
+              .isInstanceOf[PeerMessageReceiverState.InitializedDisconnectDone])
+          assert(disconnectRecv.isDisconnected)
+          assert(disconnectRecv.clientDisconnectP.isCompleted)
       }
   }
 }
