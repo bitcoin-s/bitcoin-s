@@ -69,7 +69,7 @@ import scala.util._
   */
 case class P2PClientActor(
     peer: Peer,
-    initPeerMsgHandlerReceiver: PeerMessageReceiver,
+    peerMsgHandlerReceiver: PeerMessageReceiver,
     initPeerMsgRecvState: PeerMessageReceiverState,
     onReconnect: Peer => Future[Unit],
     onStop: Peer => Future[Unit],
@@ -82,8 +82,6 @@ case class P2PClientActor(
     with P2PLogger {
 
   import context.dispatcher
-
-  private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   private var currentPeerMsgRecvState = initPeerMsgRecvState
 
@@ -156,7 +154,7 @@ case class P2PClientActor(
 
       case networkMessageReceived: NetworkMessageReceived =>
         val newMsgReceiverStateF =
-          handleReceivedMsgFn(currentPeerMsgHandlerRecv, networkMessageReceived)
+          handleReceivedMsgFn(networkMessageReceived)
         val newMsgReceiverState =
           try {
             Await.result(newMsgReceiverStateF, timeout)
@@ -366,7 +364,6 @@ case class P2PClientActor(
 
         logger.debug(
           s"Attempting to reconnect to peer=$peer, tryCount=$reconnectionTry, previous state=${currentPeerMsgRecvState}")
-        currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
         if (reconnectionTry >= maxReconnectionTries) {
           logger.debug("Exceeded maximum number of reconnection attempts")
@@ -482,25 +479,24 @@ case class P2PClientActor(
     }
   }
 
-  private val handleReceivedMsgFn: (
-      PeerMessageReceiver,
-      NetworkMessageReceived) => Future[PeerMessageReceiverState] = {
-    case (peerMsgRecv: PeerMessageReceiver, msg: NetworkMessageReceived) =>
-      val resultF = if (currentPeerMsgRecvState.isConnected) {
-        currentPeerMsgRecvState match {
-          case _ @(_: Normal | _: Waiting | Preconnection | _: Initializing) =>
-            peerMsgRecv.handleNetworkMessageReceived(msg,
-                                                     currentPeerMsgRecvState)
-          case _: Disconnected | _: InitializedDisconnectDone |
-              _: InitializedDisconnect | _: StoppedReconnect =>
-            logger.debug(
-              s"Ignoring ${msg.msg.payload.commandName} from $peer as in state=${currentPeerMsgRecvState}")
-            Future.successful(currentPeerMsgRecvState)
-        }
-      } else {
-        Future.successful(currentPeerMsgRecvState)
+  private val handleReceivedMsgFn: NetworkMessageReceived => Future[
+    PeerMessageReceiverState] = { case msg: NetworkMessageReceived =>
+    val resultF = if (currentPeerMsgRecvState.isConnected) {
+      currentPeerMsgRecvState match {
+        case _ @(_: Normal | _: Waiting | Preconnection | _: Initializing) =>
+          peerMsgHandlerReceiver.handleNetworkMessageReceived(
+            msg,
+            currentPeerMsgRecvState)
+        case _: Disconnected | _: InitializedDisconnectDone |
+            _: InitializedDisconnect | _: StoppedReconnect =>
+          logger.debug(
+            s"Ignoring ${msg.msg.payload.commandName} from $peer as in state=${currentPeerMsgRecvState}")
+          Future.successful(currentPeerMsgRecvState)
       }
-      resultF
+    } else {
+      Future.successful(currentPeerMsgRecvState)
+    }
+    resultF
   }
 
   /** Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
