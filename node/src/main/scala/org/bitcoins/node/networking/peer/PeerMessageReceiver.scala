@@ -19,7 +19,6 @@ import scala.concurrent.Future
   */
 class PeerMessageReceiver(
     node: Node,
-    val state: PeerMessageReceiverState,
     peer: Peer
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
@@ -28,7 +27,7 @@ class PeerMessageReceiver(
   require(nodeAppConfig.nodeType != NodeType.BitcoindBackend,
           "Bitcoind should handle the P2P interactions")
 
-  def stopReconnect(): PeerMessageReceiver = {
+  def stopReconnect(state: PeerMessageReceiverState): PeerMessageReceiverState = {
     state match {
       case Preconnection =>
         //when retry, state should be back to preconnection
@@ -36,12 +35,11 @@ class PeerMessageReceiver(
                                         state.clientDisconnectP,
                                         state.versionMsgP,
                                         state.verackMsgP)
-        val newRecv = toState(newState)
-        newRecv
+        newState
       case _: StoppedReconnect =>
         logger.warn(
           s"Already stopping reconnect from peer=$peer, this is a noop")
-        this
+        state
       case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
           _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
         throw new RuntimeException(
@@ -50,8 +48,8 @@ class PeerMessageReceiver(
   }
 
   def handleNetworkMessageReceived(
-      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Future[
-    PeerMessageReceiver] = {
+      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived, state: PeerMessageReceiverState): Future[
+    PeerMessageReceiverState] = {
 
     val client = networkMsgRecv.client
 
@@ -77,13 +75,13 @@ class PeerMessageReceiver(
                                   state.clientDisconnectP,
                                   state.versionMsgP,
                                   state.verackMsgP)
-            toState(newState)
-          } else this
+            newState
+          } else state
         case state: Initializing =>
           if (payload == VerAckMessage)
             state.initializationTimeoutCancellable.cancel()
-          this
-        case _ => this
+          state
+        case _ => state
       }
     }
 
@@ -108,13 +106,12 @@ class PeerMessageReceiver(
     */
   private def handleDataPayload(
       payload: DataPayload,
-      sender: PeerMessageSender,
-      curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
+      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     node.getDataMessageHandler
       .addToStream(payload, sender, peer)
-      .map(_ => new PeerMessageReceiver(node, curReceiver.state, peer))
+      .map(_ => new PeerMessageReceiver(node, peer))
   }
 
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
@@ -129,15 +126,6 @@ class PeerMessageReceiver(
       curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
     node.controlMessageHandler
       .handleControlPayload(payload, sender, peer, curReceiver)
-  }
-
-  /** Transitions our PeerMessageReceiver to a new state */
-  def toState(newState: PeerMessageReceiverState): PeerMessageReceiver = {
-    new PeerMessageReceiver(
-      node = node,
-      state = newState,
-      peer = peer
-    )
   }
 }
 
@@ -154,31 +142,10 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
       extends PeerMessageReceiverMsg
 
-  def apply(state: PeerMessageReceiverState, node: Node, peer: Peer)(implicit
+  def apply(node: Node, peer: Peer)(implicit
       system: ActorSystem,
       nodeAppConfig: NodeAppConfig
   ): PeerMessageReceiver = {
-    new PeerMessageReceiver(node = node, state = state, peer = peer)
-  }
-
-  /** Creates a peer message receiver that is ready
-    * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
-    * to connect to a peer on the network
-    */
-  def preConnection(peer: Peer, node: Node)(implicit
-      system: ActorSystem,
-      nodeAppConfig: NodeAppConfig
-  ): PeerMessageReceiver = {
-    PeerMessageReceiver(node = node,
-                        state = PeerMessageReceiverState.fresh(),
-                        peer = peer)
-  }
-
-  def newReceiver(node: Node, peer: Peer)(implicit
-      nodeAppConfig: NodeAppConfig,
-      system: ActorSystem): PeerMessageReceiver = {
-    PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                        node = node,
-                        peer = peer)
+    new PeerMessageReceiver(node = node, peer = peer)
   }
 }
