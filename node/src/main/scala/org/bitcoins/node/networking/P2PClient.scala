@@ -168,7 +168,7 @@ case class P2PClientActor(
               throw err
           }
         currentPeerMsgHandlerRecv = newMsgReceiver
-        if (currentPeerMsgHandlerRecv.isInitialized) {
+        if (currentPeerMsgRecvState.isInitialized) {
           curReconnectionTry = 0
           reconnectHandlerOpt.foreach(_.apply(peer))
           reconnectHandlerOpt = None
@@ -486,7 +486,7 @@ case class P2PClientActor(
       PeerMessageReceiver,
       NetworkMessageReceived) => Future[PeerMessageReceiver] = {
     case (peerMsgRecv: PeerMessageReceiver, msg: NetworkMessageReceived) =>
-      val resultF = if (peerMsgRecv.isConnected) {
+      val resultF = if (currentPeerMsgRecvState.isConnected) {
         currentPeerMsgHandlerRecv.state match {
           case _ @(_: Normal | _: Waiting | Preconnection | _: Initializing) =>
             peerMsgRecv.handleNetworkMessageReceived(msg)
@@ -506,9 +506,9 @@ case class P2PClientActor(
     */
   private def handleMetaMsg(metaMsg: P2PClient.MetaMsg): Boolean = {
     metaMsg match {
-      case P2PClient.IsConnected    => currentPeerMsgHandlerRecv.isConnected
-      case P2PClient.IsInitialized  => currentPeerMsgHandlerRecv.isInitialized
-      case P2PClient.IsDisconnected => currentPeerMsgHandlerRecv.isDisconnected
+      case P2PClient.IsConnected    => currentPeerMsgRecvState.isConnected
+      case P2PClient.IsInitialized  => currentPeerMsgRecvState.isInitialized
+      case P2PClient.IsDisconnected => currentPeerMsgRecvState.isDisconnected
     }
   }
 

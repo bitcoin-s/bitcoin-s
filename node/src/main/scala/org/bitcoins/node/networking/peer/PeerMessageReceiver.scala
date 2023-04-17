@@ -49,18 +49,6 @@ class PeerMessageReceiver(
     }
   }
 
-  private[networking] def isConnected: Boolean = state.isConnected
-
-  private[networking] def isDisconnected: Boolean = state.isDisconnected
-
-  private[networking] def hasReceivedVersionMsg: Boolean =
-    state.hasReceivedVersionMsg.isCompleted
-
-  private[networking] def hasReceivedVerackMsg: Boolean =
-    state.hasReceivedVerackMsg.isCompleted
-
-  private[networking] def isInitialized: Boolean = state.isInitialized
-
   def handleNetworkMessageReceived(
       networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Future[
     PeerMessageReceiver] = {
