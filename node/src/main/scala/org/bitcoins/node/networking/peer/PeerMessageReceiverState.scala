@@ -300,6 +300,26 @@ sealed abstract class PeerMessageReceiverState extends Logging {
         onResponseTimeout(msg, peer, onQueryTimeout = onQueryTimeout)
     }
   }
+
+  def stopReconnect(peer: Peer): PeerMessageReceiverState = {
+    this match {
+      case Preconnection =>
+        //when retry, state should be back to preconnection
+        val newState = StoppedReconnect(clientConnectP,
+                                        clientDisconnectP,
+                                        versionMsgP,
+                                        verackMsgP)
+        newState
+      case _: StoppedReconnect =>
+        logger.warn(
+          s"Already stopping reconnect from peer=$peer, this is a noop")
+        this
+      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
+          _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
+        throw new RuntimeException(
+          s"Cannot stop reconnect from peer=$peer when in state=$bad")
+    }
+  }
 }
 
 object PeerMessageReceiverState {

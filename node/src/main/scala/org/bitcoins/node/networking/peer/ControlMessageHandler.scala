@@ -16,8 +16,7 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
       payload: ControlPayload,
       sender: PeerMessageSender,
       peer: Peer,
-      peerMessageReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
-    val state = peerMessageReceiver.state
+      state: PeerMessageReceiverState): Future[PeerMessageReceiverState] = {
     payload match {
 
       case versionMsg: VersionMessage =>
@@ -34,11 +33,9 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
 
-            val newRecv = peerMessageReceiver.toState(newState)
-
             node.peerManager.onVersionMessage(peer, versionMsg)
 
-            sender.sendVerackMessage().map(_ => newRecv)
+            sender.sendVerackMessage().map(_ => newState)
         }
 
       case VerAckMessage =>
@@ -52,33 +49,32 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
 
           case good: Initializing =>
             val newState = good.toNormal(VerAckMessage)
-            val newRecv = peerMessageReceiver.toState(newState)
 
-            node.peerManager.onInitialization(peer).map(_ => newRecv)
+            node.peerManager.onInitialization(peer).map(_ => newState)
         }
 
       case ping: PingMessage =>
         sender.sendPong(ping).map { _ =>
-          peerMessageReceiver
+          state
         }
       case SendHeadersMessage =>
         //we want peers to just send us headers
         //we don't want to have to request them manually
-        sender.sendHeadersMessage().map(_ => peerMessageReceiver)
+        sender.sendHeadersMessage().map(_ => state)
       case msg: GossipAddrMessage =>
         handleGossipAddrMessage(msg)
-        Future.successful(peerMessageReceiver)
+        Future.successful(state)
       case SendAddrV2Message =>
-        sender.sendSendAddrV2Message().map(_ => peerMessageReceiver)
+        sender.sendSendAddrV2Message().map(_ => state)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
-        Future.successful(peerMessageReceiver)
+        Future.successful(state)
       case _ @(GetAddrMessage | _: PongMessage) =>
-        Future.successful(peerMessageReceiver)
+        Future.successful(state)
       case _: RejectMessage =>
-        Future.successful(peerMessageReceiver)
+        Future.successful(state)
       case _: FeeFilterMessage =>
-        Future.successful(peerMessageReceiver)
+        Future.successful(state)
     }
   }
 

@@ -27,29 +27,9 @@ class PeerMessageReceiver(
   require(nodeAppConfig.nodeType != NodeType.BitcoindBackend,
           "Bitcoind should handle the P2P interactions")
 
-  def stopReconnect(state: PeerMessageReceiverState): PeerMessageReceiverState = {
-    state match {
-      case Preconnection =>
-        //when retry, state should be back to preconnection
-        val newState = StoppedReconnect(state.clientConnectP,
-                                        state.clientDisconnectP,
-                                        state.versionMsgP,
-                                        state.verackMsgP)
-        newState
-      case _: StoppedReconnect =>
-        logger.warn(
-          s"Already stopping reconnect from peer=$peer, this is a noop")
-        state
-      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
-          _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
-        throw new RuntimeException(
-          s"Cannot stop reconnect from peer=$peer when in state=$bad")
-    }
-  }
-
   def handleNetworkMessageReceived(
-      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived, state: PeerMessageReceiverState): Future[
-    PeerMessageReceiverState] = {
+      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived,
+      state: PeerMessageReceiverState): Future[PeerMessageReceiverState] = {
 
     val client = networkMsgRecv.client
 
@@ -62,7 +42,7 @@ class PeerMessageReceiver(
     val payload = networkMsgRecv.msg.payload
 
     //todo: this works but doesn't seem to be the best place to do this
-    val curReceiver: PeerMessageReceiver = {
+    val curState: PeerMessageReceiverState = {
       state match {
         case state: Waiting =>
           val responseFor = state.responseFor.asInstanceOf[ExpectsResponse]
@@ -89,11 +69,10 @@ class PeerMessageReceiver(
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload,
                              sender = peerMsgSender,
-                             curReceiver)
+                             curReceiverState = curState)
       case dataPayload: DataPayload =>
-        handleDataPayload(payload = dataPayload,
-                          sender = peerMsgSender,
-                          curReceiver)
+        handleDataPayload(payload = dataPayload, sender = peerMsgSender)
+          .map(_ => curState)
     }
   }
 
@@ -123,9 +102,10 @@ class PeerMessageReceiver(
   private def handleControlPayload(
       payload: ControlPayload,
       sender: PeerMessageSender,
-      curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
+      curReceiverState: PeerMessageReceiverState): Future[
+    PeerMessageReceiverState] = {
     node.controlMessageHandler
-      .handleControlPayload(payload, sender, peer, curReceiver)
+      .handleControlPayload(payload, sender, peer, curReceiverState)
   }
 }
 

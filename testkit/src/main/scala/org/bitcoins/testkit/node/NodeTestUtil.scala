@@ -6,7 +6,10 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageReceiverState
+}
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -30,7 +33,7 @@ abstract class NodeTestUtil extends P2PLogger {
     P2PClient.apply(
       peer = peer,
       peerMessageReceiver = peerMsgReceiver,
-      peerMsgRecvState = peerMsgReceiver.state,
+      peerMsgRecvState = PeerMessageReceiverState.fresh(),
       onReconnect = (_: Peer) => Future.unit,
       onStop = (_: Peer) => Future.unit,
       onInitializationTimeout = (_: Peer) => Future.unit,

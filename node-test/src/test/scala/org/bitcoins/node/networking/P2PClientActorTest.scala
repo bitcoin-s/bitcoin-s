@@ -5,7 +5,10 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ConnectCommand
-import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageReceiverState
+}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSAppConfigBitcoinFixtureStarted
@@ -97,7 +100,7 @@ class P2PClientActorTest
     val peerMessageReceiverF =
       for {
         node <- NodeUnitTest.buildNode(peer, None)
-      } yield PeerMessageReceiver.preConnection(peer, node)
+      } yield PeerMessageReceiver(node, peer)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
@@ -105,7 +108,7 @@ class P2PClientActorTest
           P2PClient.props(
             peer = peer,
             peerMsgHandlerReceiver = peerMsgRecv,
-            peerMsgRecvState = peerMsgRecv.state,
+            peerMsgRecvState = PeerMessageReceiverState.fresh(),
             onReconnect = (_: Peer) => Future.unit,
             onStop = (_: Peer) => Future.unit,
             onInitializationTimeout = (_: Peer) => Future.unit,

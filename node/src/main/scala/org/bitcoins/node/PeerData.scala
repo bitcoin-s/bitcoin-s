@@ -8,6 +8,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
+  PeerMessageReceiverState,
   PeerMessageSender
 }
 
@@ -32,11 +33,11 @@ case class PeerData(
 
   private lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
-      PeerMessageReceiver.newReceiver(node = node, peer = peer)
+      PeerMessageReceiver(node, peer)
     P2PClient(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
-      peerMsgRecvState = peerMessageReceiver.state,
+      peerMsgRecvState = PeerMessageReceiverState.fresh(),
       onReconnect = node.peerManager.onReconnect,
       onStop = node.peerManager.onP2PClientStopped,
       onInitializationTimeout = node.peerManager.onInitializationTimeout,
