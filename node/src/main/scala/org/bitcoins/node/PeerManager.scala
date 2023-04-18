@@ -4,20 +4,21 @@ import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.networking.{P2PClientSupervisor}
+import org.bitcoins.node.networking.P2PClientSupervisor
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
 import java.time.Duration
 import scala.collection.mutable
-import scala.concurrent.duration.{DurationInt}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Random
 
@@ -26,7 +27,8 @@ case class PeerManager(
     node: NeutrinoNode)(implicit
     ec: ExecutionContext,
     system: ActorSystem,
-    nodeAppConfig: NodeAppConfig)
+    nodeAppConfig: NodeAppConfig,
+    chainAppConfig: ChainAppConfig)
     extends StartStopAsync[PeerManager]
     with P2PLogger {
 

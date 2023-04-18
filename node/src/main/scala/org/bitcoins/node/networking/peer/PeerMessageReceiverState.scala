@@ -1,11 +1,30 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.Cancellable
+import akka.actor.{ActorSystem, Cancellable}
 import grizzled.slf4j.Logging
-import org.bitcoins.core.p2p.{NetworkPayload, VerAckMessage, VersionMessage}
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.p2p.{
+  ExpectsResponse,
+  NetworkPayload,
+  VerAckMessage,
+  VersionMessage
+}
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
+  Disconnected,
+  InitializedDisconnect,
+  InitializedDisconnectDone,
+  Initializing,
+  Normal,
+  Preconnection,
+  StoppedReconnect,
+  Waiting
+}
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 sealed abstract class PeerMessageReceiverState extends Logging {
 
@@ -73,6 +92,233 @@ sealed abstract class PeerMessageReceiverState extends Logging {
     */
   def isInitialized: Boolean = {
     hasReceivedVersionMsg.isCompleted && hasReceivedVerackMsg.isCompleted
+  }
+
+  /** This method is called when we have received
+    * a [[akka.io.Tcp.Connected]] message from our peer
+    * This means we have opened a Tcp connection,
+    * but have NOT started the handshake
+    * This method will initiate the handshake
+    */
+  protected[networking] def connect(
+      client: P2PClient,
+      onInitializationTimeout: Peer => Future[Unit])(implicit
+      system: ActorSystem,
+      nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig): PeerMessageReceiverState.Initializing = {
+    import system.dispatcher
+    val peer = client.peer
+    this match {
+      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
+          _: InitializedDisconnectDone | _: Disconnected | _: StoppedReconnect |
+          _: Waiting) =>
+        throw new RuntimeException(s"Cannot call connect when in state=${bad}")
+      case Preconnection =>
+        logger.debug(s"Connection established with peer=${client.peer}")
+
+        val initializationTimeoutCancellable =
+          system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
+            val timeoutF = onInitializationTimeout(peer)
+            timeoutF.failed.foreach(err =>
+              logger.error(s"Failed to initialize timeout for peer=$peer", err))
+          }
+
+        val newState =
+          Preconnection.toInitializing(client, initializationTimeoutCancellable)
+
+        val peerMsgSender = PeerMessageSender(client)
+        val chainApi = ChainHandler.fromDatabase()
+        peerMsgSender.sendVersionMessage(chainApi)
+
+        newState
+    }
+  }
+
+  /** Initializes the disconnection from our peer on the network.
+    * This is different than [[disconnect()]] as that indicates the
+    * peer initialized a disconnection from us
+    */
+  private[networking] def initializeDisconnect(
+      peer: Peer): PeerMessageReceiverState = {
+    logger.debug(s"Initializing disconnect from $peer")
+    this match {
+      case good @ (_: Disconnected) =>
+        //if its already disconnected, just say init disconnect done so it wont reconnect
+        logger.debug(s"Init disconnect called for already disconnected $peer")
+        val newState = InitializedDisconnectDone(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP,
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP)
+        newState
+      case bad @ (_: InitializedDisconnectDone | Preconnection |
+          _: StoppedReconnect) =>
+        throw new RuntimeException(
+          s"Cannot initialize disconnect from peer=$peer when in state=$bad")
+      case _: InitializedDisconnect =>
+        logger.warn(
+          s"Already initialized disconnected from peer=$peer, this is a noop")
+        this
+      case state @ (_: Initializing | _: Normal) =>
+        val newState = InitializedDisconnect(state.clientConnectP,
+                                             state.clientDisconnectP,
+                                             state.versionMsgP,
+                                             state.verackMsgP)
+        newState
+      case state: Waiting =>
+        val newState = InitializedDisconnect(state.clientConnectP,
+                                             state.clientDisconnectP,
+                                             state.versionMsgP,
+                                             state.verackMsgP)
+        newState
+    }
+  }
+
+  protected[networking] def disconnect(
+      peer: Peer,
+      onQueryTimeout: (ExpectsResponse, Peer) => Future[Unit])(implicit
+      system: ActorSystem): Future[PeerMessageReceiverState] = {
+    import system.dispatcher
+    logger.trace(s"Disconnecting with internalstate=${this}")
+    this match {
+      case bad @ (_: Disconnected | Preconnection |
+          _: InitializedDisconnectDone | _: StoppedReconnect) =>
+        throw new RuntimeException(
+          s"Cannot disconnect from peer=${peer} when in state=${bad}")
+      case good: InitializedDisconnect =>
+        val newState = InitializedDisconnectDone(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP.success(()),
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP)
+        Future.successful(newState)
+      case good @ (_: Initializing | _: Normal | _: Waiting) =>
+        val handleF: Future[Unit] = good match {
+          case wait: Waiting =>
+            onResponseTimeout(wait.responseFor, peer, onQueryTimeout).map(_ =>
+              ())
+          case wait: Initializing =>
+            wait.initializationTimeoutCancellable.cancel()
+            Future.unit
+          case _ => Future.unit
+        }
+
+        logger.debug(s"Disconnected bitcoin peer=${peer}")
+        val newState = Disconnected(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP.success(()),
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP
+        )
+
+        handleF.map(_ => newState)
+    }
+  }
+
+  def onResponseTimeout(
+      networkPayload: NetworkPayload,
+      peer: Peer,
+      onQueryTimeout: (ExpectsResponse, Peer) => Future[Unit])(implicit
+      ec: ExecutionContext): Future[PeerMessageReceiverState] = {
+    require(networkPayload.isInstanceOf[ExpectsResponse])
+    logger.info(
+      s"Handling response timeout for ${networkPayload.commandName} from $peer")
+
+    //isn't this redundant? No, on response timeout may be called when not cancel timeout
+    this match {
+      case wait: Waiting => wait.expectedResponseCancellable.cancel()
+      case _             =>
+    }
+
+    networkPayload match {
+      case payload: ExpectsResponse =>
+        logger.info(
+          s"Response for ${payload.commandName} from $peer timed out in state $this")
+        onQueryTimeout(payload, peer).map { _ =>
+          this match {
+            case _: Waiting if isConnected && isInitialized =>
+              val newState =
+                Normal(clientConnectP,
+                       clientDisconnectP,
+                       versionMsgP,
+                       verackMsgP)
+              newState
+            case _: PeerMessageReceiverState => this
+          }
+        }
+      case _ =>
+        logger.error(
+          s"onResponseTimeout called for ${networkPayload.commandName} which does not expect response")
+        Future.successful(this)
+    }
+  }
+
+  def handleExpectResponse(
+      msg: NetworkPayload,
+      peer: Peer,
+      sendResponseTimeout: (Peer, NetworkPayload) => Future[Unit],
+      onQueryTimeout: (ExpectsResponse, Peer) => Future[Unit])(implicit
+      system: ActorSystem,
+      nodeAppConfig: NodeAppConfig): Future[PeerMessageReceiverState] = {
+    require(
+      msg.isInstanceOf[ExpectsResponse],
+      s"Cannot expect response for ${msg.commandName} from $peer as ${msg.commandName} does not expect a response.")
+    import system.dispatcher
+    this match {
+      case good: Normal =>
+        logger.debug(s"Handling expected response for ${msg.commandName}")
+        val expectedResponseCancellable =
+          system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime) {
+            val responseTimeoutF =
+              sendResponseTimeout(peer, msg)
+            responseTimeoutF.failed.foreach(err =>
+              logger.error(
+                s"Failed to timeout waiting for response for peer=$peer",
+                err))
+          }
+        val newState = Waiting(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP,
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP,
+          responseFor = msg,
+          waitingSince = System.currentTimeMillis(),
+          expectedResponseCancellable = expectedResponseCancellable
+        )
+        Future.successful(newState)
+      case state: Waiting =>
+        logger.debug(
+          s"Waiting for response to ${state.responseFor.commandName}. Ignoring next request for ${msg.commandName}")
+        Future.successful(this)
+      case bad @ (_: InitializedDisconnect | _: InitializedDisconnectDone |
+          _: StoppedReconnect) =>
+        throw new RuntimeException(
+          s"Cannot expect response for ${msg.commandName} in state $bad")
+      case Preconnection | _: Initializing | _: Disconnected =>
+        //so we sent a message when things were good, but not we are back to connecting?
+        //can happen when can happen where once we initialize the remote peer immediately disconnects us
+        onResponseTimeout(msg, peer, onQueryTimeout = onQueryTimeout)
+    }
+  }
+
+  def stopReconnect(peer: Peer): PeerMessageReceiverState = {
+    this match {
+      case Preconnection =>
+        //when retry, state should be back to preconnection
+        val newState = StoppedReconnect(clientConnectP,
+                                        clientDisconnectP,
+                                        versionMsgP,
+                                        verackMsgP)
+        newState
+      case _: StoppedReconnect =>
+        logger.warn(
+          s"Already stopping reconnect from peer=$peer, this is a noop")
+        this
+      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
+          _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
+        throw new RuntimeException(
+          s"Cannot stop reconnect from peer=$peer when in state=$bad")
+    }
   }
 }
 

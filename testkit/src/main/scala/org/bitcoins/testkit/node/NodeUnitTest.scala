@@ -209,7 +209,6 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[PeerMessageReceiver] = {
     val receiver =
       PeerMessageReceiver(
-        state = PeerMessageReceiverState.fresh(),
         node =
           buildNode(peer, chainApi, walletCreationTimeOpt)(appConfig.chainConf,
                                                            appConfig.nodeConf,
@@ -390,8 +389,7 @@ object NodeUnitTest extends P2PLogger {
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
     val receiver =
-      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                          node =
+      PeerMessageReceiver(node =
                             buildNode(peer, chainApi, walletCreationTimeOpt),
                           peer = peer)
     Future.successful(receiver)
