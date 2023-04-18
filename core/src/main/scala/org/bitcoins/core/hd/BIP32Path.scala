@@ -130,21 +130,27 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
       // and without (https://wiki.trezor.io/Standard_derivation_paths)
       .map(_.trim)
 
-    val head +: rest = parts
-    require(head == "m",
-            """The first element in a BIP32 path string must be "m"""")
+    if (parts.isEmpty || parts.length == 1) {
+      sys.error(
+        s"Cannot have bip32 path empty bip32 path or single element bip32 path, got=$string")
+    } else {
+      val head = parts.head
+      val rest = parts.tail
+      require(head == "m",
+              """The first element in a BIP32 path string must be "m"""")
 
-    val path = rest.map { str =>
-      val (index: String, hardened: Boolean) =
-        if (str.endsWith("'") || str.endsWith("h")) {
-          (str.dropRight(1), true)
-        } else {
-          (str, false)
-        }
-      BIP32Node(index.toInt, hardened)
+      val path = rest.map { str =>
+        val (index: String, hardened: Boolean) =
+          if (str.endsWith("'") || str.endsWith("h")) {
+            (str.dropRight(1), true)
+          } else {
+            (str, false)
+          }
+        BIP32Node(index.toInt, hardened)
+      }
+
+      BIP32PathImpl(path)
     }
-
-    BIP32PathImpl(path)
   }
 
   /** Takes in a BIP32 Path and verifies all paths are hardened
