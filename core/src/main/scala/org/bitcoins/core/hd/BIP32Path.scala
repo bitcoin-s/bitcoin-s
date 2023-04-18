@@ -130,9 +130,8 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
       // and without (https://wiki.trezor.io/Standard_derivation_paths)
       .map(_.trim)
 
-    if (parts.isEmpty || parts.length == 1) {
-      sys.error(
-        s"Cannot have bip32 path empty bip32 path or single element bip32 path, got=$string")
+    if (parts.isEmpty) {
+      sys.error(s"Cannot have bip32 path empty bip32 path, got=$string")
     } else {
       val head = parts.head
       val rest = parts.tail
