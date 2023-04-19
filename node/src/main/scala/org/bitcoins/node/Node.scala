@@ -213,6 +213,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     }
   }
 
+  override def getConnectionCount: Future[Int] = {
+    Future.successful(peerManager.connectedPeerCount)
+  }
+
   /** Gets the height of the given block */
   override def getBlockHeight(
       blockHash: DoubleSha256DigestBE): Future[Option[Int]] =

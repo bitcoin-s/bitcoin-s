@@ -1688,7 +1688,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
-    "return the peer list" in {
+    "return the peer list" ignore {
       val route =
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
 
@@ -1887,6 +1887,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         val expected =
           s"""{"result":{"myCollateral":1,"theirCollateral":1,"myPayout":2,"theirPayout":0,"pnl":1,"rateOfReturn":1},"error":null}""".stripMargin
         assert(str == expected)
+      }
+    }
+
+    "getConnectedPeerCount" in {
+      (() => mockNode.getConnectionCount)
+        .expects()
+        .returning(Future.successful(1))
+
+      val route =
+        nodeRoutes.handleCommand(ServerCommand("getconnectioncount", Arr()))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1,"error":null}""")
       }
     }
   }

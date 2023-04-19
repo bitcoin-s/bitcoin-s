@@ -307,6 +307,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     logger.warn(s"Cannot set IBD of BitcoindRpcClient, this is a noop")
     Future.successful(this)
   }
+
+  override def getConnectionCount: Future[Int] = {
+    super[P2PRpc].getConnectionCount
+  }
 }
 
 object BitcoindRpcClient {

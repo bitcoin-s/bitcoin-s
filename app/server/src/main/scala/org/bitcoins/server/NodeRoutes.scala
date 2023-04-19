@@ -14,12 +14,12 @@ case class NodeRoutes(nodeApi: NodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, Route] = {
-    case ServerCommand("getpeers", _) =>
+  override def handleCommand: PartialFunction[ServerCommand, Route] = {
+    case ServerCommand("getconnectioncount", _) =>
       complete {
-        Server.httpSuccess("TODO implement getpeers")
+        nodeApi.getConnectionCount
+          .map(count => Server.httpSuccess(count))
       }
-
     case ServerCommand("stop", _) =>
       nodeApi match {
         case node: Node =>
