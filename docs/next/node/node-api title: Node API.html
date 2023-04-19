@@ -62,6 +62,8 @@ implementation of your choosing. This allows you to use the bitcoin-s wallet in 
       <span class="hljs-keyword">val</span> blockFs = blockHashes.map(hash =&gt; bitcoind.getBlockRaw(hash))
       <span class="hljs-type">Future</span>.sequence(blockFs).map(_ =&gt; ())
     }
+  
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getConnectionCount</span></span>: <span class="hljs-type">Future</span>[<span class="hljs-type">Int</span>] = bitcoind.getConnectionCount
   }
 
 <span class="hljs-comment">// Finally, we can initialize our wallet with our own node api</span>
