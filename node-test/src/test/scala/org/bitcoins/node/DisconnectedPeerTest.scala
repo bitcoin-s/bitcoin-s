@@ -24,4 +24,10 @@ class DisconnectedPeerTest extends NodeUnitTest {
       node.broadcastTransaction(tx)
     }
   }
+
+  it must "count 0 peer connections correctly" in { node =>
+    for {
+      connectionCount <- node.getConnectionCount
+    } yield assert(connectionCount == 0)
+  }
 }

@@ -22,4 +22,5 @@ trait NodeApi {
     */
   def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit]
 
+  def getConnectionCount: Future[Int]
 }

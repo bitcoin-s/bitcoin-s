@@ -340,4 +340,24 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         succeed
       }
   }
+
+  it must "count peer connections correctly" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
+      for {
+        _ <- node.sync()
+        initConnectionCount <- node.getConnectionCount
+        _ = assert(initConnectionCount == 2)
+        nodeUri0 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
+        _ <- bitcoinds(0).disconnectNode(nodeUri0)
+        _ <- AsyncUtil.nonBlockingSleep(1.seconds)
+        onePeerConnectionCount <- node.getConnectionCount
+        _ = assert(onePeerConnectionCount == 1)
+        nodeUri1 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(1))
+        _ <- bitcoinds(1).disconnectNode(nodeUri1)
+        _ <- AsyncUtil.nonBlockingSleep(1.seconds)
+        zeroPeerConnectionCount <- node.getConnectionCount
+      } yield assert(zeroPeerConnectionCount == 0)
+  }
 }

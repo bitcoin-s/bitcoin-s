@@ -342,7 +342,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `dropaddresslabels` `address` - drops all labels for the given address
 
 ### Network
- - `getpeers` - List the connected peers
+ - `getconnectioncount` - Get the number of connected peers
  - `stop` - Request a graceful shutdown of Bitcoin-S
  - `sendrawtransaction` `tx` `Broadcasts the raw transaction`
     - `tx` - Transaction serialized in hex

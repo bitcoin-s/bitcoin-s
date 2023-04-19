@@ -367,6 +367,10 @@ object BitcoindRpcBackendUtil extends Logging {
           transactions: Vector[Transaction]): Future[Unit] = {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
+
+      override def getConnectionCount: Future[Int] = {
+        bitcoindRpcClient.getConnectionCount
+      }
     }
   }
 

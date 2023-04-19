@@ -16,4 +16,6 @@ object MockNodeApi extends NodeApi {
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.unit
 
+  override def getConnectionCount: Future[Int] = Future.successful(0)
+
 }

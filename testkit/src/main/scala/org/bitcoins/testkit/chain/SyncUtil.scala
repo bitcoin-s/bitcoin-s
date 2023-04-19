@@ -99,6 +99,9 @@ abstract class SyncUtil extends Logging {
           ()
         }
       }
+
+      override def getConnectionCount: Future[Int] =
+        bitcoindRpcClient.getConnectionCount
     }
   }
 
@@ -156,6 +159,9 @@ abstract class SyncUtil extends Logging {
           transactions: Vector[Transaction]): Future[Unit] = {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
+
+      override def getConnectionCount: Future[Int] =
+        bitcoindRpcClient.getConnectionCount
     }
   }
 

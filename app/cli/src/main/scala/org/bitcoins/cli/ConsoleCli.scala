@@ -1398,8 +1398,8 @@ object ConsoleCli {
               }))
         ),
       note(sys.props("line.separator") + "=== Network ==="),
-      cmd("getpeers")
-        .action((_, conf) => conf.copy(command = GetPeers))
+      cmd("getconnectioncount")
+        .action((_, conf) => conf.copy(command = GetConnectionCount))
         .text(s"List the connected peers"),
       cmd("stop")
         .action((_, conf) => conf.copy(command = Stop))
@@ -2197,8 +2197,8 @@ object ConsoleCli {
       // besthash
       case GetBestBlockHash => RequestParam("getbestblockhash")
       // peers
-      case GetPeers => RequestParam("getpeers")
-      case Stop     => RequestParam("stop")
+      case GetConnectionCount => RequestParam("getpeers")
+      case Stop               => RequestParam("stop")
       case SendRawTransaction(tx) =>
         RequestParam("sendrawtransaction", Seq(up.writeJs(tx)))
       // PSBTs
@@ -2490,7 +2490,7 @@ object CliCommand {
   case object GetDLCWalletAccounting extends AppServerCliCommand
 
   // Node
-  case object GetPeers extends AppServerCliCommand
+  case object GetConnectionCount extends AppServerCliCommand
   case object Stop extends AppServerCliCommand
 
   // Chain

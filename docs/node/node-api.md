@@ -88,6 +88,8 @@ val exampleCallback = createCallback(exampleProcessBlock)
       val blockFs = blockHashes.map(hash => bitcoind.getBlockRaw(hash))
       Future.sequence(blockFs).map(_ => ())
     }
+  
+    override def getConnectionCount: Future[Int] = bitcoind.getConnectionCount
   }
 
 // Finally, we can initialize our wallet with our own node api
