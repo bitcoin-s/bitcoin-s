@@ -61,8 +61,11 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
     require(children.length == 5,
             s"A $pathName path string must have five elements")
 
-    val _ :+ coinChild :+ accountChild :+ chainChild :+ addressChild =
-      children
+    val (coinChild, accountChild, chainChild, addressChild) = {
+      require(children.length == 5,
+              s"Must have 5 elements in HDPath, got=$children")
+      (children(1), children(2), children(3), children(4))
+    }
 
     require(coinChild.hardened, "The coin type child must be hardened!")
     require(accountChild.hardened, "The account child must be hardened!")
