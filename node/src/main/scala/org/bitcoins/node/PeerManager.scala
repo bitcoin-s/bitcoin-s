@@ -478,8 +478,9 @@ case class PeerManager(
       newDmh = currentDmh.copy(syncPeer = Some(peer))
       _ = logger.info(s"Now syncing filter headers from $peer")
       sender <- peerDataMap(peer).peerMessageSender
-      newSyncing <- PeerManager.sendFirstGetCompactFilterHeadersCommand(sender,
-                                                            currentDmh.chainApi)
+      newSyncing <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
+        sender,
+        currentDmh.chainApi)
     } yield {
       val syncPeerOpt = if (newSyncing) {
         Some(peer)
@@ -490,16 +491,17 @@ case class PeerManager(
     }
   }
 
-
 }
 
 case class ResponseTimeout(payload: NetworkPayload)
 
 object PeerManager {
+
   def sendFirstGetCompactFilterHeadersCommand(
-                                               peerMsgSender: PeerMessageSender,
-                                               chainApi: ChainApi)(implicit ec: ExecutionContext,
-                                                                   chainConfig: ChainAppConfig): Future[Boolean] = {
+      peerMsgSender: PeerMessageSender,
+      chainApi: ChainApi)(implicit
+      ec: ExecutionContext,
+      chainConfig: ChainAppConfig): Future[Boolean] = {
 
     for {
       bestFilterHeaderOpt <-
