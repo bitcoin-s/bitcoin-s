@@ -51,7 +51,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
-          node = node,
+          peerManager = node.peerManager,
           state = HeaderSync,
           initialSyncDone = None,
           filterBatchCache = Set.empty,
@@ -101,7 +101,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           DataMessageHandler(
             chainApi = chainApi,
             walletCreationTimeOpt = None,
-            node = node,
+            peerManager = node.peerManager,
             state = HeaderSync,
             initialSyncDone = None,
             filterBatchCache = Set.empty,
@@ -145,7 +145,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           DataMessageHandler(
             chainApi = chainApi,
             walletCreationTimeOpt = None,
-            node = node,
+            peerManager = node.peerManager,
             state = HeaderSync,
             initialSyncDone = None,
             filterBatchCache = Set.empty,
@@ -211,7 +211,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           DataMessageHandler(
             chainApi = chainApi,
             walletCreationTimeOpt = None,
-            node = node,
+            peerManager = node.peerManager,
             state = HeaderSync,
             initialSyncDone = None,
             filterBatchCache = Set.empty,

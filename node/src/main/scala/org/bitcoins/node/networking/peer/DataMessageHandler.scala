@@ -13,7 +13,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
-import org.bitcoins.node.{Node, P2PLogger, PeerManager}
+import org.bitcoins.node.{P2PLogger, PeerManager}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -30,7 +30,7 @@ import scala.util.control.NonFatal
 case class DataMessageHandler(
     chainApi: ChainApi,
     walletCreationTimeOpt: Option[Instant],
-    node: Node,
+    peerManager: PeerManager,
     state: DataMessageHandlerState,
     initialSyncDone: Option[Promise[Done]],
     filterBatchCache: Set[CompactFilterMessage],
@@ -51,14 +51,12 @@ case class DataMessageHandler(
                                        syncPeer = None,
                                        state = HeaderSync)
 
-  def manager: PeerManager = node.peerManager
-
   def addToStream(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender,
       peer: Peer): Future[Unit] = {
     val msg = DataMessageWrapper(payload, peerMsgSender, peer)
-    manager.dataMessageStream.offer(msg).map(_ => ())
+    peerManager.dataMessageStream.offer(msg).map(_ => ())
   }
 
   private def isChainIBD: Future[Boolean] = {
@@ -300,7 +298,8 @@ case class DataMessageHandler(
                     case ValidatingHeaders(inSyncWith, _, _) =>
                       //In the validation stage, some peer sent max amount of valid headers, revert to HeaderSync with that peer as syncPeer
                       //disconnect the ones that we have already checked since they are at least out of sync by 2000 headers
-                      val removeFs = inSyncWith.map(p => manager.removePeer(p))
+                      val removeFs =
+                        inSyncWith.map(p => peerManager.removePeer(p))
 
                       val newSyncPeer = Some(peer)
 
@@ -340,16 +339,17 @@ case class DataMessageHandler(
                       // headers are synced now with the current sync peer, now move to validating it for all peers
                       assert(syncPeer.get == peer)
 
-                      if (manager.peers.size > 1) {
+                      if (peerManager.peers.size > 1) {
                         val newState =
                           ValidatingHeaders(inSyncWith = Set(peer),
-                                            verifyingWith = manager.peers.toSet,
+                                            verifyingWith =
+                                              peerManager.peers.toSet,
                                             failedCheck = Set.empty[Peer])
 
                         logger.info(
                           s"Starting to validate headers now. Verifying with ${newState.verifyingWith}")
 
-                        val getHeadersAllF = manager.peerDataMap
+                        val getHeadersAllF = peerManager.peerDataMap
                           .filter(_._1 != peer)
                           .map(
                             _._2.peerMessageSender.flatMap(
@@ -550,17 +550,17 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
     state match {
       case HeaderSync =>
-        manager.peerDataMap(peer).updateInvalidMessageCount()
+        peerManager.peerDataMap(peer).updateInvalidMessageCount()
         if (
-          manager
+          peerManager
             .peerDataMap(peer)
-            .exceededMaxInvalidMessages && manager.peers.size > 1
+            .exceededMaxInvalidMessages && peerManager.peers.size > 1
         ) {
           logger.info(
             s"$peer exceeded max limit of invalid messages. Disconnecting.")
           for {
-            _ <- manager.removePeer(peer)
-            newDmh <- manager.syncFromNewPeer()
+            _ <- peerManager.removePeer(peer)
+            newDmh <- peerManager.syncFromNewPeer()
           } yield newDmh.copy(state = HeaderSync)
         } else {
           logger.info(s"Re-querying headers from $peer.")
@@ -597,11 +597,11 @@ case class DataMessageHandler(
   private def fetchCompactFilterHeaders(
       currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
     for {
-      peer <- manager.randomPeerWithService(
+      peer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
       newDmh = currentDmh.copy(syncPeer = Some(peer))
       _ = logger.info(s"Now syncing filter headers from $peer")
-      sender <- manager.peerDataMap(peer).peerMessageSender
+      sender <- peerManager.peerDataMap(peer).peerMessageSender
       newSyncing <- sendFirstGetCompactFilterHeadersCommand(sender)
     } yield {
       val syncPeerOpt = if (newSyncing) {
@@ -617,7 +617,7 @@ case class DataMessageHandler(
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
       case HeaderSync =>
-        manager.syncFromNewPeer()
+        peerManager.syncFromNewPeer()
 
       case headerState @ ValidatingHeaders(_, failedCheck, _) =>
         val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)

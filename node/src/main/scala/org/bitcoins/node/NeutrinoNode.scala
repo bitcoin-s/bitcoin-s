@@ -52,7 +52,7 @@ case class NeutrinoNode(
       DataMessageHandler(
         chainApi = chainApi,
         walletCreationTimeOpt = walletCreationTimeOpt,
-        node = this,
+        peerManager = peerManager,
         state = HeaderSync,
         initialSyncDone = None,
         filterBatchCache = Set.empty,
@@ -71,7 +71,7 @@ case class NeutrinoNode(
     this
   }
 
-  override val peerManager: PeerManager = PeerManager(paramPeers, this)
+  override lazy val peerManager: PeerManager = PeerManager(paramPeers, this)
 
   override def start(): Future[NeutrinoNode] = {
     val res = for {
