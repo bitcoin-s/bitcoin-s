@@ -37,7 +37,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  val peerManager: PeerManager
+  def peerManager: PeerManager
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains

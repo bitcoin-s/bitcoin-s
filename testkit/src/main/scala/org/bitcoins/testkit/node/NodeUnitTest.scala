@@ -207,13 +207,14 @@ object NodeUnitTest extends P2PLogger {
       walletCreationTimeOpt: Option[Instant])(implicit
       appConfig: BitcoinSAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
+    val node = buildNode(peer, chainApi, walletCreationTimeOpt)(
+      appConfig.chainConf,
+      appConfig.nodeConf,
+      system)
     val receiver =
-      PeerMessageReceiver(
-        node =
-          buildNode(peer, chainApi, walletCreationTimeOpt)(appConfig.chainConf,
-                                                           appConfig.nodeConf,
-                                                           system),
-        peer = peer)(system, appConfig.nodeConf)
+      PeerMessageReceiver(controlMessageHandler = node.controlMessageHandler,
+                          dataMessageHandler = node.getDataMessageHandler,
+                          peer = peer)(system, appConfig.nodeConf)
     Future.successful(receiver)
   }
 
@@ -388,9 +389,10 @@ object NodeUnitTest extends P2PLogger {
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
+    val node = buildNode(peer, chainApi, walletCreationTimeOpt)
     val receiver =
-      PeerMessageReceiver(node =
-                            buildNode(peer, chainApi, walletCreationTimeOpt),
+      PeerMessageReceiver(controlMessageHandler = node.controlMessageHandler,
+                          dataMessageHandler = node.getDataMessageHandler,
                           peer = peer)
     Future.successful(receiver)
   }

@@ -33,7 +33,9 @@ case class PeerData(
 
   private lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
-      PeerMessageReceiver(node, peer)
+      PeerMessageReceiver(node.controlMessageHandler,
+                          node.getDataMessageHandler,
+                          peer)
     P2PClient(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
