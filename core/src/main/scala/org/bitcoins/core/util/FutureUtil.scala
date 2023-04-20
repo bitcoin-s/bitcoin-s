@@ -122,9 +122,8 @@ object FutureUtil {
       Future.successful(Vector.empty)
     } else {
       val batches = elements.grouped(batchSize).toVector
-      val execute: Vector[Future[U]] = batches.map(b => f(b))
-      val doneF = Future.sequence(execute)
-      doneF
+      val executeF: Future[Vector[U]] = Future.traverse(batches)(f(_))
+      executeF
     }
   }
 
