@@ -7,7 +7,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.{Node, P2PLogger}
+import org.bitcoins.node.P2PLogger
 
 import scala.concurrent.Future
 
@@ -17,8 +17,9 @@ import scala.concurrent.Future
   * operations. This is the entry point for handling all received
   * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]]
   */
-class PeerMessageReceiver(
-    node: Node,
+case class PeerMessageReceiver(
+    controlMessageHandler: ControlMessageHandler,
+    dataMessageHandler: DataMessageHandler,
     peer: Peer
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
@@ -88,9 +89,12 @@ class PeerMessageReceiver(
       sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    node.getDataMessageHandler
+    dataMessageHandler
       .addToStream(payload, sender, peer)
-      .map(_ => new PeerMessageReceiver(node, peer))
+      .map(_ =>
+        new PeerMessageReceiver(controlMessageHandler,
+                                dataMessageHandler,
+                                peer))
   }
 
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
@@ -104,7 +108,7 @@ class PeerMessageReceiver(
       sender: PeerMessageSender,
       curReceiverState: PeerMessageReceiverState): Future[
     PeerMessageReceiverState] = {
-    node.controlMessageHandler
+    controlMessageHandler
       .handleControlPayload(payload, sender, peer, curReceiverState)
   }
 }
@@ -121,11 +125,4 @@ object PeerMessageReceiver {
 
   case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
       extends PeerMessageReceiverMsg
-
-  def apply(node: Node, peer: Peer)(implicit
-      system: ActorSystem,
-      nodeAppConfig: NodeAppConfig
-  ): PeerMessageReceiver = {
-    new PeerMessageReceiver(node = node, peer = peer)
-  }
 }

@@ -100,7 +100,10 @@ class P2PClientActorTest
     val peerMessageReceiverF =
       for {
         node <- NodeUnitTest.buildNode(peer, None)
-      } yield PeerMessageReceiver(node, peer)
+      } yield PeerMessageReceiver(
+        controlMessageHandler = node.controlMessageHandler,
+        dataMessageHandler = node.getDataMessageHandler,
+        peer = peer)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
