@@ -627,7 +627,7 @@ case class DataMessageHandler(
           fetchCompactFilterHeaders(newDmh).map(_.copy(state = PostHeaderSync))
         } else Future.successful(newDmh)
 
-      case _: DataMessageHandlerState => Future.successful(this)
+      case PostHeaderSync => Future.successful(this)
     }
   }
 
