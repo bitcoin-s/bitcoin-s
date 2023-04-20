@@ -58,7 +58,7 @@ addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.13.1")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.1")
 
 //https://github.com/portable-scala/sbt-crossproject
-addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.0")
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.1")
 
 //https://github.com/sbt/sbt-assembly
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.0.0")
