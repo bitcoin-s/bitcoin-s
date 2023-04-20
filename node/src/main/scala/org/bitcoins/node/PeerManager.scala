@@ -5,9 +5,11 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
@@ -468,6 +470,60 @@ case class PeerManager(
 
   val dataMessageStream: SourceQueueWithComplete[StreamDataMessageWrapper] =
     dataMessageStreamSource.to(dataMessageStreamSink).run()
+
+  def fetchCompactFilterHeaders(
+      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
+    for {
+      peer <- randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
+      newDmh = currentDmh.copy(syncPeer = Some(peer))
+      _ = logger.info(s"Now syncing filter headers from $peer")
+      sender <- peerDataMap(peer).peerMessageSender
+      newSyncing <- PeerManager.sendFirstGetCompactFilterHeadersCommand(sender,
+                                                            currentDmh.chainApi)
+    } yield {
+      val syncPeerOpt = if (newSyncing) {
+        Some(peer)
+      } else {
+        None
+      }
+      newDmh.copy(syncPeer = syncPeerOpt)
+    }
+  }
+
+
 }
 
 case class ResponseTimeout(payload: NetworkPayload)
+
+object PeerManager {
+  def sendFirstGetCompactFilterHeadersCommand(
+                                               peerMsgSender: PeerMessageSender,
+                                               chainApi: ChainApi)(implicit ec: ExecutionContext,
+                                                                   chainConfig: ChainAppConfig): Future[Boolean] = {
+
+    for {
+      bestFilterHeaderOpt <-
+        chainApi
+          .getBestFilterHeader()
+      filterCount <- chainApi.getFilterCount()
+      blockHash = bestFilterHeaderOpt match {
+        case Some(filterHeaderDb) =>
+          filterHeaderDb.blockHashBE
+        case None =>
+          DoubleSha256DigestBE.empty
+      }
+      hashHeightOpt <- chainApi.nextBlockHeaderBatchRange(
+        prevStopHash = blockHash,
+        batchSize = chainConfig.filterHeaderBatchSize)
+      res <- hashHeightOpt match {
+        case Some(filterSyncMarker) =>
+          peerMsgSender
+            .sendGetCompactFilterHeadersMessage(filterSyncMarker)
+            .map(_ => true)
+        case None =>
+          sys.error(
+            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt filterCount=$filterCount")
+      }
+    } yield res
+  }
+}

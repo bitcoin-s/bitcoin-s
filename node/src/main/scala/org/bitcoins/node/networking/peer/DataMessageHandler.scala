@@ -361,8 +361,9 @@ case class DataMessageHandler(
                           .map(_ => newDmh.copy(state = newState))
                       } else {
                         //if just one peer then can proceed ahead directly
-                        fetchCompactFilterHeaders(newDmh).map(
-                          _.copy(state = PostHeaderSync))
+                        peerManager
+                          .fetchCompactFilterHeaders(newDmh)
+                          .map(_.copy(state = PostHeaderSync))
                       }
 
                     case headerState @ ValidatingHeaders(inSyncWith, _, _) =>
@@ -377,8 +378,9 @@ case class DataMessageHandler(
                         // so we also check if our cached filter heights have been set as well, if they haven't then
                         // we probably need to sync filters
 
-                        fetchCompactFilterHeaders(newDmh2).map(
-                          _.copy(state = PostHeaderSync))
+                        peerManager
+                          .fetchCompactFilterHeaders(newDmh2)
+                          .map(_.copy(state = PostHeaderSync))
                       } else {
                         //do nothing, we are still waiting for some peers to send headers or timeout
                         Future.successful(newDmh2)
@@ -389,7 +391,9 @@ case class DataMessageHandler(
                       logger.info(
                         s"Starting to fetch filter headers in data message handler")
                       val newSyncingF =
-                        sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                        PeerManager.sendFirstGetCompactFilterHeadersCommand(
+                          peerMsgSender,
+                          chainApi)
                       newSyncingF.map { newSyncing =>
                         val syncPeerOpt = if (newSyncing) {
                           syncPeer
@@ -408,8 +412,9 @@ case class DataMessageHandler(
                       headerState.copy(inSyncWith = inSyncWith + peer)
                     val newDmh2 = newDmh.copy(state = newHeaderState)
                     if (newHeaderState.validated) {
-                      fetchCompactFilterHeaders(newDmh2).map(
-                        _.copy(state = PostHeaderSync))
+                      peerManager
+                        .fetchCompactFilterHeaders(newDmh2)
+                        .map(_.copy(state = PostHeaderSync))
                     } else {
                       //do nothing, we are still waiting for some peers to send headers
                       Future.successful(newDmh2)
@@ -517,7 +522,8 @@ case class DataMessageHandler(
         if (headerHeight > filterHeaderCount) {
           logger.info(
             s"Starting to fetch filter headers in data message handler")
-          sendFirstGetCompactFilterHeadersCommand(peerMessageSender)
+          PeerManager.sendFirstGetCompactFilterHeadersCommand(peerMessageSender,
+                                                              chainApi)
         } else {
           require(
             headerHeight == filterHeaderCount,
@@ -584,32 +590,15 @@ case class DataMessageHandler(
         if (newHeaderState.validated) {
           logger.info(
             s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
-          fetchCompactFilterHeaders(newDmh).map(_.copy(state = PostHeaderSync))
+          peerManager
+            .fetchCompactFilterHeaders(newDmh)
+            .map(_.copy(state = PostHeaderSync))
         } else {
           Future.successful(newDmh)
         }
 
       case _: DataMessageHandlerState =>
         Future.successful(this)
-    }
-  }
-
-  private def fetchCompactFilterHeaders(
-      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
-    for {
-      peer <- peerManager.randomPeerWithService(
-        ServiceIdentifier.NODE_COMPACT_FILTERS)
-      newDmh = currentDmh.copy(syncPeer = Some(peer))
-      _ = logger.info(s"Now syncing filter headers from $peer")
-      sender <- peerManager.peerDataMap(peer).peerMessageSender
-      newSyncing <- sendFirstGetCompactFilterHeadersCommand(sender)
-    } yield {
-      val syncPeerOpt = if (newSyncing) {
-        Some(peer)
-      } else {
-        None
-      }
-      newDmh.copy(syncPeer = syncPeerOpt)
     }
   }
 
@@ -624,7 +613,9 @@ case class DataMessageHandler(
         val newDmh = copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
-          fetchCompactFilterHeaders(newDmh).map(_.copy(state = PostHeaderSync))
+          peerManager
+            .fetchCompactFilterHeaders(newDmh)
+            .map(_.copy(state = PostHeaderSync))
         } else Future.successful(newDmh)
 
       case PostHeaderSync => Future.successful(this)
@@ -638,35 +629,6 @@ case class DataMessageHandler(
       chainApi = chainApi,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
       prevStopHash = prevStopHash)
-
-  private def sendFirstGetCompactFilterHeadersCommand(
-      peerMsgSender: PeerMessageSender): Future[Boolean] = {
-
-    for {
-      bestFilterHeaderOpt <-
-        chainApi
-          .getBestFilterHeader()
-      filterCount <- chainApi.getFilterCount()
-      blockHash = bestFilterHeaderOpt match {
-        case Some(filterHeaderDb) =>
-          filterHeaderDb.blockHashBE
-        case None =>
-          DoubleSha256DigestBE.empty
-      }
-      hashHeightOpt <- chainApi.nextBlockHeaderBatchRange(
-        prevStopHash = blockHash,
-        batchSize = chainConfig.filterHeaderBatchSize)
-      res <- hashHeightOpt match {
-        case Some(filterSyncMarker) =>
-          peerMsgSender
-            .sendGetCompactFilterHeadersMessage(filterSyncMarker)
-            .map(_ => true)
-        case None =>
-          sys.error(
-            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt filterCount=$filterCount")
-      }
-    } yield res
-  }
 
   private def sendNextGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender,
