@@ -2197,7 +2197,7 @@ object ConsoleCli {
       // besthash
       case GetBestBlockHash => RequestParam("getbestblockhash")
       // peers
-      case GetConnectionCount => RequestParam("getpeers")
+      case GetConnectionCount => RequestParam("getconnectioncount")
       case Stop               => RequestParam("stop")
       case SendRawTransaction(tx) =>
         RequestParam("sendrawtransaction", Seq(up.writeJs(tx)))
