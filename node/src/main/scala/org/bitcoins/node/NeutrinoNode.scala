@@ -97,7 +97,6 @@ case class NeutrinoNode(
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
       chainApi <- chainApiFromDb()
-      _ <- chainApi.getBestBlockHash()
       _ <- chainApi.setSyncing(true)
       _ = logger.info(s"Fetching peers to sync with...")
       syncPeer <- peerManager.randomPeerWithService(
@@ -113,10 +112,19 @@ case class NeutrinoNode(
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
       _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-      _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
-                       bestFilterOpt = bestFilterOpt,
-                       bestBlockHeader = header,
-                       chainApi = chainApi)
+      hasStaleTip <- chainApi.isTipStale()
+      _ <- {
+        if (hasStaleTip) {
+          //if we have a stale tip, we will request to sync filter headers / filters
+          //after we are done syncing block headers
+          Future.unit
+        } else {
+          syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
+                      bestFilterOpt = bestFilterOpt,
+                      bestBlockHeader = header,
+                      chainApi = chainApi)
+        }
+      }
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE.hex}")
