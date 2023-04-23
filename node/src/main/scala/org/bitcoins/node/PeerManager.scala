@@ -14,6 +14,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.networking.P2PClientSupervisor
+import org.bitcoins.node.networking.peer.DataMessageHandlerState._
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
@@ -420,6 +421,27 @@ case class PeerManager(
     Future.unit
   }
 
+  private def onHeaderRequestTimeout(
+      peer: Peer,
+      state: DataMessageHandlerState): Future[DataMessageHandler] = {
+    logger.info(s"Header request timed out from $peer in state $state")
+    state match {
+      case HeaderSync =>
+        syncFromNewPeer()
+
+      case headerState @ ValidatingHeaders(_, failedCheck, _) =>
+        val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
+        val newDmh = node.getDataMessageHandler.copy(state = newHeaderState)
+
+        if (newHeaderState.validated) {
+          fetchCompactFilterHeaders(newDmh)
+            .map(_.copy(state = PostHeaderSync))
+        } else Future.successful(newDmh)
+
+      case PostHeaderSync => Future.successful(node.getDataMessageHandler)
+    }
+  }
+
   def sendResponseTimeout(peer: Peer, payload: NetworkPayload): Future[Unit] = {
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
@@ -454,10 +476,11 @@ case class PeerManager(
           }
       case msg @ HeaderTimeoutWrapper(peer) =>
         logger.debug(s"Processing timeout header for $peer")
-        node.getDataMessageHandler.onHeaderRequestTimeout(peer).map { newDmh =>
-          node.updateDataMessageHandler(newDmh)
-          logger.debug(s"Done processing timeout header for $peer")
-          msg
+        onHeaderRequestTimeout(peer, node.getDataMessageHandler.state).map {
+          newDmh =>
+            node.updateDataMessageHandler(newDmh)
+            logger.debug(s"Done processing timeout header for $peer")
+            msg
         }
     }
 
