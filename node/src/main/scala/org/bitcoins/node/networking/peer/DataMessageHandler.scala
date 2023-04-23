@@ -602,26 +602,6 @@ case class DataMessageHandler(
     }
   }
 
-  def onHeaderRequestTimeout(peer: Peer): Future[DataMessageHandler] = {
-    logger.info(s"Header request timed out from $peer in state $state")
-    state match {
-      case HeaderSync =>
-        peerManager.syncFromNewPeer()
-
-      case headerState @ ValidatingHeaders(_, failedCheck, _) =>
-        val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
-        val newDmh = copy(state = newHeaderState)
-
-        if (newHeaderState.validated) {
-          peerManager
-            .fetchCompactFilterHeaders(newDmh)
-            .map(_.copy(state = PostHeaderSync))
-        } else Future.successful(newDmh)
-
-      case PostHeaderSync => Future.successful(this)
-    }
-  }
-
   private def sendNextGetCompactFilterHeadersCommand(
       peerMsgSender: PeerMessageSender,
       prevStopHash: DoubleSha256DigestBE): Future[Boolean] =
