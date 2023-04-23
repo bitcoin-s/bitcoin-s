@@ -15,11 +15,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.networking.P2PClientSupervisor
-<<<<<<< HEAD
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
-=======
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
->>>>>>> 461fb937056 (WIP: Move DataMessageHandler into PeerManager)
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
@@ -427,24 +423,27 @@ case class PeerManager(
     Future.unit
   }
 
+  def syncFromNewPeer(): Future[DataMessageHandler] =
+    node.syncFromNewPeer().map(_ => getDataMessageHandler)
+
   private def onHeaderRequestTimeout(
       peer: Peer,
       state: DataMessageHandlerState): Future[DataMessageHandler] = {
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
       case HeaderSync =>
-        syncFromNewPeer()
+        node.syncFromNewPeer().map(_ => getDataMessageHandler)
 
       case headerState @ ValidatingHeaders(_, failedCheck, _) =>
         val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
-        val newDmh = node.getDataMessageHandler.copy(state = newHeaderState)
+        val newDmh = getDataMessageHandler.copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
           fetchCompactFilterHeaders(newDmh)
             .map(_.copy(state = PostHeaderSync))
         } else Future.successful(newDmh)
 
-      case PostHeaderSync => Future.successful(node.getDataMessageHandler)
+      case PostHeaderSync => Future.successful(getDataMessageHandler)
     }
   }
 
