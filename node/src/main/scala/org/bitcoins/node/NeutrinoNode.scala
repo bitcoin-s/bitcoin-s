@@ -15,15 +15,10 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
-import org.bitcoins.node.networking.peer.{
-  ControlMessageHandler,
-  DataMessageHandler
-}
+import org.bitcoins.node.networking.peer.{ControlMessageHandler}
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Future}
 
 case class NeutrinoNode(
     chainApi: ChainApi,
@@ -45,33 +40,8 @@ case class NeutrinoNode(
 
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
-  private var dataMessageHandler: DataMessageHandler = {
-    val result = for {
-      chainApi <- chainApiFromDb()
-    } yield {
-      DataMessageHandler(
-        chainApi = chainApi,
-        walletCreationTimeOpt = walletCreationTimeOpt,
-        peerManager = peerManager,
-        state = HeaderSync,
-        initialSyncDone = None,
-        filterBatchCache = Set.empty,
-        syncPeer = None
-      )
-    }
-
-    Await.result(result, 10.seconds)
-  }
-
-  override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
-
-  override def updateDataMessageHandler(
-      dataMessageHandler: DataMessageHandler): NeutrinoNode = {
-    this.dataMessageHandler = dataMessageHandler
-    this
-  }
-
-  override lazy val peerManager: PeerManager = PeerManager(paramPeers, this)
+  override lazy val peerManager: PeerManager =
+    PeerManager(paramPeers, this, walletCreationTimeOpt)
 
   override def start(): Future[NeutrinoNode] = {
     val res = for {
@@ -102,8 +72,8 @@ case class NeutrinoNode(
       syncPeer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
       _ = logger.info(s"Syncing with $syncPeer")
-      _ = updateDataMessageHandler(
-        dataMessageHandler.copy(syncPeer = Some(syncPeer)))
+      _ = peerManager.updateDataMessageHandler(
+        peerManager.getDataMessageHandler.copy(syncPeer = Some(syncPeer)))
       peerMsgSender <- peerManager.peerDataMap(syncPeer).peerMessageSender
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
@@ -165,6 +135,13 @@ case class NeutrinoNode(
     }
   }
 
+  override def syncFromNewPeer(): Future[Unit] = {
+    logger.info(s"Trying to sync from new peer")
+    val _ = peerManager.updateDataMessageHandler(
+      peerManager.getDataMessageHandler.reset)
+    sync().map(_ => ())
+  }
+
   /** Starts sync compact filer headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
@@ -173,7 +150,7 @@ case class NeutrinoNode(
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
     val syncPeerMsgSenderOptF = {
-      dataMessageHandler.syncPeer.map { peer =>
+      peerManager.getDataMessageHandler.syncPeer.map { peer =>
         peerManager.peerDataMap(peer).peerMessageSender
       }
     }

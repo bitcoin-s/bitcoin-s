@@ -63,8 +63,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
-      val peerManager = node.peerManager
-      def peers = peerManager.peers
+      def peers = node.peerManager.peers
 
       for {
         bitcoindPeers <- bitcoinPeersF
@@ -72,15 +71,15 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                            maxTries = 30,
                                            interval = 1.second)
         //sync from first bitcoind
-        _ = node.updateDataMessageHandler(
-          node.getDataMessageHandler.copy(syncPeer = Some(bitcoindPeers(0)))(
-            executionContext,
-            node.nodeAppConfig,
-            node.chainAppConfig))
+        _ = node.peerManager.updateDataMessageHandler(
+          node.peerManager.getDataMessageHandler.copy(syncPeer =
+            Some(bitcoindPeers(0)))(executionContext,
+                                    node.nodeAppConfig,
+                                    node.chainAppConfig))
         expectHeaders = ExpectResponseCommand(
           GetHeadersMessage(node.chainConfig.chain.genesisHash))
         //waiting for response to header query now
-        client <- peerManager
+        client <- node.peerManager
           .peerDataMap(bitcoindPeers(0))
           .peerMessageSender
           .map(_.client)
@@ -89,7 +88,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.info(s"Disconnected $nodeUri from bitcoind")
         //old peer we were syncing with that just disconnected us
-        oldSyncPeer = node.getDataMessageHandler.syncPeer.get
+        oldSyncPeer = node.peerManager.getDataMessageHandler.syncPeer.get
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         expectedSyncPeer = bitcoindPeers(1)
       } yield {
@@ -133,17 +132,18 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
         peers <- bitcoinPeersF
         peer = peers.head
-        _ = node.updateDataMessageHandler(
-          node.getDataMessageHandler.copy(syncPeer = Some(peer))(
+        _ = node.peerManager.updateDataMessageHandler(
+          node.peerManager.getDataMessageHandler.copy(syncPeer = Some(peer))(
             executionContext,
             node.nodeConfig,
             node.chainConfig))
 
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         sender <- node.peerManager.peerDataMap(peer).peerMessageSender
-        _ <- node.getDataMessageHandler.addToStream(invalidHeaderMessage,
-                                                    sender,
-                                                    peer)
+        _ <- node.peerManager.getDataMessageHandler.addToStream(
+          invalidHeaderMessage,
+          sender,
+          peer)
         bestChain = bitcoinds(1)
         _ <- NodeTestUtil.awaitSync(node, bestChain)
       } yield {
@@ -166,9 +166,8 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           sendFs = 1
             .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
             .map(_ =>
-              node.getDataMessageHandler.addToStream(invalidHeaderMessage,
-                                                     sender,
-                                                     peer))
+              node.peerManager.getDataMessageHandler
+                .addToStream(invalidHeaderMessage, sender, peer))
           _ <- Future.sequence(sendFs)
         } yield ()
       }
@@ -178,8 +177,8 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peers <- bitcoinPeersF
         peer = peers(0)
         _ <- node.peerManager.isConnected(peer).map(assert(_))
-        _ = node.updateDataMessageHandler(
-          node.getDataMessageHandler.copy(syncPeer = Some(peer))(
+        _ = node.peerManager.updateDataMessageHandler(
+          node.peerManager.getDataMessageHandler.copy(syncPeer = Some(peer))(
             executionContext,
             node.nodeConfig,
             node.chainConfig))

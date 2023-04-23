@@ -213,7 +213,8 @@ object NodeUnitTest extends P2PLogger {
       system)
     val receiver =
       PeerMessageReceiver(controlMessageHandler = node.controlMessageHandler,
-                          dataMessageHandler = node.getDataMessageHandler,
+                          dataMessageHandler =
+                            node.peerManager.getDataMessageHandler,
                           peer = peer)(system, appConfig.nodeConf)
     Future.successful(receiver)
   }
@@ -392,7 +393,8 @@ object NodeUnitTest extends P2PLogger {
     val node = buildNode(peer, chainApi, walletCreationTimeOpt)
     val receiver =
       PeerMessageReceiver(controlMessageHandler = node.controlMessageHandler,
-                          dataMessageHandler = node.getDataMessageHandler,
+                          dataMessageHandler =
+                            node.peerManager.getDataMessageHandler,
                           peer = peer)
     Future.successful(receiver)
   }

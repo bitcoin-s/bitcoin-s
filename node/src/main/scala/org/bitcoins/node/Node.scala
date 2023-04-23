@@ -18,7 +18,6 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
-  DataMessageHandler,
   PeerMessageSender
 }
 
@@ -39,21 +38,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def peerManager: PeerManager
 
-  /** The current data message handler.
-    * It should be noted that the dataMessageHandler contains
-    * chainstate. When we update with a new chainstate, we need to
-    * make sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
-    * to make sure we don't corrupt our chainstate cache
-    */
-  def getDataMessageHandler: DataMessageHandler
-
   def controlMessageHandler: ControlMessageHandler
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.callBacks
 
   lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()
-
-  def updateDataMessageHandler(dataMessageHandler: DataMessageHandler): Node
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
@@ -134,6 +123,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     */
   def sync(): Future[Unit]
 
+  def syncFromNewPeer(): Future[Unit]
+
   /** Broadcasts the given transaction over the P2P network */
   override def broadcastTransactions(
       transactions: Vector[Transaction]): Future[Unit] = {
@@ -193,7 +184,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       isIBD: Boolean,
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     if (isIBD) {
-      val syncPeerOpt = getDataMessageHandler.syncPeer
+      val syncPeerOpt = peerManager.getDataMessageHandler.syncPeer
       syncPeerOpt match {
         case Some(peer) =>
           peerManager
