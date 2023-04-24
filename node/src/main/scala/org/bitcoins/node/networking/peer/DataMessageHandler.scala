@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import akka.Done
 import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -16,8 +15,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandlerState._
 import org.bitcoins.node.{P2PLogger, PeerManager}
 
 import java.time.Instant
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
@@ -32,7 +30,6 @@ case class DataMessageHandler(
     walletCreationTimeOpt: Option[Instant],
     peerManager: PeerManager,
     state: DataMessageHandlerState,
-    initialSyncDone: Option[Promise[Done]],
     filterBatchCache: Set[CompactFilterMessage],
     syncPeer: Option[Peer])(implicit
     ec: ExecutionContext,
@@ -46,10 +43,8 @@ case class DataMessageHandler(
   private val txDAO = BroadcastAbleTransactionDAO()
   private val syncing: Boolean = syncPeer.isDefined
 
-  def reset: DataMessageHandler = copy(initialSyncDone = None,
-                                       filterBatchCache = Set.empty,
-                                       syncPeer = None,
-                                       state = HeaderSync)
+  def reset: DataMessageHandler =
+    copy(filterBatchCache = Set.empty, syncPeer = None, state = HeaderSync)
 
   def addToStream(
       payload: DataPayload,
@@ -531,7 +526,6 @@ case class DataMessageHandler(
           require(headerHeight == filterCount,
                   s"headerHeight=$headerHeight filterCount=$filterCount")
           logger.info(s"We are synced")
-          Try(initialSyncDone.map(_.success(Done)))
           //check to see if we had blocks mined while IBD
           //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
           for {
@@ -722,9 +716,6 @@ case class DataMessageHandler(
             (newFilterHeight + filterBatch.size) == newFilterHeaderHeight)
         }
     } yield {
-      if (isSynced) {
-        Try(initialSyncDone.map(_.success(Done)))
-      }
       isSynced
     }
 

@@ -518,7 +518,6 @@ case class PeerManager(
       walletCreationTimeOpt = walletCreationTimeOpt,
       peerManager = this,
       state = HeaderSync,
-      initialSyncDone = None,
       filterBatchCache = Set.empty,
       syncPeer = None
     )
