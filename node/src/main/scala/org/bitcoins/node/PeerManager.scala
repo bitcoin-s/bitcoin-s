@@ -123,7 +123,7 @@ case class PeerManager(
     randomPeerF.flatMap(peer => peerDataMap(peer).peerMessageSender)
   }
 
-  def createInDb(
+  private def createInDb(
       peer: Peer,
       serviceIdentifier: ServiceIdentifier): Future[PeerDb] = {
     logger.debug(s"Adding peer to db $peer")
