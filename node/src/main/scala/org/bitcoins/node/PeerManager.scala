@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.blockchain.{ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
@@ -19,7 +20,7 @@ import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
-import java.time.Duration
+import java.time.{Duration, Instant}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -27,7 +28,8 @@ import scala.util.Random
 
 case class PeerManager(
     paramPeers: Vector[Peer] = Vector.empty,
-    node: NeutrinoNode)(implicit
+    node: NeutrinoNode,
+    walletCreationTimeOpt: Option[Instant])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
@@ -363,9 +365,9 @@ case class PeerManager(
       //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerDataMap.remove(peer)
-      val syncPeer = node.getDataMessageHandler.syncPeer
+      val syncPeer = getDataMessageHandler.syncPeer
       if (peers.length > 1 && syncPeer.isDefined && syncPeer.get == peer) {
-        syncFromNewPeer().map(_ => ())
+        node.syncFromNewPeer().map(_ => ())
       } else if (syncPeer.isEmpty) {
         Future.unit
       } else {
@@ -410,8 +412,8 @@ case class PeerManager(
       case _: GetHeadersMessage =>
         dataMessageStream.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
       case _ =>
-        if (peer == node.getDataMessageHandler.syncPeer.get)
-          syncFromNewPeer().map(_ => ())
+        if (peer == getDataMessageHandler.syncPeer.get)
+          node.syncFromNewPeer().map(_ => ())
         else Future.unit
     }
   }
@@ -421,24 +423,27 @@ case class PeerManager(
     Future.unit
   }
 
+  def syncFromNewPeer(): Future[DataMessageHandler] =
+    node.syncFromNewPeer().map(_ => getDataMessageHandler)
+
   private def onHeaderRequestTimeout(
       peer: Peer,
       state: DataMessageHandlerState): Future[DataMessageHandler] = {
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
       case HeaderSync =>
-        syncFromNewPeer()
+        node.syncFromNewPeer().map(_ => getDataMessageHandler)
 
       case headerState @ ValidatingHeaders(_, failedCheck, _) =>
         val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
-        val newDmh = node.getDataMessageHandler.copy(state = newHeaderState)
+        val newDmh = getDataMessageHandler.copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
           fetchCompactFilterHeaders(newDmh)
             .map(_.copy(state = PostHeaderSync))
         } else Future.successful(newDmh)
 
-      case PostHeaderSync => Future.successful(node.getDataMessageHandler)
+      case PostHeaderSync => Future.successful(getDataMessageHandler)
     }
   }
 
@@ -454,13 +459,6 @@ case class PeerManager(
     }
   }
 
-  def syncFromNewPeer(): Future[DataMessageHandler] = {
-    logger.info(s"Trying to sync from new peer")
-    val newNode =
-      node.updateDataMessageHandler(node.getDataMessageHandler.reset)
-    newNode.sync().map(_ => node.getDataMessageHandler)
-  }
-
   private val dataMessageStreamSource = Source
     .queue[StreamDataMessageWrapper](1500,
                                      overflowStrategy =
@@ -468,17 +466,17 @@ case class PeerManager(
     .mapAsync(1) {
       case msg @ DataMessageWrapper(payload, peerMsgSender, peer) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
-        node.getDataMessageHandler
+        getDataMessageHandler
           .handleDataPayload(payload, peerMsgSender, peer)
           .map { newDmh =>
-            node.updateDataMessageHandler(newDmh)
+            updateDataMessageHandler(newDmh)
             msg
           }
       case msg @ HeaderTimeoutWrapper(peer) =>
         logger.debug(s"Processing timeout header for $peer")
-        onHeaderRequestTimeout(peer, node.getDataMessageHandler.state).map {
+        onHeaderRequestTimeout(peer, getDataMessageHandler.state).map {
           newDmh =>
-            node.updateDataMessageHandler(newDmh)
+            updateDataMessageHandler(newDmh)
             logger.debug(s"Done processing timeout header for $peer")
             msg
         }
@@ -512,6 +510,26 @@ case class PeerManager(
       }
       newDmh.copy(syncPeer = syncPeerOpt)
     }
+  }
+
+  private var dataMessageHandler: DataMessageHandler = {
+    DataMessageHandler(
+      chainApi = ChainHandler.fromDatabase(),
+      walletCreationTimeOpt = walletCreationTimeOpt,
+      peerManager = this,
+      state = HeaderSync,
+      initialSyncDone = None,
+      filterBatchCache = Set.empty,
+      syncPeer = None
+    )
+  }
+
+  def getDataMessageHandler: DataMessageHandler = dataMessageHandler
+
+  def updateDataMessageHandler(
+      dataMessageHandler: DataMessageHandler): PeerManager = {
+    this.dataMessageHandler = dataMessageHandler
+    this
   }
 
 }
