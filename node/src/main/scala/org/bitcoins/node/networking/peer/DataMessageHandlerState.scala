@@ -2,19 +2,36 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.node.models.Peer
 
-sealed abstract class DataMessageHandlerState
+sealed abstract class DataMessageHandlerState {
+  def isSyncing: Boolean
+
+  def syncPeer: Peer
+}
+
+sealed abstract class SyncDataMessageHandlerState
+    extends DataMessageHandlerState {
+  override def isSyncing: Boolean = true
+}
 
 object DataMessageHandlerState {
 
-  final case object HeaderSync extends DataMessageHandlerState
+  case class HeaderSync(syncPeer: Peer) extends SyncDataMessageHandlerState
+
+  case class FilterHeaderSync(syncPeer: Peer)
+      extends SyncDataMessageHandlerState
+
+  case class FilterSync(syncPeer: Peer) extends SyncDataMessageHandlerState
 
   case class ValidatingHeaders(
+      syncPeer: Peer,
       inSyncWith: Set[Peer],
       failedCheck: Set[Peer],
       verifyingWith: Set[Peer]
-  ) extends DataMessageHandlerState {
+  ) extends SyncDataMessageHandlerState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
   }
 
-  final case object PostHeaderSync extends DataMessageHandlerState
+  case class DoneSyncing(syncPeer: Peer) extends DataMessageHandlerState {
+    override val isSyncing: Boolean = false
+  }
 }

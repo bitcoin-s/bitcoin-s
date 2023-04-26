@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.chain.blockchain.{ChainHandler}
+import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
@@ -23,7 +23,7 @@ import java.net.InetAddress
 import java.time.{Duration, Instant}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.Random
 
 case class PeerManager(
@@ -365,11 +365,9 @@ case class PeerManager(
       //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerDataMap.remove(peer)
-      val syncPeer = getDataMessageHandler.syncPeer
-      if (peers.length > 1 && syncPeer.isDefined && syncPeer.get == peer) {
+      val syncPeer = getDataMessageHandler.state.syncPeer
+      if (peers.length > 1 && syncPeer == peer) {
         node.syncFromNewPeer().map(_ => ())
-      } else if (syncPeer.isEmpty) {
-        Future.unit
       } else {
         val exn = new RuntimeException(
           s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeer")
@@ -412,7 +410,7 @@ case class PeerManager(
       case _: GetHeadersMessage =>
         dataMessageStream.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
       case _ =>
-        if (peer == getDataMessageHandler.syncPeer.get)
+        if (peer == getDataMessageHandler.state.syncPeer)
           node.syncFromNewPeer().map(_ => ())
         else Future.unit
     }
@@ -431,19 +429,20 @@ case class PeerManager(
       state: DataMessageHandlerState): Future[DataMessageHandler] = {
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
-      case HeaderSync =>
+      case HeaderSync(_) =>
         node.syncFromNewPeer().map(_ => getDataMessageHandler)
 
-      case headerState @ ValidatingHeaders(_, failedCheck, _) =>
+      case headerState @ ValidatingHeaders(_, _, failedCheck, _) =>
         val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
         val newDmh = getDataMessageHandler.copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
+          //re-review this
           fetchCompactFilterHeaders(newDmh)
-            .map(_.copy(state = PostHeaderSync))
         } else Future.successful(newDmh)
 
-      case PostHeaderSync => Future.successful(getDataMessageHandler)
+      case _: DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+        Future.successful(getDataMessageHandler)
     }
   }
 
@@ -496,30 +495,26 @@ case class PeerManager(
       currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
     for {
       peer <- randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
-      newDmh = currentDmh.copy(syncPeer = Some(peer))
       _ = logger.info(s"Now syncing filter headers from $peer")
       sender <- peerDataMap(peer).peerMessageSender
-      newSyncing <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
+      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         sender,
         currentDmh.chainApi)
     } yield {
-      val syncPeerOpt = if (newSyncing) {
-        Some(peer)
-      } else {
-        None
-      }
-      newDmh.copy(syncPeer = syncPeerOpt)
+      currentDmh.copy(state = newSyncingState)
     }
   }
 
   private var dataMessageHandler: DataMessageHandler = {
+    val peer = Await.result(
+      randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS),
+      10.seconds)
     DataMessageHandler(
       chainApi = ChainHandler.fromDatabase(),
       walletCreationTimeOpt = walletCreationTimeOpt,
       peerManager = this,
-      state = HeaderSync,
-      filterBatchCache = Set.empty,
-      syncPeer = None
+      state = DoneSyncing(peer),
+      filterBatchCache = Set.empty
     )
   }
 
@@ -541,8 +536,8 @@ object PeerManager {
       peerMsgSender: PeerMessageSender,
       chainApi: ChainApi)(implicit
       ec: ExecutionContext,
-      chainConfig: ChainAppConfig): Future[Boolean] = {
-
+      chainConfig: ChainAppConfig): Future[DataMessageHandlerState] = {
+    val syncPeer = peerMsgSender.client.peer
     for {
       bestFilterHeaderOpt <-
         chainApi
@@ -561,7 +556,7 @@ object PeerManager {
         case Some(filterSyncMarker) =>
           peerMsgSender
             .sendGetCompactFilterHeadersMessage(filterSyncMarker)
-            .map(_ => true)
+            .map(_ => FilterHeaderSync(syncPeer))
         case None =>
           sys.error(
             s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt filterCount=$filterCount")
