@@ -272,10 +272,22 @@ case class DataMessageHandler(
       case HeadersMessage(count, headers) =>
         logger.info(
           s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
-        require(state.isInstanceOf[HeaderSync],
-                s"Must receive HeadersMessage in state HeaderSync, got=$state")
-        //i think this needs to accept DoneSyncing too as there is a valid state transition from DoneSyncing -> HeaderSyncing?
-        val headerSyncState = state.asInstanceOf[HeaderSync]
+        val headerSyncState = state match {
+          case DoneSyncing => HeaderSync(peer)
+          case headerSync: HeaderSync =>
+            if (headerSync.syncPeer == peer) {
+              headerSync
+            } else {
+              //are these Set.empty correct?
+              ValidatingHeaders(syncPeer = peer,
+                                inSyncWith = Set.empty,
+                                failedCheck = Set.empty,
+                                verifyingWith = Set.empty)
+            }
+          case v: ValidatingHeaders => v
+          case x @ (_: FilterHeaderSync | _: FilterSync) =>
+            sys.error(s"Invalid state to receive headers in, got=$x")
+        }
         val chainApiHeaderProcessF: Future[DataMessageHandler] = for {
           newChainApi <- chainApi.setSyncing(count.toInt > 0)
           processed <- newChainApi.processHeaders(headers)
@@ -286,11 +298,11 @@ case class DataMessageHandler(
         val getHeadersF: Future[DataMessageHandler] = {
           for {
             newDmh <- chainApiHeaderProcessF
-            dmh <- getHeaders(newDmh,
-                              headers,
-                              peerMsgSender,
-                              peer,
-                              headerSyncState)
+            dmh <- getHeaders(newDmh = newDmh,
+                              headers = headers,
+                              peerMsgSender = peerMsgSender,
+                              peer = peer,
+                              state = headerSyncState)
           } yield dmh
         }
         getHeadersF.recoverWith {
@@ -720,7 +732,7 @@ case class DataMessageHandler(
               if (peerManager.peers.size > 1) {
                 val newState =
                   ValidatingHeaders(
-                    syncPeer, //i don't think this is right?? seems like we are syncing with all of our other peers
+                    syncPeer = peer,
                     inSyncWith = Set(peer),
                     verifyingWith = peerManager.peers.toSet,
                     failedCheck = Set.empty[Peer]
