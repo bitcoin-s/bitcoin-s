@@ -184,18 +184,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       isIBD: Boolean,
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     if (isIBD) {
-      val syncPeerOpt = peerManager.getDataMessageHandler.syncPeer
-      syncPeerOpt match {
-        case Some(peer) =>
-          peerManager
-            .peerDataMap(peer)
-            .peerMessageSender
-            .flatMap(_.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                                          blockHashes: _*))
-        case None =>
-          throw new RuntimeException(
-            "IBD not started yet. Cannot query for blocks.")
-      }
+      val peer = peerManager.getDataMessageHandler.state.syncPeer
+      peerManager
+        .peerDataMap(peer)
+        .peerMessageSender
+        .flatMap(
+          _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
     } else {
       val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(
         ServiceIdentifier.NODE_NETWORK)
