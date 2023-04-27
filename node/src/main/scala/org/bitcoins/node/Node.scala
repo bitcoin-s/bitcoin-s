@@ -16,9 +16,11 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
-  PeerMessageSender
+  PeerMessageSender,
+  SyncDataMessageHandlerState
 }
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -184,12 +186,21 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       isIBD: Boolean,
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     if (isIBD) {
-      val peer = peerManager.getDataMessageHandler.state.syncPeer
-      peerManager
-        .peerDataMap(peer)
-        .peerMessageSender
-        .flatMap(
-          _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
+      val syncPeerOpt = peerManager.getDataMessageHandler.state match {
+        case state: SyncDataMessageHandlerState => Some(state.syncPeer)
+        case DoneSyncing                        => None
+      }
+      syncPeerOpt match {
+        case Some(peer) =>
+          peerManager
+            .peerDataMap(peer)
+            .peerMessageSender
+            .flatMap(_.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
+                                          blockHashes: _*))
+        case None =>
+          throw new RuntimeException(
+            "IBD not started yet. Cannot query for blocks.")
+      }
     } else {
       val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(
         ServiceIdentifier.NODE_NETWORK)

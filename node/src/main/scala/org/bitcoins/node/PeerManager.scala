@@ -23,7 +23,7 @@ import java.net.InetAddress
 import java.time.{Duration, Instant}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Random
 
 case class PeerManager(
@@ -365,12 +365,19 @@ case class PeerManager(
       //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerDataMap.remove(peer)
-      val syncPeer = getDataMessageHandler.state.syncPeer
-      if (peers.length > 1 && syncPeer == peer) {
+      val syncPeerOpt = getDataMessageHandler.state match {
+        case state: SyncDataMessageHandlerState =>
+          Some(state.syncPeer)
+        case DoneSyncing =>
+          None
+      }
+      if (
+        peers.length > 1 && syncPeerOpt.isDefined && syncPeerOpt.get == peer
+      ) {
         node.syncFromNewPeer().map(_ => ())
       } else {
         val exn = new RuntimeException(
-          s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeer")
+          s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeerOpt")
         Future.failed(exn)
       }
     } else if (waitingForDeletion.contains(peer)) {
@@ -410,7 +417,13 @@ case class PeerManager(
       case _: GetHeadersMessage =>
         dataMessageStream.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
       case _ =>
-        if (peer == getDataMessageHandler.state.syncPeer)
+        val syncPeer = getDataMessageHandler.state match {
+          case syncState: SyncDataMessageHandlerState =>
+            syncState.syncPeer
+          case DoneSyncing =>
+            sys.error(s"Cannot have DoneSyncing and have a query timeout")
+        }
+        if (peer == syncPeer)
           node.syncFromNewPeer().map(_ => ())
         else Future.unit
     }
@@ -441,7 +454,7 @@ case class PeerManager(
           fetchCompactFilterHeaders(newDmh)
         } else Future.successful(newDmh)
 
-      case _: DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+      case DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
         Future.successful(getDataMessageHandler)
     }
   }
@@ -506,14 +519,11 @@ case class PeerManager(
   }
 
   private var dataMessageHandler: DataMessageHandler = {
-    val peer = Await.result(
-      randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS),
-      10.seconds)
     DataMessageHandler(
       chainApi = ChainHandler.fromDatabase(),
       walletCreationTimeOpt = walletCreationTimeOpt,
       peerManager = this,
-      state = DoneSyncing(peer),
+      state = DoneSyncing,
       filterBatchCache = Set.empty
     )
   }

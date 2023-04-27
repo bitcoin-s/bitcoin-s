@@ -15,9 +15,11 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
-  DataMessageHandlerState
+  DataMessageHandlerState,
+  SyncDataMessageHandlerState
 }
 
 import java.time.Instant
@@ -147,7 +149,6 @@ case class NeutrinoNode(
   }
 
   override def syncFromNewPeer(): Future[Unit] = {
-    //should i have a check here to make sure the new syncPeer isn't the old one?
     for {
       syncPeer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
@@ -162,17 +163,24 @@ case class NeutrinoNode(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
-    val syncPeerMsgSenderF = {
-      val peer = peerManager.getDataMessageHandler.state.syncPeer
-      peerManager.peerDataMap(peer).peerMessageSender
+    val syncPeerMsgSenderOptF = {
+      peerManager.getDataMessageHandler.state match {
+        case syncState: SyncDataMessageHandlerState =>
+          val peerMsgSender =
+            peerManager.peerDataMap(syncState.syncPeer).peerMessageSender
+          Some(peerMsgSender)
+        case DoneSyncing => None
+      }
     }
-    val sendCompactFilterHeaderMsgF = {
-      syncPeerMsgSenderF.flatMap(
-        _.sendNextGetCompactFilterHeadersCommand(
-          chainApi = chainApi,
-          filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-          prevStopHash = bestFilterHeader.blockHashBE)
-      )
+    val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
+      case Some(syncPeerMsgSenderF) =>
+        syncPeerMsgSenderF.flatMap(
+          _.sendNextGetCompactFilterHeadersCommand(
+            chainApi = chainApi,
+            filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
+            prevStopHash = bestFilterHeader.blockHashBE)
+        )
+      case None => Future.successful(false)
     }
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
       // If we have started syncing filters
@@ -181,16 +189,23 @@ case class NeutrinoNode(
         bestFilterOpt.isDefined &&
         bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
       ) {
-        //means we are not syncing filter headers, and our filters are NOT
-        //in sync with our compact filter headers
-        syncPeerMsgSenderF.flatMap { sender =>
-          sender
-            .sendNextGetCompactFilterCommand(chainApi = chainApi,
-                                             filterBatchSize =
-                                               chainConfig.filterBatchSize,
-                                             startHeight =
-                                               bestFilterOpt.get.height)
-            .map(_ => ())
+        syncPeerMsgSenderOptF match {
+          case Some(syncPeerMsgSenderF) =>
+            //means we are not syncing filter headers, and our filters are NOT
+            //in sync with our compact filter headers
+            syncPeerMsgSenderF.flatMap { sender =>
+              sender
+                .sendNextGetCompactFilterCommand(chainApi = chainApi,
+                                                 filterBatchSize =
+                                                   chainConfig.filterBatchSize,
+                                                 startHeight =
+                                                   bestFilterOpt.get.height)
+                .map(_ => ())
+            }
+          case None =>
+            logger.warn(
+              s"Not syncing compact filters since we do not have a syncPeer set, bestFilterOpt=$bestFilterOpt")
+            Future.unit
         }
       } else {
         Future.unit

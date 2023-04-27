@@ -42,15 +42,10 @@ case class DataMessageHandler(
 
   private val txDAO = BroadcastAbleTransactionDAO()
 
-  private val syncing: Boolean = state match {
-    case _: HeaderSync | _: ValidatingHeaders | _: FilterHeaderSync |
-        _: FilterSync =>
-      true
-    case _: DoneSyncing => false
-  }
+  private val syncing: Boolean = state.isSyncing
 
-  def reset(peer: Peer): DataMessageHandler = {
-    copy(filterBatchCache = Set.empty, state = HeaderSync(peer))
+  def reset: DataMessageHandler = {
+    copy(filterBatchCache = Set.empty, state = DoneSyncing)
   }
 
   def addToStream(
@@ -70,35 +65,39 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender,
       peer: Peer): Future[DataMessageHandler] = {
     state match {
-      case _: ValidatingHeaders =>
-        val resultF = handleDataPayloadValidState(payload, peerMsgSender, peer)
-        //process messages from all peers
-        resultF.failed.foreach { err =>
-          logger.error(
-            s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+      case syncState: SyncDataMessageHandlerState =>
+        syncState match {
+          case _: ValidatingHeaders =>
+            val resultF =
+              handleDataPayloadValidState(payload, peerMsgSender, peer)
+            //process messages from all peers
+            resultF.failed.foreach { err =>
+              logger.error(
+                s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+            }
+            resultF.recoverWith { case NonFatal(_) =>
+              Future.successful(this)
+            }
+          case state @ (_: HeaderSync | _: FilterHeaderSync | _: FilterSync) =>
+            val syncPeer = state.syncPeer
+            if (peer != syncPeer) {
+              //ignore message from peers that we aren't syncing with during IBD
+              logger.warn(
+                s"Ignoring message ${payload.commandName} from $peer because we are syncing with this peer currently. syncPeer=$syncPeer")
+              Future.successful(this)
+            } else {
+              val resultF =
+                handleDataPayloadValidState(payload, peerMsgSender, peer)
+              resultF.failed.foreach { err =>
+                logger.error(
+                  s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+              }
+              resultF.recoverWith { case NonFatal(_) =>
+                Future.successful(this)
+              }
+            }
         }
-        resultF.recoverWith { case NonFatal(_) =>
-          Future.successful(this)
-        }
-      case state @ (_: HeaderSync | _: FilterHeaderSync | _: FilterSync) =>
-        val syncPeer = state.syncPeer
-        if (peer != syncPeer) {
-          //ignore message from peers that we aren't syncing with during IBD
-          logger.warn(
-            s"Ignoring message ${payload.commandName} from $peer because we are syncing with this peer currently. syncPeer=$syncPeer")
-          Future.successful(this)
-        } else {
-          val resultF =
-            handleDataPayloadValidState(payload, peerMsgSender, peer)
-          resultF.failed.foreach { err =>
-            logger.error(
-              s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
-          }
-          resultF.recoverWith { case NonFatal(_) =>
-            Future.successful(this)
-          }
-        }
-      case DoneSyncing(_) =>
+      case DoneSyncing =>
         val resultF = handleDataPayloadValidState(payload, peerMsgSender, peer)
         resultF.failed.foreach { err =>
           logger.error(
@@ -163,7 +162,7 @@ case class DataMessageHandler(
                 if (syncing) {
                   FilterSync(filterHeaderSync.syncPeer)
                 } else {
-                  DoneSyncing(filterHeaderSync.syncPeer)
+                  DoneSyncing
                 }
               }
             }
@@ -215,7 +214,7 @@ case class DataMessageHandler(
               syncIfHeadersAhead(peerMsgSender, filterSyncState)
             } else {
               Future.successful(
-                DoneSyncing(filterSyncState.syncPeer)
+                DoneSyncing
               ) //is this right?
             }
           }
@@ -420,7 +419,7 @@ case class DataMessageHandler(
                     HeaderSync(syncPeer = filterSyncState.syncPeer)
                   }
               } else {
-                Future.successful(DoneSyncing(filterSyncState.syncPeer))
+                Future.successful(DoneSyncing)
               }
             }
           } yield newState
@@ -470,11 +469,11 @@ case class DataMessageHandler(
             s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
           peerManager
             .fetchCompactFilterHeaders(newDmh)
-            .map(_.copy(state = DoneSyncing(peer)))
+            .map(_.copy(state = FilterHeaderSync(peer)))
         } else {
           Future.successful(newDmh)
         }
-      case _: DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+      case DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
         Future.successful(this)
     }
   }
@@ -699,7 +698,7 @@ case class DataMessageHandler(
               } yield {
                 newDmh.copy(state = HeaderSync(peer))
               }
-            case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing) =>
+            case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing) =>
               sys.error(s"Cannot be in state=$x while retrieving block headers")
           }
 
@@ -767,7 +766,7 @@ case class DataMessageHandler(
                 Future.successful(newDmh2)
               }
 
-            case DoneSyncing(_) => //is this right?
+            case DoneSyncing => //is this right?
               //send further requests to the same one that sent this
               logger.info(
                 s"Starting to fetch filter headers in data message handler")
@@ -794,14 +793,14 @@ case class DataMessageHandler(
             if (newHeaderState.validated) {
               peerManager
                 .fetchCompactFilterHeaders(newDmh2)
-                .map(_.copy(state = DoneSyncing(peer)))
+                .map(_.copy(state = DoneSyncing))
             } else {
               //do nothing, we are still waiting for some peers to send headers
               Future.successful(newDmh2)
             }
           case _: HeaderSync =>
             Future.successful(newDmh)
-          case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing) =>
+          case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing) =>
             sys.error(s"Invalid state to complete block header sync in, got=$x")
         }
       }

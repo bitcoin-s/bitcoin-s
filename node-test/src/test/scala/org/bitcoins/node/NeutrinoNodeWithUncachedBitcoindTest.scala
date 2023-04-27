@@ -5,7 +5,11 @@ import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
-import org.bitcoins.node.networking.peer.DataMessageHandlerState
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
+import org.bitcoins.node.networking.peer.{
+  DataMessageHandlerState,
+  SyncDataMessageHandlerState
+}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
@@ -90,7 +94,11 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.info(s"Disconnected $nodeUri from bitcoind")
         //old peer we were syncing with that just disconnected us
-        oldSyncPeer = node.peerManager.getDataMessageHandler.state.syncPeer
+        oldSyncPeer = node.peerManager.getDataMessageHandler.state match {
+          case state: SyncDataMessageHandlerState => state.syncPeer
+          case DoneSyncing =>
+            sys.error(s"Cannot be in DOneSyncing state while awaiting sync")
+        }
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         expectedSyncPeer = bitcoindPeers(1)
       } yield {

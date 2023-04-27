@@ -5,12 +5,14 @@ import org.bitcoins.node.models.Peer
 sealed abstract class DataMessageHandlerState {
   def isSyncing: Boolean
 
-  def syncPeer: Peer
 }
 
+/** State to indicate that we are syncing the blockchain */
 sealed abstract class SyncDataMessageHandlerState
     extends DataMessageHandlerState {
   override def isSyncing: Boolean = true
+
+  def syncPeer: Peer
 }
 
 object DataMessageHandlerState {
@@ -31,7 +33,8 @@ object DataMessageHandlerState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
   }
 
-  case class DoneSyncing(syncPeer: Peer) extends DataMessageHandlerState {
+  /** State to indicate we are not currently syncing with a peer */
+  case object DoneSyncing extends DataMessageHandlerState {
     override val isSyncing: Boolean = false
   }
 }
