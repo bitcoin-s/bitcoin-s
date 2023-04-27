@@ -5,6 +5,7 @@ import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
+import org.bitcoins.node.networking.peer.DataMessageHandlerState
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
@@ -72,10 +73,11 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                            interval = 1.second)
         //sync from first bitcoind
         _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(syncPeer =
-            Some(bitcoindPeers(0)))(executionContext,
-                                    node.nodeAppConfig,
-                                    node.chainAppConfig))
+          node.peerManager.getDataMessageHandler.copy(state =
+            DataMessageHandlerState.HeaderSync(bitcoindPeers(0)))(
+            executionContext,
+            node.nodeAppConfig,
+            node.chainAppConfig))
         expectHeaders = ExpectResponseCommand(
           GetHeadersMessage(node.chainConfig.chain.genesisHash))
         //waiting for response to header query now
@@ -88,7 +90,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.info(s"Disconnected $nodeUri from bitcoind")
         //old peer we were syncing with that just disconnected us
-        oldSyncPeer = node.peerManager.getDataMessageHandler.syncPeer.get
+        oldSyncPeer = node.peerManager.getDataMessageHandler.state.syncPeer
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         expectedSyncPeer = bitcoindPeers(1)
       } yield {
@@ -133,10 +135,10 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peers <- bitcoinPeersF
         peer = peers.head
         _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(syncPeer = Some(peer))(
-            executionContext,
-            node.nodeConfig,
-            node.chainConfig))
+          node.peerManager.getDataMessageHandler.copy(state =
+            DataMessageHandlerState.HeaderSync(peer))(executionContext,
+                                                      node.nodeConfig,
+                                                      node.chainConfig))
 
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         sender <- node.peerManager.peerDataMap(peer).peerMessageSender
@@ -178,10 +180,10 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peer = peers(0)
         _ <- node.peerManager.isConnected(peer).map(assert(_))
         _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(syncPeer = Some(peer))(
-            executionContext,
-            node.nodeConfig,
-            node.chainConfig))
+          node.peerManager.getDataMessageHandler.copy(state =
+            DataMessageHandlerState.HeaderSync(peer))(executionContext,
+                                                      node.nodeConfig,
+                                                      node.chainConfig))
 
         _ <- sendInvalidHeaders(peer)
         _ <- AsyncUtil.retryUntilSatisfied(

@@ -52,9 +52,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           chainApi = chainApi,
           walletCreationTimeOpt = None,
           peerManager = node.peerManager,
-          state = HeaderSync,
-          filterBatchCache = Set.empty,
-          syncPeer = Some(peer)
+          state = HeaderSync(peer),
+          filterBatchCache = Set.empty
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
@@ -101,9 +100,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             chainApi = chainApi,
             walletCreationTimeOpt = None,
             peerManager = node.peerManager,
-            state = HeaderSync,
-            filterBatchCache = Set.empty,
-            syncPeer = Some(peer)
+            state = HeaderSync(peer),
+            filterBatchCache = Set.empty
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
@@ -140,14 +138,14 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ = node.nodeAppConfig.addCallbacks(callbacks)
         chainApi <- node.chainApiFromDb()
         dataMessageHandler =
-          DataMessageHandler(
-            chainApi = chainApi,
-            walletCreationTimeOpt = None,
-            peerManager = node.peerManager,
-            state = HeaderSync,
-            filterBatchCache = Set.empty,
-            syncPeer = Some(peer)
-          )(node.executionContext, node.nodeAppConfig, node.chainConfig)
+          DataMessageHandler(chainApi = chainApi,
+                             walletCreationTimeOpt = None,
+                             peerManager = node.peerManager,
+                             state = HeaderSync(peer),
+                             filterBatchCache = Set.empty)(
+            node.executionContext,
+            node.nodeAppConfig,
+            node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
@@ -209,9 +207,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             chainApi = chainApi,
             walletCreationTimeOpt = None,
             peerManager = node.peerManager,
-            state = HeaderSync,
-            filterBatchCache = Set.empty,
-            syncPeer = Some(peer)
+            state = HeaderSync(peer),
+            filterBatchCache = Set.empty
           )(node.executionContext, node.nodeAppConfig, node.chainConfig)
         sender <- senderF
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
