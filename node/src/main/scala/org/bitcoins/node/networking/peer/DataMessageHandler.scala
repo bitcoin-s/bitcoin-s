@@ -780,10 +780,11 @@ case class DataMessageHandler(
                   .fetchCompactFilterHeaders(newDmh)
               }
 
-            case headerState @ ValidatingHeaders(peer, inSyncWith, _, _) =>
+            case headerState @ ValidatingHeaders(_, inSyncWith, _, _) =>
               //add the current peer to it
               val newHeaderState =
-                headerState.copy(inSyncWith = inSyncWith + peer)
+                headerState.copy(syncPeer = peer,
+                                 inSyncWith = inSyncWith + peer)
               val newDmh2 = newDmh.copy(state = newHeaderState)
 
               if (newHeaderState.validated) {
