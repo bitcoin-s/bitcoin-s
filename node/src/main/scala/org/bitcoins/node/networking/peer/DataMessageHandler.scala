@@ -283,11 +283,10 @@ case class DataMessageHandler(
             s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
           val headerSyncState = state match {
             case DoneSyncing =>
-              if (count.toInt != 0)  {
+              if (count.toInt != 0) {
                 //why do we sometimes get empty HeadersMessage?
                 HeaderSync(peer)
-              }
-              else DoneSyncing
+              } else DoneSyncing
             case headerSync: HeaderSync =>
               if (headerSync.syncPeer == peer) {
                 headerSync
@@ -839,7 +838,14 @@ case class DataMessageHandler(
             }
           case _: HeaderSync =>
             Future.successful(newDmh)
-          case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing) =>
+          case DoneSyncing =>
+            if (headers.nonEmpty) {
+              sys.error(
+                s"Cannot sync ${headers.length} block headers in state=$DoneSyncing")
+            } else {
+              Future.successful(newDmh)
+            }
+          case x @ (_: FilterHeaderSync | _: FilterSync) =>
             sys.error(s"Invalid state to complete block header sync in, got=$x")
         }
       }
