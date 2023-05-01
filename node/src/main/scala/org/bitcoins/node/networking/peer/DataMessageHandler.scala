@@ -73,7 +73,7 @@ case class DataMessageHandler(
             //process messages from all peers
             resultF.failed.foreach { err =>
               logger.error(
-                s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+                s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}")
             }
             resultF.recoverWith { case NonFatal(_) =>
               Future.successful(this)
@@ -83,14 +83,14 @@ case class DataMessageHandler(
             if (peer != syncPeer) {
               //ignore message from peers that we aren't syncing with during IBD
               logger.warn(
-                s"Ignoring message ${payload.commandName} from $peer because we are syncing with this peer currently. syncPeer=$syncPeer")
+                s"Ignoring message ${payload.commandName} from $peer in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
               Future.successful(this)
             } else {
               val resultF =
                 handleDataPayloadValidState(payload, peerMsgSender, peer)
               resultF.failed.foreach { err =>
                 logger.error(
-                  s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+                  s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}")
               }
               resultF.recoverWith { case NonFatal(_) =>
                 Future.successful(this)
@@ -102,7 +102,7 @@ case class DataMessageHandler(
 
         resultF.failed.foreach { err =>
           logger.error(
-            s"Failed to handle data payload=${payload} from $peer errMsg=${err.getMessage}")
+            s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}")
         }
 
         resultF.recoverWith { case NonFatal(_) =>
@@ -282,7 +282,12 @@ case class DataMessageHandler(
           logger.info(
             s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
           val headerSyncState = state match {
-            case DoneSyncing => HeaderSync(peer)
+            case DoneSyncing =>
+              if (count.toInt != 0)  {
+                //why do we sometimes get empty HeadersMessage?
+                HeaderSync(peer)
+              }
+              else DoneSyncing
             case headerSync: HeaderSync =>
               if (headerSync.syncPeer == peer) {
                 headerSync
@@ -301,7 +306,7 @@ case class DataMessageHandler(
             newChainApi <- chainApi.setSyncing(count.toInt > 0)
             processed <- newChainApi.processHeaders(headers)
           } yield {
-            copy(chainApi = processed)
+            copy(state = headerSyncState, chainApi = processed)
           }
 
           val getHeadersF: Future[DataMessageHandler] = {
@@ -310,8 +315,7 @@ case class DataMessageHandler(
               dmh <- getHeaders(newDmh = newDmh,
                                 headers = headers,
                                 peerMsgSender = peerMsgSender,
-                                peer = peer,
-                                state = headerSyncState)
+                                peer = peer)
             } yield dmh
           }
           getHeadersF.recoverWith {
@@ -553,8 +557,10 @@ case class DataMessageHandler(
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         appConfig.nodeType match {
           case NodeType.NeutrinoNode | NodeType.FullNode =>
-            if (syncing) None
-            else Some(Inventory(TypeIdentifier.MsgWitnessBlock, hash))
+            if (syncing) {
+              logger.info(s"Ignoring inv message=$invMsg while in state=$state")
+              None
+            } else Some(Inventory(TypeIdentifier.MsgWitnessBlock, hash))
           case NodeType.BitcoindBackend =>
             throw new RuntimeException("This is impossible")
         }
@@ -691,8 +697,8 @@ case class DataMessageHandler(
       newDmh: DataMessageHandler,
       headers: Vector[BlockHeader],
       peerMsgSender: PeerMessageSender,
-      peer: Peer,
-      state: DataMessageHandlerState): Future[DataMessageHandler] = {
+      peer: Peer): Future[DataMessageHandler] = {
+    val state = newDmh.state
     val count = headers.length
     val getHeadersF: Future[DataMessageHandler] = {
       val newApi = newDmh.chainApi

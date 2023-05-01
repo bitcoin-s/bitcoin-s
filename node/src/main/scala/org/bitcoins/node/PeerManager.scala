@@ -506,10 +506,15 @@ case class PeerManager(
 
   def fetchCompactFilterHeaders(
       currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
+    val syncPeer = currentDmh.state match {
+      case s: SyncDataMessageHandlerState => s.syncPeer
+      case DoneSyncing =>
+        sys.error(
+          s"Cannot fetch compact filter headers when we are in state=DoneSyncing")
+    }
+    logger.info(s"Now syncing filter headers from $syncPeer")
     for {
-      peer <- randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ = logger.info(s"Now syncing filter headers from $peer")
-      sender <- peerDataMap(peer).peerMessageSender
+      sender <- peerDataMap(syncPeer).peerMessageSender
       newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         sender,
         currentDmh.chainApi)
