@@ -133,7 +133,7 @@ case class DataMessageHandler(
             this.copy(chainApi = newChainApi)
           }
         case filterHeader: CompactFilterHeadersMessage =>
-          logger.warn(
+          logger.debug(
             s"Got ${filterHeader.filterHashes.size} compact filter header hashes, state=$state")
           val filterHeaderSync = state match {
             //is validating headers right here? Re-review these state transitions
@@ -176,7 +176,7 @@ case class DataMessageHandler(
           }
         case filter: CompactFilterMessage =>
           logger.debug(
-            s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip}")
+            s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state")
           require(
             state.isInstanceOf[FilterSync],
             s"Can only process filter messages when we are in FilterSync state, got=$state")
@@ -295,7 +295,7 @@ case class DataMessageHandler(
                 ValidatingHeaders(syncPeer = peer,
                                   inSyncWith = Set.empty,
                                   failedCheck = Set.empty,
-                                  verifyingWith = Set.empty)
+                                  verifyingWith = peerManager.peers.toSet)
               }
             case v: ValidatingHeaders => v
             case x @ (_: FilterHeaderSync | _: FilterSync) =>

@@ -311,6 +311,12 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   it must "sync block headers that occurred while were syncing compact filters during IBD" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/5017
+
+      //problem: We are generating blocks with bitcoinds(0)
+      //but we are trying to sync these blocks with bitcoinds(1)
+      //this results in a race condition between the bitcoin-s node and bitcoinds(0) / bitcoinds(1) syncing with each other
+      //some cases, when we try to sync filters / filter headers from bitcoinds(1) we will get this error message saying we cannot find the block
+      //2023-05-01T21:46:46Z [net] Failed to find block filter hashes in index: filter_type=basic, start_height=208, stop_hash=303cc906bf99b5370581e7f23285378c18005745882c6112dbbf3e61a82aeddb
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 

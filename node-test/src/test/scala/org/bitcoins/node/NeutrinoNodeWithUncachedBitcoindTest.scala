@@ -135,6 +135,14 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   it must "re-query in case invalid headers are sent" in {
     nodeConnectedWithBitcoinds =>
+      //old behavior: When we get done syncing headers from bitcoind(0)
+      //we validate those headers against bitcoind(1)
+      //after validating those block headers, we sync filter headers from bitcoind(1)
+
+      //new behavior: When we get done syncing headers from bitcoind(0)
+      //we validate those headers against bitcoind(1)
+      //after validating headers, we trying to sync compact filter headers against bitcoind(0)
+      //which is 1 block header behind bitcoind(1) causing us to send an invalid getcfheaders query
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
 

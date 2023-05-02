@@ -512,7 +512,8 @@ case class PeerManager(
         sys.error(
           s"Cannot fetch compact filter headers when we are in state=DoneSyncing")
     }
-    logger.info(s"Now syncing filter headers from $syncPeer")
+    logger.info(
+      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
     for {
       sender <- peerDataMap(syncPeer).peerMessageSender
       newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
