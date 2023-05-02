@@ -326,8 +326,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val genBlocksF = {
         for {
           _ <- startSyncF
-          //give a little time for the sync to start
-          _ <- AsyncUtil.nonBlockingSleep(500.milliseconds)
           //generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
