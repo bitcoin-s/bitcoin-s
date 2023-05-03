@@ -804,20 +804,7 @@ case class DataMessageHandler(
                 //do nothing, we are still waiting for some peers to send headers or timeout
                 Future.successful(newDmh2)
               }
-
-            case DoneSyncing => //is this right?
-              //send further requests to the same one that sent this
-              logger.info(
-                s"Starting to fetch filter headers in data message handler")
-              val newStateF =
-                PeerManager.sendFirstGetCompactFilterHeadersCommand(
-                  peerMsgSender,
-                  chainApi)
-              newStateF.map { newState =>
-                newDmh.copy(state = newState)
-              }
-
-            case x @ (_: FilterHeaderSync | _: FilterSync) =>
+            case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing) =>
               sys.error(
                 s"Cannot be in state=$x while we are about to begin syncing compact filter headers")
           }
