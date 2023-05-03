@@ -826,12 +826,7 @@ case class DataMessageHandler(
           case _: HeaderSync =>
             Future.successful(newDmh)
           case DoneSyncing =>
-            if (headers.nonEmpty) {
-              sys.error(
-                s"Cannot sync ${headers.length} block headers in state=$DoneSyncing")
-            } else {
-              Future.successful(newDmh)
-            }
+            Future.successful(newDmh)
           case x @ (_: FilterHeaderSync | _: FilterSync) =>
             sys.error(s"Invalid state to complete block header sync in, got=$x")
         }
