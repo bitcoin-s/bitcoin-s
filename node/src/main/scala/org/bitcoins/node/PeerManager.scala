@@ -365,20 +365,25 @@ case class PeerManager(
       //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerDataMap.remove(peer)
-      val syncPeerOpt = getDataMessageHandler.state match {
-        case state: SyncDataMessageHandlerState =>
-          Some(state.syncPeer)
+      //getDataMesageHandler.state is already mutated from another thread
+      //this will be set to the new sync peer not the old one.
+      val state = getDataMessageHandler.state
+      val syncPeerOpt = state match {
+        case s: SyncDataMessageHandlerState =>
+          Some(s.syncPeer)
         case DoneSyncing =>
           None
       }
-      if (
-        peers.length > 1 && syncPeerOpt.isDefined && syncPeerOpt.get == peer
-      ) {
+      if (peers.length > 1 && syncPeerOpt.isDefined) {
         node.syncFromNewPeer().map(_ => ())
-      } else {
+      } else if (syncPeerOpt.isDefined) {
+        //means we aren't syncing with anyone, so do nothing?
         val exn = new RuntimeException(
-          s"No new peers to sync from, cannot start new sync. Terminated sync with syncPeer=$syncPeerOpt")
+          s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state}")
         Future.failed(exn)
+      } else {
+        //means we are DoneSyncing, so no need to start syncing from a new peer
+        Future.unit
       }
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
