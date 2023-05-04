@@ -169,14 +169,15 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
-  def sendGetCompactFiltersMessage(
-      filterSyncMarker: FilterSyncMarker): Future[Unit] = {
+  private def sendGetCompactFiltersMessage(
+      filterSyncMarker: FilterSyncMarker)(implicit
+      ec: ExecutionContext): Future[DataMessageHandlerState.FilterSync] = {
     val message =
       GetCompactFiltersMessage(if (filterSyncMarker.startHeight < 0) 0
                                else filterSyncMarker.startHeight,
                                filterSyncMarker.stopBlockHash)
     logger.debug(s"Sending getcfilters=$message to peer ${client.peer}")
-    sendMsg(message)
+    sendMsg(message).map(_ => DataMessageHandlerState.FilterSync(client.peer))
   }
 
   def sendGetCompactFilterHeadersMessage(
@@ -185,7 +186,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       GetCompactFilterHeadersMessage(if (filterSyncMarker.startHeight < 0) 0
                                      else filterSyncMarker.startHeight,
                                      filterSyncMarker.stopBlockHash)
-    logger.debug(s"Sending getcfheaders=$message to peer ${client.peer}")
+    logger.debug(s"Sending getcfheaders=$message to peer=${client.peer}")
     sendMsg(message)
   }
 

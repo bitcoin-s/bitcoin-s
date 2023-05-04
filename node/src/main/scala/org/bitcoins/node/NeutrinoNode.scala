@@ -15,10 +15,15 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{ControlMessageHandler}
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  DataMessageHandlerState,
+  SyncDataMessageHandlerState
+}
 
 import java.time.Instant
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 
 case class NeutrinoNode(
     chainApi: ChainApi,
@@ -63,17 +68,25 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
-    val blockchainsF =
-      BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
+
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
       _ = logger.info(s"Fetching peers to sync with...")
       syncPeer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ = logger.info(s"Syncing with $syncPeer")
-      _ = peerManager.updateDataMessageHandler(
-        peerManager.getDataMessageHandler.copy(syncPeer = Some(syncPeer)))
+      _ <- syncHelper(syncPeer)
+    } yield ()
+  }
+
+  private def syncHelper(syncPeer: Peer): Future[Unit] = {
+    logger.info(s"Syncing with $syncPeer")
+    val blockchainsF =
+      BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
+    val _ = peerManager.updateDataMessageHandler(
+      peerManager.getDataMessageHandler.copy(state =
+        DataMessageHandlerState.HeaderSync(syncPeer)))
+    for {
       peerMsgSender <- peerManager.peerDataMap(syncPeer).peerMessageSender
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
@@ -136,10 +149,11 @@ case class NeutrinoNode(
   }
 
   override def syncFromNewPeer(): Future[Unit] = {
-    logger.info(s"Trying to sync from new peer")
-    val _ = peerManager.updateDataMessageHandler(
-      peerManager.getDataMessageHandler.reset)
-    sync().map(_ => ())
+    for {
+      syncPeer <- peerManager.randomPeerWithService(
+        ServiceIdentifier.NODE_COMPACT_FILTERS)
+      _ <- syncHelper(syncPeer)
+    } yield ()
   }
 
   /** Starts sync compact filer headers.
@@ -150,8 +164,12 @@ case class NeutrinoNode(
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
     val syncPeerMsgSenderOptF = {
-      peerManager.getDataMessageHandler.syncPeer.map { peer =>
-        peerManager.peerDataMap(peer).peerMessageSender
+      peerManager.getDataMessageHandler.state match {
+        case syncState: SyncDataMessageHandlerState =>
+          val peerMsgSender =
+            peerManager.peerDataMap(syncState.syncPeer).peerMessageSender
+          Some(peerMsgSender)
+        case DoneSyncing => None
       }
     }
     val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {

@@ -5,6 +5,11 @@ import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
+import org.bitcoins.node.networking.peer.{
+  DataMessageHandlerState,
+  SyncDataMessageHandlerState
+}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
@@ -72,10 +77,11 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                            interval = 1.second)
         //sync from first bitcoind
         _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(syncPeer =
-            Some(bitcoindPeers(0)))(executionContext,
-                                    node.nodeAppConfig,
-                                    node.chainAppConfig))
+          node.peerManager.getDataMessageHandler.copy(state =
+            DataMessageHandlerState.HeaderSync(bitcoindPeers(0)))(
+            executionContext,
+            node.nodeAppConfig,
+            node.chainAppConfig))
         expectHeaders = ExpectResponseCommand(
           GetHeadersMessage(node.chainConfig.chain.genesisHash))
         //waiting for response to header query now
@@ -88,7 +94,11 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.info(s"Disconnected $nodeUri from bitcoind")
         //old peer we were syncing with that just disconnected us
-        oldSyncPeer = node.peerManager.getDataMessageHandler.syncPeer.get
+        oldSyncPeer = node.peerManager.getDataMessageHandler.state match {
+          case state: SyncDataMessageHandlerState => state.syncPeer
+          case DoneSyncing =>
+            sys.error(s"Cannot be in DOneSyncing state while awaiting sync")
+        }
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         expectedSyncPeer = bitcoindPeers(1)
       } yield {
@@ -125,6 +135,14 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   it must "re-query in case invalid headers are sent" in {
     nodeConnectedWithBitcoinds =>
+      //old behavior: When we get done syncing headers from bitcoind(0)
+      //we validate those headers against bitcoind(1)
+      //after validating those block headers, we sync filter headers from bitcoind(1)
+
+      //new behavior: When we get done syncing headers from bitcoind(0)
+      //we validate those headers against bitcoind(1)
+      //after validating headers, we trying to sync compact filter headers against bitcoind(0)
+      //which is 1 block header behind bitcoind(1) causing us to send an invalid getcfheaders query
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
 
@@ -133,10 +151,10 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peers <- bitcoinPeersF
         peer = peers.head
         _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(syncPeer = Some(peer))(
-            executionContext,
-            node.nodeConfig,
-            node.chainConfig))
+          node.peerManager.getDataMessageHandler.copy(state =
+            DataMessageHandlerState.HeaderSync(peer))(executionContext,
+                                                      node.nodeConfig,
+                                                      node.chainConfig))
 
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         sender <- node.peerManager.peerDataMap(peer).peerMessageSender
@@ -178,10 +196,10 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peer = peers(0)
         _ <- node.peerManager.isConnected(peer).map(assert(_))
         _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(syncPeer = Some(peer))(
-            executionContext,
-            node.nodeConfig,
-            node.chainConfig))
+          node.peerManager.getDataMessageHandler.copy(state =
+            DataMessageHandlerState.HeaderSync(peer))(executionContext,
+                                                      node.nodeConfig,
+                                                      node.chainConfig))
 
         _ <- sendInvalidHeaders(peer)
         _ <- AsyncUtil.retryUntilSatisfied(
