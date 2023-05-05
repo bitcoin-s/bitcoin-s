@@ -48,7 +48,6 @@ case class DataMessageHandler(
   private val txDAO = BroadcastAbleTransactionDAO()
 
   private val syncing: Boolean = state.isSyncing
-
   def reset: DataMessageHandler = {
     copy(filterBatchCache = Set.empty, state = DoneSyncing)
   }
