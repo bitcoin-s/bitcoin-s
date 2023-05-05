@@ -16,7 +16,10 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
+  DoneSyncing,
+  MisbehavingPeer
+}
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   PeerMessageSender,
@@ -188,7 +191,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (isIBD) {
       val syncPeerOpt = peerManager.getDataMessageHandler.state match {
         case state: SyncDataMessageHandlerState => Some(state.syncPeer)
-        case DoneSyncing                        => None
+        case DoneSyncing | _: MisbehavingPeer   => None
       }
       syncPeerOpt match {
         case Some(peer) =>

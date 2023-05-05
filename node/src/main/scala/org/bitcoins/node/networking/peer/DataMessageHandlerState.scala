@@ -33,6 +33,10 @@ object DataMessageHandlerState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
   }
 
+  case class MisbehavingPeer(badPeer: Peer) extends DataMessageHandlerState {
+    override val isSyncing: Boolean = false
+  }
+
   /** State to indicate we are not currently syncing with a peer */
   case object DoneSyncing extends DataMessageHandlerState {
     override val isSyncing: Boolean = false

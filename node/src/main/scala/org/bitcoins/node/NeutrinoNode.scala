@@ -15,7 +15,10 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
+  DoneSyncing,
+  MisbehavingPeer
+}
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   DataMessageHandlerState,
@@ -169,7 +172,7 @@ case class NeutrinoNode(
           val peerMsgSender =
             peerManager.peerDataMap(syncState.syncPeer).peerMessageSender
           Some(peerMsgSender)
-        case DoneSyncing => None
+        case DoneSyncing | _: MisbehavingPeer => None
       }
     }
     val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
