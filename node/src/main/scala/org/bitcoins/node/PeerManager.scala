@@ -440,9 +440,6 @@ case class PeerManager(
     Future.unit
   }
 
-  def syncFromNewPeer(): Future[DataMessageHandler] =
-    node.syncFromNewPeer().map(_ => getDataMessageHandler)
-
   private def onHeaderRequestTimeout(
       peer: Peer,
       state: DataMessageHandlerState): Future[DataMessageHandler] = {
