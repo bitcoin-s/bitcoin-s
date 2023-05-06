@@ -99,8 +99,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       def allDisconn: Future[Unit] = AsyncUtil.retryUntilSatisfied(
         peers
           .map(p =>
-            !peerManager.peerDataMap.contains(
-              p) && !peerManager.waitingForDeletion
+            !peerManager
+              .getPeerData(p)
+              .isDefined && !peerManager.waitingForDeletion
               .contains(p))
           .forall(_ == true),
         maxTries = 5,

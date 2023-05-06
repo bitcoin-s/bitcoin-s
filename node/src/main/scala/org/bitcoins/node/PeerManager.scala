@@ -7,10 +7,11 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
@@ -78,6 +79,135 @@ case class PeerManager(
     Future
       .traverse(_peerDataMap.values)(_.peerMessageSender)
       .map(_.toVector)
+  }
+
+  def sendMsg(msg: NetworkPayload, peerOpt: Option[Peer]): Future[Unit] = {
+    val peerMsgSenderF = peerOpt match {
+      case Some(peer) =>
+        val peerMsgSenderF = peerDataMap(peer).peerMessageSender
+        peerMsgSenderF
+      case None =>
+        val peerMsgSenderF = randomPeerMsgSenderWithService(
+          ServiceIdentifier.NODE_NETWORK)
+        peerMsgSenderF
+    }
+    peerMsgSenderF.flatMap(_.sendMsg(msg))
+  }
+
+  /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
+  def gossipMessage(
+      msg: NetworkPayload,
+      excludedPeerOpt: Option[Peer]): Future[Unit] = {
+    val gossipPeers = excludedPeerOpt match {
+      case Some(excludedPeer) =>
+        peerDataMap
+          .filterNot(_._1 == excludedPeer)
+          .map(_._1)
+      case None => peerDataMap.map(_._1)
+    }
+
+    Future
+      .traverse(gossipPeers)(p => sendMsg(msg, Some(p)))
+      .map(_ => ())
+  }
+
+  def sendGetHeadersMessage(
+      hashes: Vector[DoubleSha256Digest],
+      peerOpt: Option[Peer]): Future[Unit] = {
+    val peerMsgSenderF = peerOpt match {
+      case Some(peer) =>
+        val peerMsgSenderF = peerDataMap(peer).peerMessageSender
+        peerMsgSenderF
+      case None =>
+        val peerMsgSenderF = randomPeerMsgSenderWithService(
+          ServiceIdentifier.NODE_NETWORK)
+        peerMsgSenderF
+    }
+    peerMsgSenderF.flatMap(_.sendGetHeadersMessage(hashes))
+  }
+
+  def sendGetDataMessage(
+      typeIdentifier: TypeIdentifier,
+      hash: DoubleSha256DigestBE,
+      peerOpt: Option[Peer]): Future[Unit] = {
+    sendGetDataMessages(typeIdentifier, Vector(hash), peerOpt)
+  }
+
+  def sendGetDataMessages(
+      typeIdentifier: TypeIdentifier,
+      hashes: Vector[DoubleSha256DigestBE],
+      peerOpt: Option[Peer]): Future[Unit] = {
+    peerOpt match {
+      case Some(peer) =>
+        val peerMsgSenderF = peerDataMap(peer).peerMessageSender
+        val flip = hashes.map(_.flip)
+        peerMsgSenderF
+          .flatMap(_.sendGetDataMessage(typeIdentifier, flip: _*))
+      case None =>
+        val peerMsgSenderF = randomPeerMsgSenderWithService(
+          ServiceIdentifier.NODE_NETWORK)
+        peerMsgSenderF.flatMap(
+          _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
+                               hashes.map(_.flip): _*))
+
+    }
+  }
+
+  /** Starts sync compact filer headers.
+    * Only starts syncing compact filters if our compact filter headers are in sync with block headers
+    */
+  def syncCompactFilters(
+      bestFilterHeader: CompactFilterHeaderDb,
+      chainApi: ChainApi,
+      bestFilterOpt: Option[CompactFilterDb])(implicit
+      chainAppConfig: ChainAppConfig): Future[Unit] = {
+    val syncPeerMsgSenderOptF = {
+      getDataMessageHandler.state match {
+        case syncState: SyncDataMessageHandlerState =>
+          val peerMsgSender =
+            peerDataMap(syncState.syncPeer).peerMessageSender
+          Some(peerMsgSender)
+        case DoneSyncing | _: MisbehavingPeer => None
+      }
+    }
+    val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
+      case Some(syncPeerMsgSenderF) =>
+        syncPeerMsgSenderF.flatMap(
+          _.sendNextGetCompactFilterHeadersCommand(
+            chainApi = chainApi,
+            filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
+            prevStopHash = bestFilterHeader.blockHashBE)
+        )
+      case None => Future.successful(false)
+    }
+    sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
+      // If we have started syncing filters
+      if (
+        !isSyncFilterHeaders &&
+        bestFilterOpt.isDefined &&
+        bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
+      ) {
+        syncPeerMsgSenderOptF match {
+          case Some(syncPeerMsgSenderF) =>
+            //means we are not syncing filter headers, and our filters are NOT
+            //in sync with our compact filter headers
+            syncPeerMsgSenderF.flatMap { sender =>
+              sender
+                .sendNextGetCompactFilterCommand(
+                  chainApi = chainApi,
+                  filterBatchSize = chainAppConfig.filterBatchSize,
+                  startHeight = bestFilterOpt.get.height)
+                .map(_ => ())
+            }
+          case None =>
+            logger.warn(
+              s"Not syncing compact filters since we do not have a syncPeer set, bestFilterOpt=$bestFilterOpt")
+            Future.unit
+        }
+      } else {
+        Future.unit
+      }
+    }
   }
 
   def getPeerMsgSender(peer: Peer): Future[Option[PeerMessageSender]] = {
@@ -223,7 +353,9 @@ case class PeerManager(
     }
   }
 
-  def peerDataMap: Map[Peer, PeerData] = _peerDataMap.toMap
+  private def peerDataMap: Map[Peer, PeerData] = _peerDataMap.toMap
+
+  def getPeerData(peer: Peer): Option[PeerData] = peerDataMap.get(peer)
 
   override def stop(): Future[PeerManager] = {
     logger.info(s"Stopping PeerManager")

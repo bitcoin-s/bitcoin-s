@@ -476,12 +476,15 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
     val result = state match {
       case HeaderSync(peer) =>
-        peerManager.peerDataMap(peer).updateInvalidMessageCount()
-        if (
-          peerManager
-            .peerDataMap(peer)
-            .exceededMaxInvalidMessages && peerManager.peers.size > 1
-        ) {
+        val peerDataOpt = peerManager.getPeerData(peer)
+        val peerData = peerDataOpt match {
+          case Some(peerData) => peerData
+          case None =>
+            sys.error(
+              s"Cannot find peer we are syncing with in PeerManager, peer=$peer")
+        }
+        peerData.updateInvalidMessageCount()
+        if (peerData.exceededMaxInvalidMessages && peerManager.peers.size > 1) {
           logger.warn(
             s"$peer exceeded max limit of invalid messages. Disconnecting.")
 
@@ -786,15 +789,12 @@ case class DataMessageHandler(
                 logger.info(
                   s"Starting to validate headers now. Verifying with ${newState.verifyingWith}")
 
-                val getHeadersAllF = peerManager.peerDataMap
-                  .filter(_._1 != peer)
-                  .map(
-                    _._2.peerMessageSender.flatMap(
-                      _.sendGetHeadersMessage(lastHash))
-                  )
+                val getHeadersAllF = {
+                  val msg = GetHeadersMessage(lastHash)
+                  peerManager.gossipMessage(msg, excludedPeerOpt = Some(peer))
+                }
 
-                Future
-                  .sequence(getHeadersAllF)
+                getHeadersAllF
                   .map(_ => newDmh.copy(state = newState))
               } else {
                 //if just one peer then can proceed ahead directly
