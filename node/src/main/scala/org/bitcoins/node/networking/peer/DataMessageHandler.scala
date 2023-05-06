@@ -48,12 +48,16 @@ case class DataMessageHandler(
     copy(filterBatchCache = Set.empty, state = DoneSyncing)
   }
 
-  def addToStream(
-      payload: DataPayload,
-      peerMsgSender: PeerMessageSender,
-      peer: Peer): Future[Unit] = {
-    val msg = DataMessageWrapper(payload, peerMsgSender, peer)
-    peerManager.dataMessageStream.offer(msg).map(_ => ())
+  def addToStream(payload: DataPayload, peer: Peer): Future[Unit] = {
+    val peerMsgSenderOptF = peerManager.getPeerMsgSender(peer)
+    peerMsgSenderOptF.flatMap {
+      case Some(peerMsgSender) =>
+        val msg = DataMessageWrapper(payload, peerMsgSender, peer)
+        peerManager.dataMessageStream.offer(msg).map(_ => ())
+      case None =>
+        Future.failed(new RuntimeException(
+          s"Couldn't find PeerMessageSender that corresponds with peer=$peer"))
+    }
   }
 
   private def isChainIBD: Future[Boolean] = {
