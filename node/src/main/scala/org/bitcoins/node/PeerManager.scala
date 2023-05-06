@@ -611,25 +611,33 @@ case class PeerManager(
                                      overflowStrategy =
                                        OverflowStrategy.backpressure)
     .mapAsync(1) {
-      case msg @ DataMessageWrapper(payload, peerMsgSender, peer) =>
+      case msg @ DataMessageWrapper(payload, peer) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
-        getDataMessageHandler
-          .handleDataPayload(payload, peerMsgSender, peer)
-          .flatMap { newDmh =>
-            newDmh.state match {
-              case m: MisbehavingPeer =>
-                updateDataMessageHandler(newDmh)
-                //disconnect the misbehaving peer
-                for {
-                  _ <- removePeer(m.badPeer)
-                  _ <- node.syncFromNewPeer()
-                } yield msg
-              case _: SyncDataMessageHandlerState | DoneSyncing =>
-                updateDataMessageHandler(newDmh)
-                Future.successful(msg)
-            }
+        val peerMsgSenderOptF = getPeerMsgSender(peer)
+        peerMsgSenderOptF.flatMap {
+          case None =>
+            Future.failed(new RuntimeException(
+              s"Couldn't find PeerMessageSender that corresponds with peer=$peer"))
+          case Some(peerMsgSender) =>
+            getDataMessageHandler
+              .handleDataPayload(payload, peerMsgSender, peer)
+              .flatMap { newDmh =>
+                newDmh.state match {
+                  case m: MisbehavingPeer =>
+                    updateDataMessageHandler(newDmh)
+                    //disconnect the misbehaving peer
+                    for {
+                      _ <- removePeer(m.badPeer)
+                      _ <- node.syncFromNewPeer()
+                    } yield msg
+                  case _: SyncDataMessageHandlerState | DoneSyncing =>
+                    updateDataMessageHandler(newDmh)
+                    Future.successful(msg)
+                }
 
-          }
+              }
+        }
+
       case msg @ HeaderTimeoutWrapper(peer) =>
         logger.debug(s"Processing timeout header for $peer")
         onHeaderRequestTimeout(peer, getDataMessageHandler.state).map {
@@ -642,7 +650,7 @@ case class PeerManager(
 
   private val dataMessageStreamSink =
     Sink.foreach[StreamDataMessageWrapper] {
-      case DataMessageWrapper(payload, _, peer) =>
+      case DataMessageWrapper(payload, peer) =>
         logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
       case HeaderTimeoutWrapper(_) =>
     }
