@@ -11,13 +11,13 @@ import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.{DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.networking.P2PClientSupervisor
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
-import org.bitcoins.node.util.BitcoinSNodeUtil
+import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -36,6 +36,7 @@ case class PeerManager(
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig)
     extends StartStopAsync[PeerManager]
+    with PeerMessageSenderApi
     with P2PLogger {
 
   private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
@@ -81,7 +82,9 @@ case class PeerManager(
       .map(_.toVector)
   }
 
-  def sendMsg(msg: NetworkPayload, peerOpt: Option[Peer]): Future[Unit] = {
+  override def sendMsg(
+      msg: NetworkPayload,
+      peerOpt: Option[Peer]): Future[Unit] = {
     val peerMsgSenderF = peerOpt match {
       case Some(peer) =>
         val peerMsgSenderF = peerDataMap(peer).peerMessageSender
@@ -95,7 +98,7 @@ case class PeerManager(
   }
 
   /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
-  def gossipMessage(
+  override def gossipMessage(
       msg: NetworkPayload,
       excludedPeerOpt: Option[Peer]): Future[Unit] = {
     val gossipPeers = excludedPeerOpt match {
@@ -111,8 +114,8 @@ case class PeerManager(
       .map(_ => ())
   }
 
-  def sendGetHeadersMessage(
-      hashes: Vector[DoubleSha256Digest],
+  override def sendGetHeadersMessage(
+      hashes: Vector[DoubleSha256DigestBE],
       peerOpt: Option[Peer]): Future[Unit] = {
     val peerMsgSenderF = peerOpt match {
       case Some(peer) =>
@@ -123,17 +126,10 @@ case class PeerManager(
           ServiceIdentifier.NODE_NETWORK)
         peerMsgSenderF
     }
-    peerMsgSenderF.flatMap(_.sendGetHeadersMessage(hashes))
+    peerMsgSenderF.flatMap(_.sendGetHeadersMessage(hashes.map(_.flip)))
   }
 
-  def sendGetDataMessage(
-      typeIdentifier: TypeIdentifier,
-      hash: DoubleSha256DigestBE,
-      peerOpt: Option[Peer]): Future[Unit] = {
-    sendGetDataMessages(typeIdentifier, Vector(hash), peerOpt)
-  }
-
-  def sendGetDataMessages(
+  override def sendGetDataMessages(
       typeIdentifier: TypeIdentifier,
       hashes: Vector[DoubleSha256DigestBE],
       peerOpt: Option[Peer]): Future[Unit] = {

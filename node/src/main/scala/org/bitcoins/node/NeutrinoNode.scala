@@ -90,7 +90,7 @@ case class NeutrinoNode(
       bestFilterOpt <- chainApi.getBestFilter()
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
-      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE)
       _ <- peerManager.sendGetHeadersMessage(cachedHeaders, Some(syncPeer))
       hasStaleTip <- chainApi.isTipStale()
       _ <- {
