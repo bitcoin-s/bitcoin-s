@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import akka.stream.OverflowStrategy
+import akka.stream.{ActorAttributes, OverflowStrategy, Supervision}
 import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -11,7 +11,7 @@ import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
-import org.bitcoins.crypto.{DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
@@ -651,8 +651,16 @@ case class PeerManager(
       case HeaderTimeoutWrapper(_) =>
     }
 
+  private val decider: Supervision.Decider = { case err: Throwable =>
+    logger.error(s"Error occurred while processing p2p pipeline stream", err)
+    Supervision.Resume
+  }
+
   val dataMessageStream: SourceQueueWithComplete[StreamDataMessageWrapper] =
-    dataMessageStreamSource.to(dataMessageStreamSink).run()
+    dataMessageStreamSource
+      .to(dataMessageStreamSink)
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+      .run()
 
   def fetchCompactFilterHeaders(
       currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
