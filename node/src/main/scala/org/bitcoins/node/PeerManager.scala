@@ -603,9 +603,10 @@ case class PeerManager(
   }
 
   private val dataMessageStreamSource = Source
-    .queue[StreamDataMessageWrapper](8,
-                                     overflowStrategy =
-                                       OverflowStrategy.backpressure)
+    .queue[StreamDataMessageWrapper](
+      8,
+      overflowStrategy = OverflowStrategy.backpressure,
+      maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
     .mapAsync(1) {
       case msg @ DataMessageWrapper(payload, peer) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
