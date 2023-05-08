@@ -3,6 +3,7 @@ package org.bitcoins.node
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
@@ -89,9 +90,8 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           GetHeadersMessage(node.chainConfig.chain.genesisHash))
         //waiting for response to header query now
         client <- node.peerManager
-          .peerDataMap(bitcoindPeers(0))
-          .peerMessageSender
-          .map(_.client)
+          .getPeerMsgSender(bitcoindPeers(0))
+          .map(_.get.client)
         _ = client.actor ! expectHeaders
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)
@@ -160,11 +160,8 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                                       node.chainConfig))
 
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
-        sender <- node.peerManager.peerDataMap(peer).peerMessageSender
-        _ <- node.peerManager.getDataMessageHandler.addToStream(
-          invalidHeaderMessage,
-          sender,
-          peer)
+        _ <- node.peerManager.getDataMessageHandler
+          .addToStream(invalidHeaderMessage, peer)
         bestChain = bitcoinds(1)
         _ <- NodeTestUtil.awaitSync(node, bestChain)
       } yield {
@@ -180,17 +177,16 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       def sendInvalidHeaders(peer: Peer): Future[Unit] = {
         val invalidHeaderMessage =
           HeadersMessage(headers = Vector(invalidHeader))
-        val senderF = node.peerManager.peerDataMap(peer).peerMessageSender
-
-        for {
-          sender <- senderF
-          sendFs = 1
+        val sendFs = {
+          val count = 1
             .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
-            .map(_ =>
-              node.peerManager.getDataMessageHandler
-                .addToStream(invalidHeaderMessage, sender, peer))
-          _ <- Future.sequence(sendFs)
-        } yield ()
+          FutureUtil.sequentially[Int, Unit](count) { _ =>
+            node.peerManager.getDataMessageHandler
+              .addToStream(invalidHeaderMessage, peer)
+          }
+        }
+
+        sendFs.map(_ => ())
       }
 
       for {

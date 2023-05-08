@@ -70,8 +70,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * `private[node]`.
     */
   def send(msg: NetworkPayload, peer: Peer): Future[Unit] = {
-    val senderF = peerManager.peerDataMap(peer).peerMessageSender
-    senderF.flatMap(_.sendMsg(msg))
+    peerManager.sendMsg(msg, Some(peer))
   }
 
   /** Starts our node */
@@ -195,20 +194,19 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       }
       syncPeerOpt match {
         case Some(peer) =>
-          peerManager
-            .peerDataMap(peer)
-            .peerMessageSender
-            .flatMap(_.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                                          blockHashes: _*))
+          peerManager.sendGetDataMessages(typeIdentifier =
+                                            TypeIdentifier.MsgWitnessBlock,
+                                          hashes = blockHashes.map(_.flip),
+                                          peerOpt = Some(peer))
         case None =>
           throw new RuntimeException(
             "IBD not started yet. Cannot query for blocks.")
       }
     } else {
-      val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(
-        ServiceIdentifier.NODE_NETWORK)
-      peerMsgSenderF.flatMap(
-        _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
+      peerManager.sendGetDataMessages(typeIdentifier =
+                                        TypeIdentifier.MsgWitnessBlock,
+                                      hashes = blockHashes.map(_.flip),
+                                      peerOpt = None)
     }
   }
 

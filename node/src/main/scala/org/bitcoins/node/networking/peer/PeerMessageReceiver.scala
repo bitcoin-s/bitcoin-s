@@ -72,7 +72,7 @@ case class PeerMessageReceiver(
                              sender = peerMsgSender,
                              curReceiverState = curState)
       case dataPayload: DataPayload =>
-        handleDataPayload(payload = dataPayload, sender = peerMsgSender)
+        handleDataPayload(payload = dataPayload)
           .map(_ => curState)
     }
   }
@@ -85,12 +85,11 @@ case class PeerMessageReceiver(
     * @param sender
     */
   private def handleDataPayload(
-      payload: DataPayload,
-      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
+      payload: DataPayload): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMessageHandler
-      .addToStream(payload, sender, peer)
+      .addToStream(payload, peer)
       .map(_ =>
         new PeerMessageReceiver(controlMessageHandler,
                                 dataMessageHandler,
