@@ -613,7 +613,7 @@ case class PeerManager(
         peerMsgSenderOptF.flatMap {
           case None =>
             Future.failed(new RuntimeException(
-              s"Couldn't find PeerMessageSender that corresponds with peer=$peer"))
+              s"Couldn't find PeerMessageSender that corresponds with peer=$peer msg=${payload.commandName}. Was it disconnected?"))
           case Some(peerMsgSender) =>
             getDataMessageHandler
               .handleDataPayload(payload, peerMsgSender, peer)
