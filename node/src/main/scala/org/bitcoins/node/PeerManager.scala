@@ -603,7 +603,7 @@ case class PeerManager(
   }
 
   private val dataMessageStreamSource = Source
-    .queue[StreamDataMessageWrapper](1500,
+    .queue[StreamDataMessageWrapper](8,
                                      overflowStrategy =
                                        OverflowStrategy.backpressure)
     .mapAsync(1) {
