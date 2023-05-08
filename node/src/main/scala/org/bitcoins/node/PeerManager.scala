@@ -763,7 +763,6 @@ case class PeerManager(
               .flatMap { newDmh =>
                 newDmh.state match {
                   case m: MisbehavingPeer =>
-                    updateDataMessageHandler(newDmh)
                     //disconnect the misbehaving peer
                     for {
                       _ <- removePeer(m.badPeer)
@@ -775,8 +774,7 @@ case class PeerManager(
                       _ <- Future.traverse(removePeers.peers)(removePeer)
                     } yield msg
                   case _: SyncDataMessageHandlerState | DoneSyncing =>
-                    updateDataMessageHandler(newDmh)
-                    Future.successful(msg)
+                    Future.successful(newDmh)
                 }
               }
         }
