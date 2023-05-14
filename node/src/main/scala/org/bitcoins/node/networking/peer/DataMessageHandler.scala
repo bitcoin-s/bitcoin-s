@@ -903,4 +903,5 @@ case class QueryTimeout(peer: Peer, payload: ExpectsResponse)
     extends StreamDataMessageWrapper
 
 case class SendResponseTimeout(peer: Peer, payload: NetworkPayload)
+case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])
     extends StreamDataMessageWrapper

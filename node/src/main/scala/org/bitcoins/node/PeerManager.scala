@@ -110,24 +110,10 @@ case class PeerManager(
   override def sendMsg(
       msg: NetworkPayload,
       peerOpt: Option[Peer]): Future[Unit] = {
-    val peerMsgSenderF = peerOpt match {
-      case Some(peer) =>
-        val peerMsgSenderF = peerDataMap(peer).peerMessageSender
-        peerMsgSenderF.map(Some(_))
-      case None =>
-        val peerMsgSenderF = randomPeerMsgSenderWithService(
-          ServiceIdentifier.NODE_NETWORK)
-        peerMsgSenderF
-    }
-    peerMsgSenderF.flatMap { peerMsgSenderOpt =>
-      peerMsgSenderOpt match {
-        case Some(peerMsgSender) => peerMsgSender.sendMsg(msg)
-        case None =>
-          val exn = new RuntimeException(
-            s"Unable to send message=${msg.commandName} because we couldn't find a peer to send it to")
-          Future.failed(exn)
-      }
-    }
+    val networkMessage = NetworkMessage(nodeAppConfig.network, msg)
+    dataMessageStream
+      .offer(SendToPeer(msg = networkMessage, peerOpt = peerOpt))
+      .map(_ => ())
   }
 
   /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
@@ -158,25 +144,14 @@ case class PeerManager(
       typeIdentifier: TypeIdentifier,
       hashes: Vector[DoubleSha256DigestBE],
       peerOpt: Option[Peer]): Future[Unit] = {
-    peerOpt match {
-      case Some(peer) =>
-        val peerMsgSenderF = peerDataMap(peer).peerMessageSender
-        val flip = hashes.map(_.flip)
-        peerMsgSenderF
-          .flatMap(_.sendGetDataMessage(typeIdentifier, flip: _*))
-      case None =>
-        val peerMsgSenderF = randomPeerMsgSenderWithService(
-          ServiceIdentifier.NODE_NETWORK)
-        peerMsgSenderF.flatMap {
-          case Some(peerMsgSender) =>
-            peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                                             hashes.map(_.flip): _*)
-          case None =>
-            val exn = new RuntimeException(
-              s"Unable to send getdatamessage because we couldn't find a peer to send it to, hashes=$hashes")
-            Future.failed(exn)
-        }
+    val msg: NetworkPayload = {
+      val inventories =
+        hashes.map(hash => Inventory(typeIdentifier, hash.flip))
+      val message = GetDataMessage(inventories)
+      message
     }
+
+    sendMsg(msg, peerOpt)
   }
 
   /** Starts sync compact filer headers.
@@ -664,12 +639,39 @@ case class PeerManager(
     }
   }
 
-  private val dataMessageStreamSource = Source
+  private val dataMessageStreamSource: Source[
+    StreamDataMessageWrapper,
+    SourceQueueWithComplete[StreamDataMessageWrapper]] = Source
     .queue[StreamDataMessageWrapper](
       16 * nodeAppConfig.maxConnectedPeers,
       overflowStrategy = OverflowStrategy.backpressure,
       maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
     .mapAsync(1) {
+      case sendToPeer: SendToPeer =>
+        logger.debug(
+          s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
+        val peerMsgSenderOptF = sendToPeer.peerOpt match {
+          case Some(peer) => getPeerMsgSender(peer)
+          case None =>
+            getDataMessageHandler.state match {
+              case s: SyncDataMessageHandlerState =>
+                getPeerMsgSender(s.syncPeer)
+              case DoneSyncing | _: MisbehavingPeer =>
+                //pick a random peer to sync with
+                randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
+                  .map(Some(_))
+            }
+        }
+
+        peerMsgSenderOptF.flatMap {
+          case Some(peerMsgSender) =>
+            peerMsgSender
+              .sendMsg(sendToPeer.msg)
+              .map(_ => sendToPeer)
+          case None =>
+            Future.failed(new RuntimeException(
+              s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to"))
+        }
       case msg @ DataMessageWrapper(payload, peer) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerMsgSenderOptF = getPeerMsgSender(peer)
@@ -747,6 +749,9 @@ case class PeerManager(
       case InitializationTimeout(_)  =>
       case QueryTimeout(_, _)        =>
       case SendResponseTimeout(_, _) =>
+      case stp: SendToPeer =>
+        logger.debug(
+          s"Done processing ${stp.msg.header.commandName} in peerOpt=${stp.peerOpt}")
     }
 
   private val decider: Supervision.Decider = { case err: Throwable =>

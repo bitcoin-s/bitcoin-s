@@ -247,9 +247,13 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     //version or verack messages are the only messages that
     //can be sent before we are fully initialized
     //as they are needed to complete our handshake with our peer
-    logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
     val networkMsg = NetworkMessage(conf.network, msg)
-    client.actor ! networkMsg
+    sendMsg(networkMsg)
+  }
+
+  private[node] def sendMsg(msg: NetworkMessage): Future[Unit] = {
+    logger.debug(s"Sending msg=${msg.header.commandName} to peer=${socket}")
+    client.actor ! msg
     Future.unit
   }
 }
@@ -262,8 +266,6 @@ object PeerMessageSender {
     * This means we can send normal p2p messages now
     */
   case object HandshakeFinished extends PeerMessageHandlerMsg
-
-  case class SendToPeer(msg: NetworkMessage) extends PeerMessageHandlerMsg
 
   /** Accumulators network messages while we are doing a handshake with our peer
     * and caches a peer handler actor so we can send a [[HandshakeFinished]]

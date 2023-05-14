@@ -114,13 +114,7 @@ case class PeerMessageReceiver(
 
 object PeerMessageReceiver {
 
-  sealed abstract class PeerMessageReceiverMsg {
-
-    /** Who we need to use to send a reply to our peer
-      * if a response is needed for this message
-      */
-    def client: P2PClient
-  }
+  sealed abstract class PeerMessageReceiverMsg
 
   case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
       extends PeerMessageReceiverMsg
