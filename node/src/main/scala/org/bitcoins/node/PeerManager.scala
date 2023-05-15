@@ -1,8 +1,20 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import akka.stream.{ActorAttributes, OverflowStrategy, Supervision}
-import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
+import akka.stream.{
+  ActorAttributes,
+  OverflowStrategy,
+  QueueOfferResult,
+  Supervision
+}
+import akka.stream.scaladsl.{
+  RunnableGraph,
+  Sink,
+  Source,
+  SourceQueue,
+  SourceQueueWithComplete
+}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -37,6 +49,7 @@ case class PeerManager(
     chainAppConfig: ChainAppConfig)
     extends StartStopAsync[PeerManager]
     with PeerMessageSenderApi
+    with SourceQueue[StreamDataMessageWrapper]
     with P2PLogger {
 
   private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
@@ -343,6 +356,8 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
+    val queue = dataMessageStreamGraph.run()
+    dataMessageQueueOpt = Some(queue)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
       this
@@ -357,21 +372,23 @@ case class PeerManager(
     logger.info(s"Stopping PeerManager")
     val beganAt = System.currentTimeMillis()
 
+    val _ = dataMessageQueueOpt.map(_.complete())
+    val watchQueueCompleteF = watchCompletion()
     val finderStopF = finder.stop()
 
     peerServicesQueries.foreach(_.cancel()) //reset the peerServicesQueries var?
 
-    val removeF = Future.sequence(peers.map(removePeer))
-
-    val managerStopF = AsyncUtil.retryUntilSatisfied(
-      _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
-      interval = 1.seconds,
-      maxTries = 30)
-
     val stopF = for {
-      _ <- removeF
+      _ <- watchQueueCompleteF
+      _ = {
+        dataMessageQueueOpt = None //reset dataMessageQueue var
+      }
+      _ <- Future.traverse(peers)(removePeer)
       _ <- finderStopF
-      _ <- managerStopF
+      _ <- AsyncUtil.retryUntilSatisfied(
+        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
+        interval = 1.seconds,
+        maxTries = 30)
     } yield {
       logger.info(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
@@ -549,7 +566,7 @@ case class PeerManager(
 
     payload match {
       case _: GetHeadersMessage =>
-        dataMessageStream.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
+        offer(HeaderTimeoutWrapper(peer)).map(_ => ())
       case _ =>
         val syncPeer = getDataMessageHandler.state match {
           case syncState: SyncDataMessageHandlerState =>
@@ -657,11 +674,32 @@ case class PeerManager(
     Supervision.Resume
   }
 
-  val dataMessageStream: SourceQueueWithComplete[StreamDataMessageWrapper] =
+  private val dataMessageStreamGraph: RunnableGraph[
+    SourceQueueWithComplete[StreamDataMessageWrapper]] = {
     dataMessageStreamSource
       .to(dataMessageStreamSink)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
-      .run()
+  }
+
+  private var dataMessageQueueOpt: Option[
+    SourceQueueWithComplete[StreamDataMessageWrapper]] = None
+
+  override def offer(
+      elem: StreamDataMessageWrapper): Future[QueueOfferResult] = {
+    dataMessageQueueOpt match {
+      case Some(queue) => queue.offer(elem)
+      case None =>
+        Future.failed(new RuntimeException(
+          s"PeerManager not started, cannot process p2p message until PeerManager.start() is called"))
+    }
+  }
+
+  override def watchCompletion(): Future[Done] = {
+    dataMessageQueueOpt match {
+      case Some(queue) => queue.watchCompletion()
+      case None        => Future.successful(Done)
+    }
+  }
 
   def fetchCompactFilterHeaders(
       currentDmh: DataMessageHandler): Future[DataMessageHandler] = {

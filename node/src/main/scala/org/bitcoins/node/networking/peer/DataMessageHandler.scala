@@ -50,7 +50,7 @@ case class DataMessageHandler(
 
   def addToStream(payload: DataPayload, peer: Peer): Future[Unit] = {
     val msg = DataMessageWrapper(payload, peer)
-    peerManager.dataMessageStream
+    peerManager
       .offer(msg)
       .map(_ => ())
   }
