@@ -254,6 +254,10 @@ object CommonSettings {
   lazy val binariesPath =
     Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
 
+  lazy val cryptoJlinkIgnore = {
+    Vector("org.bouncycastle" -> "junit.framework") //bouncy castle 1.73 requires junit as a transitive dep
+  }
+
   lazy val dbCommonsJlinkIgnore = {
     //we don't use android
    Vector("org.flywaydb.core.api.android" -> "android.content",
@@ -321,13 +325,16 @@ object CommonSettings {
       "com.github.benmanes.caffeine.cache" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
       //optional
-      "org.codehaus.janino" -> "org.apache.tools.ant").++(loggingJlinkIgnore).++(dbCommonsJlinkIgnore)
+      "org.codehaus.janino" -> "org.apache.tools.ant")
+      .++(loggingJlinkIgnore)
+      .++(dbCommonsJlinkIgnore)
+      .++(cryptoJlinkIgnore)
     JlinkIgnore.byPackagePrefix(oracleServerIgnore:_*)
   }
 
   lazy val appServerJlinkIgnore = {
 
-    val appServerIgnore = loggingJlinkIgnore.++(dbCommonsJlinkIgnore).++(Vector(
+    val appServerIgnore = loggingJlinkIgnore.++(dbCommonsJlinkIgnore).++(cryptoJlinkIgnore).++(Vector(
       //https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
       "org.codehaus.janino" -> "org.apache.tools.ant",
       "com.github.benmanes.caffeine" -> "javax.annotation",
@@ -343,7 +350,7 @@ object CommonSettings {
     val cliIgnore = Vector(
       "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate",
       "org.slf4j" -> "org.slf4j.impl"
-    )
+    )      .++(cryptoJlinkIgnore)
 
     JlinkIgnore.byPackagePrefix(cliIgnore:_*)
   }
