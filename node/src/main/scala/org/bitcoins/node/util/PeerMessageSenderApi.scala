@@ -2,6 +2,7 @@ package org.bitcoins.node.util
 
 import org.bitcoins.core.api.chain.FilterSyncMarker
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandlerState
@@ -41,4 +42,8 @@ trait PeerMessageSenderApi {
       filterSyncMarker: FilterSyncMarker,
       peer: Peer)(implicit
       ec: ExecutionContext): Future[DataMessageHandlerState.FilterSync]
+
+  def sendInventoryMessage(
+      transactions: Vector[Transaction],
+      peerOpt: Option[Peer]): Future[Unit]
 }

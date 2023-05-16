@@ -126,16 +126,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(sendHeadersMsg)
   }
 
-  /** Sends a inventory message with the given transactions
-    */
-  def sendInventoryMessage(transactions: Transaction*): Future[Unit] = {
-    val inventories =
-      transactions.map(tx => Inventory(TypeIdentifier.MsgTx, tx.txId))
-    val message = InventoryMessage(inventories)
-    logger.trace(s"Sending inv=$message to peer=${client.peer}")
-    sendMsg(message)
-  }
-
   def sendFilterClearMessage(): Future[Unit] = {
     sendMsg(FilterClearMessage)
   }

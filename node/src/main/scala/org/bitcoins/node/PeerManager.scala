@@ -23,6 +23,7 @@ import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
@@ -196,6 +197,21 @@ case class PeerManager(
     logger.debug(s"Sending getcfilters=$message to peer ${peer}")
     sendMsg(message, Some(peer)).map(_ =>
       DataMessageHandlerState.FilterSync(peer))
+  }
+
+  override def sendInventoryMessage(
+      transactions: Vector[Transaction],
+      peerOpt: Option[Peer]): Future[Unit] = {
+    val inventories =
+      transactions.map(tx => Inventory(TypeIdentifier.MsgTx, tx.txId))
+    val message = InventoryMessage(inventories)
+    logger.trace(s"Sending inv=$message to peer=${peerOpt}")
+    peerOpt match {
+      case Some(_) =>
+        sendMsg(message, peerOpt)
+      case None =>
+        gossipMessage(msg = message, excludedPeerOpt = None)
+    }
   }
 
   /** @return a flag indicating if we are syncing or not

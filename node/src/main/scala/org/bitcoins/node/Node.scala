@@ -152,10 +152,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         val connected = peerManager.peers.nonEmpty
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
-          peerMsgSendersF.flatMap { peerMsgSenders =>
-            Future.traverse(peerMsgSenders)(
-              _.sendInventoryMessage(transactions: _*))
-          }
+          peerManager.sendInventoryMessage(transactions = transactions,
+                                           peerOpt = None)
         } else {
           Future.failed(
             new RuntimeException(
