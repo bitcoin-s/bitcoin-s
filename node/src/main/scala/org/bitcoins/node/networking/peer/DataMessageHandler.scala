@@ -185,15 +185,18 @@ case class DataMessageHandler(
                 logger.debug(
                   s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
                 sendNextGetCompactFilterHeadersCommand(
-                  peerMsgSender,
-                  filterHeader.stopHash.flip).map(_ => filterHeaderSync)
+                  peerManager = peerManager,
+                  syncPeer = peer,
+                  prevStopHash = filterHeader.stopHash.flip).map(_ =>
+                  filterHeaderSync)
               } else {
                 for {
                   startHeightOpt <- getCompactFilterStartHeight(
                     walletCreationTimeOpt)
                   filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
-                    peerMsgSender,
-                    startHeightOpt)
+                    peerManager = peerManager,
+                    syncPeer = peer,
+                    startHeightOpt = startHeightOpt)
                 } yield {
                   filterSyncStateOpt match {
                     case Some(filterSyncState) => filterSyncState
@@ -243,11 +246,13 @@ case class DataMessageHandler(
               if (batchSizeFull) {
                 logger.info(
                   s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-                sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
+                sendNextGetCompactFilterCommand(peerManager,
+                                                peer,
+                                                newFilterHeight)
               } else Future.successful(Some(filterSyncState))
             newDmhState <- {
               if (isFiltersSynced) {
-                syncIfHeadersAhead(peerMsgSender)
+                syncIfHeadersAhead(peer)
               } else {
                 val res = filterHeaderSyncStateOpt match {
                   case Some(filterSyncState) => filterSyncState
@@ -437,7 +442,7 @@ case class DataMessageHandler(
 
   /** syncs filter headers in case the header chain is still ahead post filter sync */
   private def syncIfHeadersAhead(
-      peerMessageSender: PeerMessageSender): Future[DataMessageHandlerState] = {
+      syncPeer: Peer): Future[DataMessageHandlerState] = {
     for {
       headerHeight <- chainApi.getBestHashBlockHeight()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
@@ -453,8 +458,10 @@ case class DataMessageHandler(
             s"Starting to fetch filter headers in data message handler")
           for {
             syncingFilterHeadersState <- PeerManager
-              .sendFirstGetCompactFilterHeadersCommand(peerMessageSender,
-                                                       chainApi)
+              .sendFirstGetCompactFilterHeadersCommand(peerManager =
+                                                         peerManager,
+                                                       chainApi = chainApi,
+                                                       peer = syncPeer)
           } yield {
             syncingFilterHeadersState
           }
@@ -473,8 +480,8 @@ case class DataMessageHandler(
             isIBD <- chainApi.isIBD()
             newState <- {
               if (isIBD) {
-                peerMessageSender
-                  .sendGetHeadersMessage(bestBlockHash.flip)
+                peerManager
+                  .sendGetHeadersMessage(Vector(bestBlockHash), Some(syncPeer))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
                     //we just need to sync blocks that occurred while we were doing IBD
@@ -539,31 +546,36 @@ case class DataMessageHandler(
   }
 
   private def sendNextGetCompactFilterHeadersCommand(
-      peerMsgSender: PeerMessageSender,
+      peerManager: PeerManager,
+      syncPeer: Peer,
       prevStopHash: DoubleSha256DigestBE): Future[Boolean] =
-    peerMsgSender.sendNextGetCompactFilterHeadersCommand(
+    peerManager.sendNextGetCompactFilterHeadersCommand(
       chainApi = chainApi,
+      peer = syncPeer,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
       prevStopHash = prevStopHash)
 
   private def sendNextGetCompactFilterCommand(
-      peerMsgSender: PeerMessageSender,
+      peerManager: PeerManager,
+      syncPeer: Peer,
       startHeight: Int): Future[Option[DataMessageHandlerState.FilterSync]] = {
 
-    peerMsgSender
+    peerManager
       .sendNextGetCompactFilterCommand(chainApi = chainApi,
                                        filterBatchSize =
                                          chainConfig.filterBatchSize,
-                                       startHeight = startHeight)
+                                       startHeight = startHeight,
+                                       syncPeer)
       .map { isSyncing =>
         if (isSyncing)
-          Some(DataMessageHandlerState.FilterSync(peerMsgSender.client.peer))
+          Some(DataMessageHandlerState.FilterSync(syncPeer))
         else None
       }
   }
 
   private def sendFirstGetCompactFilterCommand(
-      peerMsgSender: PeerMessageSender,
+      peerManager: PeerManager,
+      syncPeer: Peer,
       startHeightOpt: Option[Int]): Future[
     Option[DataMessageHandlerState.FilterSync]] = {
     val startHeightF = startHeightOpt match {
@@ -575,7 +587,7 @@ case class DataMessageHandler(
       startHeight <- startHeightF
       _ = logger.info(
         s"Beginning to sync filters from startHeight=$startHeight")
-      res <- sendNextGetCompactFilterCommand(peerMsgSender, startHeight)
+      res <- sendNextGetCompactFilterCommand(peerManager, syncPeer, startHeight)
     } yield res
   }
 

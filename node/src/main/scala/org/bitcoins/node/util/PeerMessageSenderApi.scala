@@ -1,10 +1,12 @@
 package org.bitcoins.node.util
 
+import org.bitcoins.core.api.chain.FilterSyncMarker
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
-import org.bitcoins.crypto.{DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandlerState
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait PeerMessageSenderApi {
 
@@ -31,4 +33,12 @@ trait PeerMessageSenderApi {
 
   def sendMsg(msg: NetworkPayload, peerOpt: Option[Peer]): Future[Unit]
 
+  def sendGetCompactFilterHeadersMessage(
+      filterSyncMarker: FilterSyncMarker,
+      peerOpt: Option[Peer]): Future[Unit]
+
+  def sendGetCompactFiltersMessage(
+      filterSyncMarker: FilterSyncMarker,
+      peer: Peer)(implicit
+      ec: ExecutionContext): Future[DataMessageHandlerState.FilterSync]
 }

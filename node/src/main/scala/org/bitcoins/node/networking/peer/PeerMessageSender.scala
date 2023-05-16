@@ -2,17 +2,13 @@ package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRef
 import akka.util.Timeout
-import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.{ChainApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  HashDigest
-}
-import org.bitcoins.node.P2PLogger
+import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
+import org.bitcoins.node.{P2PLogger}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
@@ -162,85 +158,11 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
-  /** Sends a request for filtered blocks matching the given headers */
-  def sendGetDataMessage(
-      typeIdentifier: TypeIdentifier,
-      hashes: DoubleSha256Digest*): Future[Unit] = {
-    val inventories =
-      hashes.map(hash => Inventory(typeIdentifier, hash))
-    val message = GetDataMessage(inventories)
-    logger.debug(s"Sending getdata=$message to peer=${client.peer}")
-    sendMsg(message)
-  }
-
-  private def sendGetCompactFiltersMessage(
-      filterSyncMarker: FilterSyncMarker)(implicit
-      ec: ExecutionContext): Future[DataMessageHandlerState.FilterSync] = {
-    val message =
-      GetCompactFiltersMessage(if (filterSyncMarker.startHeight < 0) 0
-                               else filterSyncMarker.startHeight,
-                               filterSyncMarker.stopBlockHash)
-    logger.debug(s"Sending getcfilters=$message to peer ${client.peer}")
-    sendMsg(message).map(_ => DataMessageHandlerState.FilterSync(client.peer))
-  }
-
-  def sendGetCompactFilterHeadersMessage(
-      filterSyncMarker: FilterSyncMarker): Future[Unit] = {
-    val message =
-      GetCompactFilterHeadersMessage(if (filterSyncMarker.startHeight < 0) 0
-                                     else filterSyncMarker.startHeight,
-                                     filterSyncMarker.stopBlockHash)
-    logger.debug(s"Sending getcfheaders=$message to peer=${client.peer}")
-    sendMsg(message)
-  }
-
   def sendGetCompactFilterCheckPointMessage(
       stopHash: DoubleSha256Digest): Future[Unit] = {
     val message = GetCompactFilterCheckPointMessage(stopHash)
     logger.debug(s"Sending getcfcheckpt=$message to peer ${client.peer}")
     sendMsg(message)
-  }
-
-  /** @return a flag indicating if we are syncing or not
-    */
-  private[node] def sendNextGetCompactFilterCommand(
-      chainApi: ChainApi,
-      filterBatchSize: Int,
-      startHeight: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
-    for {
-      filterSyncMarkerOpt <-
-        chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
-      res <- filterSyncMarkerOpt match {
-        case Some(filterSyncMarker) =>
-          logger.info(s"Requesting compact filters from $filterSyncMarker")
-
-          sendGetCompactFiltersMessage(filterSyncMarker)
-            .map(_ => true)
-        case None =>
-          Future.successful(false)
-      }
-    } yield res
-  }
-
-  private[node] def sendNextGetCompactFilterHeadersCommand(
-      chainApi: ChainApi,
-      filterHeaderBatchSize: Int,
-      prevStopHash: DoubleSha256DigestBE)(implicit
-      ec: ExecutionContext): Future[Boolean] = {
-    for {
-      filterSyncMarkerOpt <- chainApi.nextBlockHeaderBatchRange(
-        prevStopHash = prevStopHash,
-        batchSize = filterHeaderBatchSize)
-      res <- filterSyncMarkerOpt match {
-        case Some(filterSyncMarker) =>
-          logger.info(
-            s"Requesting next compact filter headers from $filterSyncMarker")
-          sendGetCompactFilterHeadersMessage(filterSyncMarker)
-            .map(_ => true)
-        case None =>
-          Future.successful(false)
-      }
-    } yield res
   }
 
   private[node] def sendMsg(msg: NetworkPayload): Future[Unit] = {
