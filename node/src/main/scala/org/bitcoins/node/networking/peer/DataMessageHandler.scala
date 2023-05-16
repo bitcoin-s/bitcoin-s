@@ -363,7 +363,7 @@ case class DataMessageHandler(
             case _: InvalidBlockHeader =>
               logger.warn(
                 s"Invalid headers of count $count sent from ${peer} in state=$state")
-              recoverInvalidHeader(peerMsgSender, peerDataOpt.get)
+              recoverInvalidHeader(peerDataOpt.get)
             case e: Throwable => throw e
           }
 
@@ -498,9 +498,7 @@ case class DataMessageHandler(
   }
 
   /** Recover the data message handler if we received an invalid block header from a peer */
-  private def recoverInvalidHeader(
-      peerMsgSender: PeerMessageSender,
-      peerData: PeerData): Future[DataMessageHandler] = {
+  private def recoverInvalidHeader(peerData: PeerData): Future[DataMessageHandler] = {
     val result = state match {
       case HeaderSync(peer) =>
         peerData.updateInvalidMessageCount()
@@ -516,8 +514,8 @@ case class DataMessageHandler(
             blockchains <- BlockHeaderDAO().getBlockchains()
             cachedHeaders = blockchains
               .flatMap(_.headers)
-              .map(_.hashBE.flip)
-            _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
+              .map(_.hashBE)
+            _ <- peerManager.sendGetHeadersMessage(cachedHeaders, Some(peer))
           } yield this
         }
 
@@ -761,14 +759,14 @@ case class DataMessageHandler(
               logger.info(
                 s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
               //ask for headers more from the same peer
-              peerMsgSender
-                .sendGetHeadersMessage(lastHash)
+              peerManager
+                .sendGetHeadersMessage(lastHash.flip, Some(peer))
                 .map(_ => newDmh)
 
             case ValidatingHeaders(_, inSyncWith, _, _) =>
               //ask for more headers now
-              val askF = peerMsgSender
-                .sendGetHeadersMessage(lastHash)
+              val askF = peerManager
+                .sendGetHeadersMessage(lastHash.flip, Some(peer))
                 .map(_ => syncing)
 
               for {

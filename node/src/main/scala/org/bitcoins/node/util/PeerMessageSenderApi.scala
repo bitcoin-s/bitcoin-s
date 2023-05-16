@@ -27,6 +27,12 @@ trait PeerMessageSenderApi {
       hashes: Vector[DoubleSha256DigestBE],
       peerOpt: Option[Peer]): Future[Unit]
 
+  def sendGetHeadersMessage(
+      lastHash: DoubleSha256DigestBE,
+      peerOpt: Option[Peer]): Future[Unit] = {
+    sendGetHeadersMessage(Vector(lastHash), peerOpt)
+  }
+
   /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
   def gossipMessage(
       msg: NetworkPayload,
