@@ -97,7 +97,6 @@ case class PeerManager(
         sys.error(
           s"Cannot addPeer, finder not started. Call PeerManager.start()")
     }
-
   }
 
   def peers: Vector[Peer] = _peerDataMap.keys.toVector
@@ -726,7 +725,20 @@ case class PeerManager(
         logger.debug(
           s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
         val peerMsgSenderOptF = sendToPeer.peerOpt match {
-          case Some(peer) => getPeerMsgSender(peer)
+          case Some(peer) =>
+            getPeerMsgSender(peer).flatMap {
+              case Some(peerMsgSender) => Future.successful(Some(peerMsgSender))
+              case None =>
+                sendToPeer.msg.payload match {
+                  case _: ControlPayload =>
+                    //peer may not be fully initialized, we may be doing the handshake with a peer
+                    finder.getData(peer).peerMessageSender.map(Some(_))
+                  case _: DataPayload =>
+                    //peer must be fully initialized to send a data payload
+                    Future.failed(new RuntimeException(
+                      s"Cannot find peer message sender to send message=${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}"))
+                }
+            }
           case None =>
             getDataMessageHandler.state match {
               case s: SyncDataMessageHandlerState =>
