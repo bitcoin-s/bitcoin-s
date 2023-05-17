@@ -24,7 +24,7 @@ import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
@@ -732,7 +732,10 @@ case class PeerManager(
                 sendToPeer.msg.payload match {
                   case _: ControlPayload =>
                     //peer may not be fully initialized, we may be doing the handshake with a peer
-                    finder.getData(peer).peerMessageSender.map(Some(_))
+                    finder.getData(peer).map(_.peerMessageSender) match {
+                      case Some(p) => p.map(Some(_))
+                      case None    => FutureUtil.none
+                    }
                   case _: DataPayload =>
                     //peer must be fully initialized to send a data payload
                     Future.failed(new RuntimeException(
