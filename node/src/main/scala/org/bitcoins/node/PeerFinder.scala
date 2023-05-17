@@ -232,10 +232,8 @@ case class PeerFinder(
     _peerData.contains(peer)
   }
 
-  def getData(peer: Peer): PeerData = {
-    require(hasPeer(peer),
-            s"finder.getData called without any data on peer=$peer")
-    _peerData(peer)
+  def getData(peer: Peer): Option[PeerData] = {
+    _peerData.get(peer)
   }
 
   def addToTry(peers: Vector[Peer], priority: Int = 0): Unit = {

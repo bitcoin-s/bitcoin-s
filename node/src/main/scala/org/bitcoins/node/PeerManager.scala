@@ -422,7 +422,7 @@ case class PeerManager(
 
     if (finder.hasPeer(peer)) {
       //one of the peers that we tried, failed to init within time, disconnect
-      finder.getData(peer).stop()
+      finder.getData(peer).get.stop()
     } else if (peerDataMap.contains(peer)) {
       //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
       //a reconnection attempt, meaning it got connected but failed to initialize, disconnect
@@ -444,13 +444,17 @@ case class PeerManager(
 
     if (finder.hasPeer(peer)) {
       //one of the peers we tries got initialized successfully
-      val peerData = finder.getData(peer)
+      val peerData = finder.getData(peer).get
       val serviceIdentifer = peerData.serviceIdentifier
       val hasCf = serviceIdentifer.nodeCompactFilters
       logger.debug(s"Initialized peer $peer with $hasCf")
 
       def sendAddrReq: Future[Unit] =
-        finder.getData(peer).peerMessageSender.flatMap(_.sendGetAddrMessage())
+        finder
+          .getData(peer)
+          .get
+          .peerMessageSender
+          .flatMap(_.sendGetAddrMessage())
 
       def managePeerF(): Future[Unit] = {
         //if we have slots remaining, connect
@@ -471,9 +475,10 @@ case class PeerManager(
               .nonBlockingSleep(duration = 10.seconds)
               .flatMap { _ =>
                 //could have already been deleted in case of connection issues
-                if (finder.hasPeer(peer))
-                  finder.getData(peer).stop()
-                else Future.unit
+                finder.getData(peer) match {
+                  case Some(p) => p.stop()
+                  case None    => Future.unit
+                }
               }
           }
         }
@@ -481,7 +486,7 @@ case class PeerManager(
 
       for {
         _ <- sendAddrReq
-        peerData = finder.getData(peer)
+        peerData = finder.getData(peer).get
         _ <- createInDb(peer, peerData.serviceIdentifier)
         _ <- managePeerF()
       } yield ()
@@ -546,7 +551,7 @@ case class PeerManager(
             s"$peer cannot be both a test and a persistent peer")
 
     if (finder.hasPeer(peer)) {
-      finder.getData(peer).setServiceIdentifier(versionMsg.services)
+      finder.getData(peer).get.setServiceIdentifier(versionMsg.services)
     } else if (peerDataMap.contains(peer)) {
       require(
         peerDataMap(peer).serviceIdentifier.bytes == versionMsg.services.bytes)
