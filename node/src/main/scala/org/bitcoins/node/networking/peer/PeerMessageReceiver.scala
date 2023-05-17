@@ -9,6 +9,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
 
@@ -31,12 +32,11 @@ case class PeerMessageReceiver(
 
   def handleNetworkMessageReceived(
       networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived,
-      state: PeerMessageReceiverState): Future[PeerMessageReceiverState] = {
+      state: PeerMessageReceiverState,
+      peerMessageSenderApi: PeerMessageSenderApi): Future[
+    PeerMessageReceiverState] = {
 
     val client = networkMsgRecv.client
-
-    //create a way to send a response if we need too
-    val peerMsgSender = PeerMessageSender(client)
 
     logger.debug(
       s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
@@ -70,7 +70,7 @@ case class PeerMessageReceiver(
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload,
-                             sender = peerMsgSender,
+                             peerMsgSenderApi = peerMessageSenderApi,
                              curReceiverState = curState)
       case dataPayload: DataPayload =>
         handleDataPayload(payload = dataPayload)
@@ -104,11 +104,11 @@ case class PeerMessageReceiver(
     */
   private def handleControlPayload(
       payload: ControlPayload,
-      sender: PeerMessageSender,
+      peerMsgSenderApi: PeerMessageSenderApi,
       curReceiverState: PeerMessageReceiverState): Future[
     PeerMessageReceiverState] = {
     controlMessageHandler
-      .handleControlPayload(payload, sender, peer, curReceiverState)
+      .handleControlPayload(payload, peerMsgSenderApi, peer, curReceiverState)
   }
 }
 

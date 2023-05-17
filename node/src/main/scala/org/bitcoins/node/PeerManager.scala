@@ -508,12 +508,9 @@ case class PeerManager(
           val hasCf = serviceIdentifer.nodeCompactFilters
           logger.debug(s"Initialized peer $peer with $hasCf")
 
-          def sendAddrReq: Future[Unit] =
-            finder
-              .getData(peer)
-              .get
-              .peerMessageSender
-              .flatMap(_.sendGetAddrMessage())
+          def sendAddrReq: Future[Unit] = {
+            sendGetAddrMessage(Some(peer))
+          }
 
           def managePeerF(): Future[Unit] = {
             //if we have slots remaining, connect

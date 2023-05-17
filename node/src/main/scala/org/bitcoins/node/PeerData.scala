@@ -36,6 +36,7 @@ case class PeerData(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
       peerMsgRecvState = PeerMessageReceiverState.fresh(),
+      peerMessageSenderApi = peerManager,
       maxReconnectionTries = 4,
       supervisor = supervisor
     )

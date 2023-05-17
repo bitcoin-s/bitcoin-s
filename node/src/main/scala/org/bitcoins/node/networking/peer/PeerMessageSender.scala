@@ -2,15 +2,12 @@ package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRef
 import akka.util.Timeout
-import org.bitcoins.core.api.chain.{ChainApi}
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
 import org.bitcoins.node.{P2PLogger}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.duration.DurationInt
@@ -56,60 +53,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
         Future.unit
     }
 
-  }
-
-  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
-  def sendVersionMessage(): Future[Unit] = {
-    val local = java.net.InetAddress.getLocalHost
-    val versionMsg = VersionMessage(
-      conf.network,
-      InetAddress(client.peer.socket.getAddress.getAddress),
-      InetAddress(local.getAddress),
-      relay = conf.relay)
-    logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
-    sendMsg(versionMsg)
-  }
-
-  def sendVersionMessage(chainApi: ChainApi)(implicit
-      ec: ExecutionContext): Future[Unit] = {
-    chainApi.getBestHashBlockHeight().flatMap { height =>
-      val localhost = java.net.InetAddress.getLocalHost
-      val versionMsg =
-        VersionMessage(conf.network,
-                       NodeConstants.userAgent,
-                       Int32(height),
-                       InetAddress(localhost.getAddress),
-                       InetAddress(localhost.getAddress),
-                       conf.relay)
-
-      logger.debug(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
-      sendMsg(versionMsg)
-    }
-  }
-
-  def sendVerackMessage(): Future[Unit] = {
-    val verackMsg = VerAckMessage
-    sendMsg(verackMsg)
-  }
-
-  def sendSendAddrV2Message(): Future[Unit] = {
-    sendMsg(SendAddrV2Message)
-  }
-
-  def sendGetAddrMessage(): Future[Unit] = {
-    sendMsg(GetAddrMessage)
-  }
-
-  /** Responds to a ping message */
-  def sendPong(ping: PingMessage): Future[Unit] = {
-    val pong = PongMessage(ping.nonce)
-    logger.trace(s"Sending pong=$pong to peer=${client.peer}")
-    sendMsg(pong)
-  }
-
-  def sendHeadersMessage(): Future[Unit] = {
-    val sendHeadersMsg = SendHeadersMessage
-    sendMsg(sendHeadersMsg)
   }
 
   def sendFilterClearMessage(): Future[Unit] = {
