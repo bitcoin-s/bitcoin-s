@@ -516,7 +516,7 @@ case class DataMessageHandler(
               .flatMap(_.headers)
               .map(_.hashBE)
             _ <- peerManager.sendGetHeadersMessage(cachedHeaders, Some(peer))
-          } yield this
+          } yield this.copy(state = HeaderSync(peer))
         }
 
       case headerState @ ValidatingHeaders(peer, _, failedCheck, _) =>
