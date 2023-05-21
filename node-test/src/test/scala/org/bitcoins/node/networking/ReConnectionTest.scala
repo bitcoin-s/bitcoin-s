@@ -1,20 +1,14 @@
 package org.bitcoins.node.networking
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.node.networking.peer.PeerHandler
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.bitcoins.testkit.node.{
   NodeTestUtil,
-  NodeTestWithCachedBitcoindNewest,
-  NodeUnitTest
+  NodeTestWithCachedBitcoindNewest
 }
-import org.bitcoins.testkit.util.AkkaUtil
 import org.scalatest.FutureOutcome
-
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
@@ -41,27 +35,20 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val node = nodeConnectedWithBitcoind.node
-      val peerF = NodeTestUtil.getBitcoindPeer(bitcoind)
-      val peerHandlerF: Future[PeerHandler] = peerF.flatMap { peer =>
-        NodeUnitTest.buildPeerHandler(peer, None)(node.nodeConfig,
-                                                  node.chainConfig,
-                                                  system)
-      }
 
       val connectedF = for {
         _ <- node.start()
-        peerHandler <- peerHandlerF
-        _ = peerHandler.peerMsgSender.connect()
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          peerHandler.p2pClient.isInitialized())
+        //wait until we are fully connected before continuing test
+        _ <- AsyncUtil.retryUntilSatisfiedF(conditionF = () =>
+          node.getConnectionCount.map(_ == 1))
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind)
+        peer <- NodeTestUtil.getBitcoindPeer(bitcoind)
         _ <- bitcoind.disconnectNode(nodeUri)
-        _ <- AkkaUtil.nonBlockingSleep(2.seconds) //time to ensure disconnection
-        //now we should eventually automatically reconnect
-        _ <- AsyncUtil.retryUntilSatisfiedF(
-          conditionF = () => peerHandler.p2pClient.isConnected(),
-          interval = 500.millis,
-          maxTries = 60)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+          node.peerManager.isDisconnected(peer))
+        //make sure we re-connect
+        _ <- AsyncUtil.retryUntilSatisfiedF(conditionF = () =>
+          node.peerManager.isConnected(peer))
       } yield succeed
 
       connectedF

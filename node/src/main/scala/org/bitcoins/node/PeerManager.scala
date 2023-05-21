@@ -410,6 +410,10 @@ case class PeerManager(
     else Future.successful(false)
   }
 
+  def isDisconnected(peer: Peer): Future[Boolean] = {
+    isConnected(peer).map(b => !b)
+  }
+
   def isInitialized(peer: Peer): Future[Boolean] = {
     if (peerDataMap.contains(peer))
       peerDataMap(peer).peerMessageSender.flatMap(_.isInitialized())
@@ -528,13 +532,16 @@ case class PeerManager(
       if (peers.length > 1 && syncPeerOpt.isDefined) {
         node.syncFromNewPeer().map(_ => ())
       } else if (syncPeerOpt.isDefined) {
+        println(s"here1")
         //means we aren't syncing with anyone, so do nothing?
         val exn = new RuntimeException(
           s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state}")
         Future.failed(exn)
       } else {
-        //means we are DoneSyncing, so no need to start syncing from a new peer
-        Future.unit
+
+        /*        //means we are DoneSyncing, so no need to start syncing from a new peer
+        Future.unit*/
+        finder.reconnect(peer)
       }
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted

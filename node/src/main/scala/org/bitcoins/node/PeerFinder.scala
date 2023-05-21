@@ -183,6 +183,11 @@ case class PeerFinder(
     initPeerF.flatMap(_ => peerDiscoveryF)
   }
 
+  def reconnect(peer: Peer): Future[Unit] = {
+    logger.info(s"Attempting to reconnect peer=$peer")
+    tryToReconnectPeer(peer)
+  }
+
   override def stop(): Future[PeerFinder] = {
     //stop scheduler
     peerConnectionScheduler.cancel()
@@ -205,6 +210,11 @@ case class PeerFinder(
   private def tryPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer, PeerData(peer, node, supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
+  }
+
+  private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
+    _peerData.put(peer, PeerData(peer, node, supervisor))
+    _peerData(peer).peerMessageSender.map(_.reconnect())
   }
 
   def removePeer(peer: Peer): Unit = {
