@@ -532,15 +532,11 @@ case class PeerManager(
       if (peers.length > 1 && syncPeerOpt.isDefined) {
         node.syncFromNewPeer().map(_ => ())
       } else if (syncPeerOpt.isDefined) {
-        println(s"here1")
         //means we aren't syncing with anyone, so do nothing?
         val exn = new RuntimeException(
           s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state}")
         Future.failed(exn)
       } else {
-
-        /*        //means we are DoneSyncing, so no need to start syncing from a new peer
-        Future.unit*/
         finder.reconnect(peer)
       }
     } else if (waitingForDeletion.contains(peer)) {
