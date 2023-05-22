@@ -1,7 +1,6 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorRef, ActorSystem, Cancellable}
-import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.ServiceIdentifier
@@ -10,6 +9,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 
 import java.net.{InetAddress, UnknownHostException}
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,6 +28,8 @@ case class PeerFinder(
     extends StartStopAsync[PeerFinder]
     with P2PLogger {
 
+  private val isStarted: AtomicBoolean = new AtomicBoolean(false)
+
   /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
   private def getPeersFromDnsSeeds: Vector[Peer] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
@@ -39,7 +41,7 @@ case class PeerFinder(
         } catch {
           case _: UnknownHostException =>
             logger.debug(s"DNS seed $seed is unavailable.")
-            Vector()
+            Vector.empty
         }
       })
       .distinct
@@ -119,17 +121,14 @@ case class PeerFinder(
 
   private val initialDelay: FiniteDuration = 30.minute
 
-  private val isConnectionSchedulerRunning = AtomicBoolean(false)
+  private val isConnectionSchedulerRunning = new AtomicBoolean(false)
 
   private lazy val peerConnectionScheduler: Cancellable =
     system.scheduler.scheduleWithFixedDelay(
       initialDelay = initialDelay,
       delay = nodeAppConfig.tryNextPeersInterval) { () =>
       {
-        if (
-          isConnectionSchedulerRunning.compareAndSet(expect = false,
-                                                     update = true)
-        ) {
+        if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
           logger.info(s"Querying p2p network for peers...")
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
           if (_peersToTry.size < 32)
@@ -156,7 +155,7 @@ case class PeerFinder(
 
   override def start(): Future[PeerFinder] = {
     logger.debug(s"Starting PeerFinder")
-
+    isStarted.set(true)
     val peersToTry = (getPeersFromParam ++ getPeersFromConfig).distinct
     val initPeerF = Future.traverse(peersToTry)(tryPeer)
 
@@ -183,7 +182,19 @@ case class PeerFinder(
     initPeerF.flatMap(_ => peerDiscoveryF)
   }
 
+  def reconnect(peer: Peer): Future[Unit] = {
+    logger.info(s"Attempting to reconnect peer=$peer")
+    if (isStarted.get) {
+      tryToReconnectPeer(peer)
+    } else {
+      logger.error(
+        s"Ignoring reconnect attempt to peer=$peer as PeerFinder is not started")
+      Future.unit
+    }
+  }
+
   override def stop(): Future[PeerFinder] = {
+    isStarted.set(false)
     //stop scheduler
     peerConnectionScheduler.cancel()
     //delete try queue
@@ -198,13 +209,20 @@ case class PeerFinder(
                            maxTries = 30)
       .map(_ => this)
 
-    closeF.flatMap(_ => waitStopF)
+    closeF.flatMap { _ =>
+      waitStopF
+    }
   }
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer, PeerData(peer, node, supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
+  }
+
+  private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
+    _peerData.put(peer, PeerData(peer, node, supervisor))
+    _peerData(peer).peerMessageSender.map(_.reconnect())
   }
 
   def removePeer(peer: Peer): Unit = {

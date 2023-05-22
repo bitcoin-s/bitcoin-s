@@ -397,7 +397,7 @@ case class PeerManager(
 
     stopF.failed.foreach { e =>
       logger.error(
-        s"Failed to stop peer manager. Peers: $peers, waiting for deletion: $waitingForDeletion",
+        s"Failed to stop peer manager. Peers: ${_peerDataMap.map(_._1)}, waiting for deletion: $waitingForDeletion",
         e)
     }
 
@@ -408,6 +408,10 @@ case class PeerManager(
     if (peerDataMap.contains(peer))
       peerDataMap(peer).peerMessageSender.flatMap(_.isConnected())
     else Future.successful(false)
+  }
+
+  def isDisconnected(peer: Peer): Future[Boolean] = {
+    isConnected(peer).map(b => !b)
   }
 
   def isInitialized(peer: Peer): Future[Boolean] = {
@@ -486,7 +490,6 @@ case class PeerManager(
 
       for {
         _ <- sendAddrReq
-        peerData = finder.getData(peer).get
         _ <- createInDb(peer, peerData.serviceIdentifier)
         _ <- managePeerF()
       } yield ()
@@ -533,8 +536,7 @@ case class PeerManager(
           s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state}")
         Future.failed(exn)
       } else {
-        //means we are DoneSyncing, so no need to start syncing from a new peer
-        Future.unit
+        finder.reconnect(peer)
       }
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted

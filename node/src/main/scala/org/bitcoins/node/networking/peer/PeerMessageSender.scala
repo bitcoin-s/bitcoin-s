@@ -30,6 +30,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     client.actor ! P2PClient.ConnectCommand
   }
 
+  def reconnect(): Unit = {
+    client.actor ! P2PClient.ReconnectCommand
+  }
+
   def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
     client.isConnected()
   }
