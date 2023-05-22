@@ -226,14 +226,6 @@ case class PeerManager(
     }
   }
 
-  def getPeerHandler(peer: Peer): Future[Option[PeerHandler]] = {
-    for {
-      peerMsgSenderOpt <- getPeerMsgSender(peer)
-    } yield {
-      peerMsgSenderOpt.map(p => PeerHandler(p.client, p))
-    }
-  }
-
   def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
     //wait when requested
     val waitF =
