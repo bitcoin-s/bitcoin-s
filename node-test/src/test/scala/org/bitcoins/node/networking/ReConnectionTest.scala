@@ -1,6 +1,9 @@
 package org.bitcoins.node.networking
 
+<<<<<<< HEAD
 import org.bitcoins.asyncutil.AsyncUtil
+=======
+>>>>>>> 1581ca161d6 (Remove PeerHandler as it isn't used in src)
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind

@@ -219,29 +219,6 @@ object NodeUnitTest extends P2PLogger {
     Future.successful(receiver)
   }
 
-  def buildPeerHandler(peer: Peer, walletCreationTimeOpt: Option[Instant])(
-      implicit
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig,
-      system: ActorSystem): Future[PeerHandler] = {
-    import system.dispatcher
-    val nodeF = buildNode(peer, walletCreationTimeOpt)
-    //the problem here is the 'self', this needs to be an ordinary peer message handler
-    //that can handle the handshake
-    val peerHandlerF = for {
-      node <- nodeF
-      //wait until peer is fully initialized
-      _ <- AsyncUtil.awaitConditionF(
-        () => {
-          node.peerManager.getPeerHandler(peer).map(_.isDefined)
-        },
-        interval = 1.second)
-      peerHandler <- node.peerManager.getPeerHandler(peer)
-    } yield peerHandler.get
-
-    peerHandlerF
-  }
-
   def destroyNode(node: Node, appConfig: BitcoinSAppConfig)(implicit
       ec: ExecutionContext): Future[Unit] = {
 
