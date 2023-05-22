@@ -100,6 +100,9 @@ class P2PClientActorTest
     val peerMessageReceiverF =
       for {
         node <- NodeUnitTest.buildNode(peer, None)
+        //piggy back off of node infra to setup p2p clients, but don't actually use
+        //the node itself so stop it here an clean up resources allocated by it
+        _ <- node.stop()
       } yield PeerMessageReceiver(
         controlMessageHandler = node.controlMessageHandler,
         dataMessageHandler = node.peerManager.getDataMessageHandler,

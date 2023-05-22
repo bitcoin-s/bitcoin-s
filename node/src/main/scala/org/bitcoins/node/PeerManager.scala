@@ -397,7 +397,7 @@ case class PeerManager(
 
     stopF.failed.foreach { e =>
       logger.error(
-        s"Failed to stop peer manager. Peers: $peers, waiting for deletion: $waitingForDeletion",
+        s"Failed to stop peer manager. Peers: ${_peerDataMap.map(_._1)}, waiting for deletion: $waitingForDeletion",
         e)
     }
 
@@ -490,7 +490,6 @@ case class PeerManager(
 
       for {
         _ <- sendAddrReq
-        peerData = finder.getData(peer).get
         _ <- createInDb(peer, peerData.serviceIdentifier)
         _ <- managePeerF()
       } yield ()
