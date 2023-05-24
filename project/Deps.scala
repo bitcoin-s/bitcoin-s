@@ -15,7 +15,7 @@ object Deps {
 
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.17.0"
-    val scalaTest = "3.2.15" //https://www.scalatest.org/
+    val scalaTest = "3.2.16" //https://www.scalatest.org/
 
     val scalaTestPlus =
       "3.2.12.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
