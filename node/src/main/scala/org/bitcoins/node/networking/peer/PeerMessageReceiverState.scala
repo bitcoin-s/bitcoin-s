@@ -159,7 +159,14 @@ sealed abstract class PeerMessageReceiverState extends Logging {
         logger.warn(
           s"Already initialized disconnected from peer=$peer, this is a noop")
         this
-      case state @ (_: Initializing | _: Normal) =>
+      case initializing: Initializing =>
+        initializing.initializationTimeoutCancellable.cancel()
+        val newState = InitializedDisconnect(initializing.clientConnectP,
+                                             initializing.clientDisconnectP,
+                                             initializing.versionMsgP,
+                                             initializing.verackMsgP)
+        newState
+      case state: Normal =>
         val newState = InitializedDisconnect(state.clientConnectP,
                                              state.clientDisconnectP,
                                              state.versionMsgP,
