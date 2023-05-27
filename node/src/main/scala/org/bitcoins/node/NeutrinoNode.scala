@@ -41,10 +41,11 @@ case class NeutrinoNode(
 
   implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
-  val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
-
   override lazy val peerManager: PeerManager =
     PeerManager(paramPeers, this, walletCreationTimeOpt)
+
+  override lazy val controlMessageHandler: ControlMessageHandler =
+    ControlMessageHandler(peerManager)
 
   override def start(): Future[NeutrinoNode] = {
     val res = for {
