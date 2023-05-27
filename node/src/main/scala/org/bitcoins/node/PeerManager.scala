@@ -65,7 +65,8 @@ case class PeerManager(
 
   private val finder: PeerFinder =
     PeerFinder(paramPeers = paramPeers,
-               node = node,
+               controlMessageHandler = ControlMessageHandler(this),
+               peerManager = this,
                skipPeers = () => peers,
                supervisor = supervisor)
 
