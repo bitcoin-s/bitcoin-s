@@ -7,6 +7,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
   PeerMessageReceiver,
   PeerMessageReceiverState,
   PeerMessageSender
@@ -19,7 +20,8 @@ import scala.concurrent.duration.DurationInt
   */
 case class PeerData(
     peer: Peer,
-    node: Node,
+    controlMessageHandler: ControlMessageHandler,
+    peerManager: PeerManager,
     supervisor: ActorRef
 )(implicit
     system: ActorSystem,
@@ -33,18 +35,18 @@ case class PeerData(
 
   private lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
-      PeerMessageReceiver(node.controlMessageHandler,
-                          node.peerManager.getDataMessageHandler,
+      PeerMessageReceiver(controlMessageHandler,
+                          peerManager.getDataMessageHandler,
                           peer)
     P2PClient(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
       peerMsgRecvState = PeerMessageReceiverState.fresh(),
-      onReconnect = node.peerManager.onReconnect,
-      onStop = node.peerManager.onP2PClientStopped,
-      onInitializationTimeout = node.peerManager.onInitializationTimeout,
-      node.peerManager.onQueryTimeout,
-      node.peerManager.sendResponseTimeout,
+      onReconnect = peerManager.onReconnect,
+      onStop = peerManager.onP2PClientStopped,
+      onInitializationTimeout = peerManager.onInitializationTimeout,
+      onQueryTimeout = peerManager.onQueryTimeout,
+      sendResponseTimeout = peerManager.sendResponseTimeout,
       maxReconnectionTries = 4,
       supervisor = supervisor
     )

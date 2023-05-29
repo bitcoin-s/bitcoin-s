@@ -6,6 +6,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ConnectCommand
 import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
   PeerMessageReceiver,
   PeerMessageReceiverState
 }
@@ -103,10 +104,11 @@ class P2PClientActorTest
         //piggy back off of node infra to setup p2p clients, but don't actually use
         //the node itself so stop it here an clean up resources allocated by it
         _ <- node.stop()
-      } yield PeerMessageReceiver(
-        controlMessageHandler = node.controlMessageHandler,
-        dataMessageHandler = node.peerManager.getDataMessageHandler,
-        peer = peer)
+        controlMessageHandler = ControlMessageHandler(node.peerManager)
+      } yield PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
+                                  dataMessageHandler =
+                                    node.peerManager.getDataMessageHandler,
+                                  peer = peer)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>

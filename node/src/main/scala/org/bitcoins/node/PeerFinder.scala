@@ -7,6 +7,7 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
+import org.bitcoins.node.networking.peer.ControlMessageHandler
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -18,7 +19,8 @@ import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
     paramPeers: Vector[Peer],
-    node: NeutrinoNode,
+    controlMessageHandler: ControlMessageHandler,
+    peerManager: PeerManager,
     skipPeers: () => Vector[Peer],
     supervisor: ActorRef)(implicit
     ec: ExecutionContext,
@@ -216,12 +218,16 @@ case class PeerFinder(
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(peer, PeerData(peer, node, supervisor))
+    _peerData.put(
+      peer,
+      PeerData(peer, controlMessageHandler, peerManager, supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(peer, PeerData(peer, node, supervisor))
+    _peerData.put(
+      peer,
+      PeerData(peer, controlMessageHandler, peerManager, supervisor))
     _peerData(peer).peerMessageSender.map(_.reconnect())
   }
 

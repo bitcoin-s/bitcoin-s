@@ -211,8 +211,11 @@ object NodeUnitTest extends P2PLogger {
       appConfig.chainConf,
       appConfig.nodeConf,
       system)
+    val controlMessageHandler = ControlMessageHandler(node.peerManager)(
+      system.dispatcher,
+      appConfig.nodeConf)
     val receiver =
-      PeerMessageReceiver(controlMessageHandler = node.controlMessageHandler,
+      PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
                           dataMessageHandler =
                             node.peerManager.getDataMessageHandler,
                           peer = peer)(system, appConfig.nodeConf)
@@ -368,8 +371,10 @@ object NodeUnitTest extends P2PLogger {
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
     val node = buildNode(peer, chainApi, walletCreationTimeOpt)
+    val controlMessageHandler =
+      ControlMessageHandler(node.peerManager)(system.dispatcher, nodeAppConfig)
     val receiver =
-      PeerMessageReceiver(controlMessageHandler = node.controlMessageHandler,
+      PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
                           dataMessageHandler =
                             node.peerManager.getDataMessageHandler,
                           peer = peer)
