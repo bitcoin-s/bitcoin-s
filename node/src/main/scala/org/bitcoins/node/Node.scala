@@ -21,7 +21,6 @@ import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
   MisbehavingPeer
 }
 import org.bitcoins.node.networking.peer.{
-  ControlMessageHandler,
   PeerMessageSender,
   SyncDataMessageHandlerState
 }
@@ -42,9 +41,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   def peerManager: PeerManager
-
-  def controlMessageHandler: ControlMessageHandler
-
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.callBacks
 
   lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()

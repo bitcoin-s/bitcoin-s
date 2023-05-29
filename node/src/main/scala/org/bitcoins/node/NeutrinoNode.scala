@@ -15,10 +15,7 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{
-  ControlMessageHandler,
-  DataMessageHandlerState
-}
+import org.bitcoins.node.networking.peer.{DataMessageHandlerState}
 
 import java.time.Instant
 import scala.concurrent.Future
@@ -43,9 +40,6 @@ case class NeutrinoNode(
 
   override lazy val peerManager: PeerManager =
     PeerManager(paramPeers, this, walletCreationTimeOpt)
-
-  override lazy val controlMessageHandler: ControlMessageHandler =
-    ControlMessageHandler(peerManager)
 
   override def start(): Future[NeutrinoNode] = {
     val res = for {
