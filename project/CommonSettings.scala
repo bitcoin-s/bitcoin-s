@@ -297,7 +297,11 @@ object CommonSettings {
     "com.zaxxer.hikari.util" -> "javassist.bytecode",
 
       //postgres requires this weird waffle dep
-    "waffle.jaas" -> "java.security.acl"
+    "waffle.jaas" -> "java.security.acl",
+
+     //no native image support for now
+     //https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
+     "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted"
     )
   }
 
