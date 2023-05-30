@@ -71,6 +71,8 @@ case class PeerData(
     _invalidMessagesCount += 1
   }
 
+  def getInvalidMessageCount = _invalidMessagesCount
+
   private var lastTimedOut: Long = 0
 
   def updateLastFailureTime(): Unit = {

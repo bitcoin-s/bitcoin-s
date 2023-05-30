@@ -402,6 +402,12 @@ case class PeerManager(
         maxTries = 30)
       _ = dataMessageQueueOpt.map(_.complete())
       _ <- watchCompletion()
+      _ <- {
+        streamDoneProcessF match {
+          case Some(f) => f
+          case None    => Future.unit
+        }
+      }
       _ = {
         dataMessageQueueOpt = None //reset dataMessageQueue var
         dataMessageHandlerOpt = None
@@ -761,7 +767,7 @@ case class PeerManager(
         chainApi = ChainHandler.fromDatabase(),
         walletCreationTimeOpt = walletCreationTimeOpt,
         queue = dataMessageQueueOpt.get,
-        Vector.empty,
+        peers,
         peerMessgeSenderApi = this,
         peerDataOpt = None,
         state = DoneSyncing,
@@ -772,7 +778,7 @@ case class PeerManager(
 
   def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): PeerManager = {
-    this.dataMessageHandlerOpt = Some(dataMessageHandler)
+    this.dataMessageHandlerOpt = Some(dataMessageHandler.copy(peers = peers))
     this
   }
 

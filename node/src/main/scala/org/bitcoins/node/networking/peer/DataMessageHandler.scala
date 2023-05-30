@@ -503,7 +503,8 @@ case class DataMessageHandler(
 
           Future.successful(copy(state = MisbehavingPeer(peer)))
         } else {
-          logger.info(s"Re-querying headers from $peer.")
+          logger.info(
+            s"Re-querying headers from $peer. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${peers.size}")
           for {
             blockchains <- BlockHeaderDAO().getBlockchains()
             cachedHeaders = blockchains
