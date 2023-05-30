@@ -9,6 +9,7 @@ import akka.stream.{
   Supervision
 }
 import akka.stream.scaladsl.{
+  Keep,
   RunnableGraph,
   Sink,
   Source,
@@ -360,8 +361,9 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-    val queue = dataMessageStreamGraph.run()
+    val (queue, doneF) = dataMessageStreamGraph.run()
     dataMessageQueueOpt = Some(queue)
+    streamDoneFOpt = Some(doneF)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
       this
@@ -393,6 +395,14 @@ case class PeerManager(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
         maxTries = 30)
+      _ <- {
+        val finishedF = streamDoneFOpt match {
+          case Some(f) => f
+          case None    => Future.successful(Done)
+        }
+        streamDoneFOpt = None
+        finishedF
+      }
     } yield {
       logger.info(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
@@ -686,14 +696,16 @@ case class PeerManager(
   }
 
   private val dataMessageStreamGraph: RunnableGraph[
-    SourceQueueWithComplete[StreamDataMessageWrapper]] = {
+    (SourceQueueWithComplete[StreamDataMessageWrapper], Future[Done])] = {
     dataMessageStreamSource
-      .to(dataMessageStreamSink)
+      .toMat(dataMessageStreamSink)(Keep.both)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
   }
 
   private var dataMessageQueueOpt: Option[
     SourceQueueWithComplete[StreamDataMessageWrapper]] = None
+
+  private var streamDoneFOpt: Option[Future[Done]] = None
 
   override def offer(
       elem: StreamDataMessageWrapper): Future[QueueOfferResult] = {
