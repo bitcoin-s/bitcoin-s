@@ -204,18 +204,13 @@ case class PeerFinder(
     //delete try queue
     _peersToTry.clear()
 
-    val closeFs = _peerData.map(_._2.stop())
-    val closeF = Future.sequence(closeFs)
-
-    val waitStopF = AsyncUtil
-      .retryUntilSatisfied(_peerData.isEmpty,
-                           interval = 1.seconds,
-                           maxTries = 30)
-      .map(_ => this)
-
-    closeF.flatMap { _ =>
-      waitStopF
-    }
+    for {
+      _ <- Future.traverse(_peerData.map(_._2))(_.stop())
+      _ <- AsyncUtil
+        .retryUntilSatisfied(_peerData.isEmpty,
+                             interval = 1.seconds,
+                             maxTries = 30)
+    } yield this
   }
 
   /** creates and initialises a new test peer */

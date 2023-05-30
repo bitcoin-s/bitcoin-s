@@ -9,6 +9,7 @@ import akka.stream.{
   Supervision
 }
 import akka.stream.scaladsl.{
+  Keep,
   RunnableGraph,
   Sink,
   Source,
@@ -360,8 +361,9 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-    val queue = dataMessageStreamGraph.run()
+    val (queue, doneF) = dataMessageStreamGraph.run()
     dataMessageQueueOpt = Some(queue)
+    streamDoneFOpt = Some(doneF)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
       this
@@ -383,12 +385,20 @@ case class PeerManager(
     peerServicesQueries.foreach(_.cancel()) //reset the peerServicesQueries var?
 
     val stopF = for {
+      _ <- finderStopF
       _ <- watchQueueCompleteF
+      _ <- {
+        val finishedF = streamDoneFOpt match {
+          case Some(f) => f
+          case None    => Future.successful(Done)
+        }
+        streamDoneFOpt = None
+        finishedF
+      }
       _ = {
         dataMessageQueueOpt = None //reset dataMessageQueue var
       }
       _ <- Future.traverse(peers)(removePeer)
-      _ <- finderStopF
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
@@ -512,7 +522,7 @@ case class PeerManager(
     require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
             s"$peer cannot be both a test and a persistent peer")
 
-    logger.info(s"Client stopped for $peer")
+    logger.info(s"Client stopped for $peer peers=$peers")
 
     if (finder.hasPeer(peer)) {
       //client actor for one of the test peers stopped, can remove it from map now
@@ -532,12 +542,12 @@ case class PeerManager(
         case DoneSyncing =>
           None
       }
-      if (peers.length > 1 && syncPeerOpt.isDefined) {
+      if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
         node.syncFromNewPeer().map(_ => ())
       } else if (syncPeerOpt.isDefined) {
         //means we aren't syncing with anyone, so do nothing?
         val exn = new RuntimeException(
-          s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state}")
+          s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
         Future.failed(exn)
       } else {
         finder.reconnect(peer)
@@ -686,14 +696,16 @@ case class PeerManager(
   }
 
   private val dataMessageStreamGraph: RunnableGraph[
-    SourceQueueWithComplete[StreamDataMessageWrapper]] = {
+    (SourceQueueWithComplete[StreamDataMessageWrapper], Future[Done])] = {
     dataMessageStreamSource
-      .to(dataMessageStreamSink)
+      .toMat(dataMessageStreamSink)(Keep.both)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
   }
 
   private var dataMessageQueueOpt: Option[
     SourceQueueWithComplete[StreamDataMessageWrapper]] = None
+
+  private var streamDoneFOpt: Option[Future[Done]] = None
 
   override def offer(
       elem: StreamDataMessageWrapper): Future[QueueOfferResult] = {
