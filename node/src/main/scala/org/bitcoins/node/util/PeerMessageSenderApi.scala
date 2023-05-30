@@ -10,6 +10,7 @@ import org.bitcoins.core.p2p.{
   PongMessage,
   SendAddrV2Message,
   SendHeadersMessage,
+  TransactionMessage,
   TypeIdentifier,
   VerAckMessage,
   VersionMessage
@@ -117,5 +118,12 @@ trait PeerMessageSenderApi {
   def sendVerackMessage(peer: Peer): Future[Unit] = {
     val verackMsg = VerAckMessage
     sendMsg(verackMsg, Some(peer))
+  }
+
+  def sendTransactionMessage(
+      transaction: Transaction,
+      peerOpt: Option[Peer]): Future[Unit] = {
+    val message = TransactionMessage(transaction)
+    sendMsg(message, peerOpt)
   }
 }

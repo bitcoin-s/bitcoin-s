@@ -4,7 +4,6 @@ import akka.actor.ActorRef
 import akka.util.Timeout
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
 import org.bitcoins.node.{P2PLogger}
 import org.bitcoins.node.config.NodeAppConfig
@@ -68,12 +67,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def sendFilterLoadMessage(bloom: BloomFilter): Future[Unit] = {
     val message = FilterLoadMessage(bloom)
     logger.trace(s"Sending filterload=$message to peer=${client.peer}")
-    sendMsg(message)
-  }
-
-  def sendTransactionMessage(transaction: Transaction): Future[Unit] = {
-    val message = TransactionMessage(transaction)
-    logger.debug(s"Sending txmessage=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
