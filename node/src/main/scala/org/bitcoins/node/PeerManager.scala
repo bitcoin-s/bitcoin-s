@@ -27,7 +27,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.networking.P2PClientSupervisor
+import org.bitcoins.node.networking.{P2PClientCallbacks, P2PClientSupervisor}
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
 import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
 import scodec.bits.ByteVector
@@ -63,12 +63,23 @@ case class PeerManager(
                    name =
                      BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
 
+  private lazy val p2pClientCallbacks = P2PClientCallbacks(
+    onReconnect,
+    onStop = onP2PClientStopped,
+    onInitializationTimeout = onInitializationTimeout,
+    onQueryTimeout = onQueryTimeout,
+    sendResponseTimeout = sendResponseTimeout
+  )
+
   private val finder: PeerFinder =
-    PeerFinder(paramPeers = paramPeers,
-               controlMessageHandler = ControlMessageHandler(this),
-               peerManager = this,
-               skipPeers = () => peers,
-               supervisor = supervisor)
+    PeerFinder(
+      paramPeers = paramPeers,
+      controlMessageHandler = ControlMessageHandler(this),
+      peerManager = this,
+      p2pClientCallbacks = p2pClientCallbacks,
+      skipPeers = () => peers,
+      supervisor = supervisor
+    )
 
   def addPeerToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
     finder.addToTry(peers, priority)

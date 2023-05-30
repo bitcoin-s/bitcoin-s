@@ -117,11 +117,7 @@ class P2PClientActorTest
             peer = peer,
             peerMsgHandlerReceiver = peerMsgRecv,
             peerMsgRecvState = PeerMessageReceiverState.fresh(),
-            onReconnect = (_: Peer) => Future.unit,
-            onStop = (_: Peer) => Future.unit,
-            onInitializationTimeout = (_: Peer) => Future.unit,
-            onQueryTimeout = (_, _) => Future.unit,
-            sendResponseTimeout = (_, _) => Future.unit,
+            p2pClientCallbacks = P2PClientCallbacks.empty,
             maxReconnectionTries = 16
           ),
           probe.ref
