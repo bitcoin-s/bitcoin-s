@@ -217,9 +217,13 @@ case class PeerFinder(
   private def tryPeer(peer: Peer): Future[Unit] = {
     peerManager.dataMessageQueueOpt match {
       case Some(queue) =>
-        _peerData.put(
-          peer,
-          PeerData(peer, controlMessageHandler, queue, peerManager, p2pClientCallbacks, supervisor))
+        _peerData.put(peer,
+                      PeerData(peer,
+                               controlMessageHandler,
+                               queue,
+                               peerManager,
+                               p2pClientCallbacks,
+                               supervisor))
         _peerData(peer).peerMessageSender.map(_.connect())
       case None =>
         val exn = new RuntimeException(
@@ -232,9 +236,13 @@ case class PeerFinder(
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
     peerManager.dataMessageQueueOpt match {
       case Some(queue) =>
-        _peerData.put(
-          peer,
-          PeerData(peer, controlMessageHandler, queue, peerManager,  p2pClientCallbacks, supervisor))
+        _peerData.put(peer,
+                      PeerData(peer,
+                               controlMessageHandler,
+                               queue,
+                               peerManager,
+                               p2pClientCallbacks,
+                               supervisor))
         _peerData(peer).peerMessageSender.map(_.reconnect())
       case None =>
         val exn = new RuntimeException(

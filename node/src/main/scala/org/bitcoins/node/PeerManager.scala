@@ -404,6 +404,7 @@ case class PeerManager(
       _ <- watchCompletion()
       _ = {
         dataMessageQueueOpt = None //reset dataMessageQueue var
+        dataMessageHandlerOpt = None
       }
     } yield {
       logger.info(
