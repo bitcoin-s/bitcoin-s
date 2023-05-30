@@ -385,16 +385,8 @@ case class PeerManager(
     peerServicesQueries.foreach(_.cancel()) //reset the peerServicesQueries var?
 
     val stopF = for {
-      _ <- watchQueueCompleteF
-      _ = {
-        dataMessageQueueOpt = None //reset dataMessageQueue var
-      }
-      _ <- Future.traverse(peers)(removePeer)
       _ <- finderStopF
-      _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
-        interval = 1.seconds,
-        maxTries = 30)
+      _ <- watchQueueCompleteF
       _ <- {
         val finishedF = streamDoneFOpt match {
           case Some(f) => f
@@ -403,6 +395,14 @@ case class PeerManager(
         streamDoneFOpt = None
         finishedF
       }
+      _ = {
+        dataMessageQueueOpt = None //reset dataMessageQueue var
+      }
+      _ <- Future.traverse(peers)(removePeer)
+      _ <- AsyncUtil.retryUntilSatisfied(
+        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
+        interval = 1.seconds,
+        maxTries = 30)
     } yield {
       logger.info(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
@@ -547,7 +547,7 @@ case class PeerManager(
       } else if (syncPeerOpt.isDefined) {
         //means we aren't syncing with anyone, so do nothing?
         val exn = new RuntimeException(
-          s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state}")
+          s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
         Future.failed(exn)
       } else {
         finder.reconnect(peer)
