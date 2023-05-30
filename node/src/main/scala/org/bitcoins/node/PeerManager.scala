@@ -384,33 +384,24 @@ case class PeerManager(
 
     val stopF = for {
       _ <- finderStopF
+      _ = dataMessageQueueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
           case Some(f) => f
           case None    => Future.successful(Done)
         }
-        streamDoneFOpt = None
         finishedF
-      }
-      _ = {
-        dataMessageQueueOpt = None //reset dataMessageQueue var
       }
       _ <- Future.traverse(peers)(removePeer)
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
         maxTries = 30)
-      _ = dataMessageQueueOpt.map(_.complete())
       _ <- watchCompletion()
-      _ <- {
-        streamDoneProcessF match {
-          case Some(f) => f
-          case None    => Future.unit
-        }
-      }
       _ = {
         dataMessageQueueOpt = None //reset dataMessageQueue var
         dataMessageHandlerOpt = None
+        streamDoneFOpt = None
       }
     } yield {
       logger.info(
@@ -665,9 +656,7 @@ case class PeerManager(
               s"Couldn't find PeerMessageSender that corresponds with peer=$peer msg=${payload.commandName}. Was it disconnected?"))
           case Some(peerMsgSender) =>
             val dmh = {
-              if (getDataMessageHandler.peerDataOpt.isEmpty) {
-                getDataMessageHandler.copy(peerDataOpt = getPeerData(peer))
-              } else getDataMessageHandler
+              getDataMessageHandler.copy(peerDataOpt = getPeerData(peer))
             }
             dmh
               .handleDataPayload(payload, peerMsgSender, peer)
