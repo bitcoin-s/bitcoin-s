@@ -1,6 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
@@ -19,7 +20,7 @@ import scala.concurrent.Future
   */
 case class PeerMessageReceiver(
     controlMessageHandler: ControlMessageHandler,
-    dataMessageHandler: DataMessageHandler,
+    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
     peer: Peer
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
@@ -88,12 +89,11 @@ case class PeerMessageReceiver(
       payload: DataPayload): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    dataMessageHandler
-      .addToStream(payload, peer)
-      .map(_ =>
-        new PeerMessageReceiver(controlMessageHandler,
-                                dataMessageHandler,
-                                peer))
+    val wrapper = DataMessageWrapper(payload, peer)
+
+    queue
+      .offer(wrapper)
+      .map(_ => new PeerMessageReceiver(controlMessageHandler, queue, peer))
   }
 
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages

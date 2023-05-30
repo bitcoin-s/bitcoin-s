@@ -37,6 +37,9 @@ object DataMessageHandlerState {
     override val isSyncing: Boolean = false
   }
 
+  case class RemovePeers(peers: Vector[Peer], isSyncing: Boolean)
+      extends DataMessageHandlerState
+
   /** State to indicate we are not currently syncing with a peer */
   case object DoneSyncing extends DataMessageHandlerState {
     override val isSyncing: Boolean = false

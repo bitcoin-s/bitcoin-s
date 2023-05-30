@@ -18,7 +18,8 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
   DoneSyncing,
-  MisbehavingPeer
+  MisbehavingPeer,
+  RemovePeers
 }
 import org.bitcoins.node.networking.peer.{
   PeerMessageSender,
@@ -185,8 +186,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     if (isIBD) {
       val syncPeerOpt = peerManager.getDataMessageHandler.state match {
-        case state: SyncDataMessageHandlerState => Some(state.syncPeer)
-        case DoneSyncing | _: MisbehavingPeer   => None
+        case state: SyncDataMessageHandlerState                => Some(state.syncPeer)
+        case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
       }
       syncPeerOpt match {
         case Some(peer) =>

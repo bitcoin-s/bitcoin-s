@@ -215,23 +215,33 @@ case class PeerFinder(
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(peer,
-                  PeerData(peer,
-                           controlMessageHandler,
-                           peerManager,
-                           p2pClientCallbacks,
-                           supervisor))
-    _peerData(peer).peerMessageSender.map(_.connect())
+    peerManager.dataMessageQueueOpt match {
+      case Some(queue) =>
+        _peerData.put(
+          peer,
+          PeerData(peer, controlMessageHandler, queue, peerManager, p2pClientCallbacks, supervisor))
+        _peerData(peer).peerMessageSender.map(_.connect())
+      case None =>
+        val exn = new RuntimeException(
+          s"PeerManager not started, call PeerManager.start() before trying to connect to peer")
+        Future.failed(exn)
+
+    }
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(peer,
-                  PeerData(peer,
-                           controlMessageHandler,
-                           peerManager,
-                           p2pClientCallbacks,
-                           supervisor))
-    _peerData(peer).peerMessageSender.map(_.reconnect())
+    peerManager.dataMessageQueueOpt match {
+      case Some(queue) =>
+        _peerData.put(
+          peer,
+          PeerData(peer, controlMessageHandler, queue, peerManager,  p2pClientCallbacks, supervisor))
+        _peerData(peer).peerMessageSender.map(_.reconnect())
+      case None =>
+        val exn = new RuntimeException(
+          s"PeerManager not started, call PeerManager.start() before trying to reconnect to peer")
+        Future.failed(exn)
+
+    }
   }
 
   def removePeer(peer: Peer): Unit = {

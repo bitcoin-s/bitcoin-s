@@ -189,7 +189,7 @@ case class PeerManager(
           val peerMsgSender =
             peerDataMap(syncState.syncPeer).peerMessageSender
           Some(peerMsgSender)
-        case DoneSyncing | _: MisbehavingPeer => None
+        case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
       }
     }
     val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
@@ -378,15 +378,12 @@ case class PeerManager(
     logger.info(s"Stopping PeerManager")
     val beganAt = System.currentTimeMillis()
 
-    val _ = dataMessageQueueOpt.map(_.complete())
-    val watchQueueCompleteF = watchCompletion()
     val finderStopF = finder.stop()
 
     peerServicesQueries.foreach(_.cancel()) //reset the peerServicesQueries var?
 
     val stopF = for {
       _ <- finderStopF
-      _ <- watchQueueCompleteF
       _ <- {
         val finishedF = streamDoneFOpt match {
           case Some(f) => f
@@ -403,6 +400,11 @@ case class PeerManager(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
         maxTries = 30)
+      _ = dataMessageQueueOpt.map(_.complete())
+      _ <- watchCompletion()
+      _ = {
+        dataMessageQueueOpt = None //reset dataMessageQueue var
+      }
     } yield {
       logger.info(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
@@ -539,7 +541,7 @@ case class PeerManager(
         case s: SyncDataMessageHandlerState =>
           Some(s.syncPeer)
         case m: MisbehavingPeer => Some(m.badPeer)
-        case DoneSyncing =>
+        case DoneSyncing | _: RemovePeers =>
           None
       }
       if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
@@ -592,7 +594,7 @@ case class PeerManager(
         val syncPeer = getDataMessageHandler.state match {
           case syncState: SyncDataMessageHandlerState =>
             syncState.syncPeer
-          case s @ (DoneSyncing | _: MisbehavingPeer) =>
+          case s @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
             sys.error(s"Cannot have state=$s and have a query timeout")
         }
         if (peer == syncPeer)
@@ -608,7 +610,8 @@ case class PeerManager(
 
   private def onHeaderRequestTimeout(
       peer: Peer,
-      state: DataMessageHandlerState): Future[DataMessageHandler] = {
+      state: DataMessageHandlerState,
+      peerData: PeerData): Future[DataMessageHandler] = {
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
       case HeaderSync(_) | MisbehavingPeer(_) =>
@@ -620,10 +623,10 @@ case class PeerManager(
 
         if (newHeaderState.validated) {
           //re-review this
-          fetchCompactFilterHeaders(newDmh)
+          newDmh.fetchCompactFilterHeaders(newDmh, peerData = peerData)
         } else Future.successful(newDmh)
 
-      case DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+      case DoneSyncing | _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
         Future.successful(getDataMessageHandler)
     }
   }
@@ -654,7 +657,12 @@ case class PeerManager(
             Future.failed(new RuntimeException(
               s"Couldn't find PeerMessageSender that corresponds with peer=$peer msg=${payload.commandName}. Was it disconnected?"))
           case Some(peerMsgSender) =>
-            getDataMessageHandler
+            val dmh = {
+              if (getDataMessageHandler.peerDataOpt.isEmpty) {
+                getDataMessageHandler.copy(peerDataOpt = getPeerData(peer))
+              } else getDataMessageHandler
+            }
+            dmh
               .handleDataPayload(payload, peerMsgSender, peer)
               .flatMap { newDmh =>
                 newDmh.state match {
@@ -664,6 +672,11 @@ case class PeerManager(
                     for {
                       _ <- removePeer(m.badPeer)
                       _ <- node.syncFromNewPeer()
+                    } yield msg
+                  case removePeers: RemovePeers =>
+                    updateDataMessageHandler(newDmh)
+                    for {
+                      _ <- Future.traverse(removePeers.peers)(removePeer)
                     } yield msg
                   case _: SyncDataMessageHandlerState | DoneSyncing =>
                     updateDataMessageHandler(newDmh)
@@ -675,11 +688,22 @@ case class PeerManager(
 
       case msg @ HeaderTimeoutWrapper(peer) =>
         logger.debug(s"Processing timeout header for $peer")
-        onHeaderRequestTimeout(peer, getDataMessageHandler.state).map {
-          newDmh =>
-            updateDataMessageHandler(newDmh)
-            logger.debug(s"Done processing timeout header for $peer")
-            msg
+        val peerDataOpt = getPeerData(peer)
+        peerDataOpt match {
+          case Some(peerData) =>
+            for {
+              msg <- {
+                onHeaderRequestTimeout(peer,
+                                       getDataMessageHandler.state,
+                                       peerData).map { newDmh =>
+                  updateDataMessageHandler(newDmh)
+                  logger.debug(s"Done processing timeout header for $peer")
+                  msg
+                }
+              }
+            } yield msg
+          case None =>
+            sys.error(s"Unkown peer timeing out header request, peer=$peer")
         }
     }
 
@@ -702,7 +726,7 @@ case class PeerManager(
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
   }
 
-  private var dataMessageQueueOpt: Option[
+  private[bitcoins] var dataMessageQueueOpt: Option[
     SourceQueueWithComplete[StreamDataMessageWrapper]] = None
 
   private var streamDoneFOpt: Option[Future[Done]] = None
@@ -724,41 +748,30 @@ case class PeerManager(
     }
   }
 
-  def fetchCompactFilterHeaders(
-      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
-    val syncPeer = currentDmh.state match {
-      case s: SyncDataMessageHandlerState => s.syncPeer
-      case state @ (DoneSyncing | _: MisbehavingPeer) =>
-        sys.error(
-          s"Cannot fetch compact filter headers when we are in state=$state")
-    }
-    logger.info(
-      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
-    for {
-      sender <- peerDataMap(syncPeer).peerMessageSender
-      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
-        sender,
-        currentDmh.chainApi)
-    } yield {
-      currentDmh.copy(state = newSyncingState)
-    }
+  private var dataMessageHandlerOpt: Option[DataMessageHandler] = {
+    None
   }
 
-  private var dataMessageHandler: DataMessageHandler = {
-    DataMessageHandler(
-      chainApi = ChainHandler.fromDatabase(),
-      walletCreationTimeOpt = walletCreationTimeOpt,
-      peerManager = this,
-      state = DoneSyncing,
-      filterBatchCache = Set.empty
-    )
+  def getDataMessageHandler: DataMessageHandler = {
+    if (dataMessageHandlerOpt.isDefined) {
+      dataMessageHandlerOpt.get
+    } else {
+      DataMessageHandler(
+        chainApi = ChainHandler.fromDatabase(),
+        walletCreationTimeOpt = walletCreationTimeOpt,
+        queue = dataMessageQueueOpt.get,
+        Vector.empty,
+        peerMessgeSenderApi = this,
+        peerDataOpt = None,
+        state = DoneSyncing,
+        filterBatchCache = Set.empty
+      )
+    }
   }
-
-  def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
   def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): PeerManager = {
-    this.dataMessageHandler = dataMessageHandler
+    this.dataMessageHandlerOpt = Some(dataMessageHandler)
     this
   }
 

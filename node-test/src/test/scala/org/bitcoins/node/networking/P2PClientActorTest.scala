@@ -2,6 +2,7 @@ package org.bitcoins.node.networking
 
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ConnectCommand
@@ -60,22 +61,34 @@ class P2PClientActorTest
     implicit val nodeConf = tuple._1.nodeConf
     for {
       peer <- bitcoindPeerF
-      client <- buildP2PClient(peer)
+      node <- NodeUnitTest.buildNode(peer = peer, walletCreationTimeOpt = None)
+      client = buildP2PClient(peer, node)
       res <- connectAndDisconnect(client)
+      _ <- node.stop()
     } yield res
   }
 
   it must "connect to two nodes" in { tuple =>
     val try1 = for {
       peer <- bitcoindPeerF
-      client <- buildP2PClient(peer)(tuple._1.chainConf, tuple._1.nodeConf)
+      node <- NodeUnitTest.buildNode(peer = peer, walletCreationTimeOpt = None)(
+        tuple._1.chainConf,
+        tuple._1.nodeConf,
+        system)
+      client = buildP2PClient(peer, node)(tuple._1.chainConf, tuple._1.nodeConf)
       res <- connectAndDisconnect(client)
+      _ <- node.stop()
     } yield res
 
     val try2 = for {
       peer <- bitcoindPeer2F
-      client <- buildP2PClient(peer)(tuple._2.chainConf, tuple._2.nodeConf)
+      node <- NodeUnitTest.buildNode(peer = peer, walletCreationTimeOpt = None)(
+        tuple._2.chainConf,
+        tuple._2.nodeConf,
+        system)
+      client = buildP2PClient(peer, node)(tuple._2.chainConf, tuple._2.nodeConf)
       res <- connectAndDisconnect(client)
+      _ <- node.stop()
     } yield res
 
     try1.flatMap { _ =>
@@ -84,9 +97,12 @@ class P2PClientActorTest
   }
 
   it must "close actor on disconnect" in { tuple =>
+    implicit val chainConf = tuple._1.chainConf
+    implicit val nodeConf = tuple._1.nodeConf
     for {
       peer <- bitcoindPeerF
-      client <- buildP2PClient(peer)(tuple._1.chainConf, tuple._1.nodeConf)
+      node <- NodeUnitTest.buildNode(peer = peer, walletCreationTimeOpt = None)
+      client = buildP2PClient(peer, node)(tuple._1.chainConf, tuple._1.nodeConf)
       _ = probe.watch(client.actor)
       _ <- connectAndDisconnect(client)
       term = probe.expectTerminated(client.actor)
@@ -95,39 +111,32 @@ class P2PClientActorTest
     }
   }
 
-  def buildP2PClient(peer: Peer)(implicit
+  def buildP2PClient(peer: Peer, node: Node)(implicit
       chainAppConfig: ChainAppConfig,
-      nodeAppConfig: NodeAppConfig): Future[P2PClient] = {
-    val peerMessageReceiverF =
-      for {
-        node <- NodeUnitTest.buildNode(peer, None)
-        //piggy back off of node infra to setup p2p clients, but don't actually use
-        //the node itself so stop it here an clean up resources allocated by it
-        _ <- node.stop()
-        controlMessageHandler = ControlMessageHandler(node.peerManager)
-      } yield PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                                  dataMessageHandler =
-                                    node.peerManager.getDataMessageHandler,
-                                  peer = peer)
+      nodeAppConfig: NodeAppConfig): P2PClient = {
 
-    val clientActorF: Future[TestActorRef[P2PClientActor]] =
-      peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(
-          P2PClient.props(
-            peer = peer,
-            peerMsgHandlerReceiver = peerMsgRecv,
-            peerMsgRecvState = PeerMessageReceiverState.fresh(),
-            p2pClientCallbacks = P2PClientCallbacks.empty,
-            maxReconnectionTries = 16
-          ),
-          probe.ref
-        )
-      }
-    val p2pClientF: Future[P2PClient] = clientActorF.map {
-      client: TestActorRef[P2PClientActor] =>
-        P2PClient(client, peer)
-    }
-    p2pClientF
+    //piggy back off of node infra to setup p2p clients, but don't actually use
+    //the node itself so stop it here an clean up resources allocated by it
+    val controlMessageHandler = ControlMessageHandler(node.peerManager)
+    val peerMsgRecv = PeerMessageReceiver(
+      controlMessageHandler = controlMessageHandler,
+      queue = node.peerManager.dataMessageQueueOpt.get,
+      peer = peer)
+
+    val client: TestActorRef[P2PClientActor] =
+      TestActorRef(
+        P2PClient.props(
+          peer = peer,
+          peerMsgHandlerReceiver = peerMsgRecv,
+          peerMsgRecvState = PeerMessageReceiverState.fresh(),
+          P2PClientCallbacks.empty,
+          maxReconnectionTries = 16
+        ),
+        probe.ref
+      )
+
+    val p2pClient: P2PClient = P2PClient(client, peer)
+    p2pClient
   }
 
   /** Helper method to connect to the
