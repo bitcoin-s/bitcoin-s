@@ -522,7 +522,9 @@ case class PeerManager(
     require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
             s"$peer cannot be both a test and a persistent peer")
 
-    logger.info(s"Client stopped for $peer")
+    //seems to be a race condition here as _peerDataMap is mutable..
+    val peerCount = peers.length
+    logger.info(s"Client stopped for $peer peers=$peers peerCount=$peerCount")
 
     if (finder.hasPeer(peer)) {
       //client actor for one of the test peers stopped, can remove it from map now
@@ -542,7 +544,7 @@ case class PeerManager(
         case DoneSyncing =>
           None
       }
-      if (peers.length > 1 && syncPeerOpt.isDefined) {
+      if (peerCount > 1 && syncPeerOpt.isDefined) {
         node.syncFromNewPeer().map(_ => ())
       } else if (syncPeerOpt.isDefined) {
         //means we aren't syncing with anyone, so do nothing?
