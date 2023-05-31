@@ -16,6 +16,7 @@ import akka.stream.{
   QueueOfferResult,
   Supervision
 }
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -157,28 +158,6 @@ case class PeerManager(
     sendMsg(message, peerOpt)
   }
 
-  def sendNextGetCompactFilterHeadersCommand(
-      chainApi: ChainApi,
-      peer: Peer,
-      filterHeaderBatchSize: Int,
-      prevStopHash: DoubleSha256DigestBE)(implicit
-      ec: ExecutionContext): Future[Boolean] = {
-    for {
-      filterSyncMarkerOpt <- chainApi.nextBlockHeaderBatchRange(
-        prevStopHash = prevStopHash,
-        batchSize = filterHeaderBatchSize)
-      res <- filterSyncMarkerOpt match {
-        case Some(filterSyncMarker) =>
-          logger.info(
-            s"Requesting next compact filter headers from $filterSyncMarker")
-          sendGetCompactFilterHeadersMessage(filterSyncMarker, Some(peer))
-            .map(_ => true)
-        case None =>
-          Future.successful(false)
-      }
-    } yield res
-  }
-
   override def sendGetCompactFiltersMessage(
       filterSyncMarker: FilterSyncMarker,
       peer: Peer)(implicit
@@ -207,28 +186,6 @@ case class PeerManager(
     }
   }
 
-  /** @return a flag indicating if we are syncing or not
-    */
-  def sendNextGetCompactFilterCommand(
-      chainApi: ChainApi,
-      filterBatchSize: Int,
-      startHeight: Int,
-      peer: Peer)(implicit ec: ExecutionContext): Future[Boolean] = {
-    for {
-      filterSyncMarkerOpt <-
-        chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
-      res <- filterSyncMarkerOpt match {
-        case Some(filterSyncMarker) =>
-          logger.info(s"Requesting compact filters from $filterSyncMarker")
-
-          sendGetCompactFiltersMessage(filterSyncMarker, peer)
-            .map(_ => true)
-        case None =>
-          Future.successful(false)
-      }
-    } yield res
-  }
-
   /** Starts sync compact filer headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
@@ -246,11 +203,13 @@ case class PeerManager(
     }
     val sendCompactFilterHeaderMsgF = syncPeerOptF match {
       case Some(syncPeer) =>
-        sendNextGetCompactFilterHeadersCommand(
+        PeerManager.sendNextGetCompactFilterHeadersCommand(
+          peerMessageSenderApi = this,
           chainApi = chainApi,
-          syncPeer,
+          peer = syncPeer,
           filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
-          prevStopHash = bestFilterHeader.blockHashBE)
+          prevStopHash = bestFilterHeader.blockHashBE
+        )
       case None => Future.successful(false)
     }
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
@@ -264,12 +223,13 @@ case class PeerManager(
           case Some(syncPeer) =>
             //means we are not syncing filter headers, and our filters are NOT
             //in sync with our compact filter headers
-            sendNextGetCompactFilterCommand(chainApi = chainApi,
-                                            filterBatchSize =
-                                              chainAppConfig.filterBatchSize,
-                                            startHeight =
-                                              bestFilterOpt.get.height,
-                                            syncPeer)
+            PeerManager
+              .sendNextGetCompactFilterCommand(
+                peerMessageSenderApi = this,
+                chainApi = chainApi,
+                filterBatchSize = chainAppConfig.filterBatchSize,
+                startHeight = bestFilterOpt.get.height,
+                peer = syncPeer)
               .map(_ => ())
           case None =>
             logger.warn(
@@ -380,6 +340,7 @@ case class PeerManager(
       paramPeers = paramPeers,
       controlMessageHandler = ControlMessageHandler(this),
       queue = queue,
+      peerMessageSenderApi = this,
       skipPeers = () => peers,
       supervisor = supervisor
     )
@@ -673,8 +634,7 @@ case class PeerManager(
 
   private def onHeaderRequestTimeout(
       peer: Peer,
-      state: DataMessageHandlerState,
-      peerData: PeerData): Future[DataMessageHandler] = {
+      state: DataMessageHandlerState): Future[DataMessageHandler] = {
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
       case HeaderSync(_) | MisbehavingPeer(_) =>
@@ -686,7 +646,7 @@ case class PeerManager(
 
         if (newHeaderState.validated) {
           //re-review this
-          newDmh.fetchCompactFilterHeaders(newDmh, peerData = peerData)
+          newDmh.fetchCompactFilterHeaders(newDmh)
         } else Future.successful(newDmh)
 
       case DoneSyncing | _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
@@ -727,7 +687,7 @@ case class PeerManager(
                 sendToPeer.msg.payload match {
                   case _: ControlPayload =>
                     //peer may not be fully initialized, we may be doing the handshake with a peer
-                    finder.getData(peer).map(_.peerMessageSender) match {
+                    finderOpt.get.getData(peer).map(_.peerMessageSender) match {
                       case Some(p) => p.map(Some(_))
                       case None    => FutureUtil.none
                     }
@@ -741,7 +701,7 @@ case class PeerManager(
             getDataMessageHandler.state match {
               case s: SyncDataMessageHandlerState =>
                 getPeerMsgSender(s.syncPeer)
-              case DoneSyncing | _: MisbehavingPeer =>
+              case DoneSyncing | _: MisbehavingPeer | _: RemovePeers =>
                 //pick a random peer to sync with
                 randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
                   .map(Some(_))
@@ -794,22 +754,11 @@ case class PeerManager(
 
       case msg @ HeaderTimeoutWrapper(peer) =>
         logger.debug(s"Processing timeout header for $peer")
-        val peerDataOpt = getPeerData(peer)
-        peerDataOpt match {
-          case Some(peerData) =>
-            for {
-              msg <- {
-                onHeaderRequestTimeout(peer,
-                                       getDataMessageHandler.state,
-                                       peerData).map { newDmh =>
-                  updateDataMessageHandler(newDmh)
-                  logger.debug(s"Done processing timeout header for $peer")
-                  msg
-                }
-              }
-            } yield msg
-          case None =>
-            sys.error(s"Unkown peer timeing out header request, peer=$peer")
+        onHeaderRequestTimeout(peer, getDataMessageHandler.state).map {
+          newDmh =>
+            updateDataMessageHandler(newDmh)
+            logger.debug(s"Done processing timeout header for $peer")
+            msg
         }
 
       case d @ DisconnectedPeer(peer, forceReconnect) =>
@@ -877,24 +826,24 @@ case class PeerManager(
     None
   }
 
-    def fetchCompactFilterHeaders(
-                                   currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
-      val syncPeer = currentDmh.state match {
-        case s: SyncDataMessageHandlerState => s.syncPeer
-        case state@(DoneSyncing | _: MisbehavingPeer) =>
-          sys.error(
-            s"Cannot fetch compact filter headers when we are in state=$state")
-      }
-      logger.info(
-        s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
-      for {
-        newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
-          this,
-          currentDmh.chainApi,
-          syncPeer)
-      } yield {
-        currentDmh.copy(state = newSyncingState)
-      }
+  def fetchCompactFilterHeaders(
+      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
+    val syncPeer = currentDmh.state match {
+      case s: SyncDataMessageHandlerState => s.syncPeer
+      case state @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
+        sys.error(
+          s"Cannot fetch compact filter headers when we are in state=$state")
+    }
+    logger.info(
+      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
+    for {
+      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
+        this,
+        currentDmh.chainApi,
+        syncPeer)
+    } yield {
+      currentDmh.copy(state = newSyncingState)
+    }
   }
 
   def getDataMessageHandler: DataMessageHandler = {
@@ -924,10 +873,10 @@ case class PeerManager(
 
 case class ResponseTimeout(payload: NetworkPayload)
 
-object PeerManager {
+object PeerManager extends Logging {
 
   def sendFirstGetCompactFilterHeadersCommand(
-      peerManager: PeerManager,
+      peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
       peer: Peer)(implicit
       ec: ExecutionContext,
@@ -948,12 +897,60 @@ object PeerManager {
         batchSize = chainConfig.filterHeaderBatchSize)
       res <- hashHeightOpt match {
         case Some(filterSyncMarker) =>
-          peerManager
+          peerMessageSenderApi
             .sendGetCompactFilterHeadersMessage(filterSyncMarker, Some(peer))
             .map(_ => FilterHeaderSync(peer))
         case None =>
           sys.error(
             s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt filterCount=$filterCount")
+      }
+    } yield res
+  }
+
+  def sendNextGetCompactFilterHeadersCommand(
+      peerMessageSenderApi: PeerMessageSenderApi,
+      chainApi: ChainApi,
+      peer: Peer,
+      filterHeaderBatchSize: Int,
+      prevStopHash: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    for {
+      filterSyncMarkerOpt <- chainApi.nextBlockHeaderBatchRange(
+        prevStopHash = prevStopHash,
+        batchSize = filterHeaderBatchSize)
+      res <- filterSyncMarkerOpt match {
+        case Some(filterSyncMarker) =>
+          logger.info(
+            s"Requesting next compact filter headers from $filterSyncMarker")
+          peerMessageSenderApi
+            .sendGetCompactFilterHeadersMessage(filterSyncMarker, Some(peer))
+            .map(_ => true)
+        case None =>
+          Future.successful(false)
+      }
+    } yield res
+  }
+
+  /** @return a flag indicating if we are syncing or not
+    */
+  def sendNextGetCompactFilterCommand(
+      peerMessageSenderApi: PeerMessageSenderApi,
+      chainApi: ChainApi,
+      filterBatchSize: Int,
+      startHeight: Int,
+      peer: Peer)(implicit ec: ExecutionContext): Future[Boolean] = {
+    for {
+      filterSyncMarkerOpt <-
+        chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
+      res <- filterSyncMarkerOpt match {
+        case Some(filterSyncMarker) =>
+          logger.info(s"Requesting compact filters from $filterSyncMarker")
+
+          peerMessageSenderApi
+            .sendGetCompactFiltersMessage(filterSyncMarker, peer)
+            .map(_ => true)
+        case None =>
+          Future.successful(false)
       }
     } yield res
   }
