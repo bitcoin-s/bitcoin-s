@@ -221,7 +221,6 @@ case class PeerFinder(
                       PeerData(peer,
                                controlMessageHandler,
                                queue,
-                               peerManager,
                                p2pClientCallbacks,
                                supervisor))
         _peerData(peer).peerMessageSender.map(_.connect())
@@ -240,7 +239,6 @@ case class PeerFinder(
                       PeerData(peer,
                                controlMessageHandler,
                                queue,
-                               peerManager,
                                p2pClientCallbacks,
                                supervisor))
         _peerData(peer).peerMessageSender.map(_.reconnect())

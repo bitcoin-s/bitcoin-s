@@ -24,7 +24,6 @@ case class PeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
-    peerManager: PeerManager,
     p2pClientCallbacks: P2PClientCallbacks,
     supervisor: ActorRef
 )(implicit
