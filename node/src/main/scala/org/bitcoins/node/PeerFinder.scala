@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorRef, ActorSystem, Cancellable}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.ServiceIdentifier
@@ -8,7 +9,10 @@ import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.P2PClientCallbacks
-import org.bitcoins.node.networking.peer.ControlMessageHandler
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  StreamDataMessageWrapper
+}
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -21,7 +25,7 @@ import scala.util.{Failure, Random, Success}
 case class PeerFinder(
     paramPeers: Vector[Peer],
     controlMessageHandler: ControlMessageHandler,
-    peerManager: PeerManager,
+    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
     p2pClientCallbacks: P2PClientCallbacks,
     skipPeers: () => Vector[Peer],
     supervisor: ActorRef)(implicit
@@ -215,39 +219,25 @@ case class PeerFinder(
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
-    peerManager.dataMessageQueueOpt match {
-      case Some(queue) =>
-        _peerData.put(peer,
-                      PeerData(peer,
-                               controlMessageHandler,
-                               queue,
-                               p2pClientCallbacks,
-                               supervisor))
-        _peerData(peer).peerMessageSender.map(_.connect())
-      case None =>
-        val exn = new RuntimeException(
-          s"PeerManager not started, call PeerManager.start() before trying to connect to peer")
-        Future.failed(exn)
+    _peerData.put(peer,
+                  PeerData(peer,
+                           controlMessageHandler,
+                           queue,
+                           p2pClientCallbacks,
+                           supervisor))
+    _peerData(peer).peerMessageSender.map(_.connect())
 
-    }
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    peerManager.dataMessageQueueOpt match {
-      case Some(queue) =>
-        _peerData.put(peer,
-                      PeerData(peer,
-                               controlMessageHandler,
-                               queue,
-                               p2pClientCallbacks,
-                               supervisor))
-        _peerData(peer).peerMessageSender.map(_.reconnect())
-      case None =>
-        val exn = new RuntimeException(
-          s"PeerManager not started, call PeerManager.start() before trying to reconnect to peer")
-        Future.failed(exn)
+    _peerData.put(peer,
+                  PeerData(peer,
+                           controlMessageHandler,
+                           queue,
+                           p2pClientCallbacks,
+                           supervisor))
+    _peerData(peer).peerMessageSender.map(_.reconnect())
 
-    }
   }
 
   def removePeer(peer: Peer): Unit = {
