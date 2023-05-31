@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
@@ -10,7 +11,8 @@ import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   PeerMessageReceiver,
   PeerMessageReceiverState,
-  PeerMessageSender
+  PeerMessageSender,
+  StreamDataMessageWrapper
 }
 
 import scala.concurrent.Future
@@ -21,7 +23,7 @@ import scala.concurrent.duration.DurationInt
 case class PeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
-    peerManager: PeerManager,
+    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
     p2pClientCallbacks: P2PClientCallbacks,
     supervisor: ActorRef
 )(implicit
@@ -36,9 +38,7 @@ case class PeerData(
 
   private lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
-      PeerMessageReceiver(controlMessageHandler,
-                          peerManager.getDataMessageHandler,
-                          peer)
+      PeerMessageReceiver(controlMessageHandler, queue, peer)
     P2PClient(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
@@ -69,6 +69,8 @@ case class PeerData(
   def updateInvalidMessageCount(): Unit = {
     _invalidMessagesCount += 1
   }
+
+  def getInvalidMessageCount = _invalidMessagesCount
 
   private var lastTimedOut: Long = 0
 

@@ -72,32 +72,38 @@ case class PeerManager(
     sendResponseTimeout = sendResponseTimeout
   )
 
-  private val finder: PeerFinder =
-    PeerFinder(
-      paramPeers = paramPeers,
-      controlMessageHandler = ControlMessageHandler(this),
-      peerManager = this,
-      p2pClientCallbacks = p2pClientCallbacks,
-      skipPeers = () => peers,
-      supervisor = supervisor
-    )
+  private var finderOpt: Option[PeerFinder] = {
+    None
+  }
 
   def addPeerToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
-    finder.addToTry(peers, priority)
+    finderOpt match {
+      case Some(finder) => finder.addToTry(peers, priority)
+      case None =>
+        sys.error(
+          s"Cannot addPeerToTry, finder not started. Call PeerManager.start()")
+    }
   }
 
   def connectedPeerCount: Int = _peerDataMap.size
 
-  def addPeer(peer: Peer): Future[Unit] = {
-    require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
-    val curPeerData = finder.popFromCache(peer).get
-    _peerDataMap.put(peer, curPeerData)
-    val hasCf =
-      if (curPeerData.serviceIdentifier.nodeCompactFilters) "with filters"
-      else ""
-    logger.info(
-      s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
-    Future.unit
+  private def addPeer(peer: Peer): Future[Unit] = {
+    finderOpt match {
+      case Some(finder) =>
+        require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
+        val curPeerData = finder.popFromCache(peer).get
+        _peerDataMap.put(peer, curPeerData)
+        val hasCf =
+          if (curPeerData.serviceIdentifier.nodeCompactFilters) "with filters"
+          else ""
+        logger.info(
+          s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
+        Future.unit
+      case None =>
+        sys.error(
+          s"Cannot addPeer, finder not started. Call PeerManager.start()")
+    }
+
   }
 
   def peers: Vector[Peer] = _peerDataMap.keys.toVector
@@ -189,7 +195,7 @@ case class PeerManager(
           val peerMsgSender =
             peerDataMap(syncState.syncPeer).peerMessageSender
           Some(peerMsgSender)
-        case DoneSyncing | _: MisbehavingPeer => None
+        case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
       }
     }
     val sendCompactFilterHeaderMsgF = syncPeerMsgSenderOptF match {
@@ -364,6 +370,15 @@ case class PeerManager(
     val (queue, doneF) = dataMessageStreamGraph.run()
     dataMessageQueueOpt = Some(queue)
     streamDoneFOpt = Some(doneF)
+    val finder = PeerFinder(
+      paramPeers = paramPeers,
+      controlMessageHandler = ControlMessageHandler(this),
+      queue = queue,
+      p2pClientCallbacks = p2pClientCallbacks,
+      skipPeers = () => peers,
+      supervisor = supervisor
+    )
+    finderOpt = Some(finder)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
       this
@@ -378,31 +393,36 @@ case class PeerManager(
     logger.info(s"Stopping PeerManager")
     val beganAt = System.currentTimeMillis()
 
-    val _ = dataMessageQueueOpt.map(_.complete())
-    val watchQueueCompleteF = watchCompletion()
-    val finderStopF = finder.stop()
+    val finderStopF = finderOpt match {
+      case Some(finder) => finder.stop()
+      case None         => Future.unit
+    }
 
     peerServicesQueries.foreach(_.cancel()) //reset the peerServicesQueries var?
 
     val stopF = for {
       _ <- finderStopF
-      _ <- watchQueueCompleteF
+      _ = dataMessageQueueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
           case Some(f) => f
           case None    => Future.successful(Done)
         }
-        streamDoneFOpt = None
         finishedF
-      }
-      _ = {
-        dataMessageQueueOpt = None //reset dataMessageQueue var
       }
       _ <- Future.traverse(peers)(removePeer)
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
         maxTries = 30)
+      _ <- watchCompletion()
+      _ = {
+        //reset all variables
+        dataMessageQueueOpt = None
+        dataMessageHandlerOpt = None
+        streamDoneFOpt = None
+        finderOpt = None
+      }
     } yield {
       logger.info(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
@@ -435,145 +455,177 @@ case class PeerManager(
   }
 
   def onInitializationTimeout(peer: Peer): Future[Unit] = {
-    require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
-            s"$peer cannot be both a test and a persistent peer")
+    finderOpt match {
+      case Some(finder) =>
+        require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
+                s"$peer cannot be both a test and a persistent peer")
 
-    if (finder.hasPeer(peer)) {
-      //one of the peers that we tried, failed to init within time, disconnect
-      finder.getData(peer).get.stop()
-    } else if (peerDataMap.contains(peer)) {
-      //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
-      //a reconnection attempt, meaning it got connected but failed to initialize, disconnect
-      peerDataMap(peer).stop()
-    } else {
-      //this should never happen
-      logger.warn(s"onInitializationTimeout called for unknown $peer")
-      Future.unit
+        if (finder.hasPeer(peer)) {
+          //one of the peers that we tried, failed to init within time, disconnect
+          finder.getData(peer).get.stop()
+        } else if (peerDataMap.contains(peer)) {
+          //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
+          //a reconnection attempt, meaning it got connected but failed to initialize, disconnect
+          peerDataMap(peer).stop()
+        } else {
+          //this should never happen
+          logger.warn(s"onInitializationTimeout called for unknown $peer")
+          Future.unit
+        }
+      case None =>
+        logger.warn(
+          s"Cannot execute onInitializationTimeout, finder not started")
+        Future.unit
     }
+
   }
 
   def onInitialization(peer: Peer): Future[Unit] = {
-    require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
-            s"$peer cannot be both a test and a persistent peer")
+    finderOpt match {
+      case Some(finder) =>
+        require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
+                s"$peer cannot be both a test and a persistent peer")
 
-    //this assumes neutrino and checks for compact filter support so should not be called for anything else
-    require(nodeAppConfig.nodeType == NodeType.NeutrinoNode,
-            s"Node cannot be ${nodeAppConfig.nodeType.shortName}")
+        //this assumes neutrino and checks for compact filter support so should not be called for anything else
+        require(nodeAppConfig.nodeType == NodeType.NeutrinoNode,
+                s"Node cannot be ${nodeAppConfig.nodeType.shortName}")
 
-    if (finder.hasPeer(peer)) {
-      //one of the peers we tries got initialized successfully
-      val peerData = finder.getData(peer).get
-      val serviceIdentifer = peerData.serviceIdentifier
-      val hasCf = serviceIdentifer.nodeCompactFilters
-      logger.debug(s"Initialized peer $peer with $hasCf")
+        if (finder.hasPeer(peer)) {
+          //one of the peers we tries got initialized successfully
+          val peerData = finder.getData(peer).get
+          val serviceIdentifer = peerData.serviceIdentifier
+          val hasCf = serviceIdentifer.nodeCompactFilters
+          logger.debug(s"Initialized peer $peer with $hasCf")
 
-      def sendAddrReq: Future[Unit] =
-        finder
-          .getData(peer)
-          .get
-          .peerMessageSender
-          .flatMap(_.sendGetAddrMessage())
+          def sendAddrReq: Future[Unit] =
+            finder
+              .getData(peer)
+              .get
+              .peerMessageSender
+              .flatMap(_.sendGetAddrMessage())
 
-      def managePeerF(): Future[Unit] = {
-        //if we have slots remaining, connect
-        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
-          addPeer(peer)
-        } else {
-          lazy val notCf = peerDataMap
-            .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
-            .keys
+          def managePeerF(): Future[Unit] = {
+            //if we have slots remaining, connect
+            if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
+              addPeer(peer)
+            } else {
+              lazy val notCf = peerDataMap
+                .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
+                .keys
 
-          //try to drop another non compact filter connection for this
-          if (hasCf && notCf.nonEmpty)
-            replacePeer(replacePeer = notCf.head, withPeer = peer)
-          else {
-            //no use for this apart from writing in db
-            //we do want to give it enough time to send addr messages
-            AsyncUtil
-              .nonBlockingSleep(duration = 10.seconds)
-              .flatMap { _ =>
-                //could have already been deleted in case of connection issues
-                finder.getData(peer) match {
-                  case Some(p) => p.stop()
-                  case None    => Future.unit
-                }
+              //try to drop another non compact filter connection for this
+              if (hasCf && notCf.nonEmpty)
+                replacePeer(replacePeer = notCf.head, withPeer = peer)
+              else {
+                //no use for this apart from writing in db
+                //we do want to give it enough time to send addr messages
+                AsyncUtil
+                  .nonBlockingSleep(duration = 10.seconds)
+                  .flatMap { _ =>
+                    //could have already been deleted in case of connection issues
+                    finder.getData(peer) match {
+                      case Some(p) => p.stop()
+                      case None    => Future.unit
+                    }
+                  }
               }
+            }
           }
+
+          for {
+            _ <- sendAddrReq
+            _ <- createInDb(peer, peerData.serviceIdentifier)
+            _ <- managePeerF()
+          } yield ()
+
+        } else if (peerDataMap.contains(peer)) {
+          //one of the persistent peers initialized again, this can happen in case of a reconnection attempt
+          //which succeeded which is all good, do nothing
+          Future.unit
+        } else {
+          logger.warn(s"onInitialization called for unknown $peer")
+          Future.unit
         }
-      }
-
-      for {
-        _ <- sendAddrReq
-        _ <- createInDb(peer, peerData.serviceIdentifier)
-        _ <- managePeerF()
-      } yield ()
-
-    } else if (peerDataMap.contains(peer)) {
-      //one of the persistent peers initialized again, this can happen in case of a reconnection attempt
-      //which succeeded which is all good, do nothing
-      Future.unit
-    } else {
-      logger.warn(s"onInitialization called for unknown $peer")
-      Future.unit
+      case None =>
+        logger.warn(
+          s"onInitialization cannot be run, PeerFinder was not started")
+        Future.unit
     }
+
   }
 
   def onP2PClientStopped(peer: Peer): Future[Unit] = {
-    require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
-            s"$peer cannot be both a test and a persistent peer")
+    finderOpt match {
+      case Some(finder) =>
+        require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
+                s"$peer cannot be both a test and a persistent peer")
 
-    logger.info(s"Client stopped for $peer peers=$peers")
+        logger.info(s"Client stopped for $peer peers=$peers")
 
-    if (finder.hasPeer(peer)) {
-      //client actor for one of the test peers stopped, can remove it from map now
-      finder.removePeer(peer)
-      Future.unit
-    } else if (peerDataMap.contains(peer)) {
-      //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
-      //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
-      _peerDataMap.remove(peer)
-      //getDataMesageHandler.state is already mutated from another thread
-      //this will be set to the new sync peer not the old one.
-      val state = getDataMessageHandler.state
-      val syncPeerOpt = state match {
-        case s: SyncDataMessageHandlerState =>
-          Some(s.syncPeer)
-        case m: MisbehavingPeer => Some(m.badPeer)
-        case DoneSyncing =>
-          None
-      }
-      if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
-        node.syncFromNewPeer().map(_ => ())
-      } else if (syncPeerOpt.isDefined) {
-        //means we aren't syncing with anyone, so do nothing?
-        val exn = new RuntimeException(
-          s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
-        Future.failed(exn)
-      } else {
-        finder.reconnect(peer)
-      }
-    } else if (waitingForDeletion.contains(peer)) {
-      //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
-      _waitingForDeletion.remove(peer)
-      Future.unit
-    } else {
-      logger.warn(s"onP2PClientStopped called for unknown $peer")
-      Future.unit
+        if (finder.hasPeer(peer)) {
+          //client actor for one of the test peers stopped, can remove it from map now
+          finder.removePeer(peer)
+          Future.unit
+        } else if (peerDataMap.contains(peer)) {
+          //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
+          //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
+          _peerDataMap.remove(peer)
+          //getDataMesageHandler.state is already mutated from another thread
+          //this will be set to the new sync peer not the old one.
+          val state = getDataMessageHandler.state
+          val syncPeerOpt = state match {
+            case s: SyncDataMessageHandlerState =>
+              Some(s.syncPeer)
+            case m: MisbehavingPeer => Some(m.badPeer)
+            case DoneSyncing | _: RemovePeers =>
+              None
+          }
+          if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
+            node.syncFromNewPeer().map(_ => ())
+          } else if (syncPeerOpt.isDefined) {
+            //means we aren't syncing with anyone, so do nothing?
+            val exn = new RuntimeException(
+              s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
+            Future.failed(exn)
+          } else {
+            finder.reconnect(peer)
+          }
+        } else if (waitingForDeletion.contains(peer)) {
+          //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
+          _waitingForDeletion.remove(peer)
+          Future.unit
+        } else {
+          logger.warn(s"onP2PClientStopped called for unknown $peer")
+          Future.unit
+        }
+      case None =>
+        logger.warn(
+          s"onP2PClientStopped cannot be run, PeerFinder was not started")
+        Future.unit
     }
   }
 
   def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Unit = {
-    require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
-            s"$peer cannot be both a test and a persistent peer")
+    finderOpt match {
+      case Some(finder) =>
+        require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
+                s"$peer cannot be both a test and a persistent peer")
 
-    if (finder.hasPeer(peer)) {
-      finder.getData(peer).get.setServiceIdentifier(versionMsg.services)
-    } else if (peerDataMap.contains(peer)) {
-      require(
-        peerDataMap(peer).serviceIdentifier.bytes == versionMsg.services.bytes)
-    } else {
-      logger.warn(s"onVersionMessage called for unknown $peer")
+        if (finder.hasPeer(peer)) {
+          finder.getData(peer).get.setServiceIdentifier(versionMsg.services)
+        } else if (peerDataMap.contains(peer)) {
+          require(
+            peerDataMap(
+              peer).serviceIdentifier.bytes == versionMsg.services.bytes)
+        } else {
+          logger.warn(s"onVersionMessage called for unknown $peer")
+        }
+      case None =>
+        logger.warn(
+          s"onVersionMessage cannot be run, PeerFinder was not started")
+        ()
     }
+
   }
 
   def onQueryTimeout(payload: ExpectsResponse, peer: Peer): Future[Unit] = {
@@ -592,7 +644,7 @@ case class PeerManager(
         val syncPeer = getDataMessageHandler.state match {
           case syncState: SyncDataMessageHandlerState =>
             syncState.syncPeer
-          case s @ (DoneSyncing | _: MisbehavingPeer) =>
+          case s @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
             sys.error(s"Cannot have state=$s and have a query timeout")
         }
         if (peer == syncPeer)
@@ -608,7 +660,8 @@ case class PeerManager(
 
   private def onHeaderRequestTimeout(
       peer: Peer,
-      state: DataMessageHandlerState): Future[DataMessageHandler] = {
+      state: DataMessageHandlerState,
+      peerData: PeerData): Future[DataMessageHandler] = {
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
       case HeaderSync(_) | MisbehavingPeer(_) =>
@@ -620,10 +673,10 @@ case class PeerManager(
 
         if (newHeaderState.validated) {
           //re-review this
-          fetchCompactFilterHeaders(newDmh)
+          newDmh.fetchCompactFilterHeaders(newDmh, peerData = peerData)
         } else Future.successful(newDmh)
 
-      case DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+      case DoneSyncing | _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
         Future.successful(getDataMessageHandler)
     }
   }
@@ -654,7 +707,10 @@ case class PeerManager(
             Future.failed(new RuntimeException(
               s"Couldn't find PeerMessageSender that corresponds with peer=$peer msg=${payload.commandName}. Was it disconnected?"))
           case Some(peerMsgSender) =>
-            getDataMessageHandler
+            val dmh = {
+              getDataMessageHandler.copy(peerDataOpt = getPeerData(peer))
+            }
+            dmh
               .handleDataPayload(payload, peerMsgSender, peer)
               .flatMap { newDmh =>
                 newDmh.state match {
@@ -664,6 +720,11 @@ case class PeerManager(
                     for {
                       _ <- removePeer(m.badPeer)
                       _ <- node.syncFromNewPeer()
+                    } yield msg
+                  case removePeers: RemovePeers =>
+                    updateDataMessageHandler(newDmh)
+                    for {
+                      _ <- Future.traverse(removePeers.peers)(removePeer)
                     } yield msg
                   case _: SyncDataMessageHandlerState | DoneSyncing =>
                     updateDataMessageHandler(newDmh)
@@ -675,11 +736,22 @@ case class PeerManager(
 
       case msg @ HeaderTimeoutWrapper(peer) =>
         logger.debug(s"Processing timeout header for $peer")
-        onHeaderRequestTimeout(peer, getDataMessageHandler.state).map {
-          newDmh =>
-            updateDataMessageHandler(newDmh)
-            logger.debug(s"Done processing timeout header for $peer")
-            msg
+        val peerDataOpt = getPeerData(peer)
+        peerDataOpt match {
+          case Some(peerData) =>
+            for {
+              msg <- {
+                onHeaderRequestTimeout(peer,
+                                       getDataMessageHandler.state,
+                                       peerData).map { newDmh =>
+                  updateDataMessageHandler(newDmh)
+                  logger.debug(s"Done processing timeout header for $peer")
+                  msg
+                }
+              }
+            } yield msg
+          case None =>
+            sys.error(s"Unkown peer timeing out header request, peer=$peer")
         }
     }
 
@@ -702,7 +774,7 @@ case class PeerManager(
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
   }
 
-  private var dataMessageQueueOpt: Option[
+  private[bitcoins] var dataMessageQueueOpt: Option[
     SourceQueueWithComplete[StreamDataMessageWrapper]] = None
 
   private var streamDoneFOpt: Option[Future[Done]] = None
@@ -724,41 +796,30 @@ case class PeerManager(
     }
   }
 
-  def fetchCompactFilterHeaders(
-      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
-    val syncPeer = currentDmh.state match {
-      case s: SyncDataMessageHandlerState => s.syncPeer
-      case state @ (DoneSyncing | _: MisbehavingPeer) =>
-        sys.error(
-          s"Cannot fetch compact filter headers when we are in state=$state")
-    }
-    logger.info(
-      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
-    for {
-      sender <- peerDataMap(syncPeer).peerMessageSender
-      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
-        sender,
-        currentDmh.chainApi)
-    } yield {
-      currentDmh.copy(state = newSyncingState)
-    }
+  private var dataMessageHandlerOpt: Option[DataMessageHandler] = {
+    None
   }
 
-  private var dataMessageHandler: DataMessageHandler = {
-    DataMessageHandler(
-      chainApi = ChainHandler.fromDatabase(),
-      walletCreationTimeOpt = walletCreationTimeOpt,
-      peerManager = this,
-      state = DoneSyncing,
-      filterBatchCache = Set.empty
-    )
+  def getDataMessageHandler: DataMessageHandler = {
+    if (dataMessageHandlerOpt.isDefined) {
+      dataMessageHandlerOpt.get
+    } else {
+      DataMessageHandler(
+        chainApi = ChainHandler.fromDatabase(),
+        walletCreationTimeOpt = walletCreationTimeOpt,
+        queue = dataMessageQueueOpt.get,
+        peers,
+        peerMessgeSenderApi = this,
+        peerDataOpt = None,
+        state = DoneSyncing,
+        filterBatchCache = Set.empty
+      )
+    }
   }
-
-  def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
   def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): PeerManager = {
-    this.dataMessageHandler = dataMessageHandler
+    this.dataMessageHandlerOpt = Some(dataMessageHandler.copy(peers = peers))
     this
   }
 

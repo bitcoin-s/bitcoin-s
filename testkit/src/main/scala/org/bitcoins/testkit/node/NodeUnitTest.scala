@@ -216,8 +216,7 @@ object NodeUnitTest extends P2PLogger {
       appConfig.nodeConf)
     val receiver =
       PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                          dataMessageHandler =
-                            node.peerManager.getDataMessageHandler,
+                          queue = node.peerManager.dataMessageQueueOpt.get,
                           peer = peer)(system, appConfig.nodeConf)
     Future.successful(receiver)
   }
@@ -375,8 +374,7 @@ object NodeUnitTest extends P2PLogger {
       ControlMessageHandler(node.peerManager)(system.dispatcher, nodeAppConfig)
     val receiver =
       PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                          dataMessageHandler =
-                            node.peerManager.getDataMessageHandler,
+                          queue = node.peerManager.dataMessageQueueOpt.get,
                           peer = peer)
     Future.successful(receiver)
   }
