@@ -1,11 +1,10 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
+import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage, NetworkMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
   DoneSyncing,
   MisbehavingPeer,
@@ -13,6 +12,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
 }
 import org.bitcoins.node.networking.peer.{
   DataMessageHandlerState,
+  SendToPeer,
   SyncDataMessageHandlerState
 }
 import org.bitcoins.server.BitcoinSAppConfig
@@ -81,19 +81,17 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                            maxTries = 30,
                                            interval = 1.second)
         //sync from first bitcoind
+        peer0 = bitcoindPeers(0)
         _ = node.peerManager.updateDataMessageHandler(
           node.peerManager.getDataMessageHandler.copy(state =
-            DataMessageHandlerState.HeaderSync(bitcoindPeers(0)))(
-            executionContext,
-            node.nodeAppConfig,
-            node.chainAppConfig))
-        expectHeaders = ExpectResponseCommand(
-          GetHeadersMessage(node.chainConfig.chain.genesisHash))
+            DataMessageHandlerState.HeaderSync(peer0))(executionContext,
+                                                       node.nodeAppConfig,
+                                                       node.chainAppConfig))
+        networkPayload =
+          GetHeadersMessage(node.chainConfig.chain.genesisHash)
         //waiting for response to header query now
-        client <- node.peerManager
-          .getPeerMsgSender(bitcoindPeers(0))
-          .map(_.get.client)
-        _ = client.actor ! expectHeaders
+        networkMessage = NetworkMessage(networkParam, networkPayload)
+        _ <- node.peerManager.offer(SendToPeer(networkMessage, Some(peer0)))
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.info(s"Disconnected $nodeUri from bitcoind")

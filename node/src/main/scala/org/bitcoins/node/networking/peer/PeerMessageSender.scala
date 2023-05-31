@@ -5,9 +5,10 @@ import akka.util.Timeout
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
-import org.bitcoins.node.{P2PLogger}
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -87,7 +88,11 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   private[node] def sendMsg(msg: NetworkMessage): Future[Unit] = {
     logger.debug(s"Sending msg=${msg.header.commandName} to peer=${socket}")
-    client.actor ! msg
+    val wrap = msg match {
+      case _: ExpectsResponse => ExpectResponseCommand(msg.payload)
+      case _                  => msg
+    }
+    client.actor ! wrap
     Future.unit
   }
 }

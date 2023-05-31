@@ -282,7 +282,8 @@ case class PeerManager(
     }
   }
 
-  def getPeerMsgSender(peer: Peer): Future[Option[PeerMessageSender]] = {
+  private def getPeerMsgSender(
+      peer: Peer): Future[Option[PeerMessageSender]] = {
     _peerDataMap.find(_._1 == peer).map(_._2.peerMessageSender) match {
       case Some(peerMsgSender) => peerMsgSender.map(Some(_))
       case None                => Future.successful(None)
