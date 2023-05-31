@@ -24,7 +24,6 @@ import org.bitcoins.node.networking.P2PClient.{
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.networking.peer.{
-  DataMessageHandlerState,
   PeerMessageReceiver,
   PeerMessageReceiverState
 }
