@@ -115,8 +115,8 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
-              "24.1" -> "09fa27956f2884434eee2ca1a9d2822712e8405c096e82ecedf64a638f42ca1a",
-              "23.2" -> "004b2e25b21e0f14cbcce6acec37f221447abbb3ea7931c689e508054bfc6cf6",
+              "24.1" -> "2b3181f73e3a7a10f57773bf57f11a622ec9f235b828e8bdbf41a2b17062ad62",
+              "23.2" -> "29dd4c94de8b292fd19fd9475f2f31f891d04f16238bd7defa48eef3f2f8546a",
               "22.0" -> "9485e4b52ed6cebfe474ab4d7d0c1be6d0bb879ba7246a8239326b2230a77eb1",
               "0.21.1" -> "94c80f90184cdc7e7e75988a55b38384de262336abd80b1b30121c6e965dc74e"
             )
