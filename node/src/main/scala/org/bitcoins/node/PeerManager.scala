@@ -778,7 +778,7 @@ case class PeerManager(
                 }
               }
         }
-      case (dmh, msg@HeaderTimeoutWrapper(peer)) =>
+      case (dmh, msg @ HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
         val peerDataOpt = getPeerData(peer)
         peerDataOpt match {
