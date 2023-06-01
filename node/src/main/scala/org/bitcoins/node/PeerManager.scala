@@ -1,7 +1,13 @@
 package org.bitcoins.node
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.stream.{
+  ActorAttributes,
+  OverflowStrategy,
+  QueueOfferResult,
+  Supervision
+}
 import akka.stream.scaladsl.{
   Keep,
   RunnableGraph,
@@ -343,9 +349,13 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-    val (queue, doneF) = dataMessageStreamGraph.run()
+
+    //preMaterialize queue?
+    val initDmh = buildStatelessDataMessagehandler(queue)
+    val graph = buildDataMessageStreamGraph(initDmh)
     dataMessageQueueOpt = Some(queue)
-    streamDoneFOpt = Some(doneF)
+    val dmhF = graph.run()
+    streamDoneFOpt = Some(dmhF)
     val finder = PeerFinder(
       paramPeers = paramPeers,
       controlMessageHandler = ControlMessageHandler(this),
@@ -395,7 +405,6 @@ case class PeerManager(
       _ = {
         //reset all variables
         dataMessageQueueOpt = None
-        dataMessageHandlerOpt = None
         streamDoneFOpt = None
         finderOpt = None
       }
@@ -679,27 +688,35 @@ case class PeerManager(
     }
   }
 
-  private val statelessDataMessagehandler: DataMessageHandler = {
+  private def buildStatelessDataMessagehandler(
+      queue: SourceQueueWithComplete[
+        StreamDataMessageWrapper]): DataMessageHandler = {
     DataMessageHandler(
       chainApi = ChainHandler.fromDatabase(),
       walletCreationTimeOpt = walletCreationTimeOpt,
-      peerManager = this,
+      queue = queue,
+      peers = Vector.empty,
+      peerMessgeSenderApi = this,
+      peerDataOpt = None,
       state = DoneSyncing,
       filterBatchCache = Set.empty
     )
   }
 
-  private val dataMessageStreamSource: Source[
-    StreamDataMessageWrapper,
-    SourceQueueWithComplete[StreamDataMessageWrapper]] = {
+  //can this queue be reused if we PeerManager.start()/PeerManager.stop()
+  //is called?
+  private val (queue, dataMessageStreamSource): (
+      SourceQueueWithComplete[StreamDataMessageWrapper],
+      Source[StreamDataMessageWrapper, NotUsed]) = {
     Source
       .queue[StreamDataMessageWrapper](
         8,
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
+      .preMaterialize()
   }
 
-  private val dataMessageStreamSink: Sink[
+  private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[
     StreamDataMessageWrapper,
     Future[DataMessageHandler]] = {
     Sink.foldAsync(statelessDataMessagehandler) {
@@ -755,10 +772,9 @@ case class PeerManager(
             Future.failed(new RuntimeException(
               s"Couldn't find PeerMessageSender that corresponds with peer=$peer msg=${payload.commandName}. Was it disconnected?"))
           case Some(_) =>
-            val peerDmh = {
-              getDataMessageHandler.copy(peerDataOpt = getPeerData(peer))
-            }
-            peerDmh
+            val peerDmh = dmh.copy(peerDataOpt = getPeerData(peer))
+
+            val resultF = peerDmh
               .handleDataPayload(payload, peerMsgSender, peer)
               .flatMap { newDmh =>
                 newDmh.state match {
@@ -767,18 +783,22 @@ case class PeerManager(
                     for {
                       _ <- removePeer(m.badPeer)
                       _ <- syncFromNewPeer()
-                    } yield msg
+                    } yield newDmh
                   case removePeers: RemovePeers =>
-                    updateDataMessageHandler(newDmh)
                     for {
                       _ <- Future.traverse(removePeers.peers)(removePeer)
-                    } yield msg
+                    } yield newDmh
                   case _: SyncDataMessageHandlerState | DoneSyncing =>
                     Future.successful(newDmh)
                 }
               }
+            resultF.map { r =>
+              logger.debug(
+                s"Done processing ${payload.commandName} in peer=${peer}")
+              r
+            }
         }
-      case (dmh, msg @ HeaderTimeoutWrapper(peer)) =>
+      case (dmh, _ @HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
         val peerDataOpt = getPeerData(peer)
         peerDataOpt match {
@@ -810,38 +830,23 @@ case class PeerManager(
     }
   }
 
-  private val dataMessageStreamSink =
-    Sink.foreach[StreamDataMessageWrapper] {
-      case DataMessageWrapper(payload, peer) =>
-        logger.debug(
-          s"Done processing ${payload.commandName} in peer=${peer} state=${getDataMessageHandler.state}")
-      case HeaderTimeoutWrapper(_)   =>
-      case DisconnectedPeer(_, _)    =>
-      case Initialized(_)            =>
-      case InitializationTimeout(_)  =>
-      case QueryTimeout(_, _)        =>
-      case SendResponseTimeout(_, _) =>
-      case stp: SendToPeer =>
-        logger.debug(
-          s"Done processing ${stp.msg.header.commandName} in peerOpt=${stp.peerOpt}")
-    }
-
   private val decider: Supervision.Decider = { case err: Throwable =>
     logger.error(s"Error occurred while processing p2p pipeline stream", err)
     Supervision.Resume
   }
 
-  private val dataMessageStreamGraph: RunnableGraph[
-    (SourceQueueWithComplete[StreamDataMessageWrapper], Future[Done])] = {
+  private def buildDataMessageStreamGraph(
+      initDmh: DataMessageHandler): RunnableGraph[
+    Future[DataMessageHandler]] = {
     dataMessageStreamSource
-      .toMat(dataMessageStreamSink)(Keep.both)
+      .toMat(buildDataMessageStreamSink(initDmh))(Keep.right)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
   }
 
   private[bitcoins] var dataMessageQueueOpt: Option[
     SourceQueueWithComplete[StreamDataMessageWrapper]] = None
 
-  private var streamDoneFOpt: Option[Future[Done]] = None
+  private var streamDoneFOpt: Option[Future[DataMessageHandler]] = None
 
   override def offer(
       elem: StreamDataMessageWrapper): Future[QueueOfferResult] = {
@@ -859,11 +864,6 @@ case class PeerManager(
       case None        => Future.successful(Done)
     }
   }
-
-  private var dataMessageHandlerOpt: Option[DataMessageHandler] = {
-    None
-  }
-
   /** Helper method to sync the blockchain over the network
     *
     * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
