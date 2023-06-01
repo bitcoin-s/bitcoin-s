@@ -95,8 +95,8 @@ TaskKeys.downloadBitcoind := {
         val expectedHash =
           if (Properties.isLinux)
             Map(
-              "24.1" -> "fb86cf6af7a10bc5f3ae6cd6a5b0348854e1462102fe71e755d30b51b6e317d1",
-              "23.2" -> "2cca490c1f2842884a3c5b0606f179f9f937177da4eadd628e3f7fd7e25d26d0",
+              "24.1" -> "c112af3d19cca7f5b5f942708ca4d522110d8e1dc1c0f8d3077f531c94e5f00f",
+              "23.2" -> "853b9b0a50800a5b355df7a39dbdd6d7a2339f765e2d31a36d14bd705e7dbce1",
               "22.0" -> "59ebd25dd82a51638b7a6bb914586201e67db67b919b2a1ff08925a7936d1b16",
               "0.21.1" -> "366eb44a7a0aa5bd342deea215ec19a184a11f2ca22220304ebb20b9c8917e2b",
             )
@@ -105,11 +105,11 @@ TaskKeys.downloadBitcoind := {
               "24.1" -> (if (System.getProperty("os.arch") == "aarch64")
                 "0bf7d0e313ac831a1b1c25c3871280721ab8fb7021bcca0f2acc280f4362a98e"
               else
-                "a2b7ba863e5536249a8e97b464bc9a91ad73a0b6340434bf1c09aa912ac52f29"),
+                "e06cffa770b162bf47ee1e7c8a5c286440a3e3cf6a543e25f865df5d4fbca9f7"),
               "23.2" -> (if (System.getProperty("os.arch") == "aarch64")
                            "33f8680f820327d5f9e64c02e476d03a5b2e5bd403e1b1cb0a82bd7ec2a8dc5e"
                          else
-                           "c816780583009a9dad426dc0c183c89be9da98906e1e2c7ebae91041c1aaaaf3"),
+                           "f56f2e21718c3ef13b962775f1e9985eed962ae6237684deebf6b59f799a912f"),
               "22.0" -> "2744d199c3343b2d94faffdfb2c94d75a630ba27301a70e47b0ad30a7e0155e9",
               "0.21.1" -> "1ea5cedb64318e9868a66d3ab65de14516f9ada53143e460d50af428b5aec3c7"
             )
