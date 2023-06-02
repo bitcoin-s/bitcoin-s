@@ -199,12 +199,6 @@ case class P2PClientActor(
       sender() ! handleMetaMsg(metaMsg)
   }
 
-  override def postStop(): Unit = {
-    super.postStop()
-    logger.debug(s"Stopped client for $peer")
-    Await.result(p2pClientCallbacks.onStop(peer), timeout)
-  }
-
   def reconnecting: Receive = LoggingReceive {
     case P2PClient.ReconnectCommand =>
       logger.debug(s"reconnecting to ${peer.socket}")
@@ -418,9 +412,8 @@ case class P2PClientActor(
         logger.debug(
           s"An error occurred in our connection with $peer, cause=$cause state=${currentPeerMsgRecvState}")
         currentPeerMsgRecvState = Await.result(
-          currentPeerMsgRecvState.disconnect(
-            peer,
-            p2pClientCallbacks.onQueryTimeout)(context.system),
+          currentPeerMsgRecvState.disconnect(peer, p2pClientCallbacks)(
+            context.system),
           timeout)
         context.stop(self)
         unalignedBytes
@@ -429,9 +422,8 @@ case class P2PClientActor(
         logger.info(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgRecvState}")
         currentPeerMsgRecvState = Await.result(
-          currentPeerMsgRecvState.disconnect(
-            peer,
-            p2pClientCallbacks.onQueryTimeout)(context.system),
+          currentPeerMsgRecvState.disconnect(peer, p2pClientCallbacks)(
+            context.system),
           timeout)
 
         context.stop(self)

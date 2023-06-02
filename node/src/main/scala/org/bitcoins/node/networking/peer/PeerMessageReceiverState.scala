@@ -12,7 +12,7 @@ import org.bitcoins.core.p2p.{
 }
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.{P2PClient, P2PClientCallbacks}
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Disconnected,
   InitializedDisconnect,
@@ -183,27 +183,31 @@ sealed abstract class PeerMessageReceiverState extends Logging {
 
   protected[networking] def disconnect(
       peer: Peer,
-      onQueryTimeout: (ExpectsResponse, Peer) => Future[Unit])(implicit
+      p2pClientCallbacks: P2PClientCallbacks)(implicit
       system: ActorSystem): Future[PeerMessageReceiverState] = {
     import system.dispatcher
     logger.trace(s"Disconnecting with internalstate=${this}")
     this match {
       case bad @ (_: Disconnected | Preconnection |
           _: InitializedDisconnectDone | _: StoppedReconnect) =>
-        throw new RuntimeException(
+        val exn = new RuntimeException(
           s"Cannot disconnect from peer=${peer} when in state=${bad}")
+        Future.failed(exn)
       case good: InitializedDisconnect =>
         val newState = InitializedDisconnectDone(
           clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
-        Future.successful(newState)
+        p2pClientCallbacks.onStop(peer).map(_ => newState)
       case good @ (_: Initializing | _: Normal | _: Waiting) =>
         val handleF: Future[Unit] = good match {
           case wait: Waiting =>
-            onResponseTimeout(wait.responseFor, peer, onQueryTimeout).map(_ =>
-              ())
+            onResponseTimeout(networkPayload = wait.responseFor,
+                              peer = peer,
+                              onQueryTimeout =
+                                p2pClientCallbacks.onQueryTimeout)
+              .map(_ => ())
           case wait: Initializing =>
             wait.initializationTimeoutCancellable.cancel()
             Future.unit
@@ -218,7 +222,10 @@ sealed abstract class PeerMessageReceiverState extends Logging {
           verackMsgP = good.verackMsgP
         )
 
-        handleF.map(_ => newState)
+        for {
+          _ <- handleF
+          _ <- p2pClientCallbacks.onStop(peer)
+        } yield newState
     }
   }
 

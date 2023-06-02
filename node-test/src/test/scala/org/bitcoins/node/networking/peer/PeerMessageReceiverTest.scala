@@ -6,11 +6,11 @@ import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.{InetAddress, VerAckMessage, VersionMessage}
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.{P2PClient, P2PClientCallbacks}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import java.net.InetSocketAddress
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Promise
 
 class PeerMessageReceiverTest extends BitcoinSAsyncTest {
 
@@ -42,7 +42,7 @@ class PeerMessageReceiverTest extends BitcoinSAsyncTest {
                                                  versionMsgP = versionMsgP,
                                                  verackMsgP = verackMsgP)
 
-    val newMsgReceiverStateF = normal.disconnect(peer, (_, _) => Future.unit)
+    val newMsgReceiverStateF = normal.disconnect(peer, P2PClientCallbacks.empty)
 
     newMsgReceiverStateF.map { newMsgReceiverState =>
       assert(
@@ -86,7 +86,7 @@ class PeerMessageReceiverTest extends BitcoinSAsyncTest {
         .isInstanceOf[PeerMessageReceiverState.InitializedDisconnect])
     assert(!newMsgReceiverState.isDisconnected)
 
-    newMsgReceiverState.disconnect(peer, (_, _) => Future.unit).map {
+    newMsgReceiverState.disconnect(peer, P2PClientCallbacks.empty).map {
       disconnectRecv =>
         assert(
           disconnectRecv
