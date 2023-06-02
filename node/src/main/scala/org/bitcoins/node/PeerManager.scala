@@ -558,14 +558,15 @@ case class PeerManager(
     * @param reconnect flag indicating if we should attempt to reconnect
     * @return
     */
-  def onP2PClientDisconnected(peer: Peer, reconnect: Boolean): Future[Unit] = {
+  def onP2PClientDisconnected(
+      peer: Peer,
+      forceReconnect: Boolean): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
 
         logger.info(s"Client stopped for $peer peers=$peers")
-
         if (finder.hasPeer(peer)) {
           //client actor for one of the test peers stopped, can remove it from map now
           finder.removePeer(peer)
@@ -587,7 +588,7 @@ case class PeerManager(
           if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
             node.syncFromNewPeer().map(_ => ())
           } else if (syncPeerOpt.isDefined) {
-            if (reconnect) {
+            if (forceReconnect || connectedPeerCount == 0) {
               finder.reconnect(peer)
             } else {
               val exn = new RuntimeException(
@@ -595,7 +596,7 @@ case class PeerManager(
               Future.failed(exn)
             }
           } else {
-            if (reconnect) {
+            if (forceReconnect || connectedPeerCount == 0) {
               finder.reconnect(peer)
             } else {
               Future.unit

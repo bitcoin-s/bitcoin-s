@@ -200,7 +200,19 @@ sealed abstract class PeerMessageReceiverState extends Logging {
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
         p2pClientCallbacks.onDisconnect(peer, false).map(_ => newState)
-      case good @ (_: Initializing | _: Normal | _: Waiting) =>
+      case good: Normal =>
+        logger.debug(s"Disconnected bitcoin peer=${peer}")
+        val newState = Disconnected(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP.success(()),
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP
+        )
+
+        for {
+          _ <- p2pClientCallbacks.onDisconnect(peer, false)
+        } yield newState
+      case good @ (_: Initializing | _: Waiting) =>
         val handleF: Future[Unit] = good match {
           case wait: Waiting =>
             onResponseTimeout(networkPayload = wait.responseFor,
