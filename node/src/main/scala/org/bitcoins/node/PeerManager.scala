@@ -35,6 +35,7 @@ import scodec.bits.ByteVector
 
 import java.net.InetAddress
 import java.time.{Duration, Instant}
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -52,7 +53,7 @@ case class PeerManager(
     with PeerMessageSenderApi
     with SourceQueue[StreamDataMessageWrapper]
     with P2PLogger {
-
+  private val isStarted: AtomicBoolean = new AtomicBoolean(false)
   private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
@@ -381,6 +382,7 @@ case class PeerManager(
     finderOpt = Some(finder)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
+      isStarted.set(true)
       this
     }
   }
@@ -391,6 +393,7 @@ case class PeerManager(
 
   override def stop(): Future[PeerManager] = {
     logger.info(s"Stopping PeerManager")
+    isStarted.set(false)
     val beganAt = System.currentTimeMillis()
 
     val finderStopF = finderOpt match {
@@ -585,10 +588,12 @@ case class PeerManager(
             case DoneSyncing | _: RemovePeers =>
               None
           }
+          val shouldReconnect =
+            (forceReconnect || connectedPeerCount == 0) && isStarted.get
           if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
             node.syncFromNewPeer().map(_ => ())
           } else if (syncPeerOpt.isDefined) {
-            if (forceReconnect || connectedPeerCount == 0) {
+            if (shouldReconnect) {
               finder.reconnect(peer)
             } else {
               val exn = new RuntimeException(
@@ -596,7 +601,7 @@ case class PeerManager(
               Future.failed(exn)
             }
           } else {
-            if (forceReconnect || connectedPeerCount == 0) {
+            if (shouldReconnect) {
               finder.reconnect(peer)
             } else {
               Future.unit
