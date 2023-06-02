@@ -66,7 +66,7 @@ case class PeerManager(
 
   private lazy val p2pClientCallbacks = P2PClientCallbacks(
     onReconnect,
-    onStop = onP2PClientStopped,
+    onDisconnect = onP2PClientStopped,
     onInitializationTimeout = onInitializationTimeout,
     onQueryTimeout = onQueryTimeout,
     sendResponseTimeout = sendResponseTimeout

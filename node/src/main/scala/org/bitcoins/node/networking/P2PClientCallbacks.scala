@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 case class P2PClientCallbacks(
     onReconnect: Peer => Future[Unit],
-    onStop: Peer => Future[Unit],
+    onDisconnect: Peer => Future[Unit],
     onInitializationTimeout: Peer => Future[Unit],
     onQueryTimeout: (ExpectsResponse, Peer) => Future[Unit],
     sendResponseTimeout: (Peer, NetworkPayload) => Future[Unit]
@@ -18,7 +18,7 @@ object P2PClientCallbacks {
   def empty: P2PClientCallbacks = {
     P2PClientCallbacks(
       onReconnect = (_: Peer) => Future.unit,
-      onStop = (_: Peer) => Future.unit,
+      onDisconnect = (_: Peer) => Future.unit,
       onInitializationTimeout = (_: Peer) => Future.unit,
       onQueryTimeout = (_, _) => Future.unit,
       sendResponseTimeout = (_, _) => Future.unit
