@@ -45,7 +45,7 @@ object Deps {
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
     val scalaCollectionCompatV = "2.10.0"
-    val pgEmbeddedV = "1.0.1"
+    val pgEmbeddedV = "2.0.3"
 
     val breezeV = "1.3"
 
@@ -228,7 +228,7 @@ object Deps {
       "org.scalatestplus" %%% "scalacheck-1-16" % V.scalaTestPlus withSources () withJavadoc ())
 
     val pgEmbedded =
-      "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
+      "io.zonky.test" % "embedded-postgres" % V.pgEmbeddedV withSources () withJavadoc ()
 
     val dropwizardMetricsCore =
       "io.dropwizard.metrics" % "metrics-core" % V.dropwizardMetricsV withSources () withJavadoc ()
@@ -278,7 +278,7 @@ object Deps {
       "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
 
     val pgEmbedded =
-      "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
+      "io.zonky.test" % "embedded-postgres" % V.pgEmbeddedV % "test" withSources() withJavadoc()
 
     val akkaTestkit =
       "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()

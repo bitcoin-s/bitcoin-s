@@ -1,7 +1,7 @@
 package org.bitcoins.testkit
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres
 import com.typesafe.config.ConfigFactory
+import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
 trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
@@ -40,7 +40,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   }
 
   def pgUrl(): Option[String] =
-    pg.map(_.getJdbcUrl("postgres"))
+    pg.map(_.getJdbcUrl("postgres", "postgres"))
 
   override def afterAll(): Unit = {
     super.afterAll()
