@@ -31,7 +31,7 @@ trait BitcoinSAkkaAsyncTest extends BaseAsyncTest with Logging {
     system.dispatcher
 
   override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system, verifySystemShutdown = false)
+    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
   }
 }
 
