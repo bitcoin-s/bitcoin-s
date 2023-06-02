@@ -1,6 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -183,6 +184,7 @@ sealed abstract class PeerMessageReceiverState extends Logging {
 
   protected[networking] def disconnect(
       peer: Peer,
+      queue: SourceQueueWithComplete[StreamDataMessageWrapper],
       p2pClientCallbacks: P2PClientCallbacks)(implicit
       system: ActorSystem): Future[PeerMessageReceiverState] = {
     import system.dispatcher
@@ -199,7 +201,8 @@ sealed abstract class PeerMessageReceiverState extends Logging {
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
-        p2pClientCallbacks.onDisconnect(peer, false).map(_ => newState)
+        val disconnectedPeer = DisconnectedPeer(peer, false)
+        queue.offer(disconnectedPeer).map(_ => newState)
       case good: Normal =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
@@ -208,9 +211,9 @@ sealed abstract class PeerMessageReceiverState extends Logging {
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP
         )
-
+        val disconnectedPeer = DisconnectedPeer(peer, false)
         for {
-          _ <- p2pClientCallbacks.onDisconnect(peer, false)
+          _ <- queue.offer(disconnectedPeer).map(_ => newState)
         } yield newState
       case good @ (_: Initializing | _: Waiting) =>
         val handleF: Future[Unit] = good match {

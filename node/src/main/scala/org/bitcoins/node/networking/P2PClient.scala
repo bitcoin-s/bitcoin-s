@@ -412,8 +412,10 @@ case class P2PClientActor(
         logger.debug(
           s"An error occurred in our connection with $peer, cause=$cause state=${currentPeerMsgRecvState}")
         currentPeerMsgRecvState = Await.result(
-          currentPeerMsgRecvState.disconnect(peer, p2pClientCallbacks)(
-            context.system),
+          currentPeerMsgRecvState.disconnect(
+            peer,
+            peerMsgHandlerReceiver.queue,
+            p2pClientCallbacks)(context.system),
           timeout)
         context.stop(self)
         unalignedBytes
@@ -422,8 +424,10 @@ case class P2PClientActor(
         logger.info(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgRecvState}")
         currentPeerMsgRecvState = Await.result(
-          currentPeerMsgRecvState.disconnect(peer, p2pClientCallbacks)(
-            context.system),
+          currentPeerMsgRecvState.disconnect(
+            peer,
+            peerMsgHandlerReceiver.queue,
+            p2pClientCallbacks)(context.system),
           timeout)
 
         context.stop(self)

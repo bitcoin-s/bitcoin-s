@@ -561,7 +561,7 @@ case class PeerManager(
     * @param reconnect flag indicating if we should attempt to reconnect
     * @return
     */
-  def onP2PClientDisconnected(
+  private def onP2PClientDisconnected(
       peer: Peer,
       forceReconnect: Boolean): Future[Unit] = {
     finderOpt match {
@@ -770,6 +770,9 @@ case class PeerManager(
           case None =>
             sys.error(s"Unkown peer timeing out header request, peer=$peer")
         }
+
+      case d @ DisconnectedPeer(peer, forceReconnect) =>
+        onP2PClientDisconnected(peer, forceReconnect).map(_ => d)
     }
 
   private val dataMessageStreamSink =
@@ -777,6 +780,7 @@ case class PeerManager(
       case DataMessageWrapper(payload, peer) =>
         logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
       case HeaderTimeoutWrapper(_) =>
+      case DisconnectedPeer(_, _)  =>
     }
 
   private val decider: Supervision.Decider = { case err: Throwable =>
