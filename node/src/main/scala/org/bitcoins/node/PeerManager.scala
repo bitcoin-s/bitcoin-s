@@ -405,6 +405,11 @@ case class PeerManager(
 
     val stopF = for {
       _ <- finderStopF
+      _ <- Future.traverse(peers)(removePeer)
+      _ <- AsyncUtil.retryUntilSatisfied(
+        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
+        interval = 1.seconds,
+        maxTries = 30)
       _ = dataMessageQueueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
@@ -413,11 +418,6 @@ case class PeerManager(
         }
         finishedF
       }
-      _ <- Future.traverse(peers)(removePeer)
-      _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
-        interval = 1.seconds,
-        maxTries = 30)
       _ <- watchCompletion()
       _ = {
         //reset all variables
