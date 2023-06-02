@@ -66,7 +66,7 @@ case class PeerManager(
 
   private lazy val p2pClientCallbacks = P2PClientCallbacks(
     onReconnect,
-    onDisconnect = onP2PClientStopped,
+    onDisconnect = onP2PClientDisconnected,
     onInitializationTimeout = onInitializationTimeout,
     onQueryTimeout = onQueryTimeout,
     sendResponseTimeout = sendResponseTimeout
@@ -554,7 +554,11 @@ case class PeerManager(
 
   }
 
-  def onP2PClientStopped(peer: Peer): Future[Unit] = {
+  /** @param peer the peer we were disconencted from
+    * @param reconnect flag indicating if we should attempt to reconnect
+    * @return
+    */
+  def onP2PClientDisconnected(peer: Peer, reconnect: Boolean): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -583,12 +587,19 @@ case class PeerManager(
           if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
             node.syncFromNewPeer().map(_ => ())
           } else if (syncPeerOpt.isDefined) {
-            //means we aren't syncing with anyone, so do nothing?
-            val exn = new RuntimeException(
-              s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
-            Future.failed(exn)
+            if (reconnect) {
+              finder.reconnect(peer)
+            } else {
+              val exn = new RuntimeException(
+                s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
+              Future.failed(exn)
+            }
           } else {
-            finder.reconnect(peer)
+            if (reconnect) {
+              finder.reconnect(peer)
+            } else {
+              Future.unit
+            }
           }
         } else if (waitingForDeletion.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted

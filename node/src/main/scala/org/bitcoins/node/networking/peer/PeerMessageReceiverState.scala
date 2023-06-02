@@ -199,7 +199,7 @@ sealed abstract class PeerMessageReceiverState extends Logging {
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
-        p2pClientCallbacks.onDisconnect(peer).map(_ => newState)
+        p2pClientCallbacks.onDisconnect(peer, false).map(_ => newState)
       case good @ (_: Initializing | _: Normal | _: Waiting) =>
         val handleF: Future[Unit] = good match {
           case wait: Waiting =>
@@ -224,7 +224,7 @@ sealed abstract class PeerMessageReceiverState extends Logging {
 
         for {
           _ <- handleF
-          _ <- p2pClientCallbacks.onDisconnect(peer)
+          _ <- p2pClientCallbacks.onDisconnect(peer, false)
         } yield newState
     }
   }

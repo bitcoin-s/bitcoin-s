@@ -184,7 +184,12 @@ case class P2PClientActor(
       context.become(
         ignoreNetworkMessages(peerConnectionOpt, newUnalignedBytes))
     case _ @(P2PClient.CloseCommand | P2PClient.CloseAnyStateCommand) =>
-    //ignore
+      val disconnectF =
+        currentPeerMsgRecvState.disconnect(peer, p2pClientCallbacks)(
+          context.system)
+      Await.result(disconnectF, timeout)
+      context.stop(self)
+      ()
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsg(metaMsg)
     case Terminated(actor)
