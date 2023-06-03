@@ -219,6 +219,7 @@ case class PeerFinder(
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
+    logger.debug(s"tryPeer=$peer")
     _peerData.put(peer,
                   PeerData(peer,
                            controlMessageHandler,
