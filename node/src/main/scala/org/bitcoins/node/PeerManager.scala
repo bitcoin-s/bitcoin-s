@@ -645,7 +645,9 @@ case class PeerManager(
 
   }
 
-  def onQueryTimeout(payload: ExpectsResponse, peer: Peer): Future[Unit] = {
+  private def onQueryTimeout(
+      payload: ExpectsResponse,
+      peer: Peer): Future[Unit] = {
     logger.debug(s"Query timeout out for $peer")
 
     //if we are removing this peer and an existing query timed out because of that
@@ -698,7 +700,9 @@ case class PeerManager(
     }
   }
 
-  def sendResponseTimeout(peer: Peer, payload: NetworkPayload): Future[Unit] = {
+  private def sendResponseTimeout(
+      peer: Peer,
+      payload: NetworkPayload): Future[Unit] = {
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
     if (peerDataMap.contains(peer)) {
@@ -777,16 +781,22 @@ case class PeerManager(
         onInitialization(i.peer).map(_ => i)
       case i: InitializationTimeout =>
         onInitializationTimeout(i.peer).map(_ => i)
+      case q: QueryTimeout =>
+        onQueryTimeout(q.payload, q.peer).map(_ => q)
+      case srt: SendResponseTimeout =>
+        sendResponseTimeout(srt.peer, srt.payload).map(_ => srt)
     }
 
   private val dataMessageStreamSink =
     Sink.foreach[StreamDataMessageWrapper] {
       case DataMessageWrapper(payload, peer) =>
         logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
-      case HeaderTimeoutWrapper(_)  =>
-      case DisconnectedPeer(_, _)   =>
-      case Initialized(_)           =>
-      case InitializationTimeout(_) =>
+      case HeaderTimeoutWrapper(_)   =>
+      case DisconnectedPeer(_, _)    =>
+      case Initialized(_)            =>
+      case InitializationTimeout(_)  =>
+      case QueryTimeout(_, _)        =>
+      case SendResponseTimeout(_, _) =>
     }
 
   private val decider: Supervision.Decider = { case err: Throwable =>

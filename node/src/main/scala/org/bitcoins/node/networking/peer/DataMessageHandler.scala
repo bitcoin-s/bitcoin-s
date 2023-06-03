@@ -898,3 +898,9 @@ case class DisconnectedPeer(peer: Peer, forceReconnect: Boolean)
 case class Initialized(peer: Peer) extends StreamDataMessageWrapper
 
 case class InitializationTimeout(peer: Peer) extends StreamDataMessageWrapper
+
+case class QueryTimeout(peer: Peer, payload: ExpectsResponse)
+    extends StreamDataMessageWrapper
+
+case class SendResponseTimeout(peer: Peer, payload: NetworkPayload)
+    extends StreamDataMessageWrapper

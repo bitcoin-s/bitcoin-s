@@ -123,9 +123,9 @@ case class P2PClientActor(
       case ResponseTimeout(msg) =>
         currentPeerMsgRecvState =
           Await.result(currentPeerMsgRecvState.onResponseTimeout(
-                         msg,
-                         peer,
-                         onQueryTimeout = p2pClientCallbacks.onQueryTimeout),
+                         networkPayload = msg,
+                         peer = peer,
+                         queue = peerMsgHandlerReceiver.queue),
                        timeout)
       case payload: NetworkPayload =>
         val networkMsg = NetworkMessage(network, payload)
@@ -344,9 +344,9 @@ case class P2PClientActor(
           case wait: Waiting =>
             currentPeerMsgRecvState = Await.result(
               currentPeerMsgRecvState.onResponseTimeout(
-                wait.responseFor,
-                peer,
-                p2pClientCallbacks.onQueryTimeout),
+                networkPayload = wait.responseFor,
+                peer = peer,
+                queue = peerMsgHandlerReceiver.queue),
               timeout)
           case init: Initializing =>
             init.initializationTimeoutCancellable.cancel()
@@ -415,8 +415,7 @@ case class P2PClientActor(
         currentPeerMsgRecvState = Await.result(
           currentPeerMsgRecvState.disconnect(
             peer,
-            peerMsgHandlerReceiver.queue,
-            p2pClientCallbacks)(context.system),
+            peerMsgHandlerReceiver.queue)(context.system),
           timeout)
         context.stop(self)
         unalignedBytes
@@ -427,8 +426,7 @@ case class P2PClientActor(
         currentPeerMsgRecvState = Await.result(
           currentPeerMsgRecvState.disconnect(
             peer,
-            peerMsgHandlerReceiver.queue,
-            p2pClientCallbacks)(context.system),
+            peerMsgHandlerReceiver.queue)(context.system),
           timeout)
 
         context.stop(self)
@@ -575,9 +573,7 @@ case class P2PClientActor(
       .handleExpectResponse(
         msg = msg,
         peer = peer,
-        sendResponseTimeout = p2pClientCallbacks.sendResponseTimeout,
-        onQueryTimeout = p2pClientCallbacks.onQueryTimeout)(context.system,
-                                                            nodeAppConfig)
+        queue = peerMsgHandlerReceiver.queue)(context.system, nodeAppConfig)
       .map { newReceiverState =>
         currentPeerMsgRecvState = newReceiverState
       }
