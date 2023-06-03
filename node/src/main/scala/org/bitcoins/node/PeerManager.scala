@@ -483,7 +483,7 @@ case class PeerManager(
 
   }
 
-  def onInitialization(peer: Peer): Future[Unit] = {
+  private def onInitialization(peer: Peer): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -773,14 +773,20 @@ case class PeerManager(
 
       case d @ DisconnectedPeer(peer, forceReconnect) =>
         onP2PClientDisconnected(peer, forceReconnect).map(_ => d)
+      case i: Initialized =>
+        onInitialization(i.peer).map(_ => i)
+      case i: InitializationTimeout =>
+        onInitializationTimeout(i.peer).map(_ => i)
     }
 
   private val dataMessageStreamSink =
     Sink.foreach[StreamDataMessageWrapper] {
       case DataMessageWrapper(payload, peer) =>
         logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
-      case HeaderTimeoutWrapper(_) =>
-      case DisconnectedPeer(_, _)  =>
+      case HeaderTimeoutWrapper(_)  =>
+      case DisconnectedPeer(_, _)   =>
+      case Initialized(_)           =>
+      case InitializationTimeout(_) =>
     }
 
   private val decider: Supervision.Decider = { case err: Throwable =>

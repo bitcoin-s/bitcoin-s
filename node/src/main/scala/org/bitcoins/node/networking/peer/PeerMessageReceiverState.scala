@@ -103,7 +103,7 @@ sealed abstract class PeerMessageReceiverState extends Logging {
     */
   protected[networking] def connect(
       client: P2PClient,
-      onInitializationTimeout: Peer => Future[Unit])(implicit
+      queue: SourceQueueWithComplete[StreamDataMessageWrapper])(implicit
       system: ActorSystem,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig): PeerMessageReceiverState.Initializing = {
@@ -119,9 +119,10 @@ sealed abstract class PeerMessageReceiverState extends Logging {
 
         val initializationTimeoutCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
-            val timeoutF = onInitializationTimeout(peer)
-            timeoutF.failed.foreach(err =>
-              logger.error(s"Failed to initialize timeout for peer=$peer", err))
+            val offerF = queue.offer(InitializationTimeout(peer))
+            offerF.failed.foreach(err =>
+              logger.error(s"Failed to offer initialize timeout for peer=$peer",
+                           err))
           }
 
         val newState =

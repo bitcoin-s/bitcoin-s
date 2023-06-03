@@ -883,7 +883,9 @@ case class DataMessageHandler(
   }
 }
 
-sealed trait StreamDataMessageWrapper
+sealed trait StreamDataMessageWrapper {
+  def peer: Peer
+}
 
 case class DataMessageWrapper(payload: DataPayload, peer: Peer)
     extends StreamDataMessageWrapper
@@ -892,3 +894,7 @@ case class HeaderTimeoutWrapper(peer: Peer) extends StreamDataMessageWrapper
 
 case class DisconnectedPeer(peer: Peer, forceReconnect: Boolean)
     extends StreamDataMessageWrapper
+
+case class Initialized(peer: Peer) extends StreamDataMessageWrapper
+
+case class InitializationTimeout(peer: Peer) extends StreamDataMessageWrapper

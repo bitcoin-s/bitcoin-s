@@ -400,11 +400,12 @@ case class P2PClientActor(
         peerConnection ! Tcp.Register(self)
         peerConnection ! Tcp.ResumeReading
         val client = P2PClient(self, peer)
-        currentPeerMsgRecvState = currentPeerMsgRecvState.connect(
-          client,
-          p2pClientCallbacks.onInitializationTimeout)(context.system,
-                                                      nodeAppConfig,
-                                                      chainAppConfig)
+        currentPeerMsgRecvState =
+          currentPeerMsgRecvState.connect(client,
+                                          queue = peerMsgHandlerReceiver.queue)(
+            context.system,
+            nodeAppConfig,
+            chainAppConfig)
         context.become(awaitNetworkRequest(peerConnection, unalignedBytes))
         unalignedBytes
 
