@@ -207,7 +207,6 @@ case class PeerFinder(
     peerConnectionScheduler.cancel()
     //delete try queue
     _peersToTry.clear()
-    _peerData.clear()
 
     for {
       _ <- Future.traverse(_peerData.map(_._2))(_.stop())

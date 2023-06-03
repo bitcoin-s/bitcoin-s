@@ -360,7 +360,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- bitcoinds(0).disconnectNode(nodeUri0)
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
           node.peerManager.isDisconnected(peer0))
-        onePeerConnectionCount <- node.getConnectionCount
-      } yield assert(onePeerConnectionCount == 1)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+          node.getConnectionCount.map(_ == 1))
+      } yield succeed
   }
 }
