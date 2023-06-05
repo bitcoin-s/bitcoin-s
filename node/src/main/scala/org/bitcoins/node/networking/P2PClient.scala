@@ -402,7 +402,7 @@ case class P2PClientActor(
         val client = P2PClient(self, peer)
         currentPeerMsgRecvState =
           currentPeerMsgRecvState.connect(client,
-            peerMessageSenderApi,
+                                          peerMessageSenderApi,
                                           queue = peerMsgHandlerReceiver.queue)(
             context.system,
             nodeAppConfig,

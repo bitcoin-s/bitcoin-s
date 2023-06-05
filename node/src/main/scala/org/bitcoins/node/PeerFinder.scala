@@ -231,7 +231,11 @@ case class PeerFinder(
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer,
-                  PeerData(peer, controlMessageHandler, queue,peerMessageSenderApi, supervisor))
+                  PeerData(peer,
+                           controlMessageHandler,
+                           queue,
+                           peerMessageSenderApi,
+                           supervisor))
     _peerData(peer).peerMessageSender.map(_.reconnect())
 
   }
