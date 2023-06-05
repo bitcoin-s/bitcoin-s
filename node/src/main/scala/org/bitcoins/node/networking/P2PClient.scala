@@ -71,7 +71,6 @@ case class P2PClientActor(
     peer: Peer,
     peerMsgHandlerReceiver: PeerMessageReceiver,
     initPeerMsgRecvState: PeerMessageReceiverState,
-    p2pClientCallbacks: P2PClientCallbacks,
     maxReconnectionTries: Int
 )(implicit nodeAppConfig: NodeAppConfig, chainAppConfig: ChainAppConfig)
     extends Actor
@@ -123,9 +122,9 @@ case class P2PClientActor(
       case ResponseTimeout(msg) =>
         currentPeerMsgRecvState =
           Await.result(currentPeerMsgRecvState.onResponseTimeout(
-                         msg,
-                         peer,
-                         onQueryTimeout = p2pClientCallbacks.onQueryTimeout),
+                         networkPayload = msg,
+                         peer = peer,
+                         queue = peerMsgHandlerReceiver.queue),
                        timeout)
       case payload: NetworkPayload =>
         val networkMsg = NetworkMessage(network, payload)
@@ -199,16 +198,9 @@ case class P2PClientActor(
       sender() ! handleMetaMsg(metaMsg)
   }
 
-  override def postStop(): Unit = {
-    super.postStop()
-    logger.debug(s"Stopped client for $peer")
-    Await.result(p2pClientCallbacks.onStop(peer), timeout)
-  }
-
   def reconnecting: Receive = LoggingReceive {
     case P2PClient.ReconnectCommand =>
       logger.debug(s"reconnecting to ${peer.socket}")
-      reconnectHandlerOpt = Some(p2pClientCallbacks.onReconnect)
       connect()
     case P2PClient.CloseCommand =>
       handleNodeCommand(P2PClient.CloseCommand, None)
@@ -350,9 +342,9 @@ case class P2PClientActor(
           case wait: Waiting =>
             currentPeerMsgRecvState = Await.result(
               currentPeerMsgRecvState.onResponseTimeout(
-                wait.responseFor,
-                peer,
-                p2pClientCallbacks.onQueryTimeout),
+                networkPayload = wait.responseFor,
+                peer = peer,
+                queue = peerMsgHandlerReceiver.queue),
               timeout)
           case init: Initializing =>
             init.initializationTimeoutCancellable.cancel()
@@ -406,11 +398,12 @@ case class P2PClientActor(
         peerConnection ! Tcp.Register(self)
         peerConnection ! Tcp.ResumeReading
         val client = P2PClient(self, peer)
-        currentPeerMsgRecvState = currentPeerMsgRecvState.connect(
-          client,
-          p2pClientCallbacks.onInitializationTimeout)(context.system,
-                                                      nodeAppConfig,
-                                                      chainAppConfig)
+        currentPeerMsgRecvState =
+          currentPeerMsgRecvState.connect(client,
+                                          queue = peerMsgHandlerReceiver.queue)(
+            context.system,
+            nodeAppConfig,
+            chainAppConfig)
         context.become(awaitNetworkRequest(peerConnection, unalignedBytes))
         unalignedBytes
 
@@ -420,7 +413,7 @@ case class P2PClientActor(
         currentPeerMsgRecvState = Await.result(
           currentPeerMsgRecvState.disconnect(
             peer,
-            p2pClientCallbacks.onQueryTimeout)(context.system),
+            peerMsgHandlerReceiver.queue)(context.system),
           timeout)
         context.stop(self)
         unalignedBytes
@@ -431,7 +424,7 @@ case class P2PClientActor(
         currentPeerMsgRecvState = Await.result(
           currentPeerMsgRecvState.disconnect(
             peer,
-            p2pClientCallbacks.onQueryTimeout)(context.system),
+            peerMsgHandlerReceiver.queue)(context.system),
           timeout)
 
         context.stop(self)
@@ -578,9 +571,7 @@ case class P2PClientActor(
       .handleExpectResponse(
         msg = msg,
         peer = peer,
-        sendResponseTimeout = p2pClientCallbacks.sendResponseTimeout,
-        onQueryTimeout = p2pClientCallbacks.onQueryTimeout)(context.system,
-                                                            nodeAppConfig)
+        queue = peerMsgHandlerReceiver.queue)(context.system, nodeAppConfig)
       .map { newReceiverState =>
         currentPeerMsgRecvState = newReceiverState
       }
@@ -662,7 +653,6 @@ object P2PClient extends P2PLogger {
       peer: Peer,
       peerMsgHandlerReceiver: PeerMessageReceiver,
       peerMsgRecvState: PeerMessageReceiverState,
-      p2pClientCallbacks: P2PClientCallbacks,
       maxReconnectionTries: Int)(implicit
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -672,7 +662,6 @@ object P2PClient extends P2PLogger {
       peer,
       peerMsgHandlerReceiver,
       peerMsgRecvState,
-      p2pClientCallbacks,
       maxReconnectionTries,
       nodeAppConfig,
       chainAppConfig
@@ -683,7 +672,6 @@ object P2PClient extends P2PLogger {
       peer: Peer,
       peerMessageReceiver: PeerMessageReceiver,
       peerMsgRecvState: PeerMessageReceiverState,
-      p2pClientCallbacks: P2PClientCallbacks,
       maxReconnectionTries: Int = 16,
       supervisor: ActorRef)(implicit
       nodeAppConfig: NodeAppConfig,
@@ -693,7 +681,6 @@ object P2PClient extends P2PLogger {
       peer = peer,
       peerMsgHandlerReceiver = peerMessageReceiver,
       peerMsgRecvState = peerMsgRecvState,
-      p2pClientCallbacks,
       maxReconnectionTries = maxReconnectionTries
     )
 

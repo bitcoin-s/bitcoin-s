@@ -53,7 +53,8 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
           case good: Initializing =>
             val newState = good.toNormal(VerAckMessage)
 
-            peerManager.onInitialization(peer).map(_ => newState)
+            val i = Initialized(peer)
+            peerManager.offer(i).map(_ => newState)
         }
 
       case ping: PingMessage =>

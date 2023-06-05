@@ -2,12 +2,6 @@ package org.bitcoins.node
 
 import akka.Done
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import akka.stream.{
-  ActorAttributes,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision
-}
 import akka.stream.scaladsl.{
   Keep,
   RunnableGraph,
@@ -15,6 +9,12 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueue,
   SourceQueueWithComplete
+}
+import akka.stream.{
+  ActorAttributes,
+  OverflowStrategy,
+  QueueOfferResult,
+  Supervision
 }
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -27,14 +27,15 @@ import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.networking.{P2PClientCallbacks, P2PClientSupervisor}
+import org.bitcoins.node.networking.P2PClientSupervisor
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
+import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
 import java.time.{Duration, Instant}
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -52,7 +53,7 @@ case class PeerManager(
     with PeerMessageSenderApi
     with SourceQueue[StreamDataMessageWrapper]
     with P2PLogger {
-
+  private val isStarted: AtomicBoolean = new AtomicBoolean(false)
   private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
@@ -63,14 +64,6 @@ case class PeerManager(
     system.actorOf(Props[P2PClientSupervisor](),
                    name =
                      BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
-
-  private lazy val p2pClientCallbacks = P2PClientCallbacks(
-    onReconnect,
-    onStop = onP2PClientStopped,
-    onInitializationTimeout = onInitializationTimeout,
-    onQueryTimeout = onQueryTimeout,
-    sendResponseTimeout = sendResponseTimeout
-  )
 
   private var finderOpt: Option[PeerFinder] = {
     None
@@ -374,13 +367,13 @@ case class PeerManager(
       paramPeers = paramPeers,
       controlMessageHandler = ControlMessageHandler(this),
       queue = queue,
-      p2pClientCallbacks = p2pClientCallbacks,
       skipPeers = () => peers,
       supervisor = supervisor
     )
     finderOpt = Some(finder)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
+      isStarted.set(true)
       this
     }
   }
@@ -391,6 +384,7 @@ case class PeerManager(
 
   override def stop(): Future[PeerManager] = {
     logger.info(s"Stopping PeerManager")
+    isStarted.set(false)
     val beganAt = System.currentTimeMillis()
 
     val finderStopF = finderOpt match {
@@ -402,6 +396,11 @@ case class PeerManager(
 
     val stopF = for {
       _ <- finderStopF
+      _ <- Future.traverse(peers)(removePeer)
+      _ <- AsyncUtil.retryUntilSatisfied(
+        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
+        interval = 1.seconds,
+        maxTries = 30)
       _ = dataMessageQueueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
@@ -410,11 +409,6 @@ case class PeerManager(
         }
         finishedF
       }
-      _ <- Future.traverse(peers)(removePeer)
-      _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
-        interval = 1.seconds,
-        maxTries = 30)
       _ <- watchCompletion()
       _ = {
         //reset all variables
@@ -480,7 +474,7 @@ case class PeerManager(
 
   }
 
-  def onInitialization(peer: Peer): Future[Unit] = {
+  private def onInitialization(peer: Peer): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -554,14 +548,19 @@ case class PeerManager(
 
   }
 
-  def onP2PClientStopped(peer: Peer): Future[Unit] = {
+  /** @param peer the peer we were disconencted from
+    * @param reconnect flag indicating if we should attempt to reconnect
+    * @return
+    */
+  private def onP2PClientDisconnected(
+      peer: Peer,
+      forceReconnect: Boolean): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
 
         logger.info(s"Client stopped for $peer peers=$peers")
-
         if (finder.hasPeer(peer)) {
           //client actor for one of the test peers stopped, can remove it from map now
           finder.removePeer(peer)
@@ -580,15 +579,24 @@ case class PeerManager(
             case DoneSyncing | _: RemovePeers =>
               None
           }
+          val shouldReconnect =
+            (forceReconnect || connectedPeerCount == 0) && isStarted.get
           if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
             node.syncFromNewPeer().map(_ => ())
           } else if (syncPeerOpt.isDefined) {
-            //means we aren't syncing with anyone, so do nothing?
-            val exn = new RuntimeException(
-              s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
-            Future.failed(exn)
+            if (shouldReconnect) {
+              finder.reconnect(peer)
+            } else {
+              val exn = new RuntimeException(
+                s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
+              Future.failed(exn)
+            }
           } else {
-            finder.reconnect(peer)
+            if (shouldReconnect) {
+              finder.reconnect(peer)
+            } else {
+              Future.unit
+            }
           }
         } else if (waitingForDeletion.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
@@ -628,7 +636,9 @@ case class PeerManager(
 
   }
 
-  def onQueryTimeout(payload: ExpectsResponse, peer: Peer): Future[Unit] = {
+  private def onQueryTimeout(
+      payload: ExpectsResponse,
+      peer: Peer): Future[Unit] = {
     logger.debug(s"Query timeout out for $peer")
 
     //if we are removing this peer and an existing query timed out because of that
@@ -651,11 +661,6 @@ case class PeerManager(
           node.syncFromNewPeer().map(_ => ())
         else Future.unit
     }
-  }
-
-  def onReconnect(peer: Peer): Future[Unit] = {
-    logger.debug(s"Reconnected with $peer")
-    Future.unit
   }
 
   private def onHeaderRequestTimeout(
@@ -681,7 +686,9 @@ case class PeerManager(
     }
   }
 
-  def sendResponseTimeout(peer: Peer, payload: NetworkPayload): Future[Unit] = {
+  private def sendResponseTimeout(
+      peer: Peer,
+      payload: NetworkPayload): Future[Unit] = {
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
     if (peerDataMap.contains(peer)) {
@@ -695,7 +702,7 @@ case class PeerManager(
 
   private val dataMessageStreamSource = Source
     .queue[StreamDataMessageWrapper](
-      8,
+      16 * nodeAppConfig.maxConnectedPeers,
       overflowStrategy = OverflowStrategy.backpressure,
       maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
     .mapAsync(1) {
@@ -753,13 +760,29 @@ case class PeerManager(
           case None =>
             sys.error(s"Unkown peer timeing out header request, peer=$peer")
         }
+
+      case d @ DisconnectedPeer(peer, forceReconnect) =>
+        onP2PClientDisconnected(peer, forceReconnect).map(_ => d)
+      case i: Initialized =>
+        onInitialization(i.peer).map(_ => i)
+      case i: InitializationTimeout =>
+        onInitializationTimeout(i.peer).map(_ => i)
+      case q: QueryTimeout =>
+        onQueryTimeout(q.payload, q.peer).map(_ => q)
+      case srt: SendResponseTimeout =>
+        sendResponseTimeout(srt.peer, srt.payload).map(_ => srt)
     }
 
   private val dataMessageStreamSink =
     Sink.foreach[StreamDataMessageWrapper] {
       case DataMessageWrapper(payload, peer) =>
         logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
-      case HeaderTimeoutWrapper(_) =>
+      case HeaderTimeoutWrapper(_)   =>
+      case DisconnectedPeer(_, _)    =>
+      case Initialized(_)            =>
+      case InitializationTimeout(_)  =>
+      case QueryTimeout(_, _)        =>
+      case SendResponseTimeout(_, _) =>
     }
 
   private val decider: Supervision.Decider = { case err: Throwable =>

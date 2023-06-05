@@ -129,7 +129,6 @@ class P2PClientActorTest
           peer = peer,
           peerMsgHandlerReceiver = peerMsgRecv,
           peerMsgRecvState = PeerMessageReceiverState.fresh(),
-          P2PClientCallbacks.empty,
           maxReconnectionTries = 16
         ),
         probe.ref
