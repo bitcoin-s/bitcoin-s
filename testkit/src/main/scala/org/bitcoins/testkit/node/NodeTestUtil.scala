@@ -5,7 +5,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.{P2PClient, P2PClientCallbacks}
+import org.bitcoins.node.networking.{P2PClient}
 import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageReceiverState
@@ -34,7 +34,6 @@ abstract class NodeTestUtil extends P2PLogger {
       peer = peer,
       peerMessageReceiver = peerMsgReceiver,
       peerMsgRecvState = PeerMessageReceiverState.fresh(),
-      p2pClientCallbacks = P2PClientCallbacks.empty,
       maxReconnectionTries = 16,
       supervisor = supervisor
     )

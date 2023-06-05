@@ -71,7 +71,6 @@ case class P2PClientActor(
     peer: Peer,
     peerMsgHandlerReceiver: PeerMessageReceiver,
     initPeerMsgRecvState: PeerMessageReceiverState,
-    p2pClientCallbacks: P2PClientCallbacks,
     maxReconnectionTries: Int
 )(implicit nodeAppConfig: NodeAppConfig, chainAppConfig: ChainAppConfig)
     extends Actor
@@ -202,7 +201,6 @@ case class P2PClientActor(
   def reconnecting: Receive = LoggingReceive {
     case P2PClient.ReconnectCommand =>
       logger.debug(s"reconnecting to ${peer.socket}")
-      reconnectHandlerOpt = Some(p2pClientCallbacks.onReconnect)
       connect()
     case P2PClient.CloseCommand =>
       handleNodeCommand(P2PClient.CloseCommand, None)
@@ -655,7 +653,6 @@ object P2PClient extends P2PLogger {
       peer: Peer,
       peerMsgHandlerReceiver: PeerMessageReceiver,
       peerMsgRecvState: PeerMessageReceiverState,
-      p2pClientCallbacks: P2PClientCallbacks,
       maxReconnectionTries: Int)(implicit
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -665,7 +662,6 @@ object P2PClient extends P2PLogger {
       peer,
       peerMsgHandlerReceiver,
       peerMsgRecvState,
-      p2pClientCallbacks,
       maxReconnectionTries,
       nodeAppConfig,
       chainAppConfig
@@ -676,7 +672,6 @@ object P2PClient extends P2PLogger {
       peer: Peer,
       peerMessageReceiver: PeerMessageReceiver,
       peerMsgRecvState: PeerMessageReceiverState,
-      p2pClientCallbacks: P2PClientCallbacks,
       maxReconnectionTries: Int = 16,
       supervisor: ActorRef)(implicit
       nodeAppConfig: NodeAppConfig,
@@ -686,7 +681,6 @@ object P2PClient extends P2PLogger {
       peer = peer,
       peerMsgHandlerReceiver = peerMessageReceiver,
       peerMsgRecvState = peerMsgRecvState,
-      p2pClientCallbacks,
       maxReconnectionTries = maxReconnectionTries
     )
 

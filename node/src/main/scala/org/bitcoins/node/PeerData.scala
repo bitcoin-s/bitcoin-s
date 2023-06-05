@@ -6,14 +6,8 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.{P2PClient, P2PClientCallbacks}
-import org.bitcoins.node.networking.peer.{
-  ControlMessageHandler,
-  PeerMessageReceiver,
-  PeerMessageReceiverState,
-  PeerMessageSender,
-  StreamDataMessageWrapper
-}
+import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.peer._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -24,7 +18,6 @@ case class PeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
-    p2pClientCallbacks: P2PClientCallbacks,
     supervisor: ActorRef
 )(implicit
     system: ActorSystem,
@@ -43,7 +36,6 @@ case class PeerData(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
       peerMsgRecvState = PeerMessageReceiverState.fresh(),
-      p2pClientCallbacks,
       maxReconnectionTries = 4,
       supervisor = supervisor
     )

@@ -2,12 +2,6 @@ package org.bitcoins.node
 
 import akka.Done
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import akka.stream.{
-  ActorAttributes,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision
-}
 import akka.stream.scaladsl.{
   Keep,
   RunnableGraph,
@@ -15,6 +9,12 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueue,
   SourceQueueWithComplete
+}
+import akka.stream.{
+  ActorAttributes,
+  OverflowStrategy,
+  QueueOfferResult,
+  Supervision
 }
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -27,9 +27,9 @@ import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.networking.{P2PClientCallbacks, P2PClientSupervisor}
+import org.bitcoins.node.networking.P2PClientSupervisor
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
+import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
 import scodec.bits.ByteVector
 
@@ -64,14 +64,6 @@ case class PeerManager(
     system.actorOf(Props[P2PClientSupervisor](),
                    name =
                      BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
-
-  private lazy val p2pClientCallbacks = P2PClientCallbacks(
-    onReconnect,
-    onDisconnect = onP2PClientDisconnected,
-    onInitializationTimeout = onInitializationTimeout,
-    onQueryTimeout = onQueryTimeout,
-    sendResponseTimeout = sendResponseTimeout
-  )
 
   private var finderOpt: Option[PeerFinder] = {
     None
@@ -375,7 +367,6 @@ case class PeerManager(
       paramPeers = paramPeers,
       controlMessageHandler = ControlMessageHandler(this),
       queue = queue,
-      p2pClientCallbacks = p2pClientCallbacks,
       skipPeers = () => peers,
       supervisor = supervisor
     )
@@ -670,11 +661,6 @@ case class PeerManager(
           node.syncFromNewPeer().map(_ => ())
         else Future.unit
     }
-  }
-
-  def onReconnect(peer: Peer): Future[Unit] = {
-    logger.debug(s"Reconnected with $peer")
-    Future.unit
   }
 
   private def onHeaderRequestTimeout(

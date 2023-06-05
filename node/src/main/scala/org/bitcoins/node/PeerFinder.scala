@@ -8,7 +8,6 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.P2PClientCallbacks
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   StreamDataMessageWrapper
@@ -26,7 +25,6 @@ case class PeerFinder(
     paramPeers: Vector[Peer],
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
-    p2pClientCallbacks: P2PClientCallbacks,
     skipPeers: () => Vector[Peer],
     supervisor: ActorRef)(implicit
     ec: ExecutionContext,
@@ -221,22 +219,14 @@ case class PeerFinder(
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
     _peerData.put(peer,
-                  PeerData(peer,
-                           controlMessageHandler,
-                           queue,
-                           p2pClientCallbacks,
-                           supervisor))
+                  PeerData(peer, controlMessageHandler, queue, supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
 
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer,
-                  PeerData(peer,
-                           controlMessageHandler,
-                           queue,
-                           p2pClientCallbacks,
-                           supervisor))
+                  PeerData(peer, controlMessageHandler, queue, supervisor))
     _peerData(peer).peerMessageSender.map(_.reconnect())
 
   }
