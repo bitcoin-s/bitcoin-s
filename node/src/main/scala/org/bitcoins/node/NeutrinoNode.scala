@@ -60,8 +60,7 @@ case class NeutrinoNode(
     *
     * @return
     */
-  override def sync(): Future[Unit] = {
-
+  override def sync(): Future[Option[Peer]] = {
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
@@ -69,12 +68,10 @@ case class NeutrinoNode(
       syncPeerOpt <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
       _ <- syncPeerOpt match {
-        case Some(p) => syncHelper(p)
-        case None =>
-          val exn = new RuntimeException("No supported peers found!")
-          Future.failed(exn)
+        case Some(syncPeer) => syncHelper(syncPeer)
+        case None           => Future.unit
       }
-    } yield ()
+    } yield syncPeerOpt
   }
 
   private def syncHelper(syncPeer: Peer): Future[Unit] = {

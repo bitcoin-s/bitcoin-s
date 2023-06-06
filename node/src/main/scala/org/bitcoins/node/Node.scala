@@ -122,7 +122,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     *
     * @return
     */
-  def sync(): Future[Unit]
+  def sync(): Future[Option[Peer]]
 
   /** Sync from a new peer
     * @return the new peer we are syncing from else none if we could not start syncing with another peer
