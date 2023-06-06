@@ -66,9 +66,14 @@ case class NeutrinoNode(
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
       _ = logger.info(s"Fetching peers to sync with...")
-      syncPeer <- peerManager.randomPeerWithService(
+      syncPeerOpt <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ <- syncHelper(syncPeer)
+      _ <- syncPeerOpt match {
+        case Some(p) => syncHelper(p)
+        case None =>
+          val exn = new RuntimeException("No supported peers found!")
+          Future.failed(exn)
+      }
     } yield ()
   }
 
@@ -142,12 +147,15 @@ case class NeutrinoNode(
     }
   }
 
-  override def syncFromNewPeer(): Future[Unit] = {
+  override def syncFromNewPeer(): Future[Option[Peer]] = {
     for {
-      syncPeer <- peerManager.randomPeerWithService(
+      syncPeerOpt <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ <- syncHelper(syncPeer)
-    } yield ()
+      _ <- syncPeerOpt match {
+        case Some(p) => syncHelper(p)
+        case None    => Future.unit
+      }
+    } yield syncPeerOpt
   }
 
   /** Gets the number of compact filters in the database */
