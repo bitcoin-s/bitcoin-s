@@ -53,6 +53,9 @@ case class NeutrinoNode(
     res
   }
 
+  override def stop(): Future[NeutrinoNode] =
+    super.stop().map(_.asInstanceOf[NeutrinoNode])
+
   /** Starts to sync our node with our peer
     * If our local best block hash is the same as our peers
     * we will not sync, otherwise we will keep syncing

@@ -280,7 +280,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       startedNode <- stoppedNode.start()
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
         startedNode.sync().map(_.isDefined))
-      _ <- NodeTestUtil.awaitSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitSync(startedNode, bitcoind)
       balanceAfterSpend <- wallet.getBalance()
     } yield {
       assert(balanceAfterSpend < initBalance)
