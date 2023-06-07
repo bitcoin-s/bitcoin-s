@@ -494,7 +494,7 @@ case class DataMessageHandler(
     val result = state match {
       case HeaderSync(peer) =>
         peerData.updateInvalidMessageCount()
-        if (peerData.exceededMaxInvalidMessages && peers.size > 1) {
+        if (peerData.exceededMaxInvalidMessages) {
           logger.warn(
             s"$peer exceeded max limit of invalid messages. Disconnecting.")
 
