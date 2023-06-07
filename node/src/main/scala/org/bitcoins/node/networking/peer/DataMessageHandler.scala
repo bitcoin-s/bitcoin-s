@@ -523,7 +523,7 @@ case class DataMessageHandler(
         if (newHeaderState.validated) {
           logger.info(
             s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
-          fetchCompactFilterHeaders(newDmh)
+          PeerManager.fetchCompactFilterHeaders(newDmh, peerMessgeSenderApi)
         } else {
           Future.successful(newDmh)
         }
@@ -735,6 +735,7 @@ case class DataMessageHandler(
       newDmh: DataMessageHandler,
       headers: Vector[BlockHeader],
       peer: Peer): Future[DataMessageHandler] = {
+    logger.debug(s"getHeaders() newDmh.state=${newDmh.state} peer=$peer")
     val state = newDmh.state
     val count = headers.length
     val getHeadersF: Future[DataMessageHandler] = {
@@ -813,7 +814,8 @@ case class DataMessageHandler(
                   .map(_ => newDmh.copy(state = newState))
               } else {
                 //if just one peer then can proceed ahead directly
-                fetchCompactFilterHeaders(newDmh)
+                PeerManager.fetchCompactFilterHeaders(newDmh,
+                                                      peerMessgeSenderApi)
               }
 
             case headerState @ ValidatingHeaders(_, inSyncWith, _, _) =>
@@ -829,7 +831,8 @@ case class DataMessageHandler(
                 // so we also check if our cached filter heights have been set as well, if they haven't then
                 // we probably need to sync filters
 
-                fetchCompactFilterHeaders(currentDmh = newDmh2)
+                PeerManager.fetchCompactFilterHeaders(currentDmh = newDmh2,
+                                                      peerMessgeSenderApi)
               } else {
                 //do nothing, we are still waiting for some peers to send headers or timeout
                 Future.successful(newDmh2)
@@ -845,10 +848,11 @@ case class DataMessageHandler(
         state match {
           case headerState @ ValidatingHeaders(_, inSyncWith, _, _) =>
             val newHeaderState =
-              headerState.copy(inSyncWith = inSyncWith + peer)
+              headerState.copy(inSyncWith = inSyncWith + peer, syncPeer = peer)
             val newDmh2 = newDmh.copy(state = newHeaderState)
             if (newHeaderState.validated) {
-              fetchCompactFilterHeaders(newDmh2)
+              PeerManager.fetchCompactFilterHeaders(newDmh2,
+                                                    peerMessgeSenderApi)
             } else {
               //do nothing, we are still waiting for some peers to send headers
               Future.successful(newDmh2)
@@ -866,25 +870,6 @@ case class DataMessageHandler(
     getHeadersF
   }
 
-  def fetchCompactFilterHeaders(
-      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
-    val syncPeer = currentDmh.state match {
-      case s: SyncDataMessageHandlerState => s.syncPeer
-      case state @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
-        sys.error(
-          s"Cannot fetch compact filter headers when we are in state=$state")
-    }
-    logger.info(
-      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
-    for {
-      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
-        peerMessageSenderApi = peerMessgeSenderApi,
-        chainApi = currentDmh.chainApi,
-        peer = syncPeer)
-    } yield {
-      currentDmh.copy(state = newSyncingState)
-    }
-  }
 }
 
 sealed trait StreamDataMessageWrapper

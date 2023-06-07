@@ -551,7 +551,10 @@ case class PeerManager(
           val shouldReconnect =
             (forceReconnect || connectedPeerCount == 0) && isStarted.get
           if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
-            node.syncFromNewPeer().map(_ => ())
+            node
+              .copy(chainApi = ChainHandler.fromDatabase())
+              .syncFromNewPeer()
+              .map(_ => ())
           } else if (syncPeerOpt.isDefined) {
             if (shouldReconnect) {
               finder.reconnect(peer)
@@ -645,8 +648,7 @@ case class PeerManager(
         val newDmh = getDataMessageHandler.copy(state = newHeaderState)
 
         if (newHeaderState.validated) {
-          //re-review this
-          newDmh.fetchCompactFilterHeaders(newDmh)
+          PeerManager.fetchCompactFilterHeaders(newDmh, this)
         } else Future.successful(newDmh)
 
       case DoneSyncing | _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
@@ -956,5 +958,29 @@ object PeerManager extends Logging {
           Future.successful(false)
       }
     } yield res
+  }
+
+  def fetchCompactFilterHeaders(
+      currentDmh: DataMessageHandler,
+      peerMessageSenderApi: PeerMessageSenderApi)(implicit
+      ec: ExecutionContext,
+      nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig): Future[DataMessageHandler] = {
+    val syncPeer = currentDmh.state match {
+      case s: SyncDataMessageHandlerState => s.syncPeer
+      case state @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
+        sys.error(
+          s"Cannot fetch compact filter headers when we are in state=$state")
+    }
+    logger.info(
+      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
+    for {
+      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
+        peerMessageSenderApi = peerMessageSenderApi,
+        chainApi = currentDmh.chainApi,
+        peer = syncPeer)
+    } yield {
+      currentDmh.copy(state = newSyncingState)
+    }
   }
 }

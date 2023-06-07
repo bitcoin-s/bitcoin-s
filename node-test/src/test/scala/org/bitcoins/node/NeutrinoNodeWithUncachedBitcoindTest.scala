@@ -99,7 +99,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         oldSyncPeer = node.peerManager.getDataMessageHandler.state match {
           case state: SyncDataMessageHandlerState => state.syncPeer
           case DoneSyncing | _: MisbehavingPeer | _: RemovePeers =>
-            sys.error(s"Cannot be in DOneSyncing state while awaiting sync")
+            sys.error(s"Cannot be in DoneSyncing state while awaiting sync")
         }
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         expectedSyncPeer = bitcoindPeers(1)
