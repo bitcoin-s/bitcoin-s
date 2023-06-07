@@ -679,34 +679,37 @@ case class PeerManager(
       case sendToPeer: SendToPeer =>
         logger.debug(
           s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
-        val peerMsgSenderOptF = sendToPeer.peerOpt match {
-          case Some(peer) =>
-            getPeerMsgSender(peer).flatMap {
-              case Some(peerMsgSender) => Future.successful(Some(peerMsgSender))
-              case None =>
-                sendToPeer.msg.payload match {
-                  case _: ControlPayload =>
-                    //peer may not be fully initialized, we may be doing the handshake with a peer
-                    finderOpt.get.getData(peer).map(_.peerMessageSender) match {
-                      case Some(p) => p.map(Some(_))
-                      case None    => FutureUtil.none
-                    }
-                  case _: DataPayload =>
-                    //peer must be fully initialized to send a data payload
-                    Future.failed(new RuntimeException(
-                      s"Cannot find peer message sender to send message=${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}"))
-                }
-            }
-          case None =>
-            getDataMessageHandler.state match {
-              case s: SyncDataMessageHandlerState =>
-                getPeerMsgSender(s.syncPeer)
-              case DoneSyncing | _: MisbehavingPeer | _: RemovePeers =>
-                //pick a random peer to sync with
-                randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
-                  .map(Some(_))
-            }
-        }
+        val peerMsgSenderOptF: Future[Option[PeerMessageSender]] =
+          sendToPeer.peerOpt match {
+            case Some(peer) =>
+              getPeerMsgSender(peer).flatMap {
+                case Some(peerMsgSender) =>
+                  Future.successful(Some(peerMsgSender))
+                case None =>
+                  sendToPeer.msg.payload match {
+                    case _: ControlPayload =>
+                      //peer may not be fully initialized, we may be doing the handshake with a peer
+                      finderOpt.get
+                        .getData(peer)
+                        .map(_.peerMessageSender) match {
+                        case Some(p) => p.map(Some(_))
+                        case None    => FutureUtil.none
+                      }
+                    case _: DataPayload =>
+                      //peer must be fully initialized to send a data payload
+                      Future.failed(new RuntimeException(
+                        s"Cannot find peer message sender to send message=${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}"))
+                  }
+              }
+            case None =>
+              getDataMessageHandler.state match {
+                case s: SyncDataMessageHandlerState =>
+                  getPeerMsgSender(s.syncPeer)
+                case DoneSyncing | _: MisbehavingPeer | _: RemovePeers =>
+                  //pick a random peer to sync with
+                  randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
+              }
+          }
 
         peerMsgSenderOptF.flatMap {
           case Some(peerMsgSender) =>
