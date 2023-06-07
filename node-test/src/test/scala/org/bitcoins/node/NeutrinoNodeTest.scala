@@ -323,7 +323,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       //start syncing node
       val numBlocks = 5
-      val startSyncF = node.sync()
+      val startSyncF =
+        AsyncUtil.retryUntilSatisfiedF(() => node.sync().map(_.isDefined))
       val genBlocksF = {
         for {
           _ <- startSyncF

@@ -21,7 +21,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
   MisbehavingPeer,
   RemovePeers
 }
-import org.bitcoins.node.networking.peer.{SyncDataMessageHandlerState}
+import org.bitcoins.node.networking.peer.SyncDataMessageHandlerState
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}

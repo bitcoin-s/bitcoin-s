@@ -723,7 +723,8 @@ case class PeerManager(
               s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to"))
         }
       case msg @ DataMessageWrapper(payload, peer) =>
-        logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
+        logger.debug(
+          s"Got ${payload.commandName} from peer=${peer} in stream state=${getDataMessageHandler.state}")
         val peerMsgSenderOptF = getPeerMsgSender(peer)
         peerMsgSenderOptF.flatMap {
           case None =>
@@ -781,7 +782,8 @@ case class PeerManager(
   private val dataMessageStreamSink =
     Sink.foreach[StreamDataMessageWrapper] {
       case DataMessageWrapper(payload, peer) =>
-        logger.debug(s"Done processing ${payload.commandName} in peer=${peer}")
+        logger.debug(
+          s"Done processing ${payload.commandName} in peer=${peer} state=${getDataMessageHandler.state}")
       case HeaderTimeoutWrapper(_)   =>
       case DisconnectedPeer(_, _)    =>
       case Initialized(_)            =>
