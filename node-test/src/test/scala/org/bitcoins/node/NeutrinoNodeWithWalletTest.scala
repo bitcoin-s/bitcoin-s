@@ -239,7 +239,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
         //restart the node now that we have received funds
         startedNode <- stoppedNode.start()
-        _ <- startedNode.sync()
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => startedNode.sync().map(_.isDefined))
         _ <- NodeTestUtil.awaitSync(node = startedNode, rpc = bitcoind)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => {
           for {
