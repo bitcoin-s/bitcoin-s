@@ -53,6 +53,9 @@ case class NeutrinoNode(
     res
   }
 
+  override def stop(): Future[NeutrinoNode] =
+    super.stop().map(_.asInstanceOf[NeutrinoNode])
+
   /** Starts to sync our node with our peer
     * If our local best block hash is the same as our peers
     * we will not sync, otherwise we will keep syncing
@@ -60,16 +63,18 @@ case class NeutrinoNode(
     *
     * @return
     */
-  override def sync(): Future[Unit] = {
-
+  override def sync(): Future[Option[Peer]] = {
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
       _ = logger.info(s"Fetching peers to sync with...")
-      syncPeer <- peerManager.randomPeerWithService(
+      syncPeerOpt <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ <- syncHelper(syncPeer)
-    } yield ()
+      _ <- syncPeerOpt match {
+        case Some(syncPeer) => syncHelper(syncPeer)
+        case None           => Future.unit
+      }
+    } yield syncPeerOpt
   }
 
   private def syncHelper(syncPeer: Peer): Future[Unit] = {
@@ -142,12 +147,15 @@ case class NeutrinoNode(
     }
   }
 
-  override def syncFromNewPeer(): Future[Unit] = {
+  override def syncFromNewPeer(): Future[Option[Peer]] = {
     for {
-      syncPeer <- peerManager.randomPeerWithService(
+      syncPeerOpt <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ <- syncHelper(syncPeer)
-    } yield ()
+      _ <- syncPeerOpt match {
+        case Some(p) => syncHelper(p)
+        case None    => Future.unit
+      }
+    } yield syncPeerOpt
   }
 
   /** Gets the number of compact filters in the database */

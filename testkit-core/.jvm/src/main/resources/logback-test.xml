@@ -59,6 +59,7 @@
     <!-- Inspect handling of headers and inventory messages  -->
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
 
+    <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="WARN"/>
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
 
@@ -66,6 +67,8 @@
     <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
 
     <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
+
+    <logger name="org.bitcoins.node.PeerFinder" level="WARN"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->

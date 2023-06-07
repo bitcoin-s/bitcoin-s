@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.Done
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.scaladsl.{
   Keep,
   RunnableGraph,
@@ -34,11 +34,11 @@ import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
-import java.time.{Duration, Instant}
+import java.time.{Instant}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 case class PeerManager(
@@ -113,13 +113,21 @@ case class PeerManager(
     val peerMsgSenderF = peerOpt match {
       case Some(peer) =>
         val peerMsgSenderF = peerDataMap(peer).peerMessageSender
-        peerMsgSenderF
+        peerMsgSenderF.map(Some(_))
       case None =>
         val peerMsgSenderF = randomPeerMsgSenderWithService(
           ServiceIdentifier.NODE_NETWORK)
         peerMsgSenderF
     }
-    peerMsgSenderF.flatMap(_.sendMsg(msg))
+    peerMsgSenderF.flatMap { peerMsgSenderOpt =>
+      peerMsgSenderOpt match {
+        case Some(peerMsgSender) => peerMsgSender.sendMsg(msg)
+        case None =>
+          val exn = new RuntimeException(
+            s"Unable to send message=${msg.commandName} because we couldn't find a peer to send it to")
+          Future.failed(exn)
+      }
+    }
   }
 
   /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
@@ -142,16 +150,8 @@ case class PeerManager(
   override def sendGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE],
       peerOpt: Option[Peer]): Future[Unit] = {
-    val peerMsgSenderF = peerOpt match {
-      case Some(peer) =>
-        val peerMsgSenderF = peerDataMap(peer).peerMessageSender
-        peerMsgSenderF
-      case None =>
-        val peerMsgSenderF = randomPeerMsgSenderWithService(
-          ServiceIdentifier.NODE_NETWORK)
-        peerMsgSenderF
-    }
-    peerMsgSenderF.flatMap(_.sendGetHeadersMessage(hashes.map(_.flip)))
+    val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
+    sendMsg(headersMsg, peerOpt)
   }
 
   override def sendGetDataMessages(
@@ -167,10 +167,15 @@ case class PeerManager(
       case None =>
         val peerMsgSenderF = randomPeerMsgSenderWithService(
           ServiceIdentifier.NODE_NETWORK)
-        peerMsgSenderF.flatMap(
-          _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                               hashes.map(_.flip): _*))
-
+        peerMsgSenderF.flatMap {
+          case Some(peerMsgSender) =>
+            peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
+                                             hashes.map(_.flip): _*)
+          case None =>
+            val exn = new RuntimeException(
+              s"Unable to send getdatamessage because we couldn't find a peer to send it to, hashes=$hashes")
+            Future.failed(exn)
+        }
     }
   }
 
@@ -238,32 +243,33 @@ case class PeerManager(
     }
   }
 
-  def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
-    //wait when requested
-    val waitF =
-      awaitPeerWithService(services,
-                           timeout = nodeAppConfig.peerDiscoveryTimeout)
+  def randomPeerWithService(
+      services: ServiceIdentifier): Future[Option[Peer]] = {
+    val filteredPeers =
+      peerDataMap
+        .filter(p => p._2.serviceIdentifier.hasServicesOf(services))
+        .keys
+        .toVector
+    val (good, _) =
+      filteredPeers.partition(p => !peerDataMap(p).hasFailedRecently)
 
-    waitF.map { _ =>
-      val filteredPeers =
-        peerDataMap
-          .filter(p => p._2.serviceIdentifier.hasServicesOf(services))
-          .keys
-          .toVector
-      require(filteredPeers.nonEmpty)
-      val (good, failedRecently) =
-        filteredPeers.partition(p => !peerDataMap(p).hasFailedRecently)
-
-      if (good.nonEmpty) good(Random.nextInt(good.length))
-      else
-        failedRecently(Random.nextInt(failedRecently.length))
+    val peerOpt = if (good.nonEmpty) {
+      Some(good(Random.nextInt(good.length)))
+    } else {
+      None
     }
+    Future.successful(peerOpt)
   }
 
-  def randomPeerMsgSenderWithService(
-      services: ServiceIdentifier): Future[PeerMessageSender] = {
-    val randomPeerF = randomPeerWithService(services)
-    randomPeerF.flatMap(peer => peerDataMap(peer).peerMessageSender)
+  private def randomPeerMsgSenderWithService(
+      services: ServiceIdentifier): Future[Option[PeerMessageSender]] = {
+    val randomPeerOptF = randomPeerWithService(services)
+    randomPeerOptF.flatMap { peerOpt =>
+      peerOpt match {
+        case Some(peer) => peerDataMap(peer).peerMessageSender.map(Some(_))
+        case None       => Future.successful(None)
+      }
+    }
   }
 
   private def createInDb(
@@ -288,46 +294,6 @@ case class PeerManager(
                   peer.socket.getPort,
                   networkByte,
                   serviceIdentifier)
-  }
-
-  private var peerServicesQueries: Vector[Cancellable] = Vector.empty
-
-  private def awaitPeerWithService(
-      services: ServiceIdentifier,
-      timeout: Duration): Future[Unit] = {
-    logger.debug(s"Waiting for peer connection. ${_peerDataMap.keys}")
-    val promise = Promise[Unit]()
-    var counter = 0
-    val cancellable =
-      system.scheduler.scheduleAtFixedRate(0.seconds, 1.second) { () =>
-        if (
-          _peerDataMap.exists(x =>
-            x._2.serviceIdentifier.hasServicesOf(services))
-        ) {
-          promise.success(())
-        } else if (counter == timeout.getSeconds.toInt) {
-          promise.failure(
-            new RuntimeException(
-              s"No supported peers found! Requested: ${services}"))
-        } else {
-          counter += 1
-        }
-      }
-
-    peerServicesQueries = peerServicesQueries.appended(cancellable)
-
-    //remove the cancellable from the peerServicesQueries
-    //when our promise is completed from the scheduled job
-    promise.future.onComplete { _ =>
-      val _: Boolean = cancellable.cancel()
-      val idx = peerServicesQueries.indexOf(cancellable)
-      if (idx >= 0) {
-        peerServicesQueries = peerServicesQueries.zipWithIndex
-          .filter(_._2 != idx)
-          .map(_._1)
-      }
-    }
-    promise.future
   }
 
   def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
@@ -391,8 +357,6 @@ case class PeerManager(
       case Some(finder) => finder.stop()
       case None         => Future.unit
     }
-
-    peerServicesQueries.foreach(_.cancel()) //reset the peerServicesQueries var?
 
     val stopF = for {
       _ <- finderStopF

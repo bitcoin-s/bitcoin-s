@@ -518,7 +518,7 @@ object NodeUnitTest extends P2PLogger {
       //see: https://github.com/bitcoin/bitcoin/issues/27085
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/4976
       _ <- bitcoind.syncWithValidationInterfaceQueue()
-      _ <- node.sync()
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => node.sync().map(_.isDefined))
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
       _ = require(syncing)
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
