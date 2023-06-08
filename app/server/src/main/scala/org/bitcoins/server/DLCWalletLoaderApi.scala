@@ -13,6 +13,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.callback.NodeCallbackStreamManager
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.NodeStateDescriptorDAO
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.util.CallbackUtil
@@ -265,7 +266,8 @@ case class DLCWalletNeutrinoBackendLoader(
     override val system: ActorSystem)
     extends DLCWalletLoaderApi {
   import system.dispatcher
-  implicit private val nodeConf = conf.nodeConf
+
+  implicit private val nodeConf: NodeAppConfig = conf.nodeConf
 
   override def isWalletLoaded: Boolean = walletHolder.isInitialized
 
@@ -318,7 +320,7 @@ case class DLCWalletBitcoindBackendLoader(
     override val system: ActorSystem)
     extends DLCWalletLoaderApi {
   import system.dispatcher
-  implicit private val nodeConf = conf.nodeConf
+  implicit private val nodeConf: NodeAppConfig = conf.nodeConf
 
   override def load(
       walletNameOpt: Option[String],

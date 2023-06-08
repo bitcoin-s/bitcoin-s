@@ -41,7 +41,7 @@ trait BitcoinSCryptoAsyncTest
     with Matchers
     with ScalaCheckPropertyChecks {
 
-  implicit override def executionContext =
+  implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
   def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {

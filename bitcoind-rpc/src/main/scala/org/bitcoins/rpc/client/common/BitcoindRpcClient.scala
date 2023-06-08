@@ -320,7 +320,8 @@ object BitcoindRpcClient {
     */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
-  implicit private lazy val system = ActorSystem.create(ActorSystemName)
+  implicit private lazy val system: ActorSystem =
+    ActorSystem.create(ActorSystemName)
 
   /** Creates an RPC client from the given instance.
     *
