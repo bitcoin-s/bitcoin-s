@@ -352,7 +352,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       for {
-        _ <- node.sync()
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => node.sync().map(_.isDefined))
         _ <- AsyncUtil.nonBlockingSleep(1.second)
         initConnectionCount <- node.getConnectionCount
         _ = assert(initConnectionCount == 2)
