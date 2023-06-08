@@ -16,12 +16,6 @@ import akka.stream.scaladsl.{
   SourceQueue,
   SourceQueueWithComplete
 }
-import akka.stream.{
-  ActorAttributes,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision
-}
 import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -208,10 +202,11 @@ case class PeerManager(
   def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
-      bestFilterOpt: Option[CompactFilterDb])(implicit
+      bestFilterOpt: Option[CompactFilterDb],
+      dmhState: DataMessageHandlerState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     val syncPeerOptF = {
-      getDataMessageHandler.state match {
+      dmhState match {
         case syncState: SyncDataMessageHandlerState =>
           Some(syncState.syncPeer)
         case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
@@ -542,7 +537,8 @@ case class PeerManager(
     */
   private def onP2PClientDisconnected(
       peer: Peer,
-      forceReconnect: Boolean, state: DataMessageHandlerState): Future[Unit] = {
+      forceReconnect: Boolean,
+      state: DataMessageHandlerState): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -653,7 +649,6 @@ case class PeerManager(
 
   private def onHeaderRequestTimeout(
       peer: Peer,
-      peerData: PeerData,
       dmh: DataMessageHandler): Future[DataMessageHandler] = {
     val state = dmh.state
     logger.info(s"Header request timed out from $peer in state $state")
@@ -669,7 +664,7 @@ case class PeerManager(
           PeerManager.fetchCompactFilterHeaders(newDmh, this)
         } else Future.successful(newDmh)
 
-      case DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+      case DoneSyncing | _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
         Future.successful(dmh)
     }
   }
@@ -719,8 +714,8 @@ case class PeerManager(
   private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[
     StreamDataMessageWrapper,
     Future[DataMessageHandler]] = {
-    Sink.foldAsync(statelessDataMessagehandler) {
-      case (dmh,sendToPeer: SendToPeer) =>
+    Sink.foldAsync(initDmh) {
+      case (dmh, sendToPeer: SendToPeer) =>
         logger.debug(
           s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
         val peerMsgSenderOptF: Future[Option[PeerMessageSender]] =
@@ -737,7 +732,7 @@ case class PeerManager(
                         .getData(peer)
                         .map(_.peerMessageSender) match {
                         case Some(p) => p.map(Some(_))
-                        case None => FutureUtil.none
+                        case None    => FutureUtil.none
                       }
                     case _: DataPayload =>
                       //peer must be fully initialized to send a data payload
@@ -759,12 +754,12 @@ case class PeerManager(
           case Some(peerMsgSender) =>
             peerMsgSender
               .sendMsg(sendToPeer.msg)
-              .map(_ => sendToPeer)
+              .map(_ => dmh)
           case None =>
             Future.failed(new RuntimeException(
               s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to"))
         }
-      case (dmh, msg@DataMessageWrapper(payload, peer)) =>
+      case (dmh, _ @DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerMsgSenderOptF = getPeerMsgSender(peer)
         peerMsgSenderOptF.flatMap {
@@ -775,7 +770,7 @@ case class PeerManager(
             val peerDmh = dmh.copy(peerDataOpt = getPeerData(peer))
 
             val resultF = peerDmh
-              .handleDataPayload(payload, peerMsgSender, peer)
+              .handleDataPayload(payload, peer)
               .flatMap { newDmh =>
                 newDmh.state match {
                   case m: MisbehavingPeer =>
@@ -802,12 +797,10 @@ case class PeerManager(
         logger.debug(s"Processing timeout header for $peer")
         val peerDataOpt = getPeerData(peer)
         peerDataOpt match {
-          case Some(peerData) =>
+          case Some(_) =>
             for {
               msg <- {
-                onHeaderRequestTimeout(peer,
-                  dmh.state,
-                  peerData).map { newDmh =>
+                onHeaderRequestTimeout(peer, dmh).map { newDmh =>
                   logger.debug(s"Done processing timeout header for $peer")
                   newDmh
                 }
@@ -817,16 +810,16 @@ case class PeerManager(
             sys.error(s"Unkown peer timeing out header request, peer=$peer")
         }
 
-      case d @ DisconnectedPeer(peer, forceReconnect) =>
-        onP2PClientDisconnected(peer, forceReconnect).map(_ => d)
-      case i: Initialized =>
-        onInitialization(i.peer).map(_ => i)
-      case i: InitializationTimeout =>
-        onInitializationTimeout(i.peer).map(_ => i)
-      case q: QueryTimeout =>
-        onQueryTimeout(q.payload, q.peer).map(_ => q)
-      case srt: SendResponseTimeout =>
-        sendResponseTimeout(srt.peer, srt.payload).map(_ => srt)
+      case (dmh, _ @DisconnectedPeer(peer, forceReconnect)) =>
+        onP2PClientDisconnected(peer, forceReconnect, dmh.state).map(_ => dmh)
+      case (dmh, i: Initialized) =>
+        onInitialization(i.peer).map(_ => dmh)
+      case (dmh, i: InitializationTimeout) =>
+        onInitializationTimeout(i.peer).map(_ => dmh)
+      case (dmh, q: QueryTimeout) =>
+        onQueryTimeout(q.payload, q.peer, dmh.state).map(_ => dmh)
+      case (dmh, srt: SendResponseTimeout) =>
+        sendResponseTimeout(srt.peer, srt.payload).map(_ => dmh)
     }
   }
 
