@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
@@ -15,7 +16,7 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{DataMessageHandlerState}
+import org.bitcoins.node.networking.peer.DataMessageHandlerState
 
 import java.time.Instant
 import scala.concurrent.Future
@@ -63,18 +64,23 @@ case class NeutrinoNode(
     *
     * @return
     */
-  override def sync(): Future[Option[Peer]] = {
+  override def sync(): Future[Peer] = {
+    val serviceIdentifier = ServiceIdentifier.NODE_COMPACT_FILTERS
+    //wait for a peer to be available to sync from...
+    //due to underlying mutability in PeerManager/PeerFinder
+    //we may not have a peer available for selection immediately
+    val peerAvailableF = AsyncUtil.retryUntilSatisfiedF(() =>
+      peerManager.randomPeerWithService(serviceIdentifier).map(_.isDefined))
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
+      _ <- peerAvailableF
       _ = logger.info(s"Fetching peers to sync with...")
-      syncPeerOpt <- peerManager.randomPeerWithService(
-        ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ <- syncPeerOpt match {
-        case Some(syncPeer) => syncHelper(syncPeer)
-        case None           => Future.unit
-      }
-    } yield syncPeerOpt
+      syncPeer <- peerManager
+        .randomPeerWithService(serviceIdentifier)
+        .map(_.get)
+      _ <- syncHelper(syncPeer)
+    } yield syncPeer
   }
 
   private def syncHelper(syncPeer: Peer): Future[Unit] = {
