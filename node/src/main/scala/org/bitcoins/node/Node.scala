@@ -114,9 +114,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * we will not sync, otherwise we will keep syncing
     * until our best block hashes match up
     *
-    * @return
+    * @return the peer we are syncing with, or a failed Future if we could not find a peer to sync with after 5 seconds
     */
-  def sync(): Future[Option[Peer]]
+  def sync(): Future[Peer]
 
   /** Sync from a new peer
     * @return the new peer we are syncing from else none if we could not start syncing with another peer
