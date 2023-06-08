@@ -16,12 +16,6 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
-  DoneSyncing,
-  MisbehavingPeer,
-  RemovePeers
-}
-import org.bitcoins.node.networking.peer.SyncDataMessageHandlerState
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -165,40 +159,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       Future.unit
     } else {
       for {
-        chainApi <- chainApiFromDb()
-        isIBD <- chainApi.isIBD()
-        _ <- downloadBlocksBasedOnIBD(isIBD, blockHashes)
+        _ <- peerManager.sendGetDataMessages(typeIdentifier =
+                                               TypeIdentifier.MsgWitnessBlock,
+                                             hashes = blockHashes.map(_.flip),
+                                             peerOpt = None)
       } yield ()
-    }
-  }
-
-  /** Helper method to download blocks.
-    * If our node is in IBD, we will only download only from our peer we are doing IBD with.
-    * If we are not in IBD, we will download from a random peer.
-    */
-  private def downloadBlocksBasedOnIBD(
-      isIBD: Boolean,
-      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
-    if (isIBD) {
-      val syncPeerOpt = peerManager.getDataMessageHandler.state match {
-        case state: SyncDataMessageHandlerState                => Some(state.syncPeer)
-        case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
-      }
-      syncPeerOpt match {
-        case Some(peer) =>
-          peerManager.sendGetDataMessages(typeIdentifier =
-                                            TypeIdentifier.MsgWitnessBlock,
-                                          hashes = blockHashes.map(_.flip),
-                                          peerOpt = Some(peer))
-        case None =>
-          throw new RuntimeException(
-            "IBD not started yet. Cannot query for blocks.")
-      }
-    } else {
-      peerManager.sendGetDataMessages(typeIdentifier =
-                                        TypeIdentifier.MsgWitnessBlock,
-                                      hashes = blockHashes.map(_.flip),
-                                      peerOpt = None)
     }
   }
 
