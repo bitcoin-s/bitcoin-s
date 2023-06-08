@@ -344,8 +344,6 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-
-    //preMaterialize queue?
     val initDmh = buildStatelessDataMessagehandler(queue)
     val graph = buildDataMessageStreamGraph(initDmh)
     dataMessageQueueOpt = Some(queue)
@@ -705,7 +703,7 @@ case class PeerManager(
       Source[StreamDataMessageWrapper, NotUsed]) = {
     Source
       .queue[StreamDataMessageWrapper](
-        8,
+        16 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
       .preMaterialize()
