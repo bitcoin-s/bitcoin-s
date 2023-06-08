@@ -54,7 +54,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     Json.parse(rawText)
   }
 
-  implicit val hdpathReads = new Reads[HDPath] {
+  implicit val hdpathReads: Reads[HDPath] = new Reads[HDPath] {
 
     override def reads(json: JsValue): JsResult[HDPath] =
       json
@@ -65,7 +65,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         })
   }
 
-  implicit val hdcoinReads = new Reads[HDCoinType] {
+  implicit val hdcoinReads: Reads[HDCoinType] = new Reads[HDCoinType] {
 
     override def reads(json: JsValue): JsResult[HDCoinType] =
       json.validate[String].map(_.toLowerCase).map {
@@ -74,7 +74,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       }
   }
 
-  implicit val hdpurposeReads = new Reads[HDPurpose] {
+  implicit val hdpurposeReads: Reads[HDPurpose] = new Reads[HDPurpose] {
 
     override def reads(json: JsValue): JsResult[HDPurpose] =
       json.validate[String].map {
@@ -84,7 +84,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       }
   }
 
-  implicit val hdchainType = new Reads[HDChainType] {
+  implicit val hdchainType: Reads[HDChainType] = new Reads[HDChainType] {
 
     override def reads(json: JsValue): JsResult[HDChainType] =
       json.validate[String].map(_.toLowerCase).map {
@@ -100,7 +100,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       address: BitcoinAddress)
 
   object TestAddress {
-    implicit val reads = Json.reads[TestAddress]
+    implicit val reads: Reads[TestAddress] = Json.reads[TestAddress]
   }
 
   case class TestVector(
@@ -111,7 +111,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       addresses: Vector[TestAddress])
 
   object TestVector {
-    implicit val reads = Json.reads[TestVector]
+    implicit val reads: Reads[TestVector] = Json.reads[TestVector]
   }
 
   lazy val vectors = json.validate[Vector[TestVector]] match {

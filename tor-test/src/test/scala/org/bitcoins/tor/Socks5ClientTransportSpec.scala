@@ -10,9 +10,11 @@ import akka.util.ByteString
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TorUtil}
 
+import scala.concurrent.ExecutionContext
+
 class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   val proxyParams = torConfig.socks5ProxyParams.get
 

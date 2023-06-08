@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext
   */
 trait BitcoinSAkkaAsyncTest extends BaseAsyncTest with Logging {
   this: AsyncTestSuite =>
-  implicit lazy val akkaTimeout = Timeout(duration)
+  implicit lazy val akkaTimeout: Timeout = Timeout(duration)
 
   implicit val system: ActorSystem = {
     ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
