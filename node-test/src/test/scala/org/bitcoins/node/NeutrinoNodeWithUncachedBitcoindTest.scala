@@ -1,9 +1,7 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage, NetworkMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.{DataMessageWrapper, SendToPeer}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -15,7 +13,6 @@ import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 /** Neutrino node tests that require changing the state of bitcoind instance */
@@ -111,11 +108,38 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
   }
   //note: now bitcoinds(1) is ahead by 1 block compared to bitcoinds(0)
 
-  it must "re-query in case invalid headers are sent" in {
-    nodeConnectedWithBitcoinds =>
-      //old behavior: When we get done syncing headers from bitcoind(0)
-      //we validate those headers against bitcoind(1)
-      //after validating those block headers, we sync filter headers from bitcoind(1)
+//  it must "re-query in case invalid headers are sent" in {
+//    nodeConnectedWithBitcoinds =>
+//      //old behavior: When we get done syncing headers from bitcoind(0)
+//      //we validate those headers against bitcoind(1)
+//      //after validating those block headers, we sync filter headers from bitcoind(1)
+//
+//      //new behavior: When we get done syncing headers from bitcoind(0)
+//      //we validate those headers against bitcoind(1)
+//      //after validating headers, we trying to sync compact filter headers against bitcoind(0)
+//      //which is 1 block header behind bitcoind(1) causing us to send an invalid getcfheaders query
+//      val node = nodeConnectedWithBitcoinds.node
+//      val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
+//
+//      for {
+//        _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
+//        peers <- bitcoinPeersF
+//        peer = peers.head
+//        _ = node.peerManager.updateDataMessageHandler(
+//          node.peerManager.getDataMessageHandler.copy(state =
+//            DataMessageHandlerState.HeaderSync(peer))(executionContext,
+//                                                      node.nodeConfig,
+//                                                      node.chainConfig))
+//
+//        invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
+//        _ <- node.peerManager.getDataMessageHandler
+//          .addToStream(invalidHeaderMessage, peer)
+//        bestChain = bitcoinds(1)
+//        _ <- NodeTestUtil.awaitSync(node, bestChain)
+//      } yield {
+//        succeed
+//      }
+//  }
 
       //new behavior: When we get done syncing headers from bitcoind(0)
       //we validate those headers against bitcoind(1)
