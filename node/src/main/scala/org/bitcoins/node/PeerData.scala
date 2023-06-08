@@ -8,6 +8,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer._
+import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -18,6 +19,7 @@ case class PeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
+    peerMessageSenderApi: PeerMessageSenderApi,
     supervisor: ActorRef
 )(implicit
     system: ActorSystem,
@@ -36,6 +38,7 @@ case class PeerData(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
       peerMsgRecvState = PeerMessageReceiverState.fresh(),
+      peerMessageSenderApi = peerMessageSenderApi,
       maxReconnectionTries = 4,
       supervisor = supervisor
     )

@@ -1,11 +1,10 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
+import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage, NetworkMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
   DoneSyncing,
   MisbehavingPeer,
@@ -13,6 +12,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
 }
 import org.bitcoins.node.networking.peer.{
   DataMessageHandlerState,
+  SendToPeer,
   SyncDataMessageHandlerState
 }
 import org.bitcoins.server.BitcoinSAppConfig
@@ -81,19 +81,17 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                            maxTries = 30,
                                            interval = 1.second)
         //sync from first bitcoind
+        peer0 = bitcoindPeers(0)
         _ = node.peerManager.updateDataMessageHandler(
           node.peerManager.getDataMessageHandler.copy(state =
-            DataMessageHandlerState.HeaderSync(bitcoindPeers(0)))(
-            executionContext,
-            node.nodeAppConfig,
-            node.chainAppConfig))
-        expectHeaders = ExpectResponseCommand(
-          GetHeadersMessage(node.chainConfig.chain.genesisHash))
+            DataMessageHandlerState.HeaderSync(peer0))(executionContext,
+                                                       node.nodeAppConfig,
+                                                       node.chainAppConfig))
+        networkPayload =
+          GetHeadersMessage(node.chainConfig.chain.genesisHash)
         //waiting for response to header query now
-        client <- node.peerManager
-          .getPeerMsgSender(bitcoindPeers(0))
-          .map(_.get.client)
-        _ = client.actor ! expectHeaders
+        networkMessage = NetworkMessage(networkParam, networkPayload)
+        _ <- node.peerManager.offer(SendToPeer(networkMessage, Some(peer0)))
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.info(s"Disconnected $nodeUri from bitcoind")
@@ -101,7 +99,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         oldSyncPeer = node.peerManager.getDataMessageHandler.state match {
           case state: SyncDataMessageHandlerState => state.syncPeer
           case DoneSyncing | _: MisbehavingPeer | _: RemovePeers =>
-            sys.error(s"Cannot be in DOneSyncing state while awaiting sync")
+            sys.error(s"Cannot be in DoneSyncing state while awaiting sync")
         }
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         expectedSyncPeer = bitcoindPeers(1)
@@ -184,6 +182,8 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           FutureUtil.sequentially[Int, Unit](count) { _ =>
             node.peerManager.getDataMessageHandler
               .addToStream(invalidHeaderMessage, peer)
+              //add a delay to not overwhelm queue so other messages can be processed
+              .flatMap(_ => AsyncUtil.nonBlockingSleep(100.millis))
           }
         }
 
@@ -193,8 +193,18 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       for {
         _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 2)
         peers <- bitcoinPeersF
-        peer = peers(0)
+        peer = peers(1)
         _ <- node.peerManager.isConnected(peer).map(assert(_))
+        bitcoinds <- bitcoindsF
+
+        //disconnect bitcoind(0) as its not needed for this test
+        node0Uri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
+        _ <- bitcoinds(0).disconnectNode(node0Uri)
+        _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 1)
+
+        _ <- node.sync()
+
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         _ = node.peerManager.updateDataMessageHandler(
           node.peerManager.getDataMessageHandler.copy(state =
             DataMessageHandlerState.HeaderSync(peer))(executionContext,

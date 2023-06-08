@@ -66,14 +66,13 @@ case class DataMessageHandler(
 
   def handleDataPayload(
       payload: DataPayload,
-      peerMsgSender: PeerMessageSender,
       peer: Peer): Future[DataMessageHandler] = {
     state match {
       case syncState: SyncDataMessageHandlerState =>
         syncState match {
           case _: ValidatingHeaders =>
             val resultF =
-              handleDataPayloadValidState(payload, peerMsgSender, peer)
+              handleDataPayloadValidState(payload, peer)
             //process messages from all peers
             resultF.failed.foreach { err =>
               logger.error(
@@ -92,7 +91,7 @@ case class DataMessageHandler(
               Future.successful(this)
             } else {
               val resultF =
-                handleDataPayloadValidState(payload, peerMsgSender, peer)
+                handleDataPayloadValidState(payload, peer)
               resultF.failed.foreach { err =>
                 logger.error(
                   s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}",
@@ -104,7 +103,7 @@ case class DataMessageHandler(
             }
         }
       case DoneSyncing =>
-        val resultF = handleDataPayloadValidState(payload, peerMsgSender, peer)
+        val resultF = handleDataPayloadValidState(payload, peer)
 
         resultF.failed.foreach { err =>
           logger.error(
@@ -124,18 +123,14 @@ case class DataMessageHandler(
         } else {
           //re-review this, we should probably pattern match on old state so we can continue syncing
           //from where we left off?
-          copy(state = DoneSyncing).handleDataPayload(payload,
-                                                      peerMsgSender,
-                                                      peer)
+          copy(state = DoneSyncing).handleDataPayload(payload, peer)
         }
       case RemovePeers(peers, _) =>
         if (peers.exists(_ == peer)) {
           Future.failed(new RuntimeException(
             s"Cannot continue processing p2p messages from peer we were suppose to remove, peer=$peer"))
         } else {
-          copy(state = DoneSyncing).handleDataPayload(payload,
-                                                      peerMsgSender,
-                                                      peer)
+          copy(state = DoneSyncing).handleDataPayload(payload, peer)
         }
 
     }
@@ -147,7 +142,6 @@ case class DataMessageHandler(
     */
   private def handleDataPayloadValidState(
       payload: DataPayload,
-      peerMsgSender: PeerMessageSender,
       peer: Peer): Future[DataMessageHandler] = {
 
     val wrappedFuture: Future[Future[DataMessageHandler]] = Future {
@@ -185,15 +179,18 @@ case class DataMessageHandler(
                 logger.debug(
                   s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
                 sendNextGetCompactFilterHeadersCommand(
-                  peerMsgSender,
-                  filterHeader.stopHash.flip).map(_ => filterHeaderSync)
+                  peerMessageSenderApi = peerMessgeSenderApi,
+                  syncPeer = peer,
+                  prevStopHash = filterHeader.stopHash.flip).map(_ =>
+                  filterHeaderSync)
               } else {
                 for {
                   startHeightOpt <- getCompactFilterStartHeight(
                     walletCreationTimeOpt)
                   filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
-                    peerMsgSender,
-                    startHeightOpt)
+                    peerMessageSenderApi = peerMessgeSenderApi,
+                    syncPeer = peer,
+                    startHeightOpt = startHeightOpt)
                 } yield {
                   filterSyncStateOpt match {
                     case Some(filterSyncState) => filterSyncState
@@ -243,11 +240,13 @@ case class DataMessageHandler(
               if (batchSizeFull) {
                 logger.info(
                   s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-                sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
+                sendNextGetCompactFilterCommand(peerMessgeSenderApi,
+                                                peer,
+                                                newFilterHeight)
               } else Future.successful(Some(filterSyncState))
             newDmhState <- {
               if (isFiltersSynced) {
-                syncIfHeadersAhead(peerMsgSender)
+                syncIfHeadersAhead(peer)
               } else {
                 val res = filterHeaderSyncStateOpt match {
                   case Some(filterSyncState) => filterSyncState
@@ -288,7 +287,10 @@ case class DataMessageHandler(
                         tx.toBaseTx
                       } else tx // send normal serialization
 
-                    peerMsgSender.sendTransactionMessage(txToBroadcast)
+                    peerMessgeSenderApi.sendTransactionMessage(transaction =
+                                                                 txToBroadcast,
+                                                               peerOpt =
+                                                                 Some(peer))
                   case None =>
                     logger.warn(
                       s"Got request to send data with hash=${inv.hash}, but found nothing")
@@ -343,11 +345,7 @@ case class DataMessageHandler(
           val getHeadersF: Future[DataMessageHandler] = {
             for {
               newDmh <- chainApiHeaderProcessF
-              dmh <- getHeaders(newDmh = newDmh,
-                                headers = headers,
-                                peerMsgSender = peerMsgSender,
-                                peer = peer,
-                                peerDataOpt = peerDataOpt)
+              dmh <- getHeaders(newDmh = newDmh, headers = headers, peer = peer)
             } yield dmh
           }
           val recoveredDmhF = getHeadersF.recoverWith {
@@ -358,7 +356,7 @@ case class DataMessageHandler(
             case _: InvalidBlockHeader =>
               logger.warn(
                 s"Invalid headers of count $count sent from ${peer} in state=$state")
-              recoverInvalidHeader(peerMsgSender, peerDataOpt.get)
+              recoverInvalidHeader(peerDataOpt.get)
             case e: Throwable => throw e
           }
 
@@ -393,9 +391,7 @@ case class DataMessageHandler(
                     newMsgHandler <- {
                       // if in IBD, do not process this header, just execute callbacks
                       if (!isIBD) {
-                        handleDataPayload(payload = headersMessage,
-                                          peerMsgSender = peerMsgSender,
-                                          peer = peer)
+                        handleDataPayload(payload = headersMessage, peer = peer)
                       } else {
                         appConfig.callBacks
                           .executeOnBlockHeadersReceivedCallbacks(
@@ -428,7 +424,7 @@ case class DataMessageHandler(
           logger.warn(s"Merkleblock is not supported")
           Future.successful(this)
         case invMsg: InventoryMessage =>
-          handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
+          handleInventoryMsg(invMsg = invMsg, peer = peer)
       }
     }
 
@@ -437,7 +433,7 @@ case class DataMessageHandler(
 
   /** syncs filter headers in case the header chain is still ahead post filter sync */
   private def syncIfHeadersAhead(
-      peerMessageSender: PeerMessageSender): Future[DataMessageHandlerState] = {
+      syncPeer: Peer): Future[DataMessageHandlerState] = {
     for {
       headerHeight <- chainApi.getBestHashBlockHeight()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
@@ -453,8 +449,10 @@ case class DataMessageHandler(
             s"Starting to fetch filter headers in data message handler")
           for {
             syncingFilterHeadersState <- PeerManager
-              .sendFirstGetCompactFilterHeadersCommand(peerMessageSender,
-                                                       chainApi)
+              .sendFirstGetCompactFilterHeadersCommand(peerMessageSenderApi =
+                                                         peerMessgeSenderApi,
+                                                       chainApi = chainApi,
+                                                       peer = syncPeer)
           } yield {
             syncingFilterHeadersState
           }
@@ -473,8 +471,8 @@ case class DataMessageHandler(
             isIBD <- chainApi.isIBD()
             newState <- {
               if (isIBD) {
-                peerMessageSender
-                  .sendGetHeadersMessage(bestBlockHash.flip)
+                peerMessgeSenderApi
+                  .sendGetHeadersMessage(Vector(bestBlockHash), Some(syncPeer))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
                     //we just need to sync blocks that occurred while we were doing IBD
@@ -492,12 +490,11 @@ case class DataMessageHandler(
 
   /** Recover the data message handler if we received an invalid block header from a peer */
   private def recoverInvalidHeader(
-      peerMsgSender: PeerMessageSender,
       peerData: PeerData): Future[DataMessageHandler] = {
     val result = state match {
       case HeaderSync(peer) =>
         peerData.updateInvalidMessageCount()
-        if (peerData.exceededMaxInvalidMessages && peers.size > 1) {
+        if (peerData.exceededMaxInvalidMessages) {
           logger.warn(
             s"$peer exceeded max limit of invalid messages. Disconnecting.")
 
@@ -509,9 +506,10 @@ case class DataMessageHandler(
             blockchains <- BlockHeaderDAO().getBlockchains()
             cachedHeaders = blockchains
               .flatMap(_.headers)
-              .map(_.hashBE.flip)
-            _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-          } yield this
+              .map(_.hashBE)
+            _ <- peerMessgeSenderApi.sendGetHeadersMessage(cachedHeaders,
+                                                           Some(peer))
+          } yield this.copy(state = HeaderSync(peer))
         }
 
       case headerState @ ValidatingHeaders(peer, _, failedCheck, _) =>
@@ -525,7 +523,7 @@ case class DataMessageHandler(
         if (newHeaderState.validated) {
           logger.info(
             s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
-          fetchCompactFilterHeaders(newDmh, peerData)
+          PeerManager.fetchCompactFilterHeaders(newDmh, peerMessgeSenderApi)
         } else {
           Future.successful(newDmh)
         }
@@ -539,31 +537,39 @@ case class DataMessageHandler(
   }
 
   private def sendNextGetCompactFilterHeadersCommand(
-      peerMsgSender: PeerMessageSender,
+      peerMessageSenderApi: PeerMessageSenderApi,
+      syncPeer: Peer,
       prevStopHash: DoubleSha256DigestBE): Future[Boolean] =
-    peerMsgSender.sendNextGetCompactFilterHeadersCommand(
+    PeerManager.sendNextGetCompactFilterHeadersCommand(
+      peerMessageSenderApi = peerMessageSenderApi,
       chainApi = chainApi,
+      peer = syncPeer,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-      prevStopHash = prevStopHash)
+      prevStopHash = prevStopHash
+    )
 
   private def sendNextGetCompactFilterCommand(
-      peerMsgSender: PeerMessageSender,
+      peerMessageSenderApi: PeerMessageSenderApi,
+      syncPeer: Peer,
       startHeight: Int): Future[Option[DataMessageHandlerState.FilterSync]] = {
 
-    peerMsgSender
-      .sendNextGetCompactFilterCommand(chainApi = chainApi,
-                                       filterBatchSize =
-                                         chainConfig.filterBatchSize,
-                                       startHeight = startHeight)
+    PeerManager
+      .sendNextGetCompactFilterCommand(
+        peerMessageSenderApi = peerMessageSenderApi,
+        chainApi = chainApi,
+        filterBatchSize = chainConfig.filterBatchSize,
+        startHeight = startHeight,
+        peer = syncPeer)
       .map { isSyncing =>
         if (isSyncing)
-          Some(DataMessageHandlerState.FilterSync(peerMsgSender.client.peer))
+          Some(DataMessageHandlerState.FilterSync(syncPeer))
         else None
       }
   }
 
   private def sendFirstGetCompactFilterCommand(
-      peerMsgSender: PeerMessageSender,
+      peerMessageSenderApi: PeerMessageSenderApi,
+      syncPeer: Peer,
       startHeightOpt: Option[Int]): Future[
     Option[DataMessageHandlerState.FilterSync]] = {
     val startHeightF = startHeightOpt match {
@@ -575,13 +581,15 @@ case class DataMessageHandler(
       startHeight <- startHeightF
       _ = logger.info(
         s"Beginning to sync filters from startHeight=$startHeight")
-      res <- sendNextGetCompactFilterCommand(peerMsgSender, startHeight)
+      res <- sendNextGetCompactFilterCommand(peerMessageSenderApi,
+                                             syncPeer,
+                                             startHeight)
     } yield res
   }
 
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
-      peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
+      peer: Peer): Future[DataMessageHandler] = {
     logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
@@ -598,7 +606,7 @@ case class DataMessageHandler(
         Some(Inventory(TypeIdentifier.MsgWitnessTx, hash))
       case other: Inventory => Some(other)
     })
-    peerMsgSender.sendMsg(getData).map(_ => this)
+    peerMessgeSenderApi.sendMsg(getData, Some(peer)).map(_ => this)
   }
 
   private def getCompactFilterStartHeight(
@@ -726,9 +734,8 @@ case class DataMessageHandler(
   private def getHeaders(
       newDmh: DataMessageHandler,
       headers: Vector[BlockHeader],
-      peerMsgSender: PeerMessageSender,
-      peer: Peer,
-      peerDataOpt: Option[PeerData]): Future[DataMessageHandler] = {
+      peer: Peer): Future[DataMessageHandler] = {
+    logger.debug(s"getHeaders() newDmh.state=${newDmh.state} peer=$peer")
     val state = newDmh.state
     val count = headers.length
     val getHeadersF: Future[DataMessageHandler] = {
@@ -749,14 +756,14 @@ case class DataMessageHandler(
               logger.info(
                 s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
               //ask for headers more from the same peer
-              peerMsgSender
-                .sendGetHeadersMessage(lastHash)
+              peerMessgeSenderApi
+                .sendGetHeadersMessage(lastHash.flip, Some(peer))
                 .map(_ => newDmh)
 
             case ValidatingHeaders(_, inSyncWith, _, _) =>
               //ask for more headers now
-              val askF = peerMsgSender
-                .sendGetHeadersMessage(lastHash)
+              val askF = peerMessgeSenderApi
+                .sendGetHeadersMessage(lastHash.flip, Some(peer))
                 .map(_ => syncing)
 
               for {
@@ -807,7 +814,8 @@ case class DataMessageHandler(
                   .map(_ => newDmh.copy(state = newState))
               } else {
                 //if just one peer then can proceed ahead directly
-                fetchCompactFilterHeaders(newDmh, peerDataOpt.get)
+                PeerManager.fetchCompactFilterHeaders(newDmh,
+                                                      peerMessgeSenderApi)
               }
 
             case headerState @ ValidatingHeaders(_, inSyncWith, _, _) =>
@@ -823,8 +831,8 @@ case class DataMessageHandler(
                 // so we also check if our cached filter heights have been set as well, if they haven't then
                 // we probably need to sync filters
 
-                fetchCompactFilterHeaders(currentDmh = newDmh2,
-                                          peerData = peerDataOpt.get)
+                PeerManager.fetchCompactFilterHeaders(currentDmh = newDmh2,
+                                                      peerMessgeSenderApi)
               } else {
                 //do nothing, we are still waiting for some peers to send headers or timeout
                 Future.successful(newDmh2)
@@ -840,10 +848,11 @@ case class DataMessageHandler(
         state match {
           case headerState @ ValidatingHeaders(_, inSyncWith, _, _) =>
             val newHeaderState =
-              headerState.copy(inSyncWith = inSyncWith + peer)
+              headerState.copy(inSyncWith = inSyncWith + peer, syncPeer = peer)
             val newDmh2 = newDmh.copy(state = newHeaderState)
             if (newHeaderState.validated) {
-              fetchCompactFilterHeaders(newDmh2, peerDataOpt.get)
+              PeerManager.fetchCompactFilterHeaders(newDmh2,
+                                                    peerMessgeSenderApi)
             } else {
               //do nothing, we are still waiting for some peers to send headers
               Future.successful(newDmh2)
@@ -861,31 +870,9 @@ case class DataMessageHandler(
     getHeadersF
   }
 
-  def fetchCompactFilterHeaders(
-      currentDmh: DataMessageHandler,
-      peerData: PeerData): Future[DataMessageHandler] = {
-    val syncPeer = currentDmh.state match {
-      case s: SyncDataMessageHandlerState => s.syncPeer
-      case state @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
-        sys.error(
-          s"Cannot fetch compact filter headers when we are in state=$state")
-    }
-    logger.info(
-      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
-    for {
-      sender <- peerData.peerMessageSender
-      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
-        sender,
-        currentDmh.chainApi)
-    } yield {
-      currentDmh.copy(state = newSyncingState)
-    }
-  }
 }
 
-sealed trait StreamDataMessageWrapper {
-  def peer: Peer
-}
+sealed trait StreamDataMessageWrapper
 
 case class DataMessageWrapper(payload: DataPayload, peer: Peer)
     extends StreamDataMessageWrapper
@@ -903,4 +890,7 @@ case class QueryTimeout(peer: Peer, payload: ExpectsResponse)
     extends StreamDataMessageWrapper
 
 case class SendResponseTimeout(peer: Peer, payload: NetworkPayload)
+    extends StreamDataMessageWrapper
+
+case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])
     extends StreamDataMessageWrapper

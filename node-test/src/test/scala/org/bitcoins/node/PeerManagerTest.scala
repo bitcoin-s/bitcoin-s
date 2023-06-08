@@ -48,8 +48,8 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         peer <- peerF
         peerManager = node.peerManager
         //wait until the initialization of the peer is done
-        _ <- AsyncUtil.retryUntilSatisfiedF { () =>
-          peerManager.getPeerMsgSender(peer).map(_.isDefined)
+        _ <- AsyncUtil.retryUntilSatisfied {
+          peerManager.peers.exists(_ == peer)
         }
       } yield {
         assert(

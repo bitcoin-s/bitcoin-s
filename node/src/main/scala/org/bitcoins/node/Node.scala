@@ -21,10 +21,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
   MisbehavingPeer,
   RemovePeers
 }
-import org.bitcoins.node.networking.peer.{
-  PeerMessageSender,
-  SyncDataMessageHandlerState
-}
+import org.bitcoins.node.networking.peer.SyncDataMessageHandlerState
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -57,9 +54,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     CompactFilterDAO(),
                                     ChainStateDescriptorDAO())
   }
-
-  def peerMsgSendersF: Future[Vector[PeerMessageSender]] =
-    peerManager.peerMsgSendersF
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -152,10 +146,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         val connected = peerManager.peers.nonEmpty
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
-          peerMsgSendersF.flatMap { peerMsgSenders =>
-            Future.traverse(peerMsgSenders)(
-              _.sendInventoryMessage(transactions: _*))
-          }
+          peerManager.sendInventoryMessage(transactions = transactions,
+                                           peerOpt = None)
         } else {
           Future.failed(
             new RuntimeException(

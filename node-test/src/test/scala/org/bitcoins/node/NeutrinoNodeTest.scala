@@ -323,7 +323,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       //start syncing node
       val numBlocks = 5
-      val startSyncF = node.sync()
+      val startSyncF =
+        AsyncUtil.retryUntilSatisfiedF(() => node.sync().map(_.isDefined))
       val genBlocksF = {
         for {
           _ <- startSyncF
@@ -351,7 +352,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       for {
-        _ <- node.sync()
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => node.sync().map(_.isDefined))
         _ <- AsyncUtil.nonBlockingSleep(1.second)
         initConnectionCount <- node.getConnectionCount
         _ = assert(initConnectionCount == 2)

@@ -12,6 +12,7 @@ import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   StreamDataMessageWrapper
 }
+import org.bitcoins.node.util.PeerMessageSenderApi
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -25,6 +26,7 @@ case class PeerFinder(
     paramPeers: Vector[Peer],
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
+    peerMessageSenderApi: PeerMessageSenderApi,
     skipPeers: () => Vector[Peer],
     supervisor: ActorRef)(implicit
     ec: ExecutionContext,
@@ -219,13 +221,21 @@ case class PeerFinder(
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
     _peerData.put(peer,
-                  PeerData(peer, controlMessageHandler, queue, supervisor))
+                  PeerData(peer,
+                           controlMessageHandler,
+                           queue,
+                           peerMessageSenderApi,
+                           supervisor))
     _peerData(peer).peerMessageSender.map(_.connect())
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
     _peerData.put(peer,
-                  PeerData(peer, controlMessageHandler, queue, supervisor))
+                  PeerData(peer,
+                           controlMessageHandler,
+                           queue,
+                           peerMessageSenderApi,
+                           supervisor))
     _peerData(peer).peerMessageSender.map(_.reconnect())
 
   }
