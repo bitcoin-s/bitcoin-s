@@ -344,8 +344,9 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
+    val (queue, source) = dataMessageStreamSource.preMaterialize()
     val initDmh = buildStatelessDataMessagehandler(queue)
-    val graph = buildDataMessageStreamGraph(initDmh)
+    val graph = buildDataMessageStreamGraph(initDmh = initDmh, source = source)
     dataMessageQueueOpt = Some(queue)
     val dmhF = graph.run()
     streamDoneFOpt = Some(dmhF)
@@ -825,14 +826,14 @@ case class PeerManager(
     Supervision.Resume
   }
 
-  private def buildDataMessageStreamGraph(initDmh: DataMessageHandler): (
-      SourceQueueWithComplete[StreamDataMessageWrapper],
-      RunnableGraph[Future[DataMessageHandler]]) = {
-    val (queue, source) = dataMessageStreamSource.preMaterialize()
+  private def buildDataMessageStreamGraph(
+      initDmh: DataMessageHandler,
+      source: Source[StreamDataMessageWrapper, NotUsed]): RunnableGraph[
+    Future[DataMessageHandler]] = {
     val graph = source
       .toMat(buildDataMessageStreamSink(initDmh))(Keep.right)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
-    (queue, graph)
+    graph
   }
 
   private[bitcoins] var dataMessageQueueOpt: Option[
