@@ -152,12 +152,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
         peers <- bitcoinPeersF
         peer = peers.head
-        _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(state =
-            DataMessageHandlerState.HeaderSync(peer))(executionContext,
-                                                      node.nodeConfig,
-                                                      node.chainConfig))
-
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         _ <- node.peerManager.getDataMessageHandler
           .addToStream(invalidHeaderMessage, peer)
