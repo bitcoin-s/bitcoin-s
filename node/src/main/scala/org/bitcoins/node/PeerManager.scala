@@ -698,15 +698,14 @@ case class PeerManager(
 
   //can this queue be reused if we PeerManager.start()/PeerManager.stop()
   //is called?
-  private val (queue, dataMessageStreamSource): (
-      SourceQueueWithComplete[StreamDataMessageWrapper],
-      Source[StreamDataMessageWrapper, NotUsed]) = {
+  private val dataMessageStreamSource: Source[
+    StreamDataMessageWrapper,
+    SourceQueueWithComplete[StreamDataMessageWrapper]] = {
     Source
       .queue[StreamDataMessageWrapper](
         16 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
-      .preMaterialize()
   }
 
   private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[
@@ -826,12 +825,14 @@ case class PeerManager(
     Supervision.Resume
   }
 
-  private def buildDataMessageStreamGraph(
-      initDmh: DataMessageHandler): RunnableGraph[
-    Future[DataMessageHandler]] = {
-    dataMessageStreamSource
+  private def buildDataMessageStreamGraph(initDmh: DataMessageHandler): (
+      SourceQueueWithComplete[StreamDataMessageWrapper],
+      RunnableGraph[Future[DataMessageHandler]]) = {
+    val (queue, source) = dataMessageStreamSource.preMaterialize()
+    val graph = source
       .toMat(buildDataMessageStreamSink(initDmh))(Keep.right)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
+    (queue, graph)
   }
 
   private[bitcoins] var dataMessageQueueOpt: Option[
