@@ -168,7 +168,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       }
   }
 
-  it must "must disconnect a peer that keeps sending invalid headers" in {
+  it must "disconnect a peer that keeps sending invalid headers" in {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
       val peerManager = node.peerManager
@@ -203,14 +203,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 1)
 
         _ <- node.sync()
-
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
-        _ = node.peerManager.updateDataMessageHandler(
-          node.peerManager.getDataMessageHandler.copy(state =
-            DataMessageHandlerState.HeaderSync(peer))(executionContext,
-                                                      node.nodeConfig,
-                                                      node.chainConfig))
-
         _ <- sendInvalidHeaders(peer)
         _ <- AsyncUtil.retryUntilSatisfied(
           !node.peerManager.peers.contains(peer))
