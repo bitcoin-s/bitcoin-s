@@ -472,7 +472,7 @@ case class DataMessageHandler(
             newState <- {
               if (isIBD) {
                 peerMessgeSenderApi
-                  .sendGetHeadersMessage(Vector(bestBlockHash), Some(syncPeer))
+                  .gossipGetHeadersMessage(Vector(bestBlockHash))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
                     //we just need to sync blocks that occurred while we were doing IBD
