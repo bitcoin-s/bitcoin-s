@@ -16,7 +16,6 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandlerState
 
 import java.time.Instant
 import scala.concurrent.Future
@@ -64,7 +63,7 @@ case class NeutrinoNode(
     *
     * @return
     */
-  override def sync(): Future[Peer] = {
+  override def sync(): Future[Unit] = {
     val serviceIdentifier = ServiceIdentifier.NODE_COMPACT_FILTERS
     //wait for a peer to be available to sync from...
     //due to underlying mutability in PeerManager/PeerFinder
@@ -75,21 +74,17 @@ case class NeutrinoNode(
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
       _ <- peerAvailableF
-      _ = logger.info(s"Fetching peers to sync with...")
-      syncPeer <- peerManager
-        .randomPeerWithService(serviceIdentifier)
-        .map(_.get)
-      _ <- syncHelper(syncPeer)
-    } yield syncPeer
+      _ <- syncHelper(None)
+    } yield ()
   }
 
-  private def syncHelper(syncPeer: Peer): Future[Unit] = {
-    logger.info(s"Syncing with $syncPeer")
+  /** Helper method to sync the blockchain over the network
+    * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
+    */
+  private def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
+    logger.info(s"Syncing with peerOpt=$syncPeerOpt")
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
-    val _ = peerManager.updateDataMessageHandler(
-      peerManager.getDataMessageHandler.copy(state =
-        DataMessageHandlerState.HeaderSync(syncPeer)))
     for {
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
@@ -97,7 +92,13 @@ case class NeutrinoNode(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE)
-      _ <- peerManager.sendGetHeadersMessage(cachedHeaders, Some(syncPeer))
+      _ <- {
+        syncPeerOpt match {
+          case Some(peer) =>
+            peerManager.sendGetHeadersMessage(cachedHeaders, Some(peer))
+          case None => peerManager.gossipGetHeadersMessage(cachedHeaders)
+        }
+      }
       hasStaleTip <- chainApi.isTipStale()
       _ <- {
         if (hasStaleTip) {
@@ -144,12 +145,14 @@ case class NeutrinoNode(
           //do nothing
           Future.unit
         } else {
-          peerManager.syncCompactFilters(bestFilterHeader,
-                                         chainApi,
-                                         Some(bestFilter))
+          peerManager.syncCompactFilters(bestFilterHeader = bestFilterHeader,
+                                         chainApi = chainApi,
+                                         bestFilterOpt = Some(bestFilter))
         }
       case (Some(bestFilterHeader), None) =>
-        peerManager.syncCompactFilters(bestFilterHeader, chainApi, None)
+        peerManager.syncCompactFilters(bestFilterHeader = bestFilterHeader,
+                                       chainApi = chainApi,
+                                       bestFilterOpt = None)
     }
   }
 
@@ -157,10 +160,7 @@ case class NeutrinoNode(
     for {
       syncPeerOpt <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ <- syncPeerOpt match {
-        case Some(p) => syncHelper(p)
-        case None    => Future.unit
-      }
+      _ <- syncHelper(syncPeerOpt)
     } yield syncPeerOpt
   }
 
