@@ -472,7 +472,7 @@ case class DataMessageHandler(
             newState <- {
               if (isIBD) {
                 peerMessgeSenderApi
-                  .sendGetHeadersMessage(Vector(bestBlockHash), Some(syncPeer))
+                  .gossipGetHeadersMessage(Vector(bestBlockHash))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
                     //we just need to sync blocks that occurred while we were doing IBD
@@ -492,7 +492,8 @@ case class DataMessageHandler(
   private def recoverInvalidHeader(
       peerData: PeerData): Future[DataMessageHandler] = {
     val result = state match {
-      case HeaderSync(peer) =>
+      case HeaderSync(_) | DoneSyncing =>
+        val peer = peerData.peer
         peerData.updateInvalidMessageCount()
         if (peerData.exceededMaxInvalidMessages) {
           logger.warn(
@@ -527,7 +528,7 @@ case class DataMessageHandler(
         } else {
           Future.successful(newDmh)
         }
-      case DoneSyncing | _: FilterHeaderSync | _: FilterSync =>
+      case _: FilterHeaderSync | _: FilterSync =>
         Future.successful(this)
       case m @ (_: MisbehavingPeer | _: RemovePeers) =>
         sys.error(s"Cannot recover invalid headers, got=$m")

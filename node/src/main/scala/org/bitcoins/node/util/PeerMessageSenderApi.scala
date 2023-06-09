@@ -42,6 +42,10 @@ trait PeerMessageSenderApi {
       hashes: Vector[DoubleSha256DigestBE],
       peerOpt: Option[Peer]): Future[Unit]
 
+  /** Gossips the [[org.bitcoins.core.p2p.GetHeadersMessage]] to all of our peers to attempt ot get the best block headers */
+  def gossipGetHeadersMessage(
+      hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
+
   def sendGetHeadersMessage(
       lastHash: DoubleSha256DigestBE,
       peerOpt: Option[Peer]): Future[Unit] = {

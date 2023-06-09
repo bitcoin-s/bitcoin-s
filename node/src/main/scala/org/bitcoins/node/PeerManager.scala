@@ -134,6 +134,12 @@ case class PeerManager(
     sendMsg(headersMsg, peerOpt)
   }
 
+  override def gossipGetHeadersMessage(
+      hashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
+    val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
+    gossipMessage(headersMsg, None)
+  }
+
   override def sendGetDataMessages(
       typeIdentifier: TypeIdentifier,
       hashes: Vector[DoubleSha256DigestBE],
