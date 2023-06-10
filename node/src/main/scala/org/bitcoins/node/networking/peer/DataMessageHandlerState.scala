@@ -1,6 +1,12 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
+  FilterHeaderSync,
+  FilterSync,
+  HeaderSync,
+  ValidatingHeaders
+}
 
 sealed abstract class DataMessageHandlerState {
   def isSyncing: Boolean
@@ -13,6 +19,15 @@ sealed abstract class SyncDataMessageHandlerState
   override def isSyncing: Boolean = true
 
   def syncPeer: Peer
+
+  def replaceSyncPeer(newSyncPeer: Peer): SyncDataMessageHandlerState = {
+    this match {
+      case h: HeaderSync         => h.copy(syncPeer = newSyncPeer)
+      case fh: FilterHeaderSync  => fh.copy(syncPeer = newSyncPeer)
+      case fs: FilterSync        => fs.copy(syncPeer = newSyncPeer)
+      case vh: ValidatingHeaders => vh.copy(syncPeer = newSyncPeer)
+    }
+  }
 }
 
 object DataMessageHandlerState {

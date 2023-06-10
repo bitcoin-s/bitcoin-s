@@ -652,9 +652,8 @@ case class PeerManager(
     val state = dmh.state
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
-      case HeaderSync(_) | MisbehavingPeer(_) =>
+      case HeaderSync(_) | MisbehavingPeer(_) | DoneSyncing =>
         syncFromNewPeer().map(_ => dmh)
-
       case headerState @ ValidatingHeaders(_, _, failedCheck, _) =>
         val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
         val newDmh = dmh.copy(state = newHeaderState)
@@ -663,7 +662,7 @@ case class PeerManager(
           PeerManager.fetchCompactFilterHeaders(newDmh, this)
         } else Future.successful(newDmh)
 
-      case DoneSyncing | _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
+      case _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
         Future.successful(dmh)
     }
   }
@@ -734,8 +733,11 @@ case class PeerManager(
                       }
                     case _: DataPayload =>
                       //peer must be fully initialized to send a data payload
-                      Future.failed(new RuntimeException(
-                        s"Cannot find peer message sender to send message=${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}"))
+                      val msg =
+                        s"Cannot find peerOpt=${sendToPeer.peerOpt} to send message=${sendToPeer.msg.payload.commandName} to. It may have been disconnected, sending to another random peer."
+                      logger.warn(msg)
+                      randomPeerMsgSenderWithService(
+                        ServiceIdentifier.NODE_NETWORK)
                   }
               }
             case None =>
@@ -752,7 +754,7 @@ case class PeerManager(
           case Some(peerMsgSender) =>
             peerMsgSender
               .sendMsg(sendToPeer.msg)
-              .map(_ => dmh)
+              .map(_ => handleDisconnectedPeer(sendToPeer, peerMsgSender, dmh))
           case None =>
             Future.failed(new RuntimeException(
               s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to"))
@@ -793,21 +795,14 @@ case class PeerManager(
         }
       case (dmh, _ @HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
-        val peerDataOpt = getPeerData(peer)
-        peerDataOpt match {
-          case Some(_) =>
-            for {
-              msg <- {
-                onHeaderRequestTimeout(peer, dmh).map { newDmh =>
-                  logger.debug(s"Done processing timeout header for $peer")
-                  newDmh
-                }
-              }
-            } yield msg
-          case None =>
-            sys.error(s"Unkown peer timeing out header request, peer=$peer")
-        }
-
+        for {
+          newDmh <- {
+            onHeaderRequestTimeout(peer, dmh).map { newDmh =>
+              logger.debug(s"Done processing timeout header for $peer")
+              newDmh
+            }
+          }
+        } yield newDmh
       case (dmh, _ @DisconnectedPeer(peer, forceReconnect)) =>
         onP2PClientDisconnected(peer, forceReconnect, dmh.state).map(_ => dmh)
       case (dmh, i: Initialized) =>
@@ -857,6 +852,7 @@ case class PeerManager(
       case None        => Future.successful(Done)
     }
   }
+
   /** Helper method to sync the blockchain over the network
     *
     * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
@@ -943,6 +939,38 @@ case class PeerManager(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
       _ <- syncHelper(syncPeerOpt)
     } yield syncPeerOpt
+  }
+
+  /** Handles the case where we need to send a message to a peer, but that peer was disconnected
+    * We change the peer and the adjust the state in [[DataMessageHandler]]
+    * @param sendToPeer the peer we were originally sending the message to
+    * @param peerMessageSender the new peer we are going to send the message to
+    * @param dmh the data message handler we need to adjust state of
+    */
+  private def handleDisconnectedPeer(
+      sendToPeer: SendToPeer,
+      peerMessageSender: PeerMessageSender,
+      dmh: DataMessageHandler): DataMessageHandler = {
+    val destination = peerMessageSender.client.peer
+    val newState: DataMessageHandlerState = sendToPeer.peerOpt match {
+      case Some(originalPeer) =>
+        if (originalPeer != destination) {
+          //need to replace syncPeer with newSyncPeer
+          dmh.state match {
+            case s: SyncDataMessageHandlerState =>
+              s.replaceSyncPeer(destination)
+            case m: MisbehavingPeer => m
+            case r: RemovePeers     => r
+            case DoneSyncing        => DoneSyncing
+          }
+        } else {
+          dmh.state
+        }
+      case None =>
+        dmh.state
+    }
+
+    dmh.copy(state = newState)
   }
 }
 
