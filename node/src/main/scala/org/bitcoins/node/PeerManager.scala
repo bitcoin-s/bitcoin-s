@@ -408,12 +408,6 @@ case class PeerManager(
       this
     }
 
-    stopF.failed.foreach { e =>
-      logger.error(
-        s"Failed to stop peer manager. Peers: ${_peerDataMap.map(_._1)}, waiting for deletion: $waitingForDeletion",
-        e)
-    }
-
     stopF
   }
 

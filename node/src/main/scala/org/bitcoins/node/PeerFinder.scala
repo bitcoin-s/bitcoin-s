@@ -208,13 +208,18 @@ case class PeerFinder(
     //delete try queue
     _peersToTry.clear()
 
-    for {
+    val stopF = for {
       _ <- Future.traverse(_peerData.map(_._2))(_.stop())
       _ <- AsyncUtil
         .retryUntilSatisfied(_peerData.isEmpty,
                              interval = 1.seconds,
                              maxTries = 30)
     } yield this
+
+    stopF.failed.foreach { e =>
+      logger.error(s"Failed to stop peer finder. Peers: ${_peerData}", e)
+    }
+    stopF
   }
 
   /** creates and initialises a new test peer */
