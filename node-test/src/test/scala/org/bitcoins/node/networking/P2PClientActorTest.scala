@@ -42,7 +42,7 @@ class P2PClientActorTest
   }
 
   lazy val bitcoindRpc2F =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    cachedBitcoindWithFundsF
 
   lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
