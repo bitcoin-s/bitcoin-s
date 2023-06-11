@@ -532,6 +532,8 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: DataMessageHandlerState): Future[Unit] = {
+    logger.info(
+      s"onP2PClientDisconnected peer=$peer forceReconnect=$forceReconnect state=$state finder.isDefined=${finderOpt.isDefined}")
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
