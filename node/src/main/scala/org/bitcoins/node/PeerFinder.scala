@@ -217,7 +217,8 @@ case class PeerFinder(
     } yield this
 
     stopF.failed.foreach { e =>
-      logger.error(s"Failed to stop peer finder. Peers: ${_peerData.map(_._1)}", e)
+      logger.error(s"Failed to stop peer finder. Peers: ${_peerData.map(_._1)}",
+                   e)
     }
     stopF
   }

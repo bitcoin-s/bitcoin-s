@@ -537,7 +537,7 @@ case class PeerManager(
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
 
-        logger.info(s"Client stopped for $peer peers=$peers")
+        logger.info(s"Client stopped for $peer peers=$peers state=$state")
         if (finder.hasPeer(peer)) {
           //client actor for one of the test peers stopped, can remove it from map now
           finder.removePeer(peer)
