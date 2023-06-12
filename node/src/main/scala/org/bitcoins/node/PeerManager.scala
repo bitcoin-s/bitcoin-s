@@ -750,7 +750,7 @@ case class PeerManager(
               .map(_ => handleDisconnectedPeer(sendToPeer, peerMsgSender, dmh))
           case None =>
             Future.failed(new RuntimeException(
-              s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to"))
+              s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to. This means we are not connected to any peers."))
         }
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
