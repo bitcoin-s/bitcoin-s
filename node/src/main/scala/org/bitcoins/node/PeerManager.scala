@@ -532,7 +532,7 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: DataMessageHandlerState): Future[Unit] = {
-    logger.info(
+    logger.debug(
       s"onP2PClientDisconnected peer=$peer forceReconnect=$forceReconnect state=$state finder.isDefined=${finderOpt.isDefined}")
     finderOpt match {
       case Some(finder) =>
