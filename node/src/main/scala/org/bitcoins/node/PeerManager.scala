@@ -532,12 +532,12 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: DataMessageHandlerState): Future[Unit] = {
-    logger.info(s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined}")
+    logger.info(
+      s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined}")
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
-
 
         if (finder.hasPeer(peer)) {
           //client actor for one of the test peers stopped, can remove it from map now
