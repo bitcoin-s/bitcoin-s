@@ -532,14 +532,13 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: DataMessageHandlerState): Future[Unit] = {
-    logger.debug(
-      s"onP2PClientDisconnected peer=$peer forceReconnect=$forceReconnect state=$state finder.isDefined=${finderOpt.isDefined}")
+    logger.info(s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined}")
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
 
-        logger.info(s"Client stopped for $peer peers=$peers state=$state")
+
         if (finder.hasPeer(peer)) {
           //client actor for one of the test peers stopped, can remove it from map now
           finder.removePeer(peer)
@@ -692,8 +691,6 @@ case class PeerManager(
     )
   }
 
-  //can this queue be reused if we PeerManager.start()/PeerManager.stop()
-  //is called?
   private val dataMessageStreamSource: Source[
     StreamDataMessageWrapper,
     SourceQueueWithComplete[StreamDataMessageWrapper]] = {
@@ -755,7 +752,7 @@ case class PeerManager(
             Future.failed(new RuntimeException(
               s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to"))
         }
-      case (dmh, _ @DataMessageWrapper(payload, peer)) =>
+      case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerMsgSenderOptF = getPeerMsgSender(peer)
         peerMsgSenderOptF.flatMap {
@@ -789,7 +786,7 @@ case class PeerManager(
               r
             }
         }
-      case (dmh, _ @HeaderTimeoutWrapper(peer)) =>
+      case (dmh, HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
         for {
           newDmh <- {
@@ -799,7 +796,7 @@ case class PeerManager(
             }
           }
         } yield newDmh
-      case (dmh, _ @DisconnectedPeer(peer, forceReconnect)) =>
+      case (dmh, DisconnectedPeer(peer, forceReconnect)) =>
         onP2PClientDisconnected(peer, forceReconnect, dmh.state).map(_ => dmh)
       case (dmh, i: Initialized) =>
         onInitialization(i.peer).map(_ => dmh)
