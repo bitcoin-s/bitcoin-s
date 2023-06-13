@@ -99,19 +99,11 @@ implicit val nodeConfig = appConfig.nodeConf
 
 val initNodeF = nodeConfig.start()
 
-//the node requires a chainHandler to store block information
-//use a helper method in our testkit to create the chain project
-val chainApiF = for {
-  chainHandler <- ChainUnitTest.createChainHandler()
-} yield chainHandler
-
-
 //yay! All setup done, let's create a node and then start it!
 val nodeF = for {
-  chainApi <- chainApiF
   peer <- peerF
 } yield {
-    NeutrinoNode(chainApi = chainApi,
+    NeutrinoNode(
         walletCreationTimeOpt = None, //you can set this to only sync compact filters after the timestamp
         paramPeers = Vector(peer),
         nodeConfig = nodeConfig,
