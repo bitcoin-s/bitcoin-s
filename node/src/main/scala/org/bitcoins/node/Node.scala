@@ -112,11 +112,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     */
   def sync(): Future[Unit]
 
-  /** Sync from a new peer
-    * @return the new peer we are syncing from else none if we could not start syncing with another peer
-    */
-  def syncFromNewPeer(): Future[Option[Peer]]
-
   /** Broadcasts the given transaction over the P2P network */
   override def broadcastTransactions(
       transactions: Vector[Transaction]): Future[Unit] = {
