@@ -2,10 +2,7 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models._
-import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -161,22 +158,16 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[NeutrinoNode] = {
     import system.dispatcher
 
-    val blockHeaderDAO = BlockHeaderDAO()
-    val filterHeaderDAO = CompactFilterHeaderDAO()
-    val filterDAO = CompactFilterDAO()
-    val stateDAO = ChainStateDescriptorDAO()
-
-    val chainApiF = {
+    val chainConfStartedF = {
       for {
         _ <- chainConf.start()
-        chainApi <- ChainHandlerCached
-          .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
       } yield {
-        chainApi
+        ()
       }
     }
 
-    val nodeF = chainApiF.map(buildNode(peer, _, walletCreationTimeOpt))
+    val nodeF =
+      chainConfStartedF.map(_ => buildNeutrinoNode(peer, walletCreationTimeOpt))
     for {
       node <- nodeF
       _ <- node.nodeConfig.start()
@@ -186,39 +177,17 @@ object NodeUnitTest extends P2PLogger {
     }
   }
 
-  def buildNode(
+  private def buildNeutrinoNode(
       peer: Peer,
-      chainApi: ChainApi,
       walletCreationTimeOpt: Option[Instant])(implicit
       chainConf: ChainAppConfig,
       nodeConf: NodeAppConfig,
       system: ActorSystem): NeutrinoNode = {
-    NeutrinoNode(chainApi,
-                 walletCreationTimeOpt,
+    NeutrinoNode(walletCreationTimeOpt,
                  nodeConf,
                  chainConf,
                  system,
                  paramPeers = Vector(peer))
-  }
-
-  def buildPeerMessageReceiver(
-      chainApi: ChainApi,
-      peer: Peer,
-      walletCreationTimeOpt: Option[Instant])(implicit
-      appConfig: BitcoinSAppConfig,
-      system: ActorSystem): Future[PeerMessageReceiver] = {
-    val node = buildNode(peer, chainApi, walletCreationTimeOpt)(
-      appConfig.chainConf,
-      appConfig.nodeConf,
-      system)
-    val controlMessageHandler = ControlMessageHandler(node.peerManager)(
-      system.dispatcher,
-      appConfig.nodeConf)
-    val receiver =
-      PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                          queue = node.peerManager.dataMessageQueueOpt.get,
-                          peer = peer)(system, appConfig.nodeConf)
-    Future.successful(receiver)
   }
 
   def destroyNode(node: Node, appConfig: BitcoinSAppConfig)(implicit
@@ -254,7 +223,7 @@ object NodeUnitTest extends P2PLogger {
   }
 
   //does not destroys the bitcoinds
-  def destroyNodeConnectedWithBitcoinds(
+  private def destroyNodeConnectedWithBitcoinds(
       nodeConnectedWithBitcoind: NodeConnectedWithBitcoinds)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
@@ -273,7 +242,7 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
-  def createNeutrinoNodeFundedWalletBitcoind(
+  private def createNeutrinoNodeFundedWalletBitcoind(
       versionOpt: Option[BitcoindVersion],
       walletCallbacks: WalletCallbacks)(implicit
       system: ActorSystem,
@@ -339,7 +308,7 @@ object NodeUnitTest extends P2PLogger {
     }
   }
 
-  def destroyNodeFundedWalletBitcoind(
+  private def destroyNodeFundedWalletBitcoind(
       fundedWalletBitcoind: NodeFundedWalletBitcoind)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
@@ -363,20 +332,23 @@ object NodeUnitTest extends P2PLogger {
   }
 
   def buildPeerMessageReceiver(
-      chainApi: ChainApi,
       peer: Peer,
       walletCreationTimeOpt: Option[Instant])(implicit
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
-    val node = buildNode(peer, chainApi, walletCreationTimeOpt)
-    val controlMessageHandler =
-      ControlMessageHandler(node.peerManager)(system.dispatcher, nodeAppConfig)
-    val receiver =
-      PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                          queue = node.peerManager.dataMessageQueueOpt.get,
-                          peer = peer)
-    Future.successful(receiver)
+    import system.dispatcher
+    val nodeF = buildNode(peer, walletCreationTimeOpt)
+    for {
+      node <- nodeF
+      controlMessageHandler =
+        ControlMessageHandler(node.peerManager)(system.dispatcher,
+                                                nodeAppConfig)
+      receiver =
+        PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
+                            queue = node.peerManager.dataMessageQueueOpt.get,
+                            peer = peer)
+    } yield receiver
   }
 
   def createPeer(bitcoind: BitcoindRpcClient)(implicit
@@ -403,17 +375,14 @@ object NodeUnitTest extends P2PLogger {
     val checkConfigF = Future {
       assert(nodeAppConfig.nodeType == NodeType.NeutrinoNode)
     }
-    val chainApiF = for {
-      _ <- checkConfigF
-      chainHandler <- ChainUnitTest.createChainHandler()
-    } yield chainHandler
+
     val nodeF = for {
+      _ <- checkConfigF
+      _ <- chainAppConfig.start()
       _ <- nodeAppConfig.start()
       peer <- createPeer(bitcoind)
-      chainApi <- chainApiF
     } yield {
-      NeutrinoNode(chainApi,
-                   walletCreationTimeOpt,
+      NeutrinoNode(walletCreationTimeOpt,
                    paramPeers = Vector(peer),
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
@@ -436,16 +405,13 @@ object NodeUnitTest extends P2PLogger {
     val checkConfigF = Future {
       assert(nodeAppConfig.nodeType == NodeType.NeutrinoNode)
     }
-    val chainApiF = for {
-      _ <- checkConfigF
-      chainHandler <- ChainUnitTest.createChainHandler()
-    } yield chainHandler
+
     val nodeF = for {
+      _ <- checkConfigF
+      _ <- chainAppConfig.start()
       _ <- nodeAppConfig.start()
-      chainApi <- chainApiF
     } yield {
-      NeutrinoNode(chainApi,
-                   walletCreationTimeOpt,
+      NeutrinoNode(walletCreationTimeOpt,
                    paramPeers = Vector(peer),
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
@@ -469,18 +435,15 @@ object NodeUnitTest extends P2PLogger {
     val checkConfigF = Future {
       assert(nodeAppConfig.nodeType == NodeType.NeutrinoNode)
     }
-    val chainApiF = for {
-      _ <- checkConfigF
-      chainHandler <- ChainUnitTest.createChainHandler()
-    } yield chainHandler
-    val peersF = bitcoinds.map(createPeer(_))
+
+    val peersF = Future.traverse(bitcoinds)(createPeer(_))
     val nodeF = for {
+      _ <- checkConfigF
+      _ <- chainAppConfig.start()
       _ <- nodeAppConfig.start()
-      chainApi <- chainApiF
-      peers <- Future.sequence(peersF)
+      peers <- peersF
     } yield {
-      NeutrinoNode(chainApi,
-                   creationTimeOpt,
+      NeutrinoNode(walletCreationTimeOpt = creationTimeOpt,
                    paramPeers = peers,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,

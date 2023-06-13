@@ -558,7 +558,6 @@ case class PeerManager(
             (forceReconnect || connectedPeerCount == 0) && isStarted.get
           if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
             node
-              .copy(chainApi = ChainHandler.fromDatabase())
               .syncFromNewPeer()
               .map(_ => ())
           } else if (syncPeerOpt.isDefined) {
