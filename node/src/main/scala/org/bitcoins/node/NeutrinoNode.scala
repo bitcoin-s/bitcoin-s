@@ -9,8 +9,6 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandlerState
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.DoneSyncing
 
 import java.time.Instant
 import scala.concurrent.Future

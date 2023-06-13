@@ -876,10 +876,24 @@ case class PeerManager(
           //after we are done syncing block headers
           Future.unit
         } else {
-          syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
-                      bestFilterOpt = bestFilterOpt,
-                      bestBlockHeader = header,
-                      chainApi = chainApi)
+          val syncPeerOptF = syncPeerOpt match {
+            case Some(p) => Future.successful(Some(p))
+            case None =>
+              randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
+          }
+          syncPeerOptF.flatMap {
+            case Some(p) =>
+              syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
+                          bestFilterOpt = bestFilterOpt,
+                          bestBlockHeader = header,
+                          chainApi = chainApi,
+                          dmhState = FilterHeaderSync(p))
+            case None =>
+              Future.failed(
+                new RuntimeException(
+                  "Could not find peer to sync filters with!"))
+          }
+
         }
       }
     } yield {
@@ -892,7 +906,8 @@ case class PeerManager(
       bestFilterHeaderOpt: Option[CompactFilterHeaderDb],
       bestFilterOpt: Option[CompactFilterDb],
       bestBlockHeader: BlockHeaderDb,
-      chainApi: ChainApi): Future[Unit] = {
+      chainApi: ChainApi,
+      dmhState: DataMessageHandlerState): Future[Unit] = {
     // If we have started syncing filters headers
     (bestFilterHeaderOpt, bestFilterOpt) match {
       case (None, None) | (None, Some(_)) =>
@@ -917,12 +932,14 @@ case class PeerManager(
         } else {
           syncCompactFilters(bestFilterHeader = bestFilterHeader,
                              chainApi = chainApi,
-                             bestFilterOpt = Some(bestFilter))
+                             bestFilterOpt = Some(bestFilter),
+                             dmhState = dmhState)
         }
       case (Some(bestFilterHeader), None) =>
         syncCompactFilters(bestFilterHeader = bestFilterHeader,
                            chainApi = chainApi,
-                           bestFilterOpt = None)
+                           bestFilterOpt = None,
+                           dmhState = dmhState)
     }
   }
 
