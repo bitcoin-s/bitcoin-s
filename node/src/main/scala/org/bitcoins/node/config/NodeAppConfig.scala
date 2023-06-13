@@ -2,14 +2,7 @@ package org.bitcoins.node.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  ChainStateDescriptorDAO,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
@@ -233,25 +226,15 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    import system.dispatcher
-
-    val blockHeaderDAO = BlockHeaderDAO()
-    val filterHeaderDAO = CompactFilterHeaderDAO()
-    val filterDAO = CompactFilterDAO()
-    val stateDAO = ChainStateDescriptorDAO()
-
-    val chainF = ChainHandlerCached
-      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
 
     nodeConf.nodeType match {
       case NodeType.NeutrinoNode =>
-        chainF.map(chain =>
-          NeutrinoNode(chain,
-                       walletCreationTimeOpt,
-                       nodeConf,
-                       chainConf,
-                       system,
-                       paramPeers = peers))
+        val n = NeutrinoNode(walletCreationTimeOpt,
+                             nodeConf,
+                             chainConf,
+                             system,
+                             paramPeers = peers)
+        Future.successful(n)
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>

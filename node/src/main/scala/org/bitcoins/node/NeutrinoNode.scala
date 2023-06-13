@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
@@ -21,7 +22,6 @@ import java.time.Instant
 import scala.concurrent.Future
 
 case class NeutrinoNode(
-    chainApi: ChainApi,
     walletCreationTimeOpt: Option[Instant],
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
@@ -83,6 +83,7 @@ case class NeutrinoNode(
     */
   private def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
     logger.info(s"Syncing with peerOpt=$syncPeerOpt")
+    val chainApi: ChainApi = ChainHandler.fromDatabase()
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
