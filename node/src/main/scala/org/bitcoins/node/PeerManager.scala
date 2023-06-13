@@ -125,10 +125,19 @@ case class PeerManager(
           .map(_._1)
       case None => peerDataMap.map(_._1)
     }
-
-    Future
-      .traverse(gossipPeers)(p => sendMsg(msg, Some(p)))
-      .map(_ => ())
+    if (gossipPeers.isEmpty) {
+      logger.warn(
+        s"We have 0 peers to gossip message=${msg.commandName} to peerDataMap=${peerDataMap
+          .map(_._1)}.")
+      Future.unit
+    } else {
+      Future
+        .traverse(gossipPeers) { p =>
+          logger.info(s"Gossiping message=${msg.commandName} to peer=$p")
+          sendMsg(msg, Some(p))
+        }
+        .map(_ => ())
+    }
   }
 
   override def sendGetHeadersMessage(
@@ -141,7 +150,7 @@ case class PeerManager(
   override def gossipGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
     val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
-    gossipMessage(headersMsg, None)
+    gossipMessage(msg = headersMsg, excludedPeerOpt = None)
   }
 
   override def sendGetDataMessages(
@@ -205,14 +214,14 @@ case class PeerManager(
       bestFilterOpt: Option[CompactFilterDb],
       dmhState: DataMessageHandlerState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
-    val syncPeerOptF = {
+    val syncPeerOpt = {
       dmhState match {
         case syncState: SyncDataMessageHandlerState =>
           Some(syncState.syncPeer)
         case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
       }
     }
-    val sendCompactFilterHeaderMsgF = syncPeerOptF match {
+    val sendCompactFilterHeaderMsgF = syncPeerOpt match {
       case Some(syncPeer) =>
         PeerManager.sendNextGetCompactFilterHeadersCommand(
           peerMessageSenderApi = this,
@@ -230,7 +239,7 @@ case class PeerManager(
         bestFilterOpt.isDefined &&
         bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
       ) {
-        syncPeerOptF match {
+        syncPeerOpt match {
           case Some(syncPeer) =>
             //means we are not syncing filter headers, and our filters are NOT
             //in sync with our compact filter headers
@@ -521,7 +530,6 @@ case class PeerManager(
           s"onInitialization cannot be run, PeerFinder was not started")
         Future.unit
     }
-
   }
 
   /** @param peer the peer we were disconencted from
@@ -533,7 +541,8 @@ case class PeerManager(
       forceReconnect: Boolean,
       state: DataMessageHandlerState): Future[Unit] = {
     logger.info(
-      s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined}")
+      s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
+        .map(_._1)}")
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -558,7 +567,10 @@ case class PeerManager(
           }
           val shouldReconnect =
             (forceReconnect || connectedPeerCount == 0) && isStarted.get
-          if (peers.exists(_ != peer) && syncPeerOpt.isDefined) {
+          if (peers.exists(_ != peer)) {
+            logger.info(
+              s"onP2PClientDisconnected peers.exists(_ != peer) _peerDataMap=${_peerDataMap
+                .map(_._1)}")
             syncFromNewPeer().map(_ => ())
           } else if (syncPeerOpt.isDefined) {
             if (shouldReconnect) {
@@ -1034,7 +1046,7 @@ object PeerManager extends Logging {
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           logger.info(
-            s"Requesting next compact filter headers from $filterSyncMarker")
+            s"Requesting next compact filter headers from $filterSyncMarker with peer=$peer")
           peerMessageSenderApi
             .sendGetCompactFilterHeadersMessage(filterSyncMarker, Some(peer))
             .map(_ => true)
@@ -1057,7 +1069,8 @@ object PeerManager extends Logging {
         chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
-          logger.info(s"Requesting compact filters from $filterSyncMarker")
+          logger.info(
+            s"Requesting compact filters from $filterSyncMarker with peer=$peer")
 
           peerMessageSenderApi
             .sendGetCompactFiltersMessage(filterSyncMarker, peer)
