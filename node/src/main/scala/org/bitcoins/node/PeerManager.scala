@@ -1090,6 +1090,7 @@ object PeerManager extends Logging {
       ec: ExecutionContext,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig): Future[DataMessageHandler] = {
+    logger.info(s"fetchCompactFilterHeaders() state=${currentDmh.state}")
     val syncPeer = currentDmh.state match {
       case s: SyncDataMessageHandlerState => s.syncPeer
       case state @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
