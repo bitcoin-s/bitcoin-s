@@ -62,6 +62,16 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   it must "switch to different peer and sync if current is unavailable" in {
     nodeConnectedWithBitcoinds =>
+      //we are getting disconnected immediately after receiving 202 block headers and requesting filter headers
+      //this causes
+      //1. The getcfheaders query to timeout when the node is disconnected
+      //2. onP2PClientDisconnected is executed when its sent across the akka stream
+      //since we were disconnected, we send a getheaders message to a different peer
+      //this peer responds with 0 new headers, however since we are in a FilterHeaderSync() state
+      //we throw an exception because we are in the incorrect state to receive a headers message
+      //
+      //since we have 0 compact filter headers/filters, BUT our block headers are synced
+      //we end up in a weird corner case where we cannot start syncing filter headers from a different peer
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
       def peers = node.peerManager.peers

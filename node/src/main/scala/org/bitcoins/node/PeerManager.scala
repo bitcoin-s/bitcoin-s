@@ -640,7 +640,7 @@ case class PeerManager(
       payload: ExpectsResponse,
       peer: Peer,
       state: DataMessageHandlerState): Future[Unit] = {
-    logger.debug(s"Query timeout out for $peer")
+    logger.debug(s"Query timeout out for $peer with payload=${payload}")
 
     //if we are removing this peer and an existing query timed out because of that
     // peerData will not have this peer
@@ -918,7 +918,6 @@ case class PeerManager(
                 new RuntimeException(
                   "Could not find peer to sync filters with!"))
           }
-
         }
       }
     } yield {
