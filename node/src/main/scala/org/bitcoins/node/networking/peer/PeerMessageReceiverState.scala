@@ -204,7 +204,7 @@ sealed abstract class PeerMessageReceiverState extends Logging {
           verackMsgP = good.verackMsgP)
         val disconnectedPeer = DisconnectedPeer(peer, false)
         queue.offer(disconnectedPeer).map(_ => newState)
-      case good: Normal =>
+      case good @ (_: Normal | _: Waiting) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,
@@ -216,30 +216,19 @@ sealed abstract class PeerMessageReceiverState extends Logging {
         for {
           _ <- queue.offer(disconnectedPeer).map(_ => newState)
         } yield newState
-      case good @ (_: Initializing | _: Waiting) =>
-        val handleF: Future[Unit] = good match {
-          case wait: Waiting =>
-            onResponseTimeout(networkPayload = wait.responseFor,
-                              peer = peer,
-                              queue = queue)
-              .map(_ => ())
-          case wait: Initializing =>
-            wait.initializationTimeoutCancellable.cancel()
-            Future.unit
-          case _ => Future.unit
-        }
+      case initializing: Initializing =>
+        initializing.initializationTimeoutCancellable.cancel()
 
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
-          clientConnectP = good.clientConnectP,
-          clientDisconnectP = good.clientDisconnectP.success(()),
-          versionMsgP = good.versionMsgP,
-          verackMsgP = good.verackMsgP
+          clientConnectP = initializing.clientConnectP,
+          clientDisconnectP = initializing.clientDisconnectP.success(()),
+          versionMsgP = initializing.versionMsgP,
+          verackMsgP = initializing.verackMsgP
         )
 
         val disconnectedPeer = DisconnectedPeer(peer, false)
         for {
-          _ <- handleF
           _ <- queue.offer(disconnectedPeer)
         } yield newState
     }
