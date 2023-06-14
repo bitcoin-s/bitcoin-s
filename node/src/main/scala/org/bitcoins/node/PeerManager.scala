@@ -208,12 +208,13 @@ case class PeerManager(
   /** Starts sync compact filer headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
-  def syncCompactFilters(
+  private def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb],
       dmhState: DataMessageHandlerState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
+    logger.info(s"syncCompactFilters() dmhState=$dmhState")
     val syncPeerOpt = {
       dmhState match {
         case syncState: SyncDataMessageHandlerState =>
@@ -882,6 +883,7 @@ case class PeerManager(
         }
       }
       hasStaleTip <- chainApi.isTipStale()
+      _ = logger.info(s"hasStaleTip=$hasStaleTip")
       _ <- {
         if (hasStaleTip) {
           //if we have a stale tip, we will request to sync filter headers / filters
@@ -920,6 +922,7 @@ case class PeerManager(
       bestBlockHeader: BlockHeaderDb,
       chainApi: ChainApi,
       dmhState: DataMessageHandlerState): Future[Unit] = {
+    logger.info(s"syncFilters() dmhState=$dmhState")
     // If we have started syncing filters headers
     (bestFilterHeaderOpt, bestFilterOpt) match {
       case (None, None) | (None, Some(_)) =>
@@ -955,7 +958,7 @@ case class PeerManager(
     }
   }
 
-  def syncFromNewPeer(): Future[Option[Peer]] = {
+  private def syncFromNewPeer(): Future[Option[Peer]] = {
     for {
       syncPeerOpt <- randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
