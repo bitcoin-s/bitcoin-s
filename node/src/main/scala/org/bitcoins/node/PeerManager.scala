@@ -572,16 +572,20 @@ case class PeerManager(
             logger.info(
               s"onP2PClientDisconnected peers.exists(_ != peer) _peerDataMap=${_peerDataMap
                 .map(_._1)}")
-            syncFromNewPeer().map {
+            val randomPeerOptF = randomPeerWithService(
+              ServiceIdentifier.NODE_COMPACT_FILTERS)
+            randomPeerOptF.flatMap {
               case Some(peer) =>
                 state match {
                   case syncState: SyncDataMessageHandlerState =>
-                    syncState.replaceSyncPeer(peer)
+                    switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
                   case x @ (DoneSyncing | _: MisbehavingPeer |
                       _: RemovePeers) =>
-                    x
+                    Future.successful(x)
                 }
-              case None => DoneSyncing
+              case None =>
+                //if we have no new peers should we just switch to DoneSyncing?
+                Future.successful(state)
             }
           } else if (syncPeerOpt.isDefined) {
             if (shouldReconnect) {
@@ -870,19 +874,24 @@ case class PeerManager(
     }
   }
 
-  /** Helper method to sync the blockchain over the network
-    *
-    * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
-    */
-  def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
-    logger.info(s"Syncing with peerOpt=$syncPeerOpt")
-    val chainApi: ChainApi = ChainHandler.fromDatabase()
+  private def switchSyncToPeer(
+      oldSyncState: SyncDataMessageHandlerState,
+      newPeer: Peer): Future[DataMessageHandlerState] = {
+    val newState = oldSyncState.replaceSyncPeer(newPeer)
+    oldSyncState match {
+      case _: HeaderSync | _: ValidatingHeaders =>
+        syncHelper(Some(newPeer)).map(_ => newState)
+      case _: FilterHeaderSync | _: FilterSync =>
+        filterSyncHelper(ChainHandler.fromDatabase(), Some(newPeer)).map(_ =>
+          newState)
+    }
+  }
+
+  private def getHeaderSyncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
     val blockchainsF =
       BlockHeaderDAO()(ec, chainAppConfig).getBlockchains()
+
     for {
-      header <- chainApi.getBestBlockHeader()
-      bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
-      bestFilterOpt <- chainApi.getBestFilter()
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE)
@@ -893,6 +902,17 @@ case class PeerManager(
           case None => gossipGetHeadersMessage(cachedHeaders)
         }
       }
+    } yield ()
+  }
+
+  private def filterSyncHelper(
+      chainApi: ChainApi,
+      syncPeerOpt: Option[Peer]): Future[Unit] = {
+    for {
+      header <- chainApi.getBestBlockHeader()
+      bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
+      bestFilterOpt <- chainApi.getBestFilter()
+
       hasStaleTip <- chainApi.isTipStale()
       _ = logger.info(s"hasStaleTip=$hasStaleTip")
       _ <- {
@@ -920,6 +940,21 @@ case class PeerManager(
           }
         }
       }
+    } yield ()
+  }
+
+  /** Helper method to sync the blockchain over the network
+    *
+    * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
+    */
+  def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
+    logger.info(s"Syncing with peerOpt=$syncPeerOpt")
+    val chainApi: ChainApi = ChainHandler.fromDatabase()
+    val headerF = chainApi.getBestBlockHeader()
+    for {
+      _ <- getHeaderSyncHelper(syncPeerOpt)
+      _ <- filterSyncHelper(chainApi, syncPeerOpt)
+      header <- headerF
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE.hex}")
