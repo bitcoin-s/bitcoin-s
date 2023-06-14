@@ -540,7 +540,7 @@ case class PeerManager(
   private def onP2PClientDisconnected(
       peer: Peer,
       forceReconnect: Boolean,
-      state: DataMessageHandlerState): Future[Unit] = {
+      state: DataMessageHandlerState): Future[DataMessageHandlerState] = {
     logger.info(
       s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
         .map(_._1)}")
@@ -552,7 +552,7 @@ case class PeerManager(
         if (finder.hasPeer(peer)) {
           //client actor for one of the test peers stopped, can remove it from map now
           finder.removePeer(peer)
-          Future.unit
+          Future.successful(state)
         } else if (peerDataMap.contains(peer)) {
           //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
           //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
@@ -572,10 +572,20 @@ case class PeerManager(
             logger.info(
               s"onP2PClientDisconnected peers.exists(_ != peer) _peerDataMap=${_peerDataMap
                 .map(_._1)}")
-            syncFromNewPeer().map(_ => ())
+            syncFromNewPeer().map {
+              case Some(peer) =>
+                state match {
+                  case syncState: SyncDataMessageHandlerState =>
+                    syncState.replaceSyncPeer(peer)
+                  case x @ (DoneSyncing | _: MisbehavingPeer |
+                      _: RemovePeers) =>
+                    x
+                }
+              case None => DoneSyncing
+            }
           } else if (syncPeerOpt.isDefined) {
             if (shouldReconnect) {
-              finder.reconnect(peer)
+              finder.reconnect(peer).map(_ => state)
             } else {
               val exn = new RuntimeException(
                 s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
@@ -583,23 +593,23 @@ case class PeerManager(
             }
           } else {
             if (shouldReconnect) {
-              finder.reconnect(peer)
+              finder.reconnect(peer).map(_ => state)
             } else {
-              Future.unit
+              Future.successful(state)
             }
           }
         } else if (waitingForDeletion.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
           _waitingForDeletion.remove(peer)
-          Future.unit
+          Future.successful(state)
         } else {
           logger.warn(s"onP2PClientStopped called for unknown $peer")
-          Future.unit
+          Future.successful(state)
         }
       case None =>
         logger.warn(
           s"onP2PClientStopped cannot be run, PeerFinder was not started")
-        Future.unit
+        Future.successful(state)
     }
   }
 
@@ -810,7 +820,8 @@ case class PeerManager(
           }
         } yield newDmh
       case (dmh, DisconnectedPeer(peer, forceReconnect)) =>
-        onP2PClientDisconnected(peer, forceReconnect, dmh.state).map(_ => dmh)
+        onP2PClientDisconnected(peer, forceReconnect, dmh.state)
+          .map(newState => dmh.copy(state = newState))
       case (dmh, i: Initialized) =>
         onInitialization(i.peer).map(_ => dmh)
       case (dmh, i: InitializationTimeout) =>
