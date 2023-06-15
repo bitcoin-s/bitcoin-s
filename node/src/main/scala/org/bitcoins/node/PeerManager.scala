@@ -874,6 +874,8 @@ case class PeerManager(
   private def switchSyncToPeer(
       oldSyncState: SyncDataMessageHandlerState,
       newPeer: Peer): Future[DataMessageHandlerState] = {
+    logger.debug(
+      s"switchSyncToPeer() oldSyncState=$oldSyncState newPeer=$newPeer")
     val newState = oldSyncState.replaceSyncPeer(newPeer)
     oldSyncState match {
       case _: HeaderSync | _: ValidatingHeaders =>
@@ -962,38 +964,64 @@ case class PeerManager(
       bestBlockHeader: BlockHeaderDb,
       chainApi: ChainApi,
       dmhState: DataMessageHandlerState): Future[Unit] = {
-    // If we have started syncing filters headers
-    (bestFilterHeaderOpt, bestFilterOpt) match {
-      case (None, None) | (None, Some(_)) =>
-        //do nothing if we haven't started syncing
+    val isTipStaleF = chainApi.isTipStale()
+    isTipStaleF.flatMap { isTipStale =>
+      if (isTipStale) {
+        logger.error(
+          s"Cannot start syncing filters while blockchain tip is stale")
         Future.unit
-      case (Some(bestFilterHeader), Some(bestFilter)) =>
-        val isFilterHeaderSynced =
-          bestFilterHeader.blockHashBE == bestBlockHeader.hashBE
-        val isFiltersSynced = {
-          //check if we have started syncing filters,
-          //and if so, see if filter headers and filters
-          //were in sync
-          bestFilter.hashBE == bestFilterHeader.filterHashBE
+      } else {
+        logger.debug(
+          s"syncFilters() bestBlockHeader=$bestBlockHeader bestFilterHeaderOpt=$bestFilterHeaderOpt bestFilterOpt=$bestFilterOpt state=$dmhState")
+        // If we have started syncing filters headers
+        (bestFilterHeaderOpt, bestFilterOpt) match {
+          case (None, None) | (None, Some(_)) =>
+            //do nothing if we haven't started syncing
+            logger.info(s"no filter headers or filters, not starting syncing?!")
+            dmhState match {
+              case fhs: FilterHeaderSync =>
+                PeerManager
+                  .sendFirstGetCompactFilterHeadersCommand(
+                    peerMessageSenderApi = this,
+                    chainApi = chainApi,
+                    peer = fhs.syncPeer)
+                  .map(_ => ())
+              case x @ (_: FilterSync | _: HeaderSync | _: MisbehavingPeer |
+                  _: RemovePeers | DoneSyncing | _: ValidatingHeaders) =>
+                val exn = new RuntimeException(
+                  s"Invalid state to start syncing filter headers with, got=$x")
+                Future.failed(exn)
+            }
+
+          case (Some(bestFilterHeader), Some(bestFilter)) =>
+            val isFilterHeaderSynced =
+              bestFilterHeader.blockHashBE == bestBlockHeader.hashBE
+            val isFiltersSynced = {
+              //check if we have started syncing filters,
+              //and if so, see if filter headers and filters
+              //were in sync
+              bestFilter.hashBE == bestFilterHeader.filterHashBE
+            }
+            if (isFilterHeaderSynced && isFiltersSynced) {
+              //means we are in sync, with filter heads & block headers & filters
+              //if there _both_ filter headers and block headers are on
+              //an old tip, our event driven node will start syncing
+              //filters after block headers are in sync
+              //do nothing
+              Future.unit
+            } else {
+              syncCompactFilters(bestFilterHeader = bestFilterHeader,
+                                 chainApi = chainApi,
+                                 bestFilterOpt = Some(bestFilter),
+                                 dmhState = dmhState)
+            }
+          case (Some(bestFilterHeader), None) =>
+            syncCompactFilters(bestFilterHeader = bestFilterHeader,
+                               chainApi = chainApi,
+                               bestFilterOpt = None,
+                               dmhState = dmhState)
         }
-        if (isFilterHeaderSynced && isFiltersSynced) {
-          //means we are in sync, with filter heads & block headers & filters
-          //if there _both_ filter headers and block headers are on
-          //an old tip, our event driven node will start syncing
-          //filters after block headers are in sync
-          //do nothing
-          Future.unit
-        } else {
-          syncCompactFilters(bestFilterHeader = bestFilterHeader,
-                             chainApi = chainApi,
-                             bestFilterOpt = Some(bestFilter),
-                             dmhState = dmhState)
-        }
-      case (Some(bestFilterHeader), None) =>
-        syncCompactFilters(bestFilterHeader = bestFilterHeader,
-                           chainApi = chainApi,
-                           bestFilterOpt = None,
-                           dmhState = dmhState)
+      }
     }
   }
 
