@@ -211,26 +211,17 @@ case class PeerManager(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb],
-      dmhState: DataMessageHandlerState)(implicit
+      dmhState: SyncDataMessageHandlerState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
-    val syncPeerOpt = {
-      dmhState match {
-        case syncState: SyncDataMessageHandlerState =>
-          Some(syncState.syncPeer)
-        case DoneSyncing | _: MisbehavingPeer | _: RemovePeers => None
-      }
-    }
-    val sendCompactFilterHeaderMsgF = syncPeerOpt match {
-      case Some(syncPeer) =>
-        PeerManager.sendNextGetCompactFilterHeadersCommand(
-          peerMessageSenderApi = this,
-          chainApi = chainApi,
-          peer = syncPeer,
-          filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
-          prevStopHash = bestFilterHeader.blockHashBE
-        )
-      case None => Future.successful(false)
-    }
+    val syncPeer = dmhState.syncPeer
+    val sendCompactFilterHeaderMsgF =
+      PeerManager.sendNextGetCompactFilterHeadersCommand(
+        peerMessageSenderApi = this,
+        chainApi = chainApi,
+        peer = syncPeer,
+        filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
+        prevStopHash = bestFilterHeader.blockHashBE
+      )
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
       // If we have started syncing filters
       if (
@@ -238,23 +229,14 @@ case class PeerManager(
         bestFilterOpt.isDefined &&
         bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
       ) {
-        syncPeerOpt match {
-          case Some(syncPeer) =>
-            //means we are not syncing filter headers, and our filters are NOT
-            //in sync with our compact filter headers
-            PeerManager
-              .sendNextGetCompactFilterCommand(
-                peerMessageSenderApi = this,
-                chainApi = chainApi,
-                filterBatchSize = chainAppConfig.filterBatchSize,
-                startHeight = bestFilterOpt.get.height,
-                peer = syncPeer)
-              .map(_ => ())
-          case None =>
-            logger.warn(
-              s"Not syncing compact filters since we do not have a syncPeer set, bestFilterOpt=$bestFilterOpt")
-            Future.unit
-        }
+        PeerManager
+          .sendNextGetCompactFilterCommand(
+            peerMessageSenderApi = this,
+            chainApi = chainApi,
+            filterBatchSize = chainAppConfig.filterBatchSize,
+            startHeight = bestFilterOpt.get.height,
+            peer = syncPeer)
+          .map(_ => ())
       } else {
         Future.unit
       }
@@ -963,7 +945,7 @@ case class PeerManager(
       bestFilterOpt: Option[CompactFilterDb],
       bestBlockHeader: BlockHeaderDb,
       chainApi: ChainApi,
-      dmhState: DataMessageHandlerState): Future[Unit] = {
+      dmhState: SyncDataMessageHandlerState): Future[Unit] = {
     val isTipStaleF = chainApi.isTipStale()
     isTipStaleF.flatMap { isTipStale =>
       if (isTipStale) {
@@ -976,8 +958,6 @@ case class PeerManager(
         // If we have started syncing filters headers
         (bestFilterHeaderOpt, bestFilterOpt) match {
           case (None, None) | (None, Some(_)) =>
-            //do nothing if we haven't started syncing
-            logger.info(s"no filter headers or filters, not starting syncing?!")
             dmhState match {
               case fhs: FilterHeaderSync =>
                 PeerManager
@@ -986,8 +966,7 @@ case class PeerManager(
                     chainApi = chainApi,
                     peer = fhs.syncPeer)
                   .map(_ => ())
-              case x @ (_: FilterSync | _: HeaderSync | _: MisbehavingPeer |
-                  _: RemovePeers | DoneSyncing | _: ValidatingHeaders) =>
+              case x @ (_: FilterSync | _: HeaderSync | _: ValidatingHeaders) =>
                 val exn = new RuntimeException(
                   s"Invalid state to start syncing filter headers with, got=$x")
                 Future.failed(exn)
