@@ -189,6 +189,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     for {
       _ <- destroyNodeF
       _ <- destroyWalletF
+      _ <- BitcoinSWalletTest.destroyWalletAppConfig(appConfig.walletConf)
     } yield ()
   }
 
