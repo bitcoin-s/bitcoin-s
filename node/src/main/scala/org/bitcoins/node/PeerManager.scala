@@ -574,8 +574,11 @@ case class PeerManager(
                 state match {
                   case syncState: SyncDataMessageHandlerState =>
                     switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
-                  case x @ (DoneSyncing | _: MisbehavingPeer |
-                      _: RemovePeers) =>
+                  case DoneSyncing =>
+                    //defensively send a getheaders to make sure we are in sync with the new peer
+                    getHeaderSyncHelper(Some(peer))
+                      .map(_ => HeaderSync(peer))
+                  case x @ (_: MisbehavingPeer | _: RemovePeers) =>
                     Future.successful(x)
                 }
               case None =>
