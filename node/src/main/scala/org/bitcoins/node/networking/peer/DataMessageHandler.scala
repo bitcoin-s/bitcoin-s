@@ -736,7 +736,7 @@ case class DataMessageHandler(
       newDmh: DataMessageHandler,
       headers: Vector[BlockHeader],
       peer: Peer): Future[DataMessageHandler] = {
-    logger.info(
+    logger.debug(
       s"getHeaders() newDmh.state=${newDmh.state} peer=$peer peers=$peer")
     val state = newDmh.state
     val count = headers.length

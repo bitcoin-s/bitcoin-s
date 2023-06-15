@@ -133,7 +133,6 @@ case class PeerManager(
     } else {
       Future
         .traverse(gossipPeers) { p =>
-          logger.info(s"Gossiping message=${msg.commandName} to peer=$p")
           sendMsg(msg, Some(p))
         }
         .map(_ => ())
@@ -214,7 +213,6 @@ case class PeerManager(
       bestFilterOpt: Option[CompactFilterDb],
       dmhState: DataMessageHandlerState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
-    logger.info(s"syncCompactFilters() dmhState=$dmhState")
     val syncPeerOpt = {
       dmhState match {
         case syncState: SyncDataMessageHandlerState =>
@@ -541,7 +539,7 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: DataMessageHandlerState): Future[DataMessageHandlerState] = {
-    logger.info(
+    logger.debug(
       s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
         .map(_._1)}")
     finderOpt match {
@@ -569,9 +567,6 @@ case class PeerManager(
           val shouldReconnect =
             (forceReconnect || connectedPeerCount == 0) && isStarted.get
           if (peers.exists(_ != peer)) {
-            logger.info(
-              s"onP2PClientDisconnected peers.exists(_ != peer) _peerDataMap=${_peerDataMap
-                .map(_._1)}")
             val randomPeerOptF = randomPeerWithService(
               ServiceIdentifier.NODE_COMPACT_FILTERS)
             randomPeerOptF.flatMap {
@@ -914,7 +909,6 @@ case class PeerManager(
       bestFilterOpt <- chainApi.getBestFilter()
 
       hasStaleTip <- chainApi.isTipStale()
-      _ = logger.info(s"hasStaleTip=$hasStaleTip")
       _ <- {
         if (hasStaleTip) {
           //if we have a stale tip, we will request to sync filter headers / filters
@@ -948,7 +942,6 @@ case class PeerManager(
     * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
     */
   def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
-    logger.info(s"Syncing with peerOpt=$syncPeerOpt")
     val chainApi: ChainApi = ChainHandler.fromDatabase()
     val headerF = chainApi.getBestBlockHeader()
     for {
@@ -957,7 +950,7 @@ case class PeerManager(
       header <- headerF
     } yield {
       logger.info(
-        s"Starting sync node, height=${header.height} hash=${header.hashBE.hex}")
+        s"Starting sync node, height=${header.height} hash=${header.hashBE.hex} peerOpt=$syncPeerOpt")
     }
   }
 
@@ -967,7 +960,6 @@ case class PeerManager(
       bestBlockHeader: BlockHeaderDb,
       chainApi: ChainApi,
       dmhState: DataMessageHandlerState): Future[Unit] = {
-    logger.info(s"syncFilters() dmhState=$dmhState")
     // If we have started syncing filters headers
     (bestFilterHeaderOpt, bestFilterOpt) match {
       case (None, None) | (None, Some(_)) =>
@@ -1135,7 +1127,6 @@ object PeerManager extends Logging {
       ec: ExecutionContext,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig): Future[DataMessageHandler] = {
-    logger.info(s"fetchCompactFilterHeaders() state=${currentDmh.state}")
     val syncPeer = currentDmh.state match {
       case s: SyncDataMessageHandlerState => s.syncPeer
       case state @ (DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
