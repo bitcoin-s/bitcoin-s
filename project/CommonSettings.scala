@@ -3,10 +3,23 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerExposedVolumes, dockerRepository, dockerUpdateLatest, maintainer}
+import com.typesafe.sbt.packager.Keys.{
+  daemonUser,
+  daemonUserUid,
+  dockerAlias,
+  dockerAliases,
+  dockerCommands,
+  dockerExposedVolumes,
+  dockerRepository,
+  dockerUpdateLatest,
+  maintainer
+}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
 import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{
+  dockerAdditionalPermissions,
+  dockerBaseImage
+}
 import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
@@ -255,53 +268,48 @@ object CommonSettings {
     Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
 
   lazy val cryptoJlinkIgnore = {
-    Vector("org.bouncycastle" -> "junit.framework") //bouncy castle 1.73 requires junit as a transitive dep
+    Vector(
+      "org.bouncycastle" -> "junit.framework"
+    ) //bouncy castle 1.74 requires junit as a transitive dep
   }
 
   lazy val dbCommonsJlinkIgnore = {
     //we don't use android
-   Vector("org.flywaydb.core.api.android" -> "android.content",
-    "org.flywaydb.core.internal.logging.android" -> "android.util",
-    "org.flywaydb.core.internal.resource.android" -> "android.content.res",
-    "org.flywaydb.core.internal.scanner.android" -> "android.content",
-    "org.flywaydb.core.internal.scanner.android" -> "android.content.pm",
-    "org.flywaydb.core.internal.scanner.android" -> "android.content.res",
-    "org.flywaydb.core.internal.scanner.android" -> "dalvik.system",
-    //we don't use hibernate
-    "com.zaxxer.hikari.hibernate" -> "org.hibernate",
-
-    //we don't ship with support for any aws products
-    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.awscore.exception",
-    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.core",
-    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3",
-    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3.model",
-    "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.core.exception",
-    "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
-    "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
-    "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
-
-    //we don't use oracle database products
-    "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
-
-    //we don't use jboss
-    "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
-
-    "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
-
-    "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
-    "com.zaxxer.hikari.pool" -> "io.micrometer.core.instrument",
-
-    "slick.jdbc" -> "javax.xml.bind",
-    "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
-    "com.zaxxer.hikari.util" -> "javassist",
-    "com.zaxxer.hikari.util" -> "javassist.bytecode",
-
+    Vector(
+      "org.flywaydb.core.api.android" -> "android.content",
+      "org.flywaydb.core.internal.logging.android" -> "android.util",
+      "org.flywaydb.core.internal.resource.android" -> "android.content.res",
+      "org.flywaydb.core.internal.scanner.android" -> "android.content",
+      "org.flywaydb.core.internal.scanner.android" -> "android.content.pm",
+      "org.flywaydb.core.internal.scanner.android" -> "android.content.res",
+      "org.flywaydb.core.internal.scanner.android" -> "dalvik.system",
+      //we don't use hibernate
+      "com.zaxxer.hikari.hibernate" -> "org.hibernate",
+      //we don't ship with support for any aws products
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.awscore.exception",
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.core",
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3",
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3.model",
+      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.core.exception",
+      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
+      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
+      "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
+      //we don't use oracle database products
+      "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
+      //we don't use jboss
+      "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
+      "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
+      "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
+      "com.zaxxer.hikari.pool" -> "io.micrometer.core.instrument",
+      "slick.jdbc" -> "javax.xml.bind",
+      "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
+      "com.zaxxer.hikari.util" -> "javassist",
+      "com.zaxxer.hikari.util" -> "javassist.bytecode",
       //postgres requires this weird waffle dep
-    "waffle.jaas" -> "java.security.acl",
-
-     //no native image support for now
-     //https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
-     "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted"
+      "waffle.jaas" -> "java.security.acl",
+      //no native image support for now
+      //https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
+      "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted"
     )
   }
 
@@ -329,34 +337,38 @@ object CommonSettings {
       "com.github.benmanes.caffeine.cache" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
       //optional
-      "org.codehaus.janino" -> "org.apache.tools.ant")
+      "org.codehaus.janino" -> "org.apache.tools.ant"
+    )
       .++(loggingJlinkIgnore)
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
-    JlinkIgnore.byPackagePrefix(oracleServerIgnore:_*)
+    JlinkIgnore.byPackagePrefix(oracleServerIgnore: _*)
   }
 
   lazy val appServerJlinkIgnore = {
 
-    val appServerIgnore = loggingJlinkIgnore.++(dbCommonsJlinkIgnore).++(cryptoJlinkIgnore).++(Vector(
-      //https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
-      "org.codehaus.janino" -> "org.apache.tools.ant",
-      "com.github.benmanes.caffeine" -> "javax.annotation",
-      "com.github.benmanes.caffeine.cache" -> "javax.annotation",
-      "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
-
-      "monix.execution.misc" -> "scala.tools.nsc"
-    ))
-    JlinkIgnore.byPackagePrefix(appServerIgnore:_*)
+    val appServerIgnore = loggingJlinkIgnore
+      .++(dbCommonsJlinkIgnore)
+      .++(cryptoJlinkIgnore)
+      .++(
+        Vector(
+          //https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
+          "org.codehaus.janino" -> "org.apache.tools.ant",
+          "com.github.benmanes.caffeine" -> "javax.annotation",
+          "com.github.benmanes.caffeine.cache" -> "javax.annotation",
+          "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
+          "monix.execution.misc" -> "scala.tools.nsc"
+        ))
+    JlinkIgnore.byPackagePrefix(appServerIgnore: _*)
   }
 
   lazy val cliJlinkIgnore = {
     val cliIgnore = Vector(
       "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate",
       "org.slf4j" -> "org.slf4j.impl"
-    )      .++(cryptoJlinkIgnore)
+    ).++(cryptoJlinkIgnore)
 
-    JlinkIgnore.byPackagePrefix(cliIgnore:_*)
+    JlinkIgnore.byPackagePrefix(cliIgnore: _*)
   }
 
   def buildPackageName(packageName: String): String = {
@@ -375,12 +387,12 @@ object CommonSettings {
   }
 
   /** @see https://github.com/sbt/sbt-dynver#detail */
-  def isRelease:Boolean = {
-     DynVer.isVersionStable && !DynVer.isSnapshot
+  def isRelease: Boolean = {
+    DynVer.isVersionStable && !DynVer.isSnapshot
   }
 
   private def getSimpleOSName: String = {
-    if(Properties.isWin) {
+    if (Properties.isWin) {
       "windows"
     } else if (Properties.isMac) {
       "mac"
