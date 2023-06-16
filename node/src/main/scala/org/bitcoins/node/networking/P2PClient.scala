@@ -542,7 +542,8 @@ case class P2PClientActor(
               s"Attempting to disconnect peer that was not connected!")
         }
       case P2PClient.CloseAnyStateCommand =>
-        logger.info(s"Received close any state for $peer")
+        logger.info(
+          s"Received close any state for peer=$peer peerConnectionOpt=$peerConnectionOpt currentPeerMsgRecvState=$currentPeerMsgRecvState")
         peerConnectionOpt match {
           case Some(peerConnection) =>
             context become ignoreNetworkMessages(Some(peerConnection),
@@ -552,8 +553,11 @@ case class P2PClientActor(
             peerConnection ! Tcp.Close
           case None =>
             context become ignoreNetworkMessages(None, ByteVector.empty)
-            currentPeerMsgRecvState =
-              currentPeerMsgRecvState.stopReconnect(peer)
+            currentPeerMsgRecvState = Await.result(
+              currentPeerMsgRecvState.stopReconnect(
+                peer,
+                peerMsgHandlerReceiver.queue),
+              timeout)
             context.stop(self)
         }
     }

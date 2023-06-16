@@ -320,7 +320,10 @@ sealed abstract class PeerMessageReceiverState extends Logging {
     }
   }
 
-  def stopReconnect(peer: Peer): PeerMessageReceiverState = {
+  def stopReconnect(
+      peer: Peer,
+      queue: SourceQueueWithComplete[StreamDataMessageWrapper])(implicit
+      ec: ExecutionContext): Future[PeerMessageReceiverState] = {
     this match {
       case Preconnection =>
         //when retry, state should be back to preconnection
@@ -328,15 +331,17 @@ sealed abstract class PeerMessageReceiverState extends Logging {
                                         clientDisconnectP,
                                         versionMsgP,
                                         verackMsgP)
-        newState
+        val disconnectedPeer = DisconnectedPeer(peer, false)
+        queue.offer(disconnectedPeer).map(_ => newState)
       case _: StoppedReconnect =>
         logger.warn(
           s"Already stopping reconnect from peer=$peer, this is a noop")
-        this
+        Future.successful(this)
       case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
           _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
-        throw new RuntimeException(
+        val exn = new RuntimeException(
           s"Cannot stop reconnect from peer=$peer when in state=$bad")
+        Future.failed(exn)
     }
   }
 }

@@ -1,6 +1,7 @@
 package org.bitcoins.node.networking
 
 import akka.testkit.{TestActorRef, TestProbe}
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
@@ -41,7 +42,7 @@ class P2PClientActorTest
   }
 
   lazy val bitcoindRpc2F =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    cachedBitcoindWithFundsF
 
   lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
@@ -150,6 +151,8 @@ class P2PClientActorTest
       isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
                                                         1.second,
                                                         15)
+      //let version/verack handshake complete before disconnecting immediately
+      _ <- AsyncUtil.nonBlockingSleep(1.second)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
