@@ -5,7 +5,6 @@ import org.bitcoins.core.config.SigNet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
@@ -13,8 +12,8 @@ import org.bitcoins.node._
 import org.bitcoins.node.networking.peer.DataMessageHandlerState.HeaderSync
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.{NodeTestWithCachedBitcoindNewest}
-import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoind}
+import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.duration.DurationInt
@@ -76,7 +75,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
     param: FixtureParam =>
       val node = param.node
       val bitcoind = param.bitcoind
-      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Block] = Promise()
 
@@ -87,37 +85,19 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         }
       }
 
-      val peerManager = node.peerManager
+      val nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
+      node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
-        block <- bitcoind.getBlockRaw(hash)
-
-        payload = BlockMessage(block)
-
-        nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
-        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
-        chainApi <- node.chainApiFromDb()
-        dataMessageHandler = DataMessageHandler(
-          chainApi = chainApi,
-          walletCreationTimeOpt = None,
-          peerManager.dataMessageQueueOpt.get,
-          peerManager.peers,
-          peerManager,
-          peerManager.getPeerData(peer),
-          state = HeaderSync(peer),
-          filterBatchCache = Set.empty
-        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, peer)
         result <- resultP.future
-      } yield assert(result == block)
+      } yield assert(result.blockHeader.hashBE == hash)
   }
 
   it must "verify OnBlockHeadersReceived callbacks are executed" in {
     param: FixtureParam =>
       val node = param.node
       val bitcoind = param.bitcoind
-      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
 
@@ -130,29 +110,12 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         }
       }
 
-      val peerManager = node.peerManager
+      val callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
 
+      node.nodeAppConfig.addCallbacks(callbacks)
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
-
-        payload = HeadersMessage(CompactSizeUInt.one, Vector(header))
-
-        callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
-
-        _ = node.nodeAppConfig.addCallbacks(callbacks)
-        chainApi <- node.chainApiFromDb()
-        dataMessageHandler = DataMessageHandler(
-          chainApi = chainApi,
-          walletCreationTimeOpt = None,
-          peerManager.dataMessageQueueOpt.get,
-          peerManager.peers,
-          peerManager,
-          peerManager.getPeerData(peer),
-          state = HeaderSync(peer),
-          filterBatchCache = Set.empty
-        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, peer)
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
@@ -185,8 +148,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
     param: FixtureParam =>
       val node = param.node
       val bitcoind = param.bitcoind
-      val peerManager = node.peerManager
-      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Transaction] = Promise()
 
@@ -196,27 +157,12 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           ()
         }
       }
-      for {
 
+      val nodeCallbacks = NodeCallbacks.onTxReceived(callback)
+      val _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
+      for {
         txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
         tx <- bitcoind.getRawTransactionRaw(txId)
-
-        payload = TransactionMessage(tx)
-
-        nodeCallbacks = NodeCallbacks.onTxReceived(callback)
-        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
-        chainApi <- node.chainApiFromDb()
-        dataMessageHandler = DataMessageHandler(
-          chainApi = chainApi,
-          walletCreationTimeOpt = None,
-          peerManager.dataMessageQueueOpt.get,
-          peerManager.peers,
-          peerManager,
-          peerManager.getPeerData(peer),
-          state = HeaderSync(peer),
-          filterBatchCache = Set.empty
-        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, peer)
         result <- resultP.future
       } yield assert(result == tx)
   }
