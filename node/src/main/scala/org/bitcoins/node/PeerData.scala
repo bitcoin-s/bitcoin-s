@@ -33,11 +33,13 @@ case class PeerData(
 
   private lazy val client: Future[P2PClient] = {
     val peerMessageReceiver =
-      PeerMessageReceiver(controlMessageHandler, queue, peer)
+      PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
+                          queue = queue,
+                          peer = peer,
+                          state = PeerMessageReceiverState.fresh())
     P2PClient(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
-      peerMsgRecvState = PeerMessageReceiverState.fresh(),
       peerMessageSenderApi = peerMessageSenderApi,
       maxReconnectionTries = 4,
       supervisor = supervisor

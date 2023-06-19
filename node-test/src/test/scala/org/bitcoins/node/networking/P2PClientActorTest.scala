@@ -122,14 +122,14 @@ class P2PClientActorTest
     val peerMsgRecv = PeerMessageReceiver(
       controlMessageHandler = controlMessageHandler,
       queue = node.peerManager.dataMessageQueueOpt.get,
-      peer = peer)
+      peer = peer,
+      state = PeerMessageReceiverState.fresh())
 
     val client: TestActorRef[P2PClientActor] =
       TestActorRef(
         P2PClient.props(
           peer = peer,
           peerMsgHandlerReceiver = peerMsgRecv,
-          peerMsgRecvState = PeerMessageReceiverState.fresh(),
           peerMessageSenderApi = node.peerManager,
           maxReconnectionTries = 16
         ),
