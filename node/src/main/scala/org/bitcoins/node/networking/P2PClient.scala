@@ -319,10 +319,12 @@ case class P2PClientActor(
           logger.debug(s"connecting to $remoteAddress")
           (peer.socket, None)
       }
+    val options = Vector(KeepAlive(true))
     manager ! Tcp.Connect(peerOrProxyAddress,
                           timeout = Some(nodeAppConfig.connectionTimeout),
-                          options = KeepAlive(true) :: Nil,
+                          options = options,
                           pullMode = true)
+
     context become connecting(proxyParams)
   }
 

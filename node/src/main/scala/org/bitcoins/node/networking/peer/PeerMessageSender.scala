@@ -1,7 +1,10 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.ActorRef
-import akka.util.Timeout
+import akka.actor.{ActorRef, ActorSystem}
+import akka.io.Tcp.SO.KeepAlive
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, Tcp}
+import akka.{NotUsed}
+import akka.util.{ByteString, Timeout}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
@@ -9,18 +12,60 @@ import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
+import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
-case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
+case class PeerMessageSender(client: P2PClient)(implicit
+    conf: NodeAppConfig,
+    system: ActorSystem)
     extends P2PLogger {
   private val socket = client.peer.socket
   implicit private val timeout: Timeout = Timeout(30.seconds)
 
+  private val options = Vector(KeepAlive(true))
+
+  private lazy val connection: Flow[
+    ByteString,
+    ByteString,
+    Future[Tcp.OutgoingConnection]] = {
+    Tcp(system).outgoingConnection(client.peer.socket, options = options)
+  }
+
+  private def parseHelper(
+      unalignedBytes: ByteString,
+      byteVec: ByteString): (ByteString, Vector[NetworkMessage]) = {
+    val bytes: ByteVector = ByteVector(unalignedBytes ++ byteVec)
+    logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
+    val (messages, newUnalignedBytes) =
+      P2PClient.parseIndividualMessages(bytes)
+    (ByteString.fromArray(newUnalignedBytes.toArray), messages)
+  }
+
+  //want to receive ByteString, parse it into a protocol message it, pass the parsed protocol message downstream and cache unaligned bytes
+  val sink: Sink[ByteString, NotUsed] = Flow[ByteString]
+    .statefulMap(() => ByteString.empty)(parseHelper, { _: ByteString => None })
+    .to(Sink.actorRef(client.actor, (), { case _: Throwable => () }))
+
+  @volatile private[this] var connectionP: Option[Promise[Option[Nothing]]] =
+    None
+
   /** Initiates a connection with the given peer */
   def connect(): Unit = {
-    client.actor ! P2PClient.ConnectCommand
+    connectionP match {
+      case Some(_) =>
+        logger.warn(s"Connected already.")
+        ()
+      case None =>
+        val p: Promise[Option[Nothing]] =
+          connection.toMat(sink)(Keep.left).runWith(Source.maybe)
+        connectionP = Some(p)
+        ()
+    }
+
+    //client.actor ! P2PClient.ConnectCommand
+
   }
 
   def reconnect(): Unit = {
@@ -28,7 +73,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   }
 
   def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
-    client.isConnected()
+    Future.successful(connectionP.isDefined)
   }
 
   def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -36,23 +81,23 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   }
 
   def isDisconnected()(implicit ec: ExecutionContext): Future[Boolean] = {
-    client.isDisconnected()
+    isConnected().map(!_)
   }
 
   /** Disconnects the given peer */
-  def disconnect()(implicit ec: ExecutionContext): Future[Unit] = {
-    isConnected().flatMap {
-      case true =>
+  def disconnect(): Future[Unit] = {
+    connectionP match {
+      case Some(p) =>
+        p.success(None)
         logger.info(s"Disconnecting peer at socket=${socket}")
-        (client.actor ! P2PClient.CloseCommand)
+        connectionP = None
         Future.unit
-      case false =>
+      case None =>
         val err =
           s"Cannot disconnect client that is not connected to socket=${socket}!"
         logger.warn(err)
         Future.unit
     }
-
   }
 
   def sendFilterClearMessage(): Future[Unit] = {
