@@ -191,6 +191,8 @@ case class P2PClientActor(
   }
 
   override def receive: Receive = LoggingReceive {
+    case () =>
+      sender() ! ()
     case cmd: NodeCommand =>
       handleNodeCommand(cmd = cmd, peerConnectionOpt = None)
     case metaMsg: P2PClient.MetaMsg =>

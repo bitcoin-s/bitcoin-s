@@ -17,7 +17,7 @@ import scodec.bits.ByteVector
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-case class PeerMessageSender(client: P2PClient)(implicit
+case class PeerMessageSender(client: P2PClient, initPeerMessageRecv: PeerMessageReceiver)(implicit
     conf: NodeAppConfig,
     system: ActorSystem)
     extends P2PLogger {
@@ -43,10 +43,28 @@ case class PeerMessageSender(client: P2PClient)(implicit
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
+  private val sinkActorRef: Sink[Any, NotUsed] = {
+    Sink.actorRefWithBackpressure(
+      ref = client.actor,
+      onInitMessage = {
+        logger.info(s"onInitMessage")
+
+      },
+      onCompleteMessage = logger.info(s"onCompleteMessage with sinkActorRef"),
+      onFailureMessage = { case err: Throwable =>
+        logger.error(s"sink.err onFailureMessage", err)
+      }
+    )
+  }
+
   //want to receive ByteString, parse it into a protocol message it, pass the parsed protocol message downstream and cache unaligned bytes
-  val sink: Sink[ByteString, NotUsed] = Flow[ByteString]
+  private val sink: Sink[ByteString, NotUsed] = Flow[ByteString]
     .statefulMap(() => ByteString.empty)(parseHelper, { _: ByteString => None })
-    .to(Sink.actorRef(client.actor, (), { case _: Throwable => () }))
+    .log("sink.log",
+         { case msgs: Vector[NetworkMessage] => logger.info(s"msgs=$msgs") })
+    .fold(initPeerMessageRecv) { case (state,msgs) =>
+      ???
+    }
 
   @volatile private[this] var connectionP: Option[Promise[Option[Nothing]]] =
     None
@@ -55,24 +73,22 @@ case class PeerMessageSender(client: P2PClient)(implicit
   def connect(): Unit = {
     connectionP match {
       case Some(_) =>
-        logger.warn(s"Connected already.")
+        logger.warn(s"Connected already to peer=${client.peer}")
         ()
       case None =>
+        logger.info(s"Attempting to connect to peer=${client.peer}")
         val p: Promise[Option[Nothing]] =
           connection.toMat(sink)(Keep.left).runWith(Source.maybe)
         connectionP = Some(p)
         ()
     }
-
-    //client.actor ! P2PClient.ConnectCommand
-
   }
 
   def reconnect(): Unit = {
     client.actor ! P2PClient.ReconnectCommand
   }
 
-  def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
+  def isConnected(): Future[Boolean] = {
     Future.successful(connectionP.isDefined)
   }
 
