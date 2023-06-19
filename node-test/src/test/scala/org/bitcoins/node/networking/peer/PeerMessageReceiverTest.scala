@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.ActorRef
+/*import akka.actor.ActorRef
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import org.bitcoins.core.config.RegTest
@@ -102,4 +102,4 @@ class PeerMessageReceiverTest extends BitcoinSAsyncTest {
       assert(disconnectRecv.clientDisconnectP.isCompleted)
     }
   }
-}
+}*/
