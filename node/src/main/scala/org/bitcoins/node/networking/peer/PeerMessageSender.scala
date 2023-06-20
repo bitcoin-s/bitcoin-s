@@ -1,26 +1,47 @@
 package org.bitcoins.node.networking.peer
 
+import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.io.Tcp.SO.KeepAlive
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, Tcp}
-import akka.{NotUsed}
+import akka.stream.scaladsl.BidiFlow
+import akka.stream.scaladsl.{
+  Flow,
+  Keep,
+  MergeHub,
+  RunnableGraph,
+  Sink,
+  Source,
+  Tcp
+}
 import akka.util.{ByteString, Timeout}
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
+import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
+import org.bitcoins.node.util.PeerMessageSenderApi
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Future, Promise}
 
-case class PeerMessageSender(client: P2PClient, initPeerMessageRecv: PeerMessageReceiver)(implicit
-    conf: NodeAppConfig,
+case class PeerMessageSender(
+    client: P2PClient,
+    initPeerMessageRecv: PeerMessageReceiver,
+    peerMessageSenderApi: PeerMessageSenderApi)(implicit
+    nodeAppConfig: NodeAppConfig,
+    chainAppConfig: ChainAppConfig,
     system: ActorSystem)
     extends P2PLogger {
+  import system.dispatcher
   private val socket = client.peer.socket
   implicit private val timeout: Timeout = Timeout(30.seconds)
 
@@ -43,44 +64,104 @@ case class PeerMessageSender(client: P2PClient, initPeerMessageRecv: PeerMessage
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
-  private val sinkActorRef: Sink[Any, NotUsed] = {
-    Sink.actorRefWithBackpressure(
-      ref = client.actor,
-      onInitMessage = {
-        logger.info(s"onInitMessage")
+  private val chainApi = ChainHandler.fromDatabase()
 
-      },
-      onCompleteMessage = logger.info(s"onCompleteMessage with sinkActorRef"),
-      onFailureMessage = { case err: Throwable =>
-        logger.error(s"sink.err onFailureMessage", err)
-      }
-    )
+  private val versionMsgF: Future[NetworkMessage] = {
+    chainApi.getBestHashBlockHeight().map { height =>
+      val localhost = java.net.InetAddress.getLocalHost
+      val versionMsg =
+        VersionMessage(nodeAppConfig.network,
+                       NodeConstants.userAgent,
+                       Int32(height),
+                       InetAddress(localhost.getAddress),
+                       InetAddress(localhost.getAddress),
+                       nodeAppConfig.relay)
+      NetworkMessage(nodeAppConfig.network, versionMsg)
+    }
   }
 
-  //want to receive ByteString, parse it into a protocol message it, pass the parsed protocol message downstream and cache unaligned bytes
-  private val sink: Sink[ByteString, NotUsed] = Flow[ByteString]
-    .statefulMap(() => ByteString.empty)(parseHelper, { _: ByteString => None })
-    .log("sink.log",
-         { case msgs: Vector[NetworkMessage] => logger.info(s"msgs=$msgs") })
-    .fold(initPeerMessageRecv) { case (state,msgs) =>
-      ???
-    }
+  private val parseToNetworkMsgFlow: Flow[
+    ByteString,
+    Vector[NetworkMessage],
+    NotUsed] = {
+    Flow[ByteString]
+      .log("hello", { case bytes => logger.info(s"Flow.bytes=$bytes") })
+      .statefulMap(() => ByteString.empty)(parseHelper,
+                                           { _: ByteString => None })
+  }
 
-  @volatile private[this] var connectionP: Option[Promise[Option[Nothing]]] =
+  private val writeNetworkMsgFlow: Flow[NetworkMessage, ByteString, NotUsed] = {
+    Flow[NetworkMessage].map(msg => ByteString(msg.bytes.toArray))
+  }
+
+  val bidiFlow: BidiFlow[
+    ByteString,
+    Vector[NetworkMessage],
+    NetworkMessage,
+    ByteString,
+    NotUsed] = {
+    BidiFlow.fromFlows(parseToNetworkMsgFlow, writeNetworkMsgFlow)
+  }
+
+  @volatile private[this] var connectionP: Option[
+    Promise[Option[NetworkMessage]]] =
     None
 
   /** Initiates a connection with the given peer */
-  def connect(): Unit = {
+  def connect(): Future[Unit] = {
     connectionP match {
       case Some(_) =>
         logger.warn(s"Connected already to peer=${client.peer}")
-        ()
+        Future.unit
       case None =>
         logger.info(s"Attempting to connect to peer=${client.peer}")
-        val p: Promise[Option[Nothing]] =
-          connection.toMat(sink)(Keep.left).runWith(Source.maybe)
+        val connectionFlow: Flow[
+          NetworkMessage,
+          Vector[NetworkMessage],
+          Future[Tcp.OutgoingConnection]] =
+          connection.joinMat(bidiFlow)(Keep.left)
+
+        val mergeHubSource: Source[
+          NetworkMessage,
+          Sink[NetworkMessage, NotUsed]] =
+          MergeHub
+            .source[NetworkMessage](16)
+            .log("mergehub")
+
+        val handleNetworkMsgSink: Sink[Vector[NetworkMessage], NotUsed] = {
+          Flow[Vector[NetworkMessage]]
+            .foldAsync(initPeerMessageRecv) { case (peerMsgRecv, msgs) =>
+              FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
+                p.handleNetworkMessageReceived(
+                  networkMsgRecv = NetworkMessageReceived(msg, client),
+                  peerMessageSenderApi = peerMessageSenderApi)
+              }
+            }
+            .to(Sink.ignore)
+        }
+
+        val graph: RunnableGraph[
+          (Sink[NetworkMessage, NotUsed], Future[Tcp.OutgoingConnection])] = {
+          mergeHubSource
+            .viaMat(connectionFlow)(Keep.both)
+            .toMat(handleNetworkMsgSink)(Keep.left)
+        }
+
+        val (mergeHubSink: Sink[NetworkMessage, NotUsed],
+             outgoingConnectionF: Future[Tcp.OutgoingConnection]) = {
+          graph.run()
+        }
+
+        val resultF: Future[NotUsed] = for {
+          _ <- outgoingConnectionF
+          versionMsg <- versionMsgF
+        } yield Source.single(versionMsg).runWith(mergeHubSink)
+
+        val p: Promise[Option[NetworkMessage]] =
+          Source.maybe[NetworkMessage].toMat(mergeHubSink)(Keep.left).run()
         connectionP = Some(p)
-        ()
+
+        resultF.map(_ => ())
     }
   }
 
@@ -92,11 +173,11 @@ case class PeerMessageSender(client: P2PClient, initPeerMessageRecv: PeerMessage
     Future.successful(connectionP.isDefined)
   }
 
-  def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
+  def isInitialized(): Future[Boolean] = {
     client.isInitialized()
   }
 
-  def isDisconnected()(implicit ec: ExecutionContext): Future[Boolean] = {
+  def isDisconnected(): Future[Boolean] = {
     isConnected().map(!_)
   }
 
@@ -143,7 +224,7 @@ case class PeerMessageSender(client: P2PClient, initPeerMessageRecv: PeerMessage
     //version or verack messages are the only messages that
     //can be sent before we are fully initialized
     //as they are needed to complete our handshake with our peer
-    val networkMsg = NetworkMessage(conf.network, msg)
+    val networkMsg = NetworkMessage(nodeAppConfig.network, msg)
     sendMsg(networkMsg)
   }
 

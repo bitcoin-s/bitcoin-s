@@ -27,8 +27,14 @@ case class PeerData(
     chainAppConfig: ChainAppConfig) {
   import system.dispatcher
 
+  private val initPeerMessageRecv = PeerMessageReceiver(
+    controlMessageHandler = controlMessageHandler,
+    queue = queue,
+    peer = peer,
+    state = PeerMessageReceiverState.fresh())
+
   lazy val peerMessageSender: Future[PeerMessageSender] = {
-    client.map(PeerMessageSender(_))
+    client.map(PeerMessageSender(_, initPeerMessageRecv, peerMessageSenderApi))
   }
 
   private lazy val client: Future[P2PClient] = {
