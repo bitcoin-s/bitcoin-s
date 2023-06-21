@@ -128,9 +128,12 @@ case class PeerMessageSender(
             .source[NetworkMessage](16)
             .log("mergehub")
 
+        val initializing =
+          initPeerMessageRecv.connect(client, peerMessageSenderApi)
+
         val handleNetworkMsgSink: Sink[Vector[NetworkMessage], NotUsed] = {
           Flow[Vector[NetworkMessage]]
-            .foldAsync(initPeerMessageRecv) { case (peerMsgRecv, msgs) =>
+            .foldAsync(initializing) { case (peerMsgRecv, msgs) =>
               FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
                 p.handleNetworkMessageReceived(
                   networkMsgRecv = NetworkMessageReceived(msg, client),
