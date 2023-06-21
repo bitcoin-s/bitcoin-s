@@ -39,10 +39,10 @@ case class PeerMessageReceiver(
       peerMessageSenderApi: PeerMessageSenderApi): Future[
     PeerMessageReceiver] = {
 
-    val client = networkMsgRecv.client
+    val peer = networkMsgRecv.peer
 
     logger.debug(
-      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
+      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${peer} state=${state}")
 
     val payload = networkMsgRecv.msg.payload
 
@@ -356,6 +356,6 @@ object PeerMessageReceiver {
 
   sealed abstract class PeerMessageReceiverMsg
 
-  case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
+  case class NetworkMessageReceived(msg: NetworkMessage, peer: Peer)
       extends PeerMessageReceiverMsg
 }

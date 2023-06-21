@@ -459,8 +459,7 @@ case class P2PClientActor(
         }
 
         logger.trace(s"About to process ${messages.length} messages")
-        messages.foreach(m =>
-          self ! NetworkMessageReceived(m, P2PClient(self, peer)))
+        messages.foreach(m => self ! NetworkMessageReceived(m, peer))
         peerConnection ! Tcp.ResumeReading
         newUnalignedBytes
     }

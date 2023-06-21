@@ -412,9 +412,7 @@ case class PeerManager(
   }
 
   def isInitialized(peer: Peer): Future[Boolean] = {
-    if (peerDataMap.contains(peer))
-      peerDataMap(peer).peerMessageSender.flatMap(_.isInitialized())
-    else Future.successful(false)
+    Future.successful(peerDataMap.exists(_._1 == peer))
   }
 
   def onInitializationTimeout(peer: Peer): Future[Unit] = {

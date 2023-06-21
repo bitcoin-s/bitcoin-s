@@ -148,10 +148,10 @@ case class PeerMessageSender(
   def connect(): Future[Unit] = {
     connectionP match {
       case Some(_) =>
-        logger.warn(s"Connected already to peer=${client.peer}")
+        logger.warn(s"Connected already to peer=${peer}")
         Future.unit
       case None =>
-        logger.info(s"Attempting to connect to peer=${client.peer}")
+        logger.info(s"Attempting to connect to peer=${peer}")
 
         val initializing =
           initPeerMessageRecv.connect(client, peerMessageSenderApi)
@@ -161,7 +161,7 @@ case class PeerMessageSender(
             .foldAsync(initializing) { case (peerMsgRecv, msgs) =>
               FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
                 p.handleNetworkMessageReceived(
-                  networkMsgRecv = NetworkMessageReceived(msg, client),
+                  networkMsgRecv = NetworkMessageReceived(msg, peer),
                   peerMessageSenderApi = peerMessageSenderApi)
               }
             }
