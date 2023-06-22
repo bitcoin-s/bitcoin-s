@@ -1,8 +1,9 @@
 package org.bitcoins.node.networking.peer
 
-import akka.{NotUsed}
+import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
 import akka.io.Tcp.SO.KeepAlive
+import akka.stream.{KillSwitches, UniqueKillSwitch}
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.{
   Flow,
@@ -31,7 +32,7 @@ import org.bitcoins.node.util.PeerMessageSenderApi
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Future}
 
 case class PeerMessageSender(
     client: P2PClient,
@@ -125,15 +126,20 @@ case class PeerMessageSender(
   private val connectionFlow: Flow[
     NetworkMessage,
     Vector[NetworkMessage],
-    Future[Tcp.OutgoingConnection]] =
-    connection.joinMat(bidiFlow)(Keep.left)
+    (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
+    connection
+      .viaMat(KillSwitches.single)(Keep.both)
+      .joinMat(bidiFlow)(Keep.left)
 
   private def connectionGraph(
       handleNetworkMsgSink: Sink[
         Vector[NetworkMessage],
-        Future[PeerMessageReceiver]]): RunnableGraph[(
-      (Sink[NetworkMessage, NotUsed], Future[Tcp.OutgoingConnection]),
-      Future[PeerMessageReceiver])] = {
+        Future[PeerMessageReceiver]]): RunnableGraph[
+    (
+        (
+            Sink[NetworkMessage, NotUsed],
+            (Future[Tcp.OutgoingConnection], UniqueKillSwitch)),
+        Future[PeerMessageReceiver])] = {
     val result = mergeHubSource
       .viaMat(connectionFlow)(Keep.both)
       .toMat(handleNetworkMsgSink)(Keep.both)
@@ -141,15 +147,11 @@ case class PeerMessageSender(
     result
   }
 
-  @volatile private[this] var connectionP: Option[
-    Promise[Option[NetworkMessage]]] =
-    None
-
   @volatile private[this] var connectionGraphOpt: Option[ConnectionGraph] = None
 
   /** Initiates a connection with the given peer */
   def connect(): Future[Unit] = {
-    connectionP match {
+    connectionGraphOpt match {
       case Some(_) =>
         logger.warn(s"Connected already to peer=${peer}")
         Future.unit
@@ -175,14 +177,16 @@ case class PeerMessageSender(
         }
 
         val ((mergeHubSink: Sink[NetworkMessage, NotUsed],
-              outgoingConnectionF: Future[Tcp.OutgoingConnection]),
+              (outgoingConnectionF: Future[Tcp.OutgoingConnection],
+               killswitch: UniqueKillSwitch)),
              streamDoneF) = {
           connectionGraph(handleNetworkMsgSink).run()
         }
 
         val graph = ConnectionGraph(mergeHubSink = mergeHubSink,
                                     connectionF = outgoingConnectionF,
-                                    streamDoneF = streamDoneF)
+                                    streamDoneF = streamDoneF,
+                                    killswitch = killswitch)
 
         connectionGraphOpt = Some(graph)
 
@@ -193,17 +197,11 @@ case class PeerMessageSender(
 
         val _ = graph.streamDoneF
           .flatMap { p =>
-            logger.info(s"streamDoneF.callback?")
             p.disconnect(peer)
           }
           .failed
           .foreach(err =>
             logger.error(s"Failed disconnect callback with peer=$peer", err))
-
-        Source.maybe.preMaterialize()
-        val p: Promise[Option[NetworkMessage]] =
-          Source.maybe[NetworkMessage].toMat(mergeHubSink)(Keep.left).run()
-        connectionP = Some(p)
 
         resultF.map(_ => ())
     }
@@ -214,7 +212,7 @@ case class PeerMessageSender(
   }
 
   def isConnected(): Future[Boolean] = {
-    Future.successful(connectionP.isDefined)
+    Future.successful(connectionGraphOpt.isDefined)
   }
 
   def isInitialized(): Future[Boolean] = {
@@ -227,13 +225,12 @@ case class PeerMessageSender(
 
   /** Disconnects the given peer */
   def disconnect(): Future[Unit] = {
-    connectionP match {
-      case Some(p) =>
-        p.success(None)
+    connectionGraphOpt match {
+      case Some(cg) =>
         logger.info(s"Disconnecting peer at socket=${socket}")
-        connectionP = None
+        cg.killswitch.shutdown()
         connectionGraphOpt = None
-        p.future.map(_ => ())
+        Future.unit
       case None =>
         val err =
           s"Cannot disconnect client that is not connected to socket=${socket}!"
@@ -299,7 +296,8 @@ object PeerMessageSender {
   case class ConnectionGraph(
       mergeHubSink: Sink[NetworkMessage, NotUsed],
       connectionF: Future[Tcp.OutgoingConnection],
-      streamDoneF: Future[PeerMessageReceiver])
+      streamDoneF: Future[PeerMessageReceiver],
+      killswitch: UniqueKillSwitch)
 
   sealed abstract class PeerMessageHandlerMsg
 

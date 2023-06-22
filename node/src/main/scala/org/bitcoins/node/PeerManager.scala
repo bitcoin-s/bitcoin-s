@@ -376,7 +376,8 @@ case class PeerManager(
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
-        maxTries = 30)
+        maxTries = 30
+      )
       _ = dataMessageQueueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
