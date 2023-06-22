@@ -183,6 +183,11 @@ case class PeerMessageSender(
           connectionGraph(handleNetworkMsgSink).run()
         }
 
+        outgoingConnectionF.map { o =>
+          logger.info(
+            s"Connected to remote=${o.remoteAddress}  local=${o.localAddress}")
+        }
+
         val graph = ConnectionGraph(mergeHubSink = mergeHubSink,
                                     connectionF = outgoingConnectionF,
                                     streamDoneF = streamDoneF,
@@ -227,13 +232,13 @@ case class PeerMessageSender(
   def disconnect(): Future[Unit] = {
     connectionGraphOpt match {
       case Some(cg) =>
-        logger.info(s"Disconnecting peer at socket=${socket}")
+        logger.info(s"Disconnecting peer=${peer}")
         cg.killswitch.shutdown()
         connectionGraphOpt = None
         Future.unit
       case None =>
         val err =
-          s"Cannot disconnect client that is not connected to socket=${socket}!"
+          s"Cannot disconnect client that is not connected to peer=${peer}!"
         logger.warn(err)
         Future.unit
     }

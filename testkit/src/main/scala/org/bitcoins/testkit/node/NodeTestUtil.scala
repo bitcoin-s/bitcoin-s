@@ -208,7 +208,12 @@ abstract class NodeTestUtil extends P2PLogger {
       system: ActorSystem): Future[URI] = {
     import system.dispatcher
     bitcoind.getPeerInfo.map { peerInfo =>
-      peerInfo.filter(_.networkInfo.addrlocal.isDefined).head.networkInfo.addr
+      val localFilter = peerInfo.filter(_.networkInfo.addrlocal.isDefined)
+      val result = localFilter.head.networkInfo.addr
+      logger.info(
+        s"localFilter=${localFilter.map(_.networkInfo.addr)} getNodeURIFromBitcoind.peerInfos=${peerInfo
+          .map(_.networkInfo.addr)}")
+      result
     }
   }
 }

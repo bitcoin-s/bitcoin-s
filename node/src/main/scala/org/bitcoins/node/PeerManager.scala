@@ -404,8 +404,12 @@ case class PeerManager(
 
   def isConnected(peer: Peer): Future[Boolean] = {
     peerDataMap.get(peer) match {
-      case None    => Future.successful(false)
-      case Some(p) => p.peerMessageSender.flatMap(_.isConnected())
+      case None =>
+        logger.info(s"isConnected None peer=$peer")
+        Future.successful(false)
+      case Some(p) =>
+        logger.info(s"isConnected Some(p) peer=$peer")
+        p.peerMessageSender.flatMap(_.isConnected())
     }
   }
 
