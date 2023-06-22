@@ -53,7 +53,7 @@ case class PeerData(
   }
 
   def stop(): Future[Unit] = {
-    client.map(_.close())
+    peerMessageSender.flatMap(_.disconnect())
   }
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
 

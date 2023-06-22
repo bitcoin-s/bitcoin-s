@@ -402,9 +402,10 @@ case class PeerManager(
   }
 
   def isConnected(peer: Peer): Future[Boolean] = {
-    if (peerDataMap.contains(peer))
-      peerDataMap(peer).peerMessageSender.flatMap(_.isConnected())
-    else Future.successful(false)
+    peerDataMap.get(peer) match {
+      case None    => Future.successful(false)
+      case Some(p) => p.peerMessageSender.flatMap(_.isConnected())
+    }
   }
 
   def isDisconnected(peer: Peer): Future[Boolean] = {
