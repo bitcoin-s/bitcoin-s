@@ -65,7 +65,7 @@ case class PeerManager(
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
-  private var finderOpt: Option[PeerFinder] = {
+  private[this] var finderOpt: Option[PeerFinder] = {
     None
   }
 
@@ -702,9 +702,9 @@ case class PeerManager(
     SourceQueueWithComplete[StreamDataMessageWrapper]] = {
     Source
       .queue[StreamDataMessageWrapper](
-        16 * nodeAppConfig.maxConnectedPeers,
+        100 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
-        maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
+        maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
   private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[
