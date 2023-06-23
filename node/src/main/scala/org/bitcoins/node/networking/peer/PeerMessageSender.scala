@@ -55,7 +55,9 @@ case class PeerMessageSender(
     ByteString,
     ByteString,
     Future[Tcp.OutgoingConnection]] = {
-    Tcp(system).outgoingConnection(client.peer.socket, options = options)
+    Tcp(system).outgoingConnection(client.peer.socket,
+                                   halfClose = false,
+                                   options = options)
   }
 
   private def parseHelper(

@@ -210,9 +210,6 @@ abstract class NodeTestUtil extends P2PLogger {
     bitcoind.getPeerInfo.map { peerInfo =>
       val localFilter = peerInfo.filter(_.networkInfo.addrlocal.isDefined)
       val result = localFilter.head.networkInfo.addr
-      logger.info(
-        s"localFilter=${localFilter.map(_.networkInfo.addr)} getNodeURIFromBitcoind.peerInfos=${peerInfo
-          .map(_.networkInfo.addr)}")
       result
     }
   }

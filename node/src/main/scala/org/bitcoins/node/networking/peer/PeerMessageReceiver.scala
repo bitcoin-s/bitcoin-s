@@ -306,7 +306,7 @@ case class PeerMessageReceiver(
   protected[networking] def disconnect(peer: Peer)(implicit
       system: ActorSystem): Future[PeerMessageReceiver] = {
     import system.dispatcher
-    logger.info(s"Disconnecting peer=$peer with internalstate=${this}")
+    logger.debug(s"Disconnecting peer=$peer with internalstate=${this}")
     state match {
       case bad @ (_: Disconnected | Preconnection |
           _: InitializedDisconnectDone | _: StoppedReconnect) =>
