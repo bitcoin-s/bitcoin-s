@@ -667,9 +667,15 @@ case class PeerManager(
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
     if (peerDataMap.contains(peer)) {
-      //peerDataMap(peer).peerMessageSender.map(
-      //  _.client.actor ! ResponseTimeout(payload))
-      ???
+      payload match {
+        case e: ExpectsResponse =>
+          offer(QueryTimeout(peer, e))
+            .map(_ => ())
+        case _: NetworkPayload =>
+          val exn = new RuntimeException(
+            s"Cannot have sendResponseTimeout for msg=${payload.commandName} for non ExpectsResponse payload")
+          Future.failed(exn)
+      }
     } else {
       logger.debug(s"Requested to send response timeout for unknown $peer")
       Future.unit
