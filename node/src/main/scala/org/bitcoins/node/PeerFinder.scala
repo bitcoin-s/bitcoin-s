@@ -242,7 +242,7 @@ case class PeerFinder(
                            queue,
                            peerMessageSenderApi,
                            supervisor))
-    _peerData(peer).peerMessageSender.map(_.reconnect())
+    _peerData(peer).peerMessageSender.flatMap(_.reconnect())
 
   }
 

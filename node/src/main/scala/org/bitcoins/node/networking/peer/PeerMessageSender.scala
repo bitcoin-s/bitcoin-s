@@ -1,11 +1,11 @@
 package org.bitcoins.node.networking.peer
 
 import akka.NotUsed
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, Cancellable}
 import akka.io.Tcp.SO.KeepAlive
 import akka.stream.{KillSwitches, UniqueKillSwitch}
-import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.{
+  BidiFlow,
   Flow,
   Keep,
   MergeHub,
@@ -14,7 +14,7 @@ import akka.stream.scaladsl.{
   Source,
   Tcp
 }
-import akka.util.{ByteString}
+import akka.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.bloom.BloomFilter
@@ -32,6 +32,7 @@ import org.bitcoins.node.util.PeerMessageSenderApi
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 case class PeerMessageSender(
     peer: Peer,
@@ -46,6 +47,11 @@ case class PeerMessageSender(
   private val socket = peer.socket
 
   private val options = Vector(KeepAlive(true))
+
+  private[this] var reconnectionTry = 0
+  private[this] var curReconnectionTry = 0
+  private[this] val reconnectionDelay = 500.millis
+  private[this] var reconnectionCancellableOpt: Option[Cancellable] = None
 
   private lazy val connection: Flow[
     ByteString,
@@ -145,6 +151,34 @@ case class PeerMessageSender(
     result
   }
 
+  private def buildConnectionGraph(): RunnableGraph[
+    (
+        (
+            Sink[NetworkMessage, NotUsed],
+            (Future[Tcp.OutgoingConnection], UniqueKillSwitch)),
+        Future[PeerMessageReceiver])] = {
+    val initializing =
+      initPeerMessageRecv.connect(peer, peerMessageSenderApi)
+
+    val handleNetworkMsgSink: Sink[
+      Vector[NetworkMessage],
+      Future[PeerMessageReceiver]] = {
+
+      Flow[Vector[NetworkMessage]]
+        .foldAsync(initializing) { case (peerMsgRecv, msgs) =>
+          FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
+            p.handleNetworkMessageReceived(networkMsgRecv =
+                                             NetworkMessageReceived(msg, peer),
+                                           peerMessageSenderApi =
+                                             peerMessageSenderApi)
+          }
+        }
+        .toMat(Sink.last)(Keep.right)
+    }
+
+    connectionGraph(handleNetworkMsgSink)
+  }
+
   @volatile private[this] var connectionGraphOpt: Option[ConnectionGraph] = None
 
   /** Initiates a connection with the given peer */
@@ -156,29 +190,11 @@ case class PeerMessageSender(
       case None =>
         logger.info(s"Attempting to connect to peer=${peer}")
 
-        val initializing =
-          initPeerMessageRecv.connect(peer, peerMessageSenderApi)
-
-        val handleNetworkMsgSink: Sink[
-          Vector[NetworkMessage],
-          Future[PeerMessageReceiver]] = {
-
-          Flow[Vector[NetworkMessage]]
-            .foldAsync(initializing) { case (peerMsgRecv, msgs) =>
-              FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
-                p.handleNetworkMessageReceived(
-                  networkMsgRecv = NetworkMessageReceived(msg, peer),
-                  peerMessageSenderApi = peerMessageSenderApi)
-              }
-            }
-            .toMat(Sink.last)(Keep.right)
-        }
-
         val ((mergeHubSink: Sink[NetworkMessage, NotUsed],
               (outgoingConnectionF: Future[Tcp.OutgoingConnection],
                killswitch: UniqueKillSwitch)),
              streamDoneF) = {
-          connectionGraph(handleNetworkMsgSink).run()
+          buildConnectionGraph().run()
         }
 
         outgoingConnectionF.map { o =>
@@ -195,6 +211,7 @@ case class PeerMessageSender(
 
         val resultF: Future[NotUsed] = for {
           _ <- outgoingConnectionF
+          _ = resetReconnect()
           versionMsg <- versionMsgF
         } yield Source.single(versionMsg).runWith(mergeHubSink)
 
@@ -210,9 +227,33 @@ case class PeerMessageSender(
     }
   }
 
-  def reconnect(): Unit = {
-    //client.actor ! P2PClient.ReconnectCommand
-    ???
+  /** resets reconnect state after connecting to a peer */
+  private def resetReconnect(): Unit = {
+    //cancel the job for reconnecting in case we were attempting to reconnect
+    reconnectionCancellableOpt.map(_.cancel())
+    reconnectionCancellableOpt = None
+    reconnectionTry = 0
+    curReconnectionTry = 0
+  }
+
+  def reconnect(): Future[Unit] = {
+    connectionGraphOpt match {
+      case Some(_) =>
+        logger.error(
+          s"Cannot reconnect when we have an active connection to peer=$peer")
+        Future.unit
+      case None =>
+        val delay = reconnectionDelay * (1 << curReconnectionTry)
+        curReconnectionTry += 1
+        reconnectionTry = reconnectionTry + 1
+
+        val cancellable = system.scheduler.scheduleOnce(delay) {
+          connect() //dropping future here?
+          ()
+        }
+        reconnectionCancellableOpt = Some(cancellable)
+        Future.unit
+    }
   }
 
   def isConnected(): Future[Boolean] = {
