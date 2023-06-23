@@ -51,24 +51,24 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="OFF"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="WARN"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="OFF"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="WARN"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="OFF"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
 
-    <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="OFF"/>
+    <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="WARN"/>
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="OFF"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
 
     <!-- See exceptions thrown in actor-->
-    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="OFF"/>
+    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
 
-    <logger name="org.bitcoins.node.PeerManager" level="OFF"/>
+    <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
 
-    <logger name="org.bitcoins.node.PeerFinder" level="OFF"/>
+    <logger name="org.bitcoins.node.PeerFinder" level="WARN"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->
@@ -98,7 +98,7 @@
     <logger name="slick.jdbc.JdbcBackend.statement" level="OFF"/>
 
     <!-- see what slick is compiling to in sql -->
-    <logger name="slick" level="OFF"/>
+    <logger name="slick.compiler" level="OFF"/>
 
     <!-- see what's returned by Slick -->
     <logger name="slick.jdbc.StatementInvoker.result" level="OFF"/>
