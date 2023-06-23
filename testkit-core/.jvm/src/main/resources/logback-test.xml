@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="WARN">
+    <root level="OFF">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -51,24 +51,24 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="OFF"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="OFF"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="OFF"/>
 
-    <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="OFF"/>
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="OFF"/>
 
     <!-- See exceptions thrown in actor-->
-    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="OFF"/>
 
-    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+    <logger name="org.bitcoins.node.PeerManager" level="OFF"/>
 
-    <logger name="org.bitcoins.node.PeerFinder" level="INFO"/>
+    <logger name="org.bitcoins.node.PeerFinder" level="OFF"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->
