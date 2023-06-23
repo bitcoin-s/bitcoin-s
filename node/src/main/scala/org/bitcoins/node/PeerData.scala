@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorSystem}
 import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.ServiceIdentifier
@@ -18,8 +18,7 @@ case class PeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
-    peerMessageSenderApi: PeerMessageSenderApi,
-    supervisor: ActorRef
+    peerMessageSenderApi: PeerMessageSenderApi
 )(implicit
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,

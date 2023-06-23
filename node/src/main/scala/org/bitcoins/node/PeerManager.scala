@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.{Done, NotUsed}
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem}
 import akka.stream.{
   ActorAttributes,
   OverflowStrategy,
@@ -34,10 +34,9 @@ import org.bitcoins.core.util.{FutureUtil, NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.P2PClientSupervisor
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
+import org.bitcoins.node.util.{PeerMessageSenderApi}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -65,11 +64,6 @@ case class PeerManager(
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
-
-  private val supervisor: ActorRef =
-    system.actorOf(Props[P2PClientSupervisor](),
-                   name =
-                     BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
 
   private var finderOpt: Option[PeerFinder] = {
     None
@@ -345,8 +339,7 @@ case class PeerManager(
       controlMessageHandler = ControlMessageHandler(this),
       queue = queue,
       peerMessageSenderApi = this,
-      skipPeers = () => peers,
-      supervisor = supervisor
+      skipPeers = () => peers
     )
     finderOpt = Some(finder)
     finder.start().map { _ =>
