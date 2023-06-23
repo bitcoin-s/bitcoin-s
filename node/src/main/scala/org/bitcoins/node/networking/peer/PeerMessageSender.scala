@@ -260,11 +260,6 @@ case class PeerMessageSender(
     Future.successful(connectionGraphOpt.isDefined)
   }
 
-  def isInitialized(): Future[Boolean] = {
-    //client.isInitialized()
-    ???
-  }
-
   def isDisconnected(): Future[Boolean] = {
     isConnected().map(!_)
   }
@@ -318,10 +313,6 @@ case class PeerMessageSender(
 
   private[node] def sendMsg(msg: NetworkMessage): Future[Unit] = {
     logger.debug(s"Sending msg=${msg.header.commandName} to peer=${socket}")
-    /*    val wrap = msg match {
-      case _: ExpectsResponse => ExpectResponseCommand(msg.payload)
-      case _                  => msg
-    }*/
     connectionGraphOpt match {
       case Some(g) =>
         val sendMsgF = Future {
