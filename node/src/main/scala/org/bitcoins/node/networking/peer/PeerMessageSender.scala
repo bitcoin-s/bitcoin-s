@@ -248,7 +248,9 @@ case class PeerMessageSender(
         reconnectionTry = reconnectionTry + 1
 
         val cancellable = system.scheduler.scheduleOnce(delay) {
-          connect() //dropping future here?
+          val connF = connect()
+          connF.failed.foreach(err =>
+            logger.error(s"Failed to reconnect with peer=$peer", err))
           ()
         }
         reconnectionCancellableOpt = Some(cancellable)
