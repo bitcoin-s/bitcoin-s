@@ -6,7 +6,6 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
 
@@ -34,22 +33,8 @@ case class PeerData(
     state = PeerMessageReceiverState.fresh())
 
   lazy val peerMessageSender: Future[PeerMessageSender] = {
-    client.map(PeerMessageSender(_, initPeerMessageRecv, peerMessageSenderApi))
-  }
-
-  private lazy val client: Future[P2PClient] = {
-    val peerMessageReceiver =
-      PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                          queue = queue,
-                          peer = peer,
-                          state = PeerMessageReceiverState.fresh())
-    P2PClient(
-      peer = peer,
-      peerMessageReceiver = peerMessageReceiver,
-      peerMessageSenderApi = peerMessageSenderApi,
-      maxReconnectionTries = 4,
-      supervisor = supervisor
-    )
+    Future.successful(
+      PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi))
   }
 
   def stop(): Future[Unit] = {

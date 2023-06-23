@@ -1,13 +1,8 @@
 package org.bitcoins.testkit.node
 
-import akka.actor.{ActorRef, ActorSystem}
-import org.bitcoins.chain.config.ChainAppConfig
+import akka.actor.ActorSystem
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.{P2PClient}
-import org.bitcoins.node.networking.peer.{PeerMessageReceiver}
-import org.bitcoins.node.util.PeerMessageSenderApi
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -19,24 +14,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class NodeTestUtil extends P2PLogger {
-
-  def client(
-      peer: Peer,
-      peerMsgReceiver: PeerMessageReceiver,
-      peerMessageSenderApi: PeerMessageSenderApi,
-      supervisor: ActorRef)(implicit
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig,
-      system: ActorSystem
-  ): Future[P2PClient] = {
-    P2PClient.apply(
-      peer = peer,
-      peerMessageReceiver = peerMsgReceiver,
-      peerMessageSenderApi = peerMessageSenderApi,
-      maxReconnectionTries = 16,
-      supervisor = supervisor
-    )
-  }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]
     * we need to connect to to make a p2p connection with bitcoind

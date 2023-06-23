@@ -674,8 +674,9 @@ case class PeerManager(
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
     if (peerDataMap.contains(peer)) {
-      peerDataMap(peer).peerMessageSender.map(
-        _.client.actor ! ResponseTimeout(payload))
+      //peerDataMap(peer).peerMessageSender.map(
+      //  _.client.actor ! ResponseTimeout(payload))
+      ???
     } else {
       logger.debug(s"Requested to send response timeout for unknown $peer")
       Future.unit
@@ -1022,7 +1023,7 @@ case class PeerManager(
       sendToPeer: SendToPeer,
       peerMessageSender: PeerMessageSender,
       dmh: DataMessageHandler): DataMessageHandler = {
-    val destination = peerMessageSender.client.peer
+    val destination = peerMessageSender.peer
     val newState: DataMessageHandlerState = sendToPeer.peerOpt match {
       case Some(originalPeer) =>
         if (originalPeer != destination) {

@@ -3,45 +3,15 @@ package org.bitcoins.node.networking.peer
 import akka.actor.Cancellable
 import grizzled.slf4j.Logging
 import org.bitcoins.core.p2p.{NetworkPayload, VerAckMessage, VersionMessage}
-import org.bitcoins.node.networking.P2PClient
-
 import scala.concurrent.{Future, Promise}
 
 sealed abstract class PeerMessageReceiverState extends Logging {
-
-  /** This promise gets completed when we receive a
-    * [[akka.io.Tcp.Connected]] message from [[org.bitcoins.node.networking.P2PClient P2PClient]]
-    */
-  def clientConnectP: Promise[P2PClient]
-
-  /** The [[org.bitcoins.node.networking.P2PClient P2PClient]] we are
-    * connected to. This isn't initiated until the client
-    * has called [[org.bitcoins.node.networking.peer.PeerMessageReceiver.connect() connect()]]
-    */
-  private val clientConnectF: Future[P2PClient] = clientConnectP.future
 
   /** This promise is completed in the [[org.bitcoins.node.networking.peer.PeerMessageReceiver.disconnect() disconnect()]]
     * when a [[org.bitcoins.node.networking.P2PClient P2PClient]] initiates a disconnections from
     * our peer on the p2p network
     */
   def clientDisconnectP: Promise[Unit]
-
-  private val clientDisconnectF: Future[Unit] = clientDisconnectP.future
-
-  /** If this future is completed, we are
-    * connected to our client. Note, there is
-    * no timeout on this future and no guarantee
-    * that some one has actually initiated
-    * a connection with a [[org.bitcoins.node.networking.P2PClient P2PClient]]
-    * @return
-    */
-  def isConnected: Boolean = {
-    clientConnectF.isCompleted && !clientDisconnectF.isCompleted
-  }
-
-  def isDisconnected: Boolean = {
-    clientDisconnectF.isCompleted && !isConnected
-  }
 
   def versionMsgP: Promise[VersionMessage]
 
@@ -82,7 +52,6 @@ object PeerMessageReceiverState {
     * where the peer is not connected to the p2p network
     */
   final case object Preconnection extends PeerMessageReceiverState {
-    def clientConnectP: Promise[P2PClient] = Promise[P2PClient]()
 
     //should this be completed since the client is disconnected???
     def clientDisconnectP: Promise[Unit] = Promise[Unit]()
@@ -90,13 +59,8 @@ object PeerMessageReceiverState {
     def verackMsgP: Promise[VerAckMessage.type] = Promise[VerAckMessage.type]()
 
     /** Converts [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection Preconnection]] to [[Initializing]] */
-    def toInitializing(
-        client: P2PClient,
-        timeout: Cancellable): Initializing = {
-      val p = clientConnectP
-      p.success(client)
+    def toInitializing(timeout: Cancellable): Initializing = {
       Initializing(
-        clientConnectP = p,
         clientDisconnectP = clientDisconnectP,
         versionMsgP = versionMsgP,
         verackMsgP = verackMsgP,
@@ -112,16 +76,12 @@ object PeerMessageReceiverState {
     * from our peer on the p2p network
     */
   case class Initializing(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type],
       waitingSince: Long,
       initializationTimeoutCancellable: Cancellable
   ) extends PeerMessageReceiverState {
-    require(
-      isConnected,
-      "We cannot have a PeerMessageReceiverState.Initializng if we are not connected")
 
     /** Helper method to modifing the state of [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Initializing]]
       * when we receive a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]]. This completes versoinMsgP
@@ -129,7 +89,6 @@ object PeerMessageReceiverState {
       */
     def withVersionMsg(versionMsg: VersionMessage): Initializing = {
       PeerMessageReceiverState.Initializing(
-        clientConnectP = clientConnectP,
         clientDisconnectP = clientDisconnectP,
         versionMsgP = versionMsgP.success(versionMsg),
         verackMsgP = verackMsgP,
@@ -144,7 +103,6 @@ object PeerMessageReceiverState {
     def toNormal(verAckMessage: VerAckMessage.type): Normal = {
       initializationTimeoutCancellable.cancel()
       Normal(
-        clientConnectP = clientConnectP,
         clientDisconnectP = clientDisconnectP,
         versionMsgP = versionMsgP,
         verackMsgP = verackMsgP.success(verAckMessage)
@@ -159,14 +117,10 @@ object PeerMessageReceiverState {
     * the peer on the network
     */
   case class Normal(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type]
   ) extends PeerMessageReceiverState {
-    require(
-      isConnected,
-      s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not connected")
     require(
       isInitialized,
       s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not initialized")
@@ -176,15 +130,10 @@ object PeerMessageReceiverState {
 
   /** The state for when we initialized as disconnect from our peer */
   case class InitializedDisconnect(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type])
       extends PeerMessageReceiverState {
-    require(
-      isConnected,
-      s"Cannot have a PeerMessageReceiverState.InitializeDisconnect when peer is not connected"
-    )
 
     override def toString: String = "InitializedDisconnect"
   }
@@ -193,7 +142,6 @@ object PeerMessageReceiverState {
     * are still processed and receiver will continue waiting until timeout.
     */
   case class Waiting(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type],
@@ -205,18 +153,12 @@ object PeerMessageReceiverState {
   }
 
   case class StoppedReconnect(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type])
       extends PeerMessageReceiverState {
     override def toString: String = "StoppedReconnect"
-
-    assert(
-      !isConnected, //since the promise is not complete both isConnected and isDisconnected is false here
-      s"Cannot have a PeerMessageReceiverState.StoppedReconnect when peer is connected"
-    )
-    assert(
+    require(
       !isInitialized,
       s"Cannot have a PeerMessageReceiverState.StoppedReconnect when peer is initialised")
   }
@@ -228,15 +170,10 @@ object PeerMessageReceiverState {
     * because we initialized the disconnection
     */
   case class InitializedDisconnectDone(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type])
       extends PeerMessageReceiverState {
-    require(
-      isDisconnected,
-      s"We cannot have a PeerMessageReceiverState.InitializedDisconnectDone if the Peer is connected")
-
     override def toString: String = "InitializedDisconnect"
   }
 
@@ -245,15 +182,10 @@ object PeerMessageReceiverState {
     * the peer disconnected us
     */
   case class Disconnected(
-      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type])
       extends PeerMessageReceiverState {
-    require(
-      isDisconnected,
-      "We cannot be in the disconnected state if a peer is not disconnected")
-
     override def toString: String = "Disconnected"
 
   }

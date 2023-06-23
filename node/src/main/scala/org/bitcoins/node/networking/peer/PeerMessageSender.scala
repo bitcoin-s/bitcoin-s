@@ -14,28 +14,27 @@ import akka.stream.scaladsl.{
   Source,
   Tcp
 }
-import akka.util.{ByteString, Timeout}
+import akka.util.{ByteString}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
-import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageSender.ConnectionGraph
 import org.bitcoins.node.util.PeerMessageSenderApi
 import scodec.bits.ByteVector
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 
 case class PeerMessageSender(
-    client: P2PClient,
+    peer: Peer,
     initPeerMessageRecv: PeerMessageReceiver,
     peerMessageSenderApi: PeerMessageSenderApi)(implicit
     nodeAppConfig: NodeAppConfig,
@@ -44,10 +43,7 @@ case class PeerMessageSender(
     extends P2PLogger {
   import system.dispatcher
 
-  private val peer = client.peer
   private val socket = peer.socket
-
-  implicit private val timeout: Timeout = Timeout(30.seconds)
 
   private val options = Vector(KeepAlive(true))
 
@@ -55,7 +51,7 @@ case class PeerMessageSender(
     ByteString,
     ByteString,
     Future[Tcp.OutgoingConnection]] = {
-    Tcp(system).outgoingConnection(client.peer.socket,
+    Tcp(system).outgoingConnection(peer.socket,
                                    halfClose = false,
                                    options = options)
   }
@@ -66,7 +62,7 @@ case class PeerMessageSender(
     val bytes: ByteVector = ByteVector(unalignedBytes ++ byteVec)
     logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
     val (messages, newUnalignedBytes) =
-      P2PClient.parseIndividualMessages(bytes)
+      NetworkUtil.parseIndividualMessages(bytes)
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
@@ -161,7 +157,7 @@ case class PeerMessageSender(
         logger.info(s"Attempting to connect to peer=${peer}")
 
         val initializing =
-          initPeerMessageRecv.connect(client, peerMessageSenderApi)
+          initPeerMessageRecv.connect(peer, peerMessageSenderApi)
 
         val handleNetworkMsgSink: Sink[
           Vector[NetworkMessage],
@@ -215,7 +211,8 @@ case class PeerMessageSender(
   }
 
   def reconnect(): Unit = {
-    client.actor ! P2PClient.ReconnectCommand
+    //client.actor ! P2PClient.ReconnectCommand
+    ???
   }
 
   def isConnected(): Future[Boolean] = {
@@ -223,7 +220,8 @@ case class PeerMessageSender(
   }
 
   def isInitialized(): Future[Boolean] = {
-    client.isInitialized()
+    //client.isInitialized()
+    ???
   }
 
   def isDisconnected(): Future[Boolean] = {
@@ -252,20 +250,20 @@ case class PeerMessageSender(
 
   def sendFilterAddMessage(hash: HashDigest): Future[Unit] = {
     val message = FilterAddMessage.fromHash(hash)
-    logger.trace(s"Sending filteradd=$message to peer=${client.peer}")
+    logger.trace(s"Sending filteradd=$message to peer=${peer}")
     sendMsg(message)
   }
 
   def sendFilterLoadMessage(bloom: BloomFilter): Future[Unit] = {
     val message = FilterLoadMessage(bloom)
-    logger.trace(s"Sending filterload=$message to peer=${client.peer}")
+    logger.trace(s"Sending filterload=$message to peer=${peer}")
     sendMsg(message)
   }
 
   def sendGetCompactFilterCheckPointMessage(
       stopHash: DoubleSha256Digest): Future[Unit] = {
     val message = GetCompactFilterCheckPointMessage(stopHash)
-    logger.debug(s"Sending getcfcheckpt=$message to peer ${client.peer}")
+    logger.debug(s"Sending getcfcheckpt=$message to peer ${peer}")
     sendMsg(message)
   }
 
