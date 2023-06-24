@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.{Done, NotUsed}
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem}
 import akka.stream.{
   ActorAttributes,
   OverflowStrategy,
@@ -34,10 +34,9 @@ import org.bitcoins.core.util.{FutureUtil, NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.P2PClientSupervisor
 import org.bitcoins.node.networking.peer.DataMessageHandlerState._
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.util.{BitcoinSNodeUtil, PeerMessageSenderApi}
+import org.bitcoins.node.util.{PeerMessageSenderApi}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -66,12 +65,7 @@ case class PeerManager(
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
-  private val supervisor: ActorRef =
-    system.actorOf(Props[P2PClientSupervisor](),
-                   name =
-                     BitcoinSNodeUtil.createActorName("P2PClientSupervisor"))
-
-  private var finderOpt: Option[PeerFinder] = {
+  private[this] var finderOpt: Option[PeerFinder] = {
     None
   }
 
@@ -345,8 +339,7 @@ case class PeerManager(
       controlMessageHandler = ControlMessageHandler(this),
       queue = queue,
       peerMessageSenderApi = this,
-      skipPeers = () => peers,
-      supervisor = supervisor
+      skipPeers = () => peers
     )
     finderOpt = Some(finder)
     finder.start().map { _ =>
@@ -376,7 +369,8 @@ case class PeerManager(
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
         interval = 1.seconds,
-        maxTries = 30)
+        maxTries = 30
+      )
       _ = dataMessageQueueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
@@ -402,9 +396,10 @@ case class PeerManager(
   }
 
   def isConnected(peer: Peer): Future[Boolean] = {
-    if (peerDataMap.contains(peer))
-      peerDataMap(peer).peerMessageSender.flatMap(_.isConnected())
-    else Future.successful(false)
+    peerDataMap.get(peer) match {
+      case None    => Future.successful(false)
+      case Some(p) => p.peerMessageSender.flatMap(_.isConnected())
+    }
   }
 
   def isDisconnected(peer: Peer): Future[Boolean] = {
@@ -412,9 +407,7 @@ case class PeerManager(
   }
 
   def isInitialized(peer: Peer): Future[Boolean] = {
-    if (peerDataMap.contains(peer))
-      peerDataMap(peer).peerMessageSender.flatMap(_.isInitialized())
-    else Future.successful(false)
+    Future.successful(peerDataMap.exists(_._1 == peer))
   }
 
   def onInitializationTimeout(peer: Peer): Future[Unit] = {
@@ -674,8 +667,15 @@ case class PeerManager(
     logger.debug(
       s"Sending response timeout for ${payload.commandName} to $peer")
     if (peerDataMap.contains(peer)) {
-      peerDataMap(peer).peerMessageSender.map(
-        _.client.actor ! ResponseTimeout(payload))
+      payload match {
+        case e: ExpectsResponse =>
+          offer(QueryTimeout(peer, e))
+            .map(_ => ())
+        case _: NetworkPayload =>
+          val exn = new RuntimeException(
+            s"Cannot have sendResponseTimeout for msg=${payload.commandName} for non ExpectsResponse payload")
+          Future.failed(exn)
+      }
     } else {
       logger.debug(s"Requested to send response timeout for unknown $peer")
       Future.unit
@@ -702,9 +702,9 @@ case class PeerManager(
     SourceQueueWithComplete[StreamDataMessageWrapper]] = {
     Source
       .queue[StreamDataMessageWrapper](
-        16 * nodeAppConfig.maxConnectedPeers,
+        100 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
-        maxConcurrentOffers = nodeAppConfig.maxConnectedPeers)
+        maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
   private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[
@@ -1022,7 +1022,7 @@ case class PeerManager(
       sendToPeer: SendToPeer,
       peerMessageSender: PeerMessageSender,
       dmh: DataMessageHandler): DataMessageHandler = {
-    val destination = peerMessageSender.client.peer
+    val destination = peerMessageSender.peer
     val newState: DataMessageHandlerState = sendToPeer.peerOpt match {
       case Some(originalPeer) =>
         if (originalPeer != destination) {

@@ -9,7 +9,6 @@ import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.util.PeerMessageSenderApi
@@ -39,10 +38,10 @@ case class PeerMessageReceiver(
       peerMessageSenderApi: PeerMessageSenderApi): Future[
     PeerMessageReceiver] = {
 
-    val client = networkMsgRecv.client
+    val peer = networkMsgRecv.peer
 
     logger.debug(
-      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
+      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${peer} state=${state}")
 
     val payload = networkMsgRecv.msg.payload
 
@@ -56,8 +55,7 @@ case class PeerMessageReceiver(
             logger.debug(
               s"Received expected response ${payload.commandName} in $timeTaken ms")
             state.expectedResponseCancellable.cancel()
-            val newState = Normal(state.clientConnectP,
-                                  state.clientDisconnectP,
+            val newState = Normal(state.clientDisconnectP,
                                   state.versionMsgP,
                                   state.verackMsgP)
             newState
@@ -133,10 +131,9 @@ case class PeerMessageReceiver(
         val qt = QueryTimeout(peer, payload)
         queue.offer(qt).map { _ =>
           state match {
-            case _: Waiting if state.isConnected && state.isInitialized =>
+            case _: Waiting if state.isInitialized =>
               val newState =
-                Normal(state.clientConnectP,
-                       state.clientDisconnectP,
+                Normal(state.clientDisconnectP,
                        state.versionMsgP,
                        state.verackMsgP)
               copy(state = newState)
@@ -170,7 +167,6 @@ case class PeerMessageReceiver(
                 err))
           }
         val newState = Waiting(
-          clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP,
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP,
@@ -198,8 +194,7 @@ case class PeerMessageReceiver(
     state match {
       case Preconnection =>
         //when retry, state should be back to preconnection
-        val newState = StoppedReconnect(state.clientConnectP,
-                                        state.clientDisconnectP,
+        val newState = StoppedReconnect(state.clientDisconnectP,
                                         state.versionMsgP,
                                         state.verackMsgP)
         val disconnectedPeer = DisconnectedPeer(peer, false)
@@ -223,20 +218,19 @@ case class PeerMessageReceiver(
     * This method will initiate the handshake
     */
   protected[networking] def connect(
-      client: P2PClient,
+      peer: Peer,
       peerMessageSenderApi: PeerMessageSenderApi)(implicit
       system: ActorSystem,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig): PeerMessageReceiver = {
     import system.dispatcher
-    val peer = client.peer
     state match {
       case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
           _: InitializedDisconnectDone | _: Disconnected | _: StoppedReconnect |
           _: Waiting) =>
         throw new RuntimeException(s"Cannot call connect when in state=${bad}")
       case Preconnection =>
-        logger.debug(s"Connection established with peer=${client.peer}")
+        logger.debug(s"Connection established with peer=${peer}")
 
         val initializationTimeoutCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
@@ -247,7 +241,7 @@ case class PeerMessageReceiver(
           }
 
         val newState =
-          Preconnection.toInitializing(client, initializationTimeoutCancellable)
+          Preconnection.toInitializing(initializationTimeoutCancellable)
 
         val chainApi = ChainHandler.fromDatabase()
         peerMessageSenderApi.sendVersionMessage(chainApi, peer)
@@ -267,11 +261,10 @@ case class PeerMessageReceiver(
       case good @ (_: Disconnected) =>
         //if its already disconnected, just say init disconnect done so it wont reconnect
         logger.debug(s"Init disconnect called for already disconnected $peer")
-        val newState = InitializedDisconnectDone(
-          clientConnectP = good.clientConnectP,
-          clientDisconnectP = good.clientDisconnectP,
-          versionMsgP = good.versionMsgP,
-          verackMsgP = good.verackMsgP)
+        val newState = InitializedDisconnectDone(clientDisconnectP =
+                                                   good.clientDisconnectP,
+                                                 versionMsgP = good.versionMsgP,
+                                                 verackMsgP = good.verackMsgP)
         copy(state = newState)
       case bad @ (_: InitializedDisconnectDone | Preconnection |
           _: StoppedReconnect) =>
@@ -283,20 +276,17 @@ case class PeerMessageReceiver(
         this
       case initializing: Initializing =>
         initializing.initializationTimeoutCancellable.cancel()
-        val newState = InitializedDisconnect(initializing.clientConnectP,
-                                             initializing.clientDisconnectP,
+        val newState = InitializedDisconnect(initializing.clientDisconnectP,
                                              initializing.versionMsgP,
                                              initializing.verackMsgP)
         copy(state = newState)
       case state: Normal =>
-        val newState = InitializedDisconnect(state.clientConnectP,
-                                             state.clientDisconnectP,
+        val newState = InitializedDisconnect(state.clientDisconnectP,
                                              state.versionMsgP,
                                              state.verackMsgP)
         copy(state = newState)
       case state: Waiting =>
-        val newState = InitializedDisconnect(state.clientConnectP,
-                                             state.clientDisconnectP,
+        val newState = InitializedDisconnect(state.clientDisconnectP,
                                              state.versionMsgP,
                                              state.verackMsgP)
         copy(state = newState)
@@ -306,7 +296,7 @@ case class PeerMessageReceiver(
   protected[networking] def disconnect(peer: Peer)(implicit
       system: ActorSystem): Future[PeerMessageReceiver] = {
     import system.dispatcher
-    logger.trace(s"Disconnecting with internalstate=${this}")
+    logger.debug(s"Disconnecting peer=$peer with internalstate=${this}")
     state match {
       case bad @ (_: Disconnected | Preconnection |
           _: InitializedDisconnectDone | _: StoppedReconnect) =>
@@ -315,7 +305,6 @@ case class PeerMessageReceiver(
         Future.failed(exn)
       case good: InitializedDisconnect =>
         val newState = InitializedDisconnectDone(
-          clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
@@ -324,7 +313,6 @@ case class PeerMessageReceiver(
       case good @ (_: Normal | _: Waiting) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
-          clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP
@@ -338,7 +326,6 @@ case class PeerMessageReceiver(
 
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
-          clientConnectP = initializing.clientConnectP,
           clientDisconnectP = initializing.clientDisconnectP.success(()),
           versionMsgP = initializing.versionMsgP,
           verackMsgP = initializing.verackMsgP
@@ -356,6 +343,6 @@ object PeerMessageReceiver {
 
   sealed abstract class PeerMessageReceiverMsg
 
-  case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
+  case class NetworkMessageReceived(msg: NetworkMessage, peer: Peer)
       extends PeerMessageReceiverMsg
 }

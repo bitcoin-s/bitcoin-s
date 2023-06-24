@@ -1,6 +1,11 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.p2p.AddrV2Message
+import org.bitcoins.core.p2p.{
+  AddrV2Message,
+  NetworkHeader,
+  NetworkMessage,
+  NetworkPayload
+}
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
@@ -156,6 +161,61 @@ abstract class NetworkUtil {
     val seconds = blockHeader.time.toLong
     val expected: Duration = chainParams.powTargetSpacing * 3
     (Instant.now.getEpochSecond - seconds) > expected.toSeconds
+  }
+
+  /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
+    * bitcoin protocol messages. This function parses our byte stream into individual network messages
+    *
+    * @param bytes the bytes that need to be parsed into individual messages
+    * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
+    */
+  def parseIndividualMessages(
+      bytes: ByteVector): (Vector[NetworkMessage], ByteVector) = {
+    @tailrec
+    def loop(
+        remainingBytes: ByteVector,
+        accum: Vector[NetworkMessage]): (Vector[NetworkMessage], ByteVector) = {
+      if (remainingBytes.length <= 0) {
+        (accum, remainingBytes)
+      } else {
+        val headerTry = Try(
+          NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize)))
+        headerTry match {
+          case Success(header) =>
+            val payloadBytes = remainingBytes
+              .drop(NetworkHeader.bytesSize)
+              .take(header.payloadSize.toInt)
+
+            val newRemainingBytes =
+              remainingBytes.drop(NetworkHeader.bytesSize + payloadBytes.size)
+
+            // If it's a message type we know, try to parse it
+            if (NetworkPayload.commandNames.contains(header.commandName)) {
+              Try(NetworkMessage(header.bytes ++ payloadBytes)) match {
+                case Success(message) =>
+                  loop(newRemainingBytes, accum :+ message)
+                case Failure(_) =>
+                  // Can't parse message yet, we need to wait for more bytes
+                  (accum, remainingBytes)
+              }
+            } else if (payloadBytes.size == header.payloadSize.toInt) { // If we've received the entire unknown message
+              loop(newRemainingBytes, accum)
+            } else {
+              // If we can't parse the entire unknown message, continue on until we can
+              // so we properly skip it
+              (accum, remainingBytes)
+            }
+          case Failure(_) =>
+            //this case means that our TCP frame was not aligned with bitcoin protocol
+            //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
+            //http://stackoverflow.com/a/37979529/967713
+            (accum, remainingBytes)
+        }
+      }
+    }
+
+    val (messages, remainingBytes) = loop(bytes, Vector.empty)
+    (messages, remainingBytes)
   }
 
 }

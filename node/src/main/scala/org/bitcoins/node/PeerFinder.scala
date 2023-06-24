@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable}
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
@@ -27,8 +27,7 @@ case class PeerFinder(
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[StreamDataMessageWrapper],
     peerMessageSenderApi: PeerMessageSenderApi,
-    skipPeers: () => Vector[Peer],
-    supervisor: ActorRef)(implicit
+    skipPeers: () => Vector[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
@@ -226,23 +225,17 @@ case class PeerFinder(
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
-    _peerData.put(peer,
-                  PeerData(peer,
-                           controlMessageHandler,
-                           queue,
-                           peerMessageSenderApi,
-                           supervisor))
-    _peerData(peer).peerMessageSender.map(_.connect())
+    _peerData.put(
+      peer,
+      PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
+    _peerData(peer).peerMessageSender.flatMap(_.connect())
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(peer,
-                  PeerData(peer,
-                           controlMessageHandler,
-                           queue,
-                           peerMessageSenderApi,
-                           supervisor))
-    _peerData(peer).peerMessageSender.map(_.reconnect())
+    _peerData.put(
+      peer,
+      PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
+    _peerData(peer).peerMessageSender.flatMap(_.reconnect())
 
   }
 
