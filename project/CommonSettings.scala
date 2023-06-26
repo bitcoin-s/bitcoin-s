@@ -95,9 +95,17 @@ object CommonSettings {
     }
   )
 
-  lazy val jlinkModules = Seq(
-    "jdk.crypto.ec"
-  )
+  lazy val jlinkModules = {
+    val base = Seq(
+      "jdk.crypto.ec"
+    )
+    val dev = {
+      //needed for visualvm to profile/debug apps
+      Vector("jdk.management.agent")
+    }
+    if (!isCI) base ++ dev
+    else base
+  }
 
   //these are java modules we do not need
   //our artifacts do not use java.desktop
