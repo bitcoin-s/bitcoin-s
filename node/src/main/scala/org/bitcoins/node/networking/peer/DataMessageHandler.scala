@@ -5,6 +5,7 @@ import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
@@ -654,20 +655,19 @@ case class DataMessageHandler(
           //if we have zero filters in our database and are syncing filters after a wallet creation time
           //we need to calculate the offset of the first filter
           //and how many compact filter headers we have seen. filter_height = best_filter_header - first_filter_filter_header
-          val firstFilterBlockHash = filterBatch.head.blockHash.flip
-          val filterHeaderOptF = chainApi.getFilterHeader(firstFilterBlockHash)
-          val blockCountF = chainApi.getBlockCount()
+          val bestBlockHashF = chainApi.getBestBlockHash()
+          val filterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
+            Future
+              .traverse(filterBatch)(f =>
+                chainApi.getFilterHeader(f.blockHash.flip))
+              .map(_.flatten.toVector)
+          }
+
           for {
-            filterHeaderOpt <- filterHeaderOptF
-            blockCount <- blockCountF
+            bestBlockHash <- bestBlockHashF
+            filterHeaders <- filterHeadersF
           } yield {
-            filterHeaderOpt match {
-              case Some(filterHeader) =>
-                (blockCount - filterHeader.height) == filterBatch.size //means we have all the filters we need in memory, just need to write to disk
-              case None =>
-                sys.error(
-                  s"Could not find filter header associated with blockHash=$firstFilterBlockHash")
-            }
+            filterHeaders.exists(_.blockHashBE == bestBlockHash)
           }
         } else if (newFilterHeight == 0 && walletCreationTimeOpt.isEmpty) {
           //fully syncing all filters
