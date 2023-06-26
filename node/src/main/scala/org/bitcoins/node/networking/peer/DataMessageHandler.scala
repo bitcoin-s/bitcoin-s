@@ -161,11 +161,10 @@ case class DataMessageHandler(
             s"Got ${filterHeader.filterHashes.size} compact filter header hashes, state=$state")
           val filterHeaderSync = state match {
             //is validating headers right here? Re-review these state transitions
-            case _: HeaderSync | _: ValidatingHeaders =>
+            case _: HeaderSync | _: ValidatingHeaders | DoneSyncing =>
               FilterHeaderSync(peer)
             case filterHeaderSync: FilterHeaderSync => filterHeaderSync
-            case x @ (DoneSyncing | _: FilterSync | _: MisbehavingPeer |
-                _: RemovePeers) =>
+            case x @ (_: FilterSync | _: MisbehavingPeer | _: RemovePeers) =>
               sys.error(
                 s"Incorrect state for handling filter header messages, got=$x")
           }
@@ -664,7 +663,7 @@ case class DataMessageHandler(
           } yield {
             filterHeaderOpt match {
               case Some(filterHeader) =>
-                (blockCount - filterHeader.height) <= chainConfig.filterBatchSize
+                (blockCount - filterHeader.height) == filterBatch.size //means we have all the filters we need in memory, just need to write to disk
               case None =>
                 sys.error(
                   s"Could not find filter header associated with blockHash=$firstFilterBlockHash")

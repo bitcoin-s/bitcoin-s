@@ -1107,6 +1107,10 @@ case class CompactFilterMessage(
 
   val commandName: String = NetworkPayload.compactFilterCommandName
   def bytes: ByteVector = RawCompactFilterMessageSerializer.write(this)
+
+  override def toString: String = {
+    s"CompactFilterMessage($filterType, blockHashBE=${blockHash.flip}, $bytes)"
+  }
 }
 
 object CompactFilterMessage extends Factory[CompactFilterMessage] {
