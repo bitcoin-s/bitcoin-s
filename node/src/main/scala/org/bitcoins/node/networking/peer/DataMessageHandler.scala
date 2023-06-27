@@ -5,6 +5,7 @@ import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
@@ -161,11 +162,10 @@ case class DataMessageHandler(
             s"Got ${filterHeader.filterHashes.size} compact filter header hashes, state=$state")
           val filterHeaderSync = state match {
             //is validating headers right here? Re-review these state transitions
-            case _: HeaderSync | _: ValidatingHeaders =>
+            case _: HeaderSync | _: ValidatingHeaders | DoneSyncing =>
               FilterHeaderSync(peer)
             case filterHeaderSync: FilterHeaderSync => filterHeaderSync
-            case x @ (DoneSyncing | _: FilterSync | _: MisbehavingPeer |
-                _: RemovePeers) =>
+            case x @ (_: FilterSync | _: MisbehavingPeer | _: RemovePeers) =>
               sys.error(
                 s"Incorrect state for handling filter header messages, got=$x")
           }
@@ -205,10 +205,14 @@ case class DataMessageHandler(
         case filter: CompactFilterMessage =>
           logger.debug(
             s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state")
-          require(
-            state.isInstanceOf[FilterSync],
-            s"Can only process filter messages when we are in FilterSync state, got=$state")
-          val filterSyncState = state.asInstanceOf[FilterSync]
+          val filterSyncState = state match {
+            case f: FilterSync => f
+            case DoneSyncing | _: FilterHeaderSync =>
+              FilterSync(peer)
+            case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync |
+                _: ValidatingHeaders) =>
+              sys.error(s"Incorrect state for handling filter messages, got=$x")
+          }
           val filterBatch = filterBatchCache.+(filter)
           val batchSizeFull: Boolean =
             filterBatch.size == chainConfig.filterBatchSize
@@ -655,20 +659,19 @@ case class DataMessageHandler(
           //if we have zero filters in our database and are syncing filters after a wallet creation time
           //we need to calculate the offset of the first filter
           //and how many compact filter headers we have seen. filter_height = best_filter_header - first_filter_filter_header
-          val firstFilterBlockHash = filterBatch.head.blockHash.flip
-          val filterHeaderOptF = chainApi.getFilterHeader(firstFilterBlockHash)
-          val blockCountF = chainApi.getBlockCount()
+          val bestBlockHashF = chainApi.getBestBlockHash()
+          val filterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
+            Future
+              .traverse(filterBatch)(f =>
+                chainApi.getFilterHeader(f.blockHash.flip))
+              .map(_.flatten.toVector)
+          }
+
           for {
-            filterHeaderOpt <- filterHeaderOptF
-            blockCount <- blockCountF
+            bestBlockHash <- bestBlockHashF
+            filterHeaders <- filterHeadersF
           } yield {
-            filterHeaderOpt match {
-              case Some(filterHeader) =>
-                (blockCount - filterHeader.height) <= chainConfig.filterBatchSize
-              case None =>
-                sys.error(
-                  s"Could not find filter header associated with blockHash=$firstFilterBlockHash")
-            }
+            filterHeaders.exists(_.blockHashBE == bestBlockHash)
           }
         } else if (newFilterHeight == 0 && walletCreationTimeOpt.isEmpty) {
           //fully syncing all filters
