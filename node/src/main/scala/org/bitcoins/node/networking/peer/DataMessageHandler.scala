@@ -205,10 +205,14 @@ case class DataMessageHandler(
         case filter: CompactFilterMessage =>
           logger.debug(
             s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state")
-          require(
-            state.isInstanceOf[FilterSync],
-            s"Can only process filter messages when we are in FilterSync state, got=$state")
-          val filterSyncState = state.asInstanceOf[FilterSync]
+          val filterSyncState = state match {
+            case f: FilterSync => f
+            case DoneSyncing | _: FilterHeaderSync =>
+              FilterSync(peer)
+            case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync |
+                _: ValidatingHeaders) =>
+              sys.error(s"Incorrect state for handling filter messages, got=$x")
+          }
           val filterBatch = filterBatchCache.+(filter)
           val batchSizeFull: Boolean =
             filterBatch.size == chainConfig.filterBatchSize

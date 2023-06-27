@@ -97,10 +97,7 @@ case class PeerMessageSender(
                                            { _: ByteString => None })
       .log("parseToNetworkMsgFlow",
            { case msgs: Vector[NetworkMessage] =>
-             msgs
-               .map(msg =>
-                 s"received msg=${msg.payload.commandName} from peer=$peer")
-               .mkString("\n")
+             s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
            })
   }
 
