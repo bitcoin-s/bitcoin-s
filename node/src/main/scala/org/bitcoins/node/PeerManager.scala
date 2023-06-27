@@ -140,7 +140,6 @@ case class PeerManager(
       case Some(peerMsgSender) =>
         peerMsgSender
           .sendMsg(sendToPeer.msg)
-      //.map(_ => handleDisconnectedPeer(sendToPeer, peerMsgSender, dmh))
       case None =>
         Future.failed(new RuntimeException(
           s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to. This means we are not connected to any peers."))
@@ -750,7 +749,6 @@ case class PeerManager(
     StreamDataMessageWrapper,
     Future[DataMessageHandler]] = {
     Sink.foldAsync(initDmh) {
-      //case (dmh, sendToPeer: SendToPeer) =>
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerMsgSenderOptF = getPeerMsgSender(peer)
@@ -1004,38 +1002,6 @@ case class PeerManager(
       _ <- syncHelper(syncPeerOpt)
     } yield syncPeerOpt
   }
-
-  /** Handles the case where we need to send a message to a peer, but that peer was disconnected
-    * We change the peer and the adjust the state in [[DataMessageHandler]]
-    * @param sendToPeer the peer we were originally sending the message to
-    * @param peerMessageSender the new peer we are going to send the message to
-    * @param dmh the data message handler we need to adjust state of
-    */
-  /*  private def handleDisconnectedPeer(
-      sendToPeer: SendToPeer,
-      peerMessageSender: PeerMessageSender,
-      dmh: DataMessageHandler): DataMessageHandler = {
-    val destination = peerMessageSender.peer
-    val newState: DataMessageHandlerState = sendToPeer.peerOpt match {
-      case Some(originalPeer) =>
-        if (originalPeer != destination) {
-          //need to replace syncPeer with newSyncPeer
-          dmh.state match {
-            case s: SyncDataMessageHandlerState =>
-              s.replaceSyncPeer(destination)
-            case m: MisbehavingPeer => m
-            case r: RemovePeers     => r
-            case DoneSyncing        => DoneSyncing
-          }
-        } else {
-          dmh.state
-        }
-      case None =>
-        dmh.state
-    }
-
-    dmh.copy(state = newState)
-  }*/
 }
 
 case class ResponseTimeout(payload: NetworkPayload)
