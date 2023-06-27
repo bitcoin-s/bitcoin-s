@@ -132,7 +132,8 @@ case class PeerManager(
                   randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
               }
           }
-        case None => randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
+        case None =>
+          randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
       }
 
     peerMsgSenderOptF.flatMap {
