@@ -1,11 +1,11 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage, NetworkMessage}
+import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{DataMessageWrapper, SendToPeer}
+import org.bitcoins.node.networking.peer.DataMessageWrapper
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
@@ -76,8 +76,11 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         networkPayload =
           GetHeadersMessage(node.chainConfig.chain.genesisHash)
         //waiting for response to header query now
-        networkMessage = NetworkMessage(networkParam, networkPayload)
-        _ <- node.peerManager.offer(SendToPeer(networkMessage, Some(peer0)))
+        _ <- node.peerManager
+          .getPeerData(peer0)
+          .get
+          .peerMessageSenderApi
+          .sendMsg(networkPayload, Some(peer0))
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.debug(

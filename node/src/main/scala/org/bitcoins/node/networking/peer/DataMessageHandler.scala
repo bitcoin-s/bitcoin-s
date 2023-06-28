@@ -898,4 +898,3 @@ case class SendResponseTimeout(peer: Peer, payload: NetworkPayload)
     extends StreamDataMessageWrapper
 
 case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])
-    extends StreamDataMessageWrapper
