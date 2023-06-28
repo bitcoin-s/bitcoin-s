@@ -95,10 +95,11 @@ case class BitcoinSAppConfig(
 
     val startedTorDependentConfigsF = for {
       _ <- torConfig
+      _ <- migrateTorDependentDbConfigsF
       _ <- Future.sequence(torDependentConfigs.map(_.start()))
     } yield ()
 
-    val startedNonTorConfigs = {
+    val startedNonTorConfigsF = {
       for {
         _ <- Future.traverse(nonTorConfigs)(_.start())
       } yield ()
@@ -106,7 +107,7 @@ case class BitcoinSAppConfig(
 
     for {
       _ <- migrateTorDependentDbConfigsF
-      _ <- startedNonTorConfigs
+      _ <- startedNonTorConfigsF
     } yield {
       logger.info(
         s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
