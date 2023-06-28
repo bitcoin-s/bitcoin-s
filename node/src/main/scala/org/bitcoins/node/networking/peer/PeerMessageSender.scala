@@ -98,8 +98,7 @@ case class PeerMessageSender(
            { case msgs: Vector[NetworkMessage] =>
              s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
            })
-      .withAttributes(Attributes.logLevels(onElement = Logging.DebugLevel,
-                                           onFailure = Logging.DebugLevel))
+      .withAttributes(Attributes.logLevels(onFailure = Logging.DebugLevel))
   }
 
   private val writeNetworkMsgFlow: Flow[NetworkMessage, ByteString, NotUsed] = {
