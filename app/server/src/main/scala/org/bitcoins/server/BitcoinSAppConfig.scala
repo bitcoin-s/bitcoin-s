@@ -96,7 +96,7 @@ case class BitcoinSAppConfig(
     val startedTorDependentConfigsF = for {
       _ <- torConfig
       _ <- migrateTorDependentDbConfigsF
-      _ <- Future.sequence(torDependentConfigs.map(_.start()))
+      _ <- Future.traverse(torDependentConfigs)(_.start())
     } yield ()
 
     val startedNonTorConfigsF = {
