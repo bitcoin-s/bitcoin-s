@@ -1,13 +1,15 @@
 package org.bitcoins.server.util
 
 import akka.http.scaladsl.Http
+import grizzled.slf4j.Logging
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 case class ServerBindings(
     httpServer: Http.ServerBinding,
-    webSocketServerOpt: Option[Http.ServerBinding]) {
+    webSocketServerOpt: Option[Http.ServerBinding])
+    extends Logging {
 
   private val terminateTimeout = 5.seconds
 
@@ -22,6 +24,9 @@ case class ServerBindings(
         case None =>
           Future.unit
       }
-    } yield ()
+    } yield {
+      logger.info(s"ServerBindings stopped")
+      ()
+    }
   }
 }

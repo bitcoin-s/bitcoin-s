@@ -3,7 +3,7 @@ package org.bitcoins.server.util
 import akka.actor.Cancellable
 import grizzled.slf4j.Logging
 
-case class BitcoindPollingCancellabe(
+case class BitcoindPollingCancellable(
     blockPollingCancellable: Cancellable,
     mempoolPollingCancelable: Cancellable)
     extends Cancellable
@@ -20,7 +20,7 @@ case class BitcoindPollingCancellabe(
 
 object BitcoindPollingCancellabe {
 
-  val none: BitcoindPollingCancellabe = BitcoindPollingCancellabe(
+  val none: BitcoindPollingCancellable = BitcoindPollingCancellable(
     Cancellable.alreadyCancelled,
     Cancellable.alreadyCancelled)
 }

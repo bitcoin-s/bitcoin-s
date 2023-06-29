@@ -253,7 +253,10 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       _ <- rescanStopF
       _ <- walletStopF
       _ <- dlcStopF
-    } yield ()
+    } yield {
+      logger.info(s"DLCWalletLoaderApi stopped")
+      ()
+    }
   }
 }
 
