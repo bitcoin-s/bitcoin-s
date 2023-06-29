@@ -2,8 +2,8 @@ package org.bitcoins.node.networking.peer
 
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, Cancellable}
+import akka.event.Logging
 import akka.io.Tcp.SO.KeepAlive
-import akka.stream.{KillSwitches, UniqueKillSwitch}
 import akka.stream.scaladsl.{
   BidiFlow,
   Flow,
@@ -14,6 +14,7 @@ import akka.stream.scaladsl.{
   Source,
   Tcp
 }
+import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
 import akka.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -57,9 +58,7 @@ case class PeerMessageSender(
     ByteString,
     ByteString,
     Future[Tcp.OutgoingConnection]] = {
-    Tcp(system).outgoingConnection(peer.socket,
-                                   halfClose = false,
-                                   options = options)
+    Tcp(system).outgoingConnection(socket, halfClose = false, options = options)
   }
 
   private def parseHelper(
@@ -99,6 +98,7 @@ case class PeerMessageSender(
            { case msgs: Vector[NetworkMessage] =>
              s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
            })
+      .withAttributes(Attributes.logLevels(onFailure = Logging.DebugLevel))
   }
 
   private val writeNetworkMsgFlow: Flow[NetworkMessage, ByteString, NotUsed] = {
@@ -194,9 +194,13 @@ case class PeerMessageSender(
           buildConnectionGraph().run()
         }
 
-        outgoingConnectionF.map { o =>
-          logger.info(
-            s"Connected to remote=${o.remoteAddress}  local=${o.localAddress}")
+        outgoingConnectionF.onComplete {
+          case scala.util.Success(o) =>
+            logger.info(
+              s"Connected to remote=${o.remoteAddress}  local=${o.localAddress}")
+          case scala.util.Failure(err) =>
+            logger.info(
+              s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
         }
 
         val graph = ConnectionGraph(mergeHubSink = mergeHubSink,
@@ -216,9 +220,6 @@ case class PeerMessageSender(
           .flatMap { p =>
             p.disconnect(peer)
           }
-          .failed
-          .foreach(err =>
-            logger.error(s"Failed disconnect callback with peer=$peer", err))
 
         resultF.map(_ => ())
     }

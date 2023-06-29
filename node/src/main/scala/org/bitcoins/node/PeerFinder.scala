@@ -124,7 +124,7 @@ case class PeerFinder(
 
   private val _peersToTry: PeerStack = PeerStack()
 
-  val maxPeerSearchCount: Int = 1000
+  private val maxPeerSearchCount: Int = 8
 
   private val initialDelay: FiniteDuration = 30.minute
 
@@ -138,10 +138,13 @@ case class PeerFinder(
         if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
           logger.info(s"Querying p2p network for peers...")
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
-          if (_peersToTry.size < 32)
+          if (_peersToTry.size < maxPeerSearchCount)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
 
-          val peers = (for { _ <- 1 to 32 } yield _peersToTry.pop()).distinct
+          val peers = (
+            1.to(maxPeerSearchCount)
+              .map(_ => _peersToTry.pop()))
+            .distinct
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
@@ -151,7 +154,8 @@ case class PeerFinder(
               isConnectionSchedulerRunning.set(false)
             case Failure(err) =>
               isConnectionSchedulerRunning.set(false)
-              logger.error(s"Failed to connect to peers=$peers", err)
+              logger.error(
+                s"Failed to connect to peers=$peers errMsg=${err.getMessage}")
           }
         } else {
           logger.warn(
