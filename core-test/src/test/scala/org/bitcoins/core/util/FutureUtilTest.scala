@@ -77,7 +77,7 @@ class FutureUtilTest extends BitcoinSJvmTest {
       }
     }
   }
-  
+
   it must "properly handle an exception in makeAsync" in {
     val f = FutureUtil.makeAsync { () =>
       throw new RuntimeException("test")
