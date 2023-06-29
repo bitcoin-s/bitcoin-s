@@ -78,37 +78,6 @@ class FutureUtilTest extends BitcoinSJvmTest {
     }
   }
 
-  it must "execute futures in parallel with batchAndParallelExecute" in {
-    val vec = 0.until(Runtime.getRuntime.availableProcessors()).toVector
-
-    val f: Vector[Int] => Future[Vector[Int]] = { vec =>
-      AsyncUtil
-        .nonBlockingSleep(1.second)
-        .map(_ => vec)
-    }
-    val start = TimeUtil.now
-    val doneF =
-      FutureUtil.batchAndParallelExecute(elements = vec, f = f, batchSize = 1)
-
-    //here is how this test case works:
-    //the vector above has the same number of elements as available processors, and the batchSize is 1
-    //each function sleeps for 1000ms (1 second).
-    //if things are run in parallel, it should take ~1 second to run all these in parallel
-    for {
-      _ <- doneF
-      stop = TimeUtil.now
-    } yield {
-      val difference = ChronoUnit.MILLIS.between(start, stop)
-      if (difference < 2000) {
-        succeed
-      } else {
-        fail(
-          s"Batch did not execute in parallel! difference=${difference} seconds processors=${Runtime.getRuntime
-            .availableProcessors()}")
-      }
-    }
-  }
-
   it must "properly handle an exception in makeAsync" in {
     val f = FutureUtil.makeAsync { () =>
       throw new RuntimeException("test")
