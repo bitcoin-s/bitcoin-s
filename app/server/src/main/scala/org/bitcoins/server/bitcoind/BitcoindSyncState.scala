@@ -1,6 +1,6 @@
 package org.bitcoins.server.bitcoind
 
-import org.bitcoins.server.util.BitcoindPollingCancellabe
+import org.bitcoins.server.util.{BitcoindPollingCancellable}
 
 import scala.concurrent.Future
 
@@ -9,7 +9,7 @@ import scala.concurrent.Future
   */
 case class BitcoindSyncState(
     syncF: Future[Unit],
-    pollingCancellable: BitcoindPollingCancellabe) {
+    pollingCancellable: BitcoindPollingCancellable) {
 
   /** Stops syncing and polling bitcoind */
   def stop(): Future[Unit] = {

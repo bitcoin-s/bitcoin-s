@@ -31,6 +31,7 @@ import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
+import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.NodeStateDescriptorDAO
 import org.bitcoins.rpc.BitcoindException.InWarmUp
@@ -130,6 +131,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           case None => Future.unit
         }
       }
+      _ <- nodeOpt match {
+        case Some(node) => node.stop()
+        case None       => Future.unit
+      }
       _ <- conf.stop()
       _ <- walletLoaderApiOpt match {
         case Some(l) => l.stop()
@@ -141,9 +146,17 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
     } yield {
+      resetState()
       //return empty wallet holder
       WalletHolder.empty
     }
+  }
+
+  private def resetState(): Unit = {
+    bitcoindSyncStateOpt = None
+    nodeOpt = None
+    walletLoaderApiOpt = None
+    serverBindingsOpt = None
   }
 
   /** Start the bitcoin-s wallet server with a neutrino backend
@@ -269,6 +282,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startedTorConfigF
       _ <- node.sync()
     } yield {
+      nodeOpt = Some(node)
       logger.info(
         s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
       ()
@@ -339,11 +353,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
   private[this] var bitcoindSyncStateOpt: Option[BitcoindSyncState] = None
 
+  private[this] var nodeOpt: Option[Node] = None
+
   /** Start the bitcoin-s wallet server with a bitcoind backend
     * @param startedTorConfigF a future that is completed when tor is fully started
     * @return
     */
-  def startBitcoindBackend(
+  private def startBitcoindBackend(
       startedTorConfigF: Future[Unit]): Future[WalletHolder] = {
     logger.info(s"startBitcoindBackend()")
     val bitcoindF = for {
@@ -597,8 +613,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 .executeOnTxReceivedCallbacks(tx)
             }
           val combinedCancellable =
-            BitcoindPollingCancellabe(blockingPollingCancellable,
-                                      mempoolCancellable)
+            BitcoindPollingCancellable(blockingPollingCancellable,
+                                       mempoolCancellable)
 
           Future.successful(combinedCancellable)
         } else {
