@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.networking.peer.DataMessageHandlerState._
+import org.bitcoins.node.networking.peer.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
 import org.bitcoins.node.{P2PLogger, PeerData, PeerManager}
 
@@ -36,7 +36,7 @@ case class DataMessageHandler(
     peers: Vector[Peer],
     peerMessgeSenderApi: PeerMessageSenderApi,
     peerDataOpt: Option[PeerData],
-    state: DataMessageHandlerState,
+    state: NodeState,
     filterBatchCache: Set[CompactFilterMessage])(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -69,7 +69,7 @@ case class DataMessageHandler(
       payload: DataPayload,
       peer: Peer): Future[DataMessageHandler] = {
     state match {
-      case syncState: SyncDataMessageHandlerState =>
+      case syncState: SyncNodeState =>
         syncState match {
           case _: ValidatingHeaders =>
             val resultF =
@@ -138,7 +138,7 @@ case class DataMessageHandler(
 
   }
 
-  /** Processes a [[DataPayload]] if our [[DataMessageHandlerState]] is valid.
+  /** Processes a [[DataPayload]] if our [[NodeState]] is valid.
     * We ignore messages from certain peers when we are in initial block download.
     */
   private def handleDataPayloadValidState(
@@ -436,8 +436,7 @@ case class DataMessageHandler(
   }
 
   /** syncs filter headers in case the header chain is still ahead post filter sync */
-  private def syncIfHeadersAhead(
-      syncPeer: Peer): Future[DataMessageHandlerState] = {
+  private def syncIfHeadersAhead(syncPeer: Peer): Future[NodeState] = {
     for {
       headerHeight <- chainApi.getBestHashBlockHeight()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
@@ -556,7 +555,7 @@ case class DataMessageHandler(
   private def sendNextGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       syncPeer: Peer,
-      startHeight: Int): Future[Option[DataMessageHandlerState.FilterSync]] = {
+      startHeight: Int): Future[Option[NodeState.FilterSync]] = {
 
     PeerManager
       .sendNextGetCompactFilterCommand(
@@ -567,7 +566,7 @@ case class DataMessageHandler(
         peer = syncPeer)
       .map { isSyncing =>
         if (isSyncing)
-          Some(DataMessageHandlerState.FilterSync(syncPeer))
+          Some(NodeState.FilterSync(syncPeer))
         else None
       }
   }
@@ -575,8 +574,7 @@ case class DataMessageHandler(
   private def sendFirstGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       syncPeer: Peer,
-      startHeightOpt: Option[Int]): Future[
-    Option[DataMessageHandlerState.FilterSync]] = {
+      startHeightOpt: Option[Int]): Future[Option[NodeState.FilterSync]] = {
     val startHeightF = startHeightOpt match {
       case Some(startHeight) => Future.successful(startHeight)
       case None              => chainApi.getFilterCount()

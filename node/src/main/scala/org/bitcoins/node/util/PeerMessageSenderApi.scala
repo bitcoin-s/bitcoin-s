@@ -20,7 +20,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandlerState
+import org.bitcoins.node.networking.peer.NodeState
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -65,8 +65,7 @@ trait PeerMessageSenderApi {
 
   def sendGetCompactFiltersMessage(
       filterSyncMarker: FilterSyncMarker,
-      peer: Peer)(implicit
-      ec: ExecutionContext): Future[DataMessageHandlerState.FilterSync]
+      peer: Peer)(implicit ec: ExecutionContext): Future[NodeState.FilterSync]
 
   def sendInventoryMessage(
       transactions: Vector[Transaction],

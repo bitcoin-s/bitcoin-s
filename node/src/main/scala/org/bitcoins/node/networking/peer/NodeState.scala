@@ -1,26 +1,25 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandlerState.{
+import org.bitcoins.node.networking.peer.NodeState.{
   FilterHeaderSync,
   FilterSync,
   HeaderSync,
   ValidatingHeaders
 }
 
-sealed abstract class DataMessageHandlerState {
+sealed abstract class NodeState {
   def isSyncing: Boolean
 
 }
 
 /** State to indicate that we are syncing the blockchain */
-sealed abstract class SyncDataMessageHandlerState
-    extends DataMessageHandlerState {
+sealed abstract class SyncNodeState extends NodeState {
   override def isSyncing: Boolean = true
 
   def syncPeer: Peer
 
-  def replaceSyncPeer(newSyncPeer: Peer): SyncDataMessageHandlerState = {
+  def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {
     this match {
       case h: HeaderSync         => h.copy(syncPeer = newSyncPeer)
       case fh: FilterHeaderSync  => fh.copy(syncPeer = newSyncPeer)
@@ -30,33 +29,32 @@ sealed abstract class SyncDataMessageHandlerState
   }
 }
 
-object DataMessageHandlerState {
+object NodeState {
 
-  case class HeaderSync(syncPeer: Peer) extends SyncDataMessageHandlerState
+  case class HeaderSync(syncPeer: Peer) extends SyncNodeState
 
-  case class FilterHeaderSync(syncPeer: Peer)
-      extends SyncDataMessageHandlerState
+  case class FilterHeaderSync(syncPeer: Peer) extends SyncNodeState
 
-  case class FilterSync(syncPeer: Peer) extends SyncDataMessageHandlerState
+  case class FilterSync(syncPeer: Peer) extends SyncNodeState
 
   case class ValidatingHeaders(
       syncPeer: Peer,
       inSyncWith: Set[Peer],
       failedCheck: Set[Peer],
       verifyingWith: Set[Peer]
-  ) extends SyncDataMessageHandlerState {
+  ) extends SyncNodeState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
   }
 
-  case class MisbehavingPeer(badPeer: Peer) extends DataMessageHandlerState {
+  case class MisbehavingPeer(badPeer: Peer) extends NodeState {
     override val isSyncing: Boolean = false
   }
 
   case class RemovePeers(peers: Vector[Peer], isSyncing: Boolean)
-      extends DataMessageHandlerState
+      extends NodeState
 
   /** State to indicate we are not currently syncing with a peer */
-  case object DoneSyncing extends DataMessageHandlerState {
+  case object DoneSyncing extends NodeState {
     override val isSyncing: Boolean = false
   }
 }
