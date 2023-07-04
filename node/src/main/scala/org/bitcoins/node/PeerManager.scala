@@ -724,7 +724,7 @@ case class PeerManager(
       walletCreationTimeOpt = walletCreationTimeOpt,
       queue = queue,
       peers = Vector.empty,
-      peerMessgeSenderApi = this,
+      peerMessageSenderApi = this,
       peerDataOpt = None,
       state = DoneSyncing,
       filterBatchCache = Set.empty
@@ -735,10 +735,10 @@ case class PeerManager(
     NodeStreamMessage,
     SourceQueueWithComplete[NodeStreamMessage]] = {
     Source
-      .queue[NodeStreamMessage](100 * nodeAppConfig.maxConnectedPeers,
-                          overflowStrategy = OverflowStrategy.backpressure,
-                          maxConcurrentOffers =
-                            Runtime.getRuntime.availableProcessors())
+      .queue[NodeStreamMessage](
+        100 * nodeAppConfig.maxConnectedPeers,
+        overflowStrategy = OverflowStrategy.backpressure,
+        maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
   private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[

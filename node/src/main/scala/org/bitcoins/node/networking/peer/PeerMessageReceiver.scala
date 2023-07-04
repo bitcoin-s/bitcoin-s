@@ -10,7 +10,7 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.{P2PLogger, NodeStreamMessage}
+import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
@@ -22,10 +22,10 @@ import scala.concurrent.Future
   * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]]
   */
 case class PeerMessageReceiver(
-                                controlMessageHandler: ControlMessageHandler,
-                                queue: SourceQueueWithComplete[NodeStreamMessage],
-                                peer: Peer,
-                                state: PeerMessageReceiverState
+    controlMessageHandler: ControlMessageHandler,
+    queue: SourceQueueWithComplete[NodeStreamMessage],
+    peer: Peer,
+    state: PeerMessageReceiverState
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
   import system.dispatcher
@@ -158,7 +158,8 @@ case class PeerMessageReceiver(
           system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime) {
             val offerF =
               queue.offer(
-                NodeStreamMessage.SendResponseTimeout(peer = peer, payload = msg))
+                NodeStreamMessage.SendResponseTimeout(peer = peer,
+                                                      payload = msg))
             offerF.failed.foreach(err =>
               logger.error(
                 s"Failed offering send response timeout waiting for response for peer=$peer",
@@ -211,7 +212,8 @@ case class PeerMessageReceiver(
 
         val initializationTimeoutCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
-            val offerF = queue.offer(NodeStreamMessage.InitializationTimeout(peer))
+            val offerF =
+              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
             offerF.failed.foreach(err =>
               logger.error(s"Failed to offer initialize timeout for peer=$peer",
                            err))

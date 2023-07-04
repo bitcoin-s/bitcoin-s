@@ -53,7 +53,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           walletCreationTimeOpt = None,
           queue = peerManager.dataMessageQueueOpt.get,
           peers = peerManager.peers,
-          peerMessgeSenderApi = peerManager,
+          peerMessageSenderApi = peerManager,
           peerDataOpt = peerManager.getPeerData(peer),
           state = HeaderSync(peer),
           filterBatchCache = Set.empty

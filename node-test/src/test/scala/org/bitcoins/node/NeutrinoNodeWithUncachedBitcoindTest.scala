@@ -154,7 +154,8 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           val count = 1
             .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
           FutureUtil.sequentially[Int, Unit](count) { _ =>
-            val msg = NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
+            val msg =
+              NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
             node.peerManager
               .offer(msg)
               //add a delay to not overwhelm queue so other messages can be processed

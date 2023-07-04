@@ -5,7 +5,7 @@ import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.{P2PLogger, PeerManager, NodeStreamMessage}
+import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -114,7 +114,7 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
           case TorV3AddrV2Message(_, _, _, _) =>
             if (nodeAppConfig.torConf.enabled)
               peerManager.addPeerToTry(Vector(peer), priority)
-          case _ => logger.debug(s"Unsupported network. Skipping.")
+          case n => logger.info(s"Unsupported network. Skipping. network=$n")
         }
     }
   }

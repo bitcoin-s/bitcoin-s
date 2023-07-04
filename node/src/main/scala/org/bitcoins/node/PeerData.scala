@@ -15,10 +15,10 @@ import scala.concurrent.duration.DurationInt
 /** PeerData contains objects specific to a peer associated together
   */
 case class PeerData(
-                     peer: Peer,
-                     controlMessageHandler: ControlMessageHandler,
-                     queue: SourceQueueWithComplete[NodeStreamMessage],
-                     peerMessageSenderApi: PeerMessageSenderApi
+    peer: Peer,
+    controlMessageHandler: ControlMessageHandler,
+    queue: SourceQueueWithComplete[NodeStreamMessage],
+    peerMessageSenderApi: PeerMessageSenderApi
 )(implicit
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,

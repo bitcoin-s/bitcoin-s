@@ -20,11 +20,11 @@ import scala.io.Source
 import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
-                       paramPeers: Vector[Peer],
-                       controlMessageHandler: ControlMessageHandler,
-                       queue: SourceQueueWithComplete[NodeStreamMessage],
-                       peerMessageSenderApi: PeerMessageSenderApi,
-                       skipPeers: () => Vector[Peer])(implicit
+    paramPeers: Vector[Peer],
+    controlMessageHandler: ControlMessageHandler,
+    queue: SourceQueueWithComplete[NodeStreamMessage],
+    peerMessageSenderApi: PeerMessageSenderApi,
+    skipPeers: () => Vector[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
