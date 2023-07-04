@@ -54,7 +54,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           queue = peerManager.dataMessageQueueOpt.get,
           peers = peerManager.peers,
           peerMessageSenderApi = peerManager,
-          peerDataOpt = peerManager.getPeerData(peer),
           state = HeaderSync(peer),
           filterBatchCache = Set.empty
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
@@ -67,7 +66,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- recoverToSucceededIf[RuntimeException](
           chainApi.processHeaders(invalidPayload.headers))
         // Verify we handle the payload correctly
-        _ <- dataMessageHandler.handleDataPayload(invalidPayload, peer)
+        peerData = peerManager.getPeerData(peer).get
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload, peerData)
       } yield succeed
   }
 

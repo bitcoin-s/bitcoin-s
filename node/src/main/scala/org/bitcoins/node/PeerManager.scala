@@ -725,7 +725,6 @@ case class PeerManager(
       queue = queue,
       peers = Vector.empty,
       peerMessageSenderApi = this,
-      peerDataOpt = None,
       state = DoneSyncing,
       filterBatchCache = Set.empty
     )
@@ -747,17 +746,15 @@ case class PeerManager(
     Sink.foldAsync(initDmh) {
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
-        val peerMsgSenderOpt = getPeerMsgSender(peer)
-        peerMsgSenderOpt match {
+        val peerDataOpt = peerDataMap.get(peer)
+        peerDataOpt match {
           case None =>
             logger.warn(
               s"Ignoring received msg=${payload.commandName} from peer=$peer because it was disconnected, peers=$peers state=${dmh.state}")
             Future.successful(dmh)
-          case Some(_) =>
-            val peerDmh = dmh.copy(peerDataOpt = getPeerData(peer))
-
-            val resultF = peerDmh
-              .handleDataPayload(payload, peer)
+          case Some(peerData) =>
+            val resultF = dmh
+              .handleDataPayload(payload, peerData)
               .flatMap { newDmh =>
                 newDmh.state match {
                   case m: MisbehavingPeer =>

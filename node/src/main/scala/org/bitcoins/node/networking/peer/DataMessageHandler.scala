@@ -35,7 +35,6 @@ case class DataMessageHandler(
     queue: SourceQueue[NodeStreamMessage],
     peers: Vector[Peer],
     peerMessageSenderApi: PeerMessageSenderApi,
-    peerDataOpt: Option[PeerData],
     state: NodeState,
     filterBatchCache: Set[CompactFilterMessage])(implicit
     ec: ExecutionContext,
@@ -56,17 +55,17 @@ case class DataMessageHandler(
 
   def handleDataPayload(
       payload: DataPayload,
-      peer: Peer): Future[DataMessageHandler] = {
+      peerData: PeerData): Future[DataMessageHandler] = {
     state match {
       case syncState: SyncNodeState =>
         syncState match {
           case _: ValidatingHeaders =>
             val resultF =
-              handleDataPayloadValidState(payload, peer)
+              handleDataPayloadValidState(payload, peerData)
             //process messages from all peers
             resultF.failed.foreach { err =>
               logger.error(
-                s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}",
+                s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
                 err)
             }
             resultF.recoverWith { case NonFatal(_) =>
@@ -74,17 +73,17 @@ case class DataMessageHandler(
             }
           case state @ (_: HeaderSync | _: FilterHeaderSync | _: FilterSync) =>
             val syncPeer = state.syncPeer
-            if (peer != syncPeer) {
+            if (peerData.peer != syncPeer) {
               //ignore message from peers that we aren't syncing with during IBD
               logger.warn(
-                s"Ignoring message ${payload.commandName} from $peer in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
+                s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
               Future.successful(this)
             } else {
               val resultF =
-                handleDataPayloadValidState(payload, peer)
+                handleDataPayloadValidState(payload, peerData)
               resultF.failed.foreach { err =>
                 logger.error(
-                  s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}",
+                  s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
                   err)
               }
               resultF.recoverWith { case NonFatal(_) =>
@@ -93,11 +92,11 @@ case class DataMessageHandler(
             }
         }
       case DoneSyncing =>
-        val resultF = handleDataPayloadValidState(payload, peer)
+        val resultF = handleDataPayloadValidState(payload, peerData)
 
         resultF.failed.foreach { err =>
           logger.error(
-            s"Failed to handle data payload=${payload} from $peer in state=$state errMsg=${err.getMessage}",
+            s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
             err)
         }
 
@@ -106,21 +105,21 @@ case class DataMessageHandler(
         }
 
       case MisbehavingPeer(badPeer) =>
-        if (badPeer == peer) {
+        if (badPeer == peerData.peer) {
           Future.failed(
             new RuntimeException(
               s"Cannot continue processing p2p messages from badPeer=$badPeer"))
         } else {
           //re-review this, we should probably pattern match on old state so we can continue syncing
           //from where we left off?
-          copy(state = DoneSyncing).handleDataPayload(payload, peer)
+          copy(state = DoneSyncing).handleDataPayload(payload, peerData)
         }
       case RemovePeers(peers, _) =>
-        if (peers.exists(_ == peer)) {
+        if (peers.exists(_ == peerData.peer)) {
           Future.failed(new RuntimeException(
-            s"Cannot continue processing p2p messages from peer we were suppose to remove, peer=$peer"))
+            s"Cannot continue processing p2p messages from peer we were suppose to remove, peer=${peerData.peer}"))
         } else {
-          copy(state = DoneSyncing).handleDataPayload(payload, peer)
+          copy(state = DoneSyncing).handleDataPayload(payload, peerData)
         }
 
     }
@@ -132,8 +131,8 @@ case class DataMessageHandler(
     */
   private def handleDataPayloadValidState(
       payload: DataPayload,
-      peer: Peer): Future[DataMessageHandler] = {
-
+      peerData: PeerData): Future[DataMessageHandler] = {
+    val peer = peerData.peer
     val wrappedFuture: Future[Future[DataMessageHandler]] = Future {
       payload match {
         case checkpoint: CompactFilterCheckPointMessage =>
@@ -349,7 +348,7 @@ case class DataMessageHandler(
             case _: InvalidBlockHeader =>
               logger.warn(
                 s"Invalid headers of count $count sent from ${peer} in state=$state")
-              recoverInvalidHeader(peerDataOpt.get)
+              recoverInvalidHeader(peerData)
             case e: Throwable => throw e
           }
 
@@ -384,7 +383,8 @@ case class DataMessageHandler(
                     newMsgHandler <- {
                       // if in IBD, do not process this header, just execute callbacks
                       if (!isIBD) {
-                        handleDataPayload(payload = headersMessage, peer = peer)
+                        handleDataPayload(payload = headersMessage,
+                                          peerData = peerData)
                       } else {
                         appConfig.callBacks
                           .executeOnBlockHeadersReceivedCallbacks(
