@@ -30,7 +30,7 @@ import org.bitcoins.core.api.chain.db.{
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{FutureUtil, NetworkUtil, StartStopAsync}
+import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
@@ -108,22 +108,18 @@ case class PeerManager(
     val sendToPeer = SendToPeer(networkMessage, peerOpt)
     logger.debug(
       s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
-    val peerMsgSenderOptF: Future[Option[PeerMessageSender]] =
+    val peerMsgSenderOpt: Option[PeerMessageSender] =
       sendToPeer.peerOpt match {
         case Some(peer) =>
-          getPeerMsgSender(peer).flatMap {
-            case Some(peerMsgSender) =>
-              Future.successful(Some(peerMsgSender))
+          getPeerMsgSender(peer) match {
+            case Some(peerMsgSender) => Some(peerMsgSender)
             case None =>
               sendToPeer.msg.payload match {
                 case _: ControlPayload =>
                   //peer may not be fully initialized, we may be doing the handshake with a peer
                   finderOpt.get
                     .getData(peer)
-                    .map(_.peerMessageSender) match {
-                    case Some(p) => p.map(Some(_))
-                    case None    => FutureUtil.none
-                  }
+                    .map(_.peerMessageSender)
                 case _: DataPayload =>
                   //peer must be fully initialized to send a data payload
                   val msg =
@@ -136,13 +132,13 @@ case class PeerManager(
           randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
       }
 
-    peerMsgSenderOptF.flatMap {
+    peerMsgSenderOpt match {
       case Some(peerMsgSender) =>
         peerMsgSender
           .sendMsg(sendToPeer.msg)
       case None =>
-        Future.failed(new RuntimeException(
-          s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to. This means we are not connected to any peers."))
+        sys.error(
+          s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to. This means we are not connected to any peers.")
     }
   }
 
@@ -275,16 +271,14 @@ case class PeerManager(
     }
   }
 
-  private def getPeerMsgSender(
-      peer: Peer): Future[Option[PeerMessageSender]] = {
+  private def getPeerMsgSender(peer: Peer): Option[PeerMessageSender] = {
     _peerDataMap.find(_._1 == peer).map(_._2.peerMessageSender) match {
-      case Some(peerMsgSender) => peerMsgSender.map(Some(_))
-      case None                => Future.successful(None)
+      case Some(peerMsgSender) => Some(peerMsgSender)
+      case None                => None
     }
   }
 
-  def randomPeerWithService(
-      services: ServiceIdentifier): Future[Option[Peer]] = {
+  def randomPeerWithService(services: ServiceIdentifier): Option[Peer] = {
     val filteredPeers =
       peerDataMap
         .filter(p => p._2.serviceIdentifier.hasServicesOf(services))
@@ -298,17 +292,17 @@ case class PeerManager(
     } else {
       None
     }
-    Future.successful(peerOpt)
+    peerOpt
   }
 
   private def randomPeerMsgSenderWithService(
-      services: ServiceIdentifier): Future[Option[PeerMessageSender]] = {
-    val randomPeerOptF = randomPeerWithService(services)
-    randomPeerOptF.flatMap { peerOpt =>
-      peerOpt match {
-        case Some(peer) => peerDataMap(peer).peerMessageSender.map(Some(_))
-        case None       => Future.successful(None)
-      }
+      services: ServiceIdentifier): Option[PeerMessageSender] = {
+    val randomPeerOpt = randomPeerWithService(services)
+    randomPeerOpt match {
+      case Some(peer) =>
+        val p = peerDataMap(peer).peerMessageSender
+        Some(p)
+      case None => None
     }
   }
 
@@ -439,7 +433,7 @@ case class PeerManager(
   def isConnected(peer: Peer): Future[Boolean] = {
     peerDataMap.get(peer) match {
       case None    => Future.successful(false)
-      case Some(p) => p.peerMessageSender.flatMap(_.isConnected())
+      case Some(p) => p.peerMessageSender.isConnected()
     }
   }
 
@@ -583,9 +577,9 @@ case class PeerManager(
           val shouldReconnect =
             (forceReconnect || connectedPeerCount == 0) && isStarted.get
           if (peers.exists(_ != peer)) {
-            val randomPeerOptF = randomPeerWithService(
+            val randomPeerOpt = randomPeerWithService(
               ServiceIdentifier.NODE_COMPACT_FILTERS)
-            randomPeerOptF.flatMap {
+            randomPeerOpt match {
               case Some(peer) =>
                 state match {
                   case syncState: SyncDataMessageHandlerState =>
@@ -754,8 +748,8 @@ case class PeerManager(
     Sink.foldAsync(initDmh) {
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
-        val peerMsgSenderOptF = getPeerMsgSender(peer)
-        peerMsgSenderOptF.flatMap {
+        val peerMsgSenderOpt = getPeerMsgSender(peer)
+        peerMsgSenderOpt match {
           case None =>
             logger.warn(
               s"Ignoring received msg=${payload.commandName} from peer=$peer because it was disconnected, peers=$peers state=${dmh.state}")
@@ -896,12 +890,12 @@ case class PeerManager(
           //after we are done syncing block headers
           Future.unit
         } else {
-          val syncPeerOptF = syncPeerOpt match {
-            case Some(p) => Future.successful(Some(p))
+          val peerOpt = syncPeerOpt match {
+            case Some(p) => Some(p)
             case None =>
               randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
           }
-          syncPeerOptF.flatMap {
+          peerOpt match {
             case Some(p) =>
               syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                           bestFilterOpt = bestFilterOpt,
@@ -1036,9 +1030,9 @@ case class PeerManager(
   }
 
   private def syncFromNewPeer(): Future[Option[Peer]] = {
+    val syncPeerOpt = randomPeerWithService(
+      ServiceIdentifier.NODE_COMPACT_FILTERS)
     for {
-      syncPeerOpt <- randomPeerWithService(
-        ServiceIdentifier.NODE_COMPACT_FILTERS)
       _ <- syncHelper(syncPeerOpt)
     } yield syncPeerOpt
   }

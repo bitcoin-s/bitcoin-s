@@ -23,7 +23,6 @@ case class PeerData(
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig) {
-  import system.dispatcher
 
   private val initPeerMessageRecv = PeerMessageReceiver(
     controlMessageHandler = controlMessageHandler,
@@ -31,13 +30,12 @@ case class PeerData(
     peer = peer,
     state = PeerMessageReceiverState.fresh())
 
-  lazy val peerMessageSender: Future[PeerMessageSender] = {
-    Future.successful(
-      PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi))
+  lazy val peerMessageSender: PeerMessageSender = {
+    PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi)
   }
 
   def stop(): Future[Unit] = {
-    peerMessageSender.flatMap(_.disconnect())
+    peerMessageSender.disconnect()
   }
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
 

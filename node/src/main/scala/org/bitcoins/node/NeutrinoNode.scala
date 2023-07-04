@@ -60,8 +60,8 @@ case class NeutrinoNode(
     //wait for a peer to be available to sync from...
     //due to underlying mutability in PeerManager/PeerFinder
     //we may not have a peer available for selection immediately
-    val peerAvailableF = AsyncUtil.retryUntilSatisfiedF(() =>
-      peerManager.randomPeerWithService(serviceIdentifier).map(_.isDefined))
+    val peerAvailableF = AsyncUtil.retryUntilSatisfied(
+      peerManager.randomPeerWithService(serviceIdentifier).isDefined)
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
