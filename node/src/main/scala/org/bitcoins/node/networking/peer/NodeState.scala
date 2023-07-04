@@ -2,19 +2,38 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.NodeState.{
+  DoneSyncing,
   FilterHeaderSync,
   FilterSync,
   HeaderSync,
+  MisbehavingPeer,
+  RemovePeers,
   ValidatingHeaders
 }
 
 sealed abstract class NodeState {
   def isSyncing: Boolean
 
+  /** All peers the node is currently connected to */
+  def peers: Set[Peer]
+
+  def replacePeers(newPeers: Set[Peer]): NodeState = this match {
+    case h: HeaderSync        => h.copy(peers = newPeers)
+    case fh: FilterHeaderSync => fh.copy(peers = newPeers)
+    case fs: FilterSync       => fs.copy(peers = newPeers)
+    case d: DoneSyncing       => d.copy(peers = newPeers)
+    case v: ValidatingHeaders => v.copy(peers = newPeers)
+    case rm: RemovePeers      => rm.copy(peers = newPeers)
+    case m: MisbehavingPeer   => m.copy(peers = newPeers)
+  }
+
 }
 
 /** State to indicate that we are syncing the blockchain */
 sealed abstract class SyncNodeState extends NodeState {
+  require(
+    peers.exists(_ == syncPeer),
+    s"syncPeer must be a member of peers, syncPeer=$syncPeer peers=$peers")
   override def isSyncing: Boolean = true
 
   def syncPeer: Peer
@@ -31,30 +50,42 @@ sealed abstract class SyncNodeState extends NodeState {
 
 object NodeState {
 
-  case class HeaderSync(syncPeer: Peer) extends SyncNodeState
+  case class HeaderSync(syncPeer: Peer, peers: Set[Peer]) extends SyncNodeState
 
-  case class FilterHeaderSync(syncPeer: Peer) extends SyncNodeState
+  case class FilterHeaderSync(syncPeer: Peer, peers: Set[Peer])
+      extends SyncNodeState
 
-  case class FilterSync(syncPeer: Peer) extends SyncNodeState
+  case class FilterSync(syncPeer: Peer, peers: Set[Peer]) extends SyncNodeState
 
   case class ValidatingHeaders(
       syncPeer: Peer,
       inSyncWith: Set[Peer],
       failedCheck: Set[Peer],
-      verifyingWith: Set[Peer]
+      verifyingWith: Set[Peer],
+      peers: Set[Peer]
   ) extends SyncNodeState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
   }
 
-  case class MisbehavingPeer(badPeer: Peer) extends NodeState {
+  case class MisbehavingPeer(badPeer: Peer, peers: Set[Peer])
+      extends NodeState {
+    require(peers.exists(_ == badPeer),
+            s"BadPeer must be in peers, badPeer=$badPeer peers=$peers")
     override val isSyncing: Boolean = false
   }
 
-  case class RemovePeers(peers: Vector[Peer], isSyncing: Boolean)
-      extends NodeState
+  case class RemovePeers(
+      peersToRemove: Vector[Peer],
+      peers: Set[Peer],
+      isSyncing: Boolean)
+      extends NodeState {
+    require(
+      peersToRemove.forall(rm => peers.exists(_ == rm)),
+      s"peersToRemove must be subset of peers, peersToRemove=$peersToRemove peers=$peers")
+  }
 
   /** State to indicate we are not currently syncing with a peer */
-  case object DoneSyncing extends NodeState {
+  case class DoneSyncing(peers: Set[Peer]) extends NodeState {
     override val isSyncing: Boolean = false
   }
 }

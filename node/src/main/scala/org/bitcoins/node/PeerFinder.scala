@@ -24,7 +24,7 @@ case class PeerFinder(
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi,
-    skipPeers: () => Vector[Peer])(implicit
+    skipPeers: () => Set[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
