@@ -50,17 +50,6 @@ case class DataMessageHandler(
 
   private val syncing: Boolean = state.isSyncing
 
-  def reset: DataMessageHandler = {
-    copy(filterBatchCache = Set.empty, state = DoneSyncing)
-  }
-
-  def addToStream(payload: DataPayload, peer: Peer): Future[Unit] = {
-    val msg = DataMessageWrapper(payload, peer)
-    queue
-      .offer(msg)
-      .map(_ => ())
-  }
-
   private def isChainIBD: Future[Boolean] = {
     chainApi.isIBD()
   }
@@ -534,7 +523,9 @@ case class DataMessageHandler(
       case _: FilterHeaderSync | _: FilterSync =>
         Future.successful(this)
       case m @ (_: MisbehavingPeer | _: RemovePeers) =>
-        sys.error(s"Cannot recover invalid headers, got=$m")
+        val exn = new RuntimeException(
+          s"Cannot recover invalid headers, got=$m")
+        Future.failed(exn)
     }
 
     result
@@ -776,7 +767,9 @@ case class DataMessageHandler(
               }
             case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing |
                 _: MisbehavingPeer | _: RemovePeers) =>
-              sys.error(s"Cannot be in state=$x while retrieving block headers")
+              val exn = new RuntimeException(
+                s"Cannot be in state=$x while retrieving block headers")
+              Future.failed(exn)
           }
 
         } else {
@@ -842,8 +835,9 @@ case class DataMessageHandler(
               }
             case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing |
                 _: MisbehavingPeer | _: RemovePeers) =>
-              sys.error(
+              val exn = new RuntimeException(
                 s"Cannot be in state=$x while we are about to begin syncing compact filter headers")
+              Future.failed(exn)
           }
         }
       } else {
@@ -866,7 +860,9 @@ case class DataMessageHandler(
             Future.successful(newDmh)
           case x @ (_: FilterHeaderSync | _: FilterSync | _: MisbehavingPeer |
               _: RemovePeers) =>
-            sys.error(s"Invalid state to complete block header sync in, got=$x")
+            val exn = new RuntimeException(
+              s"Invalid state to complete block header sync in, got=$x")
+            Future.failed(exn)
         }
       }
     }
