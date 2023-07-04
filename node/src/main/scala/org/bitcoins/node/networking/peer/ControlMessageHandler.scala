@@ -5,7 +5,7 @@ import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.{P2PLogger, PeerManager}
+import org.bitcoins.node.{P2PLogger, PeerManager, NodeStreamMessage}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -52,7 +52,7 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
           case good: Initializing =>
             val newState = good.toNormal(VerAckMessage)
 
-            val i = Initialized(peer)
+            val i = NodeStreamMessage.Initialized(peer)
             peerManager.offer(i).map(_ => newState)
         }
 

@@ -37,6 +37,7 @@ import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.NodeState._
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
+import NodeStreamMessage._
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -56,7 +57,7 @@ case class PeerManager(
     chainAppConfig: ChainAppConfig)
     extends StartStopAsync[PeerManager]
     with PeerMessageSenderApi
-    with SourceQueue[StreamDataMessageWrapper]
+    with SourceQueue[NodeStreamMessage]
     with P2PLogger {
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
   private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
@@ -717,8 +718,7 @@ case class PeerManager(
   }
 
   private def buildStatelessDataMessagehandler(
-      queue: SourceQueueWithComplete[
-        StreamDataMessageWrapper]): DataMessageHandler = {
+      queue: SourceQueueWithComplete[NodeStreamMessage]): DataMessageHandler = {
     DataMessageHandler(
       chainApi = ChainHandler.fromDatabase(),
       walletCreationTimeOpt = walletCreationTimeOpt,
@@ -732,17 +732,17 @@ case class PeerManager(
   }
 
   private val dataMessageStreamSource: Source[
-    StreamDataMessageWrapper,
-    SourceQueueWithComplete[StreamDataMessageWrapper]] = {
+    NodeStreamMessage,
+    SourceQueueWithComplete[NodeStreamMessage]] = {
     Source
-      .queue[StreamDataMessageWrapper](
-        100 * nodeAppConfig.maxConnectedPeers,
-        overflowStrategy = OverflowStrategy.backpressure,
-        maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
+      .queue[NodeStreamMessage](100 * nodeAppConfig.maxConnectedPeers,
+                          overflowStrategy = OverflowStrategy.backpressure,
+                          maxConcurrentOffers =
+                            Runtime.getRuntime.availableProcessors())
   }
 
   private def buildDataMessageStreamSink(initDmh: DataMessageHandler): Sink[
-    StreamDataMessageWrapper,
+    NodeStreamMessage,
     Future[DataMessageHandler]] = {
     Sink.foldAsync(initDmh) {
       case (dmh, DataMessageWrapper(payload, peer)) =>
@@ -811,7 +811,7 @@ case class PeerManager(
 
   private def buildDataMessageStreamGraph(
       initDmh: DataMessageHandler,
-      source: Source[StreamDataMessageWrapper, NotUsed]): RunnableGraph[
+      source: Source[NodeStreamMessage, NotUsed]): RunnableGraph[
     Future[DataMessageHandler]] = {
     val graph = source
       .toMat(buildDataMessageStreamSink(initDmh))(Keep.right)
@@ -820,12 +820,11 @@ case class PeerManager(
   }
 
   private[bitcoins] var dataMessageQueueOpt: Option[
-    SourceQueueWithComplete[StreamDataMessageWrapper]] = None
+    SourceQueueWithComplete[NodeStreamMessage]] = None
 
   private var streamDoneFOpt: Option[Future[DataMessageHandler]] = None
 
-  override def offer(
-      elem: StreamDataMessageWrapper): Future[QueueOfferResult] = {
+  override def offer(elem: NodeStreamMessage): Future[QueueOfferResult] = {
     dataMessageQueueOpt match {
       case Some(queue) => queue.offer(elem)
       case None =>

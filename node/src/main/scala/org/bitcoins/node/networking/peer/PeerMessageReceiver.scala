@@ -10,7 +10,7 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.{P2PLogger, NodeStreamMessage}
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
@@ -22,10 +22,10 @@ import scala.concurrent.Future
   * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]]
   */
 case class PeerMessageReceiver(
-    controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
-    peer: Peer,
-    state: PeerMessageReceiverState
+                                controlMessageHandler: ControlMessageHandler,
+                                queue: SourceQueueWithComplete[NodeStreamMessage],
+                                peer: Peer,
+                                state: PeerMessageReceiverState
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
   import system.dispatcher
@@ -89,7 +89,7 @@ case class PeerMessageReceiver(
       payload: DataPayload): Future[QueueOfferResult] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    val wrapper = DataMessageWrapper(payload, peer)
+    val wrapper = NodeStreamMessage.DataMessageWrapper(payload, peer)
 
     queue.offer(wrapper)
   }
@@ -125,7 +125,7 @@ case class PeerMessageReceiver(
       case payload: ExpectsResponse =>
         logger.info(
           s"Response for ${payload.commandName} from $peer timed out in state $this")
-        val qt = QueryTimeout(peer, payload)
+        val qt = NodeStreamMessage.QueryTimeout(peer, payload)
         queue.offer(qt).map { _ =>
           state match {
             case _: Waiting if state.isInitialized =>
@@ -157,7 +157,8 @@ case class PeerMessageReceiver(
         val expectedResponseCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime) {
             val offerF =
-              queue.offer(SendResponseTimeout(peer = peer, payload = msg))
+              queue.offer(
+                NodeStreamMessage.SendResponseTimeout(peer = peer, payload = msg))
             offerF.failed.foreach(err =>
               logger.error(
                 s"Failed offering send response timeout waiting for response for peer=$peer",
@@ -210,7 +211,7 @@ case class PeerMessageReceiver(
 
         val initializationTimeoutCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
-            val offerF = queue.offer(InitializationTimeout(peer))
+            val offerF = queue.offer(NodeStreamMessage.InitializationTimeout(peer))
             offerF.failed.foreach(err =>
               logger.error(s"Failed to offer initialize timeout for peer=$peer",
                            err))
@@ -284,7 +285,7 @@ case class PeerMessageReceiver(
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
-        val disconnectedPeer = DisconnectedPeer(peer, false)
+        val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         queue.offer(disconnectedPeer).map(_ => copy(state = newState))
       case good @ (_: Normal | _: Waiting) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
@@ -293,7 +294,7 @@ case class PeerMessageReceiver(
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP
         )
-        val disconnectedPeer = DisconnectedPeer(peer, false)
+        val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         for {
           _ <- queue.offer(disconnectedPeer).map(_ => newState)
         } yield copy(state = newState)
@@ -307,7 +308,7 @@ case class PeerMessageReceiver(
           verackMsgP = initializing.verackMsgP
         )
 
-        val disconnectedPeer = DisconnectedPeer(peer, false)
+        val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         for {
           _ <- queue.offer(disconnectedPeer)
         } yield copy(state = newState)

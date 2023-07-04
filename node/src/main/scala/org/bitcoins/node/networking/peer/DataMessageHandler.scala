@@ -16,7 +16,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.peer.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{P2PLogger, PeerData, PeerManager}
+import org.bitcoins.node.{P2PLogger, PeerData, PeerManager, NodeStreamMessage}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,14 +30,14 @@ import scala.util.control.NonFatal
   *                           chainConfig.filterBatchSize they will be processed and then emptied
   */
 case class DataMessageHandler(
-    chainApi: ChainApi,
-    walletCreationTimeOpt: Option[Instant],
-    queue: SourceQueue[StreamDataMessageWrapper],
-    peers: Vector[Peer],
-    peerMessgeSenderApi: PeerMessageSenderApi,
-    peerDataOpt: Option[PeerData],
-    state: NodeState,
-    filterBatchCache: Set[CompactFilterMessage])(implicit
+                               chainApi: ChainApi,
+                               walletCreationTimeOpt: Option[Instant],
+                               queue: SourceQueue[NodeStreamMessage],
+                               peers: Vector[Peer],
+                               peerMessgeSenderApi: PeerMessageSenderApi,
+                               peerDataOpt: Option[PeerData],
+                               state: NodeState,
+                               filterBatchCache: Set[CompactFilterMessage])(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
@@ -870,25 +870,3 @@ case class DataMessageHandler(
   }
 
 }
-
-sealed trait StreamDataMessageWrapper
-
-case class DataMessageWrapper(payload: DataPayload, peer: Peer)
-    extends StreamDataMessageWrapper
-
-case class HeaderTimeoutWrapper(peer: Peer) extends StreamDataMessageWrapper
-
-case class DisconnectedPeer(peer: Peer, forceReconnect: Boolean)
-    extends StreamDataMessageWrapper
-
-case class Initialized(peer: Peer) extends StreamDataMessageWrapper
-
-case class InitializationTimeout(peer: Peer) extends StreamDataMessageWrapper
-
-case class QueryTimeout(peer: Peer, payload: ExpectsResponse)
-    extends StreamDataMessageWrapper
-
-case class SendResponseTimeout(peer: Peer, payload: NetworkPayload)
-    extends StreamDataMessageWrapper
-
-case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])

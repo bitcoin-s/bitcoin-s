@@ -5,7 +5,6 @@ import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageWrapper
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
@@ -134,7 +133,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peers <- bitcoinPeersF
         peer = peers.head
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
-        msg = DataMessageWrapper(invalidHeaderMessage, peer)
+        msg = NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
         _ <- node.peerManager.offer(msg)
         bestChain = bitcoinds(1)
         _ <- NodeTestUtil.awaitSync(node, bestChain)
@@ -155,7 +154,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           val count = 1
             .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
           FutureUtil.sequentially[Int, Unit](count) { _ =>
-            val msg = DataMessageWrapper(invalidHeaderMessage, peer)
+            val msg = NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
             node.peerManager
               .offer(msg)
               //add a delay to not overwhelm queue so other messages can be processed
