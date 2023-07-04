@@ -108,7 +108,7 @@ case class PeerMessageReceiver(
       .handleControlPayload(payload, peer, curReceiverState)
   }
 
-  def onResponseTimeout(
+  private def onResponseTimeout(
       networkPayload: NetworkPayload,
       peer: Peer): Future[PeerMessageReceiver] = {
     require(networkPayload.isInstanceOf[ExpectsResponse])
@@ -184,27 +184,6 @@ case class PeerMessageReceiver(
         //so we sent a message when things were good, but not we are back to connecting?
         //can happen when can happen where once we initialize the remote peer immediately disconnects us
         onResponseTimeout(msg, peer)
-    }
-  }
-
-  def stopReconnect(peer: Peer): Future[PeerMessageReceiver] = {
-    state match {
-      case Preconnection =>
-        //when retry, state should be back to preconnection
-        val newState = StoppedReconnect(state.clientDisconnectP,
-                                        state.versionMsgP,
-                                        state.verackMsgP)
-        val disconnectedPeer = DisconnectedPeer(peer, false)
-        queue.offer(disconnectedPeer).map(_ => copy(state = newState))
-      case _: StoppedReconnect =>
-        logger.warn(
-          s"Already stopping reconnect from peer=$peer, this is a noop")
-        Future.successful(this)
-      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
-          _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
-        val exn = new RuntimeException(
-          s"Cannot stop reconnect from peer=$peer when in state=$bad")
-        Future.failed(exn)
     }
   }
 

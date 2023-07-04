@@ -1,7 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.NotUsed
-import akka.actor.{ActorRef, ActorSystem, Cancellable}
+import akka.actor.{ActorSystem, Cancellable}
 import akka.event.Logging
 import akka.io.Tcp.SO.KeepAlive
 import akka.stream.scaladsl.{
@@ -333,20 +333,5 @@ object PeerMessageSender {
       connectionF: Future[Tcp.OutgoingConnection],
       streamDoneF: Future[PeerMessageReceiver],
       killswitch: UniqueKillSwitch)
-
-  sealed abstract class PeerMessageHandlerMsg
-
-  /** For when we are done with exchanging version and verack messages
-    * This means we can send normal p2p messages now
-    */
-  case object HandshakeFinished extends PeerMessageHandlerMsg
-
-  /** Accumulators network messages while we are doing a handshake with our peer
-    * and caches a peer handler actor so we can send a [[HandshakeFinished]]
-    * message back to the actor when we are fully connected
-    */
-  case class MessageAccumulator(
-      networkMsgs: Vector[(ActorRef, NetworkMessage)],
-      peerHandler: ActorRef)
 
 }

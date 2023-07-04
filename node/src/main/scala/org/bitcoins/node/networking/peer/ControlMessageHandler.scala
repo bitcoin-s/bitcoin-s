@@ -81,7 +81,7 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
     }
   }
 
-  def handleGossipAddrMessage(message: GossipAddrMessage): Unit = {
+  private def handleGossipAddrMessage(message: GossipAddrMessage): Unit = {
     message match {
       case addr: AddrMessage =>
         addr.addresses.foreach { networkAddress =>
