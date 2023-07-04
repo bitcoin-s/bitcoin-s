@@ -165,9 +165,7 @@ case class PeerMessageSender(
         .foldAsync(initializing) { case (peerMsgRecv, msgs) =>
           FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
             p.handleNetworkMessageReceived(networkMsgRecv =
-                                             NetworkMessageReceived(msg, peer),
-                                           peerMessageSenderApi =
-                                             peerMessageSenderApi)
+              NetworkMessageReceived(msg, peer))
           }
         }
         .toMat(Sink.last)(Keep.right)

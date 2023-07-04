@@ -30,7 +30,7 @@ case class PeerData(
     peer = peer,
     state = PeerMessageReceiverState.fresh())
 
-  lazy val peerMessageSender: PeerMessageSender = {
+  val peerMessageSender: PeerMessageSender = {
     PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi)
   }
 

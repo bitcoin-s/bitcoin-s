@@ -6,7 +6,6 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{P2PLogger, PeerManager}
-import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -18,7 +17,6 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
 
   def handleControlPayload(
       payload: ControlPayload,
-      peerMsgSenderApi: PeerMessageSenderApi,
       peer: Peer,
       state: PeerMessageReceiverState): Future[PeerMessageReceiverState] = {
     payload match {
@@ -39,7 +37,7 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
 
             peerManager.onVersionMessage(peer, versionMsg)
 
-            peerMsgSenderApi.sendVerackMessage(peer).map(_ => newState)
+            peerManager.sendVerackMessage(peer).map(_ => newState)
         }
 
       case VerAckMessage =>
@@ -59,18 +57,18 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
         }
 
       case ping: PingMessage =>
-        peerMsgSenderApi.sendPong(ping, peer).map { _ =>
+        peerManager.sendPong(ping, peer).map { _ =>
           state
         }
       case SendHeadersMessage =>
         //we want peers to just send us headers
         //we don't want to have to request them manually
-        peerMsgSenderApi.sendHeadersMessage(peer).map(_ => state)
+        peerManager.sendHeadersMessage(peer).map(_ => state)
       case msg: GossipAddrMessage =>
         handleGossipAddrMessage(msg)
         Future.successful(state)
       case SendAddrV2Message =>
-        peerMsgSenderApi.sendSendAddrV2Message(peer).map(_ => state)
+        peerManager.sendSendAddrV2Message(peer).map(_ => state)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
         Future.successful(state)

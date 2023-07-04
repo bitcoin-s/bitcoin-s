@@ -34,8 +34,7 @@ case class PeerMessageReceiver(
           "Bitcoind should handle the P2P interactions")
 
   def handleNetworkMessageReceived(
-      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived,
-      peerMessageSenderApi: PeerMessageSenderApi): Future[
+      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Future[
     PeerMessageReceiver] = {
 
     val peer = networkMsgRecv.peer
@@ -71,7 +70,6 @@ case class PeerMessageReceiver(
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload,
-                             peerMsgSenderApi = peerMessageSenderApi,
                              curReceiverState = curState)
           .map(newState => copy(state = newState))
       case dataPayload: DataPayload =>
@@ -104,11 +102,10 @@ case class PeerMessageReceiver(
     */
   private def handleControlPayload(
       payload: ControlPayload,
-      peerMsgSenderApi: PeerMessageSenderApi,
       curReceiverState: PeerMessageReceiverState): Future[
     PeerMessageReceiverState] = {
     controlMessageHandler
-      .handleControlPayload(payload, peerMsgSenderApi, peer, curReceiverState)
+      .handleControlPayload(payload, peer, curReceiverState)
   }
 
   def onResponseTimeout(
