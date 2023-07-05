@@ -471,8 +471,10 @@ case class PeerManager(
 
   }
 
-  private def onInitialization(peer: Peer): Future[Unit] = {
-    finderOpt match {
+  private def onInitialization(
+      peer: Peer,
+      state: NodeState): Future[NodeState] = {
+    val stateF: Future[NodeState] = finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
@@ -524,21 +526,23 @@ case class PeerManager(
             _ <- sendAddrReq
             _ <- createInDb(peer, peerData.serviceIdentifier)
             _ <- managePeerF()
-          } yield ()
+          } yield state
 
         } else if (peerDataMap.contains(peer)) {
           //one of the persistent peers initialized again, this can happen in case of a reconnection attempt
           //which succeeded which is all good, do nothing
-          Future.unit
+          Future.successful(state)
         } else {
           logger.warn(s"onInitialization called for unknown $peer")
-          Future.unit
+          Future.successful(state)
         }
       case None =>
         logger.warn(
           s"onInitialization cannot be run, PeerFinder was not started")
-        Future.unit
+        Future.successful(state)
     }
+
+    stateF.map(_.replacePeers(peers))
   }
 
   /** @param peer the peer we were disconencted from
@@ -552,7 +556,7 @@ case class PeerManager(
     logger.debug(
       s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
         .map(_._1)}")
-    finderOpt match {
+    val stateF = finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
                 s"$peer cannot be both a test and a persistent peer")
@@ -621,6 +625,23 @@ case class PeerManager(
         logger.warn(
           s"onP2PClientStopped cannot be run, PeerFinder was not started")
         Future.successful(state)
+    }
+
+    stateF.map {
+      case s: SyncNodeState =>
+        if (s.syncPeer == peer) {
+          //the peer being disconnected is our sync peer
+          randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS) match {
+            case Some(p) => s.replaceSyncPeer(p)
+            case None    =>
+              //switch to state DoneSyncing since we have no peers to sync from
+              DoneSyncing(peers)
+          }
+        } else {
+          s.replacePeers(peers)
+        }
+      case s @ (_: RemovePeers | _: MisbehavingPeer | _: DoneSyncing) =>
+        s.replacePeers(peers)
     }
   }
 
@@ -743,8 +764,7 @@ case class PeerManager(
     NodeStreamMessage,
     Future[DataMessageHandler]] = {
     Sink.foldAsync(initDmh) {
-      case (d, DataMessageWrapper(payload, peer)) =>
-        val dmh = d.copy(state = d.state.replacePeers(peers))
+      case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerDataOpt = peerDataMap.get(peer)
         peerDataOpt match {
@@ -791,7 +811,8 @@ case class PeerManager(
         onP2PClientDisconnected(peer, forceReconnect, dmh.state)
           .map(newState => dmh.copy(state = newState))
       case (dmh, i: Initialized) =>
-        onInitialization(i.peer).map(_ => dmh)
+        onInitialization(i.peer, dmh.state)
+          .map(newState => dmh.copy(state = newState))
       case (dmh, i: InitializationTimeout) =>
         onInitializationTimeout(i.peer).map(_ => dmh)
       case (dmh, q: QueryTimeout) =>
