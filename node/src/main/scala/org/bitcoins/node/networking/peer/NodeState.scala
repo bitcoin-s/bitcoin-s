@@ -65,6 +65,10 @@ object NodeState {
       peers: Set[Peer]
   ) extends SyncNodeState {
     def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
+
+    override def toString: String = {
+      s"ValidatingHeaders(syncPeer=$syncPeer,inSyncWith=$inSyncWith,failedCheck=$failedCheck,verifyingWith=$verifyingWith,peers=$peers)"
+    }
   }
 
   case class MisbehavingPeer(badPeer: Peer, peers: Set[Peer])
