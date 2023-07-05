@@ -754,8 +754,9 @@ case class PeerManager(
         val peerMsgSenderOptF = getPeerMsgSender(peer)
         peerMsgSenderOptF.flatMap {
           case None =>
-            Future.failed(new RuntimeException(
-              s"Couldn't find PeerMessageSender that corresponds with peer=$peer msg=${payload.commandName}. Was it disconnected?"))
+            logger.warn(
+              s"Ignoring received msg=${payload.commandName} from peer=$peer because it was disconnected, peers=$peers state=${dmh.state}")
+            Future.successful(dmh)
           case Some(_) =>
             val peerDmh = dmh.copy(peerDataOpt = getPeerData(peer))
 
