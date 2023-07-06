@@ -924,7 +924,16 @@ case class PeerManager(
     val headerF = chainApi.getBestBlockHeader()
     for {
       _ <- getHeaderSyncHelper(syncPeerOpt)
-      _ <- filterSyncHelper(chainApi, syncPeerOpt)
+      //add a delay here for the case when we restart the node,
+      //our block header tip _is not_ synced with the network, but our tip is also _not_ stale
+      //this can result in duplicate syncing of filter headers.
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/5125
+      _ <- AsyncUtil.nonBlockingSleep(10.second).map { _ =>
+        val filterSyncF = filterSyncHelper(chainApi, syncPeerOpt)
+        filterSyncF.failed.foreach(err =>
+          logger.error(s"Failed to start syncing filters", err))
+        ()
+      }
       header <- headerF
     } yield {
       logger.info(
