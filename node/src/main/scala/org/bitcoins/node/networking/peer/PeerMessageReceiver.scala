@@ -10,7 +10,7 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
@@ -23,7 +23,7 @@ import scala.concurrent.Future
   */
 case class PeerMessageReceiver(
     controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
+    queue: SourceQueueWithComplete[NodeStreamMessage],
     peer: Peer,
     state: PeerMessageReceiverState
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
@@ -34,8 +34,7 @@ case class PeerMessageReceiver(
           "Bitcoind should handle the P2P interactions")
 
   def handleNetworkMessageReceived(
-      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived,
-      peerMessageSenderApi: PeerMessageSenderApi): Future[
+      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Future[
     PeerMessageReceiver] = {
 
     val peer = networkMsgRecv.peer
@@ -71,7 +70,6 @@ case class PeerMessageReceiver(
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload,
-                             peerMsgSenderApi = peerMessageSenderApi,
                              curReceiverState = curState)
           .map(newState => copy(state = newState))
       case dataPayload: DataPayload =>
@@ -91,7 +89,7 @@ case class PeerMessageReceiver(
       payload: DataPayload): Future[QueueOfferResult] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    val wrapper = DataMessageWrapper(payload, peer)
+    val wrapper = NodeStreamMessage.DataMessageWrapper(payload, peer)
 
     queue.offer(wrapper)
   }
@@ -104,14 +102,13 @@ case class PeerMessageReceiver(
     */
   private def handleControlPayload(
       payload: ControlPayload,
-      peerMsgSenderApi: PeerMessageSenderApi,
       curReceiverState: PeerMessageReceiverState): Future[
     PeerMessageReceiverState] = {
     controlMessageHandler
-      .handleControlPayload(payload, peerMsgSenderApi, peer, curReceiverState)
+      .handleControlPayload(payload, peer, curReceiverState)
   }
 
-  def onResponseTimeout(
+  private def onResponseTimeout(
       networkPayload: NetworkPayload,
       peer: Peer): Future[PeerMessageReceiver] = {
     require(networkPayload.isInstanceOf[ExpectsResponse])
@@ -128,7 +125,7 @@ case class PeerMessageReceiver(
       case payload: ExpectsResponse =>
         logger.info(
           s"Response for ${payload.commandName} from $peer timed out in state $this")
-        val qt = QueryTimeout(peer, payload)
+        val qt = NodeStreamMessage.QueryTimeout(peer, payload)
         queue.offer(qt).map { _ =>
           state match {
             case _: Waiting if state.isInitialized =>
@@ -160,7 +157,9 @@ case class PeerMessageReceiver(
         val expectedResponseCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime) {
             val offerF =
-              queue.offer(SendResponseTimeout(peer = peer, payload = msg))
+              queue.offer(
+                NodeStreamMessage.SendResponseTimeout(peer = peer,
+                                                      payload = msg))
             offerF.failed.foreach(err =>
               logger.error(
                 s"Failed offering send response timeout waiting for response for peer=$peer",
@@ -190,27 +189,6 @@ case class PeerMessageReceiver(
     }
   }
 
-  def stopReconnect(peer: Peer): Future[PeerMessageReceiver] = {
-    state match {
-      case Preconnection =>
-        //when retry, state should be back to preconnection
-        val newState = StoppedReconnect(state.clientDisconnectP,
-                                        state.versionMsgP,
-                                        state.verackMsgP)
-        val disconnectedPeer = DisconnectedPeer(peer, false)
-        queue.offer(disconnectedPeer).map(_ => copy(state = newState))
-      case _: StoppedReconnect =>
-        logger.warn(
-          s"Already stopping reconnect from peer=$peer, this is a noop")
-        Future.successful(this)
-      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
-          _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
-        val exn = new RuntimeException(
-          s"Cannot stop reconnect from peer=$peer when in state=$bad")
-        Future.failed(exn)
-    }
-  }
-
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer
     * This means we have opened a Tcp connection,
@@ -234,7 +212,8 @@ case class PeerMessageReceiver(
 
         val initializationTimeoutCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
-            val offerF = queue.offer(InitializationTimeout(peer))
+            val offerF =
+              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
             offerF.failed.foreach(err =>
               logger.error(s"Failed to offer initialize timeout for peer=$peer",
                            err))
@@ -308,7 +287,7 @@ case class PeerMessageReceiver(
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
-        val disconnectedPeer = DisconnectedPeer(peer, false)
+        val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         queue.offer(disconnectedPeer).map(_ => copy(state = newState))
       case good @ (_: Normal | _: Waiting) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
@@ -317,7 +296,7 @@ case class PeerMessageReceiver(
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP
         )
-        val disconnectedPeer = DisconnectedPeer(peer, false)
+        val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         for {
           _ <- queue.offer(disconnectedPeer).map(_ => newState)
         } yield copy(state = newState)
@@ -331,7 +310,7 @@ case class PeerMessageReceiver(
           verackMsgP = initializing.verackMsgP
         )
 
-        val disconnectedPeer = DisconnectedPeer(peer, false)
+        val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         for {
           _ <- queue.offer(disconnectedPeer)
         } yield copy(state = newState)

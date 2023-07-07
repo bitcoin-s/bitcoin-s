@@ -8,10 +8,7 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer.{
-  ControlMessageHandler,
-  StreamDataMessageWrapper
-}
+import org.bitcoins.node.networking.peer.{ControlMessageHandler}
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import java.net.{InetAddress, UnknownHostException}
@@ -25,9 +22,9 @@ import scala.util.{Failure, Random, Success}
 case class PeerFinder(
     paramPeers: Vector[Peer],
     controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
+    queue: SourceQueueWithComplete[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi,
-    skipPeers: () => Vector[Peer])(implicit
+    skipPeers: () => Set[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
@@ -232,14 +229,14 @@ case class PeerFinder(
     _peerData.put(
       peer,
       PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
-    _peerData(peer).peerMessageSender.flatMap(_.connect())
+    _peerData(peer).peerMessageSender.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
     _peerData.put(
       peer,
       PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
-    _peerData(peer).peerMessageSender.flatMap(_.reconnect())
+    _peerData(peer).peerMessageSender.reconnect()
 
   }
 

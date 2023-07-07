@@ -17,13 +17,12 @@ import scala.concurrent.duration.DurationInt
 case class PeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[StreamDataMessageWrapper],
+    queue: SourceQueueWithComplete[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi
 )(implicit
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig) {
-  import system.dispatcher
 
   private val initPeerMessageRecv = PeerMessageReceiver(
     controlMessageHandler = controlMessageHandler,
@@ -31,13 +30,12 @@ case class PeerData(
     peer = peer,
     state = PeerMessageReceiverState.fresh())
 
-  lazy val peerMessageSender: Future[PeerMessageSender] = {
-    Future.successful(
-      PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi))
+  val peerMessageSender: PeerMessageSender = {
+    PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi)
   }
 
   def stop(): Future[Unit] = {
-    peerMessageSender.flatMap(_.disconnect())
+    peerMessageSender.disconnect()
   }
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
 
