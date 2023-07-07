@@ -30,7 +30,7 @@
         <appender-ref ref="FILE" />
     </appender>
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="ASYNC-FILE"/>
     </root>
@@ -64,16 +64,13 @@
     <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="DEBUG"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
-    <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
-
     <!-- See peer details -->
-    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+    <logger name="org.bitcoins.node.PeerManager" level="DEBUG"/>
 
     <!-- See node status messages  -->
     <logger name="org.bitcoins.node.NeutrinoNode" level="INFO"/>
@@ -86,7 +83,7 @@
     <!-- connecting new block headers to chain -->
     <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
 
-    <logger name="org.bitcoins.chain.validation" level="INFO"/>
+    <logger name="org.bitcoins.chain" level="INFO"/>
 
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->

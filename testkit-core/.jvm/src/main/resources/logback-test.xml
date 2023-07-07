@@ -98,7 +98,7 @@
     <logger name="slick.jdbc.JdbcBackend.statement" level="OFF"/>
 
     <!-- see what slick is compiling to in sql -->
-    <logger name="slick.compiler" level="OFF"/>
+    <logger name="slick" level="OFF"/>
 
     <!-- see what's returned by Slick -->
     <logger name="slick.jdbc.StatementInvoker.result" level="OFF"/>

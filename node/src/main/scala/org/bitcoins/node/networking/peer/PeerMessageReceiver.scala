@@ -221,9 +221,6 @@ case class PeerMessageReceiver(
         val newState =
           Preconnection.toInitializing(initializationTimeoutCancellable)
 
-        val chainApi = ChainHandler.fromDatabase()
-        peerMessageSenderApi.sendVersionMessage(chainApi, peer)
-
         copy(state = newState)
     }
   }
