@@ -11,7 +11,6 @@ import org.bitcoins.node.config.NodeAppConfig
 
 import java.time.Instant
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 case class NeutrinoNode(
     walletCreationTimeOpt: Option[Instant],
@@ -61,10 +60,7 @@ case class NeutrinoNode(
     //due to underlying mutability in PeerManager/PeerFinder
     //we may not have a peer available for selection immediately
     val peerAvailableF = AsyncUtil.retryUntilSatisfied(
-      condition =
-        peerManager.randomPeerWithService(serviceIdentifier).isDefined,
-      interval = 500.millis,
-      maxTries = 60)
+      peerManager.randomPeerWithService(serviceIdentifier).isDefined)
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.setSyncing(true)
