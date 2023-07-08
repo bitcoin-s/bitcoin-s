@@ -29,11 +29,11 @@ import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageSender.ConnectionGraph
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
+import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState, Socks5Message}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 case class PeerMessageSender(
@@ -145,46 +145,56 @@ case class PeerMessageSender(
       .joinMat(bidiFlow)(Keep.left)
 
   private def socks5Handler: Flow[ByteString, ByteString, NotUsed] = {
-    Flow[ByteString].statefulMap[Socks5ConnectionState, ByteString](() =>
-      Socks5ConnectionState.Disconnected)(
-      { case (state, bytes) =>
-        logger.info(s"socks5Handler.connectionGraphOpt=$connectionGraphOpt")
-        connectionGraphOpt match {
-          case Some(g) =>
-            state match {
-              case Socks5ConnectionState.Disconnected =>
-                val connRequestBytes =
-                  Socks5Connection.socks5ConnectionRequest(peer.socket)
-                logger.info(s"Writing socks5 connection request")
-                Source.single(connRequestBytes).runWith(g.mergeHubSink)
-                (Socks5ConnectionState.Greeted, ByteString.empty)
-              case Socks5ConnectionState.Greeted =>
-                val connectedAddressT =
-                  Socks5Connection.tryParseConnectedAddress(bytes)
-                connectedAddressT match {
-                  case scala.util.Success(connectedAddress) =>
-                    logger.info(
-                      s"Tor connection request succeeded. target=${peer.socket} connectedAddress=$connectedAddress")
-                    val sendVersionF = for {
-                      versionMsg <- versionMsgF
-                      _ <- sendMsg(versionMsg)
-                    } yield ()
-                    Await.result(sendVersionF, 10.seconds)
-                    (Socks5ConnectionState.Connected, ByteString.empty)
-                  case scala.util.Failure(err) =>
-                    sys.error(
-                      s"Tor connection request failed to target=${peer.socket} errMsg=${err.toString}")
-                }
-              case Socks5ConnectionState.Connected =>
-                (Socks5ConnectionState.Connected, bytes)
-            }
-          case None =>
-            sys.error(
-              s"No active connection found to use for socks5 proxy to peer=$peer socket=${peer.socket}")
-        }
-      },
-      _ => None // don't care about the end state, we don't emit it downstream
-    )
+    Flow[ByteString]
+      .statefulMap[Socks5ConnectionState, Either[ByteString, Socks5Message]](
+        () => Socks5ConnectionState.Disconnected)(
+        { case (state, bytes) =>
+          state match {
+            case Socks5ConnectionState.Disconnected =>
+              (Socks5ConnectionState.Greeted,
+               Right(Socks5Message.Socks5Greeting(bytes)))
+            case Socks5ConnectionState.Greeted =>
+              (Socks5ConnectionState.Connected,
+               Right(Socks5Message.Socks5ConnectionRequest(bytes)))
+            case Socks5ConnectionState.Connected =>
+              (Socks5ConnectionState.Connected, Left(bytes))
+          }
+        },
+        _ => None // don't care about the end state, we don't emit it downstream
+      )
+      .mapAsync(1) {
+        case Right(_: Socks5Message.Socks5Greeting) =>
+          val connRequestBytes =
+            Socks5Connection.socks5ConnectionRequest(peer.socket)
+          logger.debug(s"Writing socks5 connection request")
+          connectionGraphOpt match {
+            case Some(g) =>
+              Source.single(connRequestBytes).runWith(g.mergeHubSink)
+              Future.successful(ByteString.empty)
+            case None =>
+              sys.error(
+                s"No active connection found to use for socks5 proxy to peer=$peer socket=${peer.socket}")
+          }
+        case Right(connReq: Socks5Message.Socks5ConnectionRequest) =>
+          val connectedAddressT =
+            Socks5Connection.tryParseConnectedAddress(connReq.byteString)
+          connectedAddressT match {
+            case scala.util.Success(connectedAddress) =>
+              logger.info(
+                s"Tor connection request succeeded. target=${peer.socket} connectedAddress=$connectedAddress")
+              val sendVersionF = for {
+                versionMsg <- versionMsgF
+                _ <- sendMsg(versionMsg)
+              } yield ()
+              sendVersionF.map(_ => ByteString.empty)
+            case scala.util.Failure(err) =>
+              sys.error(
+                s"Tor connection request failed to target=${peer.socket} errMsg=${err.toString}")
+          }
+        case Left(bytes) =>
+          //after socks5 handshake done, pass bytes downstream to be parsed
+          Future.successful(bytes)
+      }
   }
 
   private def connectionGraph(

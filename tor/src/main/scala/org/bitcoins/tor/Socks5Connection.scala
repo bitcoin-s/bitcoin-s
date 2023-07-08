@@ -271,3 +271,15 @@ object Socks5ConnectionState {
 
   case object Connected extends Socks5ConnectionState
 }
+
+sealed abstract class Socks5Message {
+  def byteString: ByteString
+}
+
+object Socks5Message {
+
+  case class Socks5Greeting(byteString: ByteString) extends Socks5Message
+
+  case class Socks5ConnectionRequest(byteString: ByteString)
+      extends Socks5Message
+}
