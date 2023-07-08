@@ -1,13 +1,18 @@
 package org.bitcoins.tor
 
+import akka.NotUsed
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Credentials
 import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** Simple socks 5 client. It should be given a new connection, and will
@@ -238,6 +243,57 @@ object Socks5Connection extends Logging {
     Try(parseGreetings(data, passwordAuth))
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
+
+  def socks5Handler(
+      peer: Peer,
+      sink: Sink[ByteString, NotUsed],
+      onHandshakeComplete: () => Future[Unit])(implicit
+      mat: Materializer,
+      ec: ExecutionContext): Flow[ByteString, ByteString, NotUsed] = {
+    Flow[ByteString]
+      .statefulMap[Socks5ConnectionState,
+                   Either[ByteString, Socks5MessageResponse]](() =>
+        Socks5ConnectionState.Disconnected)(
+        { case (state, bytes) =>
+          state match {
+            case Socks5ConnectionState.Disconnected =>
+              (Socks5ConnectionState.Greeted,
+               Right(Socks5MessageResponse.Socks5GreetingResponse(bytes)))
+            case Socks5ConnectionState.Greeted =>
+              (Socks5ConnectionState.Connected,
+               Right(
+                 Socks5MessageResponse.Socks5ConnectionRequestResponse(bytes)))
+            case Socks5ConnectionState.Connected =>
+              (Socks5ConnectionState.Connected, Left(bytes))
+          }
+        },
+        _ => None // don't care about the end state, we don't emit it downstream
+      )
+      .mapAsync(1) {
+        case Right(_: Socks5MessageResponse.Socks5GreetingResponse) =>
+          val connRequestBytes =
+            Socks5Connection.socks5ConnectionRequest(peer.socket)
+          logger.debug(s"Writing socks5 connection request")
+          Source.single(connRequestBytes).runWith(sink)
+          Future.successful(ByteString.empty)
+        case Right(
+              connReq: Socks5MessageResponse.Socks5ConnectionRequestResponse) =>
+          val connectedAddressT =
+            Socks5Connection.tryParseConnectedAddress(connReq.byteString)
+          connectedAddressT match {
+            case scala.util.Success(connectedAddress) =>
+              logger.info(
+                s"Tor connection request succeeded. target=${peer.socket} connectedAddress=$connectedAddress")
+              onHandshakeComplete().map(_ => ByteString.empty)
+            case scala.util.Failure(err) =>
+              sys.error(
+                s"Tor connection request failed to target=${peer.socket} errMsg=${err.toString}")
+          }
+        case Left(bytes) =>
+          //after socks5 handshake done, pass bytes downstream to be parsed
+          Future.successful(bytes)
+      }
+  }
 
 }
 sealed abstract class Socks5ConnectionState
