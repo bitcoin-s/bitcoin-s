@@ -240,29 +240,6 @@ object Socks5Connection extends Logging {
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
 
 }
-
-object Socks5ProxyParams {
-
-  val DefaultPort = 9050
-
-  val defaultProxyParams: Socks5ProxyParams =
-    Socks5ProxyParams(
-      address = InetSocketAddress.createUnresolved("127.0.0.1", DefaultPort),
-      credentialsOpt = None,
-      randomizeCredentials = true)
-
-  def proxyCredentials(
-      proxyParams: Socks5ProxyParams): Option[Socks5Connection.Credentials] =
-    if (proxyParams.randomizeCredentials) {
-      // randomize credentials for every proxy connection to enable Tor stream isolation
-      Some(
-        Socks5Connection.Credentials(CryptoUtil.randomBytes(16).toHex,
-                                     CryptoUtil.randomBytes(16).toHex))
-    } else {
-      proxyParams.credentialsOpt
-    }
-}
-
 sealed abstract class Socks5ConnectionState
 
 object Socks5ConnectionState {

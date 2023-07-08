@@ -3,10 +3,7 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorSystem
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}
-import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
