@@ -29,7 +29,11 @@ import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageSender.ConnectionGraph
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState, Socks5MessageResponse}
+import org.bitcoins.tor.{
+  Socks5Connection,
+  Socks5ConnectionState,
+  Socks5MessageResponse
+}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
@@ -146,8 +150,9 @@ case class PeerMessageSender(
 
   private def socks5Handler: Flow[ByteString, ByteString, NotUsed] = {
     Flow[ByteString]
-      .statefulMap[Socks5ConnectionState, Either[ByteString, Socks5MessageResponse]](
-        () => Socks5ConnectionState.Disconnected)(
+      .statefulMap[Socks5ConnectionState,
+                   Either[ByteString, Socks5MessageResponse]](() =>
+        Socks5ConnectionState.Disconnected)(
         { case (state, bytes) =>
           state match {
             case Socks5ConnectionState.Disconnected =>
@@ -155,7 +160,8 @@ case class PeerMessageSender(
                Right(Socks5MessageResponse.Socks5GreetingResponse(bytes)))
             case Socks5ConnectionState.Greeted =>
               (Socks5ConnectionState.Connected,
-               Right(Socks5MessageResponse.Socks5ConnectionRequestResponse(bytes)))
+               Right(
+                 Socks5MessageResponse.Socks5ConnectionRequestResponse(bytes)))
             case Socks5ConnectionState.Connected =>
               (Socks5ConnectionState.Connected, Left(bytes))
           }
@@ -175,7 +181,8 @@ case class PeerMessageSender(
               sys.error(
                 s"No active connection found to use for socks5 proxy to peer=$peer socket=${peer.socket}")
           }
-        case Right(connReq: Socks5MessageResponse.Socks5ConnectionRequestResponse) =>
+        case Right(
+              connReq: Socks5MessageResponse.Socks5ConnectionRequestResponse) =>
           val connectedAddressT =
             Socks5Connection.tryParseConnectedAddress(connReq.byteString)
           connectedAddressT match {
@@ -296,9 +303,8 @@ case class PeerMessageSender(
                 case Some(p) =>
                   val greetingBytes =
                     Socks5Connection.socks5Greeting(p.credentialsOpt.isDefined)
-                  logger.info(s"Writing socks5 greeting")
-                  Source.single(greetingBytes).runWith(graph.mergeHubSink)
-                  Future.unit
+                  logger.debug(s"Writing socks5 greeting")
+                  sendMsg(greetingBytes, graph.mergeHubSink)
                 case None => sendMsg(versionMsg)
               }
             }

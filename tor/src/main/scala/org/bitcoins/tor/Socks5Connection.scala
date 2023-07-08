@@ -278,7 +278,8 @@ sealed abstract class Socks5MessageResponse {
 
 object Socks5MessageResponse {
 
-  case class Socks5GreetingResponse(byteString: ByteString) extends Socks5MessageResponse
+  case class Socks5GreetingResponse(byteString: ByteString)
+      extends Socks5MessageResponse
 
   case class Socks5ConnectionRequestResponse(byteString: ByteString)
       extends Socks5MessageResponse

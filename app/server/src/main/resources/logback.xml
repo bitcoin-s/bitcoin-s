@@ -30,7 +30,7 @@
         <appender-ref ref="FILE" />
     </appender>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="ASYNC-FILE"/>
     </root>
@@ -42,7 +42,6 @@
     <!-- ╔═══════════════════╗ -->
     <!-- ║   Configuration   ║ -->
     <!-- ╚═══════════════════╝ -->
-
 
     <!-- inspect resolved DB connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
@@ -65,13 +64,16 @@
     <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="DEBUG"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
+    <!-- inspect TCP details -->
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
+
     <!-- See peer details -->
-    <logger name="org.bitcoins.node.PeerManager" level="DEBUG"/>
+    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
 
     <!-- See node status messages  -->
     <logger name="org.bitcoins.node.NeutrinoNode" level="INFO"/>
@@ -84,7 +86,7 @@
     <!-- connecting new block headers to chain -->
     <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
 
-    <logger name="org.bitcoins.chain" level="INFO"/>
+    <logger name="org.bitcoins.chain.validation" level="INFO"/>
 
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->
@@ -98,8 +100,6 @@
     <!-- ║   External libraries    ║ -->
     <!-- ╚═════════════════════════╝ -->
 
-    <logger name="org.flywaydb" level="INFO"/>
-    
     <!-- Disable slick logging in server -->
     <logger name="slick" level="OFF"/>
     <logger name="com.zaxxer" level="INFO"/>
