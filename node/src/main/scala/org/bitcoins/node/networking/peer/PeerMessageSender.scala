@@ -234,7 +234,7 @@ case class PeerMessageSender(
         .foldAsync(initPeerMessageRecv) { case (peerMsgRecv, msgs) =>
           peerMsgRecv.state match {
             case PeerMessageReceiverState.Preconnection =>
-              val c = initPeerMessageRecv.connect(peer, peerMessageSenderApi)
+              val c = initPeerMessageRecv.connect(peer)
               FutureUtil.foldLeftAsync(c, msgs) { case (p, msg) =>
                 p.handleNetworkMessageReceived(networkMsgRecv =
                   NetworkMessageReceived(msg, peer))
