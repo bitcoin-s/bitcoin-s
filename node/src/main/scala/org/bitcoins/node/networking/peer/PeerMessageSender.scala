@@ -18,6 +18,7 @@ import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
 import akka.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
@@ -26,7 +27,6 @@ import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageSender.ConnectionGraph
 import org.bitcoins.node.util.PeerMessageSenderApi

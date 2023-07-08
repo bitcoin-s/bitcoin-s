@@ -5,10 +5,11 @@ import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.dlc.node.{DLCNode, DLCNodeCallbacks}
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
+import org.bitcoins.tor.TorParams
 
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path

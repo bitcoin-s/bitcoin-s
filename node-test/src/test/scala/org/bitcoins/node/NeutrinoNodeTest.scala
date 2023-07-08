@@ -3,9 +3,10 @@ package org.bitcoins.node
 import akka.actor.Cancellable
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.models.{CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
+import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds

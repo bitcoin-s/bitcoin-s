@@ -5,6 +5,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
 import org.bitcoins.commons.jsonmodels.ExplorerEnv
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{SchnorrPublicKey, Sha256Digest}
@@ -15,7 +16,7 @@ import org.bitcoins.explorer.model.{
   SbAnnouncementEvent
 }
 import org.bitcoins.explorer.picklers.ExplorerPicklers
-import org.bitcoins.tor.{Socks5ClientTransport, Socks5ProxyParams}
+import org.bitcoins.tor.{Socks5ClientTransport}
 import play.api.libs.json.{
   JsArray,
   JsBoolean,

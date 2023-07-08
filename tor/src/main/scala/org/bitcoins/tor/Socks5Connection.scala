@@ -4,8 +4,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
 import akka.util.ByteString
 import grizzled.slf4j.Logging
-import org.bitcoins.crypto.CryptoUtil
-import org.bitcoins.tor.Socks5Connection.{Credentials, Socks5Connect}
+import org.bitcoins.core.api.tor.Credentials
+import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
 import scala.util.{Failure, Success, Try}
@@ -104,7 +104,7 @@ class Socks5Connection(
 
 }
 
-object Socks5Connection {
+object Socks5Connection extends Logging {
 
   def props(
       tcpConnection: ActorRef,
@@ -117,11 +117,6 @@ object Socks5Connection {
   case class Socks5Connected(address: InetSocketAddress) extends Tcp.Event
 
   case class Socks5Error(message: String) extends RuntimeException(message)
-
-  case class Credentials(username: String, password: String) {
-    require(username.length < 256, "username is too long")
-    require(password.length < 256, "password is too long")
-  }
 
   val NoAuth: Byte = 0x00
   val PasswordAuth: Byte = 0x02
@@ -244,31 +239,4 @@ object Socks5Connection {
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
 
-}
-
-case class Socks5ProxyParams(
-    address: InetSocketAddress,
-    credentialsOpt: Option[Credentials],
-    randomizeCredentials: Boolean)
-
-object Socks5ProxyParams {
-
-  val DefaultPort = 9050
-
-  val defaultProxyParams: Socks5ProxyParams =
-    Socks5ProxyParams(
-      address = InetSocketAddress.createUnresolved("127.0.0.1", DefaultPort),
-      credentialsOpt = None,
-      randomizeCredentials = true)
-
-  def proxyCredentials(
-      proxyParams: Socks5ProxyParams): Option[Socks5Connection.Credentials] =
-    if (proxyParams.randomizeCredentials) {
-      // randomize credentials for every proxy connection to enable Tor stream isolation
-      Some(
-        Socks5Connection.Credentials(CryptoUtil.randomBytes(16).toHex,
-                                     CryptoUtil.randomBytes(16).toHex))
-    } else {
-      proxyParams.credentialsOpt
-    }
 }

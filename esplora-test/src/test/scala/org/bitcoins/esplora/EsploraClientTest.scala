@@ -1,5 +1,6 @@
 package org.bitcoins.esplora
 
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -8,7 +9,6 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkit.util.TorUtil._
-import org.bitcoins.tor.Socks5ProxyParams
 
 class EsploraClientTest extends BitcoinSAsyncTest {
 

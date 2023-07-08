@@ -2,12 +2,12 @@ package org.bitcoins.feeprovider
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.feeprovider.MempoolSpaceTarget._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.bitcoins.tor.Socks5ProxyParams
 import org.scalatest.Assertion
 
 import scala.concurrent.Future

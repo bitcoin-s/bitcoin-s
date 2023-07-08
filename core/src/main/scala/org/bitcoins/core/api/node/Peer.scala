@@ -1,8 +1,7 @@
-package org.bitcoins.node.models
+package org.bitcoins.core.api.node
 
 import org.bitcoins.core.api.db.DbRowAutoInc
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.tor.Socks5ProxyParams
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 
 import java.net.InetSocketAddress
 
@@ -27,14 +26,5 @@ object Peer {
       socket: InetSocketAddress,
       socks5ProxyParams: Option[Socks5ProxyParams]): Peer = {
     Peer(socket, socks5ProxyParams = socks5ProxyParams)
-  }
-
-  /** Constructs a peer from the given `bitcoind` instance
-    */
-  def fromBitcoind(
-      bitcoind: BitcoindInstance,
-      socks5ProxyParams: Option[Socks5ProxyParams]): Peer = {
-    val socket = new InetSocketAddress(bitcoind.uri.getHost, bitcoind.p2pPort)
-    fromSocket(socket, socks5ProxyParams = socks5ProxyParams)
   }
 }

@@ -13,6 +13,7 @@ import akka.stream.stage._
 import akka.stream.{Attributes, BidiShape, Inlet, Outlet}
 import akka.util.ByteString
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.NetworkUtil
 
 import java.net.{InetSocketAddress, URI}

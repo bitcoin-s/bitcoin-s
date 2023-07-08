@@ -6,9 +6,10 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.util.ByteString
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.tor.{Socks5ClientTransport, Socks5ProxyParams}
+import org.bitcoins.tor.Socks5ClientTransport
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Try

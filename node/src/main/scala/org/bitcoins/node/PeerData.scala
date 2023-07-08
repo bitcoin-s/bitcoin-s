@@ -1,11 +1,11 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem}
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
 

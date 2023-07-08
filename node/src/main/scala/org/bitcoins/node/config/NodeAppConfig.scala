@@ -4,18 +4,18 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.CallbackConfig
-import org.bitcoins.core.api.node.NodeType
+import org.bitcoins.core.api.node.{NodeType, Peer}
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
+import org.bitcoins.tor.TorParams
 
 import java.nio.file.Path
 import java.time.{Duration, Instant}
