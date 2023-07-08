@@ -33,7 +33,7 @@ import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 case class PeerMessageSender(
@@ -44,6 +44,9 @@ case class PeerMessageSender(
     chainAppConfig: ChainAppConfig,
     system: ActorSystem)
     extends P2PLogger {
+
+  logger.info(
+    s"nodeAppConfig.socks5ProxyParams=${nodeAppConfig.socks5ProxyParams}")
   import system.dispatcher
 
   private val socket: InetSocketAddress = {
@@ -131,7 +134,7 @@ case class PeerMessageSender(
 
   private val mergeHubSource: Source[ByteString, Sink[ByteString, NotUsed]] =
     MergeHub
-      .source[ByteString](16) //does this need to be increased?
+      .source[ByteString](1024) //does this need to be increased?
 
   private val connectionFlow: Flow[
     ByteString,
@@ -152,7 +155,7 @@ case class PeerMessageSender(
               case Socks5ConnectionState.Disconnected =>
                 val connRequestBytes =
                   Socks5Connection.socks5ConnectionRequest(peer.socket)
-                logger.info(s"Writing socks5 greeting")
+                logger.info(s"Writing socks5 connection request")
                 Source.single(connRequestBytes).runWith(g.mergeHubSink)
                 (Socks5ConnectionState.Greeted, ByteString.empty)
               case Socks5ConnectionState.Greeted =>
@@ -162,6 +165,11 @@ case class PeerMessageSender(
                   case scala.util.Success(connectedAddress) =>
                     logger.info(
                       s"Tor connection request succeeded. target=${peer.socket} connectedAddress=$connectedAddress")
+                    val sendVersionF = for {
+                      versionMsg <- versionMsgF
+                      _ <- sendMsg(versionMsg)
+                    } yield ()
+                    Await.result(sendVersionF, 10.seconds)
                     (Socks5ConnectionState.Connected, ByteString.empty)
                   case scala.util.Failure(err) =>
                     sys.error(
@@ -273,7 +281,17 @@ case class PeerMessageSender(
             _ <- outgoingConnectionF
             _ = resetReconnect()
             versionMsg <- versionMsgF
-            _ <- sendMsg(versionMsg)
+            _ = {
+              nodeAppConfig.socks5ProxyParams match {
+                case Some(p) =>
+                  val greetingBytes =
+                    Socks5Connection.socks5Greeting(p.credentialsOpt.isDefined)
+                  logger.info(s"Writing socks5 greeting")
+                  Source.single(greetingBytes).runWith(graph.mergeHubSink)
+                  Future.unit
+                case None => sendMsg(versionMsg)
+              }
+            }
           } yield ()
         }
 

@@ -43,6 +43,7 @@
     <!-- ║   Configuration   ║ -->
     <!-- ╚═══════════════════╝ -->
 
+
     <!-- inspect resolved DB connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
@@ -97,6 +98,8 @@
     <!-- ║   External libraries    ║ -->
     <!-- ╚═════════════════════════╝ -->
 
+    <logger name="org.flywaydb" level="INFO"/>
+    
     <!-- Disable slick logging in server -->
     <logger name="slick" level="OFF"/>
     <logger name="com.zaxxer" level="INFO"/>
