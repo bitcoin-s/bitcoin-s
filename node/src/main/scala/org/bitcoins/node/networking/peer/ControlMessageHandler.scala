@@ -1,9 +1,9 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
 

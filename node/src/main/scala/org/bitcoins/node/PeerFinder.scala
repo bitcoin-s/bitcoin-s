@@ -4,11 +4,12 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer.{ControlMessageHandler}
+import org.bitcoins.node.models.{PeerDAO, PeerDb}
+import org.bitcoins.node.networking.peer.ControlMessageHandler
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import java.net.{InetAddress, UnknownHostException}

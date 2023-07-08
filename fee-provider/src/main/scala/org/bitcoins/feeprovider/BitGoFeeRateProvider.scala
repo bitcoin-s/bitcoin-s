@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import org.bitcoins.commons.jsonmodels.wallet.BitGoResult
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
-import org.bitcoins.tor.Socks5ProxyParams
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}

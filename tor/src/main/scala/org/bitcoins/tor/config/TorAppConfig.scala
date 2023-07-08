@@ -4,10 +4,11 @@ import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
 import org.bitcoins.tor.client.TorClient
-import org.bitcoins.tor.{Socks5ProxyParams, TorCallbacks, TorParams}
+import org.bitcoins.tor.{TorCallbacks, TorParams}
 
 import java.io.File
 import java.net.{InetAddress, InetSocketAddress}

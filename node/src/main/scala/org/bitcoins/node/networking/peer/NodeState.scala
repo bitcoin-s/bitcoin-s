@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.node.models.Peer
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.node.networking.peer.NodeState.{
   DoneSyncing,
   FilterHeaderSync,

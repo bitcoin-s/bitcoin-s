@@ -3,10 +3,9 @@ package org.bitcoins.testkit.node
 import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.node.NodeType
+import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.rpc.client.common.BitcoindVersion.V22
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}

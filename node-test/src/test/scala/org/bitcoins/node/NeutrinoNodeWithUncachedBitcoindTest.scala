@@ -1,10 +1,10 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.node.models.Peer
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds

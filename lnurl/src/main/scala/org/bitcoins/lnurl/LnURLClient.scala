@@ -6,6 +6,7 @@ import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.HttpRequest
 import akka.util.ByteString
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency._

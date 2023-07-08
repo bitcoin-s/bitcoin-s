@@ -5,9 +5,9 @@ import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.api.commons.{InstanceFactory, InstanceFactoryLocal}
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.tor.Socks5ProxyParams
 
 import java.io.File
 import java.net.URI

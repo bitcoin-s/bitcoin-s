@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.util.TorUtil
-import org.bitcoins.tor.Socks5ProxyParams
 
 import java.net.{InetSocketAddress, URI}
 import scala.concurrent.duration._
@@ -53,7 +53,7 @@ abstract class NodeTestUtil extends P2PLogger {
     } else None
   }
 
-  /** Gets the [[org.bitcoins.node.models.Peer]] that
+  /** Gets the [[Peer]] that
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
     */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient)(implicit

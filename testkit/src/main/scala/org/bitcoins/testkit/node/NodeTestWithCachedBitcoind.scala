@@ -1,9 +1,8 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.node.NodeType
+import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.node.Node
-import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest

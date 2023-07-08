@@ -6,6 +6,7 @@ import akka.http.scaladsl.client.RequestBuilding.Post
 import akka.http.scaladsl.model._
 import akka.util.ByteString
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}

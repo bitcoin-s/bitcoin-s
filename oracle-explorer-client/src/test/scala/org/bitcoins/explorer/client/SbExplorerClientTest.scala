@@ -1,6 +1,7 @@
 package org.bitcoins.explorer.client
 
 import org.bitcoins.commons.jsonmodels.ExplorerEnv
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
@@ -12,7 +13,6 @@ import org.bitcoins.explorer.model.{
   SbAnnouncementEvent
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.bitcoins.tor.Socks5ProxyParams
 
 import scala.concurrent.Future
 

@@ -3,6 +3,7 @@ package org.bitcoins.dlc.node
 import akka.actor.ActorRef
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
@@ -14,7 +15,7 @@ import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.{BitcoinSActorFixtureWithDLCWallet, TorUtil}
 import org.bitcoins.testkit.util.TorUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
-import org.bitcoins.tor.{Socks5ProxyParams, TorController, TorProtocolHandler}
+import org.bitcoins.tor.{TorController, TorProtocolHandler}
 import org.scalatest.{Assertion, FutureOutcome}
 import scodec.bits.ByteVector
 

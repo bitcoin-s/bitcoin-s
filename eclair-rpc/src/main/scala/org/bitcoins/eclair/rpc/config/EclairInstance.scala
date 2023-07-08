@@ -3,11 +3,11 @@ package org.bitcoins.eclair.rpc.config
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, ZmqConfig}
-import org.bitcoins.tor.Socks5ProxyParams
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}

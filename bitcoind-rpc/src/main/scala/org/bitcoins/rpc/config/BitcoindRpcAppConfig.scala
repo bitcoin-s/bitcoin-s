@@ -4,10 +4,10 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
-import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.tor.config.TorAppConfig
 
 import java.io.File

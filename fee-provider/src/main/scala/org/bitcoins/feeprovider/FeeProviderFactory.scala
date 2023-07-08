@@ -3,6 +3,7 @@ package org.bitcoins.feeprovider
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.feeprovider.FeeProviderName.{
@@ -12,7 +13,6 @@ import org.bitcoins.feeprovider.FeeProviderName.{
   MempoolSpace
 }
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
-import org.bitcoins.tor.Socks5ProxyParams
 
 trait FeeProviderFactory[T <: FeeRateApi] {
 

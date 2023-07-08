@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.node.peer
 
 import org.bitcoins.core.api.db.DbRowAutoInc
-import org.bitcoins.tor.Socks5ProxyParams
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 
 import java.net.InetSocketAddress
 

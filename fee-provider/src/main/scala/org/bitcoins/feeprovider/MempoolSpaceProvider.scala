@@ -4,10 +4,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import org.bitcoins.commons.jsonmodels.wallet.MempoolSpaceResult
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.feeprovider.MempoolSpaceTarget._
-import org.bitcoins.tor.Socks5ProxyParams
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}

@@ -1,12 +1,12 @@
 package org.bitcoins.node
 
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{
   DataPayload,
   ExpectsResponse,
   NetworkMessage,
   NetworkPayload
 }
-import org.bitcoins.node.models.Peer
 
 sealed abstract class NodeStreamMessage
 
