@@ -76,11 +76,12 @@ case class PeerMessageSender(
                                               halfClose = false,
                                               options = options)
     nodeAppConfig.socks5ProxyParams match {
-      case Some(_) =>
+      case Some(s) =>
         base.viaMat(
           Socks5Connection.socks5Handler(peer = peer,
                                          sink = mergeHubSink,
-                                         onHandshakeComplete = sendVersionMsg))(
+                                         onHandshakeComplete = sendVersionMsg,
+                                         credentialsOpt = s.credentialsOpt))(
           Keep.left)
       case None =>
         base

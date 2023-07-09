@@ -247,7 +247,8 @@ object Socks5Connection extends Logging {
   def socks5Handler(
       peer: Peer,
       sink: Sink[ByteString, NotUsed],
-      onHandshakeComplete: () => Future[Unit])(implicit
+      onHandshakeComplete: () => Future[Unit],
+      credentialsOpt: Option[Credentials])(implicit
       mat: Materializer,
       ec: ExecutionContext): Flow[ByteString, ByteString, NotUsed] = {
     Flow[ByteString]
@@ -257,8 +258,18 @@ object Socks5Connection extends Logging {
         { case (state, bytes) =>
           state match {
             case Socks5ConnectionState.Disconnected =>
+              if (
+                parseGreetings(bytes, credentialsOpt.isDefined) == PasswordAuth
+              ) {
+                (Socks5ConnectionState.Authenticating,
+                 Right(Socks5MessageResponse.Socks5GreetingResponse(bytes)))
+              } else {
+                (Socks5ConnectionState.Greeted,
+                 Right(Socks5MessageResponse.Socks5GreetingResponse(bytes)))
+              }
+            case Socks5ConnectionState.Authenticating =>
               (Socks5ConnectionState.Greeted,
-               Right(Socks5MessageResponse.Socks5GreetingResponse(bytes)))
+               Right(Socks5MessageResponse.Socks5AuthResponse(bytes)))
             case Socks5ConnectionState.Greeted =>
               (Socks5ConnectionState.Connected,
                Right(
@@ -271,11 +282,33 @@ object Socks5Connection extends Logging {
       )
       .mapAsync(1) {
         case Right(_: Socks5MessageResponse.Socks5GreetingResponse) =>
-          val connRequestBytes =
-            Socks5Connection.socks5ConnectionRequest(peer.socket)
-          logger.debug(s"Writing socks5 connection request")
-          Source.single(connRequestBytes).runWith(sink)
-          Future.successful(ByteString.empty)
+          credentialsOpt match {
+            case Some(c) =>
+              logger.debug(s"Authenticating socks5 proxy...")
+              val authBytes =
+                socks5PasswordAuthenticationRequest(c.username, c.password)
+              Source.single(authBytes).runWith(sink)
+              Future.successful(ByteString.empty)
+            case None =>
+              val connRequestBytes =
+                Socks5Connection.socks5ConnectionRequest(peer.socket)
+              logger.debug(s"Writing socks5 connection request")
+              Source.single(connRequestBytes).runWith(sink)
+              Future.successful(ByteString.empty)
+          }
+        case Right(authResponse: Socks5MessageResponse.Socks5AuthResponse) =>
+          tryParseAuth(authResponse.byteString) match {
+            case Success(true) =>
+              val connRequestBytes =
+                Socks5Connection.socks5ConnectionRequest(peer.socket)
+              logger.debug(s"Writing socks5 connection request after auth")
+              Source.single(connRequestBytes).runWith(sink)
+              Future.successful(ByteString.empty)
+            case Success(false) =>
+              sys.error(s"Failed to authenticate with socks5 proxy")
+            case Failure(err) => throw err
+          }
+
         case Right(
               connReq: Socks5MessageResponse.Socks5ConnectionRequestResponse) =>
           val connectedAddressT =
@@ -301,6 +334,7 @@ sealed abstract class Socks5ConnectionState
 object Socks5ConnectionState {
   case object Disconnected extends Socks5ConnectionState
   case object Greeted extends Socks5ConnectionState
+  case object Authenticating extends Socks5ConnectionState
 
   case object Connected extends Socks5ConnectionState
 }
@@ -312,6 +346,9 @@ sealed abstract class Socks5MessageResponse {
 object Socks5MessageResponse {
 
   case class Socks5GreetingResponse(byteString: ByteString)
+      extends Socks5MessageResponse
+
+  case class Socks5AuthResponse(byteString: ByteString)
       extends Socks5MessageResponse
 
   case class Socks5ConnectionRequestResponse(byteString: ByteString)
