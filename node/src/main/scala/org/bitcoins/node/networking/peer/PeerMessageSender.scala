@@ -145,7 +145,7 @@ case class PeerMessageSender(
   private val (mergeHubSink: Sink[ByteString, NotUsed],
                mergeHubSource: Source[ByteString, NotUsed]) = {
     MergeHub
-      .source[ByteString](1024) //does this need to be increased?
+      .source[ByteString](1024)
       .preMaterialize()
   }
 
@@ -239,7 +239,7 @@ case class PeerMessageSender(
 
         connectionGraphOpt = Some(graph)
 
-        val socks5GreetingF: Future[Unit] = {
+        val resultF: Future[Unit] = {
           for {
             _ <- outgoingConnectionF
             _ = resetReconnect()
@@ -262,7 +262,7 @@ case class PeerMessageSender(
             p.disconnect(peer)
           }
 
-        socks5GreetingF.map(_ => ())
+        resultF.map(_ => ())
     }
   }
 
