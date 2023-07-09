@@ -3,10 +3,10 @@ package org.bitcoins.dlc.node
 import akka.actor.ActorRef
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
-import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.BitcoinSActorFixtureWithDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet

@@ -1,12 +1,12 @@
 package org.bitcoins.dlc.node
 
 import akka.actor.ActorRef
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.dlc.models.DLCState
 import org.bitcoins.core.protocol.tlv.{LnMessage, SendOfferTLV}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.wallet.BitcoinSDualWalletTest
