@@ -4,12 +4,12 @@ import akka.actor.{ActorRef, ActorSystem}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.protocol.dlc.models.DLCMessage
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.{BigSizeUInt, BitcoinAddress}
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.node.config._
-import org.bitcoins.dlc.node.peer.Peer
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress

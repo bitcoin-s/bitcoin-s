@@ -4,9 +4,9 @@ import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.protocol.BigSizeUInt
-import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.Socks5Connection
 import scodec.bits.ByteVector
