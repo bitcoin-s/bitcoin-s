@@ -3,14 +3,11 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorSystem
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
-import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
 
@@ -194,12 +191,9 @@ case class PeerMessageReceiver(
     * but have NOT started the handshake
     * This method will initiate the handshake
     */
-  protected[networking] def connect(
-      peer: Peer,
-      peerMessageSenderApi: PeerMessageSenderApi)(implicit
+  protected[networking] def connect(peer: Peer)(implicit
       system: ActorSystem,
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig): PeerMessageReceiver = {
+      nodeAppConfig: NodeAppConfig): PeerMessageReceiver = {
     import system.dispatcher
     state match {
       case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
@@ -220,9 +214,6 @@ case class PeerMessageReceiver(
 
         val newState =
           Preconnection.toInitializing(initializationTimeoutCancellable)
-
-        val chainApi = ChainHandler.fromDatabase()
-        peerMessageSenderApi.sendVersionMessage(chainApi, peer)
 
         copy(state = newState)
     }
