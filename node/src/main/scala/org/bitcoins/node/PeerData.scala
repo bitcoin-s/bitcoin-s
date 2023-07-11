@@ -9,6 +9,8 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -61,6 +63,26 @@ case class PeerData(
 
   def updateLastFailureTime(): Unit = {
     lastTimedOut = System.currentTimeMillis()
+  }
+
+  @volatile private[this] var lastSuccessfulParsedMsg: Long = 0
+
+  def updateLastParsedMessageTime(): Unit = {
+    lastSuccessfulParsedMsg = System.currentTimeMillis()
+    ()
+  }
+
+  private val TIMEOUT_INTERVAL = 20.minute
+
+  def isConnectionTimedOut: Boolean = {
+    val timeoutInstant =
+      Instant.now().minus(TIMEOUT_INTERVAL.toMillis, ChronoUnit.MILLIS)
+    val diff = Instant
+      .ofEpochMilli(lastSuccessfulParsedMsg)
+      .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
+
+    val isTimedout = diff.toEpochMilli < 0
+    isTimedout
   }
 
   /** returns true if the peer has failed due to any reason within the past 30 minutes

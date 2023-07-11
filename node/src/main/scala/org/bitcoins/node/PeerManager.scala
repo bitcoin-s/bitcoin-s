@@ -330,7 +330,7 @@ case class PeerManager(
                   serviceIdentifier)
   }
 
-  def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
+  private def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
     logger.debug(s"Replacing $replacePeer with $withPeer")
     assert(!peerDataMap(replacePeer).serviceIdentifier.nodeCompactFilters,
            s"$replacePeer has cf")
@@ -374,6 +374,9 @@ case class PeerManager(
       skipPeers = () => peers
     )
     finderOpt = Some(finder)
+
+    val inactivityCancellable = startInactivityChecksJob()
+    inactivityCancellableOpt = Some(inactivityCancellable)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
       isStarted.set(true)
@@ -391,6 +394,8 @@ case class PeerManager(
     val beganAt = System.currentTimeMillis()
 
     syncFilterCancellableOpt.map(_.cancel())
+
+    inactivityCancellableOpt.map(_.cancel())
 
     val finderStopF = finderOpt match {
       case Some(finder) => finder.stop()
@@ -420,6 +425,7 @@ case class PeerManager(
         dataMessageQueueOpt = None
         streamDoneFOpt = None
         finderOpt = None
+        inactivityCancellableOpt = None
       }
     } yield {
       logger.info(
@@ -445,7 +451,7 @@ case class PeerManager(
     Future.successful(peerDataMap.exists(_._1 == peer))
   }
 
-  def onInitializationTimeout(peer: Peer): Future[Unit] = {
+  private def onInitializationTimeout(peer: Peer): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -1051,6 +1057,31 @@ case class PeerManager(
     for {
       _ <- syncHelper(syncPeerOpt)
     } yield syncPeerOpt
+  }
+
+  @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
+    None
+
+  private def inactivityChecks(peerData: PeerData): Unit = {
+    if (peerData.isConnectionTimedOut) {
+      val stopF = peerData.stop()
+      stopF.failed.foreach(err =>
+        logger.error(s"Failed to stop node inside of inactivityChecks()", err))
+      ()
+    } else {
+      ()
+    }
+  }
+
+  private def inactivityChecksRunnable(): Runnable = { () =>
+    peerDataMap.map(_._2).map(inactivityChecks)
+    ()
+  }
+
+  private def startInactivityChecksJob(): Cancellable = {
+    val delay = 20.minute
+    system.scheduler.scheduleAtFixedRate(delay, delay)(
+      inactivityChecksRunnable())
   }
 }
 
