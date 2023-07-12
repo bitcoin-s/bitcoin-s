@@ -33,6 +33,8 @@ import org.bitcoins.tor.Socks5Connection
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -111,6 +113,9 @@ case class PeerMessageSender(
     logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
     val (messages, newUnalignedBytes) =
       NetworkUtil.parseIndividualMessages(bytes)
+
+    if (messages.nonEmpty) updateLastParsedMessageTime()
+
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
@@ -355,6 +360,25 @@ case class PeerMessageSender(
       Source.single(bytes).to(mergeHubSink).run()
     }.map(_ => ())
     sendMsgF
+  }
+
+  private val TIMEOUT_INTERVAL = 20.minute
+  @volatile private[this] var lastSuccessfulParsedMsg: Long = 0
+
+  private def updateLastParsedMessageTime(): Unit = {
+    lastSuccessfulParsedMsg = System.currentTimeMillis()
+    ()
+  }
+
+  def isConnectionTimedOut: Boolean = {
+    val timeoutInstant =
+      Instant.now().minus(TIMEOUT_INTERVAL.toMillis, ChronoUnit.MILLIS)
+    val diff = Instant
+      .ofEpochMilli(lastSuccessfulParsedMsg)
+      .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
+
+    val isTimedOut = diff.toEpochMilli < 0
+    isTimedOut
   }
 }
 
