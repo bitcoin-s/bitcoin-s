@@ -287,6 +287,7 @@ case class PeerMessageSender(
           s"Cannot reconnect when we have an active connection to peer=$peer")
         Future.unit
       case None =>
+        logger.info(s"Attempting to reconnect peer=$peer")
         val delay = reconnectionDelay * (1 << curReconnectionTry)
         curReconnectionTry += 1
         reconnectionTry = reconnectionTry + 1
@@ -380,6 +381,7 @@ case class PeerMessageSender(
       .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
 
     val isTimedOut = diff.toEpochMilli < 0
+    
     isTimedOut
   }
 }
