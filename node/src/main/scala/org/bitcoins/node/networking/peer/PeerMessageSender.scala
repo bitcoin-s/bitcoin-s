@@ -36,7 +36,7 @@ import java.net.InetSocketAddress
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 case class PeerMessageSender(
     peer: Peer,
@@ -362,7 +362,9 @@ case class PeerMessageSender(
     sendMsgF
   }
 
-  private val TIMEOUT_INTERVAL = 20.minute
+  private[this] val INACTIVITY_TIMEOUT: FiniteDuration =
+    nodeAppConfig.inactivityTimeout
+
   @volatile private[this] var lastSuccessfulParsedMsg: Long = 0
 
   private def updateLastParsedMessageTime(): Unit = {
@@ -372,7 +374,7 @@ case class PeerMessageSender(
 
   def isConnectionTimedOut: Boolean = {
     val timeoutInstant =
-      Instant.now().minus(TIMEOUT_INTERVAL.toMillis, ChronoUnit.MILLIS)
+      Instant.now().minus(INACTIVITY_TIMEOUT.toMillis, ChronoUnit.MILLIS)
     val diff = Instant
       .ofEpochMilli(lastSuccessfulParsedMsg)
       .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)

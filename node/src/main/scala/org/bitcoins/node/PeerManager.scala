@@ -1079,7 +1079,7 @@ case class PeerManager(
   }
 
   private def startInactivityChecksJob(): Cancellable = {
-    val delay = 20.minute
+    val delay = nodeAppConfig.inactivityTimeout
     system.scheduler.scheduleAtFixedRate(delay, delay)(
       inactivityChecksRunnable())
   }
