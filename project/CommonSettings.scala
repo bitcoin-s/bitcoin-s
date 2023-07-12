@@ -130,7 +130,7 @@ object CommonSettings {
 
   lazy val jlinkOptions = Seq(
     "--no-header-files",
-    "--no-man-pages"  ,
+    "--no-man-pages",
     "--compress=2"
   )
 
