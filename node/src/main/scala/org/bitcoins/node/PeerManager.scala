@@ -559,7 +559,7 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: NodeState): Future[NodeState] = {
-    logger.debug(
+    logger.info(
       s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
         .map(_._1)}")
     val stateF = finderOpt match {
@@ -1074,8 +1074,7 @@ case class PeerManager(
   }
 
   private def inactivityChecksRunnable(): Runnable = { () =>
-    logger.debug(
-      s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
+    logger.info(s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
     peerDataMap.map(_._2).map(inactivityChecks)
     ()
   }
