@@ -381,7 +381,7 @@ case class PeerMessageSender(
       .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
 
     val isTimedOut = diff.toEpochMilli < 0
-    
+
     isTimedOut
   }
 }
