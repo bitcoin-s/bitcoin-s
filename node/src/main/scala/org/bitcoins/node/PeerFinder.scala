@@ -188,7 +188,11 @@ case class PeerFinder(
       initPeerF.map(_ => this)
     }
 
-    initPeerF.flatMap(_ => peerDiscoveryF)
+    for {
+      _ <- initPeerF
+      peerFinder <- peerDiscoveryF
+      _ = logger.info(s"Done starting PeerFinder")
+    } yield peerFinder
   }
 
   def reconnect(peer: Peer): Future[Unit] = {
@@ -203,6 +207,7 @@ case class PeerFinder(
   }
 
   override def stop(): Future[PeerFinder] = {
+    logger.info(s"Stopping PeerFinder")
     isStarted.set(false)
     //stop scheduler
     peerConnectionScheduler.cancel()
@@ -210,12 +215,15 @@ case class PeerFinder(
     _peersToTry.clear()
 
     val stopF = for {
-      _ <- Future.traverse(_peerData.map(_._2))(_.stop())
+      _ <- Future.traverse(_peerData.map(_._1))(removePeer(_))
       _ <- AsyncUtil
         .retryUntilSatisfied(_peerData.isEmpty,
                              interval = 1.seconds,
                              maxTries = 30)
-    } yield this
+    } yield {
+      logger.info(s"Done stopping PeerFinder")
+      this
+    }
 
     stopF.failed.foreach { e =>
       logger.error(s"Failed to stop peer finder. Peers: ${_peerData.map(_._1)}",
@@ -241,10 +249,13 @@ case class PeerFinder(
 
   }
 
-  def removePeer(peer: Peer): Unit = {
+  def removePeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Removing peer $peer")
-    _peerData.remove(peer)
-    ()
+    val peerData = _peerData(peer)
+    peerData.stop().map { _ =>
+      _peerData.remove(peer) //peer must be a member of _peerData
+      ()
+    }
   }
 
   def setServiceIdentifier(
