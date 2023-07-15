@@ -318,6 +318,7 @@ case class PeerMessageSender(
         logger.info(s"Disconnecting peer=${peer}")
         cg.killswitch.shutdown()
         connectionGraphOpt = None
+        lastSuccessfulParsedMsgOpt = None
         Future.unit
       case None =>
         val err =
@@ -366,23 +367,28 @@ case class PeerMessageSender(
   private[this] val INACTIVITY_TIMEOUT: FiniteDuration =
     nodeAppConfig.inactivityTimeout
 
-  @volatile private[this] var lastSuccessfulParsedMsg: Long = 0
+  @volatile private[this] var lastSuccessfulParsedMsgOpt: Option[Long] = None
 
   private def updateLastParsedMessageTime(): Unit = {
-    lastSuccessfulParsedMsg = System.currentTimeMillis()
+    lastSuccessfulParsedMsgOpt = Some(System.currentTimeMillis())
     ()
   }
 
   def isConnectionTimedOut: Boolean = {
-    val timeoutInstant =
-      Instant.now().minus(INACTIVITY_TIMEOUT.toMillis, ChronoUnit.MILLIS)
-    val diff = Instant
-      .ofEpochMilli(lastSuccessfulParsedMsg)
-      .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
+    lastSuccessfulParsedMsgOpt match {
+      case Some(lastSuccessfulParsedMsg) =>
+        val timeoutInstant =
+          Instant.now().minus(INACTIVITY_TIMEOUT.toMillis, ChronoUnit.MILLIS)
+        val diff = Instant
+          .ofEpochMilli(lastSuccessfulParsedMsg)
+          .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
 
-    val isTimedOut = diff.toEpochMilli < 0
+        val isTimedOut = diff.toEpochMilli < 0
 
-    isTimedOut
+        isTimedOut
+      case None => false //we are not initialized yet
+    }
+
   }
 }
 
