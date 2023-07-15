@@ -592,22 +592,17 @@ case class PeerManager(
               ServiceIdentifier.NODE_COMPACT_FILTERS)
             randomPeerOpt match {
               case Some(peer) =>
-                state match {
-                  case syncState: SyncNodeState =>
-                    switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
-                  case DoneSyncing(_) =>
-                    //defensively try to sync with the new peer
-                    syncHelper(Some(peer)).map(_ => DoneSyncing(peers))
-                  case x @ (_: MisbehavingPeer | _: RemovePeers) =>
-                    Future.successful(x)
-                }
+                syncWithNewPeerHelper(state, newPeer = peer)
               case None =>
                 //if we have no new peers should we just switch to DoneSyncing?
                 Future.successful(state)
             }
           } else if (syncPeerOpt.isDefined) {
             if (shouldReconnect) {
-              finder.reconnect(peer).map(_ => state)
+              for {
+                _ <- finder.reconnect(peer)
+                state <- syncWithNewPeerHelper(state, newPeer = peer)
+              } yield state
             } else {
               val exn = new RuntimeException(
                 s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
@@ -615,7 +610,10 @@ case class PeerManager(
             }
           } else {
             if (shouldReconnect) {
-              finder.reconnect(peer).map(_ => state)
+              for {
+                _ <- finder.reconnect(peer)
+                state <- syncWithNewPeerHelper(state, newPeer = peer)
+              } yield state
             } else {
               Future.successful(state)
             }
@@ -649,6 +647,20 @@ case class PeerManager(
         }
       case s @ (_: RemovePeers | _: MisbehavingPeer | _: DoneSyncing) =>
         s.replacePeers(peers)
+    }
+  }
+
+  private def syncWithNewPeerHelper(
+      state: NodeState,
+      newPeer: Peer): Future[NodeState] = {
+    state match {
+      case syncState: SyncNodeState =>
+        switchSyncToPeer(oldSyncState = syncState, newPeer = newPeer)
+      case DoneSyncing(_) =>
+        //defensively try to sync with the new peer
+        syncHelper(Some(newPeer)).map(_ => DoneSyncing(peers))
+      case x @ (_: MisbehavingPeer | _: RemovePeers) =>
+        Future.successful(x)
     }
   }
 
@@ -815,8 +827,10 @@ case class PeerManager(
           }
         } yield newDmh
       case (dmh, DisconnectedPeer(peer, forceReconnect)) =>
-        onP2PClientDisconnected(peer, forceReconnect, dmh.state)
-          .map(newState => dmh.copy(state = newState))
+        for {
+          newState <- onP2PClientDisconnected(peer, forceReconnect, dmh.state)
+        } yield dmh.copy(state = newState)
+
       case (dmh, i: Initialized) =>
         onInitialization(i.peer, dmh.state)
           .map(newState => dmh.copy(state = newState))
