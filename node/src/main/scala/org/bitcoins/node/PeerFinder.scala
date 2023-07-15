@@ -191,7 +191,7 @@ case class PeerFinder(
     for {
       _ <- initPeerF
       peerFinder <- peerDiscoveryF
-      _ = logger.info(s"Done stopping PeerFinder")
+      _ = logger.info(s"Done starting PeerFinder")
     } yield peerFinder
   }
 
@@ -220,7 +220,10 @@ case class PeerFinder(
         .retryUntilSatisfied(_peerData.isEmpty,
                              interval = 1.seconds,
                              maxTries = 30)
-    } yield this
+    } yield {
+      logger.info(s"Done stopping PeerFinder")
+      this
+    }
 
     stopF.failed.foreach { e =>
       logger.error(s"Failed to stop peer finder. Peers: ${_peerData.map(_._1)}",
