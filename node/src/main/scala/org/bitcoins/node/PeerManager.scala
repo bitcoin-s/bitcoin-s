@@ -1075,7 +1075,8 @@ case class PeerManager(
   }
 
   private def inactivityChecksRunnable(): Runnable = { () =>
-    logger.info(s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
+    logger.debug(
+      s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
     peerDataMap.map(_._2).map(inactivityChecks)
     ()
   }
