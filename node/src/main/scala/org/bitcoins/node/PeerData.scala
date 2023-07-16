@@ -63,6 +63,8 @@ case class PeerData(
     lastTimedOut = System.currentTimeMillis()
   }
 
+  def isConnectionTimedOut: Boolean = peerMessageSender.isConnectionTimedOut
+
   /** returns true if the peer has failed due to any reason within the past 30 minutes
     */
   def hasFailedRecently: Boolean = {

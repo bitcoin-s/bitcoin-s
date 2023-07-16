@@ -179,6 +179,10 @@ bitcoin-s {
         
         # whether to have p2p peers relay us unconfirmed txs
         relay = false
+        
+        # if a node doesn't send a message in this time frame 
+        # we disconnect them and try to connect to a new peer
+        inactivity-timeout = 20 minutes
     }
 
     proxy {

@@ -289,7 +289,9 @@ case class PeerMessageReceiver(
         val disconnectedPeer = NodeStreamMessage.DisconnectedPeer(peer, false)
         for {
           _ <- queue.offer(disconnectedPeer).map(_ => newState)
-        } yield copy(state = newState)
+        } yield {
+          copy(state = newState)
+        }
       case initializing: Initializing =>
         initializing.initializationTimeoutCancellable.cancel()
 

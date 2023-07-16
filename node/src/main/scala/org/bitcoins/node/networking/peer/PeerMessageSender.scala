@@ -23,6 +23,7 @@ import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
+import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
@@ -33,8 +34,10 @@ import org.bitcoins.tor.Socks5Connection
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 case class PeerMessageSender(
     peer: Peer,
@@ -111,6 +114,9 @@ case class PeerMessageSender(
     logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
     val (messages, newUnalignedBytes) =
       NetworkUtil.parseIndividualMessages(bytes)
+
+    if (messages.nonEmpty) updateLastParsedMessageTime()
+
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
@@ -258,8 +264,14 @@ case class PeerMessageSender(
         }
 
         val _ = graph.streamDoneF
-          .flatMap { p =>
-            p.disconnect(peer)
+          .onComplete {
+            case scala.util.Success(p) =>
+              p.disconnect(peer)
+            case scala.util.Failure(err) =>
+              logger.info(
+                s"Connection with peer=$peer failed with err=${err.getMessage}")
+              val disconnectedPeer = DisconnectedPeer(peer, false)
+              initPeerMessageRecv.queue.offer(disconnectedPeer)
           }
 
         resultF.map(_ => ())
@@ -282,6 +294,7 @@ case class PeerMessageSender(
           s"Cannot reconnect when we have an active connection to peer=$peer")
         Future.unit
       case None =>
+        logger.info(s"Attempting to reconnect peer=$peer")
         val delay = reconnectionDelay * (1 << curReconnectionTry)
         curReconnectionTry += 1
         reconnectionTry = reconnectionTry + 1
@@ -312,6 +325,7 @@ case class PeerMessageSender(
         logger.info(s"Disconnecting peer=${peer}")
         cg.killswitch.shutdown()
         connectionGraphOpt = None
+        lastSuccessfulParsedMsgOpt = None
         Future.unit
       case None =>
         val err =
@@ -355,6 +369,33 @@ case class PeerMessageSender(
       Source.single(bytes).to(mergeHubSink).run()
     }.map(_ => ())
     sendMsgF
+  }
+
+  private[this] val INACTIVITY_TIMEOUT: FiniteDuration =
+    nodeAppConfig.inactivityTimeout
+
+  @volatile private[this] var lastSuccessfulParsedMsgOpt: Option[Long] = None
+
+  private def updateLastParsedMessageTime(): Unit = {
+    lastSuccessfulParsedMsgOpt = Some(System.currentTimeMillis())
+    ()
+  }
+
+  def isConnectionTimedOut: Boolean = {
+    lastSuccessfulParsedMsgOpt match {
+      case Some(lastSuccessfulParsedMsg) =>
+        val timeoutInstant =
+          Instant.now().minus(INACTIVITY_TIMEOUT.toMillis, ChronoUnit.MILLIS)
+        val diff = Instant
+          .ofEpochMilli(lastSuccessfulParsedMsg)
+          .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
+
+        val isTimedOut = diff.toEpochMilli < 0
+
+        isTimedOut
+      case None => false //we are not initialized yet
+    }
+
   }
 }
 

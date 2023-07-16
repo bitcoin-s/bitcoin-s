@@ -38,6 +38,7 @@ import org.bitcoins.node.networking.peer.NodeState._
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
 import NodeStreamMessage._
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -330,7 +331,7 @@ case class PeerManager(
                   serviceIdentifier)
   }
 
-  def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
+  private def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
     logger.debug(s"Replacing $replacePeer with $withPeer")
     assert(!peerDataMap(replacePeer).serviceIdentifier.nodeCompactFilters,
            s"$replacePeer has cf")
@@ -374,6 +375,9 @@ case class PeerManager(
       skipPeers = () => peers
     )
     finderOpt = Some(finder)
+
+    val inactivityCancellable = startInactivityChecksJob()
+    inactivityCancellableOpt = Some(inactivityCancellable)
     finder.start().map { _ =>
       logger.info("Done starting PeerManager")
       isStarted.set(true)
@@ -391,6 +395,8 @@ case class PeerManager(
     val beganAt = System.currentTimeMillis()
 
     syncFilterCancellableOpt.map(_.cancel())
+
+    inactivityCancellableOpt.map(_.cancel())
 
     val finderStopF = finderOpt match {
       case Some(finder) => finder.stop()
@@ -420,6 +426,7 @@ case class PeerManager(
         dataMessageQueueOpt = None
         streamDoneFOpt = None
         finderOpt = None
+        inactivityCancellableOpt = None
       }
     } yield {
       logger.info(
@@ -445,7 +452,7 @@ case class PeerManager(
     Future.successful(peerDataMap.exists(_._1 == peer))
   }
 
-  def onInitializationTimeout(peer: Peer): Future[Unit] = {
+  private def onInitializationTimeout(peer: Peer): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
@@ -553,7 +560,7 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: NodeState): Future[NodeState] = {
-    logger.debug(
+    logger.info(
       s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
         .map(_._1)}")
     val stateF = finderOpt match {
@@ -1051,6 +1058,38 @@ case class PeerManager(
     for {
       _ <- syncHelper(syncPeerOpt)
     } yield syncPeerOpt
+  }
+
+  @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
+    None
+
+  private def inactivityChecks(peerData: PeerData): Unit = {
+    if (peerData.isConnectionTimedOut) {
+      val stopF = peerData.stop()
+      stopF.failed.foreach(err =>
+        logger.error(s"Failed to stop node inside of inactivityChecks()", err))
+      ()
+    } else {
+      ()
+    }
+  }
+
+  private def inactivityChecksRunnable(): Runnable = { () =>
+    logger.debug(
+      s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
+    peerDataMap.map(_._2).map(inactivityChecks)
+    ()
+  }
+
+  private def startInactivityChecksJob(): Cancellable = {
+    //the interval is set shorter for some unit test cases
+    val interval = nodeAppConfig.network match {
+      case MainNet | TestNet3 | SigNet => 5.minute
+      case RegTest                     => nodeAppConfig.inactivityTimeout
+    }
+    system.scheduler.scheduleAtFixedRate(
+      initialDelay = interval,
+      interval = interval)(inactivityChecksRunnable())
   }
 }
 
