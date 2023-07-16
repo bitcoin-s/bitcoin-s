@@ -213,6 +213,10 @@ to ensure the entire module is initialized correctly.</p>
         
         <span class="hljs-comment"># whether to have p2p peers relay us unconfirmed txs</span>
         <span class="hljs-attr">relay</span> = <span class="hljs-literal">false</span>
+        
+        <span class="hljs-comment"># if a node doesn't send a message in this time frame </span>
+        <span class="hljs-comment"># we disconnect them and try to connect to a new peer</span>
+        <span class="hljs-attr">inactivity-timeout</span> = <span class="hljs-number">20</span> minutes
     }
 
     proxy {
