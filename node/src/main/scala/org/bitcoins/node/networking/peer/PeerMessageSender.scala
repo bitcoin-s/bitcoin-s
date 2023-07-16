@@ -23,6 +23,7 @@ import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
+import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
@@ -263,8 +264,14 @@ case class PeerMessageSender(
         }
 
         val _ = graph.streamDoneF
-          .flatMap { p =>
-            p.disconnect(peer)
+          .onComplete {
+            case scala.util.Success(p) =>
+              p.disconnect(peer)
+            case scala.util.Failure(err) =>
+              logger.info(
+                s"Connection with peer=$peer failed with err=${err.getMessage}")
+              val disconnectedPeer = DisconnectedPeer(peer, false)
+              initPeerMessageRecv.queue.offer(disconnectedPeer)
           }
 
         resultF.map(_ => ())

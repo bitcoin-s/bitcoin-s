@@ -38,6 +38,7 @@ import org.bitcoins.node.networking.peer.NodeState._
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
 import NodeStreamMessage._
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -1080,7 +1081,11 @@ case class PeerManager(
   }
 
   private def startInactivityChecksJob(): Cancellable = {
-    val interval = 5.minute
+    //the interval is set shorter for some unit test cases
+    val interval = nodeAppConfig.network match {
+      case MainNet | TestNet3 | SigNet => 5.minute
+      case RegTest                     => nodeAppConfig.inactivityTimeout
+    }
     system.scheduler.scheduleAtFixedRate(
       initialDelay = interval,
       interval = interval)(inactivityChecksRunnable())
