@@ -306,7 +306,7 @@ class Bech32Test extends BitcoinSUnitTest {
       val replacementChar = pickReplacementChar(l.head)
       val replaced = s"$f$replacementChar${l.tail}"
       //should fail because we replaced a char in the addr, so checksum invalid
-      Bech32Address.fromStringT(replaced).isFailure
+      assert(Bech32Address.fromStringT(replaced).isFailure)
     }
   }
 
@@ -316,7 +316,7 @@ class Bech32Test extends BitcoinSUnitTest {
       val replaced = switchCaseRandChar(old)
       //should fail because we we switched the case of a random char
       val actual = Bech32Address.fromStringT(replaced)
-      actual.isFailure
+      assert(actual.isFailure)
     }
   }
 

@@ -66,8 +66,9 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
   it must "serialization symmetry" in {
     forAll(ScriptGenerators.multiSigScriptPubKey) {
       case (multiSigScriptPubKey, _) =>
-        MultiSignatureScriptPubKey(
-          multiSigScriptPubKey.hex) == multiSigScriptPubKey
+        assert(
+          MultiSignatureScriptPubKey(
+            multiSigScriptPubKey.hex) == multiSigScriptPubKey)
     }
   }
 
