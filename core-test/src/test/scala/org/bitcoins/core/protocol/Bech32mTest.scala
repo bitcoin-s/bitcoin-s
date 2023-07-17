@@ -225,6 +225,47 @@ class Bech32mTest extends BitcoinSUnitTest {
         .isStandard)
   }
 
+  it must "split all Bech32m addresses into HRP and data" in {
+    forAll(AddressGenerator.bech32mAddress) { address =>
+      val splitT =
+        Bech32.splitToHrpAndData(address.value, Bech32Encoding.Bech32m)
+      assert(splitT.isSuccess)
+    }
+  }
+
+  it must "serialization symmetry" in {
+    forAll(ScriptGenerators.witnessScriptPubKey.suchThat(
+             _._1.witnessVersion != WitnessVersion0),
+           ChainParamsGenerator.networkParams) { case ((witSPK, _), network) =>
+      val addr = Bech32mAddress(witSPK, network)
+      val spk = Bech32mAddress.fromStringToWitSPK(addr.value)
+      assert(spk == Success(witSPK))
+    }
+  }
+
+  it must "checksum must not work if we modify a char" in {
+    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+      val old = addr.value
+      val rand = Math.abs(Random.nextInt())
+      val idx = rand % old.length
+      val (f, l) = old.splitAt(idx)
+      val replacementChar = pickReplacementChar(l.head)
+      val replaced = s"$f$replacementChar${l.tail}"
+      //should fail because we replaced a char in the addr, so checksum invalid
+      assert(Bech32mAddress.fromStringT(replaced).isFailure)
+    }
+  }
+
+  it must "fail if we have a mixed case" in {
+    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+      val old = addr.value
+      val replaced = switchCaseRandChar(old)
+      //should fail because we we switched the case of a random char
+      val actual = Bech32mAddress.fromStringT(replaced)
+      assert(actual.isFailure)
+    }
+  }
+
   @tailrec
   private def pickReplacementChar(oldChar: Char): Char = {
     val rand = Math.abs(Random.nextInt())
