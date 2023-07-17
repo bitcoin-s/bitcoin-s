@@ -398,6 +398,8 @@ case class PeerManager(
 
     inactivityCancellableOpt.map(_.cancel())
 
+    reconnectWithPeerCancellables.map(_.cancel())
+
     val finderStopF = finderOpt match {
       case Some(finder) => finder.stop()
       case None         => Future.unit
@@ -427,6 +429,7 @@ case class PeerManager(
         streamDoneFOpt = None
         finderOpt = None
         inactivityCancellableOpt = None
+        reconnectWithPeerCancellables = Vector.empty
       }
     } yield {
       logger.info(
@@ -658,6 +661,9 @@ case class PeerManager(
     }
   }
 
+  private[this] var reconnectWithPeerCancellables: Vector[Cancellable] =
+    Vector.empty
+
   private def reconnectWithPeerHelper(
       finder: PeerFinder,
       state: NodeState,
@@ -665,12 +671,17 @@ case class PeerManager(
     for {
       _ <- finder.reconnect(peer)
       //cannot send getheaders message immediately, need to wait for version/verack handshake to complete
-      _ = system.scheduler.scheduleOnce(5.second) {
+      cancellable = system.scheduler.scheduleOnce(5.second) {
         val syncF = syncWithNewPeerHelper(state, newPeer = peer)
         syncF.failed.foreach(err =>
           logger.error(s"reconnectWithPeerHelper syncF failed", err))
         ()
 
+      }
+
+      _ = {
+        reconnectWithPeerCancellables =
+          reconnectWithPeerCancellables.appended(cancellable)
       }
     } yield state
   }
