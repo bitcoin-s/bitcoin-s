@@ -664,7 +664,14 @@ case class PeerManager(
       peer: Peer): Future[NodeState] = {
     for {
       _ <- finder.reconnect(peer)
-      _ <- syncWithNewPeerHelper(state, newPeer = peer)
+      //cannot send getheaders message immediately, need to wait for version/verack handshake to complete
+      _ = system.scheduler.scheduleOnce(5.second) {
+        val syncF = syncWithNewPeerHelper(state, newPeer = peer)
+        syncF.failed.foreach(err =>
+          logger.error(s"reconnectWithPeerHelper syncF failed", err))
+        ()
+
+      }
     } yield state
   }
 
