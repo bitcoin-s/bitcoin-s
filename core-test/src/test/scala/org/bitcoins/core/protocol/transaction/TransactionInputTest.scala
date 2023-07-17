@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   P2PKScriptSignature
 }
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -48,6 +49,13 @@ class TransactionInputTest extends BitcoinSUnitTest {
     TransactionInput(c.previousOutput, c.scriptSignature, c.sequence) must be(c)
     c.hex must be(
       TransactionInput(c.previousOutput, c.scriptSignature, c.sequence).hex)
+  }
+
+  it must "serialization symmetry" in {
+    forAll(TransactionGenerators.input) { input =>
+      val result = TransactionInput(input.hex) == input
+      assert(result)
+    }
   }
 
 }

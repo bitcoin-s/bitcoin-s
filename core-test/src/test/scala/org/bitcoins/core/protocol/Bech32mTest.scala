@@ -35,19 +35,6 @@ class Bech32mTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "checksum must not work if we modify a char" in {
-    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
-      val old = addr.value
-      val rand = Math.abs(Random.nextInt())
-      val idx = rand % old.length
-      val (f, l) = old.splitAt(idx)
-      val replacementChar = pickReplacementChar(l.head)
-      val replaced = s"$f$replacementChar${l.tail}"
-      //should fail because we replaced a char in the addr, so checksum invalid
-      Bech32mAddress.fromStringT(replaced).isFailure
-    }
-  }
-
   it must "must fail if we have a mixed case" in {
     forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
       val old = addr.value
@@ -223,6 +210,29 @@ class Bech32mTest extends BitcoinSUnitTest {
       !Bech32mAddress
         .fromString("bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs")
         .isStandard)
+  }
+
+  it must "checksum must not work if we modify a char" in {
+    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+      val old = addr.value
+      val rand = Math.abs(Random.nextInt())
+      val idx = rand % old.length
+      val (f, l) = old.splitAt(idx)
+      val replacementChar = pickReplacementChar(l.head)
+      val replaced = s"$f$replacementChar${l.tail}"
+      //should fail because we replaced a char in the addr, so checksum invalid
+      assert(Bech32mAddress.fromStringT(replaced).isFailure)
+    }
+  }
+
+  it must "fail if we have a mixed case" in {
+    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+      val old = addr.value
+      val replaced = switchCaseRandChar(old)
+      //should fail because we we switched the case of a random char
+      val actual = Bech32mAddress.fromStringT(replaced)
+      assert(actual.isFailure)
+    }
   }
 
   @tailrec

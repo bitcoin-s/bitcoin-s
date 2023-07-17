@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKeyBytes}
+import org.bitcoins.testkitcore.gen.MerkleGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 8/9/16.
@@ -369,4 +370,19 @@ class MerkleBlockTests extends BitcoinSUnitTest {
     val (merkleBlock, _) = MerkleBlock(block, filterWithTxIdsInserted)
     merkleBlock.partialMerkleTree.extractMatches must be(txMatches)
   }
+
+  //TODO: This is *extremely* slow, this is currently the longest running property we have taking about 6 minutes to run
+  //I think it is the generator MerkleGenerator.merkleBlockWithInsertTxIds
+  it must "contains all inserted txids when we directly create a merkle block from the txids && " +
+    "contains all txids matched by a bloom filter && " +
+    "serialization symmetry" in {
+      forAll(MerkleGenerator.merkleBlockWithInsertedTxIds) {
+        case (merkleBlock: MerkleBlock, _, txIds: Seq[DoubleSha256Digest]) =>
+          val extractedMatches = merkleBlock.partialMerkleTree.extractMatches
+          assert(
+            extractedMatches == txIds &&
+              extractedMatches.intersect(txIds) == txIds &&
+              MerkleBlock(merkleBlock.hex) == merkleBlock)
+      }
+    }
 }

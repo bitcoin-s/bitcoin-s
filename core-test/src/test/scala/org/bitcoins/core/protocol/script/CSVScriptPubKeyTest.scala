@@ -11,6 +11,7 @@ import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -52,5 +53,11 @@ class CSVScriptPubKeyTest extends BitcoinSUnitTest {
 
     CSVScriptPubKey(scriptNum17, p2pkh).locktime must be(scriptNum17)
     CSVScriptPubKey(scriptNum5, p2pkh).locktime must be(scriptNum5)
+  }
+
+  it must "serialization symmetry" in {
+    forAll(ScriptGenerators.csvScriptPubKey) { case (csvScriptPubKey, _) =>
+      assert(CSVScriptPubKey(csvScriptPubKey.hex) == csvScriptPubKey)
+    }
   }
 }

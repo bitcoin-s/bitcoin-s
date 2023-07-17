@@ -4,6 +4,7 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BytesUtil, Leaf, Node}
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.testkitcore.gen.MerkleGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
@@ -280,4 +281,23 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
       true)
   }
 
+  it must "be able to extract all of the txids we indicated to be matches" in {
+    forAll(MerkleGenerator.partialMerkleTree) {
+      case (partialMerkleTree: PartialMerkleTree,
+            txMatches: Seq[(Boolean, DoubleSha256Digest)]) =>
+        val matchedTxs = txMatches.filter(_._1).map(_._2)
+        assert(partialMerkleTree.extractMatches == matchedTxs)
+    }
+  }
+
+  it must "generate the same partial merkle tree from the same parameters" in {
+    forAll(MerkleGenerator.partialMerkleTree) {
+      case (partialMerkleTree: PartialMerkleTree, _) =>
+        val partialMerkleTree2 =
+          PartialMerkleTree(partialMerkleTree.transactionCount,
+                            partialMerkleTree.hashes,
+                            partialMerkleTree.bits)
+        assert(partialMerkleTree2 == partialMerkleTree)
+    }
+  }
 }

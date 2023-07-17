@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -27,5 +28,11 @@ class TransactionOutPointTest extends BitcoinSUnitTest {
     val expected = TransactionOutPoint(txIdBE, UInt32.one)
 
     assert(TransactionOutPoint.fromString(string) == expected)
+  }
+
+  it must "serialization symmetry" in {
+    forAll(TransactionGenerators.outPoint) { outPoint =>
+      assert(TransactionOutPoint(outPoint.hex) == outPoint)
+    }
   }
 }

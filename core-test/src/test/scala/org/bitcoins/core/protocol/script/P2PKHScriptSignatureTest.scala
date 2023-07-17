@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.crypto.{ECDigitalSignature, HashType}
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
 
@@ -25,6 +26,13 @@ class P2PKHScriptSignatureTest extends BitcoinSJvmTest {
     }
     p2pkhScriptSig.signature must be(ECDigitalSignature(
       "3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01"))
+  }
+
+  it must "serialization symmetry" in {
+    forAll(ScriptGenerators.p2pkhScriptSignature) { p2pkhScriptSig =>
+      assert(P2PKHScriptSignature(p2pkhScriptSig.hex) == p2pkhScriptSig)
+
+    }
   }
 
 }

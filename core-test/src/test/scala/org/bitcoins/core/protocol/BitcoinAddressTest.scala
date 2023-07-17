@@ -2,7 +2,12 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.testkitcore.gen.{
+  AddressGenerator,
+  CryptoGenerators,
+  ScriptGenerators
+}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success, Try}
@@ -122,5 +127,47 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
   it must "create an address from a ScriptPubKey" in {
     val scriptPubKey = P2SHScriptPubKey(EmptyScriptPubKey)
     assert(Address.fromScriptPubKeyT(scriptPubKey, RegTest).isSuccess)
+  }
+
+  it must "get the same p2sh address no matter what factory function we use" in {
+    forAll(ScriptGenerators.randomNonP2SHScriptPubKey) {
+      case (scriptPubKey, _) =>
+        //we should get the same address no matter which factory function we use
+        val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
+        assert(
+          P2SHAddress(scriptPubKey, TestNet3) == P2SHAddress(p2shScriptPubKey,
+                                                             TestNet3))
+    }
+  }
+
+  it must "All p2sh addresses created from factory functions must be valid" in {
+    forAll(ScriptGenerators.randomNonP2SHScriptPubKey) {
+      case (scriptPubKey, _) =>
+        //we should get the same address no matter which factory function we use
+        val addr = P2SHAddress(scriptPubKey, TestNet3)
+        assert(P2SHAddress.isValid(addr.toString))
+    }
+  }
+
+  it must "get the same p2pkh address no matter what factory function we use" in {
+    forAll(CryptoGenerators.publicKey) { pubKey =>
+      val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+      assert(P2PKHAddress(pubKey, TestNet3) == P2PKHAddress(hash, TestNet3))
+    }
+  }
+
+  it must "All p2pkh addresses created from factory functions must be valid" in {
+    forAll(CryptoGenerators.publicKey) { pubKey =>
+      val addr = P2PKHAddress(pubKey, TestNet3)
+      assert(P2PKHAddress.isValid(addr.toString))
+    }
+  }
+
+  it must "serialization symmetry between script and address" in {
+    forAll(AddressGenerator.address) { addr =>
+      val spk = addr.scriptPubKey
+      val network = addr.networkParameters
+      assert(Address.fromScriptPubKey(spk, network) == addr)
+    }
   }
 }

@@ -1,21 +1,21 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.testkitcore.gen.ScriptGenerators
-import org.scalacheck.{Prop, Properties}
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class ScriptSpec extends Properties("ScriptSpec") {
+class ScriptSpec extends BitcoinSUnitTest {
 
-  property(
-    "serialization symmetry for ScriptFactory.fromAsmBytes with ScriptPubKeys") = {
-    Prop.forAllNoShrink(ScriptGenerators.scriptPubKey) { case (spk, _) =>
-      ScriptPubKey.fromAsmBytes(spk.asmBytes) == spk
+  it must
+    "serialization symmetry for ScriptFactory.fromAsmBytes with ScriptPubKeys" in {
+      forAll(ScriptGenerators.scriptPubKey) { case (spk, _) =>
+        assert(ScriptPubKey.fromAsmBytes(spk.asmBytes) == spk)
+      }
     }
-  }
 
-  property(
-    "serialization symmetry for ScriptFactory.fromAsmBytes with ScriptSignatures") = {
-    Prop.forAllNoShrink(ScriptGenerators.scriptSignature) { case ss =>
-      ScriptSignature.fromAsmBytes(ss.asmBytes) == ss
+  it must
+    "serialization symmetry for ScriptFactory.fromAsmBytes with ScriptSignatures" in {
+      forAll(ScriptGenerators.scriptSignature) { case ss =>
+        assert(ScriptSignature.fromAsmBytes(ss.asmBytes) == ss)
+      }
     }
-  }
 }
