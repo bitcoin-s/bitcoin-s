@@ -599,10 +599,7 @@ case class PeerManager(
             }
           } else if (syncPeerOpt.isDefined) {
             if (shouldReconnect) {
-              for {
-                _ <- finder.reconnect(peer)
-                state <- syncWithNewPeerHelper(state, newPeer = peer)
-              } yield state
+              reconnectWithPeerHelper(finder, state, peer)
             } else {
               val exn = new RuntimeException(
                 s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
@@ -610,10 +607,7 @@ case class PeerManager(
             }
           } else {
             if (shouldReconnect) {
-              for {
-                _ <- finder.reconnect(peer)
-                state <- syncWithNewPeerHelper(state, newPeer = peer)
-              } yield state
+              reconnectWithPeerHelper(finder, state, peer)
             } else {
               Future.successful(state)
             }
@@ -662,6 +656,16 @@ case class PeerManager(
       case x @ (_: MisbehavingPeer | _: RemovePeers) =>
         Future.successful(x)
     }
+  }
+
+  private def reconnectWithPeerHelper(
+      finder: PeerFinder,
+      state: NodeState,
+      peer: Peer): Future[NodeState] = {
+    for {
+      _ <- finder.reconnect(peer)
+      _ <- syncWithNewPeerHelper(state, newPeer = peer)
+    } yield state
   }
 
   def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Unit = {
@@ -1079,14 +1083,12 @@ case class PeerManager(
   @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
     None
 
-  private def inactivityChecks(peerData: PeerData): Unit = {
+  private def inactivityChecks(peerData: PeerData): Future[Unit] = {
     if (peerData.isConnectionTimedOut) {
       val stopF = peerData.stop()
-      stopF.failed.foreach(err =>
-        logger.error(s"Failed to stop node inside of inactivityChecks()", err))
-      ()
+      stopF
     } else {
-      ()
+      Future.unit
     }
   }
 
@@ -1095,8 +1097,10 @@ case class PeerManager(
     val resultF: Future[Unit] = if (peers.nonEmpty) {
       logger.debug(
         s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
-      peerDataMap.map(_._2).map(inactivityChecks)
-      Future.unit
+      val vec = peerDataMap.map(_._2).map(inactivityChecks)
+      Future
+        .sequence(vec)
+        .map(_ => ())
     } else if (isStarted.get) {
       logger.info(s"Restarting PeerManager")
       stop()
