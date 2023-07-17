@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.script
 
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 12/23/16.
@@ -18,5 +19,11 @@ class WitnessCommitmentTest extends BitcoinSUnitTest {
     val commitment = WitnessCommitment(hex)
     commitment.witnessRootHash.hex must be(
       "309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b5")
+  }
+
+  it must "serialization symmetry" in {
+    forAll(ScriptGenerators.witnessCommitment) { case (commitment, _) =>
+      assert(WitnessCommitment(commitment.hex) == commitment)
+    }
   }
 }

@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.crypto.ECPublicKeyBytes
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
 
 /** Created by chris on 3/8/16.
@@ -60,6 +61,14 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
     multiSigScriptPubKey.maxSigs must be(3)
     multiSigScriptPubKey.requiredSigs must be(2)
 
+  }
+
+  it must "serialization symmetry" in {
+    forAll(ScriptGenerators.multiSigScriptPubKey) {
+      case (multiSigScriptPubKey, _) =>
+        MultiSignatureScriptPubKey(
+          multiSigScriptPubKey.hex) == multiSigScriptPubKey
+    }
   }
 
 }

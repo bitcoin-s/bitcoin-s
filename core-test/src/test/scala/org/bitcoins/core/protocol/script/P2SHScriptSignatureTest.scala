@@ -6,6 +6,7 @@ import org.bitcoins.core.script.constant.{
   ScriptConstant
 }
 import org.bitcoins.crypto.ECPublicKeyBytes
+import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 
 /** Created by chris on 3/8/16.
@@ -47,5 +48,22 @@ class P2SHScriptSignatureTest extends BitcoinSJvmTest {
           "3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
       ))
   }
+
+  it must "symmetrical serialization" in {
+    forAll(ScriptGenerators.p2shScriptSignature) { p2shScriptSig =>
+      assert(P2SHScriptSignature(p2shScriptSig.hex) == p2shScriptSig)
+    }
+  }
+
+  it must
+    "place a witness scriptPubKey in a p2shScriptSig, then extract the witScriptPubKey again" in {
+      forAll(ScriptGenerators.witnessScriptPubKeyV0) {
+        case (witScriptPubKey, _) =>
+          val p2shScriptSig = P2SHScriptSignature(witScriptPubKey)
+          assert(p2shScriptSig.redeemScript == witScriptPubKey)
+          assert(
+            p2shScriptSig.scriptSignatureNoRedeemScript == EmptyScriptSignature)
+      }
+    }
 
 }
