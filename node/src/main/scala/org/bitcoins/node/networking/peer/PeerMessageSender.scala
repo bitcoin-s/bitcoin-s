@@ -36,7 +36,7 @@ import scodec.bits.ByteVector
 import java.net.InetSocketAddress
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 case class PeerMessageSender(
@@ -299,14 +299,20 @@ case class PeerMessageSender(
         curReconnectionTry += 1
         reconnectionTry = reconnectionTry + 1
 
+        val reconnectP = Promise[Unit]()
         val cancellable = system.scheduler.scheduleOnce(delay) {
           val connF = connect()
-          connF.failed.foreach(err =>
-            logger.error(s"Failed to reconnect with peer=$peer", err))
-          ()
+          connF.onComplete {
+            case scala.util.Success(_) =>
+              resetReconnect()
+              reconnectP.success(())
+            case scala.util.Failure(exception) =>
+              logger.error(s"Failed to reconnect with peer=$peer", exception)
+              reconnectP.failure(exception)
+          }
         }
         reconnectionCancellableOpt = Some(cancellable)
-        Future.unit
+        reconnectP.future
     }
   }
 
