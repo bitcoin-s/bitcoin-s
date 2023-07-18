@@ -533,12 +533,13 @@ case class PeerManager(
             _ <- sendAddrReq
             _ <- createInDb(peer, peerData.serviceIdentifier)
             _ <- managePeerF()
+            _ <- syncHelper(Some(peer))
           } yield state
 
         } else if (peerDataMap.contains(peer)) {
           //one of the persistent peers initialized again, this can happen in case of a reconnection attempt
           //which succeeded which is all good, do nothing
-          Future.successful(state)
+          syncHelper(Some(peer)).map(_ => state)
         } else {
           logger.warn(s"onInitialization called for unknown $peer")
           Future.successful(state)
