@@ -398,7 +398,7 @@ case class PeerManager(
 
     inactivityCancellableOpt.map(_.cancel())
 
-    reconnectWithPeerCancellables.map(_.cancel())
+    scheduledSyncJobCancellables.map(_.cancel())
 
     val finderStopF = finderOpt match {
       case Some(finder) => finder.stop()
@@ -429,7 +429,7 @@ case class PeerManager(
         streamDoneFOpt = None
         finderOpt = None
         inactivityCancellableOpt = None
-        reconnectWithPeerCancellables = Vector.empty
+        scheduledSyncJobCancellables = Vector.empty
       }
     } yield {
       logger.info(
@@ -661,7 +661,8 @@ case class PeerManager(
     }
   }
 
-  private[this] var reconnectWithPeerCancellables: Vector[Cancellable] =
+  /** Holds jobs were we have scheduled a call to [[syncHelper()]] in the future */
+  private[this] var scheduledSyncJobCancellables: Vector[Cancellable] =
     Vector.empty
 
   private def reconnectWithPeerHelper(
@@ -671,19 +672,36 @@ case class PeerManager(
     for {
       _ <- finder.reconnect(peer)
       //cannot send getheaders message immediately, need to wait for version/verack handshake to complete
-      cancellable = system.scheduler.scheduleOnce(5.second) {
-        val syncF = syncWithNewPeerHelper(state, newPeer = peer)
-        syncF.failed.foreach(err =>
-          logger.error(s"reconnectWithPeerHelper syncF failed", err))
-        ()
-
-      }
-
+      cancellable = syncWhenInitialized(Some((state, peer)))
       _ = {
-        reconnectWithPeerCancellables =
-          reconnectWithPeerCancellables.appended(cancellable)
+        scheduledSyncJobCancellables =
+          scheduledSyncJobCancellables.appended(cancellable)
       }
     } yield state
+  }
+
+  /** Sometimes we want to sync after a peer is initialized, this schedules a job to start syncing
+    * when the peer is initialized. This is useful for cases where we have established a connection to a peer,
+    * but have not executed the version/verack handshake required for the bitcoin protocol
+    */
+  private def syncWhenInitialized(
+      stateWithPeerOpt: Option[(NodeState, Peer)]): Cancellable = {
+    system.scheduler.scheduleOnce(5.second) {
+      stateWithPeerOpt match {
+        case Some((state, peer)) =>
+          val syncF = syncWithNewPeerHelper(state, newPeer = peer)
+          syncF.failed.foreach(err =>
+            logger.error(
+              s"syncWhenInitialized syncWithNewPeerHelper failed with state=$state peer=$peer",
+              err))
+          ()
+        case None =>
+          val syncF = syncHelper(None)
+          syncF.failed.foreach(err =>
+            logger.error(s"syncWhenInitialized syncHelper failed", err))
+          ()
+      }
+    }
   }
 
   def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Unit = {
@@ -1121,12 +1139,20 @@ case class PeerManager(
         .map(_ => ())
     } else if (isStarted.get) {
       logger.info(s"Restarting PeerManager")
-      stop()
+      val cancellableF = stop()
         .flatMap(_.start())
-        .map(_ => ())
-
+        .map(_ => syncWhenInitialized(stateWithPeerOpt = None))
+      cancellableF.map { c =>
+        scheduledSyncJobCancellables = scheduledSyncJobCancellables.appended(c)
+        ()
+      }
     } else {
-      start().map(_ => ())
+      val cancellableF =
+        start().map(_ => syncWhenInitialized(stateWithPeerOpt = None))
+      cancellableF.map { c =>
+        scheduledSyncJobCancellables = scheduledSyncJobCancellables.appended(c)
+        ()
+      }
     }
 
     resultF.failed.foreach(err =>
