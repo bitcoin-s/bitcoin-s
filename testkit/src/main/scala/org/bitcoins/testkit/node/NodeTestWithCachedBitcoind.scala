@@ -44,8 +44,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
                                                             appConfig.chainConf,
                                                             appConfig.nodeConf)
         started <- node.start()
-        _ <- NodeUnitTest.syncNeutrinoNode(started, bitcoind)
-      } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
+      } yield NeutrinoNodeConnectedWithBitcoind(started, bitcoind)
     }
 
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
@@ -93,8 +92,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
           appConfig.chainConf,
           appConfig.nodeConf)
         startedNode <- node.start()
-        syncedNode <- NodeUnitTest.syncNeutrinoNode(startedNode, bitcoinds(0))
-      } yield NeutrinoNodeConnectedWithBitcoinds(syncedNode, bitcoinds)
+      } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
