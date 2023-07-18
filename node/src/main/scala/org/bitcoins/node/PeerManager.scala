@@ -947,6 +947,7 @@ case class PeerManager(
     val headerF = chainApi.getBestBlockHeader()
     for {
       _ <- getHeaderSyncHelper(syncPeerOpt)
+      _ <- chainApi.setSyncing(true)
       cancellable = createFilterSyncJob(chainApi, syncPeerOpt)
       _ = {
         syncFilterCancellableOpt = Some(cancellable)

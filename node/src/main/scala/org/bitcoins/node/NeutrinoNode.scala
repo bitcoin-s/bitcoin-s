@@ -62,8 +62,6 @@ case class NeutrinoNode(
     val peerAvailableF = AsyncUtil.retryUntilSatisfied(
       peerManager.randomPeerWithService(serviceIdentifier).isDefined)
     for {
-      chainApi <- chainApiFromDb()
-      _ <- chainApi.setSyncing(true)
       _ <- peerAvailableF
       _ <- peerManager.syncHelper(None)
     } yield ()
