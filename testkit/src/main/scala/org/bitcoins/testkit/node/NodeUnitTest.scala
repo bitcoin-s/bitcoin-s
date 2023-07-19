@@ -108,13 +108,13 @@ trait NodeUnitTest extends BaseNodeTest {
     )(test)
   }
 
-  def withUnsyncedNeutrinoNodeConnectedToBitcoinds(
+  def withUnstartedNeutrinoNodeBitcoinds(
       test: OneArgAsyncTest,
       bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+      NeutrinoNodeNotConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -122,13 +122,13 @@ trait NodeUnitTest extends BaseNodeTest {
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
-        startedNode <- node.start()
-      } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
+      } yield NeutrinoNodeNotConnectedWithBitcoinds(node, bitcoinds)
     }
-    makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
+    makeDependentFixture[NeutrinoNodeNotConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      destroy = NodeUnitTest.destroyNodeConnectedWithBitcoinds(
-        _: NodeConnectedWithBitcoinds)(system, appConfig))(test)
+      destroy =
+        NodeUnitTest.destroyNodeNotConnectedWithBitcoinds(_)(system,
+                                                             appConfig))(test)
   }
 
   def withNeutrinoNodeFundedWalletBitcoind(
@@ -238,6 +238,14 @@ object NodeUnitTest extends P2PLogger {
     }
 
     resultF
+  }
+
+  private def destroyNodeNotConnectedWithBitcoinds(
+      x: NeutrinoNodeNotConnectedWithBitcoinds)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[Unit] = {
+    destroyNodeConnectedWithBitcoinds(
+      NeutrinoNodeConnectedWithBitcoinds(x.node, x.bitcoinds))
   }
 
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
