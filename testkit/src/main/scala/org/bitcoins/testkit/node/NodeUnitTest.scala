@@ -294,14 +294,13 @@ object NodeUnitTest extends P2PLogger {
         walletCallbacks = walletCallbacks)
 
       startedNode <- node.start()
-      syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
         appConfig.walletConf,
         system)
     } yield {
-      NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
+      NeutrinoNodeFundedWalletBitcoind(node = startedNode,
                                        wallet = fundedWallet.wallet,
                                        bitcoindRpc = fundedWallet.bitcoind)
     }
