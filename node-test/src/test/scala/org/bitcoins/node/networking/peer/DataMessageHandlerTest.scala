@@ -12,7 +12,10 @@ import org.bitcoins.node._
 import org.bitcoins.node.networking.peer.NodeState.HeaderSync
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeTestWithCachedBitcoindNewest
+}
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.scalatest.{FutureOutcome, Outcome}
 
@@ -42,10 +45,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   it must "catch errors and not fail when processing an invalid payload" in {
     param: FixtureParam =>
       val node = param.node
-      val peer = node.peerManager.peers.head
 
       val peerManager = node.peerManager
       for {
+        _ <- AsyncUtil.awaitCondition(() => peerManager.peers.nonEmpty)
+        peer = node.peerManager.peers.head
         chainApi <- node.chainApiFromDb()
         _ = require(peerManager.getPeerData(peer).isDefined)
         dataMessageHandler = DataMessageHandler(
@@ -109,10 +113,10 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         }
       }
 
-      val callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
-
-      node.nodeAppConfig.addCallbacks(callbacks)
       for {
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        nodeCallbacks = NodeCallbacks.onBlockHeadersReceived(callback)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
         result <- resultP.future
@@ -133,9 +137,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             ()
           }
       }
-      val nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
-      val _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
+
       for {
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         _ <- AsyncUtil.nonBlockingSleep(2.seconds)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
@@ -157,9 +163,10 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         }
       }
 
-      val nodeCallbacks = NodeCallbacks.onTxReceived(callback)
-      val _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
       for {
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        nodeCallbacks = NodeCallbacks.onTxReceived(callback)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
         tx <- bitcoind.getRawTransactionRaw(txId)
         result <- resultP.future

@@ -463,7 +463,7 @@ object NodeUnitTest extends P2PLogger {
           //do nothing as we are already syncing
           logger.info(
             s"Node is already syncing, skipping initiating a new sync.")
-          Future.successful(node)
+          awaitSyncAndIBD(node, bitcoind).map(_ => node)
         } else {
           neutrinoNodeSyncHelper(node, bitcoind)
         }
@@ -484,6 +484,14 @@ object NodeUnitTest extends P2PLogger {
       _ <- node.sync()
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
       _ = require(syncing)
+    } yield node
+  }
+
+  private def awaitSyncAndIBD(node: NeutrinoNode, bitcoind: BitcoindRpcClient)(
+      implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+
+    for {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- AsyncUtil.retryUntilSatisfiedF(
         () => {
@@ -500,7 +508,8 @@ object NodeUnitTest extends P2PLogger {
         interval = 1.second,
         maxTries = 5
       )
-    } yield node
+    } yield ()
+
   }
 
   /** This is needed for postgres, we do not drop tables in between individual tests with postgres
