@@ -382,7 +382,7 @@ class ChainHandler(
           this
         // Should never have the case where we have (Some, None) or (None, Some) because that means the vec would be both empty and non empty
         case (_, _) =>
-          logger.warn("Was unable to process any filters headers")
+          logger.debug("Processed 0 filter headers")
           this
       }
     }
