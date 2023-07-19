@@ -176,7 +176,8 @@ case class BlockHeaderDAO()(implicit
   def getNAncestors(
       childHash: DoubleSha256DigestBE,
       n: Int): Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting $n ancestors for blockhash=$childHash")
+    require(n >= 0, s"Cannot get negative ancestors, N=$n")
+    logger.trace(s"Getting $n ancestors for blockhash=$childHash")
     val headerOptF = findByHash(childHash)
     for {
       headerOpt <- headerOptF

@@ -335,19 +335,26 @@ class ChainHandler(
     //only add new filter headers to our database
     val newFilterHeadersF = for {
       duplicates <- duplicateFilterHeadersF
-    } yield filterHeaders.filterNot(f =>
-      duplicates.exists(_.hashBE == f.hash.flip))
+    } yield {
+      filterHeaders.filterNot(f => duplicates.exists(_.hashBE == f.hash.flip))
+    }
 
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
       newFilterHeaders <- newFilterHeadersF
-      blockHeaders <-
-        blockHeaderDAO
-          .getNAncestors(childHash = stopHash, n = newFilterHeaders.size - 1)
-          .map(_.sortBy(_.height))
+      blockHeaders <- {
+        if (newFilterHeaders.length <= 0) {
+          Future.successful(Vector.empty)
+        } else {
+          blockHeaderDAO
+            .getNAncestors(childHash = stopHash, n = newFilterHeaders.size - 1)
+            .map(_.sortBy(_.height))
+        }
+      }
+
     } yield {
       if (blockHeaders.size != newFilterHeaders.size) {
         throw UnknownBlockHash(
-          s"Filter header batch size does not match block header batch size ${newFilterHeaders.size} != ${blockHeaders.size}")
+          s"Filter header batch size does not match block header batch size newFilterHeaders=${newFilterHeaders.size} != blockHeaders=${blockHeaders.size}")
       }
       blockHeaders.indices.toVector.map { i =>
         val blockHeader = blockHeaders(i)
