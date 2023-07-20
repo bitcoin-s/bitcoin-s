@@ -181,7 +181,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(0).disconnectNode(node0Uri)
         _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 1)
 
-        _ <- node.sync()
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         _ <- sendInvalidHeaders(peer)
         _ <- AsyncUtil.retryUntilSatisfied(
