@@ -109,7 +109,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         h2 <- bitcoinds(1).getBestHashBlockHeight()
         //out of sync by 1 block, h2 ahead
         _ = assert(h2 - h1 == 1)
-        _ <- node.sync()
         _ <- NodeTestUtil.awaitBestHash(node, bitcoinds(1))
       } yield {
         succeed
