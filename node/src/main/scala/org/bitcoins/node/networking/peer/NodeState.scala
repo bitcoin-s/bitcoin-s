@@ -73,8 +73,13 @@ object NodeState {
 
   case class MisbehavingPeer(badPeer: Peer, peers: Set[Peer])
       extends NodeState {
-    require(peers.exists(_ == badPeer),
-            s"BadPeer must be in peers, badPeer=$badPeer peers=$peers")
+    if (peers.nonEmpty) {
+      //needed for the case where the last peer we are connected to is the bad peer
+      require(
+        peers.exists(_ == badPeer),
+        s"MisbehavingPeer must be in peers, badPeer=$badPeer peers=$peers")
+    }
+
     override val isSyncing: Boolean = false
   }
 
