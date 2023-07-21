@@ -69,7 +69,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
     for {
       _ <- connAndInit
-      _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoinds.head)
+      _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoinds.head)
     } yield {
       succeed
     }
@@ -190,7 +190,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
-        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         res <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
@@ -221,7 +221,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //itself out of IBD. bitcoind will not sendheaders
       //when it believes itself, or it's peer is in IBD
       val gen1F = for {
-        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         x <- bitcoind.generate(1)
       } yield x
 

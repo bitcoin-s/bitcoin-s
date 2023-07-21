@@ -21,7 +21,6 @@ import org.scalatest.FutureOutcome
 
 import java.net.InetSocketAddress
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 trait NodeUnitTest extends BaseNodeTest {
@@ -470,7 +469,7 @@ object NodeUnitTest extends P2PLogger {
           //do nothing as we are already syncing
           logger.info(
             s"Node is already syncing, skipping initiating a new sync.")
-          awaitSyncAndIBD(node, bitcoind).map(_ => node)
+          NodeTestUtil.awaitSyncAndIBD(node, bitcoind).map(_ => node)
         } else {
           neutrinoNodeSyncHelper(node, bitcoind)
         }
@@ -492,31 +491,6 @@ object NodeUnitTest extends P2PLogger {
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
         node.chainApiFromDb().flatMap(_.isSyncing()))
     } yield node
-  }
-
-  private def awaitSyncAndIBD(node: NeutrinoNode, bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
-
-    for {
-      _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- AsyncUtil.retryUntilSatisfiedF(
-        () => {
-          val chainApi = node.chainApiFromDb()
-          val syncingF = chainApi.flatMap(_.isSyncing())
-          val isIBDF = chainApi.flatMap(_.isIBD())
-          for {
-            syncing <- syncingF
-            isIBD <- isIBDF
-          } yield {
-            !syncing && !isIBD
-          }
-        },
-        interval = 1.second,
-        maxTries = 5
-      )
-    } yield ()
-
   }
 
   /** This is needed for postgres, we do not drop tables in between individual tests with postgres
