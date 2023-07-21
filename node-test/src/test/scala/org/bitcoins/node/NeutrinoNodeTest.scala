@@ -10,11 +10,7 @@ import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
-import org.bitcoins.testkit.node.{
-  NodeTestUtil,
-  NodeTestWithCachedBitcoindPair,
-  NodeUnitTest
-}
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
 import org.bitcoins.testkit.util.{AkkaUtil, TorUtil}
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
@@ -69,7 +65,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
     for {
       _ <- connAndInit
-      _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoinds.head)
+      _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoinds.head)
     } yield {
       succeed
     }
@@ -187,10 +183,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           .retryUntilSatisfied(peers.size == 2,
                                interval = 1.second,
                                maxTries = 30)
-        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         res <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
@@ -221,7 +217,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //itself out of IBD. bitcoind will not sendheaders
       //when it believes itself, or it's peer is in IBD
       val gen1F = for {
-        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         x <- bitcoind.generate(1)
       } yield x
 
@@ -269,7 +265,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
       for {
-        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         _ <- AkkaUtil.nonBlockingSleep(3.seconds)
         //have to generate the block headers independent of one another
         //rather than just calling generateToAddress(2,junkAddress)
@@ -291,7 +287,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
       for {
-        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         _ <- node.stop()
         //drop all compact filter headers / filters
         _ <- CompactFilterHeaderDAO()(executionContext, node.chainConfig)

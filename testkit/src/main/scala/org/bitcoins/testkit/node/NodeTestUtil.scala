@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -176,6 +177,31 @@ abstract class NodeTestUtil extends P2PLogger {
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
     } yield ()
+  }
+
+  def awaitSyncAndIBD(node: NeutrinoNode, bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+
+    for {
+      _ <- NodeTestUtil.awaitSync(node, bitcoind)
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        () => {
+          val chainApi = node.chainApiFromDb()
+          val syncingF = chainApi.flatMap(_.isSyncing())
+          val isIBDF = chainApi.flatMap(_.isIBD())
+          for {
+            syncing <- syncingF
+            isIBD <- isIBDF
+          } yield {
+            !syncing && !isIBD
+          }
+        },
+        interval = 1.second,
+        maxTries = 5
+      )
+    } yield ()
+
   }
 
   /** get our neutrino node's uri from a test bitcoind instance to send rpc commands for our node.
