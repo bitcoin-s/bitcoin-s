@@ -67,8 +67,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val startNodeF = for {
       _ <- peerManager.start()
     } yield {
-      logger.info(s"Our node has been full started. It took=${System
-        .currentTimeMillis() - start}ms")
       this
     }
 
@@ -85,7 +83,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       filterCount <- filterCountF
     } yield {
       logger.info(
-        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters")
+        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters. It took=${System
+          .currentTimeMillis() - start}ms")
       node
     }
   }

@@ -29,3 +29,7 @@ case class NeutrinoNodeConnectedWithBitcoindV22(
     node: NeutrinoNode,
     bitcoind: BitcoindV22RpcClient)
     extends NodeConnectedWithBitcoind
+
+case class NeutrinoNodeNotConnectedWithBitcoinds(
+    node: NeutrinoNode,
+    bitcoinds: Vector[BitcoindRpcClient])

@@ -872,11 +872,22 @@ case class PeerManager(
       s"switchSyncToPeer() oldSyncState=$oldSyncState newPeer=$newPeer")
     val newState = oldSyncState.replaceSyncPeer(newPeer)
     oldSyncState match {
-      case _: HeaderSync | _: ValidatingHeaders =>
-        syncHelper(Some(newPeer)).map(_ => newState)
-      case _: FilterHeaderSync | _: FilterSync =>
-        filterSyncHelper(ChainHandler.fromDatabase(), Some(newPeer)).map(_ =>
-          newState)
+      case s @ (_: HeaderSync | _: ValidatingHeaders) =>
+        if (s.syncPeer != newPeer) {
+          syncHelper(syncPeerOpt = Some(newPeer)).map(_ => newState)
+        } else {
+          //if its same peer we don't need to switch
+          Future.successful(oldSyncState)
+        }
+      case s @ (_: FilterHeaderSync | _: FilterSync) =>
+        if (s.syncPeer != newPeer) {
+          filterSyncHelper(chainApi = ChainHandler.fromDatabase(),
+                           syncPeerOpt = Some(newPeer)).map(_ => newState)
+        } else {
+          //if its same peer we don't need to switch
+          Future.successful(oldSyncState)
+        }
+
     }
   }
 

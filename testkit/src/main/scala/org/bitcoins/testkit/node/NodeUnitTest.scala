@@ -108,13 +108,13 @@ trait NodeUnitTest extends BaseNodeTest {
     )(test)
   }
 
-  def withUnsyncedNeutrinoNodeConnectedToBitcoinds(
+  def withUnstartedNeutrinoNodeBitcoinds(
       test: OneArgAsyncTest,
       bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+      NeutrinoNodeNotConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -122,13 +122,13 @@ trait NodeUnitTest extends BaseNodeTest {
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
-        startedNode <- node.start()
-      } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
+      } yield NeutrinoNodeNotConnectedWithBitcoinds(node, bitcoinds)
     }
-    makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
+    makeDependentFixture[NeutrinoNodeNotConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      destroy = NodeUnitTest.destroyNodeConnectedWithBitcoinds(
-        _: NodeConnectedWithBitcoinds)(system, appConfig))(test)
+      destroy =
+        NodeUnitTest.destroyNodeNotConnectedWithBitcoinds(_)(system,
+                                                             appConfig))(test)
   }
 
   def withNeutrinoNodeFundedWalletBitcoind(
@@ -240,6 +240,14 @@ object NodeUnitTest extends P2PLogger {
     resultF
   }
 
+  private def destroyNodeNotConnectedWithBitcoinds(
+      x: NeutrinoNodeNotConnectedWithBitcoinds)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[Unit] = {
+    destroyNodeConnectedWithBitcoinds(
+      NeutrinoNodeConnectedWithBitcoinds(x.node, x.bitcoinds))
+  }
+
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   private def createNeutrinoNodeFundedWalletBitcoind(
       versionOpt: Option[BitcoindVersion],
@@ -294,14 +302,13 @@ object NodeUnitTest extends P2PLogger {
         walletCallbacks = walletCallbacks)
 
       startedNode <- node.start()
-      syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
         appConfig.walletConf,
         system)
     } yield {
-      NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
+      NeutrinoNodeFundedWalletBitcoind(node = startedNode,
                                        wallet = fundedWallet.wallet,
                                        bitcoindRpc = fundedWallet.bitcoind)
     }

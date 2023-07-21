@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeNotConnectedWithBitcoinds
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.tor.CachedTor
@@ -41,7 +41,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       Vector.empty)
   }
 
-  override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
+  override type FixtureParam = NeutrinoNodeNotConnectedWithBitcoinds
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val torClientF = if (TorUtil.torEnabled) torF else Future.unit
@@ -49,7 +49,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
       bitcoinds <- bitcoindsF
-      outcome = withUnsyncedNeutrinoNodeConnectedToBitcoinds(test, bitcoinds)(
+      outcome = withUnstartedNeutrinoNodeBitcoinds(test, bitcoinds)(
         system,
         getFreshConfig)
       f <- outcome.toFuture
@@ -67,6 +67,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
       for {
         bitcoindPeers <- bitcoinPeersF
+        _ <- node.start()
         _ <- AsyncUtil.retryUntilSatisfied(peers.size == 2,
                                            maxTries = 30,
                                            interval = 1.second)
@@ -101,13 +102,13 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       def peers = peerManager.peers
 
       for {
+        _ <- node.start()
         _ <- AsyncUtil.retryUntilSatisfied(peers.size == 2)
         _ <- bitcoinds(1).generateToAddress(1, junkAddress)
         h1 <- bitcoinds(0).getBestHashBlockHeight()
         h2 <- bitcoinds(1).getBestHashBlockHeight()
         //out of sync by 1 block, h2 ahead
         _ = assert(h2 - h1 == 1)
-        _ <- node.sync()
         _ <- NodeTestUtil.awaitBestHash(node, bitcoinds(1))
       } yield {
         succeed
@@ -129,6 +130,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
 
       for {
+        _ <- node.start()
         _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
         peers <- bitcoinPeersF
         peer = peers.head
@@ -167,6 +169,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       }
 
       for {
+        _ <- node.start()
         _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 2)
         peers <- bitcoinPeersF
         peer = peers(1)
@@ -178,7 +181,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(0).disconnectNode(node0Uri)
         _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 1)
 
-        _ <- node.sync()
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         _ <- sendInvalidHeaders(peer)
         _ <- AsyncUtil.retryUntilSatisfied(

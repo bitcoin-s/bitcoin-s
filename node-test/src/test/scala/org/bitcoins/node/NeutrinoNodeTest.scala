@@ -300,7 +300,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- bitcoind.generate(1)
         //restart the node
         _ <- node.start()
-        _ <- node.sync()
         //await for us to sync compact filter headers filters
         //the sync process should get kicked off after we see the
         //newly mined block header
@@ -324,10 +323,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       //start syncing node
       val numBlocks = 5
-      val startSyncF = node.sync()
       val genBlocksF = {
         for {
-          _ <- startSyncF
           //generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
@@ -352,7 +349,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       for {
-        _ <- node.sync()
         _ <- AsyncUtil.nonBlockingSleep(1.second)
         initConnectionCount <- node.getConnectionCount
         _ = assert(initConnectionCount == 2)

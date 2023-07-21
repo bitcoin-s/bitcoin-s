@@ -494,7 +494,7 @@ case class DataMessageHandler(
         peerData.updateInvalidMessageCount()
         if (peerData.exceededMaxInvalidMessages) {
           logger.warn(
-            s"$peer exceeded max limit of invalid messages. Disconnecting.")
+            s"$peer exceeded max limit of invalid messages. Disconnecting. peers=${state.peers}")
 
           Future.successful(copy(state = MisbehavingPeer(peer, state.peers)))
         } else {
