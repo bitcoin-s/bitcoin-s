@@ -187,10 +187,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           .retryUntilSatisfied(peers.size == 2,
                                interval = 1.second,
                                maxTries = 30)
-        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         res <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
