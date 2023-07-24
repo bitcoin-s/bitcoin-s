@@ -20,7 +20,7 @@ import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 
 class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
 
@@ -93,7 +93,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
 
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
-        result <- resultP.future
+        result = Await.result(resultP.future, 30.seconds)
       } yield assert(result.blockHeader.hashBE == hash)
   }
 
@@ -119,7 +119,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
-        result <- resultP.future
+        result = Await.result(resultP.future, 30.seconds)
       } yield assert(result == Vector(header))
   }
 
@@ -145,7 +145,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- AsyncUtil.nonBlockingSleep(2.seconds)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
-        result <- resultP.future
+        result = Await.result(resultP.future, 30.seconds)
       } yield assert(result == Vector((hash.flip, filter.filter)))
   }
 
@@ -169,7 +169,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
         tx <- bitcoind.getRawTransactionRaw(txId)
-        result <- resultP.future
+        result = Await.result(resultP.future, 30.seconds)
       } yield assert(result == tx)
   }
 }
