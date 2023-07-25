@@ -27,7 +27,7 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.node.{NodeType, Peer}
+import org.bitcoins.core.api.node.{NodeType, Peer, PeerManagerApi}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
@@ -57,6 +57,7 @@ case class PeerManager(
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig)
     extends StartStopAsync[PeerManager]
+    with PeerManagerApi
     with PeerMessageSenderApi
     with SourceQueue[NodeStreamMessage]
     with P2PLogger {
@@ -82,7 +83,7 @@ case class PeerManager(
 
   def connectedPeerCount: Int = _peerDataMap.size
 
-  private def connectPeer(peer: Peer): Future[Unit] = {
+  override def connectPeer(peer: Peer): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
