@@ -124,10 +124,7 @@ case class PeerManager(
                     .map(_.peerMessageSender)
                 case _: DataPayload =>
                   //peer must be fully initialized to send a data payload
-                  val msg =
-                    s"Cannot find peerOpt=${sendToPeer.peerOpt} to send message=${sendToPeer.msg.payload.commandName} to. It may have been disconnected, sending to another random peer."
-                  logger.warn(msg)
-                  randomPeerMsgSenderWithService(ServiceIdentifier.NODE_NETWORK)
+                  None
               }
           }
         case None =>
@@ -139,8 +136,10 @@ case class PeerManager(
         peerMsgSender
           .sendMsg(sendToPeer.msg)
       case None =>
-        sys.error(
-          s"Unable to find peer message sender to send msg=${sendToPeer.msg.header.commandName} to. This means we are not connected to any peers.")
+        val msg =
+          s"Cannot find peerOpt=${sendToPeer.peerOpt} in set of peers=$peers to send message=${sendToPeer.msg.payload.commandName} to. It may have been disconnected, or we have no peers."
+        logger.warn(msg)
+        Future.unit
     }
   }
 
