@@ -88,10 +88,10 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         }
       }
 
-      val nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
-      node.nodeAppConfig.addCallbacks(nodeCallbacks)
-
       for {
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         result = Await.result(resultP.future, 30.seconds)
       } yield assert(result.blockHeader.hashBE == hash)
