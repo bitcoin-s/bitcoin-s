@@ -7,8 +7,7 @@ import org.bitcoins.node.networking.peer.NodeState.{
   FilterSync,
   HeaderSync,
   MisbehavingPeer,
-  RemovePeers,
-  ValidatingHeaders
+  RemovePeers
 }
 
 sealed abstract class NodeState {
@@ -22,7 +21,6 @@ sealed abstract class NodeState {
     case fh: FilterHeaderSync => fh.copy(peers = newPeers)
     case fs: FilterSync       => fs.copy(peers = newPeers)
     case d: DoneSyncing       => d.copy(peers = newPeers)
-    case v: ValidatingHeaders => v.copy(peers = newPeers)
     case rm: RemovePeers      => rm.copy(peers = newPeers)
     case m: MisbehavingPeer   => m.copy(peers = newPeers)
   }
@@ -40,10 +38,9 @@ sealed abstract class SyncNodeState extends NodeState {
 
   def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {
     this match {
-      case h: HeaderSync         => h.copy(syncPeer = newSyncPeer)
-      case fh: FilterHeaderSync  => fh.copy(syncPeer = newSyncPeer)
-      case fs: FilterSync        => fs.copy(syncPeer = newSyncPeer)
-      case vh: ValidatingHeaders => vh.copy(syncPeer = newSyncPeer)
+      case h: HeaderSync        => h.copy(syncPeer = newSyncPeer)
+      case fh: FilterHeaderSync => fh.copy(syncPeer = newSyncPeer)
+      case fs: FilterSync       => fs.copy(syncPeer = newSyncPeer)
     }
   }
 }
@@ -56,20 +53,6 @@ object NodeState {
       extends SyncNodeState
 
   case class FilterSync(syncPeer: Peer, peers: Set[Peer]) extends SyncNodeState
-
-  case class ValidatingHeaders(
-      syncPeer: Peer,
-      inSyncWith: Set[Peer],
-      failedCheck: Set[Peer],
-      verifyingWith: Set[Peer],
-      peers: Set[Peer]
-  ) extends SyncNodeState {
-    def validated: Boolean = inSyncWith ++ failedCheck == verifyingWith
-
-    override def toString: String = {
-      s"ValidatingHeaders(syncPeer=$syncPeer,inSyncWith=$inSyncWith,failedCheck=$failedCheck,verifyingWith=$verifyingWith,peers=$peers)"
-    }
-  }
 
   case class MisbehavingPeer(badPeer: Peer, peers: Set[Peer])
       extends NodeState {

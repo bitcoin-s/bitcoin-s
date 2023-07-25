@@ -58,18 +58,6 @@ case class DataMessageHandler(
     state match {
       case syncState: SyncNodeState =>
         syncState match {
-          case _: ValidatingHeaders =>
-            val resultF =
-              handleDataPayloadValidState(payload, peerData)
-            //process messages from all peers
-            resultF.failed.foreach { err =>
-              logger.error(
-                s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
-                err)
-            }
-            resultF.recoverWith { case NonFatal(_) =>
-              Future.successful(this)
-            }
           case state @ (_: HeaderSync | _: FilterHeaderSync | _: FilterSync) =>
             val syncPeer = state.syncPeer
             if (peerData.peer != syncPeer) {
@@ -149,7 +137,7 @@ case class DataMessageHandler(
             s"Got ${filterHeader.filterHashes.size} compact filter header hashes, state=$state")
           val filterHeaderSync = state match {
             //is validating headers right here? Re-review these state transitions
-            case s @ (_: HeaderSync | _: ValidatingHeaders | DoneSyncing(_)) =>
+            case s @ (_: HeaderSync | DoneSyncing(_)) =>
               FilterHeaderSync(peer, s.peers)
             case filterHeaderSync: FilterHeaderSync => filterHeaderSync
             case x @ (_: FilterSync | _: MisbehavingPeer | _: RemovePeers) =>
@@ -197,8 +185,7 @@ case class DataMessageHandler(
             case f: FilterSync => f
             case s @ (_: DoneSyncing | _: FilterHeaderSync) =>
               FilterSync(peer, s.peers)
-            case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync |
-                _: ValidatingHeaders) =>
+            case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync) =>
               sys.error(s"Incorrect state for handling filter messages, got=$x")
           }
           val filterBatch = filterBatchCache.+(filter)
@@ -317,14 +304,8 @@ case class DataMessageHandler(
               if (headerSync.syncPeer == peer) {
                 headerSync
               } else {
-                //are these Set.empty correct?
-                ValidatingHeaders(syncPeer = peer,
-                                  inSyncWith = Set.empty,
-                                  failedCheck = Set.empty,
-                                  verifyingWith = headerSync.peers,
-                                  peers = headerSync.peers)
+                FilterHeaderSync(headerSync.syncPeer, headerSync.peers)
               }
-            case v: ValidatingHeaders => v
             case x @ (_: FilterHeaderSync | _: FilterSync | _: MisbehavingPeer |
                 _: RemovePeers) =>
               sys.error(s"Invalid state to receive headers in, got=$x")
@@ -508,22 +489,6 @@ case class DataMessageHandler(
             _ <- peerMessageSenderApi.sendGetHeadersMessage(cachedHeaders,
                                                             Some(peer))
           } yield this.copy(state = HeaderSync(peer, state.peers))
-        }
-
-      case headerState @ ValidatingHeaders(peer, _, failedCheck, _, _) =>
-        //if a peer sends invalid data then mark it as failed, dont disconnect
-        logger.warn(
-          s"Got invalid headers from peer=$peer while validating. Marking as failed.")
-        val newHeaderState =
-          headerState.copy(failedCheck = failedCheck + peer)
-        val newDmh = copy(state = newHeaderState)
-
-        if (newHeaderState.validated) {
-          logger.info(
-            s"Done validating headers, inSyncWith=${newHeaderState.inSyncWith}, failedCheck=${newHeaderState.failedCheck}")
-          PeerManager.fetchCompactFilterHeaders(newDmh, peerMessageSenderApi)
-        } else {
-          Future.successful(newDmh)
         }
       case _: FilterHeaderSync | _: FilterSync =>
         Future.successful(this)
@@ -763,18 +728,6 @@ case class DataMessageHandler(
                 .sendGetHeadersMessage(lastHash.flip, Some(peer))
                 .map(_ => newDmh)
 
-            case ValidatingHeaders(_, inSyncWith, _, _, peers) =>
-              //ask for more headers now
-              val askF = peerMessageSenderApi
-                .sendGetHeadersMessage(lastHash.flip, Some(peer))
-                .map(_ => syncing)
-
-              for {
-                _ <- askF
-              } yield {
-                newDmh.copy(state =
-                  RemovePeers(inSyncWith.toVector, peers, true))
-              }
             case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing(_) |
                 _: MisbehavingPeer | _: RemovePeers) =>
               val exn = new RuntimeException(
@@ -793,57 +746,12 @@ case class DataMessageHandler(
           // so we also check if our cached filter heights have been set as well, if they haven't then
           // we probably need to sync filters
           state match {
-            case HeaderSync(syncPeer, peers) =>
+            case HeaderSync(syncPeer, _) =>
               // headers are synced now with the current sync peer, now move to validating it for all peers
               require(syncPeer == peer, s"syncPeer=$syncPeer peer=$peer")
 
-              if (peers.size > 1) {
-                val newState =
-                  ValidatingHeaders(
-                    syncPeer = peer,
-                    inSyncWith = Set(peer),
-                    verifyingWith = peers.toSet,
-                    failedCheck = Set.empty[Peer],
-                    peers = peers
-                  )
-
-                logger.info(
-                  s"Starting to validate headers now. Verifying with ${newState.verifyingWith}")
-
-                val getHeadersAllF = {
-                  val msg = GetHeadersMessage(lastHash)
-                  peerMessageSenderApi.gossipMessage(msg,
-                                                     excludedPeerOpt =
-                                                       Some(peer))
-                }
-
-                getHeadersAllF
-                  .map(_ => newDmh.copy(state = newState))
-              } else {
-                //if just one peer then can proceed ahead directly
-                PeerManager.fetchCompactFilterHeaders(newDmh,
-                                                      peerMessageSenderApi)
-              }
-
-            case headerState @ ValidatingHeaders(_, inSyncWith, _, _, _) =>
-              //add the current peer to it
-              val newHeaderState =
-                headerState.copy(syncPeer = peer,
-                                 inSyncWith = inSyncWith + peer)
-              val newDmh2 = newDmh.copy(state = newHeaderState)
-
-              if (newHeaderState.validated) {
-                // If we are in neutrino mode, we might need to start fetching filters and their headers
-                // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
-                // so we also check if our cached filter heights have been set as well, if they haven't then
-                // we probably need to sync filters
-
-                PeerManager.fetchCompactFilterHeaders(currentDmh = newDmh2,
-                                                      peerMessageSenderApi)
-              } else {
-                //do nothing, we are still waiting for some peers to send headers or timeout
-                Future.successful(newDmh2)
-              }
+              PeerManager.fetchCompactFilterHeaders(newDmh,
+                                                    peerMessageSenderApi)
             case x @ (_: FilterHeaderSync | _: FilterSync | DoneSyncing(_) |
                 _: MisbehavingPeer | _: RemovePeers) =>
               val exn = new RuntimeException(
@@ -854,17 +762,6 @@ case class DataMessageHandler(
       } else {
         //what if we are synced exactly by the 2000th header
         state match {
-          case headerState @ ValidatingHeaders(_, inSyncWith, _, _, _) =>
-            val newHeaderState =
-              headerState.copy(inSyncWith = inSyncWith + peer, syncPeer = peer)
-            val newDmh2 = newDmh.copy(state = newHeaderState)
-            if (newHeaderState.validated) {
-              PeerManager.fetchCompactFilterHeaders(newDmh2,
-                                                    peerMessageSenderApi)
-            } else {
-              //do nothing, we are still waiting for some peers to send headers
-              Future.successful(newDmh2)
-            }
           case _: HeaderSync =>
             Future.successful(newDmh)
           case DoneSyncing(_) =>
