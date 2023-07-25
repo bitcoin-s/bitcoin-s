@@ -88,8 +88,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         }
       }
 
-
-
       for {
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
