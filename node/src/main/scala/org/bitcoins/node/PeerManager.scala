@@ -95,7 +95,8 @@ case class PeerManager(
           s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
         Future.unit
       case None =>
-        val exn = new RuntimeException(s"Cannot connectPeer, finder not started. Call PeerManager.start()")
+        val exn = new RuntimeException(
+          s"Cannot connectPeer, finder not started. Call PeerManager.start()")
         Future.failed(exn)
     }
   }
