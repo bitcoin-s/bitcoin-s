@@ -82,7 +82,7 @@ case class PeerManager(
 
   def connectedPeerCount: Int = _peerDataMap.size
 
-  private def addPeer(peer: Peer): Future[Unit] = {
+  private def connectPeer(peer: Peer): Future[Unit] = {
     finderOpt match {
       case Some(finder) =>
         require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
@@ -95,8 +95,8 @@ case class PeerManager(
           s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
         Future.unit
       case None =>
-        sys.error(
-          s"Cannot addPeer, finder not started. Call PeerManager.start()")
+        val exn = new RuntimeException(s"Cannot connectPeer, finder not started. Call PeerManager.start()")
+        Future.failed(exn)
     }
   }
 
@@ -337,7 +337,7 @@ case class PeerManager(
            s"$replacePeer has cf")
     for {
       _ <- disconnectPeer(replacePeer)
-      _ <- addPeer(withPeer)
+      _ <- connectPeer(withPeer)
     } yield {
       ()
     }
@@ -500,7 +500,7 @@ case class PeerManager(
           def managePeerF(): Future[Unit] = {
             //if we have slots remaining, connect
             if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
-              addPeer(peer)
+              connectPeer(peer)
             } else {
               lazy val notCf = peerDataMap
                 .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
