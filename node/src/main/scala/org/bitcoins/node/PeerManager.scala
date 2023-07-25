@@ -64,8 +64,8 @@ case class PeerManager(
   private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
-  private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
-  def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
+  private val _waitingForDisconnection: mutable.Set[Peer] = mutable.Set.empty
+  def waitingForDisconnection: Set[Peer] = _waitingForDisconnection.toSet
 
   private[this] var finderOpt: Option[PeerFinder] = {
     None
@@ -336,27 +336,23 @@ case class PeerManager(
     assert(!peerDataMap(replacePeer).serviceIdentifier.nodeCompactFilters,
            s"$replacePeer has cf")
     for {
-      _ <- removePeer(replacePeer)
+      _ <- disconnectPeer(replacePeer)
       _ <- addPeer(withPeer)
     } yield {
       ()
     }
   }
 
-  def removePeer(peer: Peer): Future[Unit] = {
-    logger.debug(s"Removing persistent peer $peer")
+  def disconnectPeer(peer: Peer): Future[Unit] = {
+    logger.debug(s"Disconnecting persistent peer=$peer")
     val client: PeerData = peerDataMap(peer)
     _peerDataMap.remove(peer)
     //so we need to remove if from the map for connected peers so no more request could be sent to it but we before
     //the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
     //leading to a memory leak may happen
-    _waitingForDeletion.add(peer)
+    _waitingForDisconnection.add(peer)
     //now send request to stop actor which will be completed some time in future
     client.stop()
-  }
-
-  def isReconnection(peer: Peer): Boolean = {
-    peerDataMap.contains(peer)
   }
 
   override def start(): Future[PeerManager] = {
@@ -405,9 +401,9 @@ case class PeerManager(
 
     val stopF = for {
       _ <- finderStopF
-      _ <- Future.traverse(peers)(removePeer)
+      _ <- Future.traverse(peers)(disconnectPeer)
       _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && waitingForDeletion.isEmpty,
+        _peerDataMap.isEmpty && waitingForDisconnection.isEmpty,
         interval = 1.seconds,
         maxTries = 30
       )
@@ -620,9 +616,9 @@ case class PeerManager(
               Future.successful(state)
             }
           }
-        } else if (waitingForDeletion.contains(peer)) {
+        } else if (waitingForDisconnection.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
-          _waitingForDeletion.remove(peer)
+          _waitingForDisconnection.remove(peer)
           Future.successful(state)
         } else {
           logger.warn(s"onP2PClientStopped called for unknown $peer")
@@ -787,12 +783,12 @@ case class PeerManager(
                   case m: MisbehavingPeer =>
                     //disconnect the misbehaving peer
                     for {
-                      _ <- removePeer(m.badPeer)
+                      _ <- disconnectPeer(m.badPeer)
                       _ <- syncFromNewPeer()
                     } yield newDmh
                   case removePeers: RemovePeers =>
                     for {
-                      _ <- Future.traverse(removePeers.peers)(removePeer)
+                      _ <- Future.traverse(removePeers.peers)(disconnectPeer)
                     } yield newDmh
                   case _: SyncNodeState | DoneSyncing(_) =>
                     Future.successful(newDmh)

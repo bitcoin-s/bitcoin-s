@@ -98,7 +98,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           .map(p =>
             !peerManager
               .getPeerData(p)
-              .isDefined && !peerManager.waitingForDeletion
+              .isDefined && !peerManager.waitingForDisconnection
               .contains(p))
           .forall(_ == true),
         maxTries = 5,
@@ -110,7 +110,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- bothOurs
         _ <- allConnected
         _ <- allInitialized
-        _ <- Future.sequence(peers.map(peerManager.removePeer))
+        _ <- Future.sequence(peers.map(peerManager.disconnectPeer))
         _ <- allDisconn
       } yield {
         succeed
