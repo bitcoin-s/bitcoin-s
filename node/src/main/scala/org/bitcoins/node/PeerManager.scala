@@ -708,13 +708,6 @@ case class PeerManager(
     state match {
       case HeaderSync(_, _) | MisbehavingPeer(_, _) | DoneSyncing(_) =>
         syncFromNewPeer().map(_ => dmh)
-      case headerState @ ValidatingHeaders(_, _, failedCheck, _, _) =>
-        val newHeaderState = headerState.copy(failedCheck = failedCheck + peer)
-        val newDmh = dmh.copy(state = newHeaderState)
-
-        if (newHeaderState.validated) {
-          PeerManager.fetchCompactFilterHeaders(newDmh, this)
-        } else Future.successful(newDmh)
 
       case _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
         Future.successful(dmh)
@@ -869,7 +862,7 @@ case class PeerManager(
       s"switchSyncToPeer() oldSyncState=$oldSyncState newPeer=$newPeer")
     val newState = oldSyncState.replaceSyncPeer(newPeer)
     oldSyncState match {
-      case s @ (_: HeaderSync | _: ValidatingHeaders) =>
+      case s: HeaderSync =>
         if (s.syncPeer != newPeer) {
           syncHelper(syncPeerOpt = Some(newPeer)).map(_ => newState)
         } else {
@@ -1024,7 +1017,7 @@ case class PeerManager(
                     peer = fhs.syncPeer,
                     peers = peers)
                   .map(_ => ())
-              case x @ (_: FilterSync | _: HeaderSync | _: ValidatingHeaders) =>
+              case x @ (_: FilterSync | _: HeaderSync) =>
                 val exn = new RuntimeException(
                   s"Invalid state to start syncing filter headers with, got=$x")
                 Future.failed(exn)
