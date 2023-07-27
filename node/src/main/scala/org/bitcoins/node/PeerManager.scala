@@ -974,8 +974,29 @@ case class PeerManager(
             if !syncFilterCancellable.isCancelled =>
           syncFilterCancellable
         case Some(_) | None =>
+          val oldFilterHeaderCountF = chainApi.getFilterHeaderCount()
+          val oldFilterCountF = chainApi.getFilterCount()
           system.scheduler.scheduleOnce(10.seconds) {
-            val filterSyncF = filterSyncHelper(chainApi, syncPeerOpt)
+            val filterSyncF = {
+              for {
+                oldFilterHeaderCount <- oldFilterHeaderCountF
+                oldFilterCount <- oldFilterCountF
+                currentFilterHeaderCount <- chainApi.getFilterHeaderCount()
+                currentFilterCount <- chainApi.getFilterCount()
+                _ <- {
+                  //make sure filter sync hasn't started since we schedule the job...
+                  //see: https://github.com/bitcoin-s/bitcoin-s/issues/5167
+                  if (
+                    oldFilterHeaderCount == currentFilterHeaderCount && oldFilterCount == currentFilterCount
+                  ) {
+                    //if it hasn't started it, start it
+                    filterSyncHelper(chainApi, syncPeerOpt)
+                  } else {
+                    Future.unit
+                  }
+                }
+              } yield ()
+            }
             filterSyncF.onComplete {
               case scala.util.Success(_) =>
                 syncFilterCancellableOpt = None
