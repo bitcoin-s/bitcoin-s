@@ -80,6 +80,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   it must "reconnect a peer when inactivity checks run and we have 0 peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/5162
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val startedF =
         getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node)
@@ -94,8 +95,6 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
         _ <- AsyncUtil.retryUntilSatisfiedF(
           () => started.getConnectionCount.map(_ == 0),
           1.second)
-
-        //how do i make sure the logic to reconnect does not take affect in onP2PClientDisconnected
 
         //wait until there is a timeout for inactivity
         _ <- AsyncUtil.retryUntilSatisfiedF(
