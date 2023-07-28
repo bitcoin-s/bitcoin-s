@@ -4,6 +4,9 @@ import scala.concurrent.Future
 
 trait PeerManagerApi {
 
+  /** Peers we are currently connected too and have completed the version/verack handshake with */
+  def peers: Set[Peer]
+
   def disconnectPeer(peer: Peer): Future[Unit]
 
   def connectPeer(peer: Peer): Future[Unit]
