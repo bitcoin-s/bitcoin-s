@@ -3,7 +3,7 @@ package org.bitcoins.core.api.node
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 
-import java.net.InetSocketAddress
+import java.net.{InetSocketAddress, URI}
 
 case class Peer(
     socket: InetSocketAddress,
@@ -26,5 +26,12 @@ object Peer {
       socket: InetSocketAddress,
       socks5ProxyParams: Option[Socks5ProxyParams]): Peer = {
     Peer(socket, socks5ProxyParams = socks5ProxyParams)
+  }
+
+  def fromURI(
+      uri: URI,
+      socks5ProxyParamsOpt: Option[Socks5ProxyParams]): Peer = {
+    val socket = new InetSocketAddress(uri.getHost, uri.getPort)
+    fromSocket(socket, socks5ProxyParamsOpt)
   }
 }
