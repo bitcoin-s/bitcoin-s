@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="OFF">
+    <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -54,10 +54,10 @@
     <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="WARN"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="DEBUG"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
     <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="WARN"/>
     <!-- inspect TCP details -->
@@ -66,9 +66,9 @@
     <!-- See exceptions thrown in actor-->
     <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
 
-    <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
+    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
 
-    <logger name="org.bitcoins.node.PeerFinder" level="WARN"/>
+    <logger name="org.bitcoins.node.PeerFinder" level="INFO"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->
