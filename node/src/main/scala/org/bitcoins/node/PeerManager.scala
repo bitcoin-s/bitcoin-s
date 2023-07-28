@@ -102,7 +102,7 @@ case class PeerManager(
     }
   }
 
-  def peers: Set[Peer] = _peerDataMap.keys.toSet
+  override def peers: Set[Peer] = _peerDataMap.keys.toSet
 
   override def sendMsg(
       msg: NetworkPayload,
