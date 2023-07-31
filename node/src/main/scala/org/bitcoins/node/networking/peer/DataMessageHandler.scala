@@ -175,7 +175,7 @@ case class DataMessageHandler(
                 } yield {
                   filterSyncStateOpt match {
                     case Some(filterSyncState) => filterSyncState
-                    case None => DoneSyncing(filterHeaderSync.peers)
+                    case None                  => DoneSyncing(filterHeaderSync.peers)
                   }
                 }
               }
