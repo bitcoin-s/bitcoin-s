@@ -145,12 +145,15 @@ case class DataMessageHandler(
                 s"Incorrect state for handling filter header messages, got=$x")
           }
           val filterHeaders = filterHeader.filterHeaders
+          val blockCountF = chainApi.getBlockCount()
           for {
             newChainApi <- chainApi.processFilterHeaders(
               filterHeaders,
               filterHeader.stopHash.flip)
+            filterHeaderCount <- newChainApi.getFilterHeaderCount()
+            blockCount <- blockCountF
             newState <-
-              if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
+              if (blockCount != filterHeaderCount) {
                 logger.debug(
                   s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
                 sendNextGetCompactFilterHeadersCommand(
