@@ -153,9 +153,7 @@ case class DataMessageHandler(
             filterHeaderCount <- newChainApi.getFilterHeaderCount()
             blockCount <- blockCountF
             newState <-
-              if (
-                filterHeaders.size == chainConfig.filterHeaderBatchSize && blockCount != filterHeaderCount
-              ) {
+              if (blockCount != filterHeaderCount) {
                 logger.debug(
                   s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
                 sendNextGetCompactFilterHeadersCommand(
