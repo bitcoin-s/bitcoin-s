@@ -482,16 +482,31 @@ case class DataMessageHandler(
 
           Future.successful(copy(state = MisbehavingPeer(peer, state.peers)))
         } else {
-          logger.info(
-            s"Re-querying headers from $peer. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
+
           for {
             blockchains <- BlockHeaderDAO().getBlockchains()
             cachedHeaders = blockchains
               .flatMap(_.headers)
               .map(_.hashBE)
-            _ <- peerMessageSenderApi.sendGetHeadersMessage(cachedHeaders,
-                                                            Some(peer))
-          } yield this.copy(state = HeaderSync(peer, state.peers))
+            //select a peer that is not the one that sent us an invalid header
+            newPeerOpt = state.peers.filterNot(_ == peer).headOption
+            newState <- {
+              newPeerOpt match {
+                case Some(newPeer) =>
+                  logger.info(
+                    s"Received invalid header from peer=$peer. Re-querying headers from peer=$newPeer. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
+                  val queryF = peerMessageSenderApi.sendGetHeadersMessage(
+                    cachedHeaders,
+                    Some(newPeer))
+                  queryF.map(_ => HeaderSync(newPeer, state.peers))
+                case None =>
+                  logger.warn(
+                    s"Received invalid header from peer=$peer. Only have 1 peer so cannot re-query, state=$state")
+                  Future.successful(state)
+              }
+
+            }
+          } yield this.copy(state = newState)
         }
       case _: FilterHeaderSync | _: FilterSync =>
         Future.successful(this)

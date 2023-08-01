@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.Peer
-import org.bitcoins.core.p2p.{GetHeadersMessage, HeadersMessage}
+import org.bitcoins.core.p2p.{HeadersMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -73,14 +73,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
                                            interval = 1.second)
         //sync from first bitcoind
         peer0 = bitcoindPeers(0)
-        networkPayload =
-          GetHeadersMessage(node.chainConfig.chain.genesisHash)
-        //waiting for response to header query now
-        _ <- node.peerManager
-          .getPeerData(peer0)
-          .get
-          .peerMessageSenderApi
-          .sendMsg(networkPayload, Some(peer0))
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri)
         _ = logger.debug(
@@ -118,22 +110,18 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   it must "re-query in case invalid headers are sent" in {
     nodeConnectedWithBitcoinds =>
-      //old behavior: When we get done syncing headers from bitcoind(0)
-      //we validate those headers against bitcoind(1)
-      //after validating those block headers, we sync filter headers from bitcoind(1)
-
-      //new behavior: When we get done syncing headers from bitcoind(0)
-      //we validate those headers against bitcoind(1)
-      //after validating headers, we trying to sync compact filter headers against bitcoind(0)
-      //which is 1 block header behind bitcoind(1) causing us to send an invalid getcfheaders query
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
-
       for {
         _ <- node.start()
         _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
         peers <- bitcoinPeersF
         peer = peers.head
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
+        // generating 6 blocks will cause bitcoind(1) NOT to gossip them on the p2p network
+        //this means we can test our re-query logic by sending an invalid header from bitcoinds(0)
+        _ <- bitcoinds(1).generate(6)
+        _ <- AsyncUtil.nonBlockingSleep(2.second)
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         msg = NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
         _ <- node.peerManager.offer(msg)
