@@ -1087,21 +1087,34 @@ case class PeerManager(
   @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
     None
 
-  private def inactivityChecks(peerData: PeerData): Unit = {
+  private def inactivityChecks(peerData: PeerData): Future[Unit] = {
     if (peerData.isConnectionTimedOut) {
       val stopF = peerData.stop()
-      stopF.failed.foreach(err =>
-        logger.error(s"Failed to stop node inside of inactivityChecks()", err))
-      ()
+      stopF
     } else {
-      ()
+      Future.unit
     }
   }
 
   private def inactivityChecksRunnable(): Runnable = { () =>
     logger.debug(
       s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
-    peerDataMap.map(_._2).map(inactivityChecks)
+    val resultF = if (peerDataMap.nonEmpty) {
+      Future
+        .traverse(peerDataMap.map(_._2))(inactivityChecks)
+        .map(_ => ())
+    } else if (isStarted.get) {
+      //stop and restart to get more peers
+      stop()
+        .flatMap(_.start())
+        .map(_ => ())
+    } else {
+      start().map(_ => ())
+    }
+
+    resultF.failed.foreach(err =>
+      logger.error(s"Failed to run inactivity checks for peers=${peers}", err))
+
     ()
   }
 
