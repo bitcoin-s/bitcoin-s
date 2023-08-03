@@ -475,6 +475,31 @@ case class PeerManager(
 
   }
 
+  private def managePeerAfterInitialization(
+      finder: PeerFinder,
+      peer: Peer,
+      hasCf: Boolean): Future[Unit] = {
+    //if we have slots remaining, connect
+    if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
+      connectPeer(peer)
+    } else {
+      val notCf = peerDataMap
+        .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
+        .keys
+
+      //try to drop another non compact filter connection for this
+      if (hasCf && notCf.nonEmpty)
+        replacePeer(replacePeer = notCf.head, withPeer = peer)
+      else {
+        //could have already been deleted in case of connection issues
+        finder.getData(peer) match {
+          case Some(p) => p.stop()
+          case None    => Future.unit
+        }
+      }
+    }
+  }
+
   private def onInitialization(
       peer: Peer,
       state: NodeState): Future[NodeState] = {
@@ -494,42 +519,12 @@ case class PeerManager(
           val hasCf = serviceIdentifer.nodeCompactFilters
           logger.debug(s"Initialized peer $peer with $hasCf")
 
-          def sendAddrReq: Future[Unit] = {
-            sendGetAddrMessage(Some(peer))
-          }
-
-          def managePeerF(): Future[Unit] = {
-            //if we have slots remaining, connect
-            if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
-              connectPeer(peer)
-            } else {
-              lazy val notCf = peerDataMap
-                .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
-                .keys
-
-              //try to drop another non compact filter connection for this
-              if (hasCf && notCf.nonEmpty)
-                replacePeer(replacePeer = notCf.head, withPeer = peer)
-              else {
-                //no use for this apart from writing in db
-                //we do want to give it enough time to send addr messages
-                AsyncUtil
-                  .nonBlockingSleep(duration = 10.seconds)
-                  .flatMap { _ =>
-                    //could have already been deleted in case of connection issues
-                    finder.getData(peer) match {
-                      case Some(p) => p.stop()
-                      case None    => Future.unit
-                    }
-                  }
-              }
-            }
-          }
-
           for {
-            _ <- sendAddrReq
+            _ <- sendGetAddrMessage(Some(peer))
             _ <- createInDb(peer, peerData.serviceIdentifier)
-            _ <- managePeerF()
+            _ <- managePeerAfterInitialization(finder = finder,
+                                               peer = peer,
+                                               hasCf = hasCf)
             _ <- syncHelper(Some(peer))
           } yield state
 
