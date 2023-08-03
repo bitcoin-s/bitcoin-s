@@ -478,29 +478,35 @@ case class PeerManager(
 
   }
 
+  /** Helper method to determine what action to take after a peer is initialized, such as beginning sync with that peer */
   private def managePeerAfterInitialization(
-      finder: PeerFinder,
-      peer: Peer,
+      peerData: PeerData,
       hasCf: Boolean): Future[Unit] = {
-    //if we have slots remaining, connect
-    if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
-      connectPeer(peer)
-    } else {
-      val notCf = peerDataMap
-        .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
-        .keys
+    val peer = peerData.peer
 
-      //try to drop another non compact filter connection for this
-      if (hasCf && notCf.nonEmpty)
-        replacePeer(replacePeer = notCf.head, withPeer = peer)
-      else {
-        //could have already been deleted in case of connection issues
-        finder.getData(peer) match {
-          case Some(p) => p.stop()
-          case None    => Future.unit
+    peerData match {
+      case _: PersistentPeerData =>
+        //if we have slots remaining, connect
+        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
+          connectPeer(peer)
+            .flatMap(_ => syncHelper(Some(peer)))
+        } else {
+          val notCf = peerDataMap
+            .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
+            .keys
+
+          //try to drop another non compact filter connection for this
+          if (hasCf && notCf.nonEmpty)
+            replacePeer(replacePeer = notCf.head, withPeer = peer)
+              .flatMap(_ => syncHelper(Some(peer)))
+          else {
+            peerData.stop()
+          }
         }
-      }
+      case q: AttemptToConnectPeerData =>
+        q.stop() //successfully queried, don't try to sync with it and just stop it
     }
+
   }
 
   private def onInitialization(
@@ -525,10 +531,8 @@ case class PeerManager(
           for {
             _ <- sendGetAddrMessage(Some(peer))
             _ <- createInDb(peer, peerData.serviceIdentifier)
-            _ <- managePeerAfterInitialization(finder = finder,
-                                               peer = peer,
+            _ <- managePeerAfterInitialization(peerData = peerData,
                                                hasCf = hasCf)
-            _ <- syncHelper(Some(peer))
           } yield state
 
         } else if (peerDataMap.contains(peer)) {

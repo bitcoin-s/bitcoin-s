@@ -98,7 +98,7 @@ case class PersistentPeerData(
   * we do not want to be persistently connected to this peer, just see if
   * we can connect to it and exchange version/verack messages
   */
-case class QueriedPeerData(
+case class AttemptToConnectPeerData(
     peer: Peer,
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[NodeStreamMessage],

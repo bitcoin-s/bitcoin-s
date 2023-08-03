@@ -146,7 +146,7 @@ case class PeerFinder(
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
-          val peersF = Future.traverse(peers)(tryPeer)
+          val peersF = Future.traverse(peers)(tryToAttemptToConnectPeer)
           peersF.onComplete {
             case Success(_) =>
               isConnectionSchedulerRunning.set(false)
@@ -232,6 +232,16 @@ case class PeerFinder(
     stopF
   }
 
+  private def tryToAttemptToConnectPeer(peer: Peer): Future[Unit] = {
+    logger.debug(s"tryToAttemptToConnectPeer=$peer")
+    _peerData.put(peer,
+                  AttemptToConnectPeerData(peer,
+                                           controlMessageHandler,
+                                           queue,
+                                           peerMessageSenderApi))
+    _peerData(peer).peerMessageSender.connect()
+  }
+
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
@@ -273,7 +283,7 @@ case class PeerFinder(
       case Some(persistentPeerData: PersistentPeerData) =>
         _peerData.remove(peer)
         Some(persistentPeerData)
-      case Some(_: QueriedPeerData) => None
+      case Some(_: AttemptToConnectPeerData) => None
       case None =>
         logger.debug(s"removeFromCache: $peer not found in peerData")
         None
