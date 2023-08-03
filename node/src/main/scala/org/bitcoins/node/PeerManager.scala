@@ -504,7 +504,7 @@ case class PeerManager(
           }
         }
       case q: AttemptToConnectPeerData =>
-        q.stop() //successfully queried, don't try to sync with it and just stop it
+        q.stop() //successfully connected, don't try to sync with it and just stop it
     }
 
   }

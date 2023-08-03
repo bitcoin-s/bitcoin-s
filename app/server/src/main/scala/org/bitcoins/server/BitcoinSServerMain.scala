@@ -280,7 +280,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- callbacksF
       node <- startedNodeF
       _ <- startedTorConfigF
-      _ <- node.sync()
     } yield {
       nodeOpt = Some(node)
       logger.info(
