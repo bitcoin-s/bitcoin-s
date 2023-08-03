@@ -14,15 +14,18 @@ import scala.concurrent.duration.DurationInt
 
 /** PeerData contains objects specific to a peer associated together
   */
-case class PeerData(
-    peer: Peer,
-    controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[NodeStreamMessage],
-    peerMessageSenderApi: PeerMessageSenderApi
-)(implicit
-    system: ActorSystem,
-    nodeAppConfig: NodeAppConfig,
-    chainAppConfig: ChainAppConfig) {
+sealed trait PeerData {
+
+  implicit protected def nodeAppConfig: NodeAppConfig
+  implicit protected def chainAppConfig: ChainAppConfig
+
+  implicit protected def system: ActorSystem
+  def peer: Peer
+  def controlMessageHandler: ControlMessageHandler
+
+  def queue: SourceQueueWithComplete[NodeStreamMessage]
+
+  def peerMessageSenderApi: PeerMessageSenderApi
 
   private val initPeerMessageRecv = PeerMessageReceiver(
     controlMessageHandler = controlMessageHandler,
@@ -30,14 +33,15 @@ case class PeerData(
     peer = peer,
     state = PeerMessageReceiverState.fresh())
 
+  def stop(): Future[Unit] = {
+    peerMessageSender.disconnect()
+  }
+
   val peerMessageSender: PeerMessageSender = {
     PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi)
   }
 
-  def stop(): Future[Unit] = {
-    peerMessageSender.disconnect()
-  }
-  private var _serviceIdentifier: Option[ServiceIdentifier] = None
+  private[this] var _serviceIdentifier: Option[ServiceIdentifier] = None
 
   def serviceIdentifier: ServiceIdentifier = {
     _serviceIdentifier.getOrElse(
@@ -48,6 +52,19 @@ case class PeerData(
   def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
     _serviceIdentifier = Some(serviceIdentifier)
   }
+}
+
+/** A peer we plan on being connected to persistently */
+case class PersistentPeerData(
+    peer: Peer,
+    controlMessageHandler: ControlMessageHandler,
+    queue: SourceQueueWithComplete[NodeStreamMessage],
+    peerMessageSenderApi: PeerMessageSenderApi
+)(implicit
+    override val system: ActorSystem,
+    override val nodeAppConfig: NodeAppConfig,
+    override val chainAppConfig: ChainAppConfig)
+    extends PeerData {
 
   private var _invalidMessagesCount: Int = 0
 
@@ -76,3 +93,18 @@ case class PeerData(
     _invalidMessagesCount > nodeAppConfig.maxInvalidResponsesAllowed
   }
 }
+
+/** A peer we are just discovering on the p2p network for future connections
+  * we do not want to be persistently connected to this peer, just see if
+  * we can connect to it and exchange version/verack messages
+  */
+case class QueriedPeerData(
+    peer: Peer,
+    controlMessageHandler: ControlMessageHandler,
+    queue: SourceQueueWithComplete[NodeStreamMessage],
+    peerMessageSenderApi: PeerMessageSenderApi
+)(implicit
+    override val system: ActorSystem,
+    override val nodeAppConfig: NodeAppConfig,
+    override val chainAppConfig: ChainAppConfig)
+    extends PeerData

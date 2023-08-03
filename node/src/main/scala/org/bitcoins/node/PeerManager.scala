@@ -62,7 +62,9 @@ case class PeerManager(
     with SourceQueue[NodeStreamMessage]
     with P2PLogger {
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
-  private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
+
+  private val _peerDataMap: mutable.Map[Peer, PersistentPeerData] =
+    mutable.Map.empty
 
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
   private val _waitingForDisconnection: mutable.Set[Peer] = mutable.Set.empty
@@ -382,9 +384,10 @@ case class PeerManager(
     }
   }
 
-  private def peerDataMap: Map[Peer, PeerData] = _peerDataMap.toMap
+  private def peerDataMap: Map[Peer, PersistentPeerData] = _peerDataMap.toMap
 
-  def getPeerData(peer: Peer): Option[PeerData] = peerDataMap.get(peer)
+  def getPeerData(peer: Peer): Option[PersistentPeerData] =
+    peerDataMap.get(peer)
 
   override def stop(): Future[PeerManager] = {
     logger.info(s"Stopping PeerManager")
@@ -1082,7 +1085,7 @@ case class PeerManager(
   @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
     None
 
-  private def inactivityChecks(peerData: PeerData): Future[Unit] = {
+  private def inactivityChecks(peerData: PersistentPeerData): Future[Unit] = {
     if (peerData.isConnectionTimedOut) {
       val stopF = peerData.stop()
       stopF

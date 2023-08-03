@@ -235,16 +235,20 @@ case class PeerFinder(
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
-    _peerData.put(
-      peer,
-      PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
+    _peerData.put(peer,
+                  PersistentPeerData(peer,
+                                     controlMessageHandler,
+                                     queue,
+                                     peerMessageSenderApi))
     _peerData(peer).peerMessageSender.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(
-      peer,
-      PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
+    _peerData.put(peer,
+                  PersistentPeerData(peer,
+                                     controlMessageHandler,
+                                     queue,
+                                     peerMessageSenderApi))
     _peerData(peer).peerMessageSender.reconnect()
 
   }
@@ -264,12 +268,15 @@ case class PeerFinder(
     _peerData(peer).setServiceIdentifier(serviceIdentifier)
   }
 
-  def popFromCache(peer: Peer): Option[PeerData] = {
-    if (_peerData.contains(peer))
-      _peerData.remove(peer)
-    else {
-      logger.debug(s"removeFromCache: $peer not found in peerData")
-      None
+  def popFromCache(peer: Peer): Option[PersistentPeerData] = {
+    _peerData.get(peer) match {
+      case Some(persistentPeerData: PersistentPeerData) =>
+        _peerData.remove(peer)
+        Some(persistentPeerData)
+      case Some(_: QueriedPeerData) => None
+      case None =>
+        logger.debug(s"removeFromCache: $peer not found in peerData")
+        None
     }
   }
 

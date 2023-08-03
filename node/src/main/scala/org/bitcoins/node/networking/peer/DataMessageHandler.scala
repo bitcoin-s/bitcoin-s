@@ -16,7 +16,12 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.peer.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerData, PeerManager}
+import org.bitcoins.node.{
+  NodeStreamMessage,
+  P2PLogger,
+  PeerManager,
+  PersistentPeerData
+}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,7 +59,7 @@ case class DataMessageHandler(
 
   def handleDataPayload(
       payload: DataPayload,
-      peerData: PeerData): Future[DataMessageHandler] = {
+      peerData: PersistentPeerData): Future[DataMessageHandler] = {
     state match {
       case syncState: SyncNodeState =>
         syncState match {
@@ -118,7 +123,7 @@ case class DataMessageHandler(
     */
   private def handleDataPayloadValidState(
       payload: DataPayload,
-      peerData: PeerData): Future[DataMessageHandler] = {
+      peerData: PersistentPeerData): Future[DataMessageHandler] = {
     val peer = peerData.peer
     val wrappedFuture: Future[Future[DataMessageHandler]] = Future {
       payload match {
@@ -471,7 +476,7 @@ case class DataMessageHandler(
 
   /** Recover the data message handler if we received an invalid block header from a peer */
   private def recoverInvalidHeader(
-      peerData: PeerData): Future[DataMessageHandler] = {
+      peerData: PersistentPeerData): Future[DataMessageHandler] = {
     val result = state match {
       case state @ (HeaderSync(_, _) | DoneSyncing(_)) =>
         val peer = peerData.peer
