@@ -480,6 +480,7 @@ case class PeerManager(
 
   /** Helper method to determine what action to take after a peer is initialized, such as beginning sync with that peer */
   private def managePeerAfterInitialization(
+      finder: PeerFinder,
       peerData: PeerData,
       hasCf: Boolean): Future[Unit] = {
     val peer = peerData.peer
@@ -504,7 +505,13 @@ case class PeerManager(
           }
         }
       case q: AttemptToConnectPeerData =>
-        q.stop() //successfully connected, don't try to sync with it and just stop it
+        if (finder.hasPeer(q.peer)) {
+          //if we still have an active connection with this peer, stop it
+          q.stop()
+        } else {
+          //else it already has been deleted because of connection issues
+          Future.unit
+        }
     }
 
   }
@@ -531,7 +538,8 @@ case class PeerManager(
           for {
             _ <- sendGetAddrMessage(Some(peer))
             _ <- createInDb(peer, peerData.serviceIdentifier)
-            _ <- managePeerAfterInitialization(peerData = peerData,
+            _ <- managePeerAfterInitialization(finder = finder,
+                                               peerData = peerData,
                                                hasCf = hasCf)
           } yield state
 
