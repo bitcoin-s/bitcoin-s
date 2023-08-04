@@ -62,7 +62,9 @@ case class PeerManager(
     with SourceQueue[NodeStreamMessage]
     with P2PLogger {
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
-  private val _peerDataMap: mutable.Map[Peer, PeerData] = mutable.Map.empty
+
+  private val _peerDataMap: mutable.Map[Peer, PersistentPeerData] =
+    mutable.Map.empty
 
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
   private val _waitingForDisconnection: mutable.Set[Peer] = mutable.Set.empty
@@ -382,9 +384,10 @@ case class PeerManager(
     }
   }
 
-  private def peerDataMap: Map[Peer, PeerData] = _peerDataMap.toMap
+  private def peerDataMap: Map[Peer, PersistentPeerData] = _peerDataMap.toMap
 
-  def getPeerData(peer: Peer): Option[PeerData] = peerDataMap.get(peer)
+  def getPeerData(peer: Peer): Option[PersistentPeerData] =
+    peerDataMap.get(peer)
 
   override def stop(): Future[PeerManager] = {
     logger.info(s"Stopping PeerManager")
@@ -475,6 +478,44 @@ case class PeerManager(
 
   }
 
+  /** Helper method to determine what action to take after a peer is initialized, such as beginning sync with that peer */
+  private def managePeerAfterInitialization(
+      finder: PeerFinder,
+      peerData: PeerData,
+      hasCf: Boolean): Future[Unit] = {
+    val peer = peerData.peer
+
+    peerData match {
+      case _: PersistentPeerData =>
+        //if we have slots remaining, connect
+        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
+          connectPeer(peer)
+            .flatMap(_ => syncHelper(Some(peer)))
+        } else {
+          val notCf = peerDataMap
+            .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
+            .keys
+
+          //try to drop another non compact filter connection for this
+          if (hasCf && notCf.nonEmpty)
+            replacePeer(replacePeer = notCf.head, withPeer = peer)
+              .flatMap(_ => syncHelper(Some(peer)))
+          else {
+            peerData.stop()
+          }
+        }
+      case q: AttemptToConnectPeerData =>
+        if (finder.hasPeer(q.peer)) {
+          //if we still have an active connection with this peer, stop it
+          q.stop()
+        } else {
+          //else it already has been deleted because of connection issues
+          Future.unit
+        }
+    }
+
+  }
+
   private def onInitialization(
       peer: Peer,
       state: NodeState): Future[NodeState] = {
@@ -494,43 +535,12 @@ case class PeerManager(
           val hasCf = serviceIdentifer.nodeCompactFilters
           logger.debug(s"Initialized peer $peer with $hasCf")
 
-          def sendAddrReq: Future[Unit] = {
-            sendGetAddrMessage(Some(peer))
-          }
-
-          def managePeerF(): Future[Unit] = {
-            //if we have slots remaining, connect
-            if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
-              connectPeer(peer)
-            } else {
-              lazy val notCf = peerDataMap
-                .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
-                .keys
-
-              //try to drop another non compact filter connection for this
-              if (hasCf && notCf.nonEmpty)
-                replacePeer(replacePeer = notCf.head, withPeer = peer)
-              else {
-                //no use for this apart from writing in db
-                //we do want to give it enough time to send addr messages
-                AsyncUtil
-                  .nonBlockingSleep(duration = 10.seconds)
-                  .flatMap { _ =>
-                    //could have already been deleted in case of connection issues
-                    finder.getData(peer) match {
-                      case Some(p) => p.stop()
-                      case None    => Future.unit
-                    }
-                  }
-              }
-            }
-          }
-
           for {
-            _ <- sendAddrReq
+            _ <- sendGetAddrMessage(Some(peer))
             _ <- createInDb(peer, peerData.serviceIdentifier)
-            _ <- managePeerF()
-            _ <- syncHelper(Some(peer))
+            _ <- managePeerAfterInitialization(finder = finder,
+                                               peerData = peerData,
+                                               hasCf = hasCf)
           } yield state
 
         } else if (peerDataMap.contains(peer)) {
@@ -1087,7 +1097,7 @@ case class PeerManager(
   @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
     None
 
-  private def inactivityChecks(peerData: PeerData): Future[Unit] = {
+  private def inactivityChecks(peerData: PersistentPeerData): Future[Unit] = {
     if (peerData.isConnectionTimedOut) {
       val stopF = peerData.stop()
       stopF

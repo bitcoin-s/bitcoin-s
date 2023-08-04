@@ -146,13 +146,13 @@ case class PeerFinder(
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
-          val peersF = Future.traverse(peers)(tryPeer)
+          val peersF = Future.traverse(peers)(tryToAttemptToConnectPeer)
           peersF.onComplete {
             case Success(_) =>
               isConnectionSchedulerRunning.set(false)
             case Failure(err) =>
               isConnectionSchedulerRunning.set(false)
-              logger.error(
+              logger.debug(
                 s"Failed to connect to peers=$peers errMsg=${err.getMessage}")
           }
         } else {
@@ -232,19 +232,33 @@ case class PeerFinder(
     stopF
   }
 
+  private def tryToAttemptToConnectPeer(peer: Peer): Future[Unit] = {
+    logger.debug(s"tryToAttemptToConnectPeer=$peer")
+    _peerData.put(peer,
+                  AttemptToConnectPeerData(peer,
+                                           controlMessageHandler,
+                                           queue,
+                                           peerMessageSenderApi))
+    _peerData(peer).peerMessageSender.connect()
+  }
+
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
-    _peerData.put(
-      peer,
-      PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
+    _peerData.put(peer,
+                  PersistentPeerData(peer,
+                                     controlMessageHandler,
+                                     queue,
+                                     peerMessageSenderApi))
     _peerData(peer).peerMessageSender.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(
-      peer,
-      PeerData(peer, controlMessageHandler, queue, peerMessageSenderApi))
+    _peerData.put(peer,
+                  PersistentPeerData(peer,
+                                     controlMessageHandler,
+                                     queue,
+                                     peerMessageSenderApi))
     _peerData(peer).peerMessageSender.reconnect()
 
   }
@@ -264,12 +278,15 @@ case class PeerFinder(
     _peerData(peer).setServiceIdentifier(serviceIdentifier)
   }
 
-  def popFromCache(peer: Peer): Option[PeerData] = {
-    if (_peerData.contains(peer))
-      _peerData.remove(peer)
-    else {
-      logger.debug(s"removeFromCache: $peer not found in peerData")
-      None
+  def popFromCache(peer: Peer): Option[PersistentPeerData] = {
+    _peerData.get(peer) match {
+      case Some(persistentPeerData: PersistentPeerData) =>
+        _peerData.remove(peer)
+        Some(persistentPeerData)
+      case Some(_: AttemptToConnectPeerData) => None
+      case None =>
+        logger.debug(s"removeFromCache: $peer not found in peerData")
+        None
     }
   }
 
