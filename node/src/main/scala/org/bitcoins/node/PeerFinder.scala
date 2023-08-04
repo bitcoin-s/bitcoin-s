@@ -152,7 +152,7 @@ case class PeerFinder(
               isConnectionSchedulerRunning.set(false)
             case Failure(err) =>
               isConnectionSchedulerRunning.set(false)
-              logger.error(
+              logger.debug(
                 s"Failed to connect to peers=$peers errMsg=${err.getMessage}")
           }
         } else {
