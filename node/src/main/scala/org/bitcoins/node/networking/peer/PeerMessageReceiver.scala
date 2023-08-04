@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.core.api.node.{NodeType, Peer}
@@ -73,26 +73,6 @@ case class PeerMessageReceiver(
       .handleControlPayload(payload, peer)
   }
 
-  private def onResponseTimeout(
-      networkPayload: NetworkPayload,
-      peer: Peer): Future[PeerMessageReceiver] = {
-    require(networkPayload.isInstanceOf[ExpectsResponse])
-    logger.info(
-      s"Handling response timeout for ${networkPayload.commandName} from $peer")
-
-    networkPayload match {
-      case payload: ExpectsResponse =>
-        logger.info(
-          s"Response for ${payload.commandName} from $peer timed out in state $this")
-        val qt = NodeStreamMessage.QueryTimeout(peer, payload)
-        queue.offer(qt).map(_ => this)
-      case _ =>
-        logger.error(
-          s"onResponseTimeout called for ${networkPayload.commandName} which does not expect response")
-        Future.successful(this)
-    }
-  }
-
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer
     * This means we have opened a Tcp connection,
@@ -101,7 +81,7 @@ case class PeerMessageReceiver(
     */
   protected[networking] def connect(peer: Peer)(implicit
       system: ActorSystem,
-      nodeAppConfig: NodeAppConfig): PeerMessageReceiver = {
+      nodeAppConfig: NodeAppConfig): Cancellable = {
     import system.dispatcher
     val initializationTimeoutCancellable =
       system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
@@ -112,7 +92,7 @@ case class PeerMessageReceiver(
                        err))
       }
 
-    this
+    initializationTimeoutCancellable
   }
 
   protected[networking] def disconnect(peer: Peer)(implicit
