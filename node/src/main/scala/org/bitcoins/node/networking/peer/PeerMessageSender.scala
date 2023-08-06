@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
 import akka.event.Logging
 import akka.io.Inet.SocketOption
@@ -13,9 +13,15 @@ import akka.stream.scaladsl.{
   RunnableGraph,
   Sink,
   Source,
+  SourceQueueWithComplete,
   Tcp
 }
-import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
+import akka.stream.{
+  Attributes,
+  KillSwitches,
+  QueueOfferResult,
+  UniqueKillSwitch
+}
 import akka.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -24,24 +30,23 @@ import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
-import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
-import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageSender.ConnectionGraph
 import org.bitcoins.node.util.PeerMessageSenderApi
+import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
 import org.bitcoins.tor.Socks5Connection
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{Future, Promise}
 
 case class PeerMessageSender(
     peer: Peer,
-    initPeerMessageRecv: PeerMessageReceiver,
+    queue: SourceQueueWithComplete[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi)(implicit
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig,
@@ -166,9 +171,8 @@ case class PeerMessageSender(
   private def connectionGraph(
       handleNetworkMsgSink: Sink[
         Vector[NetworkMessage],
-        Future[PeerMessageReceiver]]): RunnableGraph[(
-      (Future[Tcp.OutgoingConnection], UniqueKillSwitch),
-      Future[PeerMessageReceiver])] = {
+        Future[Done]]): RunnableGraph[
+    ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])] = {
     val result = mergeHubSource
       .viaMat(connectionFlow)(Keep.right)
       .toMat(handleNetworkMsgSink)(Keep.both)
@@ -176,21 +180,26 @@ case class PeerMessageSender(
     result
   }
 
-  private def buildConnectionGraph(): RunnableGraph[(
-      (Future[Tcp.OutgoingConnection], UniqueKillSwitch),
-      Future[PeerMessageReceiver])] = {
+  private def buildConnectionGraph(): RunnableGraph[
+    ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])] = {
 
-    val handleNetworkMsgSink: Sink[
-      Vector[NetworkMessage],
-      Future[PeerMessageReceiver]] = {
+    val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
+
       Flow[Vector[NetworkMessage]]
-        .foldAsync(initPeerMessageRecv) { case (peerMsgRecv, msgs) =>
-          FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
-            p.handleNetworkMessageReceived(networkMsgRecv =
-              NetworkMessageReceived(msg, peer))
+        .mapAsync(1) { case msgs =>
+          FutureUtil.foldLeftAsync[QueueOfferResult, NetworkMessage](
+            QueueOfferResult.Enqueued,
+            msgs) { case (_, msg) =>
+            val wrapper = msg.payload match {
+              case c: ControlPayload =>
+                NodeStreamMessage.ControlMessageWrapper(c, peer)
+              case d: DataPayload =>
+                NodeStreamMessage.DataMessageWrapper(d, peer)
+            }
+            queue.offer(wrapper)
           }
         }
-        .toMat(Sink.last)(Keep.right)
+        .toMat(Sink.ignore)(Keep.right)
     }
 
     connectionGraph(handleNetworkMsgSink)
@@ -213,7 +222,14 @@ case class PeerMessageSender(
           buildConnectionGraph().run()
         }
 
-        val initializationCancellable = initPeerMessageRecv.connect(peer)
+        val initializationCancellable =
+          system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
+            val offerF =
+              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
+            offerF.failed.foreach(err =>
+              logger.error(s"Failed to offer initialize timeout for peer=$peer",
+                           err))
+          }
 
         outgoingConnectionF.onComplete {
           case scala.util.Success(o) =>
@@ -252,13 +268,14 @@ case class PeerMessageSender(
 
         val _ = graph.streamDoneF
           .onComplete {
-            case scala.util.Success(p) =>
-              p.disconnect(peer)
+            case scala.util.Success(_) =>
+              val disconnectedPeer = DisconnectedPeer(peer, false)
+              queue.offer(disconnectedPeer)
             case scala.util.Failure(err) =>
               logger.info(
                 s"Connection with peer=$peer failed with err=${err.getMessage}")
               val disconnectedPeer = DisconnectedPeer(peer, false)
-              initPeerMessageRecv.queue.offer(disconnectedPeer)
+              queue.offer(disconnectedPeer)
           }
 
         resultF.map(_ => ())
@@ -397,7 +414,7 @@ object PeerMessageSender {
   case class ConnectionGraph(
       mergeHubSink: Sink[ByteString, NotUsed],
       connectionF: Future[Tcp.OutgoingConnection],
-      streamDoneF: Future[PeerMessageReceiver],
+      streamDoneF: Future[Done],
       killswitch: UniqueKillSwitch)
 
 }

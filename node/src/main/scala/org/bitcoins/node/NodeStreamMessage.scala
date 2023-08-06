@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{
+  ControlPayload,
   DataPayload,
   ExpectsResponse,
   NetworkMessage,
@@ -13,6 +14,9 @@ sealed abstract class NodeStreamMessage
 object NodeStreamMessage {
 
   case class DataMessageWrapper(payload: DataPayload, peer: Peer)
+      extends NodeStreamMessage
+
+  case class ControlMessageWrapper(payload: ControlPayload, peer: Peer)
       extends NodeStreamMessage
 
   case class HeaderTimeoutWrapper(peer: Peer) extends NodeStreamMessage
