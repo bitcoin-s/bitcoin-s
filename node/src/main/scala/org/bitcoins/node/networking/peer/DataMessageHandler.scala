@@ -744,7 +744,7 @@ case class DataMessageHandler(
 
           state match {
             case HeaderSync(_, _) =>
-              logger.info(
+              logger.debug(
                 s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
               //ask for headers more from the same peer
               peerMessageSenderApi
