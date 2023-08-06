@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
 import akka.event.Logging
 import akka.io.Inet.SocketOption
@@ -16,19 +15,15 @@ import akka.stream.scaladsl.{
   SourceQueueWithComplete,
   Tcp
 }
-import akka.stream.{
-  Attributes,
-  KillSwitches,
-  QueueOfferResult,
-  UniqueKillSwitch
-}
+import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
@@ -184,20 +179,16 @@ case class PeerMessageSender(
     ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])] = {
 
     val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
-
       Flow[Vector[NetworkMessage]]
-        .mapAsync(1) { case msgs =>
-          FutureUtil.foldLeftAsync[QueueOfferResult, NetworkMessage](
-            QueueOfferResult.Enqueued,
-            msgs) { case (_, msg) =>
-            val wrapper = msg.payload match {
-              case c: ControlPayload =>
-                NodeStreamMessage.ControlMessageWrapper(c, peer)
-              case d: DataPayload =>
-                NodeStreamMessage.DataMessageWrapper(d, peer)
-            }
-            queue.offer(wrapper)
+        .mapConcat(identity)
+        .mapAsync(1) { case msg =>
+          val wrapper = msg.payload match {
+            case c: ControlPayload =>
+              NodeStreamMessage.ControlMessageWrapper(c, peer)
+            case d: DataPayload =>
+              NodeStreamMessage.DataMessageWrapper(d, peer)
           }
+          queue.offer(wrapper)
         }
         .toMat(Sink.ignore)(Keep.right)
     }
