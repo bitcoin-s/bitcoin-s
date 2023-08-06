@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
 import akka.event.Logging
 import akka.io.Inet.SocketOption
@@ -171,9 +171,8 @@ case class PeerMessageSender(
   private def connectionGraph(
       handleNetworkMsgSink: Sink[
         Vector[NetworkMessage],
-        Future[QueueOfferResult]]): RunnableGraph[(
-      (Future[Tcp.OutgoingConnection], UniqueKillSwitch),
-      Future[QueueOfferResult])] = {
+        Future[Done]]): RunnableGraph[
+    ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])] = {
     val result = mergeHubSource
       .viaMat(connectionFlow)(Keep.right)
       .toMat(handleNetworkMsgSink)(Keep.both)
@@ -181,13 +180,10 @@ case class PeerMessageSender(
     result
   }
 
-  private def buildConnectionGraph(): RunnableGraph[(
-      (Future[Tcp.OutgoingConnection], UniqueKillSwitch),
-      Future[QueueOfferResult])] = {
+  private def buildConnectionGraph(): RunnableGraph[
+    ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])] = {
 
-    val handleNetworkMsgSink: Sink[
-      Vector[NetworkMessage],
-      Future[QueueOfferResult]] = {
+    val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
 
       Flow[Vector[NetworkMessage]]
         .mapAsync(1) { case msgs =>
@@ -203,7 +199,7 @@ case class PeerMessageSender(
             queue.offer(wrapper)
           }
         }
-        .toMat(Sink.last)(Keep.right)
+        .toMat(Sink.ignore)(Keep.right)
     }
 
     connectionGraph(handleNetworkMsgSink)
@@ -418,7 +414,7 @@ object PeerMessageSender {
   case class ConnectionGraph(
       mergeHubSink: Sink[ByteString, NotUsed],
       connectionF: Future[Tcp.OutgoingConnection],
-      streamDoneF: Future[QueueOfferResult],
+      streamDoneF: Future[Done],
       killswitch: UniqueKillSwitch)
 
 }
