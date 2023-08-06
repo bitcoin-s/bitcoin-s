@@ -185,26 +185,10 @@ case class PeerMessageSender(
       Future[PeerMessageReceiver]] = {
       Flow[Vector[NetworkMessage]]
         .foldAsync(initPeerMessageRecv) { case (peerMsgRecv, msgs) =>
-          peerMsgRecv.state match {
-            case PeerMessageReceiverState.Preconnection =>
-              val c = initPeerMessageRecv.connect(peer)
-              FutureUtil.foldLeftAsync(c, msgs) { case (p, msg) =>
-                p.handleNetworkMessageReceived(networkMsgRecv =
-                  NetworkMessageReceived(msg, peer))
-              }
-            case _: PeerMessageReceiverState.Initializing |
-                _: PeerMessageReceiverState.Disconnected |
-                _: PeerMessageReceiverState.InitializedDisconnect |
-                _: PeerMessageReceiverState.InitializedDisconnectDone |
-                _: PeerMessageReceiverState.Normal |
-                _: PeerMessageReceiverState.StoppedReconnect |
-                _: PeerMessageReceiverState.Waiting =>
-              FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
-                p.handleNetworkMessageReceived(networkMsgRecv =
-                  NetworkMessageReceived(msg, peer))
-              }
+          FutureUtil.foldLeftAsync(peerMsgRecv, msgs) { case (p, msg) =>
+            p.handleNetworkMessageReceived(networkMsgRecv =
+              NetworkMessageReceived(msg, peer))
           }
-
         }
         .toMat(Sink.last)(Keep.right)
     }
@@ -229,6 +213,8 @@ case class PeerMessageSender(
           buildConnectionGraph().run()
         }
 
+        val initializationCancellable = initPeerMessageRecv.connect(peer)
+
         outgoingConnectionF.onComplete {
           case scala.util.Success(o) =>
             logger.info(
@@ -249,6 +235,7 @@ case class PeerMessageSender(
           for {
             _ <- outgoingConnectionF
             _ = resetReconnect()
+            _ = initializationCancellable.cancel()
             versionMsg <- versionMsgF
             _ = {
               nodeAppConfig.socks5ProxyParams match {

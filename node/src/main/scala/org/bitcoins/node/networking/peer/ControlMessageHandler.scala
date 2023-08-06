@@ -4,7 +4,6 @@ import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,67 +16,38 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
 
   def handleControlPayload(
       payload: ControlPayload,
-      peer: Peer,
-      state: PeerMessageReceiverState): Future[PeerMessageReceiverState] = {
+      peer: Peer): Future[Unit] = {
     payload match {
 
       case versionMsg: VersionMessage =>
         logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
-
-        state match {
-          case bad @ (_: Disconnected | _: Normal | Preconnection |
-              _: InitializedDisconnect | _: InitializedDisconnectDone |
-              _: StoppedReconnect | _: Waiting) =>
-            Future.failed(
-              new RuntimeException(
-                s"Cannot handle version message while in state=${bad}"))
-
-          case good: Initializing =>
-            val newState = good.withVersionMsg(versionMsg)
-
-            peerManager.onVersionMessage(peer, versionMsg)
-
-            peerManager.sendVerackMessage(peer).map(_ => newState)
-        }
+        peerManager.onVersionMessage(peer, versionMsg)
+        peerManager.sendVerackMessage(peer)
 
       case VerAckMessage =>
-        state match {
-          case bad @ (_: Disconnected | _: InitializedDisconnect | _: Normal |
-              _: InitializedDisconnectDone | Preconnection |
-              _: StoppedReconnect | _: Waiting) =>
-            Future.failed(
-              new RuntimeException(
-                s"Cannot handle version message while in state=${bad}"))
-
-          case good: Initializing =>
-            val newState = good.toNormal(VerAckMessage)
-
-            val i = NodeStreamMessage.Initialized(peer)
-            peerManager.offer(i).map(_ => newState)
-        }
+        val i = NodeStreamMessage.Initialized(peer)
+        peerManager.offer(i).map(_ => ())
 
       case ping: PingMessage =>
-        peerManager.sendPong(ping, peer).map { _ =>
-          state
-        }
+        peerManager.sendPong(ping, peer)
       case SendHeadersMessage =>
         //we want peers to just send us headers
         //we don't want to have to request them manually
-        peerManager.sendHeadersMessage(peer).map(_ => state)
+        peerManager.sendHeadersMessage(peer)
       case msg: GossipAddrMessage =>
         handleGossipAddrMessage(msg)
-        Future.successful(state)
+        Future.unit
       case SendAddrV2Message =>
-        peerManager.sendSendAddrV2Message(peer).map(_ => state)
+        peerManager.sendSendAddrV2Message(peer)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
-        Future.successful(state)
+        Future.unit
       case _ @(GetAddrMessage | _: PongMessage) =>
-        Future.successful(state)
+        Future.unit
       case _: RejectMessage =>
-        Future.successful(state)
+        Future.unit
       case _: FeeFilterMessage =>
-        Future.successful(state)
+        Future.unit
     }
   }
 

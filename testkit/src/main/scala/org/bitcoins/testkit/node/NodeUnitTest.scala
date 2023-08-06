@@ -352,8 +352,7 @@ object NodeUnitTest extends P2PLogger {
       receiver =
         PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
                             queue = node.peerManager.dataMessageQueueOpt.get,
-                            peer = peer,
-                            state = PeerMessageReceiverState.fresh())
+                            peer = peer)
     } yield receiver
   }
 
