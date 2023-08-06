@@ -27,17 +27,12 @@ sealed trait PeerData {
 
   def peerMessageSenderApi: PeerMessageSenderApi
 
-  private val initPeerMessageRecv = PeerMessageReceiver(controlMessageHandler =
-                                                          controlMessageHandler,
-                                                        queue = queue,
-                                                        peer = peer)
-
   def stop(): Future[Unit] = {
     peerMessageSender.disconnect()
   }
 
   val peerMessageSender: PeerMessageSender = {
-    PeerMessageSender(peer, initPeerMessageRecv, peerMessageSenderApi)
+    PeerMessageSender(peer, queue, peerMessageSenderApi)
   }
 
   private[this] var _serviceIdentifier: Option[ServiceIdentifier] = None

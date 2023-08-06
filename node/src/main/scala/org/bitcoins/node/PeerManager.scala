@@ -804,6 +804,11 @@ case class PeerManager(
               r
             }
         }
+      case (dmh, ControlMessageWrapper(payload, peer)) =>
+        val controlMessageHandler = ControlMessageHandler(this)
+        controlMessageHandler.handleControlPayload(payload, peer).map { _ =>
+          dmh
+        }
       case (dmh, HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
         for {

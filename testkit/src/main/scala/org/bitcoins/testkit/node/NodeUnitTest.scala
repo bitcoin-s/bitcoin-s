@@ -6,7 +6,6 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.networking.peer._
 import org.bitcoins.rpc.client.common.BitcoindVersion.V22
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
@@ -334,26 +333,6 @@ object NodeUnitTest extends P2PLogger {
     } yield ()
 
     destroyedF
-  }
-
-  def buildPeerMessageReceiver(
-      peer: Peer,
-      walletCreationTimeOpt: Option[Instant])(implicit
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig,
-      system: ActorSystem): Future[PeerMessageReceiver] = {
-    import system.dispatcher
-    val nodeF = buildNode(peer, walletCreationTimeOpt)
-    for {
-      node <- nodeF
-      controlMessageHandler =
-        ControlMessageHandler(node.peerManager)(system.dispatcher,
-                                                nodeAppConfig)
-      receiver =
-        PeerMessageReceiver(controlMessageHandler = controlMessageHandler,
-                            queue = node.peerManager.dataMessageQueueOpt.get,
-                            peer = peer)
-    } yield receiver
   }
 
   def createPeer(bitcoind: BitcoindRpcClient)(implicit
