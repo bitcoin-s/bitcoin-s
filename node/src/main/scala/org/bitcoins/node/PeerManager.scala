@@ -1112,8 +1112,7 @@ case class PeerManager(
   }
 
   private def inactivityChecksRunnable(): Runnable = { () =>
-    logger.debug(
-      s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
+    logger.info(s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
     val resultF = if (peerDataMap.nonEmpty) {
       Future
         .traverse(peerDataMap.map(_._2))(inactivityChecks)
