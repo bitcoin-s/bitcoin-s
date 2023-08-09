@@ -205,7 +205,7 @@ case class DataMessageHandler(
             (newBatch: Set[CompactFilterMessage], newChainApi) <- {
               if (isFiltersSynced || batchSizeFull) {
 
-                logger.info(s"Processing ${filterBatch.size} filters")
+                logger.debug(s"Processing ${filterBatch.size} filters")
                 val sortedBlockFiltersF =
                   sortBlockFiltersByBlockHeight(filterBatch)
                 for {
@@ -225,7 +225,7 @@ case class DataMessageHandler(
               calcFilterHeaderFilterHeight(chainApi)
             filterHeaderSyncStateOpt <-
               if (batchSizeFull) {
-                logger.info(
+                logger.debug(
                   s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
                 sendNextGetCompactFilterCommand(peerMessageSenderApi,
                                                 peer,
