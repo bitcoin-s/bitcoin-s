@@ -409,9 +409,11 @@ object PeerMessageSender {
       streamDoneF: Future[Done],
       killswitch: UniqueKillSwitch,
       initializationCancellable: Cancellable) {
+
     def stop(): Unit = {
       killswitch.shutdown()
       initializationCancellable.cancel()
+      ()
     }
   }
 
