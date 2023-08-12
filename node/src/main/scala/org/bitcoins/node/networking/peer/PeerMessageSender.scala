@@ -327,10 +327,7 @@ case class PeerMessageSender(
     connectionGraphOpt match {
       case Some(cg) =>
         logger.info(s"Disconnecting peer=${peer}")
-        cg.killswitch.shutdown()
-        cg.initializationCancellable.cancel()
-        connectionGraphOpt = None
-        lastSuccessfulParsedMsgOpt = None
+        cg.stop()
         Future.unit
       case None =>
         val err =
@@ -411,6 +408,11 @@ object PeerMessageSender {
       connectionF: Future[Tcp.OutgoingConnection],
       streamDoneF: Future[Done],
       killswitch: UniqueKillSwitch,
-      initializationCancellable: Cancellable)
+      initializationCancellable: Cancellable) {
+    def stop(): Unit = {
+      killswitch.shutdown()
+      initializationCancellable.cancel()
+    }
+  }
 
 }
