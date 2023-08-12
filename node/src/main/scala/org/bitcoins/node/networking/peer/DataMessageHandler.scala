@@ -377,10 +377,10 @@ case class DataMessageHandler(
                         handleDataPayload(payload = headersMessage,
                                           peerData = peerData)
                       } else {
-                        appConfig.callBacks
-                          .executeOnBlockHeadersReceivedCallbacks(
-                            Vector(block.blockHeader))
-                          .map(_ => this)
+                        //else ignore it until we are done with ibd
+                        logger.info(
+                          s"Received block=${block.blockHeader.hashBE.hex} while in IBD, ignoring it until IBD complete state=${state}.")
+                        Future.successful(this)
                       }
                     }
                   } yield {
