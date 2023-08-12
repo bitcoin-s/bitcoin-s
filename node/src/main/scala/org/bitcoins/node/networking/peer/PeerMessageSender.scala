@@ -231,10 +231,13 @@ case class PeerMessageSender(
               s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
         }
 
-        val graph = ConnectionGraph(mergeHubSink = mergeHubSink,
-                                    connectionF = outgoingConnectionF,
-                                    streamDoneF = streamDoneF,
-                                    killswitch = killswitch)
+        val graph = ConnectionGraph(
+          mergeHubSink = mergeHubSink,
+          connectionF = outgoingConnectionF,
+          streamDoneF = streamDoneF,
+          killswitch = killswitch,
+          initializationCancellable = initializationCancellable
+        )
 
         connectionGraphOpt = Some(graph)
 
@@ -325,6 +328,7 @@ case class PeerMessageSender(
       case Some(cg) =>
         logger.info(s"Disconnecting peer=${peer}")
         cg.killswitch.shutdown()
+        cg.initializationCancellable.cancel()
         connectionGraphOpt = None
         lastSuccessfulParsedMsgOpt = None
         Future.unit
@@ -406,6 +410,7 @@ object PeerMessageSender {
       mergeHubSink: Sink[ByteString, NotUsed],
       connectionF: Future[Tcp.OutgoingConnection],
       streamDoneF: Future[Done],
-      killswitch: UniqueKillSwitch)
+      killswitch: UniqueKillSwitch,
+      initializationCancellable: Cancellable)
 
 }
