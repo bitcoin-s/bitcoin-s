@@ -38,7 +38,7 @@ trait LndRouterClient { self: LndRpcClient =>
     val request =
       QueryRoutesRequest(pubKey = node.pubKey.hex,
                          amt = amount.satoshis.toLong,
-                         finalCltvDelta = 40,
+                         finalCltvDelta = 80,
                          useMissionControl = true,
                          routeHints = Vector(RouteHint(hopHints)))
 
