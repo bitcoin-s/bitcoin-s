@@ -965,9 +965,20 @@ case class PeerManager(
     for {
       _ <- chainApi.setSyncing(true)
       _ <- getHeaderSyncHelper(syncPeerOpt)
-      cancellable = createFilterSyncJob(chainApi, syncPeerOpt)
       _ = {
-        syncFilterCancellableOpt = Some(cancellable)
+        if (isStarted.get) {
+          //in certain cases, we can schedule this job while the peer manager is attempting to shutdown
+          //this is because we start syncing _after_ the connection to the peer is established
+          //while we are waiting for this connection to be established, we could decide to shutdown the PeerManager
+          //if we are unlucky there could be a race condition here between
+          //
+          // 1. Starting to sync blockchain data from our peer we just established a connection with
+          // 2. Shutting down the peer manager.
+          //
+          // the filter sync job gets scheduled _after_ PeerManager.stop() has been called
+          val cancellable = createFilterSyncJob(chainApi, syncPeerOpt)
+          syncFilterCancellableOpt = Some(cancellable)
+        }
       }
       header <- headerF
     } yield {
@@ -996,13 +1007,14 @@ case class PeerManager(
               for {
                 oldFilterHeaderCount <- oldFilterHeaderCountF
                 oldFilterCount <- oldFilterCountF
+                blockCount <- chainApi.getBlockCount()
                 currentFilterHeaderCount <- chainApi.getFilterHeaderCount()
                 currentFilterCount <- chainApi.getFilterCount()
                 _ <- {
                   //make sure filter sync hasn't started since we schedule the job...
                   //see: https://github.com/bitcoin-s/bitcoin-s/issues/5167
                   if (
-                    oldFilterHeaderCount == currentFilterHeaderCount && oldFilterCount == currentFilterCount
+                    (oldFilterHeaderCount == currentFilterHeaderCount && oldFilterCount == currentFilterCount) && blockCount != currentFilterHeaderCount
                   ) {
                     //if it hasn't started it, start it
                     filterSyncHelper(chainApi, syncPeerOpt)
