@@ -46,7 +46,7 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
 case class PeerManager(
@@ -1111,6 +1111,8 @@ case class PeerManager(
     } yield syncPeerOpt
   }
 
+  private[this] val INACTIVITY_CHECK_TIMEOUT = 60.seconds
+
   @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
     None
 
@@ -1141,7 +1143,7 @@ case class PeerManager(
     resultF.failed.foreach(err =>
       logger.error(s"Failed to run inactivity checks for peers=${peers}", err))
 
-    ()
+    Await.result(resultF, INACTIVITY_CHECK_TIMEOUT)
   }
 
   private def startInactivityChecksJob(): Cancellable = {
