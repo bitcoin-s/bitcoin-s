@@ -762,7 +762,7 @@ case class PeerManager(
     SourceQueueWithComplete[NodeStreamMessage]] = {
     Source
       .queue[NodeStreamMessage](
-        10 * nodeAppConfig.maxConnectedPeers,
+        100 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
