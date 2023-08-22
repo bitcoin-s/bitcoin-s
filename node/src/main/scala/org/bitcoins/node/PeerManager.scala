@@ -762,7 +762,7 @@ case class PeerManager(
     SourceQueueWithComplete[NodeStreamMessage]] = {
     Source
       .queue[NodeStreamMessage](
-        100 * nodeAppConfig.maxConnectedPeers,
+        10 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
@@ -806,8 +806,12 @@ case class PeerManager(
         }
       case (dmh, ControlMessageWrapper(payload, peer)) =>
         val controlMessageHandler = ControlMessageHandler(this)
-        controlMessageHandler.handleControlPayload(payload, peer).map { _ =>
-          dmh
+        controlMessageHandler.handleControlPayload(payload, peer).flatMap {
+          case Some(i) =>
+            onInitialization(i.peer, dmh.state).map(newState =>
+              dmh.copy(state = newState))
+          case None =>
+            Future.successful(dmh)
         }
       case (dmh, HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
@@ -821,9 +825,6 @@ case class PeerManager(
         } yield newDmh
       case (dmh, DisconnectedPeer(peer, forceReconnect)) =>
         onP2PClientDisconnected(peer, forceReconnect, dmh.state)
-          .map(newState => dmh.copy(state = newState))
-      case (dmh, i: Initialized) =>
-        onInitialization(i.peer, dmh.state)
           .map(newState => dmh.copy(state = newState))
       case (dmh, i: InitializationTimeout) =>
         onInitializationTimeout(i.peer).map(_ => dmh)

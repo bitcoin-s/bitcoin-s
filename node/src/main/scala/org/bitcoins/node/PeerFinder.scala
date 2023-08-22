@@ -124,14 +124,13 @@ case class PeerFinder(
 
   private val maxPeerSearchCount: Int = 8
 
-  private val initialDelay: FiniteDuration = 30.minute
+  private val initialDelay: FiniteDuration = 5.minute
 
   private val isConnectionSchedulerRunning = new AtomicBoolean(false)
 
   private lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(
-      initialDelay = initialDelay,
-      delay = nodeAppConfig.tryNextPeersInterval) { () =>
+    system.scheduler.scheduleWithFixedDelay(initialDelay = initialDelay,
+                                            delay = initialDelay) { () =>
       {
         if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
           logger.info(s"Querying p2p network for peers...")

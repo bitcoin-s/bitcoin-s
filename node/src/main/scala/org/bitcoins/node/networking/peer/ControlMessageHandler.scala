@@ -3,6 +3,7 @@ package org.bitcoins.node.networking.peer
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.node.NodeStreamMessage.Initialized
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
 
@@ -16,38 +17,45 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
 
   def handleControlPayload(
       payload: ControlPayload,
-      peer: Peer): Future[Unit] = {
+      peer: Peer): Future[Option[Initialized]] = {
     payload match {
 
       case versionMsg: VersionMessage =>
         logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
         peerManager.onVersionMessage(peer, versionMsg)
-        peerManager.sendVerackMessage(peer)
+        peerManager
+          .sendVerackMessage(peer)
+          .map(_ => None)
 
       case VerAckMessage =>
         val i = NodeStreamMessage.Initialized(peer)
-        peerManager.offer(i).map(_ => ())
-
+        Future.successful(Some(i))
       case ping: PingMessage =>
-        peerManager.sendPong(ping, peer)
+        peerManager
+          .sendPong(ping, peer)
+          .map(_ => None)
       case SendHeadersMessage =>
         //we want peers to just send us headers
         //we don't want to have to request them manually
-        peerManager.sendHeadersMessage(peer)
+        peerManager
+          .sendHeadersMessage(peer)
+          .map(_ => None)
       case msg: GossipAddrMessage =>
         handleGossipAddrMessage(msg)
-        Future.unit
+        Future.successful(None)
       case SendAddrV2Message =>
-        peerManager.sendSendAddrV2Message(peer)
+        peerManager
+          .sendSendAddrV2Message(peer)
+          .map(_ => None)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
-        Future.unit
+        Future.successful(None)
       case _ @(GetAddrMessage | _: PongMessage) =>
-        Future.unit
+        Future.successful(None)
       case _: RejectMessage =>
-        Future.unit
+        Future.successful(None)
       case _: FeeFilterMessage =>
-        Future.unit
+        Future.successful(None)
     }
   }
 
