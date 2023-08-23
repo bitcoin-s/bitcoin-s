@@ -24,8 +24,6 @@ object NodeStreamMessage {
   case class DisconnectedPeer(peer: Peer, forceReconnect: Boolean)
       extends NodeStreamMessage
 
-  case class Initialized(peer: Peer) extends NodeStreamMessage
-
   case class InitializationTimeout(peer: Peer) extends NodeStreamMessage
 
   case class QueryTimeout(peer: Peer, payload: ExpectsResponse)
@@ -35,4 +33,6 @@ object NodeStreamMessage {
       extends NodeStreamMessage
 
   case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])
+
+  case class Initialized(peer: Peer)
 }
