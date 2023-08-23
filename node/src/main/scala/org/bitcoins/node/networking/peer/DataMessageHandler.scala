@@ -369,7 +369,8 @@ case class DataMessageHandler(
                   s"Received block=${block.blockHeader.hashBE.hex} while in IBD, ignoring it until IBD complete state=${state}.")
                 Future.successful(this)
               } else if (!isIBD && headerOpt.isEmpty) {
-                logger.info(s"Received block=${block.blockHeader.hash.flip.hex}, processing block's header... state=$state")
+                logger.info(
+                  s"Received block=${block.blockHeader.hash.flip.hex}, processing block's header... state=$state")
                 val headersMessage =
                   HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
                 val newDmhF = handleDataPayload(payload = headersMessage,
