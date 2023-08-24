@@ -963,6 +963,8 @@ case class PeerManager(
   def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
     val chainApi: ChainApi = ChainHandler.fromDatabase()
     val headerF = chainApi.getBestBlockHeader()
+    val filterHeaderCountF = chainApi.getFilterHeaderCount()
+    val filterCountF = chainApi.getFilterCount()
     for {
       _ <- chainApi.setSyncing(true)
       _ <- getHeaderSyncHelper(syncPeerOpt)
@@ -982,9 +984,11 @@ case class PeerManager(
         }
       }
       header <- headerF
+      filterHeaderCount <- filterHeaderCountF
+      filterCount <- filterCountF
     } yield {
       logger.info(
-        s"Starting sync node, height=${header.height} hash=${header.hashBE.hex} peerOpt=$syncPeerOpt")
+        s"Starting sync node, height=${header.height} hash=${header.hashBE.hex} filterHeaderCount=$filterHeaderCount filterCount=$filterCount peerOpt=$syncPeerOpt")
     }
   }
 
