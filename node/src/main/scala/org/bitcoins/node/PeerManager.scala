@@ -1018,9 +1018,12 @@ case class PeerManager(
                 _ <- {
                   //make sure filter sync hasn't started since we schedule the job...
                   //see: https://github.com/bitcoin-s/bitcoin-s/issues/5167
-                  if (
-                    (oldFilterHeaderCount == currentFilterHeaderCount && oldFilterCount == currentFilterCount) && blockCount != currentFilterHeaderCount
-                  ) {
+                  val isOutOfSync = isFiltersOutOfSync(blockCount,
+                                                       oldFilterHeaderCount,
+                                                       currentFilterHeaderCount,
+                                                       oldFilterCount,
+                                                       currentFilterCount)
+                  if (isOutOfSync) {
                     //if it hasn't started it, start it
                     filterSyncHelper(chainApi, syncPeerOpt)
                   } else {
@@ -1041,6 +1044,17 @@ case class PeerManager(
       }
     }
     cancellable
+  }
+
+  /** Returns true if filter are in sync with their old counts, but out of sync with our block count */
+  private def isFiltersOutOfSync(
+      blockCount: Int,
+      oldFilterHeaderCount: Int,
+      currentFilterHeaderCount: Int,
+      oldFilterCount: Int,
+      currentFilterCount: Int): Boolean = {
+    (oldFilterHeaderCount == currentFilterHeaderCount && oldFilterCount == currentFilterCount) &&
+    (blockCount != currentFilterHeaderCount || blockCount != currentFilterCount)
   }
 
   private def syncFilters(
