@@ -162,8 +162,11 @@ case class CompactFilterDAO()(implicit
     safeDatabase.run(bestFilterQuery).map(_.headOption)
   }
 
-  private val bestFilterHeightQuery = {
-    bestFilterQuery.map(_.headOption.map(_.height))
+  private val bestFilterHeightQuery: DBIOAction[
+    Option[Int],
+    NoStream,
+    Effect.Read] = {
+    table.map(_.height).max.result
   }
 
   def getBestFilterHeight: Future[Int] = {
