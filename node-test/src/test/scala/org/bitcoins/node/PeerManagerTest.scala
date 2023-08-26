@@ -57,4 +57,23 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         ) //make sure we had a peer passed as a param
       }
   }
+
+  it must "determine if filters are out of sync" in { _ =>
+    val blockCount = 804934
+    val oldFilterHeaderCount = 804934
+    val currentFilterHeaderCount = 804934
+    val oldFilterCount = 771760
+    val currentFilterCount = 771760
+
+    val isOutOfSync = PeerManager.isFiltersOutOfSync(
+      blockCount = blockCount,
+      oldFilterHeaderCount = oldFilterHeaderCount,
+      currentFilterHeaderCount = currentFilterHeaderCount,
+      oldFilterCount = oldFilterCount,
+      currentFilterCount = currentFilterCount
+    )
+
+    assert(isOutOfSync)
+
+  }
 }
