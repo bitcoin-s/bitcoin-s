@@ -564,12 +564,12 @@ case class PeerManager(
     * @param reconnect flag indicating if we should attempt to reconnect
     * @return
     */
-  private def onP2PClientDisconnected(
+  private def onDisconnect(
       peer: Peer,
       forceReconnect: Boolean,
       state: NodeState): Future[NodeState] = {
     logger.info(
-      s"Client stopped for $peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
+      s"Disconnected peer=$peer peers=$peers state=$state forceReconnect=$forceReconnect finder.isDefined=${finderOpt.isDefined} peerDataMap=${peerDataMap
         .map(_._1)}")
     val stateF = finderOpt match {
       case Some(finder) =>
@@ -824,7 +824,7 @@ case class PeerManager(
           }
         } yield newDmh
       case (dmh, DisconnectedPeer(peer, forceReconnect)) =>
-        onP2PClientDisconnected(peer, forceReconnect, dmh.state)
+        onDisconnect(peer, forceReconnect, dmh.state)
           .map(newState => dmh.copy(state = newState))
       case (dmh, i: InitializationTimeout) =>
         onInitializationTimeout(i.peer).map(_ => dmh)
