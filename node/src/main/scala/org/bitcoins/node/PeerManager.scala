@@ -1017,6 +1017,8 @@ case class PeerManager(
           currentFilterHeaderCount <- chainApi.getFilterHeaderCount()
           currentFilterCount <- chainApi.getFilterCount()
           _ <- {
+            logger.info(
+              s"createFilterSyncJob blockCount=$blockCount oldFilterHeaderCount=$oldFilterHeaderCount filterHeaderCount=$currentFilterHeaderCount oldFilterCount=$oldFilterCount filterCount=$currentFilterCount")
             //make sure filter sync hasn't started since we schedule the job...
             //see: https://github.com/bitcoin-s/bitcoin-s/issues/5167
             val isOutOfSync = PeerManager.isFiltersOutOfSync(
