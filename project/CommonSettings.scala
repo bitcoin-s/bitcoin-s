@@ -101,7 +101,7 @@ object CommonSettings {
     )
     val dev = {
       //needed for visualvm to profile/debug apps
-      Vector("jdk.management.agent")
+      Vector("jdk.management.agent", "java.instrument")
     }
     if (!isCI) base ++ dev
     else base
