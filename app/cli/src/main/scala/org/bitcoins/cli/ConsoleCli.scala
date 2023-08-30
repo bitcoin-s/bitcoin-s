@@ -27,6 +27,7 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
+import sttp.client3.logging.slf4j.Slf4jLoggingBackend
 import sttp.client3.{Identity, SttpBackend}
 import ujson._
 import upickle.{default => up}
@@ -1938,7 +1939,7 @@ object ConsoleCli extends Logging {
   /** Converts a `ujson.Value` to String, making an
     * effort to avoid preceding and trailing `"`s
     */
-  private def jsValueToString(value: ujson.Value) = {
+  private def jsValueToString(value: ujson.Value): String = {
     value match {
       case Str(string)             => string
       case Num(num) if num.isWhole => num.toLong.toString
@@ -1948,7 +1949,7 @@ object ConsoleCli extends Logging {
   }
 
   private val backend: SttpBackend[Identity, Any] =
-    sttp.client3.HttpURLConnectionBackend()
+    Slf4jLoggingBackend(sttp.client3.HttpURLConnectionBackend())
 
   def exec(
       command: org.bitcoins.commons.rpc.CliCommand,

@@ -205,6 +205,7 @@ object Deps {
 
     // HTTP client lib
     val sttp = "com.softwaremill.sttp.client3" %% "core" % V.sttpV
+    val sttpSlf4j = "com.softwaremill.sttp.client3" %% "slf4j-backend" % "3.9.0"
 
     val scalaCollectionCompat =
       "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
@@ -441,6 +442,7 @@ object Deps {
   val cli = Def.setting {
     List(
       Compile.sttp,
+      Compile.sttpSlf4j,
       Compile.newMicroPickle.value,
       Compile.scopt
     )
