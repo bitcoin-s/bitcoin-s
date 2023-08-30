@@ -2400,10 +2400,7 @@ object CliCommand {
       case GetDLCWalletAccounting =>
         RequestParam("getdlcwalletaccounting")
       case GetVersion =>
-        // skip sending to server and just return version number of cli
-        //comeback and implement version serverside
-        //return Success(EnvUtil.getVersion)
-        RequestParam("version", Seq.empty)
+        RequestParam("getversion", Seq.empty)
       case CreateContractInfo(ann, totalCollateral, contractDescriptor) =>
         val args = Seq(up.writeJs(ann),
                        up.writeJs(totalCollateral),
