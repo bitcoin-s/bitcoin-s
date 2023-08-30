@@ -3,6 +3,7 @@ package org.bitcoins.cli
 import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
+import org.bitcoins.cli.ConsoleCli.RequestParam
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
@@ -14,10 +15,13 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  Transaction,
+  TransactionOutPoint
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -1921,16 +1925,127 @@ object ConsoleCli extends Logging {
     exec(config.command, config)
   }
 
+  /** Prints the given message to stderr and exist */
+  private def error[T](message: String): Failure[T] = {
+    Failure(new RuntimeException(message))
+  }
+
+  /** Gets the given key from jsObj if it exists
+    * and is not null
+    */
+  private def getKey(
+      key: String,
+      jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]]): Option[
+    ujson.Value] = {
+    jsObjT.toOption.flatMap(_.get(key).flatMap(result =>
+      if (result.isNull) None else Some(result)))
+  }
+
+  /** Converts a `ujson.Value` to String, making an
+    * effort to avoid preceding and trailing `"`s
+    */
+  private def jsValueToString(value: ujson.Value) = {
+    value match {
+      case Str(string)             => string
+      case Num(num) if num.isWhole => num.toLong.toString
+      case Num(num)                => num.toString
+      case rest: ujson.Value       => rest.render(2)
+    }
+  }
+
   def exec(
       command: org.bitcoins.commons.rpc.CliCommand,
       config: Config): Try[String] = {
 
+    val requestParam = CliCommand.buildRequest(command)
+    import sttp.client3._
+    implicit val backend: SttpBackend[Identity, Any] =
+      HttpURLConnectionBackend()
+    val request =
+      basicRequest
+        .post(uri"http://$host:${config.rpcPort}/")
+        .contentType("application/json")
+        .auth
+        .basic("bitcoins", config.rpcPassword)
+        .body {
+          val uuid = java.util.UUID.randomUUID.toString
+          val paramsWithID: Map[String, ujson.Value] =
+            requestParam.toJsonMap + ("id" -> up
+              .writeJs(uuid))
+          up.write(paramsWithID)
+        }
+    logger.debug(s"HTTP request: $request")
+    val response = request.send(backend)
 
-    /** Prints the given message to stderr and exist */
-    def error[T](message: String): Failure[T] = {
-      Failure(new RuntimeException(message))
+    logger.debug(s"HTTP response:" + response)
+
+    Try {
+      // in order to mimic Bitcoin Core we always send
+      // an object looking like {"result": ..., "error": ...}
+      val rawBody = response.body match {
+        case Left(err)       => err
+        case Right(response) => response
+      }
+
+      val jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]] = {
+        Try(ujson.read(rawBody).obj)
+          .transform[mutable.LinkedHashMap[String, ujson.Value]](
+            Success(_),
+            _ =>
+              Success(
+                mutable.LinkedHashMap[String, ujson.Value](
+                  "error" -> Str(rawBody))))
+      }
+
+      (getKey("result", jsObjT), getKey("error", jsObjT)) match {
+        case (Some(result), None) =>
+          Success(jsValueToString(result))
+        case (None, Some(err)) =>
+          val msg = jsValueToString(err)
+          error(msg)
+        case (None, None) => Success("")
+        case (None, None) | (Some(_), Some(_)) =>
+          error(s"Got unexpected response: $rawBody")
+      }
+    }.flatten
+  }
+
+  def host = "localhost"
+
+  case class RequestParam(
+      method: String,
+      params: Seq[ujson.Value.Value] = Nil) {
+
+    lazy val toJsonMap: Map[String, ujson.Value] = {
+      if (params.isEmpty)
+        Map("method" -> method)
+      else
+        Map("method" -> method, "params" -> params)
     }
+  }
+}
 
+case class Config(
+    command: org.bitcoins.commons.rpc.CliCommand =
+      org.bitcoins.commons.rpc.CliCommand.NoCommand,
+    network: Option[NetworkParameters] = None,
+    debug: Boolean = false,
+    rpcPortOpt: Option[Int] = None,
+    rpcPassword: String = "") {
+
+  val rpcPort: Int = rpcPortOpt match {
+    case Some(port) => port
+    case None       => command.defaultPort
+  }
+}
+
+object Config {
+  val empty: Config = Config()
+}
+
+object CliCommand {
+
+  def buildRequest(command: CliCommand): RequestParam = {
     val requestParam: RequestParam = command match {
       case GetInfo =>
         RequestParam("getinfo")
@@ -2293,8 +2408,9 @@ object ConsoleCli extends Logging {
         RequestParam("getdlcwalletaccounting")
       case GetVersion =>
         // skip sending to server and just return version number of cli
-        return Success(EnvUtil.getVersion)
-
+        //comeback and implement version serverside
+        //return Success(EnvUtil.getVersion)
+        RequestParam("version", Seq.empty)
       case CreateContractInfo(ann, totalCollateral, contractDescriptor) =>
         val args = Seq(up.writeJs(ann),
                        up.writeJs(totalCollateral),
@@ -2314,111 +2430,8 @@ object ConsoleCli extends Logging {
         sys.error(s"Command $cmd unsupported")
       case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
     }
-
-    Try {
-      import sttp.client3._
-      implicit val backend: SttpBackend[Identity, Any] =
-        HttpURLConnectionBackend()
-      val request =
-        basicRequest
-          .post(uri"http://$host:${config.rpcPort}/")
-          .contentType("application/json")
-          .auth
-          .basic("bitcoins", config.rpcPassword)
-          .body {
-            val uuid = java.util.UUID.randomUUID.toString
-            val paramsWithID: Map[String, ujson.Value] =
-              requestParam.toJsonMap + ("id" -> up
-                .writeJs(uuid))
-            up.write(paramsWithID)
-          }
-      logger.debug(s"HTTP request: $request")
-      val response = request.send(backend)
-
-      logger.debug(s"HTTP response:" + response)
-
-      // in order to mimic Bitcoin Core we always send
-      // an object looking like {"result": ..., "error": ...}
-      val rawBody = response.body match {
-        case Left(err)       => err
-        case Right(response) => response
-      }
-
-      val jsObjT =
-        Try(ujson.read(rawBody).obj)
-          .transform[mutable.LinkedHashMap[String, ujson.Value]](
-            Success(_),
-            _ =>
-              Success(
-                mutable.LinkedHashMap[String, ujson.Value](
-                  "error" -> Str(rawBody))))
-
-      /** Gets the given key from jsObj if it exists
-        * and is not null
-        */
-      def getKey(key: String): Option[ujson.Value] = {
-        jsObjT.toOption.flatMap(_.get(key).flatMap(result =>
-          if (result.isNull) None else Some(result)))
-      }
-
-      /** Converts a `ujson.Value` to String, making an
-        * effort to avoid preceding and trailing `"`s
-        */
-      def jsValueToString(value: ujson.Value) =
-        value match {
-          case Str(string)             => string
-          case Num(num) if num.isWhole => num.toLong.toString
-          case Num(num)                => num.toString
-          case rest: ujson.Value       => rest.render(2)
-        }
-
-      (getKey("result"), getKey("error")) match {
-        case (Some(result), None) =>
-          Success(jsValueToString(result))
-        case (None, Some(err)) =>
-          val msg = jsValueToString(err)
-          error(msg)
-        case (None, None) => Success("" )
-        case (None, None) | (Some(_), Some(_)) =>
-          error(s"Got unexpected response: $rawBody")
-      }
-    }.flatten
+    requestParam
   }
-
-  def host = "localhost"
-
-  case class RequestParam(
-      method: String,
-      params: Seq[ujson.Value.Value] = Nil) {
-
-    lazy val toJsonMap: Map[String, ujson.Value] = {
-      if (params.isEmpty)
-        Map("method" -> method)
-      else
-        Map("method" -> method, "params" -> params)
-    }
-  }
-}
-
-case class Config(
-    command: org.bitcoins.commons.rpc.CliCommand =
-      org.bitcoins.commons.rpc.CliCommand.NoCommand,
-    network: Option[NetworkParameters] = None,
-    debug: Boolean = false,
-    rpcPortOpt: Option[Int] = None,
-    rpcPassword: String = "") {
-
-  val rpcPort: Int = rpcPortOpt match {
-    case Some(port) => port
-    case None       => command.defaultPort
-  }
-}
-
-object Config {
-  val empty: Config = Config()
-}
-
-object CliCommand {
 
   case object GetVersion extends ServerlessCliCommand
 
