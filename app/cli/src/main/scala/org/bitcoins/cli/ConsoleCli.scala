@@ -27,6 +27,7 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
+import sttp.client3.{Identity, SttpBackend}
 import ujson._
 import upickle.{default => up}
 
@@ -1953,16 +1954,18 @@ object ConsoleCli extends Logging {
     }
   }
 
+  private val backend: SttpBackend[Identity, Any] =
+    sttp.client3.HttpURLConnectionBackend()
+
   def exec(
       command: org.bitcoins.commons.rpc.CliCommand,
       config: Config): Try[String] = {
 
     val requestParam = CliCommand.buildRequest(command)
     import sttp.client3._
-    implicit val backend: SttpBackend[Identity, Any] =
-      HttpURLConnectionBackend()
+
     val request =
-      basicRequest
+      sttp.client3.basicRequest
         .post(uri"http://$host:${config.rpcPort}/")
         .contentType("application/json")
         .auth
