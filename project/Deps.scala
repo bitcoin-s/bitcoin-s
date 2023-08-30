@@ -205,7 +205,8 @@ object Deps {
 
     // HTTP client lib
     val sttp = "com.softwaremill.sttp.client3" %% "core" % V.sttpV
-    val sttpSlf4j = "com.softwaremill.sttp.client3" %% "slf4j-backend" % "3.9.0"
+    //https://sttp.softwaremill.com/en/stable/backends/wrappers/logging.html#using-slf4j
+    val sttpSlf4j = "com.softwaremill.sttp.client3" %% "slf4j-backend" % V.sttpV
 
     val scalaCollectionCompat =
       "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
