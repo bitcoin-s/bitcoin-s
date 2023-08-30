@@ -1,5 +1,6 @@
 package org.bitcoins.cli
 
+import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
@@ -13,11 +14,7 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
-  Transaction,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.EnvUtil
@@ -37,7 +34,7 @@ import java.util.Date
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-object ConsoleCli {
+object ConsoleCli extends Logging {
 
   def parser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
@@ -1927,14 +1924,7 @@ object ConsoleCli {
   def exec(
       command: org.bitcoins.commons.rpc.CliCommand,
       config: Config): Try[String] = {
-    import System.err.{println => printerr}
 
-    /** Prints the given message to stderr if debug is set */
-    def debug(message: Any): Unit = {
-      if (config.debug) {
-        printerr(s"DEBUG: $message")
-      }
-    }
 
     /** Prints the given message to stderr and exist */
     def error[T](message: String): Failure[T] = {
@@ -2342,11 +2332,10 @@ object ConsoleCli {
                 .writeJs(uuid))
             up.write(paramsWithID)
           }
-      debug(s"HTTP request: $request")
+      logger.debug(s"HTTP request: $request")
       val response = request.send(backend)
 
-      debug(s"HTTP response:")
-      debug(response)
+      logger.debug(s"HTTP response:" + response)
 
       // in order to mimic Bitcoin Core we always send
       // an object looking like {"result": ..., "error": ...}
@@ -2389,7 +2378,7 @@ object ConsoleCli {
         case (None, Some(err)) =>
           val msg = jsValueToString(err)
           error(msg)
-        case (None, None) => Success("")
+        case (None, None) => Success("" )
         case (None, None) | (Some(_), Some(_)) =>
           error(s"Got unexpected response: $rawBody")
       }
