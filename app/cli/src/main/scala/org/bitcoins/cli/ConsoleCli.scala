@@ -50,9 +50,6 @@ object ConsoleCli extends Logging {
       opt[NetworkParameters]('n', "network")
         .action((np, conf) => conf.copy(network = Some(np)))
         .text("Select the active network."),
-      opt[Unit]("debug")
-        .action((_, conf) => conf.copy(debug = true))
-        .text("Print debugging information"),
       opt[Int]("rpcport")
         .action((port, conf) => conf.copy(rpcPortOpt = Some(port)))
         .text(s"The port to send our rpc request to on the server"),
@@ -1906,11 +1903,7 @@ object ConsoleCli extends Logging {
                 case other => other
               }))),
       checkConfig {
-        case Config(org.bitcoins.commons.rpc.CliCommand.NoCommand,
-                    _,
-                    _,
-                    _,
-                    _) =>
+        case Config(org.bitcoins.commons.rpc.CliCommand.NoCommand, _, _, _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -2029,7 +2022,6 @@ case class Config(
     command: org.bitcoins.commons.rpc.CliCommand =
       org.bitcoins.commons.rpc.CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
-    debug: Boolean = false,
     rpcPortOpt: Option[Int] = None,
     rpcPassword: String = "") {
 
