@@ -1975,7 +1975,7 @@ object ConsoleCli extends Logging {
           up.write(paramsWithID)
         }
     logger.debug(s"HTTP request: $request")
-    val response = request.send(backend)
+    val response = backend.send(request)
 
     logger.debug(s"HTTP response:" + response)
 
