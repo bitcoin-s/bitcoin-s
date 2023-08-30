@@ -1981,36 +1981,33 @@ object ConsoleCli extends Logging {
     val response: Response[Either[String, String]] = backend.send(request)
 
     logger.debug(s"HTTP response:" + response)
+    // in order to mimic Bitcoin Core we always send
+    // an object looking like {"result": ..., "error": ...}
+    val rawBody = response.body match {
+      case Left(err)       => err
+      case Right(response) => response
+    }
 
-    Try {
-      // in order to mimic Bitcoin Core we always send
-      // an object looking like {"result": ..., "error": ...}
-      val rawBody = response.body match {
-        case Left(err)       => err
-        case Right(response) => response
-      }
+    val jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]] = {
+      Try(ujson.read(rawBody).obj)
+        .transform[mutable.LinkedHashMap[String, ujson.Value]](
+          Success(_),
+          _ =>
+            Success(
+              mutable.LinkedHashMap[String, ujson.Value](
+                "error" -> Str(rawBody))))
+    }
 
-      val jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]] = {
-        Try(ujson.read(rawBody).obj)
-          .transform[mutable.LinkedHashMap[String, ujson.Value]](
-            Success(_),
-            _ =>
-              Success(
-                mutable.LinkedHashMap[String, ujson.Value](
-                  "error" -> Str(rawBody))))
-      }
-
-      (getKey("result", jsObjT), getKey("error", jsObjT)) match {
-        case (Some(result), None) =>
-          Success(jsValueToString(result))
-        case (None, Some(err)) =>
-          val msg = jsValueToString(err)
-          error(msg)
-        case (None, None) => Success("")
-        case (None, None) | (Some(_), Some(_)) =>
-          error(s"Got unexpected response: $rawBody")
-      }
-    }.flatten
+    (getKey("result", jsObjT), getKey("error", jsObjT)) match {
+      case (Some(result), None) =>
+        Success(jsValueToString(result))
+      case (None, Some(err)) =>
+        val msg = jsValueToString(err)
+        error(msg)
+      case (None, None) => Success("")
+      case (None, None) | (Some(_), Some(_)) =>
+        error(s"Got unexpected response: $rawBody")
+    }
   }
 
   def host = "localhost"
