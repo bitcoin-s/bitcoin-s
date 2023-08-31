@@ -71,7 +71,11 @@ object CommonSettings {
     Test / console / scalacOptions ++= (Compile / console / scalacOptions).value,
     Test / scalacOptions ++= testCompilerOpts(scalaVersion.value),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    assembly / test := {}
+    assembly / test := {},
+    Compile / doc := {
+      if (!isCI) (target.value / "none")
+      else (Compile / doc).value
+    }
   )
 
   lazy val jvmSettings: Seq[Setting[_]] = List(
