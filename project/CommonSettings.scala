@@ -125,9 +125,7 @@ object CommonSettings {
   lazy val rmCliJlinkModules = {
     rmJlinkModules ++ Vector(
       "java.logging",
-      "java.naming",
       "java.sql",
-      "java.xml",
       "jdk.unsupported"
     )
   }
