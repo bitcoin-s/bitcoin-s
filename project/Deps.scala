@@ -4,6 +4,7 @@ import sbt._
 object Deps {
 
   object V {
+    val antV = "1.10.14"
     val bouncyCastle = "1.76"
     val dropwizardMetricsV = "4.2.19" //https://github.com/dropwizard/metrics
 
@@ -123,6 +124,8 @@ object Deps {
     val akkaTestkit =
       "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
 
+    //https://mvnrepository.com/artifact/org.apache.ant/ant/
+    val ant = "org.apache.ant" % "ant" % V.antV
     val gson =
       "com.google.code.gson" % "gson" % V.gsonV //https://github.com/google/gson
 
@@ -443,9 +446,13 @@ object Deps {
   val cli = Def.setting {
     List(
       Compile.sttp,
+      Compile.slf4j,
       Compile.sttpSlf4j,
       Compile.newMicroPickle.value,
-      Compile.scopt
+      Compile.scopt,
+      Compile.logback,
+      Compile.codehaus,
+      Compile.ant
     )
   }
 

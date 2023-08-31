@@ -27,8 +27,10 @@ import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
+import sttp.client3.logging.LogLevel
 import sttp.client3.logging.slf4j.Slf4jLoggingBackend
 import sttp.client3.{Identity, SttpBackend}
+import sttp.model.StatusCode
 import ujson._
 import upickle.{default => up}
 
@@ -1949,7 +1951,10 @@ object ConsoleCli extends Logging {
   }
 
   private val backend: SttpBackend[Identity, Any] =
-    Slf4jLoggingBackend(sttp.client3.HttpURLConnectionBackend())
+    Slf4jLoggingBackend(
+      sttp.client3.HttpURLConnectionBackend(),
+      responseExceptionLogLevel = LogLevel.Warn
+    )
 
   def exec(
       command: org.bitcoins.commons.rpc.CliCommand,
@@ -1972,7 +1977,12 @@ object ConsoleCli extends Logging {
           up.write(paramsWithID)
         }
     logger.debug(s"HTTP request: $request")
-    val response: Response[Either[String, String]] = backend.send(request)
+    val response: Response[Either[String, String]] =
+      try { backend.send(request) }
+      catch {
+        case scala.util.control.NonFatal(err) =>
+          Response.apply(Left(err.getMessage), StatusCode.BadRequest)
+      }
 
     logger.debug(s"HTTP response:" + response)
     // in order to mimic Bitcoin Core we always send

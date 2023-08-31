@@ -139,11 +139,12 @@ object CommonSettings {
   )
 
   private val commonCompilerOpts = {
-    List(
+/*    List(
       //https://stackoverflow.com/a/43103038/967713
       "-release",
       "8"
-    )
+    )*/
+    Vector.empty
   }
 
   /** Linting options for scalac */
@@ -376,9 +377,9 @@ object CommonSettings {
 
   lazy val cliJlinkIgnore = {
     val cliIgnore = Vector(
-      "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate",
-      "org.slf4j" -> "org.slf4j.impl"
+      "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate"
     ).++(cryptoJlinkIgnore)
+      .++(loggingJlinkIgnore)
 
     JlinkIgnore.byPackagePrefix(cliIgnore: _*)
   }
