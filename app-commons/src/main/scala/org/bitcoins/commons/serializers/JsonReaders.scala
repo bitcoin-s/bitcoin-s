@@ -83,7 +83,7 @@ object JsonReaders {
   implicit object URLReads extends Reads[URL] {
 
     override def reads(json: JsValue): JsResult[URL] =
-      SerializerUtil.processJsString[URL](str => new URL(str))(json)
+      SerializerUtil.processJsString[URL](str => new URI(str).toURL)(json)
   }
 
   implicit object ZonedDateTimeReads extends Reads[ZonedDateTime] {

@@ -5,7 +5,7 @@ import org.bitcoins.core.util._
 import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
-import java.net.URL
+import java.net.{URI, URL}
 import scala.util.{Failure, Success, Try}
 
 class LnURL private (private val str: String) {
@@ -13,7 +13,7 @@ class LnURL private (private val str: String) {
   val url: URL = LnURL.decode(str) match {
     case Failure(_) =>
       throw new IllegalArgumentException("Invalid LnURL encoding")
-    case Success(value) => new URL(value)
+    case Success(value) => new URI(value).toURL
   }
 
   override def toString: String = str.toUpperCase
