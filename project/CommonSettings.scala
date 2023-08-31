@@ -137,12 +137,11 @@ object CommonSettings {
   )
 
   private val commonCompilerOpts = {
-/*    List(
+    List(
       //https://stackoverflow.com/a/43103038/967713
       "-release",
       "8"
-    )*/
-    Vector.empty
+    )
   }
 
   /** Linting options for scalac */
