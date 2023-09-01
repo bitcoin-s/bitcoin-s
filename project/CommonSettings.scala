@@ -125,9 +125,7 @@ object CommonSettings {
   lazy val rmCliJlinkModules = {
     rmJlinkModules ++ Vector(
       "java.logging",
-      "java.naming",
       "java.sql",
-      "java.xml",
       "jdk.unsupported"
     )
   }
@@ -376,9 +374,9 @@ object CommonSettings {
 
   lazy val cliJlinkIgnore = {
     val cliIgnore = Vector(
-      "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate",
-      "org.slf4j" -> "org.slf4j.impl"
+      "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate"
     ).++(cryptoJlinkIgnore)
+      .++(loggingJlinkIgnore)
 
     JlinkIgnore.byPackagePrefix(cliIgnore: _*)
   }
