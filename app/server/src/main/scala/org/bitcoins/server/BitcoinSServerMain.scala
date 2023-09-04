@@ -661,7 +661,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def buildWsSource: (
       SourceQueueWithComplete[WsNotification[_]],
       Source[WsNotification[_], NotUsed]) = {
-    val maxBufferSize: Int = 25
+    val maxBufferSize: Int = 16
 
     /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
       * we will drop the first element in the buffer
