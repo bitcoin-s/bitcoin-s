@@ -671,8 +671,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       //the BroadcastHub.sink is needed to avoid these errors
       // 'Websocket handler failed with Processor actor'
       Source
-        .queue[WsNotification[_]](maxBufferSize, OverflowStrategy.dropHead)
-        .toMat(BroadcastHub.sink)(Keep.both)
+        .queue[WsNotification[_]](maxBufferSize, OverflowStrategy.backpressure)
+        .toMat(BroadcastHub.sink(maxBufferSize))(Keep.both)
         .run()
     }
 
