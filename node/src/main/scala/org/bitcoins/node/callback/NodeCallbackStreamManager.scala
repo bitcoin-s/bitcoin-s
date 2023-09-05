@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class NodeCallbackStreamManager(
     callbacks: NodeCallbacks,
     overflowStrategy: OverflowStrategy = OverflowStrategy.backpressure,
-    maxBufferSize: Int = 1000)(implicit system: ActorSystem)
+    maxBufferSize: Int = 32)(implicit system: ActorSystem)
     extends NodeCallbacks
     with StartStopAsync[Unit]
     with Logging {
