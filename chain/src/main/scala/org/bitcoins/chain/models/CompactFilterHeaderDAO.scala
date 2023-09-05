@@ -156,13 +156,14 @@ case class CompactFilterHeaderDAO()(implicit
     safeDatabase.run(bestFilterHeaderQuery).map(_.headOption)
   }
 
-  private val bestFilterHeaderHeightQuery = {
-    bestFilterHeaderQuery.map(_.headOption.map(_.height))
+  private val bestFilterHeaderHeightQuery: Rep[Option[Int]] = {
+    table.map(_.height).max
   }
 
   def getBestFilterHeaderHeight: Future[Int] = {
-    safeDatabase.run(bestFilterHeaderHeightQuery).map { filterHeaderHeightOpt =>
-      filterHeaderHeightOpt.getOrElse(0)
+    safeDatabase.run(bestFilterHeaderHeightQuery.result).map {
+      filterHeaderHeightOpt =>
+        filterHeaderHeightOpt.getOrElse(0)
     }
   }
 
