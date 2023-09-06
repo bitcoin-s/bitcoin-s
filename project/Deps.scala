@@ -20,7 +20,7 @@ object Deps {
 
     val scalaTestPlus =
       "3.2.14.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
-    val slf4j = "2.0.7"
+    val slf4j = "2.0.9"
     val spray = "1.3.6"
     val zeromq = "0.5.3"
     val scalapb = "0.11.13"
@@ -126,6 +126,7 @@ object Deps {
 
     //https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
+
     val gson =
       "com.google.code.gson" % "gson" % V.gsonV //https://github.com/google/gson
 
