@@ -357,4 +357,32 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           node.getConnectionCount.map(_ == 1))
       } yield succeed
   }
+
+  it must "start syncing compact filters on startup when block headers / filter headers are synced" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      //https://github.com/bitcoin-s/bitcoin-s/issues/5221
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
+      val bitcoind0 = bitcoinds(0)
+      val blockCountF = bitcoind0.getBlockCount
+      for {
+        blockCount <- blockCountF
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          for {
+            chainApi <- node.chainApiFromDb()
+            fhCount <- chainApi.getFilterHeaderCount()
+          } yield fhCount == blockCount
+        })
+        _ <- node.stop()
+        _ <- node.start()
+        _ <- AsyncUtil.retryUntilSatisfiedF(
+          () => {
+            for {
+              chainApi <- node.chainApiFromDb()
+              filterCount <- chainApi.getFilterCount()
+            } yield filterCount == blockCount
+          },
+          1.second)
+      } yield succeed
+  }
 }

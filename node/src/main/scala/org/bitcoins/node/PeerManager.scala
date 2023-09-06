@@ -236,13 +236,13 @@ case class PeerManager(
     }
   }
 
-  /** Starts sync compact filer headers.
+  /** Starts sync compact filter headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
   private def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
-      bestFilterOpt: Option[CompactFilterDb],
+      compactFilterStartHeight: Int,
       nodeState: SyncNodeState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     val syncPeer = nodeState.syncPeer
@@ -257,17 +257,16 @@ case class PeerManager(
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
       // If we have started syncing filters
       if (
-        !isSyncFilterHeaders &&
-        bestFilterOpt.isDefined &&
-        bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
+        !isSyncFilterHeaders && compactFilterStartHeight < bestFilterHeader.height
       ) {
         PeerManager
           .sendNextGetCompactFilterCommand(
             peerMessageSenderApi = this,
             chainApi = chainApi,
             filterBatchSize = chainAppConfig.filterBatchSize,
-            startHeight = bestFilterOpt.get.height,
-            peer = syncPeer)
+            startHeight = compactFilterStartHeight,
+            peer = syncPeer
+          )
           .map(_ => ())
       } else {
         Future.unit
@@ -952,6 +951,8 @@ case class PeerManager(
     * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
     */
   def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
+    logger.debug(
+      s"syncHelper() syncPeerOpt=$syncPeerOpt isStarted.get=${isStarted.get} syncFilterCancellableOpt.isDefined=${syncFilterCancellableOpt.isDefined}")
     val chainApi: ChainApi = ChainHandler.fromDatabase()
     val headerF = chainApi.getBestBlockHeader()
     val filterHeaderCountF = chainApi.getFilterHeaderCount()
@@ -1017,8 +1018,6 @@ case class PeerManager(
           currentFilterHeaderCount <- chainApi.getFilterHeaderCount()
           currentFilterCount <- chainApi.getFilterCount()
           _ <- {
-            logger.info(
-              s"createFilterSyncJob blockCount=$blockCount oldFilterHeaderCount=$oldFilterHeaderCount filterHeaderCount=$currentFilterHeaderCount oldFilterCount=$oldFilterCount filterCount=$currentFilterCount")
             //make sure filter sync hasn't started since we schedule the job...
             //see: https://github.com/bitcoin-s/bitcoin-s/issues/5167
             val isOutOfSync = PeerManager.isFiltersOutOfSync(
@@ -1028,6 +1027,7 @@ case class PeerManager(
               oldFilterCount = oldFilterCount,
               currentFilterCount = currentFilterCount
             )
+
             if (isOutOfSync) {
               //if it hasn't started it, start it
               filterSyncHelper(chainApi, syncPeer)
@@ -1102,14 +1102,22 @@ case class PeerManager(
             } else {
               syncCompactFilters(bestFilterHeader = bestFilterHeader,
                                  chainApi = chainApi,
-                                 bestFilterOpt = Some(bestFilter),
+                                 compactFilterStartHeight = bestFilter.height,
                                  nodeState = nodeState)
             }
           case (Some(bestFilterHeader), None) =>
-            syncCompactFilters(bestFilterHeader = bestFilterHeader,
-                               chainApi = chainApi,
-                               bestFilterOpt = None,
-                               nodeState = nodeState)
+            val compactFilterStartHeightF =
+              PeerManager.getCompactFilterStartHeight(chainApi,
+                                                      walletCreationTimeOpt)
+            for {
+              compactFilterStartHeight <- compactFilterStartHeightF
+              _ <- syncCompactFilters(bestFilterHeader = bestFilterHeader,
+                                      chainApi = chainApi,
+                                      compactFilterStartHeight =
+                                        compactFilterStartHeight,
+                                      nodeState = nodeState)
+            } yield ()
+
         }
       }
     }
@@ -1289,5 +1297,46 @@ object PeerManager extends Logging {
       currentFilterCount: Int): Boolean = {
     (oldFilterHeaderCount == currentFilterHeaderCount && oldFilterCount == currentFilterCount) &&
     (blockCount != currentFilterHeaderCount || blockCount != currentFilterCount)
+  }
+
+  /** Return the starting point for first sync of compact filters from the network
+    *
+    * @param chainApi
+    * @param walletCreationTimeOpt the time the wallet was created, we will start syncing form this point if given
+    * @param ec
+    * @return the start height for compact filters
+    */
+  def getCompactFilterStartHeight(
+      chainApi: ChainApi,
+      walletCreationTimeOpt: Option[Instant])(implicit
+      ec: ExecutionContext): Future[Int] = {
+    chainApi.getBestFilter().flatMap {
+      case Some(f) =>
+        //we have already started syncing filters, return the height of the last filter seen
+        Future.successful(f.height)
+      case None =>
+        walletCreationTimeOpt match {
+          case Some(instant) =>
+            val creationTimeHeightF = chainApi
+              .epochSecondToBlockHeight(instant.toEpochMilli / 1000)
+            val filterCountF = chainApi.getFilterCount()
+            for {
+              creationTimeHeight <- creationTimeHeightF
+              filterCount <- filterCountF
+            } yield {
+              //filterHeightOpt contains the height of the last filter of the last batch
+              //so if we want to start syncing filters from the correct height we need to
+              //decrease the computed height
+              val height = Math.max(0, creationTimeHeight - 1)
+              //want to choose the maximum out of these too
+              //if our internal chainstate filter count is > creationTimeHeight
+              //we just want to start syncing from our last seen filter
+              Math.max(height, filterCount)
+            }
+          case None =>
+            Future.successful(0)
+        }
+    }
+
   }
 }

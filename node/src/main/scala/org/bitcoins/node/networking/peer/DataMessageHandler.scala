@@ -168,12 +168,13 @@ case class DataMessageHandler(
                   filterHeaderSync)
               } else {
                 for {
-                  startHeightOpt <- getCompactFilterStartHeight(
+                  startHeight <- PeerManager.getCompactFilterStartHeight(
+                    chainApi,
                     walletCreationTimeOpt)
                   filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
                     peerMessageSenderApi = peerMessageSenderApi,
                     syncPeer = peer,
-                    startHeightOpt = startHeightOpt,
+                    startHeight = startHeight,
                     peers = filterHeaderSync.peers)
                 } yield {
                   filterSyncStateOpt match {
@@ -222,7 +223,7 @@ case class DataMessageHandler(
               } else Future.successful((filterBatch, chainApi))
             }
             (_, newFilterHeight) <-
-              calcFilterHeaderFilterHeight(chainApi)
+              calcFilterHeaderFilterHeight(newChainApi)
             filterHeaderSyncStateOpt <-
               if (batchSizeFull) {
                 logger.debug(
@@ -552,23 +553,14 @@ case class DataMessageHandler(
   private def sendFirstGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       syncPeer: Peer,
-      startHeightOpt: Option[Int],
+      startHeight: Int,
       peers: Set[Peer]): Future[Option[NodeState.FilterSync]] = {
-    val startHeightF = startHeightOpt match {
-      case Some(startHeight) => Future.successful(startHeight)
-      case None              => chainApi.getFilterCount()
-    }
+    logger.info(s"Beginning to sync filters from startHeight=$startHeight")
 
-    for {
-      startHeight <- startHeightF
-      _ = logger.info(
-        s"Beginning to sync filters from startHeight=$startHeight")
-      res <- sendNextGetCompactFilterCommand(peerMessageSenderApi =
-                                               peerMessageSenderApi,
-                                             syncPeer = syncPeer,
-                                             startHeight = startHeight,
-                                             peers = peers)
-    } yield res
+    sendNextGetCompactFilterCommand(peerMessageSenderApi = peerMessageSenderApi,
+                                    syncPeer = syncPeer,
+                                    startHeight = startHeight,
+                                    peers = peers)
   }
 
   private def handleInventoryMsg(
@@ -593,31 +585,6 @@ case class DataMessageHandler(
     peerMessageSenderApi.sendMsg(getData, Some(peer)).map(_ => this)
   }
 
-  private def getCompactFilterStartHeight(
-      walletCreationTimeOpt: Option[Instant]): Future[Option[Int]] = {
-    walletCreationTimeOpt match {
-      case Some(instant) =>
-        val creationTimeHeightF = chainApi
-          .epochSecondToBlockHeight(instant.toEpochMilli / 1000)
-        val filterCountF = chainApi.getFilterCount()
-        for {
-          creationTimeHeight <- creationTimeHeightF
-          filterCount <- filterCountF
-        } yield {
-          //filterHeightOpt contains the height of the last filter of the last batch
-          //so if we want to start syncing filters from the correct height we need to
-          //decrease the computed height
-          val height = Math.max(0, creationTimeHeight - 1)
-          //want to choose the maximum out of these too
-          //if our internal chainstate filter count is > creationTimeHeight
-          //we just want to start syncing from our last seen filter
-          Some(Math.max(height, filterCount))
-        }
-      case None =>
-        Future.successful(None)
-    }
-  }
-
   private def calcFilterHeaderFilterHeight(
       chainApi: ChainApi): Future[(Int, Int)] = {
     for {
@@ -633,6 +600,7 @@ case class DataMessageHandler(
     for {
       (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
         chainApi)
+
       isSynced <-
         if (newFilterHeight == 0 && walletCreationTimeOpt.isDefined) {
           //if we have zero filters in our database and are syncing filters after a wallet creation time
