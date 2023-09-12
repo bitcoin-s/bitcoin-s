@@ -183,12 +183,12 @@ class P2PRpcTest extends BitcoindRpcTest {
         BitcoindRpcTestUtil.createUnconnectedNodePair(clientAccum = clientAccum)
       hash <- client2.generate(1)
       block <- client2.getBlockRaw(hash.head)
-      preCount1 <- client1.getBlockCount
-      preCount2 <- client2.getBlockCount
+      preCount1 <- client1.getBlockCount()
+      preCount2 <- client2.getBlockCount()
       _ <- client1.submitBlock(block)
 
-      postCount1 <- client1.getBlockCount
-      postCount2 <- client2.getBlockCount
+      postCount1 <- client1.getBlockCount()
+      postCount2 <- client2.getBlockCount()
       hash1 <- client1.getBlockHash(postCount1)
       hash2 <- client2.getBlockHash(postCount2)
     } yield {

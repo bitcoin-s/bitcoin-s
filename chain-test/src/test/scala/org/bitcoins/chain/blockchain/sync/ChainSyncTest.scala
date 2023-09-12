@@ -36,7 +36,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
       for {
         chainHandler <- newChainHandlerF
         count <- chainHandler.getBlockCount()
-        bitcoindCount <- bitcoind.getBlockCount
+        bitcoindCount <- bitcoind.getBlockCount()
       } yield {
         assert(bitcoindCount == count)
       }
@@ -48,7 +48,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
       val chainHandler = bitcoindWithChainHandler.chainHandler
       //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
       val getBestBlockHashFunc = { () =>
-        bitcoind.getBestBlockHash
+        bitcoind.getBestBlockHash()
       }
 
       val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
@@ -69,7 +69,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
           getBlockHeaderFunc = getBlockHeaderFunc,
           getBestBlockHashFunc = getBestBlockHashFunc)
         bitcoinSCount <- newChainHandler2.getBlockCount()
-        bitcoindCount <- bitcoind.getBlockCount
+        bitcoindCount <- bitcoind.getBlockCount()
       } yield assert(bitcoinSCount == bitcoindCount)
 
       newChainHandler2F
@@ -100,8 +100,8 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
         chainApiSync1 <- sync1F
         count <- chainApiSync1.getBlockCount()
         bestHash <- chainApiSync1.getBestBlockHash()
-        bitcoindBlockCount <- bitcoind.getBlockCount
-        bitcoindBestBlockHash <- bitcoind.getBestBlockHash
+        bitcoindBlockCount <- bitcoind.getBlockCount()
+        bitcoindBestBlockHash <- bitcoind.getBestBlockHash()
       } yield {
         assert(count == bitcoindBlockCount)
         assert(bestHash == bitcoindBestBlockHash)
@@ -119,8 +119,8 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
         count <- chainApiSync2.getBlockCount()
         _ <- generate1F
         bestHash <- chainApiSync2.getBestBlockHash()
-        bitcoindBlockCount <- bitcoind.getBlockCount
-        bitcoindBestBlockHash <- bitcoind.getBestBlockHash
+        bitcoindBlockCount <- bitcoind.getBlockCount()
+        bitcoindBestBlockHash <- bitcoind.getBestBlockHash()
       } yield {
         assert(count == bitcoindBlockCount)
         assert(bestHash == bitcoindBestBlockHash)

@@ -51,8 +51,8 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
         _ = assert(tx.confirmations > 0)
         rawTx <- second.getRawTransaction(txid)
         _ = assert(rawTx.confirmations.exists(_ > 0))
-        firstBlock <- first.getBestBlockHash
-        secondBlock <- second.getBestBlockHash
+        firstBlock <- first.getBestBlockHash()
+        secondBlock <- second.getBestBlockHash()
       } yield assert(firstBlock == secondBlock)
   }
 
@@ -62,12 +62,12 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
       val NodePair(first, second) = nodes
       val allClients = nodes.toVector
       for {
-        heightPreGeneration <- first.getBlockCount
+        heightPreGeneration <- first.getBlockCount()
         _ <- BitcoindRpcTestUtil.generateAllAndSync(allClients,
                                                     blocks = blocksToGenerate)
-        firstHash <- first.getBestBlockHash
-        secondHash <- second.getBestBlockHash
-        heightPostGeneration <- first.getBlockCount
+        firstHash <- first.getBestBlockHash()
+        secondHash <- second.getBestBlockHash()
+        heightPostGeneration <- first.getBlockCount()
       } yield {
         assert(firstHash == secondHash)
         assert(

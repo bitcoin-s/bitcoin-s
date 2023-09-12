@@ -40,7 +40,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
     val streamF: Future[RunnableGraph[Future[NeutrinoHDWalletApi]]] = for {
       _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
-      bitcoindHeight <- bitcoind.getBlockCount
+      bitcoindHeight <- bitcoind.getBlockCount()
       walletStateOpt <- wallet.getSyncDescriptorOpt()
 
       heightRange <- {
@@ -508,7 +508,7 @@ object BitcoindRpcBackendUtil extends Logging {
     logger.debug("Polling bitcoind for block count")
 
     val resF: Future[Unit] = for {
-      count <- bitcoind.getBlockCount
+      count <- bitcoind.getBlockCount()
       retval <- {
         if (prevCount < count) {
           logger.info(

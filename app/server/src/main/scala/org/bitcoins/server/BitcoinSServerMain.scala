@@ -643,7 +643,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     AsyncUtil.retryUntilSatisfiedF(
       conditionF = { () =>
         for {
-          bitcoindHeight <- bitcoind.getBlockCount
+          bitcoindHeight <- bitcoind.getBlockCount()
           walletStateOpt <- wallet.getSyncDescriptorOpt()
         } yield walletStateOpt.forall(bitcoindHeight >= _.height)
       },

@@ -61,8 +61,8 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       balance <- wallet.getBalance()
 
-      height <- bitcoind.getBlockCount
-      bestHash <- bitcoind.getBestBlockHash
+      height <- bitcoind.getBlockCount()
+      bestHash <- bitcoind.getBestBlockHash()
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(balance == amountToSend)

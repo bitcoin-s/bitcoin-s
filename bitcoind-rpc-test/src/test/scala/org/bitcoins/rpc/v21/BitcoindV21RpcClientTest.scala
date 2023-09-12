@@ -112,7 +112,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
     client: BitcoindV21RpcClient =>
       for {
         info <- client.getBlockChainInfo
-        bestHash <- client.getBestBlockHash
+        bestHash <- client.getBestBlockHash()
       } yield {
         assert(info.isInstanceOf[GetBlockChainInfoResultPostV19])
         val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPostV19]
@@ -186,7 +186,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
 
   it should "correctly dump tx out set" in { client: BitcoindV21RpcClient =>
     for {
-      hash <- client.getBestBlockHash
+      hash <- client.getBestBlockHash()
       height <- client.getBestHashBlockHeight()
       result <- client.dumpTxOutSet(new File("utxo.dat").toPath)
     } yield {

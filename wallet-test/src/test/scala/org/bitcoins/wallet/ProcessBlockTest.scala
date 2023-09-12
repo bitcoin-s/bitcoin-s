@@ -51,8 +51,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       _ <- wallet.processBlock(block)
       utxos <- wallet.listUtxos()
-      height <- bitcoind.getBlockCount
-      bestHash <- bitcoind.getBestBlockHash
+      height <- bitcoind.getBlockCount()
+      bestHash <- bitcoind.getBestBlockHash()
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
       txDbOpt <- wallet.findByTxId(txId)
     } yield {
@@ -82,8 +82,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
       balance <- wallet.getConfirmedBalance()
 
-      height <- bitcoind.getBlockCount
-      bestHash <- bitcoind.getBestBlockHash
+      height <- bitcoind.getBlockCount()
+      bestHash <- bitcoind.getBestBlockHash()
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(syncHeightOpt.isDefined)
@@ -116,8 +116,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
       balance <- wallet.getConfirmedBalance()
 
-      height <- bitcoind.getBlockCount
-      bestHash <- bitcoind.getBestBlockHash
+      height <- bitcoind.getBlockCount()
+      bestHash <- bitcoind.getBestBlockHash()
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
 

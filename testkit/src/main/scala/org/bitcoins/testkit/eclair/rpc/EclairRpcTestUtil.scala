@@ -714,7 +714,7 @@ trait EclairRpcTestUtil extends Logging {
       bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] =
     for {
-      blockCount <- bitcoind.getBlockCount
+      blockCount <- bitcoind.getBlockCount()
       info <- client.getInfo
     } yield info.blockHeight == blockCount
 

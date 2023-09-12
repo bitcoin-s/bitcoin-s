@@ -31,7 +31,7 @@ class ScanBitcoind()(implicit
     val bitcoindF = rpcAppConfig.clientF
 
     //    val startHeight = 675000
-    val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount)
+    val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount())
 
     val f = for {
       bitcoind <- bitcoindF

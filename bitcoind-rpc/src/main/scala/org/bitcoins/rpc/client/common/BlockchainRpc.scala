@@ -13,7 +13,7 @@ import scala.concurrent.Future
   */
 trait BlockchainRpc { self: Client =>
 
-  def getBestBlockHash: Future[DoubleSha256DigestBE] = {
+  def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
     bitcoindCall[DoubleSha256DigestBE]("getbestblockhash")
   }
 
@@ -36,7 +36,7 @@ trait BlockchainRpc { self: Client =>
     }
   }
 
-  def getBlockCount: Future[Int] = {
+  def getBlockCount(): Future[Int] = {
     bitcoindCall[Int]("getblockcount")
   }
 

@@ -147,7 +147,7 @@ trait LndRpcTestUtil extends Logging {
   private def clientInSync(client: LndRpcClient, bitcoind: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] =
     for {
-      blockCount <- bitcoind.getBlockCount
+      blockCount <- bitcoind.getBlockCount()
       info <- client.getInfo
     } yield info.blockHeight == UInt32(blockCount)
 

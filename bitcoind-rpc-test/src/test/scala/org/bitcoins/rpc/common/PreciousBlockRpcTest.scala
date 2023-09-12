@@ -21,9 +21,9 @@ class PreciousBlockRpcTest extends BitcoindFixturesCachedPairNewest {
         freshClient.generate(1)
       blocks2 <- otherFreshClient.generate(1)
 
-      bestHash1 <- freshClient.getBestBlockHash
+      bestHash1 <- freshClient.getBestBlockHash()
       _ = assert(bestHash1 == blocks1.head)
-      bestHash2 <- otherFreshClient.getBestBlockHash
+      bestHash2 <- otherFreshClient.getBestBlockHash()
       _ = assert(bestHash2 == blocks2.head)
 
       _ <-
@@ -33,7 +33,7 @@ class PreciousBlockRpcTest extends BitcoindFixturesCachedPairNewest {
         BitcoindRpcTestUtil.hasSeenBlock(otherFreshClient, bestHash1))
 
       _ <- otherFreshClient.preciousBlock(bestHash1)
-      newBestHash <- otherFreshClient.getBestBlockHash
+      newBestHash <- otherFreshClient.getBestBlockHash()
 
     } yield assert(newBestHash == bestHash1)
   }
