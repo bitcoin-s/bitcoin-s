@@ -22,7 +22,7 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
 
       val chainHandler = bitcoindChainHandler.chainHandler
 
-      val bitcoindBlockCountF = bitcoind.getBlockCount
+      val bitcoindBlockCountF = bitcoind.getBlockCount()
       for {
         bitcoinSBlockCount <-
           chainHandler

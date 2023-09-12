@@ -217,7 +217,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       remoteFundingUtxos <- remoteFundingUtxosF
       feeRate <- feeRateF
       client <- clientF
-      currentHeight <- client.getBlockCount
+      currentHeight <- client.getBlockCount()
     } yield {
       val tomorrowInBlocks = BlockHeight(currentHeight + 144)
       val twoDaysInBlocks = BlockHeight(currentHeight + 288)

@@ -127,7 +127,7 @@ trait CLightningRpcTestUtil extends Logging {
       bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] =
     for {
-      blockCount <- bitcoind.getBlockCount
+      blockCount <- bitcoind.getBlockCount()
       info <- client.getInfo
     } yield info.blockheight == blockCount
 
@@ -214,7 +214,7 @@ trait CLightningRpcTestUtil extends Logging {
 
     def isSynced: Future[Boolean] = for {
       (client, otherClient) <- clientsF
-      height <- bitcoind.getBlockCount
+      height <- bitcoind.getBlockCount()
 
       infoA <- client.getInfo
       infoB <- otherClient.getInfo

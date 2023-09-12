@@ -76,7 +76,7 @@ class UTXORpcTest extends BitcoindRpcTest {
   it should "correctly dump tx out set" in {
     for {
       client <- clientF
-      hash <- client.getBestBlockHash
+      hash <- client.getBestBlockHash()
       height <- client.getBestHashBlockHeight()
       result <- client.dumpTxOutSet(new File("utxo.dat").toPath)
     } yield {

@@ -216,7 +216,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] =
     for {
-      hash <- getBestBlockHash
+      hash <- getBestBlockHash()
       header <- getBlockHeader(hash)
     } yield header.blockHeaderDb
 

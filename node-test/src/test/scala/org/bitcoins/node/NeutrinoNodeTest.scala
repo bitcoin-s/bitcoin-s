@@ -364,7 +364,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       val bitcoind0 = bitcoinds(0)
-      val blockCountF = bitcoind0.getBlockCount
+      val blockCountF = bitcoind0.getBlockCount()
       for {
         blockCount <- blockCountF
         _ <- AsyncUtil.retryUntilSatisfiedF(() => {

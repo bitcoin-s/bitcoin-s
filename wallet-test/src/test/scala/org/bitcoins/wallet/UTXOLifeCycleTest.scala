@@ -77,7 +77,7 @@ class UTXOLifeCycleTest
       _ = assert(newTransactions.map(_.transaction).contains(tx))
 
       // Give tx a fake hash so it can appear as it's in a block
-      hash <- bitcoind.getBestBlockHash
+      hash <- bitcoind.getBestBlockHash()
       _ <- wallet.processTransaction(tx, Some(hash))
 
       _ <- wallet.updateUtxoPendingStates()
@@ -322,7 +322,7 @@ class UTXOLifeCycleTest
       _ = assert(newTransactions.map(_.transaction).contains(tx))
 
       // Give tx a fake hash so it can appear as it's in a block
-      hash <- bitcoind.getBestBlockHash
+      hash <- bitcoind.getBestBlockHash()
       _ <- wallet.processTransaction(tx, Some(hash))
 
       _ <- wallet.updateUtxoPendingStates()
@@ -424,7 +424,7 @@ class UTXOLifeCycleTest
       oldTransactions <- wallet.listTransactions()
       addr <- wallet.getNewAddress()
 
-      blockHash <- bitcoind.getBestBlockHash
+      blockHash <- bitcoind.getBestBlockHash()
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)

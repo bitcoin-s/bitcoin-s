@@ -486,8 +486,8 @@ trait BitcoindRpcTestUtil extends Logging {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     def isSynced(): Future[Boolean] = {
-      client1.getBestBlockHash.flatMap { hash1 =>
-        client2.getBestBlockHash.map { hash2 =>
+      client1.getBestBlockHash().flatMap { hash1 =>
+        client2.getBestBlockHash().map { hash2 =>
           hash1 == hash2
         }
       }
@@ -506,8 +506,8 @@ trait BitcoindRpcTestUtil extends Logging {
     import system.dispatcher
 
     def isSameBlockHeight(): Future[Boolean] = {
-      client1.getBlockCount.flatMap { count1 =>
-        client2.getBlockCount.map { count2 =>
+      client1.getBlockCount().flatMap { count1 =>
+        client2.getBlockCount().map { count2 =>
           count1 == count2
         }
       }
@@ -905,7 +905,7 @@ trait BitcoindRpcTestUtil extends Logging {
       addressForMining: BitcoinAddress)(implicit
       ec: ExecutionContext): Future[Unit] = {
     for {
-      currentCount <- client.getBlockCount
+      currentCount <- client.getBlockCount()
       blocksToMine = blockHeight - currentCount
       _ <- client.generateToAddress(blocks = blocksToMine, addressForMining)
     } yield ()
@@ -1023,7 +1023,7 @@ trait BitcoindRpcTestUtil extends Logging {
     }
 
     def areBlocksGenerated(): Future[Boolean] = {
-      rpc.getBlockCount.map { count =>
+      rpc.getBlockCount().map { count =>
         count >= blocksToGenerate
       }
     }

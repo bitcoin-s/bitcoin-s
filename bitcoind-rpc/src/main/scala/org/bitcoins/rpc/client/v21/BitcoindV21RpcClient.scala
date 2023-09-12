@@ -58,9 +58,9 @@ class BitcoindV21RpcClient(override val instance: BitcoindInstance)(implicit
                                    batchSize = FutureUtil.getParallelism)
   }
 
-  override def getFilterCount(): Future[Int] = getBlockCount
+  override def getFilterCount(): Future[Int] = getBlockCount()
 
-  override def getFilterHeaderCount(): Future[Int] = getBlockCount
+  override def getFilterHeaderCount(): Future[Int] = getBlockCount()
 
   override def getFilter(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {

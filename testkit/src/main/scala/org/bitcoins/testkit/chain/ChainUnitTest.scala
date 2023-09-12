@@ -672,7 +672,7 @@ object ChainUnitTest extends ChainVerificationLogger {
     //sync headers
     //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
     val getBestBlockHashFunc = { () =>
-      bitcoind.getBestBlockHash
+      bitcoind.getBestBlockHash()
     }
 
     val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>

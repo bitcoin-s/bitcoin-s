@@ -35,7 +35,7 @@ abstract class SyncUtil extends Logging {
   /** Creates a function that will retrun bitcoin's best block hash when called */
   def getBestBlockHashFunc(
       bitcoind: BitcoindRpcClient): () => Future[DoubleSha256DigestBE] = { () =>
-    bitcoind.getBestBlockHash
+    bitcoind.getBestBlockHash()
   }
 
   /** Creates a function that you can pass a hash to and it returns the block header */
@@ -241,7 +241,7 @@ abstract class SyncUtil extends Logging {
     for {
       chainApi <- chainApiF
       filterSyncChainApi <- FilterSync.syncFilters(chainApi, getFilter)
-      bestBlockHash <- bitcoindV19.getBestBlockHash
+      bestBlockHash <- bitcoindV19.getBestBlockHash()
       ourBestFilter <- chainApi.getBestFilterHeader()
       _ = require(
         bestBlockHash == ourBestFilter.get.blockHashBE,

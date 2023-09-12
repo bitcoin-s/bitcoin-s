@@ -164,7 +164,7 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
     val url = baseUrl + s"/blocks/tip/height"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 
-    sendRequest(request).map(_.toInt)(ec)
+    sendRequest(request).map(_.toInt)(_ec)
   }
 
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {

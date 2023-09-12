@@ -301,7 +301,7 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
 
       tx <- lndA.sendOutputs(Vector(output), feeRate, spendUnconfirmed = false)
       _ <- lndA.publishTransaction(tx)
-      height <- bitcoind.getBlockCount
+      height <- bitcoind.getBlockCount()
       confirmedF = lndB.subscribeTxConfirmation(txId = tx.txId,
                                                 script = addr.scriptPubKey,
                                                 requiredConfs = 6,

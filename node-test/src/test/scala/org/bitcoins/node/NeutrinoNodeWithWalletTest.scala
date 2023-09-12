@@ -193,7 +193,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <-
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
-      bitcoindHeight <- bitcoind.getBlockCount
+      bitcoindHeight <- bitcoind.getBlockCount()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- AsyncUtil.retryUntilSatisfiedF(() => {
         // wait until the block is processed by the wallet

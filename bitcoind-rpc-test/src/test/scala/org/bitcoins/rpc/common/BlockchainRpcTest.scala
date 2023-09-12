@@ -31,7 +31,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     val client = nodePair.node1
     for {
       info <- client.getBlockChainInfo
-      bestHash <- client.getBestBlockHash
+      bestHash <- client.getBestBlockHash()
     } yield {
       assert(info.isInstanceOf[GetBlockChainInfoResultPostV23])
       val postV23 = info.asInstanceOf[GetBlockChainInfoResultPostV23]
@@ -52,8 +52,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       mostRecentBlock <- client.getBlock(blocks.head)
       _ <- client.invalidateBlock(blocks.head)
       mempool <- client.getRawMemPool
-      count1 <- client.getBlockCount
-      count2 <- otherClient.getBlockCount
+      count1 <- client.getBlockCount()
+      count2 <- otherClient.getBlockCount()
 
       _ <- client.generate(
         2
@@ -69,7 +69,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     val client = nodePair.node1
     for {
       blocks <- client.generate(2)
-      count <- client.getBlockCount
+      count <- client.getBlockCount()
       hash <- client.getBlockHash(count)
       prevhash <- client.getBlockHash(count - 1)
     } yield {
@@ -96,7 +96,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     val client = nodePair.node1
     for {
       result <- client.rescanBlockChain()
-      count <- client.getBlockCount
+      count <- client.getBlockCount()
     } yield {
       assert(result.start_height == 0)
       assert(count == result.stop_height)
@@ -142,7 +142,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
       tx <- client.getTransaction(block.tx.head.txid)
-      count <- client.getBlockCount
+      count <- client.getBlockCount()
     } yield {
       assert(tx.txid == block.tx.head.txid)
       assert(tx.amount == Bitcoins(50))
@@ -176,7 +176,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to get the best block hash" in { nodePair =>
     val client = nodePair.node1
     for {
-      _ <- client.getBestBlockHash
+      _ <- client.getBestBlockHash()
     } yield succeed
   }
 
@@ -203,8 +203,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
     val client = nodePair.node1
     for {
       info <- client.getTxOutSetInfo
-      count <- client.getBlockCount
-      hash <- client.getBestBlockHash
+      count <- client.getBlockCount()
+      hash <- client.getBestBlockHash()
     } yield {
       assert(info.height == count)
       assert(info.bestblock == hash)

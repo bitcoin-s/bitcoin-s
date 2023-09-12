@@ -69,7 +69,7 @@ abstract class NodeTestUtil extends P2PLogger {
   /** Checks if the given node and bitcoind is synced */
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
-    val hashF = rpc.getBestBlockHash
+    val hashF = rpc.getBestBlockHash()
     for {
       chainApi <- node.chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
@@ -81,7 +81,7 @@ abstract class NodeTestUtil extends P2PLogger {
 
   def isSameBestFilterHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
-    val rpcCountF = rpc.getBlockCount
+    val rpcCountF = rpc.getBlockCount()
     for {
       chainApi <- node.chainApiFromDb()
       filterCount <- chainApi.getFilterCount()
@@ -93,7 +93,7 @@ abstract class NodeTestUtil extends P2PLogger {
 
   def isSameBestFilterHeaderHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
-    val rpcCountF = rpc.getBlockCount
+    val rpcCountF = rpc.getBlockCount()
     for {
       chainApi <- node.chainApiFromDb()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
@@ -108,7 +108,7 @@ abstract class NodeTestUtil extends P2PLogger {
     */
   def isSameBlockCount(node: Node, rpc: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
-    val rpcCountF = rpc.getBlockCount
+    val rpcCountF = rpc.getBlockCount()
     for {
       chainApi <- node.chainApiFromDb()
       count <- chainApi.getBlockCount()
@@ -154,7 +154,7 @@ abstract class NodeTestUtil extends P2PLogger {
       node.chainApiFromDb().flatMap(_.getBestBlockHash())
     }
     def bestBitcoindHashF: Future[DoubleSha256DigestBE] =
-      bitcoind.getBestBlockHash
+      bitcoind.getBestBlockHash()
 
     TestAsyncUtil.retryUntilSatisfiedF(
       () => {
