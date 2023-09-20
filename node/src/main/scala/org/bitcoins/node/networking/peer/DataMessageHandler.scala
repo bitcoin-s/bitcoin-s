@@ -500,8 +500,11 @@ case class DataMessageHandler(
                   queryF.map(_ => HeaderSync(newPeer, state.peers))
                 case None =>
                   logger.warn(
-                    s"Received invalid header from peer=$peer. Only have 1 peer so cannot re-query, state=$state")
-                  Future.successful(state)
+                    s"Received invalid header from peer=$peer. Only have 1 peer so re-querying from same peer, state=$state")
+                  val queryF = peerMessageSenderApi.sendGetHeadersMessage(
+                    cachedHeaders,
+                    Some(peer))
+                  queryF.map(_ => state)
               }
 
             }
