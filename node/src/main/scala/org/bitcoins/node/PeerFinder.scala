@@ -124,7 +124,7 @@ case class PeerFinder(
 
   private val maxPeerSearchCount: Int = 8
 
-  private val initialDelay: FiniteDuration = 30.minute
+  private val initialDelay: FiniteDuration = 12.hour
 
   private val isConnectionSchedulerRunning = new AtomicBoolean(false)
 
