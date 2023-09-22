@@ -385,4 +385,32 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           1.second)
       } yield succeed
   }
+
+  it must "handle reorgs correctly" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      //https://github.com/bitcoin-s/bitcoin-s/issues/5017
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
+      val bitcoind0 = bitcoinds(0)
+      val bitcoind1 = bitcoinds(1)
+      logger.info(s"-1")
+      for {
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind0)
+        //disconnect bitcoind1 as we don't need it
+        nodeUri1 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
+        _ <- bitcoind1.disconnectNode(nodeUri1)
+        bestBlockHash0 <- bitcoind0.getBestBlockHash()
+        _ <- bitcoind0.invalidateBlock(bestBlockHash0)
+        _ = logger.info(s"0")
+        //now generate a block, make sure we sync with them
+        _ <- bitcoind0.generate(1)
+        _ = logger.info(s"1")
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind0)
+        _ = logger.info(s"2")
+        //generate another block to make sure the reorg is complete
+        _ <- bitcoind0.generate(1)
+        _ = logger.info(s"3")
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind0)
+      } yield succeed
+  }
 }
