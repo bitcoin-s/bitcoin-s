@@ -17,7 +17,10 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
-import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
+import org.bitcoins.testkit.chain.ChainUnitTest.{
+  createChainHandler,
+  createChainHandlerCached
+}
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.chain.models.{
   ReorgFixtureBlockHeaderDAO,
@@ -213,6 +216,7 @@ trait ChainUnitTest
 
   def createChainHandlerWithGenesisFilter(): Future[ChainHandler] = {
     for {
+      _ <- cachedChainConf.start()
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
         ChainTestUtil.genesisFilterHeaderDb.filterHeader,
@@ -225,7 +229,7 @@ trait ChainUnitTest
   def createChainHandlerCachedWithGenesisFilter(): Future[
     ChainHandlerCached] = {
     for {
-      chainHandler <- createChainHandler()
+      chainHandler <- createChainHandlerCached()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
         ChainTestUtil.genesisFilterHeaderDb.filterHeader,
         ChainTestUtil.genesisHeaderDb.hashBE)
@@ -450,7 +454,12 @@ object ChainUnitTest extends ChainVerificationLogger {
   def createChainHandler()(implicit
       ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[ChainHandler] = {
-    createChainHandlerCached()
+    val handlerWithGenesisHeaderF =
+      ChainUnitTest.setupHeaderTableWithGenesisHeader()
+    for {
+      _ <- handlerWithGenesisHeaderF
+      c = ChainHandler.fromDatabase()
+    } yield c
   }
 
   def createChainHandlerCached()(implicit
