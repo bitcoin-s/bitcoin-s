@@ -216,7 +216,6 @@ trait ChainUnitTest
 
   def createChainHandlerWithGenesisFilter(): Future[ChainHandler] = {
     for {
-      _ <- cachedChainConf.start()
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
         ChainTestUtil.genesisFilterHeaderDb.filterHeader,
