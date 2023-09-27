@@ -479,11 +479,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "return None for ChainHandler.nextBlockHeaderBatchRange if we are synced" in {
     chainHandler: ChainHandler =>
-      val genesisHeader =
-        chainHandler.chainConfig.chain.genesisBlock.blockHeader
       val assert1F = for {
+        bestBlockHash <- chainHandler.getBestBlockHash()
         rangeOpt <-
-          chainHandler.nextBlockHeaderBatchRange(genesisHeader.hashBE, 1)
+          chainHandler.nextBlockHeaderBatchRange(bestBlockHash, 1)
       } yield {
         assert(rangeOpt.isEmpty)
       }

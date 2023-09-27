@@ -222,7 +222,6 @@ class ChainHandler(
       prevBlockHeaderOpt: Option[BlockHeaderDb],
       batchSize: Int,
       blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = {
-
     val chainsF = prevBlockHeaderOpt match {
       case None =>
         blockHeaderDAO.getBlockchainsBetweenHeights(from = 0,
@@ -256,7 +255,9 @@ class ChainHandler(
       (nextBlockHeaderOpt, prevBlockHeaderOpt) match {
         case (Some(next), Some(prev)) =>
           //this means we are synced, so return None
-          if (next.stopBlockHash == prev.hash) {
+          val isSynced =
+            next.stopBlockHash == prev.hash || next.stopBlockHash == chainConfig.chain.genesisHash
+          if (isSynced) {
             None
           } else {
             nextBlockHeaderOpt
