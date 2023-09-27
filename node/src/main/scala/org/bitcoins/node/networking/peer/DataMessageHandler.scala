@@ -434,7 +434,7 @@ case class DataMessageHandler(
                                                        peer = syncPeer,
                                                        peers = peers)
           } yield {
-            syncingFilterHeadersState
+            syncingFilterHeadersState.getOrElse(DoneSyncing(peers))
           }
 
         } else {

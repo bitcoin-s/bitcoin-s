@@ -241,7 +241,8 @@ class ChainHandler(
     } yield syncMarkerOpt
 
   /** Finds the next header in the chain. Uses chain work to break ties
-    * returning only the header in the chain with the most work
+    * returning only the header in the chain with the most work,
+    * else returns None if there is no next header
     */
   private def findNextHeader(
       prevBlockHeader: BlockHeaderDb,
@@ -281,13 +282,11 @@ class ChainHandler(
           val isSynced =
             next.stopBlockHash == prevBlockHeader.hash || next.stopBlockHash == chainConfig.chain.genesisHash
           if (isSynced) {
-            println(s"isSynced!")
             None
           } else {
             nextBlockHeaderOpt
           }
         case None =>
-          println(s"log here?")
           //log here?
           None
       }
