@@ -202,7 +202,7 @@ class ChainHandler(
           findNextHeader(prevBlockHeader, batchSize, blockchains)
         case None =>
           if (prevStopHash == DoubleSha256DigestBE.empty) {
-            getHeadersAtHeight(batchSize).flatMap { headers =>
+            getHeadersAtHeight(batchSize - 1).flatMap { headers =>
               val fsmOptF = if (headers.isEmpty) {
                 //just get best height?
                 getBestBlockHeader().map { bestHeader =>
