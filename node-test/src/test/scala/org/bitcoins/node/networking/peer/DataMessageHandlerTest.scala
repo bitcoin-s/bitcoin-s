@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
-import org.bitcoins.node.networking.peer.NodeState.HeaderSync
+import org.bitcoins.core.api.node.NodeState.HeaderSync
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{

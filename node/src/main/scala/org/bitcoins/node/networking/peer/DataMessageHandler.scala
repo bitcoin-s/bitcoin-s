@@ -6,7 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
-import org.bitcoins.core.api.node.{NodeType, Peer}
+import org.bitcoins.core.api.node.{NodeState, NodeType, Peer, SyncNodeState}
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.networking.peer.NodeState._
+import org.bitcoins.core.api.node.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
 import org.bitcoins.node.{
   NodeStreamMessage,
