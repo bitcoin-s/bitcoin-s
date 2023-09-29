@@ -25,7 +25,7 @@ import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
-import org.scalatest.{Assertion, FutureOutcome}
+import org.scalatest.{Assertion, Assertions, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
@@ -122,9 +122,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
         bestHash <- chainHandler.getBestBlockHash()
         newHeaderC <- newHeaderCF
       } yield {
-        checkReorgHeaders(header1 = newHeaderB,
-                          header2 = newHeaderC,
-                          bestHash = bestHash)
+        ChainHandlerTest.checkReorgHeaders(header1 = newHeaderB,
+                                           header2 = newHeaderC,
+                                           bestHash = bestHash)
       }
 
       // build a new header D off of C which was seen later
@@ -448,9 +448,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
         val marker = blockHeaderBatchOpt.get
-        checkReorgHeaders(header1 = newHeaderB,
-                          header2 = newHeaderC,
-                          bestHash = marker.stopBlockHash.flip)
+        ChainHandlerTest.checkReorgHeaders(header1 = newHeaderB,
+                                           header2 = newHeaderC,
+                                           bestHash = marker.stopBlockHash.flip)
         assert(newHeaderB.height == marker.startHeight)
       }
 
@@ -479,11 +479,10 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "return None for ChainHandler.nextBlockHeaderBatchRange if we are synced" in {
     chainHandler: ChainHandler =>
-      val genesisHeader =
-        chainHandler.chainConfig.chain.genesisBlock.blockHeader
       val assert1F = for {
+        bestBlockHash <- chainHandler.getBestBlockHash()
         rangeOpt <-
-          chainHandler.nextBlockHeaderBatchRange(genesisHeader.hashBE, 1)
+          chainHandler.nextBlockHeaderBatchRange(bestBlockHash, 1)
       } yield {
         assert(rangeOpt.isEmpty)
       }
@@ -721,21 +720,24 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
 
   }
+}
+
+object ChainHandlerTest {
 
   /** Checks that
     * 1. The header1 & header2 have the same chainwork
     * 2. Checks that header1 and header2 have the same time
     * 3. Checks bestHash is one of header1.hashBE or header2.hashBE
     */
-  private def checkReorgHeaders(
+  def checkReorgHeaders(
       header1: BlockHeaderDb,
       header2: BlockHeaderDb,
       bestHash: DoubleSha256DigestBE): Assertion = {
-    assert(header1.chainWork == header2.chainWork)
-    assert(header1.time == header2.time)
+    Assertions.assert(header1.chainWork == header2.chainWork)
+    Assertions.assert(header1.time == header2.time)
     //if both chainwork and time are the same, we are left to
     //how the database serves up the data
     //just make sure it is one of the two headers
-    assert(Vector(header1.hashBE, header2.hashBE).contains(bestHash))
+    Assertions.assert(Vector(header1.hashBE, header2.hashBE).contains(bestHash))
   }
 }

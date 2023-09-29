@@ -1182,18 +1182,20 @@ case class ResponseTimeout(payload: NetworkPayload)
 
 object PeerManager extends Logging {
 
+  /** Sends first getcfheader message.
+    * Returns None if are our filter headers are in sync with our block headers
+    */
   def sendFirstGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
       peer: Peer,
       peers: Set[Peer])(implicit
       ec: ExecutionContext,
-      chainConfig: ChainAppConfig): Future[NodeState] = {
+      chainConfig: ChainAppConfig): Future[Option[NodeState]] = {
     for {
       bestFilterHeaderOpt <-
         chainApi
           .getBestFilterHeader()
-      filterCount <- chainApi.getFilterCount()
       blockHash = bestFilterHeaderOpt match {
         case Some(filterHeaderDb) =>
           filterHeaderDb.blockHashBE
@@ -1207,10 +1209,11 @@ object PeerManager extends Logging {
         case Some(filterSyncMarker) =>
           peerMessageSenderApi
             .sendGetCompactFilterHeadersMessage(filterSyncMarker, Some(peer))
-            .map(_ => FilterHeaderSync(peer, peers))
+            .map(_ => Some(FilterHeaderSync(peer, peers)))
         case None =>
-          sys.error(
-            s"Could not find block header in database to sync filter headers from! It's likely your database is corrupted blockHash=$blockHash bestFilterHeaderOpt=$bestFilterHeaderOpt filterCount=$filterCount")
+          logger.info(
+            s"Filter headers are synced! filterHeader.blockHashBE=$blockHash")
+          Future.successful(None)
       }
     } yield res
   }
@@ -1279,13 +1282,18 @@ object PeerManager extends Logging {
     logger.info(
       s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
     for {
-      newSyncingState <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
+      newSyncingStateOpt <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMessageSenderApi,
         chainApi = currentDmh.chainApi,
         peer = syncPeer,
         peers = peers)
     } yield {
-      currentDmh.copy(state = newSyncingState)
+      newSyncingStateOpt match {
+        case Some(newSyncingState) =>
+          currentDmh.copy(state = newSyncingState)
+        case None =>
+          currentDmh.copy(state = DoneSyncing(currentDmh.state.peers))
+      }
     }
   }
 

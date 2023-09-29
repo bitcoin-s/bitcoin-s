@@ -196,12 +196,37 @@ class ChainHandler(
       batchSize: Int,
       blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = for {
     prevBlockHeaderOpt <- getHeader(prevStopHash)
-    headerOpt <-
-      if (prevBlockHeaderOpt.isDefined)
-        findNextHeader(prevBlockHeaderOpt, batchSize, blockchains)
-      else if (prevStopHash == DoubleSha256DigestBE.empty)
-        findNextHeader(None, batchSize, blockchains)
-      else Future.successful(None)
+    headerOpt <- {
+      prevBlockHeaderOpt match {
+        case Some(prevBlockHeader) =>
+          findNextHeader(prevBlockHeader, batchSize, blockchains)
+        case None =>
+          if (prevStopHash == DoubleSha256DigestBE.empty) {
+            getHeadersAtHeight(batchSize - 1).flatMap { headers =>
+              val fsmOptF = if (headers.isEmpty) {
+                //just get best height?
+                getBestBlockHeader().map { bestHeader =>
+                  val f = FilterSyncMarker(0, bestHeader.hash)
+                  Some(f)
+                }
+              } else if (headers.length == 1) {
+                val header = headers.head
+                val f = FilterSyncMarker(0, header.hash)
+                Future.successful(Some(f))
+              } else {
+                //just select first header, i guess
+                val header = headers.head
+                val f = FilterSyncMarker(0, header.hash)
+                Future.successful(Some(f))
+              }
+              fsmOptF
+            }
+          } else {
+            Future.successful(None)
+          }
+
+      }
+    }
   } yield headerOpt
 
   /** @inheritdoc */
@@ -216,35 +241,33 @@ class ChainHandler(
     } yield syncMarkerOpt
 
   /** Finds the next header in the chain. Uses chain work to break ties
-    * returning only the header in the chain with the most work
+    * returning only the header in the chain with the most work,
+    * else returns None if there is no next header
     */
   private def findNextHeader(
-      prevBlockHeaderOpt: Option[BlockHeaderDb],
+      prevBlockHeader: BlockHeaderDb,
       batchSize: Int,
       blockchains: Vector[Blockchain]): Future[Option[FilterSyncMarker]] = {
-
-    val chainsF = prevBlockHeaderOpt match {
-      case None =>
-        blockHeaderDAO.getBlockchainsBetweenHeights(from = 0,
-                                                    to = batchSize - 1)
-      case Some(prevBlockHeader) =>
-        val inMemoryBlockchains = {
-          blockchains.filter(
-            _.exists(_.previousBlockHashBE == prevBlockHeader.hashBE))
-        }
-        if (inMemoryBlockchains.nonEmpty) {
-          Future.successful(inMemoryBlockchains)
-        } else {
-          blockHeaderDAO.getBlockchainsBetweenHeights(
-            from = prevBlockHeader.height,
-            to = prevBlockHeader.height + batchSize)
-        }
+    val chainsF = {
+      val inMemoryBlockchains = {
+        blockchains.filter(
+          _.exists(_.previousBlockHashBE == prevBlockHeader.hashBE))
+      }
+      if (inMemoryBlockchains.nonEmpty) {
+        Future.successful(inMemoryBlockchains)
+      } else {
+        blockHeaderDAO.getBlockchainsBetweenHeights(
+          from = prevBlockHeader.height,
+          to = prevBlockHeader.height + batchSize)
+      }
     }
 
-    val startHeight = prevBlockHeaderOpt match {
-      case None => 0
-      case Some(prevBlockHeader) =>
+    val startHeight = {
+      if (prevBlockHeader.hashBE == chainConfig.chain.genesisHash.flip) {
+        1
+      } else {
         prevBlockHeader.height + 1
+      }
     }
 
     for {
@@ -253,16 +276,19 @@ class ChainHandler(
       val nextBlockHeaderOpt = getBestChainAtHeight(startHeight = startHeight,
                                                     batchSize = batchSize,
                                                     blockchains = chains)
-      (nextBlockHeaderOpt, prevBlockHeaderOpt) match {
-        case (Some(next), Some(prev)) =>
+      nextBlockHeaderOpt match {
+        case Some(next) =>
           //this means we are synced, so return None
-          if (next.stopBlockHash == prev.hash) {
+          val isSynced =
+            next.stopBlockHash == prevBlockHeader.hash || next.stopBlockHash == chainConfig.chain.genesisHash
+          if (isSynced) {
             None
           } else {
             nextBlockHeaderOpt
           }
-        case (Some(_), None) | (None, Some(_)) | (None, None) =>
-          nextBlockHeaderOpt
+        case None =>
+          //log here?
+          None
       }
     }
   }
