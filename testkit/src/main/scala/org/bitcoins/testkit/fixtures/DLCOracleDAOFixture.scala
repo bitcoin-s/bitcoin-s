@@ -1,5 +1,11 @@
 package org.bitcoins.testkit.fixtures
 
+import org.bitcoins.dlc.commons.oracle.{
+  EventOutcomeDAO,
+  OracleAnnouncementDataDAO,
+  OracleMetadataDAO,
+  OracleSchnorrNonceDAO
+}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
@@ -7,11 +13,6 @@ import org.flywaydb.core.api.output.CleanResult
 import org.scalatest._
 
 import scala.concurrent.Future
-
-case class DLCOracleDAOs(
-    rValueDAO: RValueDAO,
-    eventDAO: EventDAO,
-    outcomeDAO: EventOutcomeDAO)
 
 trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
@@ -24,7 +25,17 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
     val rValueDAO = RValueDAO()
     val eventDAO = EventDAO()
     val outcomeDAO = EventOutcomeDAO()
-    DLCOracleDAOs(rValueDAO, eventDAO, outcomeDAO)
+    val oracleAnnouncementDAO = OracleAnnouncementDataDAO()
+    val oracleMetadataDAO = OracleMetadataDAO()
+    val oracleSchnorrNonceDAO = OracleSchnorrNonceDAO()
+    DLCOracleDAOs(
+      rValueDAO = rValueDAO,
+      eventDAO = eventDAO,
+      outcomeDAO = outcomeDAO,
+      oracleAnnouncementDAO = oracleAnnouncementDAO,
+      oracleMetadataDAO = oracleMetadataDAO,
+      oracleSchnorrNonceDAO = oracleSchnorrNonceDAO
+    )
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {

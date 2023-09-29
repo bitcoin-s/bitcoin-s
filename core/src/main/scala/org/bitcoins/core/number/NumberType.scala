@@ -272,6 +272,7 @@ object UInt8
   }
   lazy val zero = checkCached(0.toShort)
   lazy val one = checkCached(1.toShort)
+  lazy val two = checkCached(2.toShort)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = 255

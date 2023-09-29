@@ -909,7 +909,7 @@ object CreateDLCOffer extends ServerJsonModels {
   }
 }
 
-case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+case class DecodeContractInfo(contractInfo: ContractInfoTLV)
     extends CliCommand
     with AppServerCliCommand
 
@@ -919,7 +919,7 @@ object DecodeContractInfo extends ServerJsonModels {
     jsArr.arr.toList match {
       case contractInfoJs :: Nil =>
         Try {
-          val contractInfo = ContractInfoV0TLV(contractInfoJs.str)
+          val contractInfo = ContractInfoTLV.fromHex(contractInfoJs.str)
           DecodeContractInfo(contractInfo)
         }
       case Nil =>
@@ -965,7 +965,7 @@ object DecodeOffer extends ServerJsonModels {
   }
 }
 
-case class DecodeAnnouncement(announcement: OracleAnnouncementTLV)
+case class DecodeAnnouncement(announcement: BaseOracleAnnouncement)
     extends CliCommand
     with AppServerCliCommand
 
@@ -1448,7 +1448,7 @@ object BumpFee extends ServerJsonModels {
 }
 
 case class CreateContractInfo(
-    announcementTLV: OracleAnnouncementTLV,
+    announcementTLV: OracleAnnouncementV1TLV,
     totalCollateral: Satoshis,
     contractDescriptor: ContractDescriptorTLV)
     extends CommandRpc
@@ -1456,14 +1456,14 @@ case class CreateContractInfo(
     with ServerJsonModels {
 
   def ContractDescriptorTLV: ContractDescriptor = {
-    ContractDescriptor.fromTLV(contractDescriptor)
+    ContractDescriptor.fromSubType(contractDescriptor)
   }
 }
 
 object CreateContractInfo extends ServerJsonModels {
 
   lazy val empty: CreateContractInfo = {
-    CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
+    CreateContractInfo(announcementTLV = OracleAnnouncementV1TLV.dummy,
                        totalCollateral = Satoshis.zero,
                        contractDescriptor = ContractDescriptorTLV.empty)
   }
@@ -1473,7 +1473,7 @@ object CreateContractInfo extends ServerJsonModels {
       case announcementVal +: totalCollateralVal +: payoutsVal +: Vector() =>
         Try {
           val announcementTLV =
-            OracleAnnouncementTLV.fromHex(announcementVal.str)
+            OracleAnnouncementV1TLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
           //validate that these are part of the announcement?
           val contractDescriptor =

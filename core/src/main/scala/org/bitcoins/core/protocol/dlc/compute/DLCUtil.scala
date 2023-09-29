@@ -14,11 +14,11 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
 }
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.protocol.tlv.{SchnorrAttestationTLV}
 import org.bitcoins.core.protocol.tlv.{
-  OracleAnnouncementTLV,
+  BaseOracleAnnouncement,
   OracleAttestmentTLV,
-  OracleAttestmentV0TLV,
-  OracleEventV0TLV
+  OracleAttestmentV0TLV
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
@@ -260,17 +260,11 @@ object DLCUtil {
   }
 
   def matchOracleSignatures(
-      announcements: Vector[OracleAnnouncementTLV],
+      announcements: Vector[BaseOracleAnnouncement],
       oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+    //is this right?
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
-      announcements
-        .map { ann =>
-          ann.eventTLV match {
-            case v0: OracleEventV0TLV =>
-              v0.nonces
-          }
-        }
-        .map(_.toVector)
+      announcements.flatMap(_.nonces.map(_.toVector))
     }
     val resultOpt = oracleSignatures.find { case oracleSignature =>
       val oracleSigNonces: Vector[SchnorrNonce] =
@@ -282,7 +276,7 @@ object DLCUtil {
 
   /** Checks to see if the given oracle signatures and announcement have the same nonces */
   private def matchOracleSignaturesForAnnouncements(
-      announcement: OracleAnnouncementTLV,
+      announcement: BaseOracleAnnouncement,
       signature: OracleSignatures): Option[OracleSignatures] = {
     matchOracleSignatures(
       Vector(announcement),
@@ -306,6 +300,8 @@ object DLCUtil {
             val oracleSig = attestment match {
               case v0: OracleAttestmentV0TLV =>
                 OracleSignatures(SingleOracleInfo(ann), v0)
+              case v1: SchnorrAttestationTLV =>
+                OracleSignatures(SingleOracleInfo(ann), v1)
             }
             val isMatch = matchOracleSignaturesForAnnouncements(ann, oracleSig)
             isMatch match {
@@ -326,26 +322,29 @@ object DLCUtil {
   def buildOracleSignaturesNaive(
       announcements: OrderedAnnouncements,
       attestments: Vector[OracleAttestmentTLV]): Vector[OracleSignatures] = {
-
     attestments.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
       // Nonces should be unique so searching for the first nonce should be safe
       val firstNonce = sig match {
         case v0: OracleAttestmentV0TLV =>
           v0.unsortedSignatures.head.rx
+        case _: SchnorrAttestationTLV =>
+          sig.sigs.head.rx
       }
-      announcements
+      val announcementOpt = announcements
         .find { ann =>
-          ann.eventTLV match {
-            case v0: OracleEventV0TLV =>
-              v0.nonces.headOption
-                .contains(firstNonce)
-          }
-        } match {
+          ann.nonces.flatten.exists(_ == firstNonce)
+        }
+
+      announcementOpt match {
         case Some(announcement) =>
-          acc :+ OracleSignatures(SingleOracleInfo(announcement), sig)
+          val sigs = sig match {
+            case v0: OracleAttestmentV0TLV => v0.unsortedSignatures
+            case v1: SchnorrAttestationTLV => v1.sigs.toVector
+          }
+          acc :+ OracleSignatures(SingleOracleInfo(announcement), sigs)
         case None =>
           throw new RuntimeException(
-            s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
+            s"Cannot find announcement for associated public key, pubKey=${sig.publicKey.hex} nonce=$firstNonce announcements=$announcements attestments=$attestments")
       }
     }
   }

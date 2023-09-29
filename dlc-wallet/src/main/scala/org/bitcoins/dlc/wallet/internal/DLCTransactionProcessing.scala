@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet.internal
 
 import org.bitcoins.core.api.dlc.wallet.db._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.dlc.oracle.NonceSignaturePairDbShim
 import org.bitcoins.core.protocol.dlc.execution.SetupDLC
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
@@ -157,8 +158,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           }
         }
         (sigDbs, refundSigOpt) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
-        (announcements, announcementData, nonceDbs) <- dlcDataManagement
-          .getDLCAnnouncementDbs(dlcId)
+        (announcements, announcementData, nonceDbs, metadatas) <-
+          dlcDataManagement
+            .getDLCAnnouncementDbs(dlcId)
 
         cet <-
           transactionDAO
@@ -174,13 +176,13 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         outcome = sigAndOutcome._2
         oracleInfos = getOutcomeDbInfo(outcome)._2
 
-        noncesByAnnouncement = nonceDbs
-          .groupBy(_.announcementId)
+        noncesByAnnouncement = NonceSignaturePairDbShim.sort(nonceDbs)
 
         announcementsWithId = dlcDataManagement.getOracleAnnouncementsWithId(
           announcements,
           announcementData,
-          nonceDbs)
+          nonceDbs,
+          metadatas)
 
         usedIds = {
           announcementsWithId
@@ -195,26 +197,26 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           usedIds.flatMap { id =>
             outcome match {
               case enum: EnumOracleOutcome =>
-                val nonces = noncesByAnnouncement(id).sortBy(_.index)
-                nonces.map(_.copy(outcomeOpt = Some(enum.outcome.outcome)))
+                NonceSignaturePairDbShim.updateEnumOutcome(
+                  id = id,
+                  enumOutcome = enum,
+                  attestation = sig.sig,
+                  noncesByAnnouncement = noncesByAnnouncement)
               case numeric: NumericOracleOutcome =>
-                numeric.oraclesAndOutcomes.flatMap { case (oracle, outcome) =>
-                  val id = announcementsWithId
-                    .find(_._1 == oracle.announcement)
-                    .map(_._2)
-                    .get
-                  val nonces = noncesByAnnouncement(id).sortBy(_.index)
-                  outcome.digits.zip(nonces).map { case (digit, nonceDb) =>
-                    nonceDb.copy(outcomeOpt = Some(digit.toString))
-                  }
-                }
+                NonceSignaturePairDbShim.updateNumericOutcome(
+                  numericOutcome = numeric,
+                  //this is the aggregate signature, not the specific signature for the nonce
+                  //is this right? can i get the specific field element for the nonce?
+                  attestation = sig.sig,
+                  noncesByAnnouncement = noncesByAnnouncement,
+                  announcementsWithIds = announcementsWithId)
             }
           }
         }
         updatedDlcDbSig = dlcDb.copy(aggregateSignatureOpt = Some(sig))
         //updates the aggregateSignatureOpt along with the state to RemoteClaimed
         updatedDlcDbA = dlcDAO.updateAction(updatedDlcDbSig)
-        updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
+        updateNonceA = actionBuilder.updateAllNoncesAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
           updatedAnnouncements)
         actions = {
@@ -383,7 +385,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             }
           }
 
-      DLCSign(cetSigs,
+      DLCSign(DLCOfferTLV.currentVersionOpt,
+              cetSigs,
               offerRefundSig,
               FundingSignatures(fundingSigs),
               contractId)

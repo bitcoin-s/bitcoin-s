@@ -11,7 +11,7 @@ sealed trait DLCSerializationVersion
 
 object DLCSerializationVersion extends StringFactory[DLCSerializationVersion] {
 
-  val current: DLCSerializationVersion = Beta
+  val current: DLCSerializationVersion = Gamma
 
   /** This format existed in our wallet before we merged support for this PR
     * on the DLC spec repo. See the diff below
@@ -25,7 +25,9 @@ object DLCSerializationVersion extends StringFactory[DLCSerializationVersion] {
     */
   case object Beta extends DLCSerializationVersion
 
-  private val all = Vector(Alpha, Beta)
+  case object Gamma extends DLCSerializationVersion
+
+  private val all = Vector(Alpha, Beta, Gamma)
 
   override def fromString(str: String): DLCSerializationVersion = {
     fromStringOpt(str) match {

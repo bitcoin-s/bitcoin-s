@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet.util
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.dlc.accounting.DLCAccounting
+import org.bitcoins.core.dlc.oracle.NonceSignaturePairDbShim
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
@@ -22,8 +23,8 @@ case class IntermediaryDLCStatus(
     contractData: DLCContractDataDb,
     offerDb: DLCOfferDb,
     acceptDbOpt: Option[DLCAcceptDb],
-    nonceDbs: Vector[OracleNonceDb],
-    announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+    nonceDbs: Vector[NonceSignaturePairDbShim],
+    announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
     announcementIds: Vector[DLCAnnouncementDb]
 ) {
 
@@ -209,8 +210,8 @@ object DLCStatusBuilder {
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
-      nonceDbs: Vector[OracleNonceDb],
-      announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+      nonceDbs: Vector[NonceSignaturePairDbShim],
+      announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
       announcementIds: Vector[DLCAnnouncementDb],
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
@@ -314,12 +315,12 @@ object DLCStatusBuilder {
     */
   def getOracleOutcomeAndSigs(
       announcementIds: Vector[DLCAnnouncementDb],
-      announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
-      nonceDbs: Vector[OracleNonceDb]): (
+      announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
+      nonceDbs: Vector[NonceSignaturePairDbShim]): (
       OracleOutcome,
       OrderedSchnorrSignatures) = {
-    val noncesByAnnouncement: Map[Long, Vector[OracleNonceDb]] =
-      nonceDbs.sortBy(_.index).groupBy(_.announcementId)
+    val noncesByAnnouncement: Map[Long, Vector[NonceSignaturePairDbShim]] =
+      NonceSignaturePairDbShim.sort(nonceDbs)
     val oracleOutcome = {
       val usedOracleIds = announcementIds.filter(_.used)
       val usedOracles = usedOracleIds.sortBy(_.index).map { used =>
@@ -328,7 +329,7 @@ object DLCStatusBuilder {
       require(usedOracles.nonEmpty,
               s"Error, no oracles used, dlcIds=${announcementIds.map(_.dlcId)}")
       announcementsWithId.head._1.eventTLV.eventDescriptor match {
-        case _: EnumEventDescriptorV0TLV =>
+        case _: EnumEventDescriptorV0TLV | _: EnumEventDescriptorDLCSubType =>
           val oracleInfos = usedOracles.map(t => EnumSingleOracleInfo(t._1))
           val outcomes = usedOracles.map { case (_, id) =>
             val nonces = noncesByAnnouncement(id)
@@ -339,10 +340,11 @@ object DLCStatusBuilder {
           require(outcomes.distinct.size == 1,
                   s"Should only be one outcome for enum, got $outcomes")
           EnumOracleOutcome(oracleInfos, outcomes.head)
-        case _: UnsignedDigitDecompositionEventDescriptor =>
+        case _: UnsignedDigitDecompositionEventDescriptor |
+            _: UnsignedDigitDecompositionEventDescriptorDLCType =>
           val oraclesAndOutcomes = usedOracles.map { case (announcement, id) =>
             val oracleInfo = NumericSingleOracleInfo(announcement)
-            val nonces = noncesByAnnouncement(id).sortBy(_.index)
+            val nonces = noncesByAnnouncement.values.flatten.toVector
             // need to allow for some Nones because we don't always get
             // all the digits because of prefixing
             val digits = nonces.flatMap(_.outcomeOpt.map(_.toInt))
@@ -351,7 +353,8 @@ object DLCStatusBuilder {
             (oracleInfo, outcome)
           }
           NumericOracleOutcome(oraclesAndOutcomes)
-        case _: SignedDigitDecompositionEventDescriptor =>
+        case _: SignedDigitDecompositionEventDescriptor |
+            _: SignedDigitDecompositionEventDescriptorDLCType =>
           throw new RuntimeException(s"SignedNumericOutcome not yet supported")
       }
     }

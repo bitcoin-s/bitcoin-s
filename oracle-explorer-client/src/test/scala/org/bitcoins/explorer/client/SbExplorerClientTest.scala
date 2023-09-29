@@ -53,7 +53,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
   }
 
   it must "get an oracle name" in {
-    val key = announcement.publicKey
+    val key = announcement.announcementPublicKey
     for {
       name <- explorerClient.getOracleName(key)
     } yield {

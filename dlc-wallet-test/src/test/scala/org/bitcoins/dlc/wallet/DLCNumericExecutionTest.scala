@@ -75,6 +75,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
     val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
       case v0: OracleEventV0TLV => v0.eventId
+      case v1: OracleEventV1TLV => v1.eventId
     }
 
     (OracleAttestmentV0TLV(eventId,
@@ -94,12 +95,10 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       (sigs, _) = getSigs(status.contractInfo)
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sigs).map(_.get)
-
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 1)
-
       _ = assert(result)
 
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
@@ -213,7 +212,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
         }
 
         val aggS = statusA.oracleSigs
-          .filter(sig => neededNonces.contains(sig.rx))
+          .filter(sig => neededNonces.exists(_ == sig.rx))
           .map(_.sig)
           .reduce(_.add(_))
 

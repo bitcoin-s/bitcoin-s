@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
+import org.bitcoins.dlc.commons.oracle.OracleAnnouncementDataDAO
 import org.bitcoins.dlc.wallet.models._
 
 import scala.concurrent.ExecutionContext

@@ -22,3 +22,26 @@ case class DLCContractDataDb(
   lazy val dlcTimeouts: DLCTimeouts =
     DLCTimeouts(contractMaturity, contractTimeout)
 }
+
+object DLCContractDataDbHelper {
+
+  def apply(
+      dlcId: Sha256Digest,
+      oracleThreshold: Int,
+      oracleParamsTLVOpt: Option[OracleParamsV0TLV],
+      contractDescriptorTLV: ContractDescriptorTLV,
+      contractMaturity: BlockTimeStamp,
+      contractTimeout: BlockTimeStamp,
+      totalCollateral: CurrencyUnit
+  ): DLCContractDataDb = {
+    DLCContractDataDb(
+      dlcId = dlcId,
+      oracleThreshold = oracleThreshold,
+      oracleParamsTLVOpt = oracleParamsTLVOpt,
+      contractDescriptorTLV = contractDescriptorTLV,
+      contractMaturity = contractMaturity,
+      contractTimeout = contractTimeout,
+      totalCollateral = totalCollateral
+    )
+  }
+}

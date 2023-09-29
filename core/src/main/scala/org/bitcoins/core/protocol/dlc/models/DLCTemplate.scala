@@ -62,12 +62,15 @@ case class MultiOracleDLCTemplate(
     minFailExp < maxErrorExp,
     s"minFailExp ($minFailExp) must be less than maxErrorExp ($maxErrorExp)")
 
-  override val oracleInfo: NumericMultiOracleInfo =
+  private val oracleParamsTLV =
+    OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage)
+
+  override val oracleInfo: NumericMultiOracleInfo = {
+
     NumericMultiOracleInfo(threshold = oracleThreshold,
                            announcements = OrderedAnnouncements(oracles),
-                           maxErrorExp = maxErrorExp,
-                           minFailExp = minFailExp,
-                           maximizeCoverage = maximizeCoverage)
+                           Some(oracleParamsTLV))
+  }
 
   override val toContractInfo: ContractInfo = {
     val pair: NumericPair =
@@ -83,19 +86,20 @@ object DLCTemplate {
       oracles: Vector[OracleAnnouncementTLV]
   ): Boolean = {
     oracles.head.eventTLV.eventDescriptor match {
-      case EnumEventDescriptorV0TLV(outcomes) =>
+      case enum: BaseEnumEventDescriptor =>
+        val outcomes = enum.outcomes
         oracles.forall {
           _.eventTLV.eventDescriptor match {
-            case enum: EnumEventDescriptorV0TLV =>
+            case enum: BaseEnumEventDescriptor =>
               enum.outcomes.sortBy(_.normStr) == outcomes.sortBy(_.normStr)
-            case _: DigitDecompositionEventDescriptorV0TLV => false
+            case _: BaseNumericEventDescriptorTLV => false
           }
         }
-      case decomp: DigitDecompositionEventDescriptorV0TLV =>
+      case decomp: BaseNumericEventDescriptorTLV =>
         oracles.forall {
           _.eventTLV.eventDescriptor match {
-            case _: EnumEventDescriptorV0TLV => false
-            case d: DigitDecompositionEventDescriptorV0TLV =>
+            case _: BaseEnumEventDescriptor => false
+            case d: BaseNumericEventDescriptorTLV =>
               decomp.numDigits == d.numDigits && decomp.base == d.base
           }
         }

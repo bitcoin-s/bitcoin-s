@@ -1,18 +1,21 @@
 package org.bitcoins.core.api.dlcoracle
 
-import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.dlc.oracle.OracleAnnouncementWithId
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+
 import java.time.Instant
 import scala.concurrent.Future
 
 trait DLCOracleApi {
-  def publicKey(): SchnorrPublicKey
+  def announcementPublicKey(): SchnorrPublicKey
+
+  def attestationPublicKey(): SchnorrPublicKey
 
   def oracleName(): Future[Option[String]]
 
@@ -20,64 +23,65 @@ trait DLCOracleApi {
 
   def stakingAddress(network: BitcoinNetwork): Bech32Address
 
-  def listEventDbs(): Future[Vector[EventDb]]
-
-  def listPendingEventDbs(): Future[Vector[EventDb]]
-
-  def listCompletedEventDbs(): Future[Vector[EventDb]]
-
   def listEvents(): Future[Vector[OracleEvent]]
 
-  def listPendingEvents(): Future[Vector[OracleEvent]]
+  def listPendingEvents(): Future[Vector[PendingOracleEvent]]
 
-  def listCompletedEvents(): Future[Vector[OracleEvent]]
+  def listCompletedEvents(): Future[Vector[CompletedOracleEvent]]
 
-  def findEvent(oracleEventTLV: OracleEventTLV): Future[Option[OracleEvent]]
+  def findEvent(
+      announcement: BaseOracleAnnouncement): Future[Option[OracleEvent]]
 
   def findEvent(eventName: String): Future[Option[OracleEvent]]
 
   def createNewDigitDecompAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      base: UInt16,
+      base: UInt8,
       isSigned: Boolean,
       numDigits: Int,
       unit: String,
-      precision: Int32): Future[OracleAnnouncementTLV]
+      precision: Int32): Future[OracleAnnouncementWithId]
 
   def createNewEnumAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      outcomes: Vector[String]): Future[OracleAnnouncementTLV]
+      outcomes: Vector[String]): Future[OracleAnnouncementWithId]
 
   def createNewAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      descriptor: EventDescriptorTLV,
+      descriptor: EventDescriptorDLCType,
       signingVersion: SigningVersion = SigningVersion.latest): Future[
-    OracleAnnouncementTLV]
+    OracleAnnouncementWithId]
 
   /** Signs an enumerated announcement
     * @param eventName the event name of the announcement
     * @param outcome the outcome for the give announcement
     */
-  def signEnum(eventName: String, outcome: EnumAttestation): Future[EventDb]
+  def signEnum(
+      eventName: String,
+      outcome: EnumAttestation): Future[CompletedEnumV0OracleEvent]
 
   /** Signs an enumerated announcement
     * @param oracleEventTLV the tlv of the oracle event
     * @param outcome the outcome for the give announcement
     */
   def signEnum(
-      oracleEventTLV: OracleEventTLV,
-      outcome: EnumAttestation): Future[EventDb]
+      oracleEventTLV: BaseOracleEvent,
+      outcome: EnumAttestation): Future[CompletedEnumV0OracleEvent]
 
   def createAttestation(
       nonce: SchnorrNonce,
-      outcome: DLCAttestationType): Future[EventDb]
+      outcome: DLCAttestationType): Future[FieldElement]
 
-  def signDigits(eventName: String, num: Long): Future[OracleEvent]
+  def signDigits(
+      eventName: String,
+      num: Long): Future[CompletedDigitDecompositionV0OracleEvent]
 
-  def signDigits(oracleEventTLV: OracleEventTLV, num: Long): Future[OracleEvent]
+  def signDigits(
+      announcement: BaseOracleAnnouncement,
+      num: Long): Future[CompletedDigitDecompositionV0OracleEvent]
 
   /** Deletes an announcement with the given name
     * WARNING: If this announcement has been published widely
@@ -85,7 +89,7 @@ trait DLCOracleApi {
     * You likely should only use this in testing scenarios
     * @return the deleted announcement
     */
-  def deleteAnnouncement(eventName: String): Future[OracleAnnouncementTLV]
+  def deleteAnnouncement(eventName: String): Future[BaseOracleAnnouncement]
 
   /** Deletes an announcement with the given name
     * WARNING: If this announcement has been published widely
@@ -94,7 +98,7 @@ trait DLCOracleApi {
     * @return the deleted announcement
     */
   def deleteAnnouncement(
-      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV]
+      announcementTLV: BaseOracleAnnouncement): Future[BaseOracleAnnouncement]
 
   /** Deletes attestations for the given event
     *
@@ -108,7 +112,8 @@ trait DLCOracleApi {
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  def deleteAttestation(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
+  def deleteAttestation(
+      announcement: BaseOracleAnnouncement): Future[OracleEvent]
 
   /** Signs the SHA256 hash of the given string using the oracle's signing key */
   def signMessage(message: String): SchnorrDigitalSignature = {

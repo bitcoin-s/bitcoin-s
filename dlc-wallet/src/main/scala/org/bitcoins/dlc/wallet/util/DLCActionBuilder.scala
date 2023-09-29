@@ -1,6 +1,12 @@
 package org.bitcoins.dlc.wallet.util
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.dlc.oracle.{
+  NonceSignaturePairDb,
+  NonceSignaturePairDbShim,
+  OracleNonceDb
+}
 import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
 import org.bitcoins.db.DbCommonsColumnMappers
 import org.bitcoins.dlc.wallet.models._
@@ -8,7 +14,9 @@ import org.bitcoins.dlc.wallet.models._
 import scala.concurrent.ExecutionContext
 
 /** Utility class to help build actions to insert things into our DLC tables */
-case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
+case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs)(implicit
+    ec: ExecutionContext)
+    extends Logging {
 
   private val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
@@ -18,6 +26,7 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
   private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
   private val dlcSigsDAO = dlcWalletDAOs.dlcSigsDAO
   private val dlcRefundSigDAO = dlcWalletDAOs.dlcRefundSigDAO
+  private val oracleSchnorrNonceDAO = dlcWalletDAOs.oracleSchnorrNonceDAO
   private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
 
   //idk if it matters which profile api i import, but i need access to transactionally
@@ -163,24 +172,28 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
   def updateDLCOracleSigsAction(
       outcomeAndSigByNonce: Map[
         SchnorrNonce,
-        (String, SchnorrDigitalSignature)])(implicit
-      ec: ExecutionContext): DBIOAction[
-    Vector[OracleNonceDb],
+        (String, SchnorrDigitalSignature)]): DBIOAction[
+    Vector[NonceSignaturePairDbShim],
     NoStream,
-    Effect.Write with Effect.Read with Effect.Transactional] = {
-    val updateAction = for {
-      nonceDbs <- oracleNonceDAO.findByNoncesAction(
-        outcomeAndSigByNonce.keys.toVector)
+    Effect.Write with Effect.Read] = {
+    val updateAction: DBIOAction[
+      Vector[NonceSignaturePairDbShim],
+      NoStream,
+      Effect.Write with Effect.Read] = for {
+      nonceDbs <- getNonceDbsByNonceAction(outcomeAndSigByNonce.keys.toVector)
       _ = assert(nonceDbs.size == outcomeAndSigByNonce.keys.size,
                  "Didn't receive all nonce dbs")
 
       updated = nonceDbs.map { db =>
         val (outcome, sig) = outcomeAndSigByNonce(db.nonce)
-        db.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
+        db match {
+          case n: NonceSignaturePairDb =>
+            n.copy(outcomeOpt = Some(outcome), attestationOpt = Some(sig.sig))
+          case o: OracleNonceDb =>
+            o.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
+        }
       }
-
-      updateNonces <- oracleNonceDAO.updateAllAction(updated)
-
+      updateNonces <- updateAllNoncesAction(updated)
       announcementDbs <- {
         val announcementIds = updateNonces.map(_.announcementId).distinct
         dlcAnnouncementDAO.findByAnnouncementIdsAction(announcementIds)
@@ -190,5 +203,45 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     } yield updateNonces
 
     updateAction
+  }
+
+  def updateAllNoncesAction(
+      nonceShims: Vector[NonceSignaturePairDbShim]): DBIOAction[
+    Vector[NonceSignaturePairDbShim],
+    NoStream,
+    Effect.Write] = {
+    require(
+      nonceShims.forall(_.isInstanceOf[OracleNonceDb]) ||
+        nonceShims.forall(_.isInstanceOf[NonceSignaturePairDb]),
+      s"All NonceShims must be of the same type, got=$nonceShims"
+    )
+    nonceShims.headOption match {
+      case Some(_: OracleNonceDb) =>
+        val cast = nonceShims.map(_.asInstanceOf[OracleNonceDb])
+        oracleNonceDAO.updateAllAction(cast)
+      case Some(_: NonceSignaturePairDb) =>
+        val cast = nonceShims.map(_.asInstanceOf[NonceSignaturePairDb])
+        oracleSchnorrNonceDAO
+          .updateNonceSignatureDb(cast)
+          .map(_ => cast)
+      case None =>
+        DBIO.successful(Vector.empty)
+    }
+  }
+
+  def getNonceDbsByNonceAction(nonces: Vector[SchnorrNonce]): DBIOAction[
+    Vector[NonceSignaturePairDbShim],
+    NoStream,
+    Effect.Read] = {
+    val oldA = oracleNonceDAO.findByNoncesAction(nonces)
+    val newNoncesA = oracleSchnorrNonceDAO.findByNoncesAction(nonces)
+
+    val action = oldA.flatMap { old =>
+      newNoncesA.map { newNonces =>
+        old ++ newNonces
+      }
+    }
+
+    action
   }
 }

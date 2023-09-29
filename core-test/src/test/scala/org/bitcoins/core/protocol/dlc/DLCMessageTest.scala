@@ -48,6 +48,7 @@ class DLCMessageTest extends BitcoinSJvmTest {
     assertThrows[IllegalArgumentException](
       DLCOffer(
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+        tempContractId = Sha256Digest.empty,
         contractInfo = SingleContractInfo.dummy,
         pubKeys = DLCPublicKeys(dummyPubKey, dummyAddress),
         collateral = Satoshis(-1),
@@ -65,6 +66,7 @@ class DLCMessageTest extends BitcoinSJvmTest {
     assertThrows[IllegalArgumentException](
       DLCOffer(
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+        tempContractId = Sha256Digest.empty,
         contractInfo = SingleContractInfo.dummy,
         pubKeys = DLCPublicKeys(dummyPubKey, dummyAddress),
         collateral = Satoshis(-1),
@@ -81,6 +83,7 @@ class DLCMessageTest extends BitcoinSJvmTest {
   it must "not allow a negative collateral for a DLCAccept" in {
     assertThrows[IllegalArgumentException](
       DLCAccept(
+        protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
         Satoshis(-1),
         DLCPublicKeys(dummyPubKey, dummyAddress),
         Vector.empty,

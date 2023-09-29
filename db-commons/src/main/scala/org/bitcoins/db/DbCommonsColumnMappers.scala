@@ -316,7 +316,7 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val oracleParamsV0TLVMapper: BaseColumnType[OracleParamsV0TLV] = {
     MappedColumnType
-      .base[OracleParamsV0TLV, String](_.hex, OracleParamsV0TLV.fromHex)
+      .base[OracleParamsV0TLV, String](_.hex, OracleParamsV0TLV.fromHex(_).get)
   }
 
   implicit val negotiationFieldsTLVMapper: BaseColumnType[
@@ -478,10 +478,14 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[DLCState, String](_.toString, DLCState.fromString)
   }
 
-  implicit val eventDescriptorTLVMapper: BaseColumnType[EventDescriptorTLV] = {
-    MappedColumnType.base[EventDescriptorTLV, String](
+  implicit val eventDescriptorTLVMapper: BaseColumnType[BaseEventDescriptor] = {
+    MappedColumnType.base[BaseEventDescriptor, String](
       _.hex,
-      EventDescriptorTLV.fromHex)
+      { case hex: String =>
+        EventDescriptorDLCType
+          .fromHexT(hex)
+          .getOrElse(EventDescriptorTLV.fromHex(hex))
+      })
   }
 
   implicit val oracleAnnouncementTLV: BaseColumnType[OracleAnnouncementTLV] = {
@@ -550,5 +554,16 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[NodeStateDescriptor, String](
       _.toString,
       NodeStateDescriptor.fromString)
+
+  implicit val normalizedStringMapper: BaseColumnType[NormalizedString] = {
+    MappedColumnType.base[NormalizedString, String](_.toString,
+                                                    NormalizedString.fromString)
+  }
+
+  implicit val metadataSignature: BaseColumnType[OracleMetadataSignature] = {
+    MappedColumnType.base[OracleMetadataSignature, String](
+      _.metadataSignature.hex,
+      OracleMetadataSignature.fromHex)
+  }
 
 }

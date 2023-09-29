@@ -7,6 +7,7 @@ import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
@@ -21,9 +22,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
   import system.dispatcher
 
   override def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
-    case ServerCommand("getpublickey", _) =>
+    case ServerCommand("getannouncementpublickey", _) =>
       complete {
-        Server.httpSuccess(oracle.publicKey().hex)
+        Server.httpSuccess(oracle.announcementPublicKey().hex)
       }
 
     case ServerCommand("getstakingaddress", _) =>
@@ -56,8 +57,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           complete {
             oracle
               .createNewEnumAnnouncement(label, maturationTime, outcomes)
-              .map { announcementTLV =>
-                Server.httpSuccess(announcementTLV.hex)
+              .map { annWithId =>
+                Server.httpSuccess(annWithId.announcement.hex)
               }
           }
       }
@@ -83,13 +84,13 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             oracle
               .createNewDigitDecompAnnouncement(eventName,
                                                 maturationTime,
-                                                UInt16(2),
+                                                UInt8.two,
                                                 isSigned,
                                                 numDigits,
                                                 unit,
                                                 Int32(precision))
-              .map { announcementTLV =>
-                Server.httpSuccess(announcementTLV.hex)
+              .map { annWithId =>
+                Server.httpSuccess(annWithId.announcement.hex)
               }
           }
       }
@@ -113,13 +114,13 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             oracle
               .createNewDigitDecompAnnouncement(eventName,
                                                 maturationTime,
-                                                UInt16(base),
+                                                UInt8(base),
                                                 isSigned,
                                                 numDigits,
                                                 unit,
                                                 Int32(precision))
-              .map { announcementTLV =>
-                Server.httpSuccess(announcementTLV.hex)
+              .map { annWithId =>
+                Server.httpSuccess(annWithId.announcement.hex)
               }
           }
       }
@@ -135,9 +136,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             oracle.findEvent(eventName).map {
               case Some(event: OracleEvent) =>
                 val outcomesJson = event.eventDescriptorTLV match {
-                  case enum: EnumEventDescriptorV0TLV =>
+                  case enum: BaseEnumEventDescriptor =>
                     enum.outcomes.map(outcome => Str(outcome.normStr))
-                  case decomp: DigitDecompositionEventDescriptorV0TLV =>
+                  case decomp: BaseNumericEventDescriptorTLV =>
                     val digits = 0.until(decomp.numDigits.toInt).map { _ =>
                       0
                         .until(decomp.base.toInt)
@@ -146,9 +147,11 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                     }
 
                     val vecs = decomp match {
-                      case _: UnsignedDigitDecompositionEventDescriptor =>
+                      case _: UnsignedDigitDecompositionEventDescriptor |
+                          _: UnsignedDigitDecompositionEventDescriptorDLCType =>
                         digits
-                      case _: SignedDigitDecompositionEventDescriptor =>
+                      case _: SignedDigitDecompositionEventDescriptor |
+                          _: SignedDigitDecompositionEventDescriptorDLCType =>
                         Vector(Str("+"), Str("-")) +: digits
                     }
                     vecs.map(vec => Arr.from(vec))
@@ -187,7 +190,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                   "signedOutcome" -> signedOutcomeJs,
                   // TLV shas for UI to have ids
                   "announcementTLVsha256" -> event.announcementTLV.sha256.hex,
-                  "eventDescriptorTLVsha256" -> event.eventDescriptorTLV.sha256.hex
+                  "eventDescriptorTLVsha256" -> CryptoUtil
+                    .sha256(event.eventDescriptorTLV.bytes)
+                    .hex
                 )
                 Server.httpSuccess(json)
               case None =>
@@ -206,14 +211,11 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           complete {
             oracle
               .signEnum(eventName, EnumAttestation(outcome))
-              .map { eventDb =>
-                val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
-                oracleEvent match {
-                  case _: PendingOracleEvent =>
-                    throw new RuntimeException("Failed to sign event")
-                  case event: CompletedOracleEvent =>
-                    Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
-                }
+              .map {
+                case _: PendingOracleEvent =>
+                  throw new RuntimeException("Failed to sign event")
+                case event: CompletedOracleEvent =>
+                  Server.httpSuccess(event.oracleAttestmentV0TLV.hex)
               }
           }
       }

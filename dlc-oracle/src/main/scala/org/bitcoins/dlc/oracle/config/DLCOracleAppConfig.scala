@@ -16,6 +16,7 @@ import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
+import org.bitcoins.dlc.commons.oracle.EventOutcomeDAO
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager

@@ -91,16 +91,6 @@ object DLCWalletUtil extends Logging {
                                       nonWinnerTakeAllOutcomes.map(_._1))
   }
 
-  lazy val invalidOracleInfo: EnumSingleOracleInfo = {
-    val info = EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
-                                                 rValue,
-                                                 sampleOutcomes.map(_._1))
-    val announcement = info.announcement.asInstanceOf[OracleAnnouncementV0TLV]
-    val invalidAnnouncement =
-      announcement.copy(announcementSignature = SchnorrDigitalSignature.dummy)
-    info.copy(announcement = invalidAnnouncement)
-  }
-
   lazy val sampleContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
@@ -108,9 +98,6 @@ object DLCWalletUtil extends Logging {
     ContractOraclePair.EnumPair(sampleContractDescriptorNonWinnerTakeAll,
                                 sampleOracleInfoNonWinnerTakeAll)
   }
-
-  lazy val invalidContractOraclePair: ContractOraclePair.EnumPair =
-    ContractOraclePair.EnumPair(sampleContractDescriptor, invalidOracleInfo)
 
   lazy val sampleContractInfo: SingleContractInfo =
     SingleContractInfo(totalCollateral = total,
@@ -124,9 +111,6 @@ object DLCWalletUtil extends Logging {
 
   lazy val sampleContractInfo2: ContractInfo =
     SingleContractInfo(amt2, sampleContractOraclePair)
-
-  lazy val invalidContractInfo: ContractInfo =
-    SingleContractInfo(half, invalidContractOraclePair)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -143,7 +127,7 @@ object DLCWalletUtil extends Logging {
     val unsorted = rValues.take(numDigits).toVector
     val sorted = OrderedNonces.fromUnsorted(unsorted)
     NumericSingleOracleInfo(
-      OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, sorted))
+      OracleAnnouncementV1TLV.dummyForKeys(oraclePrivKey, sorted))
   }
 
   lazy val multiNonceContractOraclePair: ContractOraclePair.NumericPair = {
@@ -155,7 +139,7 @@ object DLCWalletUtil extends Logging {
     SingleContractInfo(total, multiNonceContractOraclePair)
 
   lazy val numericContractInfoV0 =
-    multiNonceContractInfo.toTLV.asInstanceOf[ContractInfoV0TLV]
+    multiNonceContractInfo.toSubType.asInstanceOf[ContractInfoV0TLV]
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(0)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1)
@@ -212,6 +196,7 @@ object DLCWalletUtil extends Logging {
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    tempContractId = Sha256Digest.empty,
     contractInfo = sampleContractInfo,
     pubKeys = dummyDLCKeys,
     collateral = half,
@@ -234,6 +219,7 @@ object DLCWalletUtil extends Logging {
 
   lazy val sampleDLCOffer2 = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    tempContractId = Sha256Digest.empty,
     contractInfo = sampleContractInfo2,
     pubKeys = dummyDLCKeys,
     collateral = sampleContractInfo2.totalCollateral,
@@ -246,22 +232,10 @@ object DLCWalletUtil extends Logging {
     timeouts = dummyTimeouts
   )
 
-  lazy val invalidDLCOffer: DLCOffer = DLCOffer(
-    protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
-    contractInfo = invalidContractInfo,
-    pubKeys = dummyDLCKeys,
-    collateral = half,
-    fundingInputs = Vector(dummyFundingInputs.head),
-    changeAddress = dummyAddress,
-    payoutSerialId = sampleOfferPayoutSerialId,
-    changeSerialId = sampleOfferChangeSerialId,
-    fundOutputSerialId = sampleFundOutputSerialId,
-    feeRate = SatoshisPerVirtualByte(Satoshis(3)),
-    timeouts = dummyTimeouts
-  )
-
   lazy val sampleMultiNonceDLCOffer: DLCOffer =
-    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo)
+    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo,
+                        tempContractId =
+                          Sha256Digest(ECPrivateKey.freshPrivateKey.bytes))
 
   lazy val dummyOutcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)] =
     Vector(
@@ -283,6 +257,7 @@ object DLCWalletUtil extends Logging {
     Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId))
 
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
+    DLCOfferTLV.currentVersionOpt,
     collateral = half,
     pubKeys = dummyDLCKeys,
     fundingInputs = Vector(dummyFundingInputs.last),
@@ -300,10 +275,13 @@ object DLCWalletUtil extends Logging {
       (TransactionOutPoint(dummyBlockHash, UInt32.zero), dummyScriptWitness)))
 
   lazy val sampleDLCSign: DLCSign =
-    DLCSign(dummyCETSigs,
-            dummyPartialSig,
-            dummyFundingSignatures,
-            ByteVector.empty)
+    DLCSign(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+      cetSigs = dummyCETSigs,
+      refundSig = dummyPartialSig,
+      fundingSigs = dummyFundingSignatures,
+      contractId = ByteVector.empty
+    )
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
     dlcId = Sha256Digest(
@@ -331,7 +309,7 @@ object DLCWalletUtil extends Logging {
     dlcId = sampleDLCDb.dlcId,
     oracleThreshold = 1,
     oracleParamsTLVOpt = None,
-    contractDescriptorTLV = sampleContractDescriptor.toTLV,
+    contractDescriptorTLV = sampleContractDescriptor.toSubType,
     contractMaturity = BlockTimeStamp(0),
     contractTimeout = BlockTimeStamp(1),
     totalCollateral = total
@@ -510,6 +488,7 @@ object DLCWalletUtil extends Logging {
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
     val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
       case v0: OracleEventV0TLV => v0.eventId
+      case v1: OracleEventV1TLV => v1.eventId
     }
 
     (OracleAttestmentV0TLV(eventId,

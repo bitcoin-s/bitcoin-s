@@ -69,7 +69,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
           .outcome
 
       val eventId = announcements
-        .find(_.publicKey == priv.schnorrPublicKey)
+        .find(_.announcementPublicKey == priv.schnorrPublicKey)
         .map(_.eventTLV) match {
         case Some(v0: OracleEventV0TLV) => v0.eventId
         case None | Some(_) =>
@@ -90,7 +90,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
         contractDescriptor.find(_._2 == Satoshis.zero).get._1.outcome
 
       val eventId = announcements
-        .find(_.publicKey == priv.schnorrPublicKey)
+        .find(_.announcementPublicKey == priv.schnorrPublicKey)
         .map(_.eventTLV) match {
         case Some(v0: OracleEventV0TLV) => v0.eventId
         case None | Some(_) =>

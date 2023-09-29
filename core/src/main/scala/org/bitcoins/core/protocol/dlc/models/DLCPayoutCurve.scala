@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 case class DLCPayoutCurve(
     pieces: OrderedDLCPayoutCurvePieces,
     serializationVersion: DLCSerializationVersion)
-    extends TLVSerializable[PayoutFunctionV0TLV] {
+    extends DLCSpecTypeSerializable[PayoutFunctionV0TLV] {
 
   val endpoints: Vector[OutcomePayoutPoint] = {
     pieces.toVector.map(_.leftEndpoint).:+(pieces.last.rightEndpoint)
@@ -24,10 +24,10 @@ case class DLCPayoutCurve(
   require(pieces.map(_.rightEndpoint) == endpoints.tail,
           s"Endpoints must line up: $this")
 
-  override def toTLV: PayoutFunctionV0TLV = {
+  override def toSubType: PayoutFunctionV0TLV = {
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
     val orderedTlvPoints = OrderedTLVPoints(tlvEndpoints)
-    val tlvPieces = pieces.map(_.toTLV).toVector
+    val tlvPieces = pieces.map(_.toSubType).toVector
 
     PayoutFunctionV0TLV(orderedTlvPoints, tlvPieces, serializationVersion)
   }
@@ -85,10 +85,10 @@ case class DLCPayoutCurve(
 }
 
 object DLCPayoutCurve
-    extends TLVDeserializable[PayoutFunctionV0TLV, DLCPayoutCurve](
+    extends DLCSpecTypeDeserializable[PayoutFunctionV0TLV, DLCPayoutCurve](
       PayoutFunctionV0TLV) {
 
-  override def fromTLV(tlv: PayoutFunctionV0TLV): DLCPayoutCurve = {
+  override def fromSubType(tlv: PayoutFunctionV0TLV): DLCPayoutCurve = {
     val pieces =
       tlv.endpoints.toVector.init.zip(tlv.endpoints.tail).zip(tlv.pieces).map {
         case ((leftEndpoint, rightEndpoint), tlvPiece) =>
@@ -140,7 +140,11 @@ object DLCPayoutCurve
 
   def fromPointsPre144(points: Vector[OldTLVPoint]): DLCPayoutCurve = {
     val newPoints =
-      points.map(p => TLVPoint(p.outcome, p.value, p.extraPrecision))
+      points.map(p =>
+        TLVPoint(p.outcome,
+                 p.value,
+                 p.extraPrecision,
+                 DLCSerializationVersion.Alpha))
     fromPoints(newPoints, serializationVersion = DLCSerializationVersion.Alpha)
   }
 }
@@ -159,7 +163,10 @@ trait DLCPoint {
   }
 
   def toTLVPoint: TLVPoint = {
-    TLVPoint(outcome, roundedPayout, extraPrecision)
+    TLVPoint(outcome,
+             roundedPayout,
+             extraPrecision,
+             DLCSerializationVersion.current)
   }
 
   def toOutcomePayoutPoint: OutcomePayoutPoint = {
@@ -242,7 +249,8 @@ object PiecewisePolynomialMidpoint {
   }
 }
 
-sealed trait DLCPayoutCurvePiece extends TLVSerializable[PayoutCurvePieceTLV] {
+sealed trait DLCPayoutCurvePiece
+    extends DLCSpecTypeSerializable[PayoutCurvePieceTLV] {
   def leftEndpoint: OutcomePayoutPoint
   def rightEndpoint: OutcomePayoutPoint
 
@@ -306,7 +314,7 @@ case class DLCHyperbolaPayoutCurvePiece(
     leftEndpoint: OutcomePayoutPoint,
     rightEndpoint: OutcomePayoutPoint)
     extends DLCPayoutCurvePiece
-    with TLVSerializable[HyperbolaPayoutCurvePieceTLV] {
+    with DLCSpecTypeSerializable[HyperbolaPayoutCurvePieceTLV] {
   require(a * d != b * c, s"a*d cannot equal b*c: $this")
 
   override def apply(outcome: Long): Satoshis = {
@@ -335,7 +343,7 @@ case class DLCHyperbolaPayoutCurvePiece(
     }
   }
 
-  override def toTLV: HyperbolaPayoutCurvePieceTLV = {
+  override def toSubType: HyperbolaPayoutCurvePieceTLV = {
     HyperbolaPayoutCurvePieceTLV(
       usePositivePiece,
       Signed16PTLVNumber.fromBigDecimal(translateOutcome),
@@ -343,7 +351,8 @@ case class DLCHyperbolaPayoutCurvePiece(
       Signed16PTLVNumber.fromBigDecimal(a),
       Signed16PTLVNumber.fromBigDecimal(b),
       Signed16PTLVNumber.fromBigDecimal(c),
-      Signed16PTLVNumber.fromBigDecimal(d)
+      Signed16PTLVNumber.fromBigDecimal(d),
+      DLCSerializationVersion.current
     )
   }
 
@@ -385,7 +394,7 @@ object DLCHyperbolaPayoutCurvePiece {
 /** A single piece of a larger piecewise function defined between left and right endpoints */
 sealed trait DLCPolynomialPayoutCurvePiece
     extends DLCPayoutCurvePiece
-    with TLVSerializable[PolynomialPayoutCurvePieceTLV] {
+    with DLCSpecTypeSerializable[PolynomialPayoutCurvePieceTLV] {
   def midpoints: Vector[OutcomePayoutPoint]
 
   def points: Vector[OutcomePayoutPoint] = {
@@ -403,8 +412,9 @@ sealed trait DLCPolynomialPayoutCurvePiece
             s"Points must be ascending: $this")
   }
 
-  override def toTLV: PolynomialPayoutCurvePieceTLV = {
-    PolynomialPayoutCurvePieceTLV(midpoints.map(_.toTLVPoint))
+  override def toSubType: PolynomialPayoutCurvePieceTLV = {
+    PolynomialPayoutCurvePieceTLV(midpoints.map(_.toTLVPoint),
+                                  DLCSerializationVersion.current)
   }
 
   override def flip(

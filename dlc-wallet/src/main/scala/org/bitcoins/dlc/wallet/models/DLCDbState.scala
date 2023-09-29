@@ -29,7 +29,8 @@ sealed trait DLCDbState {
   }
 
   def offer: DLCOffer = {
-    offerDb.toDLCOffer(contractInfo = contractInfo,
+    offerDb.toDLCOffer(tempContractId = dlcDb.tempContractId,
+                       contractInfo = contractInfo,
                        fundingInputs = offerFundingInputs,
                        dlcDb = dlcDb,
                        contractDataDb = contractDataDb)

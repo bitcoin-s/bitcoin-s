@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.dlc.commons.oracle.OracleAnnouncementDataDAO
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models.{IncomingDLCOfferDAO, _}
 import org.bitcoins.server.BitcoinSAppConfig
