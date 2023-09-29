@@ -1,14 +1,4 @@
-package org.bitcoins.node.networking.peer
-
-import org.bitcoins.core.api.node.Peer
-import org.bitcoins.node.networking.peer.NodeState.{
-  DoneSyncing,
-  FilterHeaderSync,
-  FilterSync,
-  HeaderSync,
-  MisbehavingPeer,
-  RemovePeers
-}
+package org.bitcoins.core.api.node
 
 sealed abstract class NodeState {
   def isSyncing: Boolean
@@ -17,12 +7,12 @@ sealed abstract class NodeState {
   def peers: Set[Peer]
 
   def replacePeers(newPeers: Set[Peer]): NodeState = this match {
-    case h: HeaderSync        => h.copy(peers = newPeers)
-    case fh: FilterHeaderSync => fh.copy(peers = newPeers)
-    case fs: FilterSync       => fs.copy(peers = newPeers)
-    case d: DoneSyncing       => d.copy(peers = newPeers)
-    case rm: RemovePeers      => rm.copy(peers = newPeers)
-    case m: MisbehavingPeer   => m.copy(peers = newPeers)
+    case h: NodeState.HeaderSync        => h.copy(peers = newPeers)
+    case fh: NodeState.FilterHeaderSync => fh.copy(peers = newPeers)
+    case fs: NodeState.FilterSync       => fs.copy(peers = newPeers)
+    case d: NodeState.DoneSyncing       => d.copy(peers = newPeers)
+    case rm: NodeState.RemovePeers      => rm.copy(peers = newPeers)
+    case m: NodeState.MisbehavingPeer   => m.copy(peers = newPeers)
   }
 
 }
@@ -38,9 +28,9 @@ sealed abstract class SyncNodeState extends NodeState {
 
   def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {
     this match {
-      case h: HeaderSync        => h.copy(syncPeer = newSyncPeer)
-      case fh: FilterHeaderSync => fh.copy(syncPeer = newSyncPeer)
-      case fs: FilterSync       => fs.copy(syncPeer = newSyncPeer)
+      case h: NodeState.HeaderSync        => h.copy(syncPeer = newSyncPeer)
+      case fh: NodeState.FilterHeaderSync => fh.copy(syncPeer = newSyncPeer)
+      case fs: NodeState.FilterSync       => fs.copy(syncPeer = newSyncPeer)
     }
   }
 }
