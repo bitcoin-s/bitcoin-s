@@ -98,8 +98,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           .map(p =>
             !peerManager
               .getPeerData(p)
-              .isDefined && !peerManager.waitingForDisconnection
-              .contains(p))
+              .isDefined)
           .forall(_ == true),
         maxTries = 5,
         interval = 1.second

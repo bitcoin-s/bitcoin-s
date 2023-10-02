@@ -74,7 +74,6 @@ case class PeerManager(
 
   /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
   private val _waitingForDisconnection: mutable.Set[Peer] = mutable.Set.empty
-  def waitingForDisconnection: Set[Peer] = _waitingForDisconnection.toSet
 
   private[this] var finderOpt: Option[PeerFinder] = {
     None
@@ -224,7 +223,7 @@ case class PeerManager(
                                else filterSyncMarker.startHeight,
                                filterSyncMarker.stopBlockHash)
     logger.debug(s"Sending getcfilters=$message to peer ${peer}")
-    val fs = NodeState.FilterSync(peer, peers, waitingForDisconnection)
+    val fs = NodeState.FilterSync(peer, peers, _waitingForDisconnection.toSet)
     sendMsg(message, Some(peer)).map(_ => fs)
   }
 
@@ -413,7 +412,7 @@ case class PeerManager(
       _ <- finderStopF
       _ <- Future.traverse(peers)(disconnectPeer)
       _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && waitingForDisconnection.isEmpty,
+        _peerDataMap.isEmpty && _waitingForDisconnection.isEmpty,
         interval = 1.seconds,
         maxTries = 30
       )
@@ -633,7 +632,7 @@ case class PeerManager(
               Future.successful(state)
             }
           }
-        } else if (waitingForDisconnection.contains(peer)) {
+        } else if (_waitingForDisconnection.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
           _waitingForDisconnection.remove(peer)
           Future.successful(state)
@@ -655,7 +654,7 @@ case class PeerManager(
             case Some(p) => s.replaceSyncPeer(p)
             case None    =>
               //switch to state DoneSyncing since we have no peers to sync from
-              DoneSyncing(peers, waitingForDisconnection)
+              DoneSyncing(peers, _waitingForDisconnection.toSet)
           }
         } else {
           s.replacePeers(peers)
@@ -942,7 +941,7 @@ case class PeerManager(
           val fhs = FilterHeaderSync(syncPeer = syncPeer,
                                      peers = peers,
                                      waitingForDisconnection =
-                                       waitingForDisconnection)
+                                       _waitingForDisconnection.toSet)
           syncFilters(
             bestFilterHeaderOpt = bestFilterHeaderOpt,
             bestFilterOpt = bestFilterOpt,
