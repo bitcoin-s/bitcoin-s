@@ -20,17 +20,17 @@ sealed abstract class NodeState {
   def replaceWaitingForDisconnection(
       newWaitingForDisconnection: Set[Peer]): NodeState = {
     this match {
-      case h: HeaderSync =>
+      case h: NodeState.HeaderSync =>
         h.copy(waitingForDisconnection = newWaitingForDisconnection)
-      case fh: FilterHeaderSync =>
+      case fh: NodeState.FilterHeaderSync =>
         fh.copy(waitingForDisconnection = newWaitingForDisconnection)
-      case fs: FilterSync =>
+      case fs: NodeState.FilterSync =>
         fs.copy(waitingForDisconnection = newWaitingForDisconnection)
-      case d: DoneSyncing =>
+      case d: NodeState.DoneSyncing =>
         d.copy(waitingForDisconnection = newWaitingForDisconnection)
-      case rm: RemovePeers =>
+      case rm: NodeState.RemovePeers =>
         rm.copy(waitingForDisconnection = newWaitingForDisconnection)
-      case m: MisbehavingPeer =>
+      case m: NodeState.MisbehavingPeer =>
         m.copy(waitingForDisconnection = newWaitingForDisconnection)
     }
   }
