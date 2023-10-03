@@ -63,7 +63,7 @@ case class NeutrinoNode(
       peerManager.randomPeerWithService(serviceIdentifier).isDefined)
     for {
       _ <- peerAvailableF
-      _ <- peerManager.syncHelper(None)
+      _ <- peerManager.sync(None)
     } yield ()
   }
 
