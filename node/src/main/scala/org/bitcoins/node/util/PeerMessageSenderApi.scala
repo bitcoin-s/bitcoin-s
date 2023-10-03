@@ -1,7 +1,7 @@
 package org.bitcoins.node.util
 
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
-import org.bitcoins.core.api.node.{NodeState, Peer}
+import org.bitcoins.core.api.node.{Peer}
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.{
   GetAddrMessage,
@@ -64,7 +64,7 @@ trait PeerMessageSenderApi {
 
   def sendGetCompactFiltersMessage(
       filterSyncMarker: FilterSyncMarker,
-      peer: Peer)(implicit ec: ExecutionContext): Future[NodeState.FilterSync]
+      peer: Peer)(implicit ec: ExecutionContext): Future[Unit]
 
   def sendInventoryMessage(
       transactions: Vector[Transaction],

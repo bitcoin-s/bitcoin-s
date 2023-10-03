@@ -6,6 +6,8 @@ sealed abstract class NodeState {
   /** All peers the node is currently connected to */
   def peers: Set[Peer]
 
+  def waitingForDisconnection: Set[Peer]
+
   def replacePeers(newPeers: Set[Peer]): NodeState = this match {
     case h: NodeState.HeaderSync        => h.copy(peers = newPeers)
     case fh: NodeState.FilterHeaderSync => fh.copy(peers = newPeers)
@@ -13,6 +15,24 @@ sealed abstract class NodeState {
     case d: NodeState.DoneSyncing       => d.copy(peers = newPeers)
     case rm: NodeState.RemovePeers      => rm.copy(peers = newPeers)
     case m: NodeState.MisbehavingPeer   => m.copy(peers = newPeers)
+  }
+
+  def replaceWaitingForDisconnection(
+      newWaitingForDisconnection: Set[Peer]): NodeState = {
+    this match {
+      case h: NodeState.HeaderSync =>
+        h.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case fh: NodeState.FilterHeaderSync =>
+        fh.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case fs: NodeState.FilterSync =>
+        fs.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case d: NodeState.DoneSyncing =>
+        d.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case rm: NodeState.RemovePeers =>
+        rm.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case m: NodeState.MisbehavingPeer =>
+        m.copy(waitingForDisconnection = newWaitingForDisconnection)
+    }
   }
 
 }
@@ -37,14 +57,28 @@ sealed abstract class SyncNodeState extends NodeState {
 
 object NodeState {
 
-  case class HeaderSync(syncPeer: Peer, peers: Set[Peer]) extends SyncNodeState
-
-  case class FilterHeaderSync(syncPeer: Peer, peers: Set[Peer])
+  case class HeaderSync(
+      syncPeer: Peer,
+      peers: Set[Peer],
+      waitingForDisconnection: Set[Peer])
       extends SyncNodeState
 
-  case class FilterSync(syncPeer: Peer, peers: Set[Peer]) extends SyncNodeState
+  case class FilterHeaderSync(
+      syncPeer: Peer,
+      peers: Set[Peer],
+      waitingForDisconnection: Set[Peer])
+      extends SyncNodeState
 
-  case class MisbehavingPeer(badPeer: Peer, peers: Set[Peer])
+  case class FilterSync(
+      syncPeer: Peer,
+      peers: Set[Peer],
+      waitingForDisconnection: Set[Peer])
+      extends SyncNodeState
+
+  case class MisbehavingPeer(
+      badPeer: Peer,
+      peers: Set[Peer],
+      waitingForDisconnection: Set[Peer])
       extends NodeState {
     if (peers.nonEmpty) {
       //needed for the case where the last peer we are connected to is the bad peer
@@ -59,6 +93,7 @@ object NodeState {
   case class RemovePeers(
       peersToRemove: Vector[Peer],
       peers: Set[Peer],
+      waitingForDisconnection: Set[Peer],
       isSyncing: Boolean)
       extends NodeState {
     require(
@@ -67,7 +102,8 @@ object NodeState {
   }
 
   /** State to indicate we are not currently syncing with a peer */
-  case class DoneSyncing(peers: Set[Peer]) extends NodeState {
+  case class DoneSyncing(peers: Set[Peer], waitingForDisconnection: Set[Peer])
+      extends NodeState {
     override val isSyncing: Boolean = false
   }
 }

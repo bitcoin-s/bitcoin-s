@@ -72,10 +72,6 @@ case class PeerManager(
   private val _peerDataMap: mutable.Map[Peer, PersistentPeerData] =
     mutable.Map.empty
 
-  /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
-  private val _waitingForDisconnection: mutable.Set[Peer] = mutable.Set.empty
-  def waitingForDisconnection: Set[Peer] = _waitingForDisconnection.toSet
-
   private[this] var finderOpt: Option[PeerFinder] = {
     None
   }
@@ -217,14 +213,13 @@ case class PeerManager(
 
   override def sendGetCompactFiltersMessage(
       filterSyncMarker: FilterSyncMarker,
-      peer: Peer)(implicit
-      ec: ExecutionContext): Future[NodeState.FilterSync] = {
+      peer: Peer)(implicit ec: ExecutionContext): Future[Unit] = {
     val message =
       GetCompactFiltersMessage(if (filterSyncMarker.startHeight < 0) 0
                                else filterSyncMarker.startHeight,
                                filterSyncMarker.stopBlockHash)
     logger.debug(s"Sending getcfilters=$message to peer ${peer}")
-    sendMsg(message, Some(peer)).map(_ => NodeState.FilterSync(peer, peers))
+    sendMsg(message, Some(peer)).map(_ => ())
   }
 
   override def sendInventoryMessage(
@@ -353,14 +348,7 @@ case class PeerManager(
 
   def disconnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Disconnecting persistent peer=$peer")
-    val client: PeerData = peerDataMap(peer)
-    _peerDataMap.remove(peer)
-    //so we need to remove if from the map for connected peers so no more request could be sent to it but we before
-    //the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
-    //leading to a memory leak may happen
-    _waitingForDisconnection.add(peer)
-    //now send request to stop actor which will be completed some time in future
-    client.stop()
+    offer(InitializeDisconnect(peer)).map(_ => ())
   }
 
   override def start(): Future[PeerManager] = {
@@ -412,7 +400,7 @@ case class PeerManager(
       _ <- finderStopF
       _ <- Future.traverse(peers)(disconnectPeer)
       _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && waitingForDisconnection.isEmpty,
+        _peerDataMap.isEmpty,
         interval = 1.seconds,
         maxTries = 30
       )
@@ -594,7 +582,7 @@ case class PeerManager(
             case s: SyncNodeState =>
               Some(s.syncPeer)
             case m: MisbehavingPeer => Some(m.badPeer)
-            case DoneSyncing(_) | _: RemovePeers =>
+            case _: DoneSyncing | _: RemovePeers =>
               None
           }
           val shouldReconnect =
@@ -607,9 +595,9 @@ case class PeerManager(
                 state match {
                   case syncState: SyncNodeState =>
                     switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
-                  case DoneSyncing(_) =>
+                  case d: DoneSyncing =>
                     //defensively try to sync with the new peer
-                    syncHelper(Some(peer)).map(_ => DoneSyncing(peers))
+                    syncHelper(Some(peer)).map(_ => d)
                   case x @ (_: MisbehavingPeer | _: RemovePeers) =>
                     Future.successful(x)
                 }
@@ -632,10 +620,10 @@ case class PeerManager(
               Future.successful(state)
             }
           }
-        } else if (waitingForDisconnection.contains(peer)) {
+        } else if (state.waitingForDisconnection.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
-          _waitingForDisconnection.remove(peer)
-          Future.successful(state)
+          val removed = state.waitingForDisconnection.removedAll(Set(peer))
+          Future.successful(state.replaceWaitingForDisconnection(removed))
         } else {
           logger.warn(s"onP2PClientStopped called for unknown $peer")
           Future.successful(state)
@@ -654,7 +642,7 @@ case class PeerManager(
             case Some(p) => s.replaceSyncPeer(p)
             case None    =>
               //switch to state DoneSyncing since we have no peers to sync from
-              DoneSyncing(peers)
+              DoneSyncing(peers, state.waitingForDisconnection)
           }
         } else {
           s.replacePeers(peers)
@@ -706,7 +694,7 @@ case class PeerManager(
         val syncPeer = state match {
           case syncState: SyncNodeState =>
             syncState.syncPeer
-          case s @ (DoneSyncing(_) | _: MisbehavingPeer | _: RemovePeers) =>
+          case s @ (_: DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
             sys.error(s"Cannot have state=$s and have a query timeout")
         }
         if (peer == syncPeer)
@@ -721,7 +709,7 @@ case class PeerManager(
     val state = dmh.state
     logger.info(s"Header request timed out from $peer in state $state")
     state match {
-      case HeaderSync(_, _) | MisbehavingPeer(_, _) | DoneSyncing(_) =>
+      case _: HeaderSync | _: MisbehavingPeer | _: DoneSyncing =>
         syncFromNewPeer().map(_ => dmh)
 
       case _: FilterHeaderSync | _: FilterSync | _: RemovePeers =>
@@ -757,7 +745,7 @@ case class PeerManager(
       walletCreationTimeOpt = walletCreationTimeOpt,
       queue = queue,
       peerMessageSenderApi = this,
-      state = DoneSyncing(peers),
+      state = DoneSyncing(peers = peers, waitingForDisconnection = Set.empty),
       filterBatchCache = Set.empty
     )
   }
@@ -778,6 +766,19 @@ case class PeerManager(
     Sink.foldAsync(initDmh) {
       case (dmh, s: StartSync) =>
         syncHelper(s.peerOpt).map(_ => dmh)
+      case (dmh, i: InitializeDisconnect) =>
+        val client: PeerData = peerDataMap(i.peer)
+        _peerDataMap.remove(i.peer)
+        //so we need to remove if from the map for connected peers so no more request could be sent to it but we before
+        //the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
+        //leading to a memory leak may happen
+
+        //now send request to stop actor which will be completed some time in future
+        client.stop().map { _ =>
+          val newWaiting = dmh.state.waitingForDisconnection.+(i.peer)
+          val newState = dmh.state.replaceWaitingForDisconnection(newWaiting)
+          dmh.copy(state = newState)
+        }
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerDataOpt = peerDataMap.get(peer)
@@ -801,7 +802,7 @@ case class PeerManager(
                     for {
                       _ <- Future.traverse(removePeers.peers)(disconnectPeer)
                     } yield newDmh
-                  case _: SyncNodeState | DoneSyncing(_) =>
+                  case _: SyncNodeState | _: DoneSyncing =>
                     Future.successful(newDmh)
                 }
               }
@@ -938,12 +939,15 @@ case class PeerManager(
           //after we are done syncing block headers
           Future.unit
         } else {
+          val fhs = FilterHeaderSync(syncPeer = syncPeer,
+                                     peers = peers,
+                                     waitingForDisconnection = Set.empty)
           syncFilters(
             bestFilterHeaderOpt = bestFilterHeaderOpt,
             bestFilterOpt = bestFilterOpt,
             bestBlockHeader = header,
             chainApi = chainApi,
-            nodeState = FilterHeaderSync(syncPeer, peers)
+            nodeState = fhs
           )
         }
       }
@@ -1087,8 +1091,7 @@ case class PeerManager(
                   .sendFirstGetCompactFilterHeadersCommand(
                     peerMessageSenderApi = this,
                     chainApi = chainApi,
-                    peer = fhs.syncPeer,
-                    peers = peers)
+                    state = fhs)
                   .map(_ => ())
               case x @ (_: FilterSync | _: HeaderSync) =>
                 val exn = new RuntimeException(
@@ -1201,8 +1204,7 @@ object PeerManager extends Logging {
   def sendFirstGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
-      peer: Peer,
-      peers: Set[Peer])(implicit
+      state: SyncNodeState)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[Option[NodeState]] = {
     for {
@@ -1221,8 +1223,13 @@ object PeerManager extends Logging {
       res <- hashHeightOpt match {
         case Some(filterSyncMarker) =>
           peerMessageSenderApi
-            .sendGetCompactFilterHeadersMessage(filterSyncMarker, Some(peer))
-            .map(_ => Some(FilterHeaderSync(peer, peers)))
+            .sendGetCompactFilterHeadersMessage(filterSyncMarker,
+                                                Some(state.syncPeer))
+            .map(_ =>
+              Some(
+                FilterHeaderSync(state.syncPeer,
+                                 state.peers,
+                                 state.waitingForDisconnection)))
         case None =>
           logger.info(
             s"Filter headers are synced! filterHeader.blockHashBE=$blockHash")
@@ -1286,26 +1293,27 @@ object PeerManager extends Logging {
       ec: ExecutionContext,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig): Future[DataMessageHandler] = {
-    val (syncPeer, peers) = currentDmh.state match {
-      case s: SyncNodeState => (s.syncPeer, s.peers)
-      case state @ (DoneSyncing(_) | _: MisbehavingPeer | _: RemovePeers) =>
+    val syncNodeState = currentDmh.state match {
+      case s: SyncNodeState => s
+      case state @ (_: DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
         sys.error(
           s"Cannot fetch compact filter headers when we are in state=$state")
     }
     logger.info(
-      s"Now syncing filter headers from $syncPeer in state=${currentDmh.state}")
+      s"Now syncing filter headers from ${syncNodeState.syncPeer} in state=${currentDmh.state}")
     for {
       newSyncingStateOpt <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMessageSenderApi,
         chainApi = currentDmh.chainApi,
-        peer = syncPeer,
-        peers = peers)
+        state = syncNodeState)
     } yield {
       newSyncingStateOpt match {
         case Some(newSyncingState) =>
           currentDmh.copy(state = newSyncingState)
         case None =>
-          currentDmh.copy(state = DoneSyncing(currentDmh.state.peers))
+          val state = DoneSyncing(currentDmh.state.peers,
+                                  currentDmh.state.waitingForDisconnection)
+          currentDmh.copy(state = state)
       }
     }
   }

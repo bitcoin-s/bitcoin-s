@@ -21,6 +21,8 @@ object NodeStreamMessage {
 
   case class HeaderTimeoutWrapper(peer: Peer) extends NodeStreamMessage
 
+  case class InitializeDisconnect(peer: Peer) extends NodeStreamMessage
+
   case class DisconnectedPeer(peer: Peer, forceReconnect: Boolean)
       extends NodeStreamMessage
 
