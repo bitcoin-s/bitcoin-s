@@ -116,7 +116,7 @@ case class PeerManager(
     val sendToPeer = SendToPeer(networkMessage, peerOpt)
     logger.debug(
       s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
-    val peerMsgSenderOpt: Option[PeerMessageSender] =
+    val peerMsgSenderOpt: Option[PeerConnection] =
       sendToPeer.peerOpt match {
         case Some(peer) =>
           getPeerMsgSender(peer) match {
@@ -275,7 +275,7 @@ case class PeerManager(
     }
   }
 
-  private def getPeerMsgSender(peer: Peer): Option[PeerMessageSender] = {
+  private def getPeerMsgSender(peer: Peer): Option[PeerConnection] = {
     _peerDataMap.find(_._1 == peer).map(_._2.peerMessageSender) match {
       case Some(peerMsgSender) => Some(peerMsgSender)
       case None                => None
@@ -300,7 +300,7 @@ case class PeerManager(
   }
 
   private def randomPeerMsgSenderWithService(
-      services: ServiceIdentifier): Option[PeerMessageSender] = {
+      services: ServiceIdentifier): Option[PeerConnection] = {
     val randomPeerOpt = randomPeerWithService(services)
     randomPeerOpt match {
       case Some(peer) =>

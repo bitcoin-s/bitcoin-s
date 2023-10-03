@@ -27,7 +27,7 @@ import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
-import org.bitcoins.node.networking.peer.PeerMessageSender.ConnectionGraph
+import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
 import org.bitcoins.node.util.PeerMessageSenderApi
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
 import org.bitcoins.tor.Socks5Connection
@@ -39,7 +39,7 @@ import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 
-case class PeerMessageSender(
+case class PeerConnection(
     peer: Peer,
     queue: SourceQueueWithComplete[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi)(implicit
@@ -401,7 +401,7 @@ case class PeerMessageSender(
   }
 }
 
-object PeerMessageSender {
+object PeerConnection {
 
   case class ConnectionGraph(
       mergeHubSink: Sink[ByteString, NotUsed],

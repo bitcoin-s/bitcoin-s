@@ -31,8 +31,8 @@ sealed trait PeerData {
     peerMessageSender.disconnect()
   }
 
-  val peerMessageSender: PeerMessageSender = {
-    PeerMessageSender(peer, queue, peerMessageSenderApi)
+  val peerMessageSender: PeerConnection = {
+    PeerConnection(peer, queue, peerMessageSenderApi)
   }
 
   private[this] var _serviceIdentifier: Option[ServiceIdentifier] = None
