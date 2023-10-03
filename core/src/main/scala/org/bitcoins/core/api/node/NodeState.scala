@@ -17,6 +17,24 @@ sealed abstract class NodeState {
     case m: NodeState.MisbehavingPeer   => m.copy(peers = newPeers)
   }
 
+  def replaceWaitingForDisconnection(
+      newWaitingForDisconnection: Set[Peer]): NodeState = {
+    this match {
+      case h: HeaderSync =>
+        h.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case fh: FilterHeaderSync =>
+        fh.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case fs: FilterSync =>
+        fs.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case d: DoneSyncing =>
+        d.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case rm: RemovePeers =>
+        rm.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case m: MisbehavingPeer =>
+        m.copy(waitingForDisconnection = newWaitingForDisconnection)
+    }
+  }
+
 }
 
 /** State to indicate that we are syncing the blockchain */

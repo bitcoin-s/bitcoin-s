@@ -72,9 +72,6 @@ case class PeerManager(
   private val _peerDataMap: mutable.Map[Peer, PersistentPeerData] =
     mutable.Map.empty
 
-  /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
-  private val _waitingForDisconnection: mutable.Set[Peer] = mutable.Set.empty
-
   private[this] var finderOpt: Option[PeerFinder] = {
     None
   }
@@ -216,15 +213,13 @@ case class PeerManager(
 
   override def sendGetCompactFiltersMessage(
       filterSyncMarker: FilterSyncMarker,
-      peer: Peer)(implicit
-      ec: ExecutionContext): Future[NodeState.FilterSync] = {
+      peer: Peer)(implicit ec: ExecutionContext): Future[Unit] = {
     val message =
       GetCompactFiltersMessage(if (filterSyncMarker.startHeight < 0) 0
                                else filterSyncMarker.startHeight,
                                filterSyncMarker.stopBlockHash)
     logger.debug(s"Sending getcfilters=$message to peer ${peer}")
-    val fs = NodeState.FilterSync(peer, peers, _waitingForDisconnection.toSet)
-    sendMsg(message, Some(peer)).map(_ => fs)
+    sendMsg(message, Some(peer)).map(_ => ())
   }
 
   override def sendInventoryMessage(
@@ -353,14 +348,7 @@ case class PeerManager(
 
   def disconnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Disconnecting persistent peer=$peer")
-    val client: PeerData = peerDataMap(peer)
-    _peerDataMap.remove(peer)
-    //so we need to remove if from the map for connected peers so no more request could be sent to it but we before
-    //the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
-    //leading to a memory leak may happen
-    _waitingForDisconnection.add(peer)
-    //now send request to stop actor which will be completed some time in future
-    client.stop()
+    offer(InitializeDisconnect(peer)).map(_ => ())
   }
 
   override def start(): Future[PeerManager] = {
@@ -412,7 +400,7 @@ case class PeerManager(
       _ <- finderStopF
       _ <- Future.traverse(peers)(disconnectPeer)
       _ <- AsyncUtil.retryUntilSatisfied(
-        _peerDataMap.isEmpty && _waitingForDisconnection.isEmpty,
+        _peerDataMap.isEmpty,
         interval = 1.seconds,
         maxTries = 30
       )
@@ -632,10 +620,10 @@ case class PeerManager(
               Future.successful(state)
             }
           }
-        } else if (_waitingForDisconnection.contains(peer)) {
+        } else if (state.waitingForDisconnection.contains(peer)) {
           //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
-          _waitingForDisconnection.remove(peer)
-          Future.successful(state)
+          val removed = state.waitingForDisconnection.removedAll(Set(peer))
+          Future.successful(state.replaceWaitingForDisconnection(removed))
         } else {
           logger.warn(s"onP2PClientStopped called for unknown $peer")
           Future.successful(state)
@@ -654,7 +642,7 @@ case class PeerManager(
             case Some(p) => s.replaceSyncPeer(p)
             case None    =>
               //switch to state DoneSyncing since we have no peers to sync from
-              DoneSyncing(peers, _waitingForDisconnection.toSet)
+              DoneSyncing(peers, state.waitingForDisconnection)
           }
         } else {
           s.replacePeers(peers)
@@ -778,6 +766,19 @@ case class PeerManager(
     Sink.foldAsync(initDmh) {
       case (dmh, s: StartSync) =>
         syncHelper(s.peerOpt).map(_ => dmh)
+      case (dmh, i: InitializeDisconnect) =>
+        val client: PeerData = peerDataMap(i.peer)
+        _peerDataMap.remove(i.peer)
+        //so we need to remove if from the map for connected peers so no more request could be sent to it but we before
+        //the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
+        //leading to a memory leak may happen
+
+        //now send request to stop actor which will be completed some time in future
+        client.stop().map { _ =>
+          val newWaiting = dmh.state.waitingForDisconnection.+(i.peer)
+          val newState = dmh.state.replaceWaitingForDisconnection(newWaiting)
+          dmh.copy(state = newState)
+        }
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerDataOpt = peerDataMap.get(peer)
@@ -940,8 +941,7 @@ case class PeerManager(
         } else {
           val fhs = FilterHeaderSync(syncPeer = syncPeer,
                                      peers = peers,
-                                     waitingForDisconnection =
-                                       _waitingForDisconnection.toSet)
+                                     waitingForDisconnection = Set.empty)
           syncFilters(
             bestFilterHeaderOpt = bestFilterHeaderOpt,
             bestFilterOpt = bestFilterOpt,

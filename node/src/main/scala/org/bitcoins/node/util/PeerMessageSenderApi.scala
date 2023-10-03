@@ -64,7 +64,7 @@ trait PeerMessageSenderApi {
 
   def sendGetCompactFiltersMessage(
       filterSyncMarker: FilterSyncMarker,
-      peer: Peer)(implicit ec: ExecutionContext): Future[NodeState.FilterSync]
+      peer: Peer)(implicit ec: ExecutionContext): Future[Unit]
 
   def sendInventoryMessage(
       transactions: Vector[Transaction],
