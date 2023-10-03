@@ -32,6 +32,7 @@ object NodeStreamMessage {
   case class SendResponseTimeout(peer: Peer, payload: NetworkPayload)
       extends NodeStreamMessage
 
+  case class StartSync(peerOpt: Option[Peer]) extends NodeStreamMessage
   case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])
 
   case class Initialized(peer: Peer)

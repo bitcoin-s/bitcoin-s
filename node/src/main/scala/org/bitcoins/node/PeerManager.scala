@@ -776,6 +776,8 @@ case class PeerManager(
     NodeStreamMessage,
     Future[DataMessageHandler]] = {
     Sink.foldAsync(initDmh) {
+      case (dmh, s: StartSync) =>
+        syncHelper(s.peerOpt).map(_ => dmh)
       case (dmh, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         val peerDataOpt = peerDataMap.get(peer)
@@ -952,11 +954,16 @@ case class PeerManager(
   @volatile private[this] var syncFilterCancellableOpt: Option[Cancellable] =
     None
 
+  def sync(syncPeerOpt: Option[Peer]): Future[Unit] = {
+    val s = StartSync(syncPeerOpt)
+    offer(s).map(_ => ())
+  }
+
   /** Helper method to sync the blockchain over the network
     *
     * @param syncPeerOpt if syncPeer is given, we send [[org.bitcoins.core.p2p.GetHeadersMessage]] to that peer. If None we gossip GetHeadersMessage to all peers
     */
-  def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
+  private def syncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
     logger.debug(
       s"syncHelper() syncPeerOpt=$syncPeerOpt isStarted.get=${isStarted.get} syncFilterCancellableOpt.isDefined=${syncFilterCancellableOpt.isDefined}")
     val chainApi: ChainApi = ChainHandler.fromDatabase()
