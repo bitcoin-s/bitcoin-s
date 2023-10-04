@@ -6,7 +6,13 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
-import org.bitcoins.core.api.node.{NodeState, NodeType, Peer, SyncNodeState}
+import org.bitcoins.core.api.node.{
+  NodeState,
+  NodeType,
+  Peer,
+  PeerManagerApi,
+  SyncNodeState
+}
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -39,6 +45,7 @@ case class DataMessageHandler(
     walletCreationTimeOpt: Option[Instant],
     queue: SourceQueue[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi,
+    peerManagerApi: PeerManagerApi,
     state: NodeState)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -287,9 +294,7 @@ case class DataMessageHandler(
                       } else tx // send normal serialization
 
                     peerMessageSenderApi.sendTransactionMessage(transaction =
-                                                                  txToBroadcast,
-                                                                peerOpt =
-                                                                  Some(peer))
+                      txToBroadcast)
                   case None =>
                     logger.warn(
                       s"Got request to send data with hash=${inv.hash}, but found nothing")
@@ -423,7 +428,7 @@ case class DataMessageHandler(
           logger.warn(s"Merkleblock is not supported")
           Future.successful(this)
         case invMsg: InventoryMessage =>
-          handleInventoryMsg(invMsg = invMsg, peer = peer)
+          handleInventoryMsg(invMsg = invMsg)
       }
     }
 
@@ -477,7 +482,7 @@ case class DataMessageHandler(
                             syncNodeState.waitingForDisconnection)
             newState <- {
               if (isIBD) {
-                peerMessageSenderApi
+                peerManagerApi
                   .gossipGetHeadersMessage(Vector(bestBlockHash))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
@@ -524,9 +529,8 @@ case class DataMessageHandler(
                 case Some(newPeer) =>
                   logger.info(
                     s"Received invalid header from peer=$peer. Re-querying headers from peer=$newPeer. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
-                  val queryF = peerMessageSenderApi.sendGetHeadersMessage(
-                    cachedHeaders,
-                    Some(newPeer))
+                  val queryF =
+                    peerMessageSenderApi.sendGetHeadersMessage(cachedHeaders)
                   val hs = HeaderSync(newPeer,
                                       state.peers,
                                       state.waitingForDisconnection)
@@ -534,9 +538,8 @@ case class DataMessageHandler(
                 case None =>
                   logger.warn(
                     s"Received invalid header from peer=$peer. Only have 1 peer so re-querying from same peer, state=$state")
-                  val queryF = peerMessageSenderApi.sendGetHeadersMessage(
-                    cachedHeaders,
-                    Some(peer))
+                  val queryF =
+                    peerMessageSenderApi.sendGetHeadersMessage(cachedHeaders)
                   queryF.map(_ => state)
               }
 
@@ -609,8 +612,7 @@ case class DataMessageHandler(
   }
 
   private def handleInventoryMsg(
-      invMsg: InventoryMessage,
-      peer: Peer): Future[DataMessageHandler] = {
+      invMsg: InventoryMessage): Future[DataMessageHandler] = {
     logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
@@ -627,7 +629,7 @@ case class DataMessageHandler(
         Some(Inventory(TypeIdentifier.MsgWitnessTx, hash))
       case other: Inventory => Some(other)
     })
-    peerMessageSenderApi.sendMsg(getData, Some(peer)).map(_ => this)
+    peerMessageSenderApi.sendMsg(getData).map(_ => this)
   }
 
   private def calcFilterHeaderFilterHeight(
@@ -754,7 +756,7 @@ case class DataMessageHandler(
                 s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
               //ask for headers more from the same peer
               peerMessageSenderApi
-                .sendGetHeadersMessage(lastHash.flip, Some(peer))
+                .sendGetHeadersMessage(lastHash.flip)
                 .map(_ => newDmh)
 
             case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
