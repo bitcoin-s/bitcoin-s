@@ -9,8 +9,10 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer.ControlMessageHandler
-import org.bitcoins.node.util.PeerMessageSenderApi
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  PeerMessageSender
+}
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -24,7 +26,6 @@ case class PeerFinder(
     paramPeers: Vector[Peer],
     controlMessageHandler: ControlMessageHandler,
     queue: SourceQueueWithComplete[NodeStreamMessage],
-    peerMessageSenderApi: PeerMessageSenderApi,
     skipPeers: () => Set[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
@@ -234,32 +235,34 @@ case class PeerFinder(
 
   private def tryToAttemptToConnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryToAttemptToConnectPeer=$peer")
+    val peerConnection = _peerData(peer).peerConnection
+    val peerMessageSender = PeerMessageSender(peerConnection)
     _peerData.put(peer,
                   AttemptToConnectPeerData(peer,
                                            controlMessageHandler,
                                            queue,
-                                           peerMessageSenderApi))
-    _peerData(peer).peerConnection.connect()
+                                           peerMessageSender))
+    peerConnection.connect()
   }
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
-    _peerData.put(peer,
-                  PersistentPeerData(peer,
-                                     controlMessageHandler,
-                                     queue,
-                                     peerMessageSenderApi))
-    _peerData(peer).peerConnection.connect()
+    val peerConnection = _peerData(peer).peerConnection
+    val peerMessageSender = PeerMessageSender(peerConnection)
+    _peerData.put(
+      peer,
+      PersistentPeerData(peer, controlMessageHandler, queue, peerMessageSender))
+    peerConnection.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    _peerData.put(peer,
-                  PersistentPeerData(peer,
-                                     controlMessageHandler,
-                                     queue,
-                                     peerMessageSenderApi))
-    _peerData(peer).peerConnection.reconnect()
+    val peerConnection = _peerData(peer).peerConnection
+    val peerMessageSender = PeerMessageSender(peerConnection)
+    _peerData.put(
+      peer,
+      PersistentPeerData(peer, controlMessageHandler, queue, peerMessageSender))
+    peerConnection.reconnect()
 
   }
 

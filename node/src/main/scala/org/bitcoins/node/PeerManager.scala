@@ -173,17 +173,6 @@ case class PeerManager(
     peerOpt
   }
 
-  private def randomPeerMsgSenderWithService(
-      services: ServiceIdentifier): Option[PeerConnection] = {
-    val randomPeerOpt = randomPeerWithService(services)
-    randomPeerOpt match {
-      case Some(peer) =>
-        val p = peerDataMap(peer).peerConnection
-        Some(p)
-      case None => None
-    }
-  }
-
   private def createInDb(
       peer: Peer,
       serviceIdentifier: ServiceIdentifier): Future[PeerDb] = {
@@ -239,7 +228,6 @@ case class PeerManager(
       paramPeers = paramPeers,
       controlMessageHandler = ControlMessageHandler(this),
       queue = queue,
-      peerMessageSenderApi = this,
       skipPeers = () => peers
     )
     finderOpt = Some(finder)
@@ -957,9 +945,12 @@ case class PeerManager(
           case (None, None) | (None, Some(_)) =>
             nodeState match {
               case fhs: FilterHeaderSync =>
+                val conn =
+                  getPeerMsgSender(fhs.syncPeer).get //.get should be safe
+                val peerMsgSender = PeerMessageSender(conn)
                 PeerManager
                   .sendFirstGetCompactFilterHeadersCommand(
-                    peerMessageSenderApi = this,
+                    peerMessageSenderApi = peerMsgSender,
                     chainApi = chainApi,
                     state = fhs)
                   .map(_ => ())

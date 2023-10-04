@@ -1,18 +1,11 @@
 package org.bitcoins.node.networking.peer
 
-import akka.stream.scaladsl.SourceQueue
 import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
-import org.bitcoins.core.api.node.{
-  NodeState,
-  NodeType,
-  Peer,
-  PeerManagerApi,
-  SyncNodeState
-}
+import org.bitcoins.core.api.node.{NodeState, NodeType, Peer, SyncNodeState}
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -22,12 +15,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.core.api.node.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{
-  NodeStreamMessage,
-  P2PLogger,
-  PeerManager,
-  PersistentPeerData
-}
+import org.bitcoins.node.{P2PLogger, PeerManager, PersistentPeerData}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,9 +31,8 @@ import scala.util.control.NonFatal
 case class DataMessageHandler(
     chainApi: ChainApi,
     walletCreationTimeOpt: Option[Instant],
-    queue: SourceQueue[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi,
-    peerManagerApi: PeerManagerApi,
+    peerManager: PeerManager,
     state: NodeState)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -482,7 +469,7 @@ case class DataMessageHandler(
                             syncNodeState.waitingForDisconnection)
             newState <- {
               if (isIBD) {
-                peerManagerApi
+                peerManager
                   .gossipGetHeadersMessage(Vector(bestBlockHash))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
