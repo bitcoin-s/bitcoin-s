@@ -239,7 +239,7 @@ case class PeerFinder(
                                            controlMessageHandler,
                                            queue,
                                            peerMessageSenderApi))
-    _peerData(peer).peerMessageSender.connect()
+    _peerData(peer).peerConnection.connect()
   }
 
   /** creates and initialises a new test peer */
@@ -250,7 +250,7 @@ case class PeerFinder(
                                      controlMessageHandler,
                                      queue,
                                      peerMessageSenderApi))
-    _peerData(peer).peerMessageSender.connect()
+    _peerData(peer).peerConnection.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
@@ -259,7 +259,7 @@ case class PeerFinder(
                                      controlMessageHandler,
                                      queue,
                                      peerMessageSenderApi))
-    _peerData(peer).peerMessageSender.reconnect()
+    _peerData(peer).peerConnection.reconnect()
 
   }
 

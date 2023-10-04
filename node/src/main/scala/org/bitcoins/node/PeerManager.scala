@@ -150,7 +150,7 @@ case class PeerManager(
   }
 
   private def getPeerMsgSender(peer: Peer): Option[PeerConnection] = {
-    _peerDataMap.find(_._1 == peer).map(_._2.peerMessageSender) match {
+    _peerDataMap.find(_._1 == peer).map(_._2.peerConnection) match {
       case Some(peerMsgSender) => Some(peerMsgSender)
       case None                => None
     }
@@ -178,7 +178,7 @@ case class PeerManager(
     val randomPeerOpt = randomPeerWithService(services)
     randomPeerOpt match {
       case Some(peer) =>
-        val p = peerDataMap(peer).peerMessageSender
+        val p = peerDataMap(peer).peerConnection
         Some(p)
       case None => None
     }
@@ -309,7 +309,7 @@ case class PeerManager(
   def isConnected(peer: Peer): Future[Boolean] = {
     peerDataMap.get(peer) match {
       case None    => Future.successful(false)
-      case Some(p) => p.peerMessageSender.isConnected()
+      case Some(p) => p.peerConnection.isConnected()
     }
   }
 
@@ -400,7 +400,7 @@ case class PeerManager(
         if (finder.hasPeer(peer)) {
           //one of the peers we tries got initialized successfully
           val peerData = finder.getData(peer).get
-          val peerMsgSender = PeerMessageSender(peerData.peerMessageSender)
+          val peerMsgSender = PeerMessageSender(peerData.peerConnection)
           val serviceIdentifer = peerData.serviceIdentifier
           val hasCf = serviceIdentifer.nodeCompactFilters
           logger.debug(s"Initialized peer $peer with $hasCf")
@@ -1036,7 +1036,7 @@ case class PeerManager(
     } else {
       Future
         .traverse(gossipPeers) { p =>
-          val sender = PeerMessageSender(p.peerMessageSender)
+          val sender = PeerMessageSender(p.peerConnection)
           sender.sendMsg(msg)
         }
         .map(_ => ())

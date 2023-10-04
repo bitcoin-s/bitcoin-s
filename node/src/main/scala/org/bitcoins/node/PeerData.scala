@@ -28,10 +28,10 @@ sealed trait PeerData {
   def peerMessageSenderApi: PeerMessageSenderApi
 
   def stop(): Future[Unit] = {
-    peerMessageSender.disconnect()
+    peerConnection.disconnect()
   }
 
-  val peerMessageSender: PeerConnection = {
+  val peerConnection: PeerConnection = {
     PeerConnection(peer, queue, peerMessageSenderApi)
   }
 
@@ -74,7 +74,7 @@ case class PersistentPeerData(
     lastTimedOut = System.currentTimeMillis()
   }
 
-  def isConnectionTimedOut: Boolean = peerMessageSender.isConnectionTimedOut
+  def isConnectionTimedOut: Boolean = peerConnection.isConnectionTimedOut
 
   /** returns true if the peer has failed due to any reason within the past 30 minutes
     */
