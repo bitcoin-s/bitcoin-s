@@ -745,8 +745,7 @@ case class PeerManager(
       walletCreationTimeOpt = walletCreationTimeOpt,
       queue = queue,
       peerMessageSenderApi = this,
-      state = DoneSyncing(peers = peers, waitingForDisconnection = Set.empty),
-      filterBatchCache = Set.empty
+      state = DoneSyncing(peers = peers, waitingForDisconnection = Set.empty)
     )
   }
 

@@ -1,5 +1,7 @@
 package org.bitcoins.core.api.node
 
+import org.bitcoins.core.p2p.CompactFilterMessage
+
 sealed abstract class NodeState {
   def isSyncing: Boolean
 
@@ -72,7 +74,8 @@ object NodeState {
   case class FilterSync(
       syncPeer: Peer,
       peers: Set[Peer],
-      waitingForDisconnection: Set[Peer])
+      waitingForDisconnection: Set[Peer],
+      filterBatchCache: Set[CompactFilterMessage])
       extends SyncNodeState
 
   case class MisbehavingPeer(

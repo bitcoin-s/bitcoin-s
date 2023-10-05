@@ -57,8 +57,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           walletCreationTimeOpt = None,
           queue = peerManager.dataMessageQueueOpt.get,
           peerMessageSenderApi = peerManager,
-          state = HeaderSync(peer, peerManager.peers, Set.empty),
-          filterBatchCache = Set.empty
+          state = HeaderSync(peer, peerManager.peers, Set.empty)
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest

@@ -39,8 +39,7 @@ case class DataMessageHandler(
     walletCreationTimeOpt: Option[Instant],
     queue: SourceQueue[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi,
-    state: NodeState,
-    filterBatchCache: Set[CompactFilterMessage])(implicit
+    state: NodeState)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
@@ -202,11 +201,11 @@ case class DataMessageHandler(
           val filterSyncState = state match {
             case f: FilterSync => f
             case s @ (_: DoneSyncing | _: FilterHeaderSync) =>
-              FilterSync(peer, s.peers, s.waitingForDisconnection)
+              FilterSync(peer, s.peers, s.waitingForDisconnection, Set.empty)
             case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync) =>
               sys.error(s"Incorrect state for handling filter messages, got=$x")
           }
-          val filterBatch = filterBatchCache.+(filter)
+          val filterBatch = filterSyncState.filterBatchCache.+(filter)
           val batchSizeFull: Boolean =
             filterBatch.size == chainConfig.filterBatchSize
           for {
@@ -246,7 +245,8 @@ case class DataMessageHandler(
                 syncIfHeadersAhead(filterSyncState)
               } else {
                 val res = filterHeaderSyncStateOpt match {
-                  case Some(filterSyncState) => filterSyncState
+                  case Some(filterSyncState) =>
+                    filterSyncState.copy(filterBatchCache = newBatch)
                   case None =>
                     val d = DoneSyncing(filterSyncState.peers,
                                         filterSyncState.waitingForDisconnection)
@@ -260,7 +260,6 @@ case class DataMessageHandler(
           } yield {
             this.copy(
               chainApi = newChainApi,
-              filterBatchCache = newBatch,
               state = newDmhState
             )
           }
@@ -563,7 +562,7 @@ case class DataMessageHandler(
   private def sendNextGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       startHeight: Int,
-      syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
+      fs: NodeState.FilterSync): Future[Option[NodeState.FilterSync]] = {
 
     PeerManager
       .sendNextGetCompactFilterCommand(
@@ -571,15 +570,16 @@ case class DataMessageHandler(
         chainApi = chainApi,
         filterBatchSize = chainConfig.filterBatchSize,
         startHeight = startHeight,
-        peer = syncNodeState.syncPeer
+        peer = fs.syncPeer
       )
       .map { isSyncing =>
         if (isSyncing) {
-          val fs = NodeState.FilterSync(syncPeer = syncNodeState.syncPeer,
-                                        peers = syncNodeState.peers,
-                                        waitingForDisconnection =
-                                          syncNodeState.waitingForDisconnection)
-          Some(fs)
+          val newState = NodeState.FilterSync(
+            syncPeer = fs.syncPeer,
+            peers = fs.peers,
+            waitingForDisconnection = fs.waitingForDisconnection,
+            filterBatchCache = fs.filterBatchCache)
+          Some(newState)
         } else None
       }
   }
@@ -590,9 +590,15 @@ case class DataMessageHandler(
       syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
     logger.info(s"Beginning to sync filters from startHeight=$startHeight")
 
+    val fs = syncNodeState match {
+      case x @ (_: HeaderSync | _: FilterHeaderSync) =>
+        FilterSync(x.syncPeer, x.peers, x.waitingForDisconnection, Set.empty)
+      case fs: FilterSync => fs
+    }
+
     sendNextGetCompactFilterCommand(peerMessageSenderApi = peerMessageSenderApi,
                                     startHeight = startHeight,
-                                    syncNodeState = syncNodeState)
+                                    fs = fs)
   }
 
   private def handleInventoryMsg(
