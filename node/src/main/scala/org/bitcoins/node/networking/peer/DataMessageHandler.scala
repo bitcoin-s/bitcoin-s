@@ -366,8 +366,15 @@ case class DataMessageHandler(
 
           for {
             newDmh <- recoveredDmhF
-            _ <- appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
-              headers)
+            _ <- {
+              if (count.toInt == 0) {
+                Future.unit //don't execute callbacks if we receive 0 headers from peer
+              } else {
+                appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
+                  headers)
+              }
+
+            }
           } yield {
             newDmh
           }
