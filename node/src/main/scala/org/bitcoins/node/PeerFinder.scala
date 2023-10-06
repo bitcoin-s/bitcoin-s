@@ -249,7 +249,7 @@ case class PeerFinder(
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    val peerConnection = _peerData(peer).peerConnection
+    val peerConnection = PeerConnection(peer, peerManager)
     val peerMessageSender = PeerMessageSender(peerConnection)
     _peerData.put(peer,
                   PersistentPeerData(peer, peerManager, peerMessageSender))
