@@ -116,8 +116,8 @@ case class PeerManager(
       nodeState: SyncNodeState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     val syncPeer = nodeState.syncPeer
-    val peerMsgSender = getPeerConnection(syncPeer) match {
-      case Some(conn) => PeerMessageSender(conn)
+    val peerMsgSender = getPeerMsgSender(syncPeer) match {
+      case Some(p) => p
       case None =>
         sys.error(s"Could not find peer=$syncPeer")
     }
@@ -151,16 +151,21 @@ case class PeerManager(
 
   private def getPeerConnection(peer: Peer): Option[PeerConnection] = {
     _peerDataMap.find(_._1 == peer).map(_._2.peerConnection) match {
-      case Some(peerMsgSender) => Some(peerMsgSender)
-      case None                => None
+      case Some(peerConnection) => Some(peerConnection)
+      case None                 => None
     }
   }
 
   private def randomPeerConnection(
       services: ServiceIdentifier): Option[PeerConnection] = {
     val peerOpt = randomPeerWithService(services)
-    val peerMsgSenderOpt = peerOpt.flatMap(getPeerConnection(_))
-    peerMsgSenderOpt
+    val peerConnectionOpt = peerOpt.flatMap(getPeerConnection(_))
+    peerConnectionOpt
+  }
+
+  private def getPeerMsgSender(peer: Peer): Option[PeerMessageSender] = {
+    val randomPeerOpt = getPeerConnection(peer)
+    randomPeerOpt.map(PeerMessageSender(_))
   }
 
   def randomPeerWithService(services: ServiceIdentifier): Option[Peer] = {
@@ -685,15 +690,8 @@ case class PeerManager(
                 peerData.controlMessageHandler
               }
             case _: ControlPayload =>
-              val connOpt = getPeerConnection(peer)
-              connOpt match {
-                case Some(conn) =>
-                  val peerMsgSender = PeerMessageSender(conn)
-                  val controlMessageHandler =
-                    ControlMessageHandler(this, peerMsgSender)
-                  Some(controlMessageHandler)
-                case None => None
-              }
+              val peerMsgSenderOpt = getPeerMsgSender(peer)
+              peerMsgSenderOpt.map(p => ControlMessageHandler(this, p))
           }
         controlMessageHandlerOpt match {
           case Some(controlMessageHandler) =>
@@ -804,9 +802,7 @@ case class PeerManager(
       _ <- {
         syncPeerOpt match {
           case Some(peer) =>
-            val peerMsgSender = PeerMessageSender(
-              getPeerConnection(peer).get
-            ) //check this .get
+            val peerMsgSender = getPeerMsgSender(peer).get //check this .get
             peerMsgSender.sendGetHeadersMessage(cachedHeaders)
           case None => gossipGetHeadersMessage(cachedHeaders)
         }
@@ -977,9 +973,8 @@ case class PeerManager(
           case (None, None) | (None, Some(_)) =>
             nodeState match {
               case fhs: FilterHeaderSync =>
-                val conn =
-                  getPeerConnection(fhs.syncPeer).get //.get should be safe
-                val peerMsgSender = PeerMessageSender(conn)
+                val peerMsgSender =
+                  getPeerMsgSender(fhs.syncPeer).get //check this .get
                 PeerManager
                   .sendFirstGetCompactFilterHeadersCommand(
                     peerMessageSenderApi = peerMsgSender,
