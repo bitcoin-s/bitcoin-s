@@ -509,27 +509,15 @@ case class DataMessageHandler(
             cachedHeaders = blockchains
               .flatMap(_.headers)
               .map(_.hashBE)
-            //select a peer that is not the one that sent us an invalid header
-            newPeerOpt = state.peers.filterNot(_ == peer).headOption
             newState <- {
-              newPeerOpt match {
-                case Some(newPeer) =>
-                  logger.info(
-                    s"Received invalid header from peer=$peer. Re-querying headers from peer=$newPeer. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
-                  val queryF =
-                    peerMessageSenderApi.sendGetHeadersMessage(cachedHeaders)
-                  val hs = HeaderSync(newPeer,
-                                      state.peers,
-                                      state.waitingForDisconnection)
-                  queryF.map(_ => hs)
-                case None =>
-                  logger.warn(
-                    s"Received invalid header from peer=$peer. Only have 1 peer so re-querying from same peer, state=$state")
-                  val queryF =
-                    peerMessageSenderApi.sendGetHeadersMessage(cachedHeaders)
-                  queryF.map(_ => state)
-              }
-
+              logger.info(
+                s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
+              val queryF =
+                peerManager.gossipGetHeadersMessage(cachedHeaders)
+              //switch to DoneSyncing state until we receive a valid header from our peers
+              val d =
+                DoneSyncing(state.peers, state.waitingForDisconnection)
+              queryF.map(_ => d)
             }
           } yield this.copy(state = newState)
         }
