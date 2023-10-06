@@ -1,13 +1,11 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -21,18 +19,20 @@ sealed trait PeerData {
 
   implicit protected def system: ActorSystem
   def peer: Peer
-  def controlMessageHandler: ControlMessageHandler
+  def peerManager: PeerManager
 
-  def queue: SourceQueueWithComplete[NodeStreamMessage]
+  def peerMessageSender: PeerMessageSender
 
-  def peerMessageSenderApi: PeerMessageSenderApi
+  def controlMessageHandler: ControlMessageHandler =
+    ControlMessageHandler(peerManager, peerMessageSender)(system.dispatcher,
+                                                          nodeAppConfig)
 
   def stop(): Future[Unit] = {
     peerConnection.disconnect()
   }
 
-  val peerConnection: PeerConnection = {
-    PeerConnection(peer, queue, peerMessageSenderApi)
+  def peerConnection: PeerConnection = {
+    peerMessageSender.peerConnection
   }
 
   private[this] var _serviceIdentifier: Option[ServiceIdentifier] = None
@@ -51,9 +51,8 @@ sealed trait PeerData {
 /** A peer we plan on being connected to persistently */
 case class PersistentPeerData(
     peer: Peer,
-    controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[NodeStreamMessage],
-    peerMessageSenderApi: PeerMessageSenderApi
+    peerManager: PeerManager,
+    peerMessageSender: PeerMessageSender
 )(implicit
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,
@@ -94,9 +93,8 @@ case class PersistentPeerData(
   */
 case class AttemptToConnectPeerData(
     peer: Peer,
-    controlMessageHandler: ControlMessageHandler,
-    queue: SourceQueueWithComplete[NodeStreamMessage],
-    peerMessageSenderApi: PeerMessageSenderApi
+    peerManager: PeerManager,
+    peerMessageSender: PeerMessageSender
 )(implicit
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,

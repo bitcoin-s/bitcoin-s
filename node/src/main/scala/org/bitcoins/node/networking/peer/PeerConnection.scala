@@ -12,7 +12,6 @@ import akka.stream.scaladsl.{
   RunnableGraph,
   Sink,
   Source,
-  SourceQueueWithComplete,
   Tcp
 }
 import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
@@ -28,8 +27,8 @@ import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
-import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
+
+import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
 import org.bitcoins.tor.Socks5Connection
 import scodec.bits.ByteVector
 
@@ -39,10 +38,7 @@ import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 
-case class PeerConnection(
-    peer: Peer,
-    queue: SourceQueueWithComplete[NodeStreamMessage],
-    peerMessageSenderApi: PeerMessageSenderApi)(implicit
+case class PeerConnection(peer: Peer, peerManager: PeerManager)(implicit
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig,
     system: ActorSystem)
@@ -188,7 +184,7 @@ case class PeerConnection(
             case d: DataPayload =>
               NodeStreamMessage.DataMessageWrapper(d, peer)
           }
-          queue.offer(wrapper)
+          peerManager.offer(wrapper)
         }
         .toMat(Sink.ignore)(Keep.right)
     }
@@ -216,7 +212,7 @@ case class PeerConnection(
         val initializationCancellable =
           system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
             val offerF =
-              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
+              peerManager.offer(NodeStreamMessage.InitializationTimeout(peer))
             offerF.failed.foreach(err =>
               logger.error(s"Failed to offer initialize timeout for peer=$peer",
                            err))
@@ -264,12 +260,12 @@ case class PeerConnection(
           .onComplete {
             case scala.util.Success(_) =>
               val disconnectedPeer = DisconnectedPeer(peer, false)
-              queue.offer(disconnectedPeer)
+              peerManager.offer(disconnectedPeer)
             case scala.util.Failure(err) =>
               logger.info(
                 s"Connection with peer=$peer failed with err=${err.getMessage}")
               val disconnectedPeer = DisconnectedPeer(peer, false)
-              queue.offer(disconnectedPeer)
+              peerManager.offer(disconnectedPeer)
           }
 
         resultF.map(_ => ())

@@ -156,6 +156,13 @@ case class PeerManager(
     }
   }
 
+  private def randomPeerMsgSender(
+      services: ServiceIdentifier): Option[PeerConnection] = {
+    val peerOpt = randomPeerWithService(services)
+    val peerMsgSenderOpt = peerOpt.flatMap(getPeerMsgSender(_))
+    peerMsgSenderOpt
+  }
+
   def randomPeerWithService(services: ServiceIdentifier): Option[Peer] = {
     val filteredPeers =
       peerDataMap
@@ -226,8 +233,7 @@ case class PeerManager(
     streamDoneFOpt = Some(stateF)
     val finder = PeerFinder(
       paramPeers = paramPeers,
-      controlMessageHandler = ControlMessageHandler(this),
-      queue = queue,
+      peerManager = this,
       skipPeers = () => peers
     )
     finderOpt = Some(finder)
@@ -394,11 +400,12 @@ case class PeerManager(
           logger.debug(s"Initialized peer $peer with $hasCf")
 
           for {
-            _ <- peerMsgSender.sendGetAddrMessage()
-            _ <- createInDb(peer, peerData.serviceIdentifier)
             _ <- managePeerAfterInitialization(finder = finder,
                                                peerData = peerData,
                                                hasCf = hasCf)
+            _ <- peerMsgSender.sendGetAddrMessage()
+            _ <- createInDb(peer, peerData.serviceIdentifier)
+
           } yield state
 
         } else if (peerDataMap.contains(peer)) {
@@ -639,11 +646,12 @@ case class PeerManager(
               s"Ignoring received msg=${payload.commandName} from peer=$peer because it was disconnected, peers=$peers state=${state}")
             Future.successful(state)
           case Some(peerData) =>
+            val peerMsgSender = PeerMessageSender(peerData.peerConnection)
             val dmh = DataMessageHandler(chainApi = ChainHandler.fromDatabase(),
                                          walletCreationTimeOpt =
                                            walletCreationTimeOpt,
-                                         queue = dataMessageQueueOpt.get,
-                                         peerMessageSenderApi = this,
+                                         peerMessageSenderApi = peerMsgSender,
+                                         peerManager = this,
                                          state = state)
             val resultF = dmh
               .handleDataPayload(payload, peerData)
@@ -670,13 +678,37 @@ case class PeerManager(
             }
         }
       case (state, ControlMessageWrapper(payload, peer)) =>
-        val controlMessageHandler = ControlMessageHandler(this)
-        controlMessageHandler.handleControlPayload(payload, peer).flatMap {
-          case Some(i) =>
-            onInitialization(i.peer, state)
+        val controlMessageHandlerOpt: Option[ControlMessageHandler] =
+          payload match {
+            case _: VersionMessage | VerAckMessage =>
+              finderOpt.flatMap(_.getData(peer)).map { peerData =>
+                peerData.controlMessageHandler
+              }
+            case _: ControlPayload =>
+              val connOpt = getPeerMsgSender(peer)
+              connOpt match {
+                case Some(conn) =>
+                  val peerMsgSender = PeerMessageSender(conn)
+                  val controlMessageHandler =
+                    ControlMessageHandler(this, peerMsgSender)
+                  Some(controlMessageHandler)
+                case None => None
+              }
+          }
+        controlMessageHandlerOpt match {
+          case Some(controlMessageHandler) =>
+            controlMessageHandler.handleControlPayload(payload, peer).flatMap {
+              case Some(i) =>
+                onInitialization(i.peer, state)
+              case None =>
+                Future.successful(state)
+            }
           case None =>
+            logger.warn(
+              s"Cannot find peer=$peer to handle control payload=${payload.commandName}")
             Future.successful(state)
         }
+
       case (state, HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
         for {
@@ -1038,6 +1070,19 @@ case class PeerManager(
       hashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
     val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
     gossipMessage(msg = headersMsg, excludedPeerOpt = None)
+  }
+
+  override def sendToRandomPeer(payload: NetworkPayload): Future[Unit] = {
+    val randomPeerOpt = randomPeerMsgSender(
+      ServiceIdentifier.NODE_COMPACT_FILTERS)
+    randomPeerOpt match {
+      case Some(p) =>
+        val peerMsgSender = PeerMessageSender(p)
+        peerMsgSender.sendMsg(payload)
+      case None =>
+        logger.warn(s"Cannot find peer to send message=${payload.commandName}")
+        Future.unit
+    }
   }
 
   private[this] val INACTIVITY_CHECK_TIMEOUT = 60.seconds

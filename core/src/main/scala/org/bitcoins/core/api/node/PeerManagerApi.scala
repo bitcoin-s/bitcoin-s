@@ -27,4 +27,5 @@ trait PeerManagerApi {
   def gossipGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
 
+  def sendToRandomPeer(payload: NetworkPayload): Future[Unit]
 }
