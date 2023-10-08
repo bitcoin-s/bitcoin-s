@@ -405,12 +405,11 @@ case class PeerManager(
           logger.debug(s"Initialized peer $peer with $hasCf")
 
           for {
+            _ <- peerMsgSender.sendGetAddrMessage()
+            _ <- createInDb(peer, peerData.serviceIdentifier)
             _ <- managePeerAfterInitialization(finder = finder,
                                                peerData = peerData,
                                                hasCf = hasCf)
-            _ <- peerMsgSender.sendGetAddrMessage()
-            _ <- createInDb(peer, peerData.serviceIdentifier)
-
           } yield state
 
         } else if (peerDataMap.contains(peer)) {
