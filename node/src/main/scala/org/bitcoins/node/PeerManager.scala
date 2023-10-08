@@ -1067,13 +1067,6 @@ case class PeerManager(
     gossipMessage(msg = headersMsg, excludedPeerOpt = None)
   }
 
-  def gossipGetHeadersMessage(
-      hashes: Vector[DoubleSha256DigestBE],
-      excludedPeerOpt: Option[Peer]): Future[Unit] = {
-    val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
-    gossipMessage(msg = headersMsg, excludedPeerOpt = excludedPeerOpt)
-  }
-
   override def sendToRandomPeer(payload: NetworkPayload): Future[Unit] = {
     val randomPeerOpt = randomPeerConnection(
       ServiceIdentifier.NODE_COMPACT_FILTERS)
