@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import akka.stream.scaladsl.SourceQueue
 import org.bitcoins.chain.blockchain.{DuplicateHeaders, InvalidBlockHeader}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -16,12 +15,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.core.api.node.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{
-  NodeStreamMessage,
-  P2PLogger,
-  PeerManager,
-  PersistentPeerData
-}
+import org.bitcoins.node.{P2PLogger, PeerManager, PersistentPeerData}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,8 +31,8 @@ import scala.util.control.NonFatal
 case class DataMessageHandler(
     chainApi: ChainApi,
     walletCreationTimeOpt: Option[Instant],
-    queue: SourceQueue[NodeStreamMessage],
     peerMessageSenderApi: PeerMessageSenderApi,
+    peerManager: PeerManager,
     state: NodeState)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -287,9 +281,7 @@ case class DataMessageHandler(
                       } else tx // send normal serialization
 
                     peerMessageSenderApi.sendTransactionMessage(transaction =
-                                                                  txToBroadcast,
-                                                                peerOpt =
-                                                                  Some(peer))
+                      txToBroadcast)
                   case None =>
                     logger.warn(
                       s"Got request to send data with hash=${inv.hash}, but found nothing")
@@ -423,7 +415,7 @@ case class DataMessageHandler(
           logger.warn(s"Merkleblock is not supported")
           Future.successful(this)
         case invMsg: InventoryMessage =>
-          handleInventoryMsg(invMsg = invMsg, peer = peer)
+          handleInventoryMsg(invMsg = invMsg)
       }
     }
 
@@ -477,7 +469,7 @@ case class DataMessageHandler(
                             syncNodeState.waitingForDisconnection)
             newState <- {
               if (isIBD) {
-                peerMessageSenderApi
+                peerManager
                   .gossipGetHeadersMessage(Vector(bestBlockHash))
                   .map { _ =>
                     //set to done syncing since we are technically done with IBD
@@ -517,29 +509,15 @@ case class DataMessageHandler(
             cachedHeaders = blockchains
               .flatMap(_.headers)
               .map(_.hashBE)
-            //select a peer that is not the one that sent us an invalid header
-            newPeerOpt = state.peers.filterNot(_ == peer).headOption
             newState <- {
-              newPeerOpt match {
-                case Some(newPeer) =>
-                  logger.info(
-                    s"Received invalid header from peer=$peer. Re-querying headers from peer=$newPeer. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
-                  val queryF = peerMessageSenderApi.sendGetHeadersMessage(
-                    cachedHeaders,
-                    Some(newPeer))
-                  val hs = HeaderSync(newPeer,
-                                      state.peers,
-                                      state.waitingForDisconnection)
-                  queryF.map(_ => hs)
-                case None =>
-                  logger.warn(
-                    s"Received invalid header from peer=$peer. Only have 1 peer so re-querying from same peer, state=$state")
-                  val queryF = peerMessageSenderApi.sendGetHeadersMessage(
-                    cachedHeaders,
-                    Some(peer))
-                  queryF.map(_ => state)
-              }
-
+              logger.info(
+                s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
+              val queryF =
+                peerManager.gossipGetHeadersMessage(cachedHeaders)
+              //switch to DoneSyncing state until we receive a valid header from our peers
+              val d =
+                DoneSyncing(state.peers, state.waitingForDisconnection)
+              queryF.map(_ => d)
             }
           } yield this.copy(state = newState)
         }
@@ -609,8 +587,7 @@ case class DataMessageHandler(
   }
 
   private def handleInventoryMsg(
-      invMsg: InventoryMessage,
-      peer: Peer): Future[DataMessageHandler] = {
+      invMsg: InventoryMessage): Future[DataMessageHandler] = {
     logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
@@ -627,7 +604,7 @@ case class DataMessageHandler(
         Some(Inventory(TypeIdentifier.MsgWitnessTx, hash))
       case other: Inventory => Some(other)
     })
-    peerMessageSenderApi.sendMsg(getData, Some(peer)).map(_ => this)
+    peerMessageSenderApi.sendMsg(getData).map(_ => this)
   }
 
   private def calcFilterHeaderFilterHeight(
@@ -754,7 +731,7 @@ case class DataMessageHandler(
                 s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
               //ask for headers more from the same peer
               peerMessageSenderApi
-                .sendGetHeadersMessage(lastHash.flip, Some(peer))
+                .sendGetHeadersMessage(lastHash.flip)
                 .map(_ => newDmh)
 
             case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |

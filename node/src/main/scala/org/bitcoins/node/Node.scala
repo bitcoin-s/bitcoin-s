@@ -10,7 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.api.node.{NodeApi, Peer}
+import org.bitcoins.core.api.node.{NodeApi}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -47,15 +47,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     CompactFilterHeaderDAO(),
                                     CompactFilterDAO(),
                                     ChainStateDescriptorDAO())
-  }
-
-  /** Sends the given P2P to our peer.
-    * This method is useful for playing around
-    * with P2P messages, therefore marked as
-    * `private[node]`.
-    */
-  def send(msg: NetworkPayload, peer: Peer): Future[Unit] = {
-    peerManager.sendMsg(msg, Some(peer))
   }
 
   /** Starts our node */
@@ -134,8 +125,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         val connected = peerManager.peers.nonEmpty
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
-          peerManager.sendInventoryMessage(transactions = transactions,
-                                           peerOpt = None)
+          val inventories =
+            transactions.map(t => Inventory(TypeIdentifier.MsgTx, t.txId))
+          val invMsg = InventoryMessage(inventories)
+          peerManager.sendToRandomPeer(invMsg)
         } else {
           Future.failed(
             new RuntimeException(
@@ -152,11 +145,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
+      val typeIdentifier = TypeIdentifier.MsgWitnessBlock
+      val inventories =
+        blockHashes.map(hash => Inventory(typeIdentifier, hash))
+      val message = GetDataMessage(inventories)
       for {
-        _ <- peerManager.sendGetDataMessages(typeIdentifier =
-                                               TypeIdentifier.MsgWitnessBlock,
-                                             hashes = blockHashes.map(_.flip),
-                                             peerOpt = None)
+        _ <- peerManager.sendToRandomPeer(message)
       } yield ()
     }
   }

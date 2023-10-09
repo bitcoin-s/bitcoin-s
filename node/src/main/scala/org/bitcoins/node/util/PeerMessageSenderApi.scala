@@ -1,7 +1,6 @@
 package org.bitcoins.node.util
 
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
-import org.bitcoins.core.api.node.{Peer}
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.{
   GetAddrMessage,
@@ -27,81 +26,53 @@ trait PeerMessageSenderApi {
 
   def sendGetDataMessage(
       typeIdentifier: TypeIdentifier,
-      hash: DoubleSha256DigestBE,
-      peerOpt: Option[Peer]): Future[Unit] = {
-    sendGetDataMessages(typeIdentifier, Vector(hash), peerOpt)
+      hash: DoubleSha256DigestBE): Future[Unit] = {
+    sendGetDataMessages(typeIdentifier, Vector(hash))
   }
 
   def sendGetDataMessages(
       typeIdentifier: TypeIdentifier,
-      hashes: Vector[DoubleSha256DigestBE],
-      peerOpt: Option[Peer]): Future[Unit]
-
-  def sendGetHeadersMessage(
-      hashes: Vector[DoubleSha256DigestBE],
-      peerOpt: Option[Peer]): Future[Unit]
-
-  /** Gossips the [[org.bitcoins.core.p2p.GetHeadersMessage]] to all of our peers to attempt ot get the best block headers */
-  def gossipGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
 
-  def sendGetHeadersMessage(
-      lastHash: DoubleSha256DigestBE,
-      peerOpt: Option[Peer]): Future[Unit] = {
-    sendGetHeadersMessage(Vector(lastHash), peerOpt)
+  def sendGetHeadersMessage(hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
+
+  def sendGetHeadersMessage(lastHash: DoubleSha256DigestBE): Future[Unit] = {
+    sendGetHeadersMessage(Vector(lastHash))
   }
 
-  /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
-  def gossipMessage(
-      msg: NetworkPayload,
-      excludedPeerOpt: Option[Peer]): Future[Unit]
-
-  def sendMsg(msg: NetworkPayload, peerOpt: Option[Peer]): Future[Unit]
+  def sendMsg(msg: NetworkPayload): Future[Unit]
 
   def sendGetCompactFilterHeadersMessage(
-      filterSyncMarker: FilterSyncMarker,
-      peerOpt: Option[Peer]): Future[Unit]
+      filterSyncMarker: FilterSyncMarker): Future[Unit]
 
-  def sendGetCompactFiltersMessage(
-      filterSyncMarker: FilterSyncMarker,
-      peer: Peer)(implicit ec: ExecutionContext): Future[Unit]
+  def sendGetCompactFiltersMessage(filterSyncMarker: FilterSyncMarker)(implicit
+      ec: ExecutionContext): Future[Unit]
 
-  def sendInventoryMessage(
-      transactions: Vector[Transaction],
-      peerOpt: Option[Peer]): Future[Unit]
+  def sendInventoryMessage(transactions: Vector[Transaction]): Future[Unit]
 
-  def sendSendAddrV2Message(peer: Peer): Future[Unit] = {
-    sendMsg(SendAddrV2Message, Some(peer))
+  def sendSendAddrV2Message(): Future[Unit] = {
+    sendMsg(SendAddrV2Message)
   }
 
-  def sendGetAddrMessage(peerOpt: Option[Peer]): Future[Unit] = {
-    sendMsg(GetAddrMessage, peerOpt)
+  def sendGetAddrMessage(): Future[Unit] = {
+    sendMsg(GetAddrMessage)
   }
 
   /** Responds to a ping message */
-  def sendPong(ping: PingMessage, peer: Peer): Future[Unit] = {
+  def sendPong(ping: PingMessage): Future[Unit] = {
     val pong = PongMessage(ping.nonce)
-    sendMsg(pong, Some(peer))
+    sendMsg(pong)
   }
 
-  def sendHeadersMessage(peer: Peer): Future[Unit] = {
+  def sendHeadersMessage(): Future[Unit] = {
     val sendHeadersMsg = SendHeadersMessage
-    sendMsg(sendHeadersMsg, Some(peer))
+    sendMsg(sendHeadersMsg)
   }
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
-  def sendVersionMessage(peer: Peer)(implicit
-      conf: NodeAppConfig): Future[Unit] = {
-    val local = java.net.InetAddress.getLocalHost
-    val versionMsg = VersionMessage(
-      conf.network,
-      InetAddress(peer.socket.getAddress.getAddress),
-      InetAddress(local.getAddress),
-      relay = conf.relay)
-    sendMsg(versionMsg, Some(peer))
-  }
+  def sendVersionMessage()(implicit conf: NodeAppConfig): Future[Unit]
 
-  def sendVersionMessage(chainApi: ChainApi, peer: Peer)(implicit
+  def sendVersionMessage(chainApi: ChainApi)(implicit
       ec: ExecutionContext,
       conf: NodeAppConfig): Future[Unit] = {
     chainApi.getBestHashBlockHeight().flatMap { height =>
@@ -113,19 +84,17 @@ trait PeerMessageSenderApi {
                        InetAddress(localhost.getAddress),
                        InetAddress(localhost.getAddress),
                        conf.relay)
-      sendMsg(versionMsg, Some(peer))
+      sendMsg(versionMsg)
     }
   }
 
-  def sendVerackMessage(peer: Peer): Future[Unit] = {
+  def sendVerackMessage(): Future[Unit] = {
     val verackMsg = VerAckMessage
-    sendMsg(verackMsg, Some(peer))
+    sendMsg(verackMsg)
   }
 
-  def sendTransactionMessage(
-      transaction: Transaction,
-      peerOpt: Option[Peer]): Future[Unit] = {
+  def sendTransactionMessage(transaction: Transaction): Future[Unit] = {
     val message = TransactionMessage(transaction)
-    sendMsg(message, peerOpt)
+    sendMsg(message)
   }
 }

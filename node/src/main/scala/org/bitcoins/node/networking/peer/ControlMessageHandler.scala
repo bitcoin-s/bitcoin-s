@@ -5,12 +5,15 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.Initialized
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.util.PeerMessageSenderApi
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-case class ControlMessageHandler(peerManager: PeerManager)(implicit
+case class ControlMessageHandler(
+    peerManager: PeerManager,
+    peerMsgSenderApi: PeerMessageSenderApi)(implicit
     ec: ExecutionContext,
     nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
@@ -23,29 +26,29 @@ case class ControlMessageHandler(peerManager: PeerManager)(implicit
       case versionMsg: VersionMessage =>
         logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
         peerManager.onVersionMessage(peer, versionMsg)
-        peerManager
-          .sendVerackMessage(peer)
+        peerMsgSenderApi
+          .sendVerackMessage()
           .map(_ => None)
 
       case VerAckMessage =>
         val i = NodeStreamMessage.Initialized(peer)
         Future.successful(Some(i))
       case ping: PingMessage =>
-        peerManager
-          .sendPong(ping, peer)
+        peerMsgSenderApi
+          .sendPong(ping)
           .map(_ => None)
       case SendHeadersMessage =>
         //we want peers to just send us headers
         //we don't want to have to request them manually
-        peerManager
-          .sendHeadersMessage(peer)
+        peerMsgSenderApi
+          .sendHeadersMessage()
           .map(_ => None)
       case msg: GossipAddrMessage =>
         handleGossipAddrMessage(msg)
         Future.successful(None)
       case SendAddrV2Message =>
-        peerManager
-          .sendSendAddrV2Message(peer)
+        peerMsgSenderApi
+          .sendSendAddrV2Message()
           .map(_ => None)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
