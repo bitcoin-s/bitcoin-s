@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.chain
 
+import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.{
@@ -19,6 +20,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
+import org.bitcoins.server.BitcoindRpcBackendUtil
 import org.bitcoins.testkit.chain.fixture.{
   BitcoindBaseVersionChainHandlerViaRpc,
   BitcoindBlockFilterRpcChainHandler,
@@ -107,62 +109,10 @@ abstract class SyncUtil extends Logging {
 
   def getNodeApiWalletCallback(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet])(implicit ec: ExecutionContext): NodeApi = {
-    new NodeApi {
-
-      /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
-        */
-      override def downloadBlocks(
-          blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
-        logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
-        val f: Vector[DoubleSha256Digest] => Future[Wallet] = { hashes =>
-          val blocksF =
-            FutureUtil.sequentially(hashes)(bitcoindRpcClient.getBlockRaw)
-
-          val updatedWalletF = for {
-            blocks <- blocksF
-            wallet <- walletF
-            processedWallet <- {
-              FutureUtil.foldLeftAsync(wallet, blocks) { case (wallet, block) =>
-                wallet.processBlock(block)
-              }
-            }
-          } yield processedWallet
-
-          updatedWalletF
-        }
-
-        val batchSize = 25
-        val batchedExecutedF = {
-          for {
-            wallet <- walletF
-            updatedWallet <-
-              FutureUtil.batchExecute[DoubleSha256Digest, Wallet](
-                elements = blockHashes,
-                f = f,
-                init = wallet,
-                batchSize = batchSize)
-          } yield updatedWallet
-
-        }
-
-        batchedExecutedF.map { _ =>
-          logger.info(
-            s"Done fetching ${blockHashes.length} hashes from bitcoind")
-          ()
-        }
-      }
-
-      /** Broadcasts the given transaction over the P2P network
-        */
-      override def broadcastTransactions(
-          transactions: Vector[Transaction]): Future[Unit] = {
-        bitcoindRpcClient.broadcastTransactions(transactions)
-      }
-
-      override def getConnectionCount: Future[Int] =
-        bitcoindRpcClient.getConnectionCount
-    }
+      walletF: Future[Wallet])(implicit system: ActorSystem): NodeApi = {
+    BitcoindRpcBackendUtil.buildBitcoindNodeApi(bitcoindRpcClient,
+                                                walletF,
+                                                None)
   }
 
   def getNodeChainQueryApi(bitcoind: BitcoindRpcClient)(implicit
@@ -175,7 +125,7 @@ abstract class SyncUtil extends Logging {
   def getNodeChainQueryApiWalletCallback(
       bitcoind: BitcoindRpcClient,
       walletF: Future[Wallet])(implicit
-      ec: ExecutionContext): NodeChainQueryApi = {
+      system: ActorSystem): NodeChainQueryApi = {
     val chainQuery = bitcoind
     val nodeApi =
       SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)

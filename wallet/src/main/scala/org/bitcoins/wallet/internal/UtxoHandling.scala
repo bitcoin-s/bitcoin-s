@@ -1,11 +1,12 @@
 package org.bitcoins.wallet.internal
 
+import akka.stream.scaladsl.{Sink, Source}
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.BlockHashWithConfs
+import org.bitcoins.core.util.{BlockHashWithConfs, FutureUtil}
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -191,22 +192,22 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         Vector[SpendingInfoDb]]): Future[
     Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
 
-    val blockHashesWithConfsVec = relevantBlocks.map {
-      case (blockHashOpt, spendingInfoDbs) =>
-        blockHashOpt match {
-          case Some(blockHash) =>
-            chainQueryApi
-              .getNumberOfConfirmations(blockHash)
-              .map(confs => Some(BlockHashWithConfs(blockHash, confs)))
-              .map(blockWithConfsOpt => (blockWithConfsOpt, spendingInfoDbs))
-          case None =>
-            Future.successful((None, spendingInfoDbs))
-        }
-    }
+    val resultF = Source(relevantBlocks)
+      .mapAsync(FutureUtil.getParallelism) {
+        case (blockHashOpt, spendingInfoDbs) =>
+          blockHashOpt match {
+            case Some(blockHash) =>
+              chainQueryApi
+                .getNumberOfConfirmations(blockHash)
+                .map(confs => Some(BlockHashWithConfs(blockHash, confs)))
+                .map(blockWithConfsOpt => (blockWithConfsOpt, spendingInfoDbs))
+            case None =>
+              Future.successful((None, spendingInfoDbs))
+          }
+      }
+      .runWith(Sink.seq)
 
-    Future
-      .sequence(blockHashesWithConfsVec)
-      .map(_.toMap)
+    resultF.map(_.toMap)
   }
 
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
