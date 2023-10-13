@@ -18,10 +18,11 @@ import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
-import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant

@@ -15,7 +15,7 @@ import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.fixture._
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
-import org.bitcoins.wallet.WalletCallbacks
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.scalatest.FutureOutcome
 
 import java.net.InetSocketAddress

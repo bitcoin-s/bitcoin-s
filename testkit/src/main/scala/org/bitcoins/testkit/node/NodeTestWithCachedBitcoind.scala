@@ -18,7 +18,7 @@ import org.bitcoins.testkit.rpc.{
 }
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.WalletCallbacks
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future

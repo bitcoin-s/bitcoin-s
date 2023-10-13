@@ -39,6 +39,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._

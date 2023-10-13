@@ -50,7 +50,15 @@ import org.bitcoins.dlc.wallet.{
   OnDLCStateChange
 }
 import org.bitcoins.tor.{OnTorStarted, TorCallbacks}
-import org.bitcoins.wallet._
+import org.bitcoins.wallet.callback.{
+  OnFeeRateChanged,
+  OnNewAddressGenerated,
+  OnRescanComplete,
+  OnReservedUtxos,
+  OnTransactionBroadcast,
+  OnTransactionProcessed,
+  WalletCallbacks
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
