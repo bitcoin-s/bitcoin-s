@@ -1,5 +1,6 @@
 package org.bitcoins.server.util
 
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
@@ -57,6 +58,7 @@ import org.bitcoins.wallet.callback.{
   OnReservedUtxos,
   OnTransactionBroadcast,
   OnTransactionProcessed,
+  WalletCallbackStreamManager,
   WalletCallbacks
 }
 
@@ -170,7 +172,9 @@ object WebsocketUtil extends Logging {
   /** Builds websocket callbacks for the wallet */
   def buildWalletCallbacks(
       walletQueue: SourceQueueWithComplete[WsNotification[_]],
-      walletName: String)(implicit ec: ExecutionContext): WalletCallbacks = {
+      walletName: String)(implicit
+      system: ActorSystem): WalletCallbackStreamManager = {
+    import system.dispatcher
     val onAddressCreated: OnNewAddressGenerated = { addr =>
       val notification = WalletNotification.NewAddressNotification(addr)
       val offerF = walletQueue.offer(notification)
@@ -208,7 +212,7 @@ object WebsocketUtil extends Logging {
       offerF.map(_ => ())
     }
 
-    WalletCallbacks(
+    val callbacks = WalletCallbacks(
       onTransactionProcessed = Vector(onTxProcessed),
       onTransactionBroadcast = Vector(onTxBroadcast),
       onReservedUtxos = Vector(onReservedUtxo),
@@ -217,6 +221,8 @@ object WebsocketUtil extends Logging {
       onRescanComplete = Vector(onRescanComplete),
       onFeeRateChanged = Vector(onFeeRate)
     )
+
+    WalletCallbackStreamManager(callbacks = callbacks)
   }
 
   def buildTorCallbacks(queue: SourceQueueWithComplete[WsNotification[_]])(

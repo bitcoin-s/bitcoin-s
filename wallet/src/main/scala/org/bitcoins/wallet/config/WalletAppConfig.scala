@@ -18,7 +18,10 @@ import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.wallet.callback.WalletCallbacks
+import org.bitcoins.wallet.callback.{
+  WalletCallbackStreamManager,
+  WalletCallbacks
+}
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
@@ -226,18 +229,26 @@ case class WalletAppConfig(
   }
 
   override def stop(): Future[Unit] = {
+    val stopCallbacksF = callBacks match {
+      case stream: WalletCallbackStreamManager => stream.stop()
+      case _: WalletCallbacks =>
+        Future.unit
+    }
     if (isHikariLoggingEnabled) {
       stopHikariLogger()
     }
 
-    clearCallbacks()
-    stopRebroadcastTxsScheduler()
-    //this eagerly shuts down all scheduled tasks on the scheduler
-    //in the future, we should actually cancel all things that are scheduled
-    //manually, and then shutdown the scheduler
-    scheduler.shutdownNow()
-    rescanThreadPool.shutdownNow()
-    super.stop()
+    stopCallbacksF.flatMap { _ =>
+      clearCallbacks()
+      stopRebroadcastTxsScheduler()
+      //this eagerly shuts down all scheduled tasks on the scheduler
+      //in the future, we should actually cancel all things that are scheduled
+      //manually, and then shutdown the scheduler
+      scheduler.shutdownNow()
+      rescanThreadPool.shutdownNow()
+      super.stop()
+    }
+
   }
 
   /** The path to our encrypted mnemonic seed */
