@@ -15,12 +15,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{Future}
 
 case class DLCWalletCallbackStreamManager(
-    override val onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange],
-    override val onOfferAdd: CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd],
-    override val onOfferRemove: CallbackHandler[Sha256Digest, OnDLCOfferRemove],
+    callbacks: DLCWalletCallbacks,
     overflowStrategy: OverflowStrategy = OverflowStrategy.backpressure,
     maxBufferSize: Int = 16)(implicit system: ActorSystem)
-    extends DLCWalletCallbacks(onStateChange, onOfferAdd, onOfferRemove)
+    extends DLCWalletCallbacks
     with StartStopAsync[Unit]
     with Logging {
 
@@ -74,11 +72,25 @@ case class DLCWalletCallbackStreamManager(
     matSourceAndQueue(offerRemoveSource, offerRemoveSink)
   }
 
+  override def onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange] = {
+    callbacks.onStateChange
+  }
+
+  override def onOfferAdd: CallbackHandler[
+    IncomingDLCOfferDb,
+    OnDLCOfferAdd] = {
+    callbacks.onOfferAdd
+  }
+
+  override def onOfferRemove: CallbackHandler[
+    Sha256Digest,
+    OnDLCOfferRemove] = {
+    callbacks.onOfferRemove
+  }
+
   override def +(other: DLCWalletCallbacks): DLCWalletCallbacks = {
     val newCallbacks = other.+(this)
-    DLCWalletCallbacks(newCallbacks.onStateChange,
-                       newCallbacks.onOfferAdd,
-                       newCallbacks.onOfferRemove)
+    DLCWalletCallbackStreamManager(newCallbacks)
   }
 
   override def start(): Future[Unit] = Future.unit
