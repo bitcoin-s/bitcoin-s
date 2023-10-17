@@ -5,7 +5,6 @@ import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Keep, Sink, Source, SourceQueueWithComplete}
 import grizzled.slf4j.Logging
-import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -14,6 +13,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.FeeUnit
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
 
 case class WalletCallbackStreamManager(
@@ -142,7 +142,7 @@ case class WalletCallbackStreamManager(
 
   override def start(): Future[Unit] = Future.unit
 
-  private val isStopped: AtomicBoolean = AtomicBoolean(false)
+  private val isStopped: AtomicBoolean = new AtomicBoolean(false)
 
   override def stop(): Future[Unit] = {
     val start = System.currentTimeMillis()
