@@ -32,7 +32,7 @@ case class DLCWalletCallbackStreamManager(
 
   private val stateChangeSink: Sink[DLCStatus, Future[Done]] = {
     Sink.foreachAsync(1) { case state =>
-      onStateChange.execute(state)
+      callbacks.executeOnDLCStateChange(state)
     }
   }
 
@@ -48,7 +48,7 @@ case class DLCWalletCallbackStreamManager(
 
   private val offerAddSink: Sink[IncomingDLCOfferDb, Future[Done]] = {
     Sink.foreachAsync(1) { case offer =>
-      onOfferAdd.execute(offer)
+      callbacks.executeOnDLCOfferAdd(offer)
     }
   }
 
@@ -57,14 +57,14 @@ case class DLCWalletCallbackStreamManager(
   }
 
   private val offerRemoveSource: Source[
-    IncomingDLCOfferDb,
-    SourceQueueWithComplete[IncomingDLCOfferDb]] = {
+    Sha256Digest,
+    SourceQueueWithComplete[Sha256Digest]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
-  private val offerRemoveSink: Sink[IncomingDLCOfferDb, Future[Done]] = {
+  private val offerRemoveSink: Sink[Sha256Digest, Future[Done]] = {
     Sink.foreachAsync(1) { case offer =>
-      onOfferAdd.execute(offer)
+      callbacks.executeOnDLCOfferRemove(offer)
     }
   }
 

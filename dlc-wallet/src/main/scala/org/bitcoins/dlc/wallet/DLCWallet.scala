@@ -488,7 +488,7 @@ abstract class DLCWallet
 
       _ <- safeDLCDatabase.run(offerActions)
       status <- findDLC(dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
     } yield offer
   }
 
@@ -714,7 +714,7 @@ abstract class DLCWallet
         }
       }
       status <- findDLC(dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
     } yield dlcAccept
   }
 
@@ -823,7 +823,7 @@ abstract class DLCWallet
             PayoutAddress(initializedAccept.pubKeys.payoutAddress,
                           isExternalAddress))
         )
-        _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
+        _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(status)
         cetSigs <- signer.createCETSigsAsync()
         refundSig = signer.signRefundTx
         dlc = initializedAccept.dlc
@@ -1111,7 +1111,7 @@ abstract class DLCWallet
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
       _ = logger.info(s"DLC ${contractId.toHex} is signed")
       status <- findDLC(dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
     } yield {
       logger.info(
         s"Done creating sign message with contractId=${contractId.toHex} tempContractId=${dlc.tempContractId.hex}")
@@ -1137,8 +1137,7 @@ abstract class DLCWallet
       for {
         _ <- updatedF
         status <- findDLC(dlcDb.dlcId)
-        _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
-                                                               status.get)
+        _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
         sigs <- signer.createCETSigsAsync()
 
         sigsDbs: Vector[DLCCETSignaturesDb] = sigs.outcomeSigs
@@ -1640,8 +1639,7 @@ abstract class DLCWallet
 
       _ <- processTransaction(tx, None)
       dlcStatusOpt <- findDLC(dlcId = dlcDb.dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
-                                                             dlcStatusOpt.get)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(dlcStatusOpt.get)
     } yield tx
   }
 
@@ -1692,7 +1690,7 @@ abstract class DLCWallet
 
       _ <- processTransaction(refundTx, blockHashOpt = None)
       status <- findDLC(dlcDb.dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
     } yield refundTx
   }
 

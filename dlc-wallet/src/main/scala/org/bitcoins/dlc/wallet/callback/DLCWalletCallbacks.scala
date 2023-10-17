@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.callback
 
-import grizzled.slf4j.{Logger, Logging}
+import grizzled.slf4j.{Logging}
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
@@ -19,7 +19,7 @@ trait DLCWalletCallbacks
 
   def onOfferRemove: CallbackHandler[Sha256Digest, OnDLCOfferRemove]
 
-  def executeOnDLCStateChange(logger: Logger, status: DLCStatus)(implicit
+  def executeOnDLCStateChange(status: DLCStatus)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onStateChange.execute(
       status,
@@ -28,7 +28,7 @@ trait DLCWalletCallbacks
                      err))
   }
 
-  def executeOnDLCOfferAdd(logger: Logger, offerDb: IncomingDLCOfferDb)(implicit
+  def executeOnDLCOfferAdd(offerDb: IncomingDLCOfferDb)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onOfferAdd.execute(
       offerDb,
@@ -37,7 +37,7 @@ trait DLCWalletCallbacks
                      err))
   }
 
-  def executeOnDLCOfferRemove(logger: Logger, offerHash: Sha256Digest)(implicit
+  def executeOnDLCOfferRemove(offerHash: Sha256Digest)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onOfferRemove.execute(
       offerHash,
