@@ -47,7 +47,7 @@ import org.bitcoins.testkit.wallet._
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.WalletCallbacks
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.testkit.node.MockNodeApi
 import akka.actor.ActorSystem
 import scala.concurrent._
