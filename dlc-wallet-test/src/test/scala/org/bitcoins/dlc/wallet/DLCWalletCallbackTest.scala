@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCStatus,
   SingleContractInfo
 }
+import org.bitcoins.dlc.wallet.callback.{DLCWalletCallbacks, OnDLCStateChange}
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.bitcoins.testkitcore.gen.CryptoGenerators

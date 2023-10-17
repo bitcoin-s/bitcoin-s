@@ -44,7 +44,7 @@ import org.bitcoins.dlc.node.{
   OnSignFailed,
   OnSignSucceed
 }
-import org.bitcoins.dlc.wallet.{
+import org.bitcoins.dlc.wallet.callback.{
   DLCWalletCallbacks,
   OnDLCOfferAdd,
   OnDLCOfferRemove,

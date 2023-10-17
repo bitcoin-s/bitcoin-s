@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
+import org.bitcoins.dlc.wallet.callback.DLCWalletCallbacks
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
 import org.bitcoins.dlc.wallet.models.{
   DLCSetupDbState,

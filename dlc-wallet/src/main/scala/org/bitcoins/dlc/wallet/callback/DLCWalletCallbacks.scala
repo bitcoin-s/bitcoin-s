@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.wallet
+package org.bitcoins.dlc.wallet.callback
 
 import grizzled.slf4j.Logger
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb

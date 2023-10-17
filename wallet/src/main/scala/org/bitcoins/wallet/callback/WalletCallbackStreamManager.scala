@@ -225,5 +225,8 @@ case class WalletCallbackStreamManager(
     callbacks.onFeeRateChanged
   }
 
-  override def +(other: WalletCallbacks): WalletCallbacks = ???
+  override def +(other: WalletCallbacks): WalletCallbacks = {
+    val newCallbacks = other.+(this)
+    WalletCallbackStreamManager(newCallbacks)
+  }
 }
