@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
+import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -20,7 +21,10 @@ import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
-import org.bitcoins.dlc.wallet.callback.DLCWalletCallbacks
+import org.bitcoins.dlc.wallet.callback.{
+  DLCWalletCallbackStreamManager,
+  DLCWalletCallbacks
+}
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
 import org.bitcoins.dlc.wallet.models.{
   DLCSetupDbState,
@@ -47,7 +51,8 @@ case class DLCAppConfig(
     val system: ActorSystem)
     extends DbAppConfig
     with DLCDbManagement
-    with JdbcProfileComponent[DLCAppConfig] {
+    with JdbcProfileComponent[DLCAppConfig]
+    with CallbackConfig[DLCWalletCallbacks] {
   implicit override val ec: ExecutionContext = system.dispatcher
   override protected[bitcoins] def moduleName: String = "dlc"
   override protected[bitcoins] type ConfigType = DLCAppConfig
@@ -89,6 +94,15 @@ case class DLCAppConfig(
       s"Applied ${numMigrations.migrationsExecuted} to the dlc project. Started with initMigrations=$initMigrations")
 
     f
+  }
+
+  override def stop(): Future[Unit] = {
+    val stopCallbacksF = callBacks match {
+      case stream: DLCWalletCallbackStreamManager => stream.stop()
+      case _: DLCWalletCallbacks =>
+        Future.unit
+    }
+    stopCallbacksF
   }
 
   lazy val walletConf: WalletAppConfig =
@@ -136,9 +150,13 @@ case class DLCAppConfig(
 
   def walletCallbacks: DLCWalletCallbacks = callbacks.atomicGet
 
-  def addCallbacks(newCallbacks: DLCWalletCallbacks): DLCWalletCallbacks = {
+  override def addCallbacks(
+      newCallbacks: DLCWalletCallbacks): DLCWalletCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
+
+  override lazy val callbackFactory: DLCWalletCallbacks.type =
+    DLCWalletCallbacks
 
   /** Delete alpha version DLCs, these are old protocol format DLCs that cannot be safely updated to the new protocol version of DLCs */
   private def deleteAlphaVersionDLCs(): Future[Unit] = {

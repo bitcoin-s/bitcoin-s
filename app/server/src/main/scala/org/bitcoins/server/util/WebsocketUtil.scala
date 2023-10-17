@@ -45,6 +45,7 @@ import org.bitcoins.dlc.node.{
   OnSignSucceed
 }
 import org.bitcoins.dlc.wallet.callback.{
+  DLCWalletCallbackStreamManager,
   DLCWalletCallbacks,
   OnDLCOfferAdd,
   OnDLCOfferRemove,
@@ -259,7 +260,8 @@ object WebsocketUtil extends Logging {
 
   def buildDLCWalletCallbacks(
       walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
-      ec: ExecutionContext): DLCWalletCallbacks = {
+      system: ActorSystem): DLCWalletCallbackStreamManager = {
+    import system.dispatcher
     val onStateChange: OnDLCStateChange = { status: DLCStatus =>
       val notification = WalletNotification.DLCStateChangeNotification(status)
       val offerF = walletQueue.offer(notification)
@@ -281,8 +283,10 @@ object WebsocketUtil extends Logging {
 
     import DLCWalletCallbacks._
 
-    onDLCStateChange(onStateChange) + onDLCOfferAdd(
+    val callbacks = onDLCStateChange(onStateChange) + onDLCOfferAdd(
       onOfferAdd) + onDLCOfferRemove(onOfferRemove)
+
+    DLCWalletCallbackStreamManager(callbacks)
   }
 
   def buildDLCNodeCallbacks(

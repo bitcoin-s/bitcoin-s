@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet.callback
 
 import grizzled.slf4j.{Logger, Logging}
-import org.bitcoins.core.api.callback.ModuleCallbacks
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
@@ -48,7 +48,7 @@ trait DLCWalletCallbacks
 
 }
 
-object DLCWalletCallbacks {
+object DLCWalletCallbacks extends CallbackFactory[DLCWalletCallbacks] {
 
   private case class DLCWalletCallbacksImpl(
       onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange],
