@@ -31,7 +31,7 @@ object Deps {
     val scodecV = "1.1.37"
     val junitV = "0.13.3"
     val nativeLoaderV = "2.4.0"
-    val typesafeConfigV = "1.4.2"
+    val typesafeConfigV = "1.4.3"
 
     val asyncNewScalaV = "1.0.1"
 
