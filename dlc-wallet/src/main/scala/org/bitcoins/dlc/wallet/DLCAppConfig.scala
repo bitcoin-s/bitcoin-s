@@ -102,7 +102,7 @@ case class DLCAppConfig(
       case _: DLCWalletCallbacks =>
         Future.unit
     }
-    stopCallbacksF
+    stopCallbacksF.flatMap(_ => super.stop())
   }
 
   lazy val walletConf: WalletAppConfig =
