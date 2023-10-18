@@ -23,7 +23,7 @@ object Deps {
     val slf4j = "2.0.9"
     val spray = "1.3.6"
     val zeromq = "0.5.4"
-    val scalapb = "0.11.13"
+    val scalapb = "0.11.14"
     val akkav = "10.2.10"
     val playv = "2.10.1" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "2.6.20"
