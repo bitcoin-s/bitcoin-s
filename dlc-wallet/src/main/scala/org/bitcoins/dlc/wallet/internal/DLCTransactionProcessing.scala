@@ -90,8 +90,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           for {
             withOutcomeOpt <- calculateAndSetOutcome(withState)
             dlc <- findDLC(dlcDb.dlcId)
-            _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
-                                                                  dlc.get)
+            _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(dlc.get)
           } yield {
             withOutcomeOpt
           }
@@ -303,7 +302,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       val sendF = updatedDlcDbsF.flatMap { updatedDlcDbs =>
         Future.sequence {
           updatedDlcDbs.map(u =>
-            dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, u.get))
+            dlcConfig.walletCallbacks.executeOnDLCStateChange(u.get))
         }
       }
       sendF.map(_ => ())

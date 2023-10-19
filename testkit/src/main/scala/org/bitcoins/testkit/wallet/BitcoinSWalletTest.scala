@@ -26,8 +26,9 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.{
 }
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen._
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
 import java.util.UUID

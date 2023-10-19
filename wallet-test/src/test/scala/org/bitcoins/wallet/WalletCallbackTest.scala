@@ -8,6 +8,14 @@ import org.bitcoins.core.protocol.blockchain.{Block, RegTestNetChainParams}
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.wallet.callback.{
+  OnBlockProcessed,
+  OnNewAddressGenerated,
+  OnReservedUtxos,
+  OnTransactionBroadcast,
+  OnTransactionProcessed,
+  WalletCallbacks
+}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt

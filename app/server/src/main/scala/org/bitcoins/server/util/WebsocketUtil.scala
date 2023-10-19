@@ -1,5 +1,6 @@
 package org.bitcoins.server.util
 
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
@@ -43,14 +44,24 @@ import org.bitcoins.dlc.node.{
   OnSignFailed,
   OnSignSucceed
 }
-import org.bitcoins.dlc.wallet.{
+import org.bitcoins.dlc.wallet.callback.{
+  DLCWalletCallbackStreamManager,
   DLCWalletCallbacks,
   OnDLCOfferAdd,
   OnDLCOfferRemove,
   OnDLCStateChange
 }
 import org.bitcoins.tor.{OnTorStarted, TorCallbacks}
-import org.bitcoins.wallet._
+import org.bitcoins.wallet.callback.{
+  OnFeeRateChanged,
+  OnNewAddressGenerated,
+  OnRescanComplete,
+  OnReservedUtxos,
+  OnTransactionBroadcast,
+  OnTransactionProcessed,
+  WalletCallbackStreamManager,
+  WalletCallbacks
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -162,7 +173,9 @@ object WebsocketUtil extends Logging {
   /** Builds websocket callbacks for the wallet */
   def buildWalletCallbacks(
       walletQueue: SourceQueueWithComplete[WsNotification[_]],
-      walletName: String)(implicit ec: ExecutionContext): WalletCallbacks = {
+      walletName: String)(implicit
+      system: ActorSystem): WalletCallbackStreamManager = {
+    import system.dispatcher
     val onAddressCreated: OnNewAddressGenerated = { addr =>
       val notification = WalletNotification.NewAddressNotification(addr)
       val offerF = walletQueue.offer(notification)
@@ -200,7 +213,7 @@ object WebsocketUtil extends Logging {
       offerF.map(_ => ())
     }
 
-    WalletCallbacks(
+    val callbacks = WalletCallbacks(
       onTransactionProcessed = Vector(onTxProcessed),
       onTransactionBroadcast = Vector(onTxBroadcast),
       onReservedUtxos = Vector(onReservedUtxo),
@@ -209,6 +222,8 @@ object WebsocketUtil extends Logging {
       onRescanComplete = Vector(onRescanComplete),
       onFeeRateChanged = Vector(onFeeRate)
     )
+
+    WalletCallbackStreamManager(callbacks = callbacks)
   }
 
   def buildTorCallbacks(queue: SourceQueueWithComplete[WsNotification[_]])(
@@ -245,7 +260,8 @@ object WebsocketUtil extends Logging {
 
   def buildDLCWalletCallbacks(
       walletQueue: SourceQueueWithComplete[WsNotification[_]])(implicit
-      ec: ExecutionContext): DLCWalletCallbacks = {
+      system: ActorSystem): DLCWalletCallbackStreamManager = {
+    import system.dispatcher
     val onStateChange: OnDLCStateChange = { status: DLCStatus =>
       val notification = WalletNotification.DLCStateChangeNotification(status)
       val offerF = walletQueue.offer(notification)
@@ -267,8 +283,10 @@ object WebsocketUtil extends Logging {
 
     import DLCWalletCallbacks._
 
-    onDLCStateChange(onStateChange) + onDLCOfferAdd(
+    val callbacks = onDLCStateChange(onStateChange) + onDLCOfferAdd(
       onOfferAdd) + onDLCOfferRemove(onOfferRemove)
+
+    DLCWalletCallbackStreamManager(callbacks)
   }
 
   def buildDLCNodeCallbacks(

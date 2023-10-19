@@ -413,6 +413,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     }
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
+
     for {
       _ <- AkkaUtil.nonBlockingSleep(15.seconds)
       _ = promise.success(None)

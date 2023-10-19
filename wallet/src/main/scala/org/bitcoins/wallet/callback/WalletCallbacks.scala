@@ -1,9 +1,9 @@
-package org.bitcoins.wallet
+package org.bitcoins.wallet.callback
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
-import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -24,6 +24,7 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] with Logging {
   def onTransactionBroadcast: CallbackHandler[
     Transaction,
     OnTransactionBroadcast]
+
   def onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos]
 
   def onNewAddressGenerated: CallbackHandler[
@@ -105,22 +106,6 @@ trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] with Logging {
   }
 
 }
-
-/** Callback for handling a processed transaction */
-trait OnTransactionProcessed extends Callback[Transaction]
-
-trait OnTransactionBroadcast extends Callback[Transaction]
-
-trait OnReservedUtxos extends Callback[Vector[SpendingInfoDb]]
-
-trait OnNewAddressGenerated extends Callback[BitcoinAddress]
-
-trait OnBlockProcessed extends Callback[Block]
-
-/** Triggered when a rescan is */
-trait OnRescanComplete extends Callback[String]
-
-trait OnFeeRateChanged extends Callback[FeeUnit]
 
 object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
 

@@ -5,7 +5,6 @@ import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Keep, Sink, Source, SourceQueueWithComplete}
 import grizzled.slf4j.Logging
-import monix.execution.atomic.AtomicBoolean
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -14,6 +13,7 @@ import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Creates a wrapper around the give node callbacks with a stream */
@@ -108,7 +108,7 @@ case class NodeCallbackStreamManager(
 
   override def start(): Future[Unit] = Future.unit
 
-  private val isStopped: AtomicBoolean = AtomicBoolean(false)
+  private val isStopped: AtomicBoolean = new AtomicBoolean(false)
 
   /** Completes all streams and waits until they are fully drained */
   override def stop(): Future[Unit] = {

@@ -41,6 +41,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.wallet._
+import org.bitcoins.wallet.callback._
 import org.bitcoins.wallet.config.WalletAppConfig
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```

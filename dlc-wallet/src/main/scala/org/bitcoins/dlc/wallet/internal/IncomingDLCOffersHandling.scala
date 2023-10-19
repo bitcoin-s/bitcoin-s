@@ -30,14 +30,14 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
           dlcWalletDAOs.contactDAO.createIfDoesNotExist(contactDb)
         case None => Future.successful(())
       }
-      _ <- dlcConfig.walletCallbacks.executeOnDLCOfferAdd(logger, added)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCOfferAdd(added)
     } yield dbo.hash
   }
 
   def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit] = {
     for {
       _ <- dlcWalletDAOs.incomingDLCOfferDAO.delete(offerHash)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCOfferRemove(logger, offerHash)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCOfferRemove(offerHash)
     } yield ()
   }
 

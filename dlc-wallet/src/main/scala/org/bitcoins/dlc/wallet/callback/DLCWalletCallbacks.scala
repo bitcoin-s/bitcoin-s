@@ -1,6 +1,7 @@
-package org.bitcoins.dlc.wallet
+package org.bitcoins.dlc.wallet.callback
 
-import grizzled.slf4j.Logger
+import grizzled.slf4j.{Logging}
+import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
@@ -8,12 +9,17 @@ import org.bitcoins.crypto.Sha256Digest
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class DLCWalletCallbacks(
-    onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange],
-    onOfferAdd: CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd],
-    onOfferRemove: CallbackHandler[Sha256Digest, OnDLCOfferRemove]) {
+trait DLCWalletCallbacks
+    extends ModuleCallbacks[DLCWalletCallbacks]
+    with Logging {
 
-  def executeOnDLCStateChange(logger: Logger, status: DLCStatus)(implicit
+  def onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange]
+
+  def onOfferAdd: CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd]
+
+  def onOfferRemove: CallbackHandler[Sha256Digest, OnDLCOfferRemove]
+
+  def executeOnDLCStateChange(status: DLCStatus)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onStateChange.execute(
       status,
@@ -22,7 +28,7 @@ case class DLCWalletCallbacks(
                      err))
   }
 
-  def executeOnDLCOfferAdd(logger: Logger, offerDb: IncomingDLCOfferDb)(implicit
+  def executeOnDLCOfferAdd(offerDb: IncomingDLCOfferDb)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onOfferAdd.execute(
       offerDb,
@@ -31,7 +37,7 @@ case class DLCWalletCallbacks(
                      err))
   }
 
-  def executeOnDLCOfferRemove(logger: Logger, offerHash: Sha256Digest)(implicit
+  def executeOnDLCOfferRemove(offerHash: Sha256Digest)(implicit
       ec: ExecutionContext): Future[Unit] = {
     onOfferRemove.execute(
       offerHash,
@@ -40,17 +46,25 @@ case class DLCWalletCallbacks(
                      err))
   }
 
-  def +(other: DLCWalletCallbacks): DLCWalletCallbacks = {
-    copy(onStateChange = onStateChange ++ other.onStateChange,
-         onOfferAdd = onOfferAdd ++ other.onOfferAdd,
-         onOfferRemove = onOfferRemove ++ other.onOfferRemove)
-  }
 }
 
-object DLCWalletCallbacks {
+object DLCWalletCallbacks extends CallbackFactory[DLCWalletCallbacks] {
 
-  val empty: DLCWalletCallbacks = {
-    DLCWalletCallbacks(
+  private case class DLCWalletCallbacksImpl(
+      onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange],
+      onOfferAdd: CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd],
+      onOfferRemove: CallbackHandler[Sha256Digest, OnDLCOfferRemove])
+      extends DLCWalletCallbacks {
+
+    override def +(other: DLCWalletCallbacks): DLCWalletCallbacks = {
+      copy(onStateChange = onStateChange ++ other.onStateChange,
+           onOfferAdd = onOfferAdd ++ other.onOfferAdd,
+           onOfferRemove = onOfferRemove ++ other.onOfferRemove)
+    }
+  }
+
+  private val emptyImpl: DLCWalletCallbacksImpl = {
+    DLCWalletCallbacksImpl(
       CallbackHandler[DLCStatus, OnDLCStateChange]("onDLCStateChange",
                                                    Vector.empty),
       CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd]("onDLCOfferAdd",
@@ -59,26 +73,27 @@ object DLCWalletCallbacks {
                                                       Vector.empty)
     )
   }
+  val empty: DLCWalletCallbacks = emptyImpl
 
   def onDLCStateChange(f: OnDLCStateChange): DLCWalletCallbacks = {
     val handler =
       CallbackHandler[DLCStatus, OnDLCStateChange]("onDLCStateChange",
                                                    Vector(f))
-    empty.copy(onStateChange = handler)
+    emptyImpl.copy(onStateChange = handler)
   }
 
   def onDLCOfferAdd(f: OnDLCOfferAdd): DLCWalletCallbacks = {
     val handler =
       CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd]("onDLCOfferAdd",
                                                          Vector(f))
-    empty.copy(onOfferAdd = handler)
+    emptyImpl.copy(onOfferAdd = handler)
   }
 
   def onDLCOfferRemove(f: OnDLCOfferRemove): DLCWalletCallbacks = {
     val handler =
       CallbackHandler[Sha256Digest, OnDLCOfferRemove]("onDLCOfferRemove",
                                                       Vector(f))
-    empty.copy(onOfferRemove = handler)
+    emptyImpl.copy(onOfferRemove = handler)
   }
 
 }
