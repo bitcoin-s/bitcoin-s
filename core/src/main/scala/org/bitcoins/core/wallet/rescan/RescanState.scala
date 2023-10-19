@@ -54,9 +54,13 @@ object RescanState {
       */
     def isCompletedEarly: Boolean = _isCompletedEarly.get
 
-    def isStopped: Boolean = doneF.isCompleted && recursiveRescanP.isCompleted
+    def isStopped: Boolean = entireRescanDoneF.isCompleted
 
-    def doneF: Future[Vector[BlockMatchingResponse]] = {
+    /** Means this single rescan is complete, but recursive rescans may not be completed */
+    def singlePassDoneF: Future[Vector[BlockMatchingResponse]] = blocksMatchedF
+
+    /** Means the entire rescan is done (including recursive rescans) */
+    def entireRescanDoneF: Future[Vector[BlockMatchingResponse]] = {
       for {
         b0 <- blocksMatchedF
         recursive <- recursiveRescanP.future
@@ -103,6 +107,17 @@ object RescanState {
     }
   }
 
+  def awaitSingleRescanDone(rescanState: RescanState)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    rescanState match {
+      case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
+          RescanState.RescanNotNeeded =>
+        Future.unit
+      case started: RescanState.RescanStarted =>
+        started.singlePassDoneF.map(_ => ())
+    }
+  }
+
   /** Returns a Future for all rescan states that will be complete when the rescan is done.
     * This can be because the stream was externally termianted early, or the rescan completes.
     * If you are interested in just the stream completing beacuse the rescan was fully executed,
@@ -115,7 +130,7 @@ object RescanState {
           RescanState.RescanNotNeeded =>
         Future.unit
       case started: RescanState.RescanStarted =>
-        started.doneF.map(_ => ())
+        started.entireRescanDoneF.map(_ => ())
     }
   }
 
@@ -130,7 +145,7 @@ object RescanState {
           RescanState.RescanNotNeeded =>
         Future.unit
       case started: RescanState.RescanStarted =>
-        started.doneF.flatMap { _ =>
+        started.entireRescanDoneF.flatMap { _ =>
           if (started.isCompletedEarly) {
             Future.failed(
               new RuntimeException(

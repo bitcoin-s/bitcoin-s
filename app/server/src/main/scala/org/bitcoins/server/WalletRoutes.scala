@@ -1143,7 +1143,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     stateF.map {
       case started: RescanState.RescanStarted =>
-        started.doneF.map { _ =>
+        started.entireRescanDoneF.map { _ =>
           logger.info(s"Rescan finished, setting state to RescanDone")
           rescanStateOpt = Some(RescanState.RescanDone)
         }

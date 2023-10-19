@@ -145,7 +145,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       case started: RescanState.RescanStarted =>
         if (rescanStateOpt.isEmpty) {
           //add callback to reset state when the rescan is done
-          val resetStateCallbackF = started.doneF.map { _ =>
+          val resetStateCallbackF = started.entireRescanDoneF.map { _ =>
             rescanStateOpt = None
           }
           resetStateCallbackF.failed.foreach {

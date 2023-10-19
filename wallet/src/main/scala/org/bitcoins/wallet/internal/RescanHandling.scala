@@ -109,7 +109,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
           resF.map {
             case r: RescanState.RescanStarted =>
-              r.doneF.map(_ =>
+              r.entireRescanDoneF.map(_ =>
                 logger.info(s"Finished rescanning the wallet. It took ${System
                   .currentTimeMillis() - startTime}ms"))
             case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
@@ -340,9 +340,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount): Future[Unit] = {
     logger.info(s"recursiveRescan()")
     val awaitPreviousRescanF =
-      RescanState.awaitRescanDone(rescanState = prevState)
+      RescanState.awaitSingleRescanDone(rescanState = prevState)
     for {
-      _ <- awaitPreviousRescanF //this is where the deadlock occurs 
+      _ <- awaitPreviousRescanF //this is where the deadlock occurs
       _ = logger.info(s"awaitPreviousRescanF")
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)

@@ -143,7 +143,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           rescanState match {
             case started: RescanState.RescanStarted =>
               logger.error(s"@@@@@@ started=$started @@@@@@")
-              started.doneF
+              started.entireRescanDoneF
             case _: RescanState => Future.unit
           }
         }
