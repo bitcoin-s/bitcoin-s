@@ -41,7 +41,7 @@ import org.bitcoins.testkit.util.AkkaUtil
 import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
@@ -416,19 +416,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
     for {
       _ <- AkkaUtil.nonBlockingSleep(15.seconds)
-      _ = {
-        if (!promise.isCompleted) {
-          logger.error(s"@@@@@@@@@ promise not complete @@@@@@@@@")
-          promise.success(None)
-        } else {
-          promise.future.onComplete {
-            case Success(_) => logger.error(s"@@@@@@@@@ Success @@@@@@@@@")
-            case Failure(err) =>
-              logger.error(s"@@@@@@@@@ err=${err.getMessage} @@@@@@@@@", err)
-          }
-        }
-
-      }
+      _ = promise.success(None)
       notifications <- notificationsF
     } yield {
       val syncingNotifications =
