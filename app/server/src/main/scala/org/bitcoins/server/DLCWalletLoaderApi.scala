@@ -139,7 +139,7 @@ sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
       case RescanState.RescanAlreadyStarted =>
       //do nothing in this case, we don't need to keep these states around
       //don't overwrite the existing reference to RescanStarted
-      case RescanState.RescanDone =>
+      case RescanState.RescanDone | RescanState.RescanNotNeeded =>
         //rescan is done, reset state
         rescanStateOpt = None
       case started: RescanState.RescanStarted =>

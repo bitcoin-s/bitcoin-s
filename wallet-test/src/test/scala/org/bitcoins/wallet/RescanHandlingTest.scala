@@ -141,10 +141,13 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                                                    force = false)
         _ <- {
           rescanState match {
-            case started: RescanState.RescanStarted => started.blocksMatchedF
-            case _: RescanState                     => Future.unit
+            case started: RescanState.RescanStarted =>
+              logger.error(s"@@@@@@ started=$started @@@@@@")
+              started.doneF
+            case _: RescanState => Future.unit
           }
         }
+        _ = logger.info(s"@@@@@@ doneF complete @@@@@@@")
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
@@ -460,7 +463,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
             started.fail(
               new RuntimeException(
                 "Purposefully terminate rescan early for test"))
-          case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+          case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
+              RescanState.RescanNotNeeded =>
             fail(s"Rescan must be started")
         }
         _ <- AsyncUtil.nonBlockingSleep(

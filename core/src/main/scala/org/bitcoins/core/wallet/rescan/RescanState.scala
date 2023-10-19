@@ -15,6 +15,9 @@ object RescanState {
   /** Finished a rescan */
   case object RescanDone extends RescanState
 
+  /** For the case where we do not need to initiate a recursive rescan with a fresh pool of wallet addresses */
+  case object RescanNotNeeded extends RescanState
+
   /** A rescan has already been started */
   case object RescanAlreadyStarted extends RescanState
 
@@ -23,11 +26,12 @@ object RescanState {
     * the rescan early by completing the promise
     * [[blocksMatchedF]] is a future that is completed when the rescan is done
     * this returns all blocks that were matched during the rescan.
+    * [[recursiveRescanP]] is a promise that is completed when there is a recursive rescan is started or there is not a recursive rescan started
     */
   case class RescanStarted(
       private val completeRescanEarlyP: Promise[Option[Int]],
-      blocksMatchedF: Future[Vector[BlockMatchingResponse]])(implicit
-      ec: ExecutionContext)
+      blocksMatchedF: Future[Vector[BlockMatchingResponse]],
+      recursiveRescanP: Promise[RescanState])(implicit ec: ExecutionContext)
       extends RescanState {
 
     private val _isCompletedEarly: AtomicBoolean = new AtomicBoolean(false)
@@ -38,7 +42,9 @@ object RescanState {
     }
 
     completeRescanEarlyP.future.failed.foreach {
-      case RescanTerminatedEarly          => _isCompletedEarly.set(true)
+      case RescanTerminatedEarly =>
+        recursiveRescanP.failure(RescanTerminatedEarly)
+        _isCompletedEarly.set(true)
       case scala.util.control.NonFatal(_) => //do nothing
     }
 
@@ -48,30 +54,52 @@ object RescanState {
       */
     def isCompletedEarly: Boolean = _isCompletedEarly.get
 
-    def isStopped: Boolean = doneF.isCompleted
+    def isStopped: Boolean = doneF.isCompleted && recursiveRescanP.isCompleted
 
-    def doneF: Future[Vector[BlockMatchingResponse]] = blocksMatchedF
+    def doneF: Future[Vector[BlockMatchingResponse]] = {
+      for {
+        b0 <- blocksMatchedF
+        recursive <- recursiveRescanP.future
+        _ = println(s"doneF.recursive=$recursive")
+        b1 <- recursive match {
+          case r: RescanStarted => r.blocksMatchedF
+          case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
+            Future.successful(Vector.empty)
+        }
+      } yield b0 ++ b1
+    }
 
     /** Fails a rescan with the given exception */
     def fail(err: Throwable): Unit = {
       completeRescanEarlyP.failure(err)
+      recursiveRescanP.failure(err)
     }
 
     /** Completes the stream that the rescan in progress uses.
       * This aborts the rescan early.
       */
     def stop(): Future[Vector[BlockMatchingResponse]] = {
-      if (!completeRescanEarlyP.isCompleted) {
-        fail(RescanTerminatedEarly)
+      val f = if (!completeRescanEarlyP.isCompleted) {
+        val stoppedRecursiveRescanF = recursiveRescanP.future.flatMap {
+          case started: RescanStarted => started.stop()
+          case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
+            Future.unit
+        }
+        stoppedRecursiveRescanF.map(_ => fail(RescanTerminatedEarly))
+      } else {
+        Future.unit
       }
-      blocksMatchedF.recoverWith {
-        case RescanTerminatedEarly =>
-          //this means this was purposefully terminated early
-          //don't propagate the exception
-          Future.successful(Vector.empty)
-        case err =>
-          throw err
+      f.flatMap { _ =>
+        blocksMatchedF.recoverWith {
+          case RescanTerminatedEarly =>
+            //this means this was purposefully terminated early
+            //don't propagate the exception
+            Future.successful(Vector.empty)
+          case err =>
+            throw err
+        }
       }
+
     }
   }
 
@@ -83,7 +111,8 @@ object RescanState {
   def awaitRescanDone(rescanState: RescanState)(implicit
       ec: ExecutionContext): Future[Unit] = {
     rescanState match {
-      case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+      case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
+          RescanState.RescanNotNeeded =>
         Future.unit
       case started: RescanState.RescanStarted =>
         started.doneF.map(_ => ())
@@ -97,7 +126,8 @@ object RescanState {
   def awaitRescanComplete(rescanState: RescanState)(implicit
       ec: ExecutionContext): Future[Unit] = {
     rescanState match {
-      case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+      case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
+          RescanState.RescanNotNeeded =>
         Future.unit
       case started: RescanState.RescanStarted =>
         started.doneF.flatMap { _ =>
