@@ -85,16 +85,20 @@ object RescanState {
       * This aborts the rescan early.
       */
     def stop(): Future[Vector[BlockMatchingResponse]] = {
-      val f = if (!completeRescanEarlyP.isCompleted) {
-        val stoppedRecursiveRescanF = recursiveRescanP.future.flatMap {
-          case started: RescanStarted => started.stop()
-          case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
-            Future.unit
-        }
-        stoppedRecursiveRescanF.map(_ => fail(RescanTerminatedEarly))
-      } else {
-        Future.unit
+      val stoppedRecursiveRescanF = recursiveRescanP.future.flatMap {
+        case started: RescanStarted => started.stop()
+        case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
+          Future.unit
       }
+
+      val f = stoppedRecursiveRescanF.flatMap { _ =>
+        if (!completeRescanEarlyP.isCompleted) {
+          stoppedRecursiveRescanF.map(_ => fail(RescanTerminatedEarly))
+        } else {
+          Future.unit
+        }
+      }
+
       f.flatMap { _ =>
         blocksMatchedF.recoverWith {
           case RescanTerminatedEarly =>

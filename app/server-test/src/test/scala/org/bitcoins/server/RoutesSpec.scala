@@ -1714,8 +1714,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                               _: Boolean,
                               _: Boolean)(_: ExecutionContext))
         .expects(None, None, 100, false, false, executor)
-        .returning(Future.successful(RescanState
-          .RescanStarted(Promise(), Future.successful(Vector.empty))))
+        .returning(
+          Future.successful(
+            RescanState
+              .RescanStarted(Promise(),
+                             Future.successful(Vector.empty),
+                             Promise())))
 
       val route1 =
         walletRoutes.handleCommand(
@@ -1741,8 +1745,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           false,
           false,
           executor)
-        .returning(Future.successful(RescanState
-          .RescanStarted(Promise(), Future.successful(Vector.empty))))
+        .returning(
+          Future.successful(
+            RescanState
+              .RescanStarted(Promise(),
+                             Future.successful(Vector.empty),
+                             Promise())))
 
       val route2 =
         walletRoutes.handleCommand(
@@ -1769,8 +1777,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                  false,
                  false,
                  executor)
-        .returning(Future.successful(RescanState
-          .RescanStarted(Promise(), Future.successful(Vector.empty))))
+        .returning(
+          Future.successful(
+            RescanState
+              .RescanStarted(Promise(),
+                             Future.successful(Vector.empty),
+                             Promise())))
 
       val route3 =
         walletRoutes.handleCommand(
