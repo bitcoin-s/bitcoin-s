@@ -1721,6 +1721,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                              Future.successful(Vector.empty),
                              Promise())))
 
+      walletLoader.clearRescanState()
       val route1 =
         walletRoutes.handleCommand(
           ServerCommand("rescan", Arr(Arr(), Null, Null, true, true)))
@@ -1752,6 +1753,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                              Future.successful(Vector.empty),
                              Promise())))
 
+      walletLoader.clearRescanState()
       val route2 =
         walletRoutes.handleCommand(
           ServerCommand(
@@ -1784,6 +1786,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                              Future.successful(Vector.empty),
                              Promise())))
 
+      walletLoader.clearRescanState()
       val route3 =
         walletRoutes.handleCommand(
           ServerCommand(
@@ -1810,6 +1813,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                  executor)
         .returning(Future.successful(RescanState.RescanDone))
 
+      walletLoader.clearRescanState()
       val route4 =
         walletRoutes.handleCommand(
           ServerCommand("rescan",
@@ -1822,7 +1826,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       // negative cases
-
+      walletLoader.clearRescanState()
       val route5 =
         walletRoutes.handleCommand(
           ServerCommand("rescan",
@@ -1835,6 +1839,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           String] == s"""{"result":null,"error":"Invalid blockstamp: abcd"}""")
       }
 
+      walletLoader.clearRescanState()
       val route6 =
         walletRoutes.handleCommand(
           ServerCommand(
@@ -1848,6 +1853,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           responseAs[String] == s"""{"result":null,"error":"Invalid blockstamp: 2018-10-27T12:34:56"}""")
       }
 
+      walletLoader.clearRescanState()
       val route7 =
         walletRoutes.handleCommand(
           ServerCommand("rescan", Arr(Null, Num(-1), Null, true, false)))
@@ -1868,6 +1874,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(None, None, 55, false, false, executor)
         .returning(Future.successful(RescanState.RescanDone))
 
+      walletLoader.clearRescanState()
       val route8 =
         walletRoutes.handleCommand(
           ServerCommand("rescan",
