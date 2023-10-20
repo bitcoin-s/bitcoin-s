@@ -26,7 +26,8 @@ object RescanState {
     * the rescan early by completing the promise
     * [[blocksMatchedF]] is a future that is completed when the rescan is done
     * this returns all blocks that were matched during the rescan.
-    * [[recursiveRescanP]] is a promise that is completed when there is a recursive rescan is started or there is not a recursive rescan started
+    * [[recursiveRescanP]] If the rescan is continued with a fresh pool of addresses it completes `recursiveRescanP` with the new `RescanState.RescanStarted`.
+    * If the rescan is done because `addressGapLimit` is satisfied,  `recursiveRescanP` with `RescanState.RescanNotNeeded`
     */
   case class RescanStarted(
       private val completeRescanEarlyP: Promise[Option[Int]],
