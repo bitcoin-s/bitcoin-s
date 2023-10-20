@@ -57,14 +57,16 @@ object RescanState {
     def isStopped: Boolean = entireRescanDoneF.isCompleted
 
     /** Means this single rescan is complete, but recursive rescans may not be completed */
-    def singlePassDoneF: Future[Vector[BlockMatchingResponse]] = blocksMatchedF
+    def singleRescanDoneF: Future[Vector[BlockMatchingResponse]] =
+      blocksMatchedF
 
-    /** Means the entire rescan is done (including recursive rescans) */
+    /** Means the entire rescan is done (including recursive rescans). This future is completed
+      * when we rescan filters with addresses do not contain funds within [[WalletAppConfig.addressGapLimit]]
+      */
     def entireRescanDoneF: Future[Vector[BlockMatchingResponse]] = {
       for {
         b0 <- blocksMatchedF
         recursive <- recursiveRescanP.future
-        _ = println(s"doneF.recursive=$recursive")
         b1 <- recursive match {
           case r: RescanStarted => r.blocksMatchedF
           case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
@@ -114,7 +116,7 @@ object RescanState {
           RescanState.RescanNotNeeded =>
         Future.unit
       case started: RescanState.RescanStarted =>
-        started.singlePassDoneF.map(_ => ())
+        started.singleRescanDoneF.map(_ => ())
     }
   }
 
