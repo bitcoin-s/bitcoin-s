@@ -308,21 +308,18 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       forceGenerateSpks: Boolean): Future[RescanState] = {
-    logger.error(s"@@@@@@@ doNeutrinoRescan @@@@@@@")
     for {
       inProgress <- matchBlocks(endOpt = endOpt,
                                 startOpt = startOpt,
                                 account = account,
                                 addressBatchSize = addressBatchSize,
                                 forceGenerateSpks)
-      _ = logger.info(s"inProgress=$inProgress")
       _ = recursiveRescan(prevState = inProgress,
                           startOpt = startOpt,
                           endOpt = endOpt,
                           addressBatchSize = addressBatchSize,
                           account = account)
     } yield {
-      logger.error(s"@@@@@@ doNeutrinoRescan complete @@@@@@@")
       inProgress
     }
   }
@@ -338,12 +335,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       account: HDAccount): Future[Unit] = {
-    logger.info(s"recursiveRescan()")
     val awaitPreviousRescanF =
       RescanState.awaitSingleRescanDone(rescanState = prevState)
     for {
       _ <- awaitPreviousRescanF //this is where the deadlock occurs
-      _ = logger.info(s"awaitPreviousRescanF")
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
@@ -367,7 +362,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
         }
       }
     } yield {
-      logger.info(s"Done recursiveRescan()")
       ()
     }
   }

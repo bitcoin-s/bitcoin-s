@@ -142,12 +142,10 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- {
           rescanState match {
             case started: RescanState.RescanStarted =>
-              logger.error(s"@@@@@@ started=$started @@@@@@")
               started.entireRescanDoneF
             case _: RescanState => Future.unit
           }
         }
-        _ = logger.info(s"@@@@@@ doneF complete @@@@@@@")
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
