@@ -392,7 +392,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                      ignoreCreationTime = false)
     val _ = ConsoleCli.exec(cmd, cliConfig)
     for {
-      _ <- AkkaUtil.nonBlockingSleep(5000.millis)
+      _ <- AkkaUtil.nonBlockingSleep(10.second)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
