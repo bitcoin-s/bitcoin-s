@@ -109,10 +109,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
           resF.map {
             case r: RescanState.RescanStarted =>
-              r.doneF.map(_ =>
+              r.entireRescanDoneF.map(_ =>
                 logger.info(s"Finished rescanning the wallet. It took ${System
                   .currentTimeMillis() - startTime}ms"))
-            case RescanState.RescanDone | RescanState.RescanAlreadyStarted =>
+            case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
+                RescanState.RescanNotNeeded =>
             //nothing to log
           }
 
@@ -158,7 +159,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield ()
   }
 
-  lazy val walletCreationBlockHeight: Future[BlockHeight] =
+  private lazy val walletCreationBlockHeight: Future[BlockHeight] =
     chainQueryApi
       .epochSecondToBlockHeight(creationTime.getEpochSecond)
       .map(BlockHeight)
@@ -231,14 +232,18 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val (completeRescanEarlyP, matchingBlocksF) =
       combine.toMat(rescanSink)(Keep.both).run()
 
+    val recursiveRescanP: Promise[RescanState] = Promise()
+
     //if we have seen the last filter, complete the rescanEarlyP so we are consistent
-    rescanCompletePromise.future.map(_ => completeRescanEarlyP.success(None))
+    rescanCompletePromise.future.map { _ =>
+      completeRescanEarlyP.success(None)
+    }
 
     val flatten = matchingBlocksF.map(_.flatten.toVector)
 
     //return RescanStarted with access to the ability to complete the rescan early
     //via the completeRescanEarlyP promise.
-    RescanState.RescanStarted(completeRescanEarlyP, flatten)
+    RescanState.RescanStarted(completeRescanEarlyP, flatten, recursiveRescanP)
   }
 
   /** Iterates over the block filters in order to find filters that match to the given addresses
@@ -257,14 +262,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
     *                         (default [[Runtime.getRuntime.availableProcessors()]])
     * @return a list of matching block hashes
     */
-  def getMatchingBlocks(
+  private def getMatchingBlocks(
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       account: HDAccount,
       forceGenerateSpks: Boolean,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(implicit
-      ec: ExecutionContext): Future[RescanState] = {
+      ec: ExecutionContext): Future[RescanState.RescanStarted] = {
     require(addressBatchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
     for {
@@ -325,15 +330,15 @@ private[wallet] trait RescanHandling extends WalletLogger {
     * do another rescan
     */
   private def recursiveRescan(
-      prevState: RescanState,
+      prevState: RescanState.RescanStarted,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       account: HDAccount): Future[Unit] = {
     val awaitPreviousRescanF =
-      RescanState.awaitRescanComplete(rescanState = prevState)
+      RescanState.awaitSingleRescanDone(rescanState = prevState)
     for {
-      _ <- awaitPreviousRescanF
+      _ <- awaitPreviousRescanF //this is where the deadlock occurs
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
@@ -342,19 +347,23 @@ private[wallet] trait RescanHandling extends WalletLogger {
         ) {
           logger.info(
             s"Did not find any funds within the last ${walletConfig.addressGapLimit} addresses. Stopping our rescan.")
+          prevState.recursiveRescanP.success(RescanState.RescanNotNeeded)
           Future.unit
         } else {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
               s"match within our address gap limit of ${walletConfig.addressGapLimit} externalGap=$externalGap changeGap=$changeGap")
-          doNeutrinoRescan(account = account,
-                           startOpt = startOpt,
-                           endOpt = endOpt,
-                           addressBatchSize = addressBatchSize,
-                           forceGenerateSpks = true)
+          val recursiveF = doNeutrinoRescan(account = account,
+                                            startOpt = startOpt,
+                                            endOpt = endOpt,
+                                            addressBatchSize = addressBatchSize,
+                                            forceGenerateSpks = true)
+          recursiveF.map(r => prevState.recursiveRescanP.success(r))
         }
       }
-    } yield ()
+    } yield {
+      ()
+    }
   }
 
   private def calcAddressGap(
@@ -402,7 +411,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       account: HDAccount,
       addressBatchSize: Int,
-      forceGenerateSpks: Boolean): Future[RescanState] = {
+      forceGenerateSpks: Boolean): Future[RescanState.RescanStarted] = {
     val rescanStateF = for {
       rescanState <- getMatchingBlocks(startOpt = startOpt,
                                        endOpt = endOpt,

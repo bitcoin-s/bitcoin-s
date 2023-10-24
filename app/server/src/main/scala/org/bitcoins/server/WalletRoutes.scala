@@ -1104,7 +1104,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
                     //do nothing, we don't want to reset/stop a rescan that is running
                     Future.successful(started)
                   }
-                case RescanState.RescanDone =>
+                case RescanState.RescanDone | RescanState.RescanNotNeeded =>
                   //if the previous rescan is done, start another rescan
                   startRescan(rescan)
                 case RescanState.RescanAlreadyStarted =>
@@ -1143,11 +1143,12 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     stateF.map {
       case started: RescanState.RescanStarted =>
-        started.doneF.map { _ =>
+        started.entireRescanDoneF.map { _ =>
           logger.info(s"Rescan finished, setting state to RescanDone")
           rescanStateOpt = Some(RescanState.RescanDone)
         }
-      case RescanState.RescanAlreadyStarted | RescanState.RescanDone =>
+      case RescanState.RescanAlreadyStarted | RescanState.RescanDone |
+          RescanState.RescanNotNeeded =>
       //do nothing in these cases, no state needs to be reset
     }
 
@@ -1158,7 +1159,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     rescanState match {
       case RescanState.RescanAlreadyStarted | _: RescanState.RescanStarted =>
         "Rescan started."
-      case RescanState.RescanDone =>
+      case RescanState.RescanDone | RescanState.RescanNotNeeded =>
         "Rescan done."
     }
   }
