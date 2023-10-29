@@ -350,8 +350,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         nodeUri0 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoinds(0))
         peer0 <- NodeTestUtil.getBitcoindPeer(bitcoinds(0))
         _ <- bitcoinds(0).disconnectNode(nodeUri0)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          node.peerManager.isDisconnected(peer0))
+        _ <- AsyncUtil.retryUntilSatisfiedF(
+          () => node.peerManager.isDisconnected(peer0),
+          1.second)
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
           node.getConnectionCount.map(_ == 1))
       } yield succeed
