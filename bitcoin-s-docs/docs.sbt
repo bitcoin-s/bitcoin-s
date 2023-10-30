@@ -33,8 +33,8 @@ buildInfoPackage := "org.bitcoins.docs"
 // Mdoc end
 ///////
 
-Test / bloopGenerate := None
-Compile / bloopGenerate := None
+Test / bloopGenerate := sbt.Value(None)
+Compile / bloopGenerate := sbt.Value(None)
 
 //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
 Compile / scalacOptions ~= (_.filterNot(s => s == "-Xfatal-warnings"))
