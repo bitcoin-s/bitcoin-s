@@ -23,12 +23,12 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("24.1", "23.2", "22.0", "0.21.1")
+    List("24.2", "23.2", "22.0", "0.21.1")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
 
-  val arm64MacVersions = List("24.1", "23.2")
+  val arm64MacVersions = List("24.2", "23.2")
   def getPlatformAndSuffix(version: String): (String, String) = {
     if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
     else if (Properties.isMac) {
@@ -95,14 +95,14 @@ TaskKeys.downloadBitcoind := {
         val expectedHash =
           if (Properties.isLinux)
             Map(
-              "24.1" -> "c112af3d19cca7f5b5f942708ca4d522110d8e1dc1c0f8d3077f531c94e5f00f",
+              "24.2" -> "7540d6e34c311e355af2fd76e5eee853b76c291978d6b5ebb555c7877e9de38d",
               "23.2" -> "853b9b0a50800a5b355df7a39dbdd6d7a2339f765e2d31a36d14bd705e7dbce1",
               "22.0" -> "59ebd25dd82a51638b7a6bb914586201e67db67b919b2a1ff08925a7936d1b16",
               "0.21.1" -> "366eb44a7a0aa5bd342deea215ec19a184a11f2ca22220304ebb20b9c8917e2b",
             )
           else if (Properties.isMac)
             Map(
-              "24.1" -> (if (System.getProperty("os.arch") == "aarch64")
+              "24.2" -> (if (System.getProperty("os.arch") == "aarch64")
                 "0bf7d0e313ac831a1b1c25c3871280721ab8fb7021bcca0f2acc280f4362a98e"
               else
                 "e06cffa770b162bf47ee1e7c8a5c286440a3e3cf6a543e25f865df5d4fbca9f7"),
@@ -115,7 +115,7 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
-              "24.1" -> "2b3181f73e3a7a10f57773bf57f11a622ec9f235b828e8bdbf41a2b17062ad62",
+              "24.2" -> "2b3181f73e3a7a10f57773bf57f11a622ec9f235b828e8bdbf41a2b17062ad62",
               "23.2" -> "29dd4c94de8b292fd19fd9475f2f31f891d04f16238bd7defa48eef3f2f8546a",
               "22.0" -> "9485e4b52ed6cebfe474ab4d7d0c1be6d0bb879ba7246a8239326b2230a77eb1",
               "0.21.1" -> "94c80f90184cdc7e7e75988a55b38384de262336abd80b1b30121c6e965dc74e"
