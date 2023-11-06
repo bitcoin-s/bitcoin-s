@@ -359,7 +359,6 @@ lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
 
 lazy val coreTestJVM = coreTest.jvm
   .settings(libraryDependencies ++= Deps.coreTestJVM.value)
-  .settings(testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-S", "244100937345831466"))
   .dependsOn(testkit)
 
 lazy val coreTestJS = coreTest.js
