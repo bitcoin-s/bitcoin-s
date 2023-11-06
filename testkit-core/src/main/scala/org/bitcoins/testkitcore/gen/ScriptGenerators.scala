@@ -79,9 +79,9 @@ sealed abstract class ScriptGenerators {
       numKeys <- Gen.choose(1, Consensus.maxPublicKeysPerMultiSig)
       hash <- CryptoGenerators.doubleSha256Digest
       hashType <- CryptoGenerators.hashType
+      privKeys <- CryptoGenerators.privateKeySeq(numKeys)
     } yield for {
-      _ <- 0 until numKeys
-      privKey = ECPrivateKey()
+      privKey <- privKeys
     } yield ECDigitalSignature.fromBytes(
       privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte))
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
