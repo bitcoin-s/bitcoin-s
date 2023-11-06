@@ -8,7 +8,16 @@ import scodec.bits.ByteVector
   */
 sealed abstract class CryptoGenerators {
 
-  def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
+  def privateKey: Gen[ECPrivateKey] = {
+    //purposefully don't reach for cryptographically strong
+    //number generation, we want determinism to reproduce failed
+    //test cases. If we don't generate the private key with scalacheck
+    //we won't be able to reproduce the test case with a seed
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/1339
+    NumberGenerator.bytevector(32).map { vec =>
+      ECPrivateKey.fromBytes(vec)
+    }
+  }
 
   def fieldElement: Gen[FieldElement] = privateKey.map(_.fieldElement)
 
@@ -169,9 +178,20 @@ sealed abstract class CryptoGenerators {
       hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     } yield hash
 
-  def aesKey128Bit: Gen[AesKey] = Gen.delay(AesKey.get128Bit())
-  def aesKey192Bit: Gen[AesKey] = Gen.delay(AesKey.get192Bit())
-  def aesKey256Bit: Gen[AesKey] = Gen.delay(AesKey.get256Bit())
+  def aesKey128Bit: Gen[AesKey] = {
+    val bytesGen = NumberGenerator.bytevector(16)
+    bytesGen.map(AesKey.fromValidBytes(_))
+  }
+
+  def aesKey192Bit: Gen[AesKey] = {
+    val bytesGen = NumberGenerator.bytevector(24)
+    bytesGen.map(AesKey.fromValidBytes(_))
+  }
+
+  def aesKey256Bit: Gen[AesKey] = {
+    val bytesGen = NumberGenerator.bytevector(32)
+    bytesGen.map(AesKey.fromValidBytes(_))
+  }
 
   def aesKey: Gen[AesKey] =
     Gen.oneOf(aesKey128Bit, aesKey192Bit, aesKey256Bit)
