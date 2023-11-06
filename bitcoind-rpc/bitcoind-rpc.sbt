@@ -103,7 +103,7 @@ TaskKeys.downloadBitcoind := {
           else if (Properties.isMac)
             Map(
               "24.2" -> (if (System.getProperty("os.arch") == "aarch64")
-                "0bf7d0e313ac831a1b1c25c3871280721ab8fb7021bcca0f2acc280f4362a98e"
+                "ae6f5f0cb4079005c32695711ef78b26a26c4c547ceb593b3626059626530a5d"
               else
                 "e06cffa770b162bf47ee1e7c8a5c286440a3e3cf6a543e25f865df5d4fbca9f7"),
               "23.2" -> (if (System.getProperty("os.arch") == "aarch64")
