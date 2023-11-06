@@ -105,7 +105,7 @@ TaskKeys.downloadBitcoind := {
               "24.2" -> (if (System.getProperty("os.arch") == "aarch64")
                 "ae6f5f0cb4079005c32695711ef78b26a26c4c547ceb593b3626059626530a5d"
               else
-                "e06cffa770b162bf47ee1e7c8a5c286440a3e3cf6a543e25f865df5d4fbca9f7"),
+                "b1b21455c339b2daf0998bfad17d0741d967c3c81db040bb5f73234168526d29"),
               "23.2" -> (if (System.getProperty("os.arch") == "aarch64")
                            "33f8680f820327d5f9e64c02e476d03a5b2e5bd403e1b1cb0a82bd7ec2a8dc5e"
                          else
@@ -115,7 +115,7 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
-              "24.2" -> "2b3181f73e3a7a10f57773bf57f11a622ec9f235b828e8bdbf41a2b17062ad62",
+              "24.2" -> "544436bc9d5ce017e679bbccfe8a4928fbc840b414ee0240db8c3523ba54340a",
               "23.2" -> "29dd4c94de8b292fd19fd9475f2f31f891d04f16238bd7defa48eef3f2f8546a",
               "22.0" -> "9485e4b52ed6cebfe474ab4d7d0c1be6d0bb879ba7246a8239326b2230a77eb1",
               "0.21.1" -> "94c80f90184cdc7e7e75988a55b38384de262336abd80b1b30121c6e965dc74e"
