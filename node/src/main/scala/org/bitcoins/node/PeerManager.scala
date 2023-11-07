@@ -449,8 +449,6 @@ case class PeerManager(
           //client actor for one of the test peers stopped, can remove it from map now
           finder.removePeer(peer).map(_ => state)
         } else if (peerDataMap.contains(peer)) {
-          //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
-          //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
           _peerDataMap.remove(peer)
           //getDataMesageHandler.state is already mutated from another thread
           //this will be set to the new sync peer not the old one.
