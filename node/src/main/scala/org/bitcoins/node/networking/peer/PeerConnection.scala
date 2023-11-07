@@ -260,12 +260,16 @@ case class PeerConnection(peer: Peer, peerManager: PeerManager)(implicit
           .onComplete {
             case scala.util.Success(_) =>
               val disconnectedPeer = DisconnectedPeer(peer, false)
-              peerManager.offer(disconnectedPeer)
+              peerManager.offer(disconnectedPeer).map { _ =>
+                connectionGraphOpt = None
+              }
             case scala.util.Failure(err) =>
               logger.info(
                 s"Connection with peer=$peer failed with err=${err.getMessage}")
               val disconnectedPeer = DisconnectedPeer(peer, false)
-              peerManager.offer(disconnectedPeer)
+              peerManager.offer(disconnectedPeer).map { _ =>
+                connectionGraphOpt = None
+              }
           }
 
         resultF.map(_ => ())
