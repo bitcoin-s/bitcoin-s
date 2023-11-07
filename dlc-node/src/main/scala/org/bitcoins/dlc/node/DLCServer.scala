@@ -27,16 +27,17 @@ class DLCServer(
 
   IO(Tcp) ! Tcp.Bind(self, bindAddress)
 
-  var socket: ActorRef = _
+  private[this] var socketOpt: Option[ActorRef] = None
 
   override def receive: Receive = LoggingReceive {
     case Tcp.Bound(localAddress) =>
       log.info(s"Bound at $localAddress")
       boundAddress.foreach(_.success(localAddress))
-      socket = sender()
+      socketOpt = Some(sender())
 
     case DLCServer.Disconnect =>
-      socket ! Tcp.Unbind
+      socketOpt.map(_ ! Tcp.Unbind)
+      socketOpt = None
 
     case c @ Tcp.CommandFailed(_: Tcp.Bind) =>
       val ex = c.cause.getOrElse(new IOException("Unknown Error"))
@@ -58,7 +59,8 @@ class DLCServer(
 
   override def postStop(): Unit = {
     super.postStop()
-    socket ! Tcp.Unbind
+    socketOpt.map(_ ! Tcp.Unbind)
+    socketOpt = None
   }
 
   override def aroundReceive(receive: Receive, msg: Any): Unit = try {
