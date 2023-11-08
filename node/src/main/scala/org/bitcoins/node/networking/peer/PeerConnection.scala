@@ -324,6 +324,7 @@ case class PeerConnection(peer: Peer, peerManager: PeerManager)(implicit
       case Some(cg) =>
         logger.info(s"Disconnecting peer=${peer}")
         cg.stop()
+        connectionGraphOpt = None
         Future.unit
       case None =>
         val err =
