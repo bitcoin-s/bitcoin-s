@@ -30,7 +30,7 @@ object Deps {
     val jUnixSocketV = "2.8.2"
     val scodecV = "1.1.38"
     val junitV = "0.13.3"
-    val nativeLoaderV = "2.4.0"
+    val nativeLoaderV = "2.5.0"
     val typesafeConfigV = "1.4.3"
 
     val asyncNewScalaV = "1.0.1"
