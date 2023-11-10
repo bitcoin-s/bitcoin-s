@@ -1,6 +1,8 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
@@ -17,7 +19,7 @@ case class NeutrinoNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    paramPeers: Vector[Peer] = Vector.empty)
+    paramPeers: Vector[Peer])
     extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -29,11 +31,35 @@ case class NeutrinoNode(
 
   implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override lazy val peerManager: PeerManager =
-    PeerManager(paramPeers, walletCreationTimeOpt)
+  private[bitcoins] val dataMessageStreamSource: Source[
+    NodeStreamMessage,
+    SourceQueueWithComplete[NodeStreamMessage]] = {
+    Source
+      .queue[NodeStreamMessage](
+        100 * nodeAppConfig.maxConnectedPeers,
+        overflowStrategy = OverflowStrategy.backpressure,
+        maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
+  }
+
+  private[bitcoins] lazy val (queue, source) =
+    dataMessageStreamSource.preMaterialize()
+
+  private lazy val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
+                                                       queue = queue,
+                                                       skipPeers =
+                                                         () => Set.empty)
+
+  override lazy val peerManager: PeerManager = {
+    PeerManager(paramPeers = paramPeers,
+                walletCreationTimeOpt = walletCreationTimeOpt,
+                dataMessageQueue = queue,
+                source = source,
+                peerFinder)
+  }
 
   override def start(): Future[NeutrinoNode] = {
     val res = for {
+      _ <- peerFinder.start()
       node <- super.start()
     } yield {
       node.asInstanceOf[NeutrinoNode]

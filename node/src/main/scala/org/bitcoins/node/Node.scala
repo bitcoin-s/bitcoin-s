@@ -33,6 +33,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   def peerManager: PeerManager
+
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.callBacks
 
   lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()
