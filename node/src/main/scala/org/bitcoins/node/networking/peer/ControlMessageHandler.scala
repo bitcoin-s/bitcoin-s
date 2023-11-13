@@ -16,61 +16,49 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
     nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
 
-  private def getPeerMsgSenderApi(peer: Peer): Option[PeerMessageSenderApi] = {
-    peerFinder.getPeerData(peer).map(_.peerMessageSender)
-  }
-
   def handleControlPayload(
       payload: ControlPayload,
-      peer: Peer): Future[Option[Initialized]] = {
-    val result: Future[Option[Initialized]] = getPeerMsgSenderApi(peer) match {
-      case Some(peerMsgSenderApi) =>
-        payload match {
+      peerMsgSenderApi: PeerMessageSenderApi): Future[Option[Initialized]] = {
+    val peer = peerMsgSenderApi.peer
+    payload match {
 
-          case versionMsg: VersionMessage =>
-            logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
-            peerFinder.onVersionMessage(peer, versionMsg)
-            peerMsgSenderApi
-              .sendVerackMessage()
-              .map(_ => None)
+      case versionMsg: VersionMessage =>
+        logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
+        peerFinder.onVersionMessage(peer, versionMsg)
+        peerMsgSenderApi
+          .sendVerackMessage()
+          .map(_ => None)
 
-          case VerAckMessage =>
-            val i = NodeStreamMessage.Initialized(peer)
-            Future.successful(Some(i))
-          case ping: PingMessage =>
-            peerMsgSenderApi
-              .sendPong(ping)
-              .map(_ => None)
-          case SendHeadersMessage =>
-            //we want peers to just send us headers
-            //we don't want to have to request them manually
-            peerMsgSenderApi
-              .sendHeadersMessage()
-              .map(_ => None)
-          case msg: GossipAddrMessage =>
-            handleGossipAddrMessage(msg)
-            Future.successful(None)
-          case SendAddrV2Message =>
-            peerMsgSenderApi
-              .sendSendAddrV2Message()
-              .map(_ => None)
-          case _ @(_: FilterAddMessage | _: FilterLoadMessage |
-              FilterClearMessage) =>
-            Future.successful(None)
-          case _ @(GetAddrMessage | _: PongMessage) =>
-            Future.successful(None)
-          case _: RejectMessage =>
-            Future.successful(None)
-          case _: FeeFilterMessage =>
-            Future.successful(None)
-        }
-      case None =>
-        val exn = new RuntimeException(
-          s"Cannot find peerMsgSender for peer=$peer to handle controlpayload=${payload.commandName}")
-        Future.failed(exn)
+      case VerAckMessage =>
+        val i = NodeStreamMessage.Initialized(peer)
+        Future.successful(Some(i))
+      case ping: PingMessage =>
+        peerMsgSenderApi
+          .sendPong(ping)
+          .map(_ => None)
+      case SendHeadersMessage =>
+        //we want peers to just send us headers
+        //we don't want to have to request them manually
+        peerMsgSenderApi
+          .sendHeadersMessage()
+          .map(_ => None)
+      case msg: GossipAddrMessage =>
+        handleGossipAddrMessage(msg)
+        Future.successful(None)
+      case SendAddrV2Message =>
+        peerMsgSenderApi
+          .sendSendAddrV2Message()
+          .map(_ => None)
+      case _ @(_: FilterAddMessage | _: FilterLoadMessage |
+          FilterClearMessage) =>
+        Future.successful(None)
+      case _ @(GetAddrMessage | _: PongMessage) =>
+        Future.successful(None)
+      case _: RejectMessage =>
+        Future.successful(None)
+      case _: FeeFilterMessage =>
+        Future.successful(None)
     }
-
-    result
   }
 
   private def handleGossipAddrMessage(message: GossipAddrMessage): Unit = {

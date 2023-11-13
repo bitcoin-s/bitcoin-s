@@ -597,10 +597,29 @@ case class PeerManager(
             }
         }
       case (state, ControlMessageWrapper(payload, peer)) =>
-        controlMessageHandler.handleControlPayload(payload, peer).flatMap {
-          case Some(i) =>
-            onInitialization(i.peer, state)
+        val peerMsgSenderApiOpt: Option[PeerMessageSenderApi] =
+          getPeerMsgSender(peer) match {
+            case Some(p) => Some(p)
+            case None =>
+              finder.getPeerData(peer) match {
+                case Some(p) => Some(p.peerMessageSender)
+                case None    => None
+              }
+          }
+        peerMsgSenderApiOpt match {
+          case Some(peerMsgSenderApi) =>
+            val resultOptF = controlMessageHandler
+              .handleControlPayload(payload,
+                                    peerMsgSenderApi = peerMsgSenderApi)
+            resultOptF.flatMap {
+              case Some(i) =>
+                onInitialization(i.peer, state)
+              case None =>
+                Future.successful(state)
+            }
           case None =>
+            logger.warn(
+              s"Cannot find a peer message sender api from peer=$peer to handle control payload=${payload.commandName}")
             Future.successful(state)
         }
 

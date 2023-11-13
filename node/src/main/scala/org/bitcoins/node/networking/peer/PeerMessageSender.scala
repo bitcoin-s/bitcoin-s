@@ -29,7 +29,7 @@ case class PeerMessageSender(peerConnection: PeerConnection)(implicit
     extends PeerMessageSenderApi
     with P2PLogger {
 
-  private val peer: Peer = peerConnection.peer
+  override val peer: Peer = peerConnection.peer
 
   override def sendMsg(msg: NetworkPayload): Future[Unit] = {
     val networkMessage = NetworkMessage(nodeAppConfig.network, msg)
