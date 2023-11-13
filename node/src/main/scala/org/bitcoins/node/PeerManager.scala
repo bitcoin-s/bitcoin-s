@@ -597,26 +597,10 @@ case class PeerManager(
             }
         }
       case (state, ControlMessageWrapper(payload, peer)) =>
-        val controlMessageHandlerOpt: Option[ControlMessageHandler] =
-          payload match {
-            case _: VersionMessage | VerAckMessage =>
-              finder.getPeerData(peer).map { peerData =>
-                peerData.controlMessageHandler
-              }
-            case _: ControlPayload =>
-              Some(controlMessageHandler)
-          }
-        controlMessageHandlerOpt match {
-          case Some(controlMessageHandler) =>
-            controlMessageHandler.handleControlPayload(payload, peer).flatMap {
-              case Some(i) =>
-                onInitialization(i.peer, state)
-              case None =>
-                Future.successful(state)
-            }
+        controlMessageHandler.handleControlPayload(payload, peer).flatMap {
+          case Some(i) =>
+            onInitialization(i.peer, state)
           case None =>
-            logger.warn(
-              s"Cannot find peer=$peer to handle control payload=${payload.commandName}")
             Future.successful(state)
         }
 

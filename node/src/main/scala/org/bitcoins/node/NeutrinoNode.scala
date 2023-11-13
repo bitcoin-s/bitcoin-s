@@ -54,13 +54,13 @@ case class NeutrinoNode(
                 walletCreationTimeOpt = walletCreationTimeOpt,
                 dataMessageQueue = queue,
                 source = source,
-                peerFinder)
+                finder = peerFinder)
   }
 
   override def start(): Future[NeutrinoNode] = {
     val res = for {
-      _ <- peerFinder.start()
       node <- super.start()
+      _ <- peerFinder.start()
     } yield {
       node.asInstanceOf[NeutrinoNode]
     }

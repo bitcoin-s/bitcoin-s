@@ -6,7 +6,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
-import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.{
@@ -170,7 +170,7 @@ case class PeerFinder(
     logger.debug(s"Starting PeerFinder")
     isStarted.set(true)
     val peersToTry = (getPeersFromParam ++ getPeersFromConfig).distinct
-    val initPeerF = Future.traverse(peersToTry)(tryPeer)
+    val initPeerF = FutureUtil.sequentially(peersToTry)(tryPeer)
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
@@ -240,9 +240,7 @@ case class PeerFinder(
     logger.debug(s"tryToAttemptToConnectPeer=$peer")
     val peerConnection = _peerData(peer).peerConnection
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(
-      peer,
-      AttemptToConnectPeerData(peer, controlMessageHandler, peerMessageSender))
+    _peerData.put(peer, AttemptToConnectPeerData(peer, peerMessageSender))
     peerConnection.connect()
   }
 
@@ -251,24 +249,20 @@ case class PeerFinder(
     logger.debug(s"tryPeer=$peer")
     val peerConnection = PeerConnection(peer, queue)
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(
-      peer,
-      PersistentPeerData(peer, controlMessageHandler, peerMessageSender))
+    _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
     peerConnection.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
     val peerConnection = PeerConnection(peer, queue)
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(
-      peer,
-      PersistentPeerData(peer, controlMessageHandler, peerMessageSender))
+    _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
     peerConnection.reconnect()
 
   }
 
   def removePeer(peer: Peer): Future[Unit] = {
-    logger.debug(s"Removing peer $peer")
+    logger.debug(s"Removing peer=$peer")
     val peerData = _peerData(peer)
     peerData.stop().map { _ =>
       _peerData.remove(peer) //peer must be a member of _peerData
@@ -299,6 +293,7 @@ case class PeerFinder(
   }
 
   def getPeerData(peer: Peer): Option[PeerData] = {
+    logger.debug(s"getPeerData.peers=${_peerData.keys.toVector}")
     _peerData.get(peer)
   }
 
