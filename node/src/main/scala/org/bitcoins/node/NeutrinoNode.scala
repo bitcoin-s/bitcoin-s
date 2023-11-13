@@ -1,12 +1,19 @@
 package org.bitcoins.node
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Source, SourceQueueWithComplete}
+import akka.stream.{ActorAttributes, OverflowStrategy, Supervision}
+import akka.stream.scaladsl.{
+  Keep,
+  RunnableGraph,
+  Source,
+  SourceQueueWithComplete
+}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.node.{NodeType, Peer}
+import org.bitcoins.core.api.node.NodeState.DoneSyncing
+import org.bitcoins.core.api.node.{NodeState, NodeType, Peer}
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
@@ -57,7 +64,30 @@ case class NeutrinoNode(
                 finder = peerFinder)
   }
 
+  private val decider: Supervision.Decider = { case err: Throwable =>
+    logger.error(s"Error occurred while processing p2p pipeline stream", err)
+    Supervision.Resume
+  }
+
+  private var streamDoneFOpt: Option[Future[NodeState]] = None
+
+  private def buildDataMessageStreamGraph(
+      initState: NodeState,
+      source: Source[NodeStreamMessage, NotUsed]): RunnableGraph[
+    Future[NodeState]] = {
+    val graph = source
+      .toMat(peerManager.buildP2PMessageHandlerSink(initState))(Keep.right)
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+    graph
+  }
+
   override def start(): Future[NeutrinoNode] = {
+    val initState =
+      DoneSyncing(peers = Set.empty, waitingForDisconnection = Set.empty)
+    val graph =
+      buildDataMessageStreamGraph(initState = initState, source = source)
+    val stateF = graph.run()
+    streamDoneFOpt = Some(stateF)
     val res = for {
       node <- super.start()
       _ <- peerFinder.start()
@@ -70,8 +100,27 @@ case class NeutrinoNode(
     res
   }
 
-  override def stop(): Future[NeutrinoNode] =
-    super.stop().map(_.asInstanceOf[NeutrinoNode])
+  override def stop(): Future[NeutrinoNode] = {
+    for {
+      n <- super.stop()
+      _ <- peerFinder.stop()
+      //need to complete queue in NeutrinoNode.stop()
+      _ = queue.complete()
+      _ <- {
+        val finishedF = streamDoneFOpt match {
+          case Some(f) => f
+          case None    => Future.successful(Done)
+        }
+        finishedF
+      }
+      _ = {
+        //reset all variables
+        streamDoneFOpt = None
+      }
+    } yield {
+      n.asInstanceOf[NeutrinoNode]
+    }
+  }
 
   /** Starts to sync our node with our peer
     * If our local best block hash is the same as our peers

@@ -1,43 +1,30 @@
 package org.bitcoins.node
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.{ActorAttributes, Supervision}
-import akka.stream.scaladsl.{
-  Keep,
-  RunnableGraph,
-  Sink,
-  Source,
-  SourceQueueWithComplete
-}
+import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.core.api.chain.{ChainApi}
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.node.{
-  NodeState,
-  NodeType,
-  Peer,
-  PeerManagerApi,
-  SyncNodeState
-}
+import org.bitcoins.core.api.node.NodeState._
+import org.bitcoins.core.api.node._
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.node.NodeStreamMessage._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
-import org.bitcoins.core.api.node.NodeState._
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import NodeStreamMessage._
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import scodec.bits.ByteVector
 
 import java.net.InetAddress
@@ -202,14 +189,6 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-
-    val initState =
-      DoneSyncing(peers = peers, waitingForDisconnection = Set.empty)
-    val graph =
-      buildDataMessageStreamGraph(initState = initState, source = source)
-    val stateF = graph.run()
-    streamDoneFOpt = Some(stateF)
-
     val inactivityCancellable = startInactivityChecksJob()
     inactivityCancellableOpt = Some(inactivityCancellable)
     logger.info("Done starting PeerManager")
@@ -231,34 +210,21 @@ case class PeerManager(
 
     inactivityCancellableOpt.map(_.cancel())
 
-    //maybe need to move this .stop() call into NeutrinoNode
-    val finderStopF = finder.stop()
-
     val stopF = for {
-      _ <- finderStopF
       _ <- Future.traverse(peers)(disconnectPeer)
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty,
         interval = 1.seconds,
         maxTries = 30
       )
-      //need to complete queue in NeutrinoNode.stop()
-      _ <- {
-        val finishedF = streamDoneFOpt match {
-          case Some(f) => f
-          case None    => Future.successful(Done)
-        }
-        finishedF
-      }
       _ = {
         //reset all variables
         syncFilterCancellableOpt = None
-        streamDoneFOpt = None
         inactivityCancellableOpt = None
       }
     } yield {
       logger.info(
-        s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
+        s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt}ms")
       this
     }
 
@@ -538,7 +504,7 @@ case class PeerManager(
     finder.controlMessageHandler
   }
 
-  private def buildP2PMessageHandlerSink(
+  def buildP2PMessageHandlerSink(
       initState: NodeState): Sink[NodeStreamMessage, Future[NodeState]] = {
     Sink.foldAsync(initState) {
       case (state, s: StartSync) =>
@@ -643,23 +609,6 @@ case class PeerManager(
         sendResponseTimeout(srt.peer, srt.payload).map(_ => dmh)
     }
   }
-
-  private val decider: Supervision.Decider = { case err: Throwable =>
-    logger.error(s"Error occurred while processing p2p pipeline stream", err)
-    Supervision.Resume
-  }
-
-  private def buildDataMessageStreamGraph(
-      initState: NodeState,
-      source: Source[NodeStreamMessage, NotUsed]): RunnableGraph[
-    Future[NodeState]] = {
-    val graph = source
-      .toMat(buildP2PMessageHandlerSink(initState))(Keep.right)
-      .withAttributes(ActorAttributes.supervisionStrategy(decider))
-    graph
-  }
-
-  private var streamDoneFOpt: Option[Future[NodeState]] = None
 
   private def switchSyncToPeer(
       oldSyncState: SyncNodeState,
