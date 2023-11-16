@@ -1,8 +1,7 @@
 package org.bitcoins.node
 
-import akka.NotUsed
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{Sink, Source, SourceQueue}
+import akka.stream.scaladsl.{Sink, SourceQueue}
 import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -38,7 +37,6 @@ case class PeerManager(
     paramPeers: Vector[Peer],
     walletCreationTimeOpt: Option[Instant],
     dataMessageQueue: SourceQueue[NodeStreamMessage],
-    source: Source[NodeStreamMessage, NotUsed],
     finder: PeerFinder)(implicit
     ec: ExecutionContext,
     system: ActorSystem,

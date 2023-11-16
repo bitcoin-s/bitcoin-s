@@ -10,9 +10,10 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.api.node.{NodeApi}
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
@@ -22,7 +23,11 @@ import scala.util.{Failure, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
-trait Node extends NodeApi with ChainQueryApi with P2PLogger {
+trait Node
+    extends NodeApi
+    with ChainQueryApi
+    with StartStopAsync[Node]
+    with P2PLogger {
 
   implicit def system: ActorSystem
 
@@ -51,7 +56,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   /** Starts our node */
-  def start(): Future[Node] = {
+  override def start(): Future[Node] = {
     logger.info("Starting node")
     val start = System.currentTimeMillis()
 
@@ -78,19 +83,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters. It took=${System
           .currentTimeMillis() - start}ms")
       node
-    }
-  }
-
-  /** Stops our node */
-  def stop(): Future[Node] = {
-    logger.info(s"Stopping node")
-
-    val start = System.currentTimeMillis()
-
-    peerManager.stop().map { _ =>
-      logger.info(
-        s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
-      this
     }
   }
 

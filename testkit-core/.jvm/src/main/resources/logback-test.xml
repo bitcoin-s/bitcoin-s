@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="OFF">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -66,11 +66,11 @@
     <!-- See exceptions thrown in actor-->
     <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
 
-    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+    <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
 
-    <logger name="org.bitcoins.node.PeerFinder" level="DEBUG"/>
+    <logger name="org.bitcoins.node.PeerFinder" level="WARN"/>
 
-    <logger name="org.bitcoins.node.networking.peer.PeerConnection" level="DEBUG"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerConnection" level="WARN"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->

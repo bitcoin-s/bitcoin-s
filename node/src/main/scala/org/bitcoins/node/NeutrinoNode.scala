@@ -59,9 +59,6 @@ case class NeutrinoNode(
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
-  private lazy val (queue, source) =
-    dataMessageStreamSource.preMaterialize()
-
   private lazy val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
                                                        queue = this,
                                                        skipPeers =
@@ -71,11 +68,10 @@ case class NeutrinoNode(
     PeerManager(paramPeers = paramPeers,
                 walletCreationTimeOpt = walletCreationTimeOpt,
                 dataMessageQueue = this,
-                source = source,
                 finder = peerFinder)
   }
 
-  private val queueOpt: Option[SourceQueueWithComplete[NodeStreamMessage]] =
+  private var queueOpt: Option[SourceQueueWithComplete[NodeStreamMessage]] =
     None
 
   private var streamDoneFOpt: Option[Future[NodeState]] = None
@@ -98,6 +94,10 @@ case class NeutrinoNode(
   override def start(): Future[NeutrinoNode] = {
     val initState =
       DoneSyncing(peers = Set.empty, waitingForDisconnection = Set.empty)
+    val (queue, source) =
+      dataMessageStreamSource.preMaterialize()
+
+    queueOpt = Some(queue)
     val graph =
       buildDataMessageStreamGraph(initState = initState, source = source)
     val stateF = graph.run()
@@ -119,13 +119,15 @@ case class NeutrinoNode(
   }
 
   override def stop(): Future[NeutrinoNode] = {
+    logger.info(s"Stopping NeutrinoNode")
     isStarted.set(false)
+    val start = System.currentTimeMillis()
     inactivityCancellableOpt.map(_.cancel())
     for {
-      n <- super.stop()
       _ <- peerFinder.stop()
+      _ <- peerManager.stop()
       //need to complete queue in NeutrinoNode.stop()
-      _ = queue.complete()
+      _ = queueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {
           case Some(f) => f
@@ -137,9 +139,12 @@ case class NeutrinoNode(
         //reset all variables
         streamDoneFOpt = None
         inactivityCancellableOpt = None
+        queueOpt = None
       }
     } yield {
-      n.asInstanceOf[NeutrinoNode]
+      logger.info(
+        s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
+      this
     }
   }
 
@@ -219,7 +224,7 @@ case class NeutrinoNode(
       case Some(queue) => queue.offer(elem)
       case None =>
         Future.failed(new RuntimeException(
-          s"PeerManager not started, cannot process p2p message until NeutrinoNode.start() is called"))
+          s"NeutrinoNode not started, cannot process p2p message until NeutrinoNode.start() is called"))
     }
   }
 
