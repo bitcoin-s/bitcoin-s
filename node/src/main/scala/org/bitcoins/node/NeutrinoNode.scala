@@ -93,6 +93,7 @@ case class NeutrinoNode(
   }
 
   override def start(): Future[NeutrinoNode] = {
+    isStarted.set(true)
     val initState =
       DoneSyncing(peers = Set.empty, waitingForDisconnection = Set.empty)
     val (queue, source) =
