@@ -6,7 +6,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
-import org.bitcoins.core.util.{FutureUtil, NetworkUtil, StartStopAsync}
+import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.{
@@ -170,7 +170,7 @@ case class PeerFinder(
     logger.debug(s"Starting PeerFinder")
     isStarted.set(true)
     val peersToTry = (getPeersFromParam ++ getPeersFromConfig).distinct
-    val initPeerF = FutureUtil.sequentially(peersToTry)(tryPeer)
+    val initPeerF = Future.traverse(peersToTry)(tryPeer)
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {

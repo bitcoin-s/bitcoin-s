@@ -67,14 +67,15 @@ case class NeutrinoNode(
   override lazy val peerManager: PeerManager = {
     PeerManager(paramPeers = paramPeers,
                 walletCreationTimeOpt = walletCreationTimeOpt,
-                dataMessageQueue = this,
+                queue = this,
                 finder = peerFinder)
   }
 
-  private var queueOpt: Option[SourceQueueWithComplete[NodeStreamMessage]] =
+  private[this] var queueOpt: Option[
+    SourceQueueWithComplete[NodeStreamMessage]] =
     None
 
-  private var streamDoneFOpt: Option[Future[NodeState]] = None
+  private[this] var streamDoneFOpt: Option[Future[NodeState]] = None
 
   private val decider: Supervision.Decider = { case err: Throwable =>
     logger.error(s"Error occurred while processing p2p pipeline stream", err)
@@ -126,7 +127,6 @@ case class NeutrinoNode(
     for {
       _ <- peerFinder.stop()
       _ <- peerManager.stop()
-      //need to complete queue in NeutrinoNode.stop()
       _ = queueOpt.map(_.complete())
       _ <- {
         val finishedF = streamDoneFOpt match {

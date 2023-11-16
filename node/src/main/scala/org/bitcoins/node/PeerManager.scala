@@ -36,7 +36,7 @@ import scala.util.Random
 case class PeerManager(
     paramPeers: Vector[Peer],
     walletCreationTimeOpt: Option[Instant],
-    dataMessageQueue: SourceQueue[NodeStreamMessage],
+    queue: SourceQueue[NodeStreamMessage],
     finder: PeerFinder)(implicit
     ec: ExecutionContext,
     system: ActorSystem,
@@ -181,7 +181,7 @@ case class PeerManager(
 
   def disconnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Disconnecting persistent peer=$peer")
-    dataMessageQueue.offer(InitializeDisconnect(peer)).map(_ => ())
+    queue.offer(InitializeDisconnect(peer)).map(_ => ())
   }
 
   override def start(): Future[PeerManager] = {
@@ -442,7 +442,7 @@ case class PeerManager(
 
     payload match {
       case _: GetHeadersMessage =>
-        dataMessageQueue.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
+        queue.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
       case _ =>
         val syncPeer = state match {
           case syncState: SyncNodeState =>
@@ -477,7 +477,7 @@ case class PeerManager(
     if (peerDataMap.contains(peer)) {
       payload match {
         case e: ExpectsResponse =>
-          dataMessageQueue
+          queue
             .offer(QueryTimeout(peer, e))
             .map(_ => ())
         case _: NetworkPayload =>
@@ -683,7 +683,7 @@ case class PeerManager(
 
   def sync(syncPeerOpt: Option[Peer]): Future[Unit] = {
     val s = StartSync(syncPeerOpt)
-    dataMessageQueue.offer(s).map(_ => ())
+    queue.offer(s).map(_ => ())
   }
 
   /** Helper method to sync the blockchain over the network
