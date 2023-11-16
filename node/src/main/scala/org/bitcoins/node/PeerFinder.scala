@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.stream.scaladsl.{SourceQueue}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
@@ -25,7 +25,7 @@ import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
     paramPeers: Vector[Peer],
-    queue: SourceQueueWithComplete[NodeStreamMessage],
+    queue: SourceQueue[NodeStreamMessage],
     skipPeers: () => Set[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
@@ -293,7 +293,6 @@ case class PeerFinder(
   }
 
   def getPeerData(peer: Peer): Option[PeerData] = {
-    logger.debug(s"getPeerData.peers=${_peerData.keys.toVector}")
     _peerData.get(peer)
   }
 

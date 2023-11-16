@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import akka.NotUsed
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{Sink, Source, SourceQueue}
 import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -16,7 +16,6 @@ import org.bitcoins.core.api.chain.db.{
 }
 import org.bitcoins.core.api.node.NodeState._
 import org.bitcoins.core.api.node._
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -32,13 +31,13 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 case class PeerManager(
     paramPeers: Vector[Peer],
     walletCreationTimeOpt: Option[Instant],
-    dataMessageQueue: SourceQueueWithComplete[NodeStreamMessage],
+    dataMessageQueue: SourceQueue[NodeStreamMessage],
     source: Source[NodeStreamMessage, NotUsed],
     finder: PeerFinder)(implicit
     ec: ExecutionContext,
@@ -189,9 +188,6 @@ case class PeerManager(
 
   override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-    val inactivityCancellable = startInactivityChecksJob()
-    inactivityCancellableOpt = Some(inactivityCancellable)
-    logger.info("Done starting PeerManager")
     isStarted.set(true)
     Future.successful(this)
   }
@@ -208,8 +204,6 @@ case class PeerManager(
 
     syncFilterCancellableOpt.map(_.cancel())
 
-    inactivityCancellableOpt.map(_.cancel())
-
     val stopF = for {
       _ <- Future.traverse(peers)(disconnectPeer)
       _ <- AsyncUtil.retryUntilSatisfied(
@@ -220,7 +214,6 @@ case class PeerManager(
       _ = {
         //reset all variables
         syncFilterCancellableOpt = None
-        inactivityCancellableOpt = None
       }
     } yield {
       logger.info(
@@ -926,51 +919,17 @@ case class PeerManager(
     }
   }
 
-  private[this] val INACTIVITY_CHECK_TIMEOUT = 60.seconds
-
-  @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
-    None
-
-  private def inactivityChecks(peerData: PersistentPeerData): Future[Unit] = {
-    if (peerData.isConnectionTimedOut) {
-      val stopF = peerData.stop()
-      stopF
-    } else {
-      Future.unit
+  private[node] def inactivityChecks(peer: Peer): Future[Unit] = {
+    val peerDataOpt = peerDataMap.get(peer)
+    peerDataOpt match {
+      case Some(peerData) =>
+        val stopF = peerData.stop()
+        stopF
+      case None =>
+        logger.warn(
+          s"Could not find peerData to run inactivity check against for peer=$peer")
+        Future.unit
     }
-  }
-
-  private def inactivityChecksRunnable(): Runnable = { () =>
-    logger.debug(
-      s"Running inactivity checks for peers=${peerDataMap.map(_._1)}")
-    val resultF = if (peerDataMap.nonEmpty) {
-      Future
-        .traverse(peerDataMap.map(_._2))(inactivityChecks)
-        .map(_ => ())
-    } else if (isStarted.get) {
-      //stop and restart to get more peers
-      stop()
-        .flatMap(_.start())
-        .map(_ => ())
-    } else {
-      start().map(_ => ())
-    }
-
-    resultF.failed.foreach(err =>
-      logger.error(s"Failed to run inactivity checks for peers=${peers}", err))
-
-    Await.result(resultF, INACTIVITY_CHECK_TIMEOUT)
-  }
-
-  private def startInactivityChecksJob(): Cancellable = {
-    //the interval is set shorter for some unit test cases
-    val interval = nodeAppConfig.network match {
-      case MainNet | TestNet3 | SigNet => 5.minute
-      case RegTest                     => nodeAppConfig.inactivityTimeout
-    }
-    system.scheduler.scheduleAtFixedRate(
-      initialDelay = interval,
-      interval = interval)(inactivityChecksRunnable())
   }
 }
 

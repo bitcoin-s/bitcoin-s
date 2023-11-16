@@ -124,7 +124,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- AsyncUtil.nonBlockingSleep(2.second)
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
         msg = NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
-        _ <- node.queue.offer(msg)
+        _ <- node.offer(msg)
         bestChain = bitcoinds(1)
         _ <- NodeTestUtil.awaitSync(node, bestChain)
       } yield {
@@ -146,7 +146,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           FutureUtil.sequentially[Int, Unit](count) { _ =>
             val msg =
               NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
-            node.queue
+            node
               .offer(msg)
               //add a delay to not overwhelm queue so other messages can be processed
               .flatMap(_ => AsyncUtil.nonBlockingSleep(100.millis))
