@@ -76,7 +76,11 @@ object NodeState {
       peers: Set[Peer],
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage])
-      extends SyncNodeState
+      extends SyncNodeState {
+    override def toString: String = {
+      s"FilterSync(syncPeer=$syncPeer,peers=$peers,waitingForDisconnection=$waitingForDisconnection,filterBatchCache.size=${filterBatchCache.size})"
+    }
+  }
 
   case class MisbehavingPeer(
       badPeer: Peer,
