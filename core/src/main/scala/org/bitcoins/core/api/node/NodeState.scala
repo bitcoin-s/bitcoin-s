@@ -77,6 +77,7 @@ object NodeState {
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage])
       extends SyncNodeState {
+
     override def toString: String = {
       s"FilterSync(syncPeer=$syncPeer,peers=$peers,waitingForDisconnection=$waitingForDisconnection,filterBatchCache.size=${filterBatchCache.size})"
     }
