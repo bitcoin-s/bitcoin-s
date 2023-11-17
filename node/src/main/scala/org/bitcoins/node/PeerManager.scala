@@ -921,8 +921,12 @@ case class PeerManager(
     val peerDataOpt = peerDataMap.get(peer)
     peerDataOpt match {
       case Some(peerData) =>
-        val stopF = peerData.stop()
-        stopF
+        if (peerData.isConnectionTimedOut) {
+          val stopF = peerData.stop()
+          stopF
+        } else {
+          Future.unit
+        }
       case None =>
         logger.warn(
           s"Could not find peerData to run inactivity check against for peer=$peer")
