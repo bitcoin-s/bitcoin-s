@@ -19,13 +19,8 @@ sealed trait PeerData {
 
   implicit protected def system: ActorSystem
   def peer: Peer
-  def peerManager: PeerManager
 
   def peerMessageSender: PeerMessageSender
-
-  def controlMessageHandler: ControlMessageHandler =
-    ControlMessageHandler(peerManager, peerMessageSender)(system.dispatcher,
-                                                          nodeAppConfig)
 
   def stop(): Future[Unit] = {
     peerConnection.disconnect()
@@ -51,7 +46,6 @@ sealed trait PeerData {
 /** A peer we plan on being connected to persistently */
 case class PersistentPeerData(
     peer: Peer,
-    peerManager: PeerManager,
     peerMessageSender: PeerMessageSender
 )(implicit
     override val system: ActorSystem,
@@ -93,7 +87,6 @@ case class PersistentPeerData(
   */
 case class AttemptToConnectPeerData(
     peer: Peer,
-    peerManager: PeerManager,
     peerMessageSender: PeerMessageSender
 )(implicit
     override val system: ActorSystem,

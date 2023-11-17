@@ -6,26 +6,25 @@ import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.Initialized
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerManager}
+import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerFinder}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-case class ControlMessageHandler(
-    peerManager: PeerManager,
-    peerMsgSenderApi: PeerMessageSenderApi)(implicit
+case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
     ec: ExecutionContext,
     nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
 
   def handleControlPayload(
       payload: ControlPayload,
-      peer: Peer): Future[Option[Initialized]] = {
+      peerMsgSenderApi: PeerMessageSenderApi): Future[Option[Initialized]] = {
+    val peer = peerMsgSenderApi.peer
     payload match {
 
       case versionMsg: VersionMessage =>
         logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
-        peerManager.onVersionMessage(peer, versionMsg)
+        peerFinder.onVersionMessage(peer, versionMsg)
         peerMsgSenderApi
           .sendVerackMessage()
           .map(_ => None)
@@ -77,7 +76,7 @@ case class ControlMessageHandler(
           val peer = Peer.fromSocket(socket = inetAddress,
                                      socks5ProxyParams =
                                        nodeAppConfig.socks5ProxyParams)
-          peerManager.addPeerToTry(Vector(peer), 0)
+          peerFinder.addToTry(Vector(peer), 0)
         }
       case addr: AddrV2Message =>
         val bytes = addr.bytes
@@ -91,10 +90,10 @@ case class ControlMessageHandler(
         val priority = if (services.nodeCompactFilters) 1 else 0
         addr match {
           case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
-            peerManager.addPeerToTry(Vector(peer), priority = priority)
+            peerFinder.addToTry(Vector(peer), priority = priority)
           case TorV3AddrV2Message(_, _, _, _) =>
             if (nodeAppConfig.torConf.enabled)
-              peerManager.addPeerToTry(Vector(peer), priority)
+              peerFinder.addToTry(Vector(peer), priority)
           case n => logger.info(s"Unsupported network. Skipping. network=$n")
         }
     }

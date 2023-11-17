@@ -69,6 +69,8 @@
     <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
 
     <logger name="org.bitcoins.node.PeerFinder" level="WARN"/>
+
+    <logger name="org.bitcoins.node.networking.peer.PeerConnection" level="WARN"/>
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->

@@ -1,14 +1,19 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.scaladsl.{SourceQueue}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
-import org.bitcoins.core.p2p.ServiceIdentifier
+import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  PeerConnection,
+  PeerMessageSender
+}
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -20,7 +25,7 @@ import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
     paramPeers: Vector[Peer],
-    peerManager: PeerManager,
+    queue: SourceQueue[NodeStreamMessage],
     skipPeers: () => Set[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
@@ -30,6 +35,9 @@ case class PeerFinder(
     with P2PLogger {
 
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
+
+  val controlMessageHandler: ControlMessageHandler =
+    ControlMessageHandler(this)
 
   /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
   private def getPeersFromDnsSeeds: Vector[Peer] = {
@@ -232,33 +240,29 @@ case class PeerFinder(
     logger.debug(s"tryToAttemptToConnectPeer=$peer")
     val peerConnection = _peerData(peer).peerConnection
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(
-      peer,
-      AttemptToConnectPeerData(peer, peerManager, peerMessageSender))
+    _peerData.put(peer, AttemptToConnectPeerData(peer, peerMessageSender))
     peerConnection.connect()
   }
 
   /** creates and initialises a new test peer */
   private def tryPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
-    val peerConnection = PeerConnection(peer, peerManager)
+    val peerConnection = PeerConnection(peer, queue)
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(peer,
-                  PersistentPeerData(peer, peerManager, peerMessageSender))
+    _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
     peerConnection.connect()
   }
 
   private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    val peerConnection = PeerConnection(peer, peerManager)
+    val peerConnection = PeerConnection(peer, queue)
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(peer,
-                  PersistentPeerData(peer, peerManager, peerMessageSender))
+    _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
     peerConnection.reconnect()
 
   }
 
   def removePeer(peer: Peer): Future[Unit] = {
-    logger.debug(s"Removing peer $peer")
+    logger.debug(s"Removing peer=$peer")
     val peerData = _peerData(peer)
     peerData.stop().map { _ =>
       _peerData.remove(peer) //peer must be a member of _peerData
@@ -288,12 +292,20 @@ case class PeerFinder(
     _peerData.contains(peer)
   }
 
-  def getData(peer: Peer): Option[PeerData] = {
+  def getPeerData(peer: Peer): Option[PeerData] = {
     _peerData.get(peer)
   }
 
   def addToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
     _peersToTry.pushAll(peers, priority)
+  }
+
+  def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Unit = {
+    if (hasPeer(peer)) {
+      getPeerData(peer).get.setServiceIdentifier(versionMsg.services)
+    } else {
+      logger.warn(s"onVersionMessage called for unknown $peer")
+    }
   }
 }
 
