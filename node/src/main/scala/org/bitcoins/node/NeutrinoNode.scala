@@ -189,7 +189,7 @@ case class NeutrinoNode(
 
   private def inactivityChecksRunnable(): Runnable = { () =>
     val peers = peerManager.peers
-    logger.info(s"Running inactivity checks for peers=${peers}")
+    logger.debug(s"Running inactivity checks for peers=${peers}")
     val resultF = if (peers.nonEmpty) {
       Future
         .traverse(peers)(peerManager.inactivityChecks)
