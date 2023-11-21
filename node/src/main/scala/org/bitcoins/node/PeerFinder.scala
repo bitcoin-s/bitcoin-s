@@ -264,11 +264,8 @@ case class PeerFinder(
 
   def removePeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Removing peer=$peer")
-    val peerData = _peerData(peer)
-    peerData.stop().map { _ =>
-      _peerData.remove(peer) //peer must be a member of _peerData
-      ()
-    }
+    _peerData.remove(peer) //peer must be a member of _peerData
+    Future.unit
   }
 
   def setServiceIdentifier(

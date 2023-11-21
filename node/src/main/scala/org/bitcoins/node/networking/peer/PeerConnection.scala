@@ -269,13 +269,11 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               val _ = graph.streamDoneF
                 .onComplete {
                   case scala.util.Success(_) =>
-                    val disconnectedPeer = DisconnectedPeer(peer, false)
-                    queue.offer(disconnectedPeer)
+                    handleStreamComplete()
                   case scala.util.Failure(err) =>
                     logger.info(
                       s"Connection with peer=$peer failed with err=${err.getMessage}")
-                    val disconnectedPeer = DisconnectedPeer(peer, false)
-                    queue.offer(disconnectedPeer)
+                    handleStreamComplete()
                 }
             }
             _ = resetReconnect()
@@ -288,8 +286,24 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
             }
           } yield ()
         }
-
         resultF.map(_ => ())
+    }
+  }
+
+  private def handleStreamComplete(): Future[Unit] = {
+    val f = if (connectionGraphOpt.isDefined) {
+      //if our peer initiated the disconnect
+      //we need to call disconnect() to reset connectionGraphOpt
+      disconnect()
+    } else {
+      //if we initiated the disconnect we've already called disconnect(), so don't do it twice
+      Future.unit
+    }
+    f.flatMap { _ =>
+      val disconnectedPeer = DisconnectedPeer(peer, false)
+      queue
+        .offer(disconnectedPeer)
+        .map(_ => ())
     }
   }
 
