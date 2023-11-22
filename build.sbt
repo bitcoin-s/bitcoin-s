@@ -224,7 +224,6 @@ lazy val `bitcoin-s` = project
     testkitCoreJS,
     testkit,
     zmq,
-    oracleExplorerClient,
     oracleServer,
     oracleServerTest,
     serverRoutes,
@@ -281,7 +280,6 @@ lazy val `bitcoin-s` = project
     appCommonsTest,
     testkit,
     zmq,
-    oracleExplorerClient,
     oracleServer,
     oracleServerTest,
     serverRoutes,
@@ -705,7 +703,6 @@ lazy val docs = project
     cryptoJVM,
     coreJVM,
     dbCommons,
-    oracleExplorerClient,
     feeProvider,
     dlcOracle,
     eclairRpc,
@@ -805,15 +802,6 @@ lazy val dlcOracleTest = project
     libraryDependencies ++= Deps.dlcOracleTest
   )
   .dependsOn(coreJVM % testAndCompile, dlcOracle, testkit)
-
-lazy val oracleExplorerClient = project
-  .in(file("oracle-explorer-client"))
-  .settings(CommonSettings.settings: _*)
-  .settings(
-    name := "bitcoin-s-oracle-explorer-client",
-    libraryDependencies ++= Deps.oracleExplorerClient
-  )
-  .dependsOn(coreJVM, appCommons, tor, testkit % "test->test")
 
 lazy val scripts = project
   .in(file("app/scripts"))
