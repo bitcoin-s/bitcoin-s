@@ -183,8 +183,10 @@ case class PeerManager(
 
   override def isConnected(peer: Peer): Future[Boolean] = {
     peerDataMap.get(peer) match {
-      case None    => Future.successful(false)
-      case Some(p) => p.peerConnection.isConnected()
+      case None => Future.successful(false)
+      case Some(p) =>
+        val bool = p.peerConnection.isConnected()
+        Future.successful(bool)
     }
   }
 
@@ -206,7 +208,11 @@ case class PeerManager(
 
     if (finder.hasPeer(peer)) {
       //one of the peers that we tried, failed to init within time, disconnect
-      finder.getPeerData(peer).get.stop().map(_ => ())
+      finder
+        .getPeerData(peer)
+        .get
+        .stop()
+        .map(_ => ())
     } else if (state.getPeerData(peer).isDefined) {
       //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
       //a reconnection attempt, meaning it got connected but failed to initialize, disconnect

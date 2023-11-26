@@ -36,14 +36,28 @@ import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
-case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
-    implicit
+sealed trait PeerConnection extends P2PLogger {
+  def peer: Peer
+  def queue: SourceQueue[NodeStreamMessage]
+
+  def isConnected(): Boolean
+
+  def isDisconnected(): Boolean = {
+    !isConnected()
+  }
+}
+
+case class DisconnectedPeerConnection(
+    peer: Peer,
+    queue: SourceQueue[NodeStreamMessage])(implicit
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig,
     system: ActorSystem)
-    extends P2PLogger {
+    extends PeerConnection {
 
   import system.dispatcher
+
+  override def isConnected(): Boolean = false
 
   private val socket: InetSocketAddress = {
     nodeAppConfig.socks5ProxyParams match {
@@ -85,10 +99,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                        nodeAppConfig.relay)
       NetworkMessage(nodeAppConfig.network, versionMsg)
     }
-  }
-
-  private def sendVersionMsg(): Future[Unit] = {
-    versionMsgF.flatMap(v => sendMsg(v.bytes, mergeHubSink))
   }
 
   private def parseHelper(
@@ -157,8 +167,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     result
   }
 
-  private def buildConnectionGraph(): Future[
-    ((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
+  private def buildActivePeerConnection(): Future[ActivePeerConnection] = {
 
     val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
       Flow[Vector[NetworkMessage]]
@@ -175,8 +184,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         .toMat(Sink.ignore)(Keep.right)
     }
 
-    val runningStream: Future[
-      ((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
+    val runningStream: Future[ActivePeerConnection] = {
       nodeAppConfig.socks5ProxyParams match {
         case Some(s) =>
           val connectionSink =
@@ -188,7 +196,12 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                     case Socks5ConnectionState.Connected =>
                       //need to send version message when we are first
                       //connected to initiate bitcoin protocol handshake
-                      sendVersionMsg().map(_ => ByteString.empty)
+                      versionMsgF.map { versionMsg =>
+                        Source
+                          .single(ByteString(versionMsg.bytes.toArray))
+                          .runWith(mergeHubSink)
+                        ByteString.empty
+                      }
                     case Socks5ConnectionState.Disconnected |
                         Socks5ConnectionState.Authenticating |
                         Socks5ConnectionState.Greeted =>
@@ -202,7 +215,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
             ByteString,
             (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
             mergeHubSource.viaMat(connection)(Keep.right)
-          Socks5Connection
+          val socks5ConnF = Socks5Connection
             .socks5Handler(
               socket = peer.socket,
               source = source,
@@ -211,92 +224,62 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               credentialsOpt = s.credentialsOpt
             )
 
+          socks5ConnF.map { case ((_, killswitch), doneF) =>
+            val connGraph = ConnectionGraph(
+              mergeHubSink = mergeHubSink,
+              connectionF = socks5ConnF.map(_._1._1),
+              streamDoneF = doneF,
+              killswitch = killswitch
+            )
+            ActivePeerConnection(peer, queue, connectionGraph = connGraph)
+          }
+
         case None =>
           val result = connectionGraph(handleNetworkMsgSink).run()
-          result._1._1.map(conn => ((conn, result._1._2), result._2))
+          result._1._1.map { _ =>
+            val graph = ConnectionGraph(mergeHubSink = mergeHubSink,
+                                        connectionF = result._1._1,
+                                        streamDoneF = result._2,
+                                        killswitch = result._1._2)
+            ActivePeerConnection(peer, queue, graph)
+          }
       }
     }
 
     runningStream
   }
 
-  def getLocalAddress: Future[Option[InetSocketAddress]] = {
-    connectionGraphOpt match {
-      case Some(g) => g.connectionF.map(c => Some(c.localAddress))
-      case None    => Future.successful(None)
-    }
-  }
-
-  @volatile private[this] var connectionGraphOpt: Option[ConnectionGraph] = None
-
   /** Initiates a connection with the given peer */
-  def connect(): Future[Unit] = {
-    connectionGraphOpt match {
-      case Some(_) =>
-        logger.warn(s"Connected already to peer=${peer}")
-        Future.unit
-      case None =>
-        logger.debug(s"Attempting to connect to peer=${peer}")
+  def connect(): Future[ActivePeerConnection] = {
+    logger.info(s"Attempting to connect to peer=${peer}")
 
-        val outgoingConnectionF = {
-          buildConnectionGraph()
-        }
-
-        outgoingConnectionF.onComplete {
-          case scala.util.Success(o) =>
-            val tcp = o._1._1
-            logger.debug(
-              s"Connected to remote=${tcp.remoteAddress}  local=${tcp.localAddress}")
-          case scala.util.Failure(err) =>
-            logger.debug(
-              s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
-            val offerF =
-              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
-            offerF.failed.foreach(err =>
-              logger.error(s"Failed to offer initialize timeout for peer=$peer",
-                           err))
-        }
-
-        val resultF: Future[Unit] = {
-          for {
-            outgoingConnection <- outgoingConnectionF
-            graph = ConnectionGraph(
-              mergeHubSink = mergeHubSink,
-              connectionF = outgoingConnectionF.map(_._1._1),
-              streamDoneF = outgoingConnection._2,
-              killswitch = outgoingConnection._1._2
-            )
-            _ = {
-              connectionGraphOpt = Some(graph)
-              val _ = graph.streamDoneF
-                .onComplete {
-                  case scala.util.Success(_) =>
-                    handleStreamComplete()
-                  case scala.util.Failure(err) =>
-                    logger.debug(
-                      s"Connection with peer=$peer failed with err=${err.getMessage}")
-                    handleStreamComplete()
-                }
-            }
-            _ = resetReconnect()
-            _ <- {
-              nodeAppConfig.socks5ProxyParams match {
-                case Some(_) => Future.unit
-                case None    => sendVersionMsg()
-              }
-            }
-          } yield ()
-        }
-        resultF.map(_ => ())
+    val activePeerConnectionF = {
+      buildActivePeerConnection()
     }
-  }
+    activePeerConnectionF.flatMap(_.connectionGraph.connectionF).onComplete {
+      case scala.util.Success(tcp) =>
+        logger.debug(
+          s"Connected to remote=${tcp.remoteAddress}  local=${tcp.localAddress}")
+      case scala.util.Failure(err) =>
+        logger.debug(
+          s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
+    }
 
-  private def handleStreamComplete(): Future[Unit] = {
-    val disconnectedPeer = DisconnectedPeer(peer, false)
-    val offerF = queue
-      .offer(disconnectedPeer)
-      .map(_ => ())
-    offerF
+    val resultF: Future[ActivePeerConnection] = {
+      for {
+        apc <- activePeerConnectionF
+        _ = resetReconnect()
+        version <- versionMsgF
+        _ <- {
+          nodeAppConfig.socks5ProxyParams match {
+            case Some(_) => Future.unit
+            case None    => apc.sendMsg(version)
+          }
+        }
+      } yield apc
+    }
+
+    resultF
   }
 
   /** resets reconnect state after connecting to a peer */
@@ -308,52 +291,70 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     curReconnectionTry = 0
   }
 
-  def reconnect(): Future[Unit] = {
-    connectionGraphOpt match {
-      case Some(_) =>
-        logger.error(
-          s"Cannot reconnect when we have an active connection to peer=$peer")
-        Future.unit
-      case None =>
-        logger.info(s"Attempting to reconnect peer=$peer")
-        val delay = reconnectionDelay * (1 << curReconnectionTry)
-        curReconnectionTry += 1
-        reconnectionTry = reconnectionTry + 1
+  def reconnect(): Future[ActivePeerConnection] = {
+    logger.info(s"Attempting to reconnect peer=$peer")
+    val delay = reconnectionDelay * (1 << curReconnectionTry)
+    curReconnectionTry += 1
+    reconnectionTry = reconnectionTry + 1
 
-        val reconnectP = Promise[Unit]()
-        val cancellable = system.scheduler.scheduleOnce(delay) {
-          val connF = connect()
-          connF.onComplete {
-            case scala.util.Success(_) =>
-              resetReconnect()
-              reconnectP.success(())
-            case scala.util.Failure(exception) =>
-              logger.error(s"Failed to reconnect with peer=$peer", exception)
-              reconnectP.failure(exception)
-          }
-        }
-        reconnectionCancellableOpt = Some(cancellable)
-        reconnectP.future
+    val reconnectP = Promise[ActivePeerConnection]()
+    val cancellable = system.scheduler.scheduleOnce(delay) {
+      val connF = connect()
+      connF.onComplete {
+        case scala.util.Success(apc) =>
+          resetReconnect()
+          reconnectP.success(apc)
+        case scala.util.Failure(exception) =>
+          logger.error(s"Failed to reconnect with peer=$peer", exception)
+          reconnectP.failure(exception)
+      }
+    }
+    reconnectionCancellableOpt = Some(cancellable)
+    reconnectP.future
+  }
+}
+
+case class ActivePeerConnection(
+    peer: Peer,
+    queue: SourceQueue[NodeStreamMessage],
+    connectionGraph: ConnectionGraph)(implicit
+    nodeAppConfig: NodeAppConfig,
+    chainAppConfig: ChainAppConfig,
+    system: ActorSystem)
+    extends PeerConnection {
+  import system.dispatcher
+
+  private def handleStreamComplete(): Future[Unit] = {
+    val disconnectedPeer = DisconnectedPeer(peer, false)
+    queue
+      .offer(disconnectedPeer)
+      .map(_ => ())
+  }
+
+  locally {
+    connectionGraph.streamDoneF
+      .flatMap(_ => handleStreamComplete())
+      .recoverWith { case err =>
+        logger.error(s"ActivePeerConnection failed", err)
+        handleStreamComplete()
+      }
+  }
+
+  private val socket: InetSocketAddress = {
+    nodeAppConfig.socks5ProxyParams match {
+      case Some(proxy) => proxy.address
+      case None        => peer.socket
     }
   }
 
-  def isConnected(): Future[Boolean] = {
-    Future.successful(connectionGraphOpt.isDefined)
-  }
-
-  def isDisconnected(): Future[Boolean] = {
-    isConnected().map(!_)
-  }
+  override def isConnected(): Boolean = true
 
   /** Disconnects the given peer */
-  def disconnect(): Future[Done] = {
-    connectionGraphOpt match {
-      case Some(cg) =>
-        logger.debug(s"Disconnecting peer=${peer}")
-        connectionGraphOpt = None
-        cg.stop()
-      case None =>
-        Future.successful(Done)
+  def disconnect(): Future[DisconnectedPeerConnection] = {
+    logger.debug(s"Disconnecting peer=${peer}")
+    connectionGraph.stop().map { _ =>
+      val dcp = DisconnectedPeerConnection(peer, queue)
+      dcp
     }
   }
 
@@ -368,28 +369,17 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   private[node] def sendMsg(msg: NetworkMessage): Future[Unit] = {
     logger.debug(
       s"Sending msg=${msg.header.commandName} to peer=${peer} socket=$socket")
-    connectionGraphOpt match {
-      case Some(g) =>
-        sendMsg(msg.bytes, g.mergeHubSink)
-      case None =>
-        val log =
-          s"Could not send msg=${msg.payload.commandName} because we do not have an active connection to peer=${peer} socket=$socket"
-        logger.warn(log)
-        Future.unit
-    }
+    sendMsg(msg.bytes)
   }
 
-  private def sendMsg(
-      bytes: ByteVector,
-      mergeHubSink: Sink[ByteString, NotUsed]): Future[Unit] = {
-    sendMsg(ByteString.fromArray(bytes.toArray), mergeHubSink)
+  private[node] def sendMsg(bytes: ByteVector): Future[Unit] = {
+    val bs = ByteString(bytes.toArray)
+    sendMsg(bs)
   }
 
-  private def sendMsg(
-      bytes: ByteString,
-      mergeHubSink: Sink[ByteString, NotUsed]): Future[Unit] = {
+  private[node] def sendMsg(byteString: ByteString): Future[Unit] = {
     val sendMsgF = Future {
-      Source.single(bytes).to(mergeHubSink).run()
+      Source.single(byteString).to(connectionGraph.mergeHubSink).run()
     }.map(_ => ())
     sendMsgF
   }

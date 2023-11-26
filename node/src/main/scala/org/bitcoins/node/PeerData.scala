@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
@@ -27,11 +26,11 @@ sealed trait PeerData {
 
   def peerMessageSender: PeerMessageSender
 
-  def stop(): Future[Done] = {
+  def stop(): Future[DisconnectedPeerConnection] = {
     peerConnection.disconnect()
   }
 
-  def peerConnection: PeerConnection = {
+  def peerConnection: ActivePeerConnection = {
     peerMessageSender.peerConnection
   }
 

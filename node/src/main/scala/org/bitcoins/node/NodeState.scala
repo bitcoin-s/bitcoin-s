@@ -10,7 +10,10 @@ import org.bitcoins.node.NodeState.{
   NodeShuttingDown,
   RemovePeers
 }
-import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  ActivePeerConnection,
+  PeerMessageSender
+}
 
 import java.time.Instant
 import java.time.temporal.{ChronoUnit}
@@ -44,8 +47,8 @@ sealed trait NodeRunningState extends NodeState {
     peerDataMap.find(_._1 == peer).map(_._2)
   }
 
-  def getPeerConnection(peer: Peer): Option[PeerConnection] = {
-    peerDataMap.find(_._1 == peer).map(_._2.peerConnection) match {
+  def getPeerConnection(peer: Peer): Option[ActivePeerConnection] = {
+    peerDataMap.find(_._1.peer == peer).map(_._2.peerConnection) match {
       case Some(peerConnection) => Some(peerConnection)
       case None                 => None
     }

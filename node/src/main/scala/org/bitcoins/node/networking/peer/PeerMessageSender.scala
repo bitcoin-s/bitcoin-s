@@ -22,7 +22,7 @@ import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class PeerMessageSender(peerConnection: PeerConnection)
+case class PeerMessageSender(peerConnection: ActivePeerConnection)
     extends PeerMessageSenderApi
     with P2PLogger {
 

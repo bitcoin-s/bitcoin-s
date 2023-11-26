@@ -10,8 +10,9 @@ import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.{
+  ActivePeerConnection,
   ControlMessageHandler,
-  PeerConnection,
+  DisconnectedPeerConnection,
   PeerMessageSender
 }
 import org.bitcoins.node.util.BitcoinSNodeUtil
@@ -175,25 +176,26 @@ case class PeerFinder(
     }
   }
 
-  def connect(peer: Peer): Future[Unit] = {
+  def connect(peer: Peer): Future[Option[ActivePeerConnection]] = {
     logger.info(s"Attempting to connect peer=$peer")
     if (isStarted.get()) {
       tryPeer(peer, isPersistent = true)
+        .map(Some(_))
     } else {
       logger.warn(
         s"Ignoring connect attempt to peer=$peer as PeerFinder is not started")
-      Future.unit
+      Future.successful(None)
     }
   }
 
-  def reconnect(peer: Peer): Future[Unit] = {
+  def reconnect(peer: Peer): Future[Option[ActivePeerConnection]] = {
     logger.info(s"Attempting to reconnect peer=$peer")
     if (isStarted.get) {
-      tryToReconnectPeer(peer)
+      tryToReconnectPeer(peer).map(Some(_))
     } else {
       logger.warn(
         s"Ignoring reconnect attempt to peer=$peer as PeerFinder is not started")
-      Future.unit
+      Future.successful(None)
     }
   }
 
@@ -237,23 +239,28 @@ case class PeerFinder(
   }
 
   /** creates and initialises a new test peer */
-  private def tryPeer(peer: Peer, isPersistent: Boolean): Future[Unit] = {
+  private def tryPeer(peer: Peer, isPersistent: Boolean): Future[ActivePeerConnection] = {
     logger.debug(s"tryPeer=$peer")
-    val peerConnection = PeerConnection(peer, queue)
-    val peerMessageSender = PeerMessageSender(peerConnection)
-    val pd = isPersistent match {
-      case true  => PersistentPeerData(peer, peerMessageSender)
-      case false => AttemptToConnectPeerData(peer, peerMessageSender)
+    val peerConnection = DisconnectedPeerConnection(peer, queue)
+
+    peerConnection.connect().map { apc =>
+      val peerMessageSender = PeerMessageSender(apc)
+      val pd = isPersistent match {
+        case true  => PersistentPeerData(peer, peerMessageSender)
+        case false => AttemptToConnectPeerData(peer, peerMessageSender)
+      }
+      _peerData.put(peer, pd)
+      apc
     }
-    _peerData.put(peer, pd)
-    peerConnection.connect()
   }
 
-  private def tryToReconnectPeer(peer: Peer): Future[Unit] = {
-    val peerConnection = PeerConnection(peer, queue)
-    val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
-    peerConnection.reconnect()
+  private def tryToReconnectPeer(peer: Peer): Future[ActivePeerConnection] = {
+    val peerConnection = DisconnectedPeerConnection(peer, queue)
+    peerConnection.reconnect().map { apc =>
+      val peerMessageSender = PeerMessageSender(apc)
+      _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
+      apc
+    }
 
   }
 
