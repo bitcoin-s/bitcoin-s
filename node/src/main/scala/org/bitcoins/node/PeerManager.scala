@@ -349,8 +349,11 @@ case class PeerManager(
               s"$peer cannot be both a test and a persistent peer")
 
       if (finder.hasPeer(peer)) {
-        //client actor for one of the test peers stopped, can remove it from map now
-        finder.removePeer(peer).map(_ => state)
+        if (peers.isEmpty) {
+          finder.reconnect(peer).map(_ => state)
+        } else {
+          finder.removePeer(peer).map(_ => state)
+        }
       } else if (peerDataMap.contains(peer)) {
         val peerData = _peerDataMap(peer)
         _peerDataMap.remove(peer)
