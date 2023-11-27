@@ -191,9 +191,7 @@ case class NeutrinoNode(
     val peers = peerManager.peers
     logger.debug(s"Running inactivity checks for peers=${peers}")
     val resultF = if (peers.nonEmpty) {
-      Future
-        .traverse(peers)(peerManager.inactivityChecks)
-        .map(_ => ())
+      Future.unit //do nothing?
     } else if (isStarted.get) {
       //stop and restart to get more peers
       stop()

@@ -916,23 +916,6 @@ case class PeerManager(
         Future.unit
     }
   }
-
-  private[node] def inactivityChecks(peer: Peer): Future[Unit] = {
-    val peerDataOpt = peerDataMap.get(peer)
-    peerDataOpt match {
-      case Some(peerData) =>
-        if (peerData.isConnectionTimedOut) {
-          val stopF = peerData.stop()
-          stopF
-        } else {
-          Future.unit
-        }
-      case None =>
-        logger.warn(
-          s"Could not find peerData to run inactivity check against for peer=$peer")
-        Future.unit
-    }
-  }
 }
 
 case class ResponseTimeout(payload: NetworkPayload)
