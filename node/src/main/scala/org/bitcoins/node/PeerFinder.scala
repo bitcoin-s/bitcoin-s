@@ -238,10 +238,11 @@ case class PeerFinder(
 
   private def tryToAttemptToConnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"tryToAttemptToConnectPeer=$peer")
+
     val peerConnection = _peerData(peer).peerConnection
     val peerMessageSender = PeerMessageSender(peerConnection)
     _peerData.put(peer, AttemptToConnectPeerData(peer, peerMessageSender))
-    peerConnection.connect()
+    peerConnection.reconnect()
   }
 
   /** creates and initialises a new test peer */

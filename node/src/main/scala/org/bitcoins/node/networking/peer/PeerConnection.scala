@@ -4,7 +4,6 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.event.Logging
 import akka.io.Inet.SocketOption
 import akka.io.Tcp.SO.KeepAlive
-import akka.stream.scaladsl.SourceQueue
 import akka.stream.scaladsl.{
   BidiFlow,
   Flow,
@@ -13,6 +12,7 @@ import akka.stream.scaladsl.{
   RunnableGraph,
   Sink,
   Source,
+  SourceQueue,
   Tcp
 }
 import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
@@ -33,9 +33,7 @@ import org.bitcoins.tor.Socks5Connection
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
 case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
@@ -112,8 +110,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     val (messages, newUnalignedBytes) =
       NetworkUtil.parseIndividualMessages(bytes)
 
-    if (messages.nonEmpty) updateLastParsedMessageTime()
-
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
@@ -122,6 +118,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Vector[NetworkMessage],
     NotUsed] = {
     Flow[ByteString]
+      .idleTimeout(nodeAppConfig.inactivityTimeout)
       .statefulMap(() => ByteString.empty)(parseHelper,
                                            { _: ByteString => None })
       .log(
@@ -369,33 +366,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       Source.single(bytes).to(mergeHubSink).run()
     }.map(_ => ())
     sendMsgF
-  }
-
-  private[this] val INACTIVITY_TIMEOUT: FiniteDuration =
-    nodeAppConfig.inactivityTimeout
-
-  @volatile private[this] var lastSuccessfulParsedMsgOpt: Option[Long] = None
-
-  private def updateLastParsedMessageTime(): Unit = {
-    lastSuccessfulParsedMsgOpt = Some(System.currentTimeMillis())
-    ()
-  }
-
-  def isConnectionTimedOut: Boolean = {
-    lastSuccessfulParsedMsgOpt match {
-      case Some(lastSuccessfulParsedMsg) =>
-        val timeoutInstant =
-          Instant.now().minus(INACTIVITY_TIMEOUT.toMillis, ChronoUnit.MILLIS)
-        val diff = Instant
-          .ofEpochMilli(lastSuccessfulParsedMsg)
-          .minus(timeoutInstant.toEpochMilli, ChronoUnit.MILLIS)
-
-        val isTimedOut = diff.toEpochMilli < 0
-
-        isTimedOut
-      case None => false //we are not initialized yet
-    }
-
   }
 }
 

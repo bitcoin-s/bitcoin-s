@@ -349,8 +349,11 @@ case class PeerManager(
               s"$peer cannot be both a test and a persistent peer")
 
       if (finder.hasPeer(peer)) {
-        //client actor for one of the test peers stopped, can remove it from map now
-        finder.removePeer(peer).map(_ => state)
+        if (peers.isEmpty) {
+          finder.reconnect(peer).map(_ => state)
+        } else {
+          finder.removePeer(peer).map(_ => state)
+        }
       } else if (peerDataMap.contains(peer)) {
         val peerData = _peerDataMap(peer)
         _peerDataMap.remove(peer)
@@ -913,23 +916,6 @@ case class PeerManager(
         peerMsgSender.sendMsg(payload)
       case None =>
         logger.warn(s"Cannot find peer to send message=${payload.commandName}")
-        Future.unit
-    }
-  }
-
-  private[node] def inactivityChecks(peer: Peer): Future[Unit] = {
-    val peerDataOpt = peerDataMap.get(peer)
-    peerDataOpt match {
-      case Some(peerData) =>
-        if (peerData.isConnectionTimedOut) {
-          val stopF = peerData.stop()
-          stopF
-        } else {
-          Future.unit
-        }
-      case None =>
-        logger.warn(
-          s"Could not find peerData to run inactivity check against for peer=$peer")
         Future.unit
     }
   }
