@@ -29,7 +29,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
-import org.bitcoins.tor.Socks5Connection
+import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
@@ -75,12 +75,26 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                                               options = options)
     nodeAppConfig.socks5ProxyParams match {
       case Some(s) =>
-        base.viaMat(
-          Socks5Connection.socks5Handler(peer = peer,
-                                         sink = mergeHubSink,
-                                         onHandshakeComplete = sendVersionMsg,
-                                         credentialsOpt = s.credentialsOpt))(
-          Keep.left)
+        val socks5Flow = Socks5Connection.socks5Handler(peer = peer,
+                                                        sink = mergeHubSink,
+                                                        credentialsOpt =
+                                                          s.credentialsOpt)
+
+        val handleConnectionFlow = socks5Flow.mapAsync(1) {
+          case Left(bytes) => Future.successful(bytes)
+          case Right(state) =>
+            state match {
+              case Socks5ConnectionState.Connected =>
+                //need to send version message when we are first
+                //connected to initiate bitcoin protocol handshake
+                sendVersionMsg().map(_ => ByteString.empty)
+              case Socks5ConnectionState.Disconnected |
+                  Socks5ConnectionState.Authenticating |
+                  Socks5ConnectionState.Greeted =>
+                Future.successful(ByteString.empty)
+            }
+        }
+        base.viaMat(handleConnectionFlow)(Keep.left)
       case None =>
         base
     }
