@@ -255,16 +255,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
             _ = resetReconnect()
             _ = initializationCancellable.cancel()
             versionMsg <- versionMsgF
-            _ = {
-              nodeAppConfig.socks5ProxyParams match {
-                case Some(p) =>
-                  val greetingBytes =
-                    Socks5Connection.socks5Greeting(p.credentialsOpt.isDefined)
-                  logger.debug(s"Writing socks5 greeting")
-                  sendMsg(greetingBytes, graph.mergeHubSink)
-                case None => sendMsg(versionMsg)
-              }
-            }
+            _ <- sendMsg(versionMsg)
           } yield ()
         }
 

@@ -268,6 +268,9 @@ object Socks5Connection extends Logging {
           { case (state, bytes) =>
             state match {
               case Socks5ConnectionState.Disconnected =>
+                val passwordAuth = credentialsOpt.isDefined
+                logger.debug(s"Writing socks5 greeting")
+                Source.single(socks5Greeting(passwordAuth)).runWith(sink)
                 if (
                   parseGreetings(bytes,
                                  credentialsOpt.isDefined) == PasswordAuth
