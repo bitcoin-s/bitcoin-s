@@ -3,7 +3,8 @@ package org.bitcoins.lnurl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Get
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.{HttpRequest, MediaTypes}
 import akka.util.ByteString
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.tor.Socks5ProxyParams
@@ -41,7 +42,9 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
 
   private def sendRequestAndParse[T <: LnURLJsonModel](request: HttpRequest)(
       implicit reads: Reads[T]): Future[T] = {
-    sendRequest(request)
+    val withAcceptHeader =
+      request.addHeader(Accept(MediaTypes.`application/json`))
+    sendRequest(withAcceptHeader)
       .map { str =>
         val json = Json.parse(str)
         json.validate[T] match {
