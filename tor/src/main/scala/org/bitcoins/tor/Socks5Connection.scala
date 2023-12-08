@@ -243,11 +243,15 @@ object Socks5Connection extends Logging {
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
 
-  /** A flow to handle socks5 connections
-    * We emit Left(bytes) downstream when we have finished the socks5 handshake
-    * We emit Right(Socks5ConnectionState) downstream when we are still doing the socks5 handshake
-    * Emitting the Socks5ConnectionState downstream allows you to build your stream logic based on
-    * the state of the socks5 connection
+  /** @param socket the peer we are connecting to
+    * @param source the source that produces ByteStrings we need to send to our peer
+    * @param sink the sink that receives messages from our peer and performs application specific logic
+    * @param mergeHubSink a way for socks5Handler to send messages to the socks5 proxy to complete the handshake
+    * @param credentialsOpt the credentials to authenticate the socks5 proxy.
+    * @param mat
+    * @tparam MatSource the materialized value of the source given to us
+    * @tparam MatSink the materialized value of the sink given to us
+    * @return a running tcp connection along with the results of the materialize source and sink
     */
   def socks5Handler[MatSource, MatSink](
       socket: InetSocketAddress,
