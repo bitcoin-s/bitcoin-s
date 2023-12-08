@@ -4,14 +4,14 @@ import akka.NotUsed
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 import grizzled.slf4j.Logging
-import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Credentials
 import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /** Simple socks 5 client. It should be given a new connection, and will
@@ -243,19 +243,25 @@ object Socks5Connection extends Logging {
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
 
-  /** A flow to handle socks5 connections
-    * We emit Left(bytes) downstream when we have finished the socks5 handshake
-    * We emit Right(Socks5ConnectionState) downstream when we are still doing the socks5 handshake
-    * Emitting the Socks5ConnectionState downstream allows you to build your stream logic based on
-    * the state of the socks5 connection
+  /** @param socket the peer we are connecting to
+    * @param source the source that produces ByteStrings we need to send to our peer
+    * @param sink the sink that receives messages from our peer and performs application specific logic
+    * @param mergeHubSink a way for socks5Handler to send messages to the socks5 proxy to complete the handshake
+    * @param credentialsOpt the credentials to authenticate the socks5 proxy.
+    * @param mat
+    * @tparam MatSource the materialized value of the source given to us
+    * @tparam MatSink the materialized value of the sink given to us
+    * @return a running tcp connection along with the results of the materialize source and sink
     */
-  def socks5Handler(
-      peer: Peer,
-      sink: Sink[ByteString, NotUsed],
-      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Flow[
-    ByteString,
-    Either[ByteString, Socks5ConnectionState],
-    NotUsed] = {
+  def socks5Handler[MatSource, MatSink](
+      socket: InetSocketAddress,
+      source: Source[
+        ByteString,
+        (Future[akka.stream.scaladsl.Tcp.OutgoingConnection], MatSource)],
+      sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
+      mergeHubSink: Sink[ByteString, NotUsed],
+      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Future[
+    ((akka.stream.scaladsl.Tcp.OutgoingConnection, MatSource), MatSink)] = {
 
     val flowState: Flow[
       ByteString,
@@ -279,7 +285,7 @@ object Socks5Connection extends Logging {
                       val authBytes =
                         socks5PasswordAuthenticationRequest(c.username,
                                                             c.password)
-                      Source.single(authBytes).runWith(sink)
+                      Source.single(authBytes).runWith(mergeHubSink)
                       val state = Socks5ConnectionState.Authenticating
                       (state, Right(state))
                     case None =>
@@ -290,9 +296,9 @@ object Socks5Connection extends Logging {
                 } else {
 
                   val connRequestBytes =
-                    Socks5Connection.socks5ConnectionRequest(peer.socket)
+                    Socks5Connection.socks5ConnectionRequest(socket)
                   logger.debug(s"Writing socks5 connection request")
-                  Source.single(connRequestBytes).runWith(sink)
+                  Source.single(connRequestBytes).runWith(mergeHubSink)
                   val state = Socks5ConnectionState.Greeted
                   (state, Right(state))
                 }
@@ -300,10 +306,10 @@ object Socks5Connection extends Logging {
                 tryParseAuth(bytes) match {
                   case Success(true) =>
                     val connRequestBytes =
-                      Socks5Connection.socks5ConnectionRequest(peer.socket)
+                      Socks5Connection.socks5ConnectionRequest(socket)
                     logger.debug(
                       s"Writing socks5 connection request after auth")
-                    Source.single(connRequestBytes).runWith(sink)
+                    Source.single(connRequestBytes).runWith(mergeHubSink)
                     val state = Socks5ConnectionState.Greeted
                     (state, Right(state))
                   case Success(false) =>
@@ -316,12 +322,12 @@ object Socks5Connection extends Logging {
                 connectedAddressT match {
                   case scala.util.Success(connectedAddress) =>
                     logger.info(
-                      s"Tor connection request succeeded. target=${peer.socket} connectedAddress=$connectedAddress")
+                      s"Tor connection request succeeded. target=${socket} connectedAddress=$connectedAddress")
                     val state = Socks5ConnectionState.Connected
                     (state, Right(state))
                   case scala.util.Failure(err) =>
                     sys.error(
-                      s"Tor connection request failed to target=${peer.socket} errMsg=${err.toString}")
+                      s"Tor connection request failed to target=${socket} errMsg=${err.toString}")
                 }
               case Socks5ConnectionState.Connected =>
                 (Socks5ConnectionState.Connected, Left(bytes))
@@ -332,7 +338,22 @@ object Socks5Connection extends Logging {
         )
     }
 
-    flowState
+    val ((tcpConnectionF, matSource), matSink) = source
+      .viaMat(flowState)(Keep.left)
+      .toMat(sink)(Keep.both)
+      .run()
+
+    //send greeting to kick off stream
+    tcpConnectionF.map { conn =>
+      val passwordAuth = credentialsOpt.isDefined
+      val greetingSource: Source[ByteString, NotUsed] = {
+        Source.single(socks5Greeting(passwordAuth))
+      }
+
+      greetingSource.to(mergeHubSink).run()
+
+      ((conn, matSource), matSink)
+    }(mat.executionContext)
   }
 
 }
