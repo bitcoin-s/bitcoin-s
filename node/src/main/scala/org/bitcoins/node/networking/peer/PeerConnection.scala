@@ -198,13 +198,18 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               .viaMat(parseToNetworkMsgFlow)(Keep.left)
               .toMat(handleNetworkMsgSink)(Keep.right)
 
+          val source: Source[
+            ByteString,
+            (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
+            mergeHubSource.viaMat(connection)(Keep.right)
           Socks5Connection
-            .socks5Handler(peer = peer,
-                           mergeHubSource = mergeHubSource,
-                           connectionFlow = connection,
-                           sink = connectionSink,
-                           mergeHubSink = mergeHubSink,
-                           credentialsOpt = s.credentialsOpt)
+            .socks5Handler(
+              socket = peer.socket,
+              source = source,
+              sink = connectionSink,
+              mergeHubSink = mergeHubSink,
+              credentialsOpt = s.credentialsOpt
+            )
 
         case None =>
           val result = connectionGraph(handleNetworkMsgSink).run()

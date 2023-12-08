@@ -7,7 +7,6 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
 import grizzled.slf4j.Logging
-import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Credentials
 import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
@@ -251,10 +250,8 @@ object Socks5Connection extends Logging {
     * the state of the socks5 connection
     */
   def socks5Handler[MatSource, MatSink](
-      peer: Peer,
-      mergeHubSource: Source[ByteString, NotUsed],
-      connectionFlow: Flow[
-        ByteString,
+      socket: InetSocketAddress,
+      source: Source[
         ByteString,
         (Future[akka.stream.scaladsl.Tcp.OutgoingConnection], MatSource)],
       sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
@@ -295,7 +292,7 @@ object Socks5Connection extends Logging {
                 } else {
 
                   val connRequestBytes =
-                    Socks5Connection.socks5ConnectionRequest(peer.socket)
+                    Socks5Connection.socks5ConnectionRequest(socket)
                   logger.debug(s"Writing socks5 connection request")
                   Source.single(connRequestBytes).runWith(mergeHubSink)
                   val state = Socks5ConnectionState.Greeted
@@ -305,7 +302,7 @@ object Socks5Connection extends Logging {
                 tryParseAuth(bytes) match {
                   case Success(true) =>
                     val connRequestBytes =
-                      Socks5Connection.socks5ConnectionRequest(peer.socket)
+                      Socks5Connection.socks5ConnectionRequest(socket)
                     logger.debug(
                       s"Writing socks5 connection request after auth")
                     Source.single(connRequestBytes).runWith(mergeHubSink)
@@ -321,12 +318,12 @@ object Socks5Connection extends Logging {
                 connectedAddressT match {
                   case scala.util.Success(connectedAddress) =>
                     logger.info(
-                      s"Tor connection request succeeded. target=${peer.socket} connectedAddress=$connectedAddress")
+                      s"Tor connection request succeeded. target=${socket} connectedAddress=$connectedAddress")
                     val state = Socks5ConnectionState.Connected
                     (state, Right(state))
                   case scala.util.Failure(err) =>
                     sys.error(
-                      s"Tor connection request failed to target=${peer.socket} errMsg=${err.toString}")
+                      s"Tor connection request failed to target=${socket} errMsg=${err.toString}")
                 }
               case Socks5ConnectionState.Connected =>
                 (Socks5ConnectionState.Connected, Left(bytes))
@@ -337,8 +334,7 @@ object Socks5Connection extends Logging {
         )
     }
 
-    val ((tcpConnectionF, matSource), matSink) = mergeHubSource
-      .viaMat(connectionFlow)(Keep.right)
+    val ((tcpConnectionF, matSource), matSink) = source
       .viaMat(flowState)(Keep.left)
       .toMat(sink)(Keep.both)
       .run()
