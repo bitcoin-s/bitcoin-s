@@ -355,52 +355,47 @@ case class PeerManager(
           finder.removePeer(peer).map(_ => state)
         }
       } else if (peerDataMap.contains(peer)) {
-        val peerData = _peerDataMap(peer)
         _peerDataMap.remove(peer)
-        peerData.stop().flatMap { _ =>
-          //getDataMesageHandler.state is already mutated from another thread
-          //this will be set to the new sync peer not the old one.
-          val syncPeerOpt = state match {
-            case s: SyncNodeState =>
-              Some(s.syncPeer)
-            case m: MisbehavingPeer => Some(m.badPeer)
-            case _: DoneSyncing | _: RemovePeers =>
-              None
-          }
-          val shouldReconnect =
-            (forceReconnect || connectedPeerCount == 0) && isStarted.get
-          if (peers.exists(_ != peer)) {
-            val randomPeerOpt =
-              randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
-            randomPeerOpt match {
-              case Some(peer) =>
-                state match {
-                  case syncState: SyncNodeState =>
-                    switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
-                  case d: DoneSyncing =>
-                    //defensively try to sync with the new peer
-                    syncHelper(Some(peer)).map(_ => d)
-                  case x @ (_: MisbehavingPeer | _: RemovePeers) =>
-                    Future.successful(x)
-                }
-              case None =>
-                //if we have no new peers should we just switch to DoneSyncing?
-                Future.successful(state)
-            }
-          } else if (syncPeerOpt.isDefined) {
-            if (shouldReconnect) {
-              finder.reconnect(peer).map(_ => state)
-            } else {
-              val exn = new RuntimeException(
-                s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
-              Future.failed(exn)
-            }
-          } else {
-            if (shouldReconnect) {
-              finder.reconnect(peer).map(_ => state)
-            } else {
+        val syncPeerOpt = state match {
+          case s: SyncNodeState =>
+            Some(s.syncPeer)
+          case m: MisbehavingPeer => Some(m.badPeer)
+          case _: DoneSyncing | _: RemovePeers =>
+            None
+        }
+        val shouldReconnect =
+          (forceReconnect || connectedPeerCount == 0) && isStarted.get
+        if (peers.exists(_ != peer)) {
+          val randomPeerOpt =
+            randomPeerWithService(ServiceIdentifier.NODE_COMPACT_FILTERS)
+          randomPeerOpt match {
+            case Some(peer) =>
+              state match {
+                case syncState: SyncNodeState =>
+                  switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
+                case d: DoneSyncing =>
+                  //defensively try to sync with the new peer
+                  syncHelper(Some(peer)).map(_ => d)
+                case x @ (_: MisbehavingPeer | _: RemovePeers) =>
+                  Future.successful(x)
+              }
+            case None =>
+              //if we have no new peers should we just switch to DoneSyncing?
               Future.successful(state)
-            }
+          }
+        } else if (syncPeerOpt.isDefined) {
+          if (shouldReconnect) {
+            finder.reconnect(peer).map(_ => state)
+          } else {
+            val exn = new RuntimeException(
+              s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
+            Future.failed(exn)
+          }
+        } else {
+          if (shouldReconnect) {
+            finder.reconnect(peer).map(_ => state)
+          } else {
+            Future.successful(state)
           }
         }
       } else if (state.waitingForDisconnection.contains(peer)) {
