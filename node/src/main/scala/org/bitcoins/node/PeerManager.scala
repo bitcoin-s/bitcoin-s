@@ -356,8 +356,6 @@ case class PeerManager(
         }
       } else if (peerDataMap.contains(peer)) {
         _peerDataMap.remove(peer)
-        //getDataMesageHandler.state is already mutated from another thread
-        //this will be set to the new sync peer not the old one.
         val syncPeerOpt = state match {
           case s: SyncNodeState =>
             Some(s.syncPeer)
