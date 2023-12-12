@@ -61,6 +61,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   it must "disconnect a peer after a period of inactivity" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+      val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val timeout = 5.seconds
       val startedF =
         getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node,
@@ -69,6 +70,8 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
         started <- startedF
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
           started.getConnectionCount.map(_ == 1))
+        //let sync occur so we aren't receiving blockchain data over the network
+        _ <- NodeTestUtil.awaitAllSync(started, bitcoind)
         //wait until there is a timeout for inactivity
         _ <- AsyncUtil.nonBlockingSleep(timeout)
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
