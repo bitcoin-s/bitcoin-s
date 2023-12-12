@@ -13,7 +13,7 @@ import org.bitcoins.testkit.node.{
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
@@ -61,16 +61,18 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   it must "disconnect a peer after a period of inactivity" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+      val timeout = 5.seconds
       val startedF =
-        getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node)
+        getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node,
+                                            timeout)
       for {
         started <- startedF
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
           started.getConnectionCount.map(_ == 1))
         //wait until there is a timeout for inactivity
-        _ <- AsyncUtil.retryUntilSatisfiedF(
-          () => started.getConnectionCount.map(_ == 0),
-          1.second)
+        _ <- AsyncUtil.nonBlockingSleep(timeout)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+          started.getConnectionCount.map(_ == 0))
         _ <- started.stop()
         _ <- started.nodeConfig.stop()
       } yield {
@@ -82,8 +84,10 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/5162
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val timeout = 5.second
       val startedF =
-        getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node)
+        getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node,
+                                            timeout)
       for {
         started <- startedF
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
@@ -108,12 +112,14 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   private def getSmallInactivityCheckNeutrinoNode(
-      initNode: NeutrinoNode): Future[NeutrinoNode] = {
+      initNode: NeutrinoNode,
+      timeout: FiniteDuration): Future[NeutrinoNode] = {
 
     //make a custom config, set the inactivity timeout very low
     //so we will disconnect our peer organically
     val config =
-      ConfigFactory.parseString("bitcoin-s.node.inactivity-timeout=5s")
+      ConfigFactory.parseString(
+        s"bitcoin-s.node.inactivity-timeout=${timeout.toString}")
     val stoppedConfigF = initNode.nodeConfig.stop()
     val newNodeAppConfigF =
       stoppedConfigF.map(_ => initNode.nodeConfig.withOverrides(config))
