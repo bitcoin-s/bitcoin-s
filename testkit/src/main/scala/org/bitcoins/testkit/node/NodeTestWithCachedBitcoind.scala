@@ -7,8 +7,16 @@ import org.bitcoins.node.Node
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoind, NeutrinoNodeConnectedWithBitcoinds}
-import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindNewest, CachedBitcoindNewestNoP2pBlockFilters, CachedBitcoindPairNewest}
+import org.bitcoins.testkit.node.fixture.{
+  NeutrinoNodeConnectedWithBitcoind,
+  NeutrinoNodeConnectedWithBitcoinds
+}
+import org.bitcoins.testkit.rpc.{
+  CachedBitcoind,
+  CachedBitcoindNewest,
+  CachedBitcoindNewestNoP2pBlockFilters,
+  CachedBitcoindPairNewest
+}
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.callback.WalletCallbacks
