@@ -354,18 +354,17 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 
   /** Disconnects the given peer */
-  def disconnect(): Future[Unit] = {
+  def disconnect(): Future[Done] = {
     connectionGraphOpt match {
       case Some(cg) =>
         logger.info(s"Disconnecting peer=${peer}")
-        cg.stop()
         connectionGraphOpt = None
-        Future.unit
+        cg.stop()
       case None =>
         val err =
           s"Cannot disconnect client that is not connected to peer=${peer}!"
         logger.warn(err)
-        Future.unit
+        Future.successful(Done)
     }
   }
 
@@ -415,10 +414,10 @@ object PeerConnection {
       killswitch: UniqueKillSwitch,
       initializationCancellable: Cancellable) {
 
-    def stop(): Unit = {
+    def stop(): Future[Done] = {
       killswitch.shutdown()
       initializationCancellable.cancel()
-      ()
+      streamDoneF
     }
   }
 
