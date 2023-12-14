@@ -51,10 +51,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     def peers = peerManager.peers
 
     val connAndInit = for {
-      _ <- AsyncUtil
-        .retryUntilSatisfied(peers.size == 2,
-                             maxTries = 30,
-                             interval = 1.second)
       _ <- Future
         .sequence(peers.map(peerManager.isConnected))
         .flatMap(p => assert(p.forall(_ == true)))
@@ -144,10 +140,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       //assert connected to 2 peers and both initialised and connected
       val assertConnAndInit = for {
-        _ <- AsyncUtil
-          .retryUntilSatisfied(peers.size == 2,
-                               interval = 1.second,
-                               maxTries = 30)
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
@@ -178,10 +170,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       def peers = peerManager.peers
 
       val assert1F = for {
-        _ <- AsyncUtil
-          .retryUntilSatisfied(peers.size == 2,
-                               interval = 1.second,
-                               maxTries = 30)
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
