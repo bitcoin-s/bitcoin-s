@@ -150,7 +150,7 @@ case class PeerFinder(
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
-          val peersF = Future.traverse(peers)(tryPeer )
+          val peersF = Future.traverse(peers)(tryPeer)
           peersF.onComplete {
             case Success(_) =>
               isConnectionSchedulerRunning.set(false)
