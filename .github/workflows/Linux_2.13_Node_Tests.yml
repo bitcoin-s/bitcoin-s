@@ -22,12 +22,12 @@ jobs:
           java-version: '17'
           cache: 'sbt'
       - name: Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.ivy2/cache
             ~/.sbt
             ~/.bitcoin-s/binaries
-          key: ${{ runner.os }}-cache
+          key: ${{ runner.os }}-node-test-cache
       - name: run tests
         run: sbt -J-Xmx2g cryptoTestJS/test coreJS/test 'set scalaJSStage in Global := FullOptStage' cryptoTestJS/test coreJS/test asyncUtilsTestJS/test coverage nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcNodeTest/test
