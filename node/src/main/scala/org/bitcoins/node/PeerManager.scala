@@ -243,11 +243,13 @@ case class PeerManager(
 
     if (finder.hasPeer(peer)) {
       //one of the peers that we tried, failed to init within time, disconnect
-      finder.getPeerData(peer).get.stop()
+      finder.getPeerData(peer).get.stop().map(_ => ())
     } else if (peerDataMap.contains(peer)) {
       //this is one of our persistent peers which must have been initialized earlier, this can happen in case of
       //a reconnection attempt, meaning it got connected but failed to initialize, disconnect
-      peerDataMap(peer).stop()
+      peerDataMap(peer)
+        .stop()
+        .map(_ => ())
     } else {
       //this should never happen
       logger.warn(s"onInitializationTimeout called for unknown $peer")
@@ -278,13 +280,15 @@ case class PeerManager(
             replacePeer(replacePeer = notCf.head, withPeer = peer)
               .flatMap(_ => syncHelper(Some(peer)))
           else {
-            peerData.stop()
+            peerData
+              .stop()
+              .map(_ => ())
           }
         }
       case q: AttemptToConnectPeerData =>
         if (finder.hasPeer(q.peer)) {
           //if we still have an active connection with this peer, stop it
-          q.stop()
+          q.stop().map(_ => ())
         } else {
           //else it already has been deleted because of connection issues
           Future.unit

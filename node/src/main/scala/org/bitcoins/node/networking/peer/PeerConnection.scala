@@ -107,7 +107,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Vector[NetworkMessage],
     NotUsed] = {
     Flow[ByteString]
-      .idleTimeout(nodeAppConfig.inactivityTimeout)
       .statefulMap(() => ByteString.empty)(parseHelper,
                                            { _: ByteString => None })
       .log(
@@ -143,6 +142,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Vector[NetworkMessage],
     (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
     connection
+      .idleTimeout(nodeAppConfig.inactivityTimeout)
       .joinMat(bidiFlow)(Keep.left)
 
   private def connectionGraph(
@@ -299,12 +299,15 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       //if we initiated the disconnect we've already called disconnect(), so don't do it twice
       Future.unit
     }
-    f.flatMap { _ =>
+    val offerP = Promise[Unit]()
+    f.onComplete { _ =>
       val disconnectedPeer = DisconnectedPeer(peer, false)
-      queue
+      val offerF = queue
         .offer(disconnectedPeer)
         .map(_ => ())
+      offerF.onComplete(offerP.complete(_))
     }
+    offerP.future
   }
 
   /** resets reconnect state after connecting to a peer */
@@ -354,18 +357,17 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 
   /** Disconnects the given peer */
-  def disconnect(): Future[Unit] = {
+  def disconnect(): Future[Done] = {
     connectionGraphOpt match {
       case Some(cg) =>
         logger.info(s"Disconnecting peer=${peer}")
-        cg.stop()
         connectionGraphOpt = None
-        Future.unit
+        cg.stop()
       case None =>
         val err =
           s"Cannot disconnect client that is not connected to peer=${peer}!"
         logger.warn(err)
-        Future.unit
+        Future.successful(Done)
     }
   }
 
@@ -415,10 +417,10 @@ object PeerConnection {
       killswitch: UniqueKillSwitch,
       initializationCancellable: Cancellable) {
 
-    def stop(): Unit = {
+    def stop(): Future[Done] = {
       killswitch.shutdown()
       initializationCancellable.cancel()
-      ()
+      streamDoneF
     }
   }
 

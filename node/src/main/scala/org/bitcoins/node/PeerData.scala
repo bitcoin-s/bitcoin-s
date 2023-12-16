@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
@@ -22,7 +23,7 @@ sealed trait PeerData {
 
   def peerMessageSender: PeerMessageSender
 
-  def stop(): Future[Unit] = {
+  def stop(): Future[Done] = {
     peerConnection.disconnect()
   }
 
