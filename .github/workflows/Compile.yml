@@ -20,5 +20,13 @@ jobs:
           distribution: 'adopt'
           java-version: '17'
           cache: 'sbt'
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.bitcoin-s/binaries
+          key: ${{ runner.os }}-compile-cache
       - name: Compile and Check Formatting
         run: sbt -J-Xmx2g +test:compile scalafmtCheckAll docs/mdoc

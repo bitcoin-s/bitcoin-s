@@ -28,6 +28,6 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
             ~/.bitcoin-s/binaries
-          key: ${{ runner.os }}-cache
+          key: ${{ runner.os }}-rpc-tests-cache
       - name: run tests
         run: sbt coverage bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls lndRpcTest/test esploraTest/test
