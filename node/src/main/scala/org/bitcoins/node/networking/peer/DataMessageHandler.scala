@@ -282,6 +282,8 @@ case class DataMessageHandler(
                 Some(headerSync)
               } else {
                 //means we received a headers message from a peer we aren't syncing with, so ignore for now
+                logger.debug(
+                  s"Ignoring headers from peer=$peer while we are syncing with syncPeer=${headerSync.syncPeer}")
                 None
               }
 
