@@ -270,38 +270,39 @@ case class DataMessageHandler(
         case HeadersMessage(count, headers) =>
           logger.info(
             s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
-          val newState = state match {
+          val newStateOpt: Option[NodeState] = state match {
             case d: DoneSyncing =>
-              if (count.toInt != 0) {
+              val s = if (count.toInt != 0) {
                 //why do we sometimes get empty HeadersMessage?
                 HeaderSync(peer, d.peers, d.waitingForDisconnection)
               } else DoneSyncing(d.peers, d.waitingForDisconnection)
+              Some(s)
             case headerSync: HeaderSync =>
               if (headerSync.syncPeer == peer) {
-                headerSync
+                Some(headerSync)
               } else {
-                val fhs = FilterHeaderSync(syncPeer = headerSync.syncPeer,
-                                           peers = headerSync.peers,
-                                           waitingForDisconnection =
-                                             headerSync.waitingForDisconnection)
-                fhs
+                //means we received a headers message from a peer we aren't syncing with, so ignore for now
+                None
               }
 
             case x @ (_: FilterHeaderSync | _: FilterSync) =>
               logger.warn(
                 s"Ignoring headers msg with size=${headers.size} while in state=$x")
-              x
+              Some(x)
             case x @ (_: MisbehavingPeer | _: RemovePeers) =>
               sys.error(s"Invalid state to receive headers in, got=$x")
           }
 
-          newState match {
-            case h: HeaderSync =>
+          newStateOpt match {
+            case Some(h: HeaderSync) =>
               handleHeadersMessage(h, headers, peerData)
                 .map(s => copy(state = s))
-            case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
-                _: MisbehavingPeer | _: RemovePeers) =>
+            case Some(
+                  x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
+                  _: MisbehavingPeer | _: RemovePeers)) =>
               Future.successful(copy(state = x))
+            case None =>
+              Future.successful(this)
           }
         case msg: BlockMessage =>
           val block = msg.block
