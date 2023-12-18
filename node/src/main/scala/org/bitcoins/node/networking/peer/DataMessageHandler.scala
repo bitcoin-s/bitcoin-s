@@ -305,7 +305,7 @@ case class DataMessageHandler(
         case HeadersMessage(count, headers) =>
           logger.info(
             s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
-          val headerSyncState = state match {
+          val newState = state match {
             case d: DoneSyncing =>
               if (count.toInt != 0) {
                 //why do we sometimes get empty HeadersMessage?
@@ -321,53 +321,22 @@ case class DataMessageHandler(
                                              headerSync.waitingForDisconnection)
                 fhs
               }
-            case x @ (_: FilterHeaderSync | _: FilterSync | _: MisbehavingPeer |
-                _: RemovePeers) =>
+
+            case x @ (_: FilterHeaderSync | _: FilterSync) =>
+              logger.warn(
+                s"Ignoring headers msg with size=${headers.size} while in state=$x")
+              x
+            case x @ (_: MisbehavingPeer | _: RemovePeers) =>
               sys.error(s"Invalid state to receive headers in, got=$x")
           }
-          val chainApiHeaderProcessF: Future[DataMessageHandler] = for {
-            newChainApi <- chainApi.setSyncing(count.toInt > 0)
-            processed <- newChainApi.processHeaders(headers)
-          } yield {
-            copy(state = headerSyncState, chainApi = processed)
-          }
 
-          val getHeadersF: Future[DataMessageHandler] = {
-            for {
-              newDmh <- chainApiHeaderProcessF
-              dmh <- getHeaders(newDmh = newDmh, headers = headers, peer = peer)
-            } yield dmh
-          }
-          val recoveredDmhF = getHeadersF.recoverWith {
-            case _: DuplicateHeaders =>
-              logger.warn(
-                s"Received duplicate headers from ${peer} in state=$state")
-              Future.successful(this)
-            case _: InvalidBlockHeader =>
-              logger.warn(
-                s"Invalid headers of count $count sent from ${peer} in state=$state")
-              recoverInvalidHeader(peerData)
-            case e: Throwable => throw e
-          }
-
-          recoveredDmhF.failed.map { err =>
-            logger.error(
-              s"Error when processing headers message: ${err.getMessage}")
-          }
-
-          for {
-            newDmh <- recoveredDmhF
-            _ <- {
-              if (count.toInt == 0) {
-                Future.unit //don't execute callbacks if we receive 0 headers from peer
-              } else {
-                appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
-                  headers)
-              }
-
-            }
-          } yield {
-            newDmh
+          newState match {
+            case h: HeaderSync =>
+              handleHeadersMessage(h, headers, peerData)
+                .map(s => copy(state = s))
+            case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
+                _: MisbehavingPeer | _: RemovePeers) =>
+              Future.successful(copy(state = x))
           }
         case msg: BlockMessage =>
           val block = msg.block
@@ -488,7 +457,7 @@ case class DataMessageHandler(
 
   /** Recover the data message handler if we received an invalid block header from a peer */
   private def recoverInvalidHeader(
-      peerData: PersistentPeerData): Future[DataMessageHandler] = {
+      peerData: PersistentPeerData): Future[NodeState] = {
     val result = state match {
       case state @ (_: HeaderSync | _: DoneSyncing) =>
         val peer = peerData.peer
@@ -501,7 +470,7 @@ case class DataMessageHandler(
                                   peers = state.peers,
                                   waitingForDisconnection =
                                     state.waitingForDisconnection)
-          Future.successful(copy(state = m))
+          Future.successful(m)
         } else {
 
           for {
@@ -519,10 +488,10 @@ case class DataMessageHandler(
                 DoneSyncing(state.peers, state.waitingForDisconnection)
               queryF.map(_ => d)
             }
-          } yield this.copy(state = newState)
+          } yield newState
         }
       case _: FilterHeaderSync | _: FilterSync =>
-        Future.successful(this)
+        Future.successful(state)
       case m @ (_: MisbehavingPeer | _: RemovePeers) =>
         val exn = new RuntimeException(
           s"Cannot recover invalid headers, got=$m")
@@ -705,41 +674,29 @@ case class DataMessageHandler(
   }
 
   private def getHeaders(
-      newDmh: DataMessageHandler,
+      state: HeaderSync,
       headers: Vector[BlockHeader],
-      peer: Peer): Future[DataMessageHandler] = {
-    logger.debug(
-      s"getHeaders() newDmh.state=${newDmh.state} peer=$peer peers=$peer")
-    val state = newDmh.state
+      peer: Peer,
+      chainApi: ChainApi): Future[NodeState] = {
+    logger.debug(s"getHeaders() newDmh.state=${state} peer=$peer peers=$peer")
     val count = headers.length
-    val getHeadersF: Future[DataMessageHandler] = {
-      val newApi = newDmh.chainApi
+    val getHeadersF: Future[NodeState] = {
       if (headers.nonEmpty) {
 
         val lastHeader = headers.last
         val lastHash = lastHeader.hash
-        newApi.getBlockCount().map { count =>
+        chainApi.getBlockCount().map { count =>
           logger.trace(
             s"Processed headers, most recent has height=$count and hash=$lastHash.")
         }
 
         if (count == HeadersMessage.MaxHeadersCount) {
-
-          state match {
-            case _: HeaderSync =>
-              logger.debug(
-                s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-              //ask for headers more from the same peer
-              peerMessageSenderApi
-                .sendGetHeadersMessage(lastHash.flip)
-                .map(_ => newDmh)
-
-            case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
-                _: MisbehavingPeer | _: RemovePeers) =>
-              val exn = new RuntimeException(
-                s"Cannot be in state=$x while retrieving block headers")
-              Future.failed(exn)
-          }
+          logger.debug(
+            s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
+          //ask for headers more from the same peer
+          peerMessageSenderApi
+            .sendGetHeadersMessage(lastHash.flip)
+            .map(_ => state)
 
         } else {
           logger.debug(
@@ -751,37 +708,79 @@ case class DataMessageHandler(
           // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
           // so we also check if our cached filter heights have been set as well, if they haven't then
           // we probably need to sync filters
-          state match {
-            case h: HeaderSync =>
-              val syncPeer = h.syncPeer
-              // headers are synced now with the current sync peer, now move to validating it for all peers
-              require(syncPeer == peer, s"syncPeer=$syncPeer peer=$peer")
+          val syncPeer = state.syncPeer
+          // headers are synced now with the current sync peer, now move to validating it for all peers
+          require(syncPeer == peer, s"syncPeer=$syncPeer peer=$peer")
 
-              PeerManager.fetchCompactFilterHeaders(newDmh,
-                                                    peerMessageSenderApi)
-            case x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
-                _: MisbehavingPeer | _: RemovePeers) =>
-              val exn = new RuntimeException(
-                s"Cannot be in state=$x while we are about to begin syncing compact filter headers")
-              Future.failed(exn)
+          val fhsOptF = PeerManager.fetchCompactFilterHeaders(
+            state = state,
+            chainApi = chainApi,
+            peerMessageSenderApi = peerMessageSenderApi)
+          fhsOptF.map {
+            case Some(s) => s
+            case None    =>
+              //is this right? If we don't send cfheaders to our peers, are we done syncing?
+              DoneSyncing(state.peers, state.waitingForDisconnection)
           }
         }
       } else {
         //what if we are synced exactly by the 2000th header
-        state match {
-          case _: HeaderSync =>
-            Future.successful(newDmh)
-          case _: DoneSyncing =>
-            Future.successful(newDmh)
-          case x @ (_: FilterHeaderSync | _: FilterSync | _: MisbehavingPeer |
-              _: RemovePeers) =>
-            val exn = new RuntimeException(
-              s"Invalid state to complete block header sync in, got=$x")
-            Future.failed(exn)
-        }
+        Future.successful(state)
       }
     }
     getHeadersF
+  }
+
+  private def handleHeadersMessage(
+      headerSyncState: HeaderSync,
+      headers: Vector[BlockHeader],
+      peerData: PersistentPeerData): Future[NodeState] = {
+    val peer = headerSyncState.syncPeer
+    val count = headers.size
+    val chainApiHeaderProcessF: Future[DataMessageHandler] = for {
+      newChainApi <- chainApi.setSyncing(count > 0)
+      processed <- newChainApi.processHeaders(headers)
+    } yield {
+      copy(state = headerSyncState, chainApi = processed)
+    }
+
+    val getHeadersF: Future[NodeState] = {
+      for {
+        newDmh <- chainApiHeaderProcessF
+        dmh <- getHeaders(state = headerSyncState,
+                          headers = headers,
+                          peer = peer,
+                          newDmh.chainApi)
+      } yield dmh
+    }
+    val recoveredStateF: Future[NodeState] = getHeadersF.recoverWith {
+      case _: DuplicateHeaders =>
+        logger.warn(s"Received duplicate headers from ${peer} in state=$state")
+        Future.successful(headerSyncState)
+      case _: InvalidBlockHeader =>
+        logger.warn(
+          s"Invalid headers of count $count sent from ${peer} in state=$state")
+        recoverInvalidHeader(peerData)
+      case e: Throwable => throw e
+    }
+
+    recoveredStateF.failed.map { err =>
+      logger.error(s"Error when processing headers message: ${err.getMessage}")
+    }
+
+    for {
+      newState <- recoveredStateF
+      _ <- {
+        if (count == 0) {
+          Future.unit //don't execute callbacks if we receive 0 headers from peer
+        } else {
+          appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(headers)
+        }
+
+      }
+    } yield {
+      newState
+    }
   }
 
 }

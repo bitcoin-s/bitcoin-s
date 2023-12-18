@@ -932,7 +932,8 @@ object PeerManager extends Logging {
       chainApi: ChainApi,
       state: SyncNodeState)(implicit
       ec: ExecutionContext,
-      chainConfig: ChainAppConfig): Future[Option[NodeState]] = {
+      chainConfig: ChainAppConfig): Future[
+    Option[NodeState.FilterHeaderSync]] = {
     for {
       bestFilterHeaderOpt <-
         chainApi
@@ -1013,33 +1014,21 @@ object PeerManager extends Logging {
   }
 
   def fetchCompactFilterHeaders(
-      currentDmh: DataMessageHandler,
+      state: SyncNodeState, //can we tighten this type up?
+      chainApi: ChainApi,
       peerMessageSenderApi: PeerMessageSenderApi)(implicit
       ec: ExecutionContext,
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig): Future[DataMessageHandler] = {
-    val syncNodeState = currentDmh.state match {
-      case s: SyncNodeState => s
-      case state @ (_: DoneSyncing | _: MisbehavingPeer | _: RemovePeers) =>
-        sys.error(
-          s"Cannot fetch compact filter headers when we are in state=$state")
-    }
+      chainAppConfig: ChainAppConfig): Future[
+    Option[NodeState.FilterHeaderSync]] = {
     logger.info(
-      s"Now syncing filter headers from ${syncNodeState.syncPeer} in state=${currentDmh.state}")
+      s"Now syncing filter headers from ${state.syncPeer} in state=${state}")
     for {
       newSyncingStateOpt <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMessageSenderApi,
-        chainApi = currentDmh.chainApi,
-        state = syncNodeState)
+        chainApi = chainApi,
+        state = state)
     } yield {
-      newSyncingStateOpt match {
-        case Some(newSyncingState) =>
-          currentDmh.copy(state = newSyncingState)
-        case None =>
-          val state = DoneSyncing(currentDmh.state.peers,
-                                  currentDmh.state.waitingForDisconnection)
-          currentDmh.copy(state = state)
-      }
+      newSyncingStateOpt
     }
   }
 
