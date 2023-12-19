@@ -136,7 +136,7 @@ class AsyncUtilTest extends BitcoinSJvmTest {
     }
 
     val _ =
-      AsyncUtil.awaitCondition(blockingTask)
+      AsyncUtil.awaitCondition(() => blockingTask)
 
     //schedule a non blocking task second
     val counter1 = new AtomicInteger(0)
