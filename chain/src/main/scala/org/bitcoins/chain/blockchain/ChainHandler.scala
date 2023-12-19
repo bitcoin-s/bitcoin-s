@@ -443,14 +443,18 @@ class ChainHandler(
       Map[DoubleSha256DigestBE, CompactFilterMessage]] = {
       for {
         newFilters <- newFiltersF
-      } yield {
-        newFilters.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
-          if (messages.size > 1) {
-            return Future.failed(DuplicateFilters(
-              s"Attempt to process ${messages.length} duplicate filters for blockHashBE=$blockHash"))
-          }
-          (blockHash, messages.head)
+        result = newFilters.groupBy(_.blockHash.flip).map {
+          case (blockHash, messages) =>
+            if (messages.size > 1) {
+              Future.failed(DuplicateFilters(
+                s"Attempt to process ${messages.length} duplicate filters for blockHashBE=$blockHash"))
+            } else {
+              Future.successful((blockHash, messages.head))
+            }
         }
+        iter <- Future.sequence(result)
+      } yield {
+        iter.toMap
       }
     }
 

@@ -153,7 +153,17 @@ object CommonSettings {
       "-Xlint:inaccessible",
       "-Xlint:infer-any",
       "-Xlint:missing-interpolator",
-      "-Xlint:eta-sam"
+      "-Xlint:eta-sam",
+      "-Xlint:doc-detached",
+      "-Xlint:private-shadow",
+      //"-Xlint:type-parameter-shadow" need to fix BinaryTree.scala
+      "-Xlint:poly-implicit-overload",
+      "-Xlint:option-implicit",
+      "-Xlint:delayedinit-select",
+      "-Xlint:package-object-classes",
+      "-Xlint:stars-align",
+      "-Xlint:constant",
+      "-Xlint:nonlocal-return"
     )
   }
 
