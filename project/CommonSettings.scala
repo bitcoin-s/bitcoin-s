@@ -52,8 +52,9 @@ object CommonSettings {
       )
     ),
     Compile / scalacOptions ++= compilerOpts(scalaVersion = scalaVersion.value),
-    Test / scalacOptions := testCompilerOpts(scalaVersion =
+    Test / scalacOptions ++= testCompilerOpts(scalaVersion =
       scalaVersion.value),
+    Test / scalacOptions --= scala2_13SourceCompilerOpts,
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     Compile / console / scalacOptions ~= (_ filterNot (s =>
@@ -204,10 +205,8 @@ object CommonSettings {
   }
 
   def testCompilerOpts(scalaVersion: String): Seq[String] = {
-    (//initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
-      Vector("-Xcheckinit") ++
-      compilerOpts(scalaVersion))
-      .diff(scala2_13SourceCompilerOpts)
+    //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+    Vector("-Xcheckinit")
   }
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
