@@ -188,7 +188,7 @@ trait BitcoinSWalletTest
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      createWalletAppConfig(pgUrl, Vector.empty)
+      createWalletAppConfig(() => pgUrl(), Vector.empty)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
@@ -199,7 +199,7 @@ trait BitcoinSWalletTest
 
   def withWalletConfigNotStarted(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      createWalletAppConfigNotStarted(pgUrl, Vector.empty)
+      createWalletAppConfigNotStarted(() => pgUrl(), Vector.empty)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = _ => {

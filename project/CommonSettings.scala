@@ -153,6 +153,7 @@ object CommonSettings {
       "-Xlint:inaccessible",
       "-Xlint:infer-any",
       "-Xlint:missing-interpolator",
+      "-Xlint:eta-zero",
       "-Xlint:eta-sam",
       "-Xlint:doc-detached",
       "-Xlint:private-shadow",

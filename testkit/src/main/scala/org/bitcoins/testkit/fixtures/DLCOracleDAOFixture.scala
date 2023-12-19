@@ -16,7 +16,7 @@ case class DLCOracleDAOs(
 trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   implicit protected val config: DLCOracleAppConfig =
-    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
+    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(() => pgUrl())
 
   override type FixtureParam = DLCOracleDAOs
 

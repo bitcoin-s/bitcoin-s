@@ -26,7 +26,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
                                                               Vector.empty)
 
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
@@ -211,7 +211,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(!rescan)
       rescanState <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
-      _ <- AsyncUtil.awaitConditionF(condition,
+      _ <- AsyncUtil.awaitConditionF(() => condition(),
                                      maxTries = 200,
                                      interval = 200.millis)
       _ <- rescanState.asInstanceOf[RescanStarted].stop()

@@ -30,7 +30,7 @@ trait DualWalletTestCachedBitcoind
     val walletNameConfig =
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
     val extraConfig = config.withFallback(walletNameConfig)
-    BaseWalletTest.getFreshConfig(pgUrl, Vector(extraConfig))
+    BaseWalletTest.getFreshConfig(() => pgUrl(), Vector(extraConfig))
   }
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {

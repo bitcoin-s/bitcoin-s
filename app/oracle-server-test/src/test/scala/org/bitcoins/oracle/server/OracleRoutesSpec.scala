@@ -64,7 +64,7 @@ class OracleRoutesSpec
     "get public key" in {
       val key = ECPublicKey.freshPublicKey.schnorrPublicKey
 
-      (mockOracleApi.publicKey: () => SchnorrPublicKey)
+      (() => mockOracleApi.publicKey())
         .expects()
         .returning(key)
 
@@ -95,7 +95,7 @@ class OracleRoutesSpec
     }
 
     "list announcements" in {
-      (mockOracleApi.listEvents: () => Future[Vector[OracleEvent]])
+      (() => mockOracleApi.listEvents())
         .expects()
         .returning(Future.successful(Vector(dummyOracleEvent)))
 
@@ -399,7 +399,7 @@ class OracleRoutesSpec
     }
 
     "get oracle name" in {
-      (mockOracleApi.oracleName: () => Future[Option[String]])
+      (() => mockOracleApi.oracleName())
         .expects()
         .returning(Future.successful(Some("oracle name")))
 

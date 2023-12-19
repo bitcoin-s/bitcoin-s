@@ -21,13 +21,13 @@ trait TestAppConfigFixture
   }
 
   def withTestAppConfig(test: OneArgAsyncTest): FutureOutcome = {
-    makeDependentFixture(getFreshTestConfig, destroyTestConfig)(test)
+    makeDependentFixture(() => getFreshTestConfig(), destroyTestConfig)(test)
   }
 
   def getFreshTestConfig(): Future[TestAppConfig] = {
     val configOverride = BitcoinSTestAppConfig.configWithEmbeddedDb(
       Some(ProjectType.Test),
-      pgUrl = pgUrl)
+      pgUrl = () => pgUrl())
     val config =
       TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverride))
 

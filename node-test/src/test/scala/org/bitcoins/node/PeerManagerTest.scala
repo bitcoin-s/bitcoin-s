@@ -18,7 +18,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig = {
     BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
-      pgUrl,
+      () => pgUrl(),
       Vector.empty)
   }
 
