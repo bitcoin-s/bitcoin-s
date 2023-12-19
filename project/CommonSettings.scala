@@ -52,7 +52,7 @@ object CommonSettings {
       )
     ),
     Compile / scalacOptions ++= compilerOpts(scalaVersion = scalaVersion.value),
-    Test / scalacOptions ++= testCompilerOpts(scalaVersion =
+    Test / scalacOptions := testCompilerOpts(scalaVersion =
       scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
@@ -69,7 +69,6 @@ object CommonSettings {
     //see: https://github.com/bitcoin-s/bitcoin-s/issues/3232
     Compile / doc / scalacOptions ++= Vector(s"-Wconf:any:ws"),
     Test / console / scalacOptions ++= (Compile / console / scalacOptions).value,
-    Test / scalacOptions ++= testCompilerOpts(scalaVersion.value),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     assembly / test := {},
     Compile / doc := {
@@ -147,6 +146,7 @@ object CommonSettings {
   /** Linting options for scalac */
   private val scala2_13CompilerLinting = {
     Seq(
+      "-Xfatal-warnings",
       "-Xlint:unused",
       "-Xlint:adapted-args",
       "-Xlint:nullary-unit",
@@ -163,13 +163,15 @@ object CommonSettings {
       "-Xlint:package-object-classes",
       "-Xlint:stars-align",
       "-Xlint:constant",
-      "-Xlint:nonlocal-return"
+      "-Xlint:nonlocal-return",
+      "-Xlint:implicit-not-found",
+      "-Xlint:serial"
     )
   }
 
   /** Compiler options for source code */
   private val scala2_13SourceCompilerOpts = {
-    Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
+    Seq("-Xlint:valpattern")
   }
 
   private val nonScala2_13CompilerOpts = Seq(
@@ -195,17 +197,16 @@ object CommonSettings {
       "off"
     ) ++ commonCompilerOpts ++ {
       if (scalaVersion.startsWith("2.13")) {
-        scala2_13SourceCompilerOpts
+        scala2_13SourceCompilerOpts ++ scala2_13CompilerLinting
       } else nonScala2_13CompilerOpts
     }
   }
 
   def testCompilerOpts(scalaVersion: String): Seq[String] = {
-    (commonCompilerOpts ++
-      //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+    (//initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
       Vector("-Xcheckinit") ++
       compilerOpts(scalaVersion))
-      .filterNot(_ == "-Xfatal-warnings")
+      .diff(scala2_13SourceCompilerOpts)
   }
 
   lazy val testSettings: Seq[Setting[_]] = Seq(

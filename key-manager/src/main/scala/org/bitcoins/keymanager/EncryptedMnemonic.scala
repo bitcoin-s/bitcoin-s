@@ -18,12 +18,16 @@ sealed trait DecryptedSeedState extends SeedState {
   protected def strToEncrypt: String
 
   def encrypt(password: AesPassword): EncryptedSeed = {
-    val Right(clearText) = ByteVector.encodeUtf8(strToEncrypt)
-    val (key, salt) = password.toKey
+    val clearTextE = ByteVector.encodeUtf8(strToEncrypt)
+    clearTextE match {
+      case Left(err) => throw err
+      case Right(clearText) =>
+        val (key, salt) = password.toKey
 
-    val encrypted = AesCrypt.encrypt(clearText, key)
+        val encrypted = AesCrypt.encrypt(clearText, key)
 
-    EncryptedSeed(encrypted, salt, creationTime, backupTimeOpt, imported)
+        EncryptedSeed(encrypted, salt, creationTime, backupTimeOpt, imported)
+    }
   }
 }
 

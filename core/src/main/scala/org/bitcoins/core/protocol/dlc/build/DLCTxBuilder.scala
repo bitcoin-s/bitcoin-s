@@ -362,7 +362,7 @@ object DLCTxBuilder {
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingOutputRef: OutputReference): WitnessTransaction = {
-    val Vector(AdaptorPointCETPair(_, cet)) = buildCETs(
+    val cets = buildCETs(
       Vector(adaptorPoint),
       contractInfo,
       offerFundingKey,
@@ -374,8 +374,9 @@ object DLCTxBuilder {
       timeouts,
       fundingOutputRef
     )
-
-    cet
+    require(cets.length == 1,
+            s"Cannot have more than 1 CET for buildCET, got=${cets.length}")
+    cets.head.wtx
   }
 
   def buildCETs(
