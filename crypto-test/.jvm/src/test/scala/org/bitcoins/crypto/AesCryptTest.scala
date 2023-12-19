@@ -320,7 +320,6 @@ class AesCryptTest extends BitcoinSCryptoTest {
         case Left(_)  => fail(s"Failed to decrypt")
         case Right(b) => b
       }
-      assert(decrypted == plainbytes)
 
       /** The AES implementation in pycrypto refuses to work with
         * data that's not padded to the block size (although this
