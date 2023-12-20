@@ -170,7 +170,7 @@ class DLCRoutesSpec
     }
 
     "contacts-list list contacts" in {
-      (mockWallet.listDLCContacts: () => Future[Vector[DLCContactDb]])
+      (() => mockWallet.listDLCContacts())
         .expects()
         .returning(Future.successful(Vector(expected)))
 

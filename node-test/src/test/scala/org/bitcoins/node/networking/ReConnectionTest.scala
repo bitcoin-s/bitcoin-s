@@ -18,7 +18,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
                                                               Vector.empty)
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind

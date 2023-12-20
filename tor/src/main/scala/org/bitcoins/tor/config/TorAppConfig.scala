@@ -269,18 +269,11 @@ object TorAppConfig extends AppConfigFactory[TorAppConfig] {
 
   private lazy val ports = {
     val proxyPort = NetworkUtil.randomPort()
-
-    def findControlPort: Int = {
-      1.to(1024).foreach { _ =>
-        val controlPort = NetworkUtil.randomPort()
-        if (proxyPort != controlPort) {
-          return controlPort
-        }
-      }
-      throw new RuntimeException("Cannot find a non-bound port")
+    var controlPort = proxyPort
+    while (proxyPort == controlPort) {
+      controlPort = NetworkUtil.randomPort()
     }
-
-    TorPorts(proxyPort, findControlPort)
+    TorPorts(proxyPort, controlPort)
   }
 
 }

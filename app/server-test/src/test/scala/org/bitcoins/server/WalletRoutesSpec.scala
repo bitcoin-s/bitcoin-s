@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.fee.{SatoshisPerVirtualByte}
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
@@ -50,7 +50,7 @@ class WalletRoutesSpec
   "WalletRoutes" should {
     "estimatefee" in {
 
-      (mockWalletApi.getFeeRate: () => Future[FeeUnit])
+      (() => mockWalletApi.getFeeRate())
         .expects()
         .returning(Future.successful(SatoshisPerVirtualByte.one))
       val route =

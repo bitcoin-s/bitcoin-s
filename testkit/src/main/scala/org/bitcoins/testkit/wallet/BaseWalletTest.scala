@@ -29,7 +29,7 @@ trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
     val bipPasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
     val bip39Config =
       BitcoinSWalletTest.buildBip39PasswordConfig(bipPasswordOpt)
-    BaseWalletTest.getFreshConfig(pgUrl, Vector(bip39Config))
+    BaseWalletTest.getFreshConfig(() => pgUrl(), Vector(bip39Config))
   }
 
   protected def getFreshWalletAppConfig: WalletAppConfig = {

@@ -41,8 +41,13 @@ class AesCryptTest extends BitcoinSCryptoTest {
         AesCrypt.encryptWithIV(plainText, cipherText.iv, key)
       assert(encrypted == cipherText)
 
-      val Right(decrypted) = AesCrypt.decrypt(cipherText, key)
-      assert(decrypted == plainText)
+      val decryptedE = AesCrypt.decrypt(cipherText, key)
+      decryptedE match {
+        case Left(_) => fail(s"Unsucessful decryption")
+        case Right(decrypted) =>
+          assert(decrypted == plainText)
+      }
+
     }
 
     val first =
@@ -87,7 +92,11 @@ class AesCryptTest extends BitcoinSCryptoTest {
   it must "pass an openssl hard coded vector" in {
     val key = getKey(hex"5CE91F97ED28FD5D1172E23EB17B1BAA")
     val plainText = "foobar"
-    val Right(plainbytes) = ByteVector.encodeUtf8(plainText)
+    val plainBytesE = ByteVector.encodeUtf8(plainText)
+    val plainbytes = plainBytesE match {
+      case Left(_)  => fail(s"Unsuccessful encoding")
+      case Right(b) => b
+    }
     val iv = getIV(hex"455014871CD34F8DCFD7C1E387987BFF")
     //val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
 
@@ -98,11 +107,20 @@ class AesCryptTest extends BitcoinSCryptoTest {
     // assert(encrypted.cipherText == expectedCipher)
     assert(encrypted.iv == iv)
 
-    val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
+    val decryptedE = AesCrypt.decrypt(encrypted, key)
+    val decrypted = decryptedE match {
+      case Left(_)  => fail(s"Failed to decrypt")
+      case Right(b) => b
+    }
     assert(decrypted == plainbytes)
 
-    val Right(decryptedText) = decrypted.decodeUtf8
-    assert(decryptedText == plainText)
+    val decodedTextE = decrypted.decodeUtf8
+    decodedTextE match {
+      case Left(_) => fail(s"Failed to decode text")
+      case Right(decryptedText) =>
+        assert(decryptedText == plainText)
+    }
+
   }
 
   /** REPL.it: https://repl.it/@torkelrogstad/aes-test
@@ -131,7 +149,11 @@ class AesCryptTest extends BitcoinSCryptoTest {
     )
 
     val plaintext = "The quick brown fox jumps over the lazy dog. 👻 👻"
-    val Right(plainbytes) = ByteVector.encodeUtf8(plaintext)
+    val plainBytesE = ByteVector.encodeUtf8(plaintext)
+    val plainbytes = plainBytesE match {
+      case Left(_)  => fail(s"Unsuccessful encoding")
+      case Right(b) => b
+    }
 
     // decrypt our own encrypted data
     {
@@ -140,11 +162,19 @@ class AesCryptTest extends BitcoinSCryptoTest {
       assert(encrypted.iv == iv)
       assert(encrypted.cipherText == expectedCipher)
 
-      val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
+      val decryptedE = AesCrypt.decrypt(encrypted, key)
+      val decrypted = decryptedE match {
+        case Left(_)  => fail(s"Failed to decrypt")
+        case Right(b) => b
+      }
       assert(decrypted == plainbytes)
 
-      val Right(decryptedText) = decrypted.decodeUtf8
-      assert(decryptedText == plaintext)
+      val decodedTextE = decrypted.decodeUtf8
+      decodedTextE match {
+        case Left(_) => fail(s"Failed to decode text")
+        case Right(decryptedText) =>
+          assert(decryptedText == plaintext)
+      }
     }
 
     // decrypt the expected cipher text
@@ -152,11 +182,19 @@ class AesCryptTest extends BitcoinSCryptoTest {
       val encrypted =
         AesEncryptedData(cipherText = expectedCipher, iv = iv)
 
-      val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
+      val decryptedE = AesCrypt.decrypt(encrypted, key)
+      val decrypted = decryptedE match {
+        case Left(_)  => fail(s"Failed to decrypt")
+        case Right(b) => b
+      }
       assert(decrypted == plainbytes)
 
-      val Right(decryptedText) = decrypted.decodeUtf8
-      assert(decryptedText == plaintext)
+      val decodedTextE = decrypted.decodeUtf8
+      decodedTextE match {
+        case Left(_) => fail(s"Failed to decode text")
+        case Right(decryptedText) =>
+          assert(decryptedText == plaintext)
+      }
     }
   }
 
@@ -243,7 +281,11 @@ class AesCryptTest extends BitcoinSCryptoTest {
     val key = getKey(hex"e67a00b510bcff7f4a0101ff5f7fb690")
     val iv = getIV(hex"f43b7f80624e7f01123ac272beb1ff7f")
     val plainText = "The quick brown fox jumps over the lazy dog."
-    val Right(plainbytes) = ByteVector.encodeUtf8(plainText)
+    val plainBytesE = ByteVector.encodeUtf8(plainText)
+    val plainbytes = plainBytesE match {
+      case Left(_)  => fail(s"Unsuccessful encoding")
+      case Right(b) => b
+    }
     val expectedCipher =
       hex"09697c53d3a1e5ec5a465231e536c70428f53cb7d4030a707e42daa338ce147ec2d55c865e85dfb5072a1bf31a977cf4"
 
@@ -254,18 +296,30 @@ class AesCryptTest extends BitcoinSCryptoTest {
       // assert(encrypted.cipherText == expectedCipher)
       assert(encrypted.iv == iv)
 
-      val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
+      val decryptedE = AesCrypt.decrypt(encrypted, key)
+      val decrypted = decryptedE match {
+        case Left(_)  => fail(s"Failed to decrypt")
+        case Right(b) => b
+      }
       assert(decrypted == plainbytes)
 
-      val Right(decryptedText) = decrypted.decodeUtf8
-      assert(decryptedText == plainText)
+      val decodedTextE = decrypted.decodeUtf8
+      decodedTextE match {
+        case Left(_) => fail(s"Failed to decode text")
+        case Right(decryptedText) =>
+          assert(decryptedText == plainText)
+      }
     }
 
     // test decrypting ciphertext from pycrypto
     {
       val encrypted = AesEncryptedData(expectedCipher, iv)
 
-      val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
+      val decryptedE = AesCrypt.decrypt(encrypted, key)
+      val decrypted = decryptedE match {
+        case Left(_)  => fail(s"Failed to decrypt")
+        case Right(b) => b
+      }
 
       /** The AES implementation in pycrypto refuses to work with
         * data that's not padded to the block size (although this
@@ -276,9 +330,12 @@ class AesCryptTest extends BitcoinSCryptoTest {
         */
       assertPaddedEqual(decrypted, plainbytes)
 
-      val Right(decryptedText) = decrypted.decodeUtf8
-      assert(decryptedText.trim == plainText.trim)
-
+      val decodedTextE = decrypted.decodeUtf8
+      decodedTextE match {
+        case Left(_) => fail(s"Failed to decode text")
+        case Right(decryptedText) =>
+          assert(decryptedText.trim == plainText.trim)
+      }
     }
   }
 

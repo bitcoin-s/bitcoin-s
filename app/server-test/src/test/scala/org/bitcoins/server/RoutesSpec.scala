@@ -183,7 +183,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the block count" in {
-      (mockChainApi.getBlockCount: () => Future[Int])
+      (() => mockChainApi.getBlockCount())
         .expects()
         .returning(Future.successful(1234567890))
 
@@ -197,7 +197,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the filter count" in {
-      (mockChainApi.getFilterCount: () => Future[Int])
+      (() => mockChainApi.getFilterCount())
         .expects()
         .returning(Future.successful(1234567890))
 
@@ -211,7 +211,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the filter header count" in {
-      (mockChainApi.getFilterHeaderCount: () => Future[Int])
+      (() => mockChainApi.getFilterHeaderCount())
         .expects()
         .returning(Future.successful(1234567890))
 
@@ -225,7 +225,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the best block hash" in {
-      (mockChainApi.getBestBlockHash: () => Future[DoubleSha256DigestBE])
+      (() => mockChainApi.getBestBlockHash())
         .expects()
         .returning(Future.successful(DoubleSha256DigestBE.empty))
 
@@ -261,7 +261,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(blockHeader.hashBE)
         .returning(Future.successful(Some(blockHeaderDb)))
 
-      (mockChainApi.getBestBlockHeader: () => Future[BlockHeaderDb])
+      (() => mockChainApi.getBestBlockHeader())
         .expects()
         .returning(Future.successful(blockHeaderDb))
 
@@ -282,7 +282,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the median time past" in {
-      (mockChainApi.getMedianTimePast: () => Future[Long])
+      (() => mockChainApi.getMedianTimePast())
         .expects()
         .returning(Future.successful(1234567890L))
 
@@ -327,7 +327,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's confirmed balance" in {
-      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getConfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
@@ -342,7 +342,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's confirmed balance in sats" in {
-      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getConfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
@@ -357,7 +357,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's unconfirmed balance" in {
-      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getUnconfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
@@ -374,11 +374,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val spendingInfoDb = TransactionTestUtil.spendingInfoDb
 
     "return the wallet's balances in bitcoin" in {
-      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getConfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
-      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getUnconfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
@@ -399,11 +399,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's balances in sats" in {
-      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getConfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
-      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getUnconfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
@@ -424,7 +424,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet's unconfirmed balance in sats" in {
-      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+      (() => mockWalletApi.getUnconfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
@@ -439,7 +439,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "check if the wallet is empty" in {
-      (mockWalletApi.isEmpty: () => Future[Boolean])
+      (() => mockWalletApi.isEmpty())
         .expects()
         .returning(Future.successful(true))
 
@@ -454,7 +454,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet utxos" in {
 
-      (mockWalletApi.listUtxos: () => Future[Vector[SpendingInfoDb]])
+      (() => mockWalletApi.listUtxos())
         .expects()
         .returning(Future.successful(Vector(spendingInfoDb)))
 
@@ -494,7 +494,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (mockWalletApi.listAddresses: () => Future[Vector[AddressDb]])
+      (() => mockWalletApi.listAddresses())
         .expects()
         .returning(Future.successful(Vector(addressDb)))
 
@@ -517,7 +517,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (mockWalletApi.listSpentAddresses: () => Future[Vector[AddressDb]])
+      (() => mockWalletApi.listSpentAddresses())
         .expects()
         .returning(Future.successful(Vector(addressDb)))
 
@@ -540,9 +540,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (mockWalletApi.listFundedAddresses: () => Future[Vector[(
-          AddressDb,
-          CurrencyUnit)]])
+      (() => mockWalletApi.listFundedAddresses())
         .expects()
         .returning(Future.successful(Vector((addressDb, Satoshis.zero))))
 
@@ -565,7 +563,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (mockWalletApi.listUnusedAddresses: () => Future[Vector[AddressDb]])
+      (() => mockWalletApi.listUnusedAddresses())
         .expects()
         .returning(Future.successful(Vector(addressDb)))
 
@@ -589,7 +587,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                   hdAccount =
                     HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0))
 
-      (mockWalletApi.listAccounts: () => Future[Vector[AccountDb]])
+      (() => mockWalletApi.listAccounts())
         .expects()
         .returning(Future.successful(Vector(accountDb)))
 
@@ -604,7 +602,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return a new address" in {
-      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
+      (() => mockWalletApi.getNewAddress())
         .expects()
         .returning(Future.successful(testAddress))
 
@@ -657,7 +655,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "lock unspent" in {
-      (mockWalletApi.listUtxos: () => Future[Vector[SpendingInfoDb]])
+      (() => mockWalletApi.listUtxos())
         .expects()
         .returning(Future.successful(Vector(spendingInfoDb)))
         .anyNumberOfTimes()
@@ -777,7 +775,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "get address labels" in {
-      (mockWalletApi.getAddressTags: () => Future[Vector[AddressTagDb]])
+      (() => mockWalletApi.getAddressTags())
         .expects()
         .returning(
           Future.successful(Vector(AddressTagDb(testAddress, testLabel))))
@@ -1703,7 +1701,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "run wallet rescan" in {
       // positive cases
 
-      (mockWalletApi.discoveryBatchSize: () => Int)
+      (() => mockWalletApi.discoveryBatchSize())
         .expects()
         .returning(100)
         .atLeastOnce()
@@ -1893,7 +1891,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                                            myPayout = Satoshis(2),
                                            theirPayout = Satoshis.zero)
 
-      (mockWalletApi.getWalletAccounting: () => Future[DLCWalletAccounting])
+      (() => mockWalletApi.getWalletAccounting())
         .expects()
         .returning(Future.successful(accounting))
 

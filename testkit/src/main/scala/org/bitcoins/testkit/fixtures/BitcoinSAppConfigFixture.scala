@@ -59,11 +59,11 @@ trait BitcoinSAppConfigBitcoinFixtureStarted
       for {
         _ <- cachedBitcoindWithFundsF
         bitcoinSAppConfig1 = BitcoinSTestAppConfig
-          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl = pgUrl,
+          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl = () => pgUrl(),
                                                config = Vector.empty,
                                                forceNamedWallet = true)
         bitcoinSAppConfig2 = BitcoinSTestAppConfig
-          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl = pgUrl,
+          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl = () => pgUrl(),
                                                config = Vector.empty,
                                                forceNamedWallet = true)
         _ <- bitcoinSAppConfig1.start()
