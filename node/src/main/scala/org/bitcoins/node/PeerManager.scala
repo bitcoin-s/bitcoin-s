@@ -64,6 +64,10 @@ case class PeerManager(
 
   override def peers: Set[Peer] = _peerDataMap.keys.toSet
 
+  def peersWithServices: Set[PeerWithServices] = {
+    peerDataMap.map(_._2.peerWithServicesOpt).flatten.toSet
+  }
+
   /** Starts sync compact filter headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
@@ -333,7 +337,9 @@ case class PeerManager(
       }
     }
 
-    stateF.map(_.replacePeers(peers))
+    stateF.map { s =>
+      s.replacePeers(peersWithServices)
+    }
   }
 
   /** @param peer the peer we were disconencted from
@@ -370,7 +376,8 @@ case class PeerManager(
           (forceReconnect || connectedPeerCount == 0) && isStarted.get
         if (peers.exists(_ != peer)) {
           val randomPeerOpt =
-            state.randomPeer(excludePeers = Set(peer))
+            state.randomPeer(excludePeers = Set(peer),
+                             ServiceIdentifier.NODE_COMPACT_FILTERS)
           randomPeerOpt match {
             case Some(peer) =>
               state match {
@@ -415,17 +422,18 @@ case class PeerManager(
       case s: SyncNodeState =>
         if (s.syncPeer == peer) {
           //the peer being disconnected is our sync peer
-          s.randomPeer(excludePeers = Set(peer)) match {
+          s.randomPeer(excludePeers = Set(peer),
+                       ServiceIdentifier.NODE_COMPACT_FILTERS) match {
             case Some(p) => s.replaceSyncPeer(p)
             case None    =>
               //switch to state DoneSyncing since we have no peers to sync from
-              DoneSyncing(peers, state.waitingForDisconnection)
+              DoneSyncing(peersWithServices, state.waitingForDisconnection)
           }
         } else {
-          s.replacePeers(peers)
+          s.replacePeers(peersWithServices)
         }
       case s @ (_: RemovePeers | _: MisbehavingPeer | _: DoneSyncing) =>
-        s.replacePeers(peers)
+        s.replacePeers(peersWithServices)
     }
   }
 
@@ -519,7 +527,8 @@ case class PeerManager(
                   s"Ignoring sync request for peer=${p} while we are in state=$x")
                 Future.successful(Some(x)) //ignore sync request?
               case d: DoneSyncing =>
-                val h = HeaderSync(p, d.peers, d.waitingForDisconnection)
+                val h =
+                  HeaderSync(p, d.peersWithServices, d.waitingForDisconnection)
                 syncFromNewPeer(h)
             }
           case None =>
@@ -529,9 +538,12 @@ case class PeerManager(
                 //we are either syncing already, or we are in a bad state to start a sync
                 Future.successful(Some(x))
               case d: DoneSyncing =>
-                state.randomPeer(Set.empty) match {
+                state.randomPeer(Set.empty,
+                                 ServiceIdentifier.NODE_COMPACT_FILTERS) match {
                   case Some(p) =>
-                    val h = HeaderSync(p, d.peers, d.waitingForDisconnection)
+                    val h = HeaderSync(p,
+                                       d.peersWithServices,
+                                       d.waitingForDisconnection)
                     syncFromNewPeer(h)
                   case None =>
                     Future.successful(None)
@@ -633,7 +645,8 @@ case class PeerManager(
               case Some(s) => s
               case None    =>
                 //we don't have a state to represent no connected peers atm, so switch to DoneSyncing?
-                DoneSyncing(peers = Set.empty, state.waitingForDisconnection)
+                DoneSyncing(peersWithServices = Set.empty,
+                            state.waitingForDisconnection)
             }
           }
         } yield {
@@ -741,7 +754,7 @@ case class PeerManager(
           Future.unit
         } else {
           val fhs = FilterHeaderSync(syncPeer = syncPeer,
-                                     peers = peers,
+                                     peersWithServices = peersWithServices,
                                      waitingForDisconnection = Set.empty)
           syncFilters(
             bestFilterHeaderOpt = bestFilterHeaderOpt,
@@ -936,15 +949,16 @@ case class PeerManager(
   }
 
   private def syncFromNewPeer(state: NodeState): Future[Option[NodeState]] = {
+    val svcIdentifier = ServiceIdentifier.NODE_COMPACT_FILTERS
     val syncPeerOpt = state match {
       case s: SyncNodeState =>
-        s.randomPeer(excludePeers = Set(s.syncPeer))
+        s.randomPeer(excludePeers = Set(s.syncPeer), svcIdentifier)
       case m: MisbehavingPeer =>
-        m.randomPeer(excludePeers = Set(m.badPeer))
+        m.randomPeer(excludePeers = Set(m.badPeer), svcIdentifier)
       case rm: RemovePeers =>
-        rm.randomPeer(excludePeers = rm.peersToRemove.toSet)
+        rm.randomPeer(excludePeers = rm.peersToRemove.toSet, svcIdentifier)
       case d: DoneSyncing =>
-        d.randomPeer(Set.empty)
+        d.randomPeer(Set.empty, svcIdentifier)
     }
     for {
       newStateOpt <- syncPeerOpt match {
@@ -954,7 +968,9 @@ case class PeerManager(
               case s: SyncNodeState =>
                 s.replaceSyncPeer(syncPeer)
               case d: DoneSyncing =>
-                HeaderSync(syncPeer, d.peers, d.waitingForDisconnection)
+                HeaderSync(syncPeer,
+                           d.peersWithServices,
+                           d.waitingForDisconnection)
               case x @ (_: MisbehavingPeer | _: RemovePeers) => x
             }
             Some(newState)
@@ -1044,9 +1060,10 @@ object PeerManager extends Logging {
             .sendGetCompactFilterHeadersMessage(filterSyncMarker)
             .map(_ =>
               Some(
-                FilterHeaderSync(state.syncPeer,
-                                 state.peers,
-                                 state.waitingForDisconnection)))
+                FilterHeaderSync(syncPeer = state.syncPeer,
+                                 peersWithServices = state.peersWithServices,
+                                 waitingForDisconnection =
+                                   state.waitingForDisconnection)))
         case None =>
           logger.info(
             s"Filter headers are synced! filterHeader.blockHashBE=$blockHash")
