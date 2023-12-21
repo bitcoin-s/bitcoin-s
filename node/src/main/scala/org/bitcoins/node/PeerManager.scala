@@ -507,10 +507,16 @@ case class PeerManager(
       case (state, s: StartSync) =>
         val nodeStateOptF: Future[Option[NodeState]] = s.peerOpt match {
           case Some(p) =>
-            //what if p is a member of waitingForDisconnection?
             state match {
-              case s: SyncNodeState => switchSyncToPeer(s, p).map(Some(_))
+              case s: SyncNodeState if !s.waitingForDisconnection.contains(p) =>
+                switchSyncToPeer(s, p).map(Some(_))
+              case s: SyncNodeState =>
+                logger.warn(
+                  s"Ignoring sync request for peer=${p} as its waiting for disconnection")
+                Future.successful(Some(s))
               case x @ (_: MisbehavingPeer | _: RemovePeers) =>
+                logger.warn(
+                  s"Ignoring sync request for peer=${p} while we are in state=$x")
                 Future.successful(Some(x)) //ignore sync request?
               case d: DoneSyncing =>
                 val h = HeaderSync(p, d.peers, d.waitingForDisconnection)
