@@ -1,13 +1,6 @@
 package org.bitcoins.node
 
-import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.{
-  ActorAttributes,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision
-}
 import akka.stream.scaladsl.{
   Keep,
   RunnableGraph,
@@ -15,20 +8,26 @@ import akka.stream.scaladsl.{
   SourceQueue,
   SourceQueueWithComplete
 }
+import akka.stream.{
+  ActorAttributes,
+  OverflowStrategy,
+  QueueOfferResult,
+  Supervision
+}
+import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.node.NodeState.DoneSyncing
 import org.bitcoins.core.api.node.{NodeState, NodeType, Peer}
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
-import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 case class NeutrinoNode(
     walletCreationTimeOpt: Option[Instant],
@@ -157,12 +156,11 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
-    val serviceIdentifier = ServiceIdentifier.NODE_COMPACT_FILTERS
     //wait for a peer to be available to sync from...
     //due to underlying mutability in PeerManager/PeerFinder
     //we may not have a peer available for selection immediately
-    val peerAvailableF = AsyncUtil.retryUntilSatisfied(
-      peerManager.randomPeerWithService(serviceIdentifier).isDefined)
+    val peerAvailableF =
+      AsyncUtil.retryUntilSatisfiedF(() => getConnectionCount.map(_ > 0))
     for {
       _ <- peerAvailableF
       _ <- peerManager.sync(None)

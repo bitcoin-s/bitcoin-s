@@ -1,6 +1,8 @@
 package org.bitcoins.core.api.node
 
-import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.p2p.{CompactFilterMessage}
+
+import scala.util.Random
 
 sealed abstract class NodeState {
   def isSyncing: Boolean
@@ -37,6 +39,24 @@ sealed abstract class NodeState {
     }
   }
 
+  def randomPeer(excludePeers: Set[Peer]): Option[Peer] = {
+    val filteredPeers =
+      peers
+        .filterNot(p => excludePeers.exists(_ == p))
+        //don't give peer a peer that we are waiting to disconnect
+        .filterNot(p => waitingForDisconnection.exists(_ == p))
+        //.filter(p => p._2.serviceIdentifier.hasServicesOf(services))
+        .toVector
+    //val (good, _) =
+    //  filteredPeers.partition(p => !peerDataMap(p).hasFailedRecently)
+
+    val peerOpt = if (filteredPeers.nonEmpty) {
+      Some(filteredPeers(Random.nextInt(filteredPeers.length)))
+    } else {
+      None
+    }
+    peerOpt
+  }
 }
 
 /** State to indicate that we are syncing the blockchain */

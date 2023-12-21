@@ -227,7 +227,12 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       val bitcoindAddrF = bitcoind.getNewAddress
       val sendAmt = Bitcoins.one
       //stop the node to take us offline
-      val stopF = node.stop()
+      val stopF = {
+        for {
+          _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+          n <- node.stop()
+        } yield n
+      }
       for {
         initBalance <- initBalanceF
         receiveAddr <- receivedAddrF
