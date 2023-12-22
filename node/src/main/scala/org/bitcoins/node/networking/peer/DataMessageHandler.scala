@@ -344,7 +344,7 @@ case class DataMessageHandler(
                 }
               } else {
                 logger.info(
-                  s"Received block=${block.blockHeader.hash.flip.hex} state=$state")
+                  s"Received block=${block.blockHeader.hash.flip.hex} state=$state isIBD=$isIBD headerOpt=${headerOpt.isDefined}")
                 appConfig.callBacks
                   .executeOnBlockReceivedCallbacks(block)
                   .map(_ => this)

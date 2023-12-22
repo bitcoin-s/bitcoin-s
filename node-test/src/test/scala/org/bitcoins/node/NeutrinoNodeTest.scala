@@ -389,20 +389,25 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val bitcoind0 = bitcoinds(0)
       val bitcoind1 = bitcoinds(1)
       for {
-        _ <- NodeTestUtil.awaitAllSync(node, bitcoind0)
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind0)
         //disconnect bitcoind1 as we don't need it
         nodeUri1 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
         _ <- bitcoind1.disconnectNode(nodeUri1)
         bestBlockHash0 <- bitcoind0.getBestBlockHash()
         _ <- bitcoind0.invalidateBlock(bestBlockHash0)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+          node.getConnectionCount.map(_ == 1))
         //now generate a block, make sure we sync with them
         hashes <- bitcoind0.generate(1)
         chainApi <- node.chainApiFromDb()
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
           chainApi.getHeader(hashes.head).map(_.isDefined))
         //generate another block to make sure the reorg is complete
-        _ <- bitcoind0.generate(1)
-        _ <- NodeTestUtil.awaitAllSync(node, bitcoind0)
+        hashes1 <- bitcoind0.generate(1)
+        _ = logger.info(s"hashes1=$hashes1")
+        _ <- NodeTestUtil.awaitAllSync(node = node,
+                                       bitcoind = bitcoind0,
+                                       bestBlockHashBE = Some(hashes1.head))
       } yield succeed
   }
 }
