@@ -232,13 +232,33 @@ class ChainHandler(
   /** @inheritdoc */
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[FilterSyncMarker]] =
-    for {
+      stopHash: DoubleSha256DigestBE,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+    if (prevStopHash == DoubleSha256DigestBE.empty) {
+      val fsm = FilterSyncMarker(0, stopHash.flip)
+      Future.successful(Some(fsm))
+    } else if (prevStopHash == stopHash) {
+      //means are are in sync
+      Future.successful(None)
+    } else {
+      val prevBlockHeaderOptF = getHeader(prevStopHash)
+      val syncMarkerOpt = prevBlockHeaderOptF.map {
+        case Some(prevBlockHeader) =>
+          val f = FilterSyncMarker(prevBlockHeader.height + 1, stopHash.flip)
+          Some(f)
+        case None => None
+      }
+      syncMarkerOpt
+    }
+
+    /*    for {
       blockchains <- blockHeaderDAO.getBlockchains()
       syncMarkerOpt <- nextBlockHeaderBatchRangeWithChains(prevStopHash,
                                                            batchSize,
                                                            blockchains)
-    } yield syncMarkerOpt
+    } yield syncMarkerOpt*/
+
+  }
 
   /** Finds the next header in the chain. Uses chain work to break ties
     * returning only the header in the chain with the most work,

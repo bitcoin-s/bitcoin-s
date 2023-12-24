@@ -362,10 +362,12 @@ case class DataMessageHandler(
   /** syncs filter headers in case the header chain is still ahead post filter sync */
   private def syncIfHeadersAhead(
       syncNodeState: SyncNodeState): Future[NodeState] = {
+    val bestBlockHashF = chainApi.getBestBlockHash()
     for {
       headerHeight <- chainApi.getBestHashBlockHeight()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
+      bestBlockHash <- bestBlockHashF
       newState <- {
         require(headerHeight >= Math.max(filterHeaderCount, filterCount),
                 "Header chain cannot be behind filter or filter header chain")
@@ -378,12 +380,14 @@ case class DataMessageHandler(
           val fhs = FilterHeaderSync(syncNodeState.syncPeer,
                                      syncNodeState.peers,
                                      syncNodeState.waitingForDisconnection)
+
           for {
             syncingFilterHeadersState <- PeerManager
               .sendFirstGetCompactFilterHeadersCommand(peerMessageSenderApi =
                                                          peerMessageSenderApi,
                                                        chainApi = chainApi,
-                                                       state = fhs)
+                                                       state = fhs,
+                                                       stopHash = bestBlockHash)
           } yield {
             syncingFilterHeadersState.getOrElse(
               DoneSyncing(syncNodeState.peers,
@@ -467,13 +471,15 @@ case class DataMessageHandler(
   private def sendNextGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       syncPeer: Peer,
-      prevStopHash: DoubleSha256DigestBE): Future[Boolean] =
+      prevStopHash: DoubleSha256DigestBE,
+      stopHash: DoubleSha256DigestBE): Future[Boolean] =
     PeerManager.sendNextGetCompactFilterHeadersCommand(
       peerMessageSenderApi = peerMessageSenderApi,
       chainApi = chainApi,
       peer = syncPeer,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-      prevStopHash = prevStopHash
+      prevStopHash = prevStopHash,
+      stopHash = stopHash
     )
 
   private def sendNextGetCompactFilterCommand(
@@ -678,7 +684,8 @@ case class DataMessageHandler(
           val fhsOptF = PeerManager.fetchCompactFilterHeaders(
             state = state,
             chainApi = chainApi,
-            peerMessageSenderApi = peerMessageSenderApi)
+            peerMessageSenderApi = peerMessageSenderApi,
+            stopHash = lastHeader.hashBE)
           fhsOptF.map {
             case Some(s) => s
             case None    =>
@@ -753,11 +760,13 @@ case class DataMessageHandler(
       peer: Peer): Future[NodeState] = {
     val filterHeaders = filterHeader.filterHeaders
     val blockCountF = chainApi.getBlockCount()
+    val bestBlockHashF = chainApi.getBestBlockHash()
     for {
       _ <- chainApi.processFilterHeaders(filterHeaders,
                                          filterHeader.stopHash.flip)
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       blockCount <- blockCountF
+      bestBlockHash <- bestBlockHashF
       newState <-
         if (blockCount != filterHeaderCount) {
           logger.debug(
@@ -765,8 +774,8 @@ case class DataMessageHandler(
           sendNextGetCompactFilterHeadersCommand(
             peerMessageSenderApi = peerMessageSenderApi,
             syncPeer = peer,
-            prevStopHash = filterHeader.stopHash.flip).map(_ =>
-            filterHeaderSync)
+            prevStopHash = filterHeader.stopHash.flip,
+            stopHash = bestBlockHash).map(_ => filterHeaderSync)
         } else {
           for {
             startHeight <- PeerManager.getCompactFilterStartHeight(

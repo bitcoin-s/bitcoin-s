@@ -222,6 +222,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
+      stopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[FilterSyncMarker]] =
     Future.failed(
       new UnsupportedOperationException(

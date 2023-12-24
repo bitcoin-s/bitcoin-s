@@ -8,7 +8,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
-import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.{ChainApi}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -50,14 +50,6 @@ case class ChainHandlerCached(
 
   override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
     getBestFilterHeaderWithChains(blockchains)
-  }
-
-  override def nextBlockHeaderBatchRange(
-      prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    nextBlockHeaderBatchRangeWithChains(prevStopHash = prevStopHash,
-                                        batchSize = batchSize,
-                                        blockchains = blockchains)
   }
 }
 

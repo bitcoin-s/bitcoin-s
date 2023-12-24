@@ -48,7 +48,11 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         chainHandler.chainConfig.chain.genesisBlock.blockHeader
       val assert1F = for {
         rangeOpt <-
-          chainHandler.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
+          chainHandler.nextBlockHeaderBatchRange(prevStopHash =
+                                                   DoubleSha256DigestBE.empty,
+                                                 stopHash =
+                                                   genesisHeader.hashBE,
+                                                 batchSize = 1)
       } yield {
         val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)
@@ -72,7 +76,10 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
       for {
         chainApi <- chainApi2
         rangeOpt <-
-          chainApi.nextBlockHeaderBatchRange(DoubleSha256DigestBE.empty, 2)
+          chainApi.nextBlockHeaderBatchRange(prevStopHash =
+                                               DoubleSha256DigestBE.empty,
+                                             stopHash = blockHeader.hashBE,
+                                             batchSize = 2)
       } yield {
         val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)
@@ -91,12 +98,13 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
 
       //two competing headers B,C built off of A
       //so just pick the first headerB to be our next block header batch
-      val assert1F = for {
+      val assert0F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
         newHeaderC <- newHeaderCF
         blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
+          stopHash = newHeaderB.hashBE,
           batchSize = batchSize)
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
@@ -105,6 +113,26 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
                                            header2 = newHeaderC,
                                            bestHash = marker.stopBlockHash.flip)
         assert(newHeaderB.height == marker.startHeight)
+      }
+
+      //two competing headers B,C built off of A
+      //pick headerC to be our next block header batch
+      val assert1F = for {
+        _ <- assert0F
+        chainHandler <- chainHandlerF
+        newHeaderB <- newHeaderBF
+        newHeaderC <- newHeaderCF
+        blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
+          prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
+          stopHash = newHeaderC.hashBE,
+          batchSize = batchSize)
+      } yield {
+        assert(blockHeaderBatchOpt.isDefined)
+        val marker = blockHeaderBatchOpt.get
+        ChainHandlerTest.checkReorgHeaders(header1 = newHeaderB,
+                                           header2 = newHeaderC,
+                                           bestHash = marker.stopBlockHash.flip)
+        assert(newHeaderC.height == marker.startHeight)
       }
 
       //now let's build a new block header ontop of C and process it
@@ -118,6 +146,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         chainApiD <- chainHandler.processHeader(headerD.blockHeader)
         blockHeaderBatchOpt <- chainApiD.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
+          stopHash = headerD.hashBE,
           batchSize = batchSize)
         count <- chainApiD.getBlockCount()
       } yield {
@@ -135,7 +164,9 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
       val assert1F = for {
         bestBlockHash <- chainHandler.getBestBlockHash()
         rangeOpt <-
-          chainHandler.nextBlockHeaderBatchRange(bestBlockHash, 1)
+          chainHandler.nextBlockHeaderBatchRange(prevStopHash = bestBlockHash,
+                                                 stopHash = bestBlockHash,
+                                                 batchSize = 1)
       } yield {
         assert(rangeOpt.isEmpty)
       }
