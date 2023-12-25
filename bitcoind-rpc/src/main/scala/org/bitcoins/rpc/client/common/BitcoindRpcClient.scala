@@ -229,7 +229,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
         s"Bitcoind chainApi doesn't allow you fetch block header batch range"))
 
   override def nextFilterHeaderBatchRange(
-      startHeight: Int,
+      stopBlockHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[FilterSyncMarker]] =
     Future.failed(
       new UnsupportedOperationException(

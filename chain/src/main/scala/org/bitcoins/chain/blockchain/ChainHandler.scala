@@ -345,28 +345,27 @@ class ChainHandler(
 
   /** @inheritdoc */
   override def nextFilterHeaderBatchRange(
-      filterHeight: Int,
+      stopBlockHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val startHeight = if (filterHeight <= 0) 0 else filterHeight + 1
-    val stopHeight = startHeight - 1 + batchSize
-
-    val stopBlockF =
-      getFilterHeadersAtHeight(stopHeight).map(_.headOption).flatMap {
-        case Some(stopBlock) =>
-          Future.successful(stopBlock)
-        case None =>
-          // This means the stop height is past the filter header height
-          getBestFilterHeader().map(
-            _.getOrElse(throw UnknownBlockHeight(
-              s"Unknown filter header height $stopHeight")))
+    val bestFilterHeaderOptF = getBestFilterHeader()
+    val stopBlockHeaderOptF = getHeader(stopBlockHash)
+    for {
+      bestFilterHeaderOpt <- bestFilterHeaderOptF
+      stopBlockHeaderOpt <- stopBlockHeaderOptF
+      startHeight = bestFilterHeaderOpt.map(_.height + 1).getOrElse(0)
+      fsmOpt = {
+        stopBlockHeaderOpt match {
+          case Some(sbh) =>
+            if (startHeight > sbh.height) {
+              None
+            } else {
+              val f = FilterSyncMarker(startHeight, stopBlockHash.flip)
+              Some(f)
+            }
+          case None => None
+        }
       }
-
-    stopBlockF.map { stopBlock =>
-      if (startHeight > stopBlock.height)
-        None
-      else
-        Some(FilterSyncMarker(startHeight, stopBlock.blockHashBE.flip))
-    }
+    } yield fsmOpt
   }
 
   /** @inheritdoc */
