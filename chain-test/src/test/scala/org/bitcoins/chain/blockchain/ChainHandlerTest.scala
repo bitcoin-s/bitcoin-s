@@ -389,7 +389,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
-  it must "generate a range for a block filter query for the genesis block" in {
+  it must "generate a range for a block filter header query for the genesis block" in {
     chainHandler: ChainHandler =>
       val genesisHeader =
         chainHandler.chainConfig.chain.genesisBlock.blockHeader
@@ -432,7 +432,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "generate the correct range of block filters if a header is reorged" in {
+  it must "generate the correct range of block filter headers if a block header is reorged" in {
     chainHandler: ChainHandler =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerF = reorgFixtureF.map(_.chainApi)
@@ -457,6 +457,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
                                            header2 = newHeaderC,
                                            bestHash = marker.stopBlockHash.flip)
         assert(newHeaderB.height == marker.startHeight)
+        assert(newHeaderB.hashBE == marker.stopBlockHash.flip)
       }
 
       //two competing headers B,C built off of A
@@ -477,6 +478,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
                                            header2 = newHeaderC,
                                            bestHash = marker.stopBlockHash.flip)
         assert(newHeaderC.height == marker.startHeight)
+        assert(newHeaderC.hashBE == marker.stopBlockHash.flip)
       }
 
       //now let's build a new block header ontop of C and process it
@@ -498,7 +500,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(blockHeaderBatchOpt.isDefined)
         val marker = blockHeaderBatchOpt.get
         assert(headerC.height == marker.startHeight)
-        assert(headerD.hash == marker.stopBlockHash)
+        assert(headerD.hashBE == marker.stopBlockHash.flip)
       }
 
   }
@@ -522,12 +524,125 @@ class ChainHandlerTest extends ChainDbUnitTest {
       for {
         bestBlock <- chainHandler.getBestBlockHeader()
         bestBlockHashBE = bestBlock.hashBE
-        rangeOpt <- chainHandler.nextFilterHeaderBatchRange(0, 1)
+        rangeOpt <- chainHandler.nextFilterHeaderBatchRange(bestBlockHashBE, 1)
       } yield {
         val marker = rangeOpt.get
         assert(rangeOpt.nonEmpty)
         assert(marker.startHeight == 0)
         assert(marker.stopBlockHash == bestBlockHashBE.flip)
+      }
+  }
+
+  it must "generate the correct range of block filters if a header is reorged" in {
+    chainHandler: ChainHandler =>
+      val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
+      val chainHandlerF = reorgFixtureF.map(_.chainApi)
+      val newHeaderBF = reorgFixtureF.map(_.headerDb1)
+      val newHeaderCF = reorgFixtureF.map(_.headerDb2)
+      val batchSize = 100
+
+      //two competing headers B,C built off of A
+      //first specify header B to be syncing filter headers from
+      val assert0F = for {
+        chainHandler <- chainHandlerF
+        newHeaderB <- newHeaderBF
+        newHeaderC <- newHeaderCF
+        blockHeaderBatchOpt <- chainHandler.nextFilterHeaderBatchRange(
+          stopBlockHash = newHeaderB.hashBE,
+          batchSize = batchSize)
+      } yield {
+        assert(blockHeaderBatchOpt.isDefined)
+        val marker = blockHeaderBatchOpt.get
+        ChainHandlerTest.checkReorgHeaders(header1 = newHeaderB,
+                                           header2 = newHeaderC,
+                                           bestHash = marker.stopBlockHash.flip)
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash.flip == newHeaderB.hashBE)
+      }
+
+      //two competing headers B,C built off of A
+      //first specify header C to be syncing filter headers from
+      val assert1F = for {
+        _ <- assert0F
+        chainHandler <- chainHandlerF
+        newHeaderB <- newHeaderBF
+        newHeaderC <- newHeaderCF
+        blockHeaderBatchOpt <- chainHandler.nextFilterHeaderBatchRange(
+          stopBlockHash = newHeaderC.hashBE,
+          batchSize = batchSize)
+      } yield {
+        assert(blockHeaderBatchOpt.isDefined)
+        val marker = blockHeaderBatchOpt.get
+        ChainHandlerTest.checkReorgHeaders(header1 = newHeaderB,
+                                           header2 = newHeaderC,
+                                           bestHash = marker.stopBlockHash.flip)
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash.flip == newHeaderC.hashBE)
+      }
+
+      //now let's build a new block header ontop of C and process it
+      //when we call chainHandler.nextFilterHeaderBatchRange it
+      //should be C's hash instead of B's hash
+      for {
+        _ <- assert1F
+        chainHandler <- chainHandlerF
+        headerC <- newHeaderCF
+        headerD = BlockHeaderHelper.buildNextHeader(headerC)
+        chainApiD <- chainHandler.processHeader(headerD.blockHeader)
+        blockHeaderBatchOpt <- chainApiD.nextFilterHeaderBatchRange(
+          stopBlockHash = headerD.hashBE,
+          batchSize = batchSize)
+        count <- chainApiD.getBlockCount()
+      } yield {
+        assert(count == 2)
+        assert(blockHeaderBatchOpt.isDefined)
+        val marker = blockHeaderBatchOpt.get
+        assert(marker.startHeight == 0)
+        assert(headerD.hash == marker.stopBlockHash)
+      }
+
+  }
+
+  it must "generate a range for a block filter query for the genesis block" in {
+    chainHandler: ChainHandler =>
+      val genesisHeader =
+        chainHandler.chainConfig.chain.genesisBlock.blockHeader
+      val assert1F = for {
+        rangeOpt <-
+          chainHandler.nextFilterHeaderBatchRange(stopBlockHash =
+                                                    genesisHeader.hashBE,
+                                                  1)
+      } yield {
+        assert(rangeOpt.nonEmpty)
+        val marker = rangeOpt.get
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash == genesisHeader.hash)
+      }
+
+      //let's process a block header, and then be able to fetch that header as the last stopHash
+      val blockHeaderDb = {
+        BlockHeaderDbHelper.fromBlockHeader(height = 0,
+                                            chainWork =
+                                              Pow.getBlockProof(genesisHeader),
+                                            bh = genesisHeader)
+      }
+
+      val blockHeader = BlockHeaderHelper.buildNextHeader(blockHeaderDb)
+      val chainApi2 = assert1F.flatMap { _ =>
+        chainHandler.processHeader(blockHeader.blockHeader)
+      }
+
+      for {
+        chainApi <- chainApi2
+        rangeOpt <-
+          chainApi.nextFilterHeaderBatchRange(stopBlockHash =
+                                                blockHeader.hashBE,
+                                              batchSize = 2)
+      } yield {
+        val marker = rangeOpt.get
+        assert(rangeOpt.nonEmpty)
+        assert(marker.startHeight == 0)
+        assert(marker.stopBlockHash == blockHeader.hash)
       }
   }
 

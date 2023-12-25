@@ -346,23 +346,36 @@ class ChainHandler(
   /** @inheritdoc */
   override def nextFilterHeaderBatchRange(
       stopBlockHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val bestFilterHeaderOptF = getBestFilterHeader()
+      batchSize: Int,
+      startHeightOpt: Option[Int]): Future[Option[FilterSyncMarker]] = {
+    val bestFilterOptF = getBestFilter()
     val stopBlockHeaderOptF = getHeader(stopBlockHash)
     for {
-      bestFilterHeaderOpt <- bestFilterHeaderOptF
+      bestFilterOpt <- bestFilterOptF
       stopBlockHeaderOpt <- stopBlockHeaderOptF
-      startHeight = bestFilterHeaderOpt.map(_.height + 1).getOrElse(0)
+      startHeight = {
+        bestFilterOpt match {
+          case Some(bf) =>
+            if (bf.height == 0) 0
+            else bf.height + 1
+          case None => 0
+        }
+      }
       fsmOpt = {
         stopBlockHeaderOpt match {
           case Some(sbh) =>
-            if (startHeight > sbh.height) {
+            if (
+              stopBlockHash == chainConfig.network.chainParams.genesisHashBE
+            ) {
+              Some(FilterSyncMarker(0, stopBlockHash.flip))
+            } else if (startHeight > sbh.height) {
               None
             } else {
               val f = FilterSyncMarker(startHeight, stopBlockHash.flip)
               Some(f)
             }
-          case None => None
+          case None =>
+            None
         }
       }
     } yield fsmOpt

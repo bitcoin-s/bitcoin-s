@@ -101,6 +101,7 @@ case class PeerManager(
             peerMessageSenderApi = peerMsgSender,
             chainApi = chainApi,
             filterBatchSize = chainAppConfig.filterBatchSize,
+            startHeightOpt = Some(compactFilterStartHeight),
             stopBlockHash = bestFilterHeader.blockHashBE,
             peer = syncPeer
           )
@@ -1015,11 +1016,14 @@ object PeerManager extends Logging {
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
       filterBatchSize: Int,
+      startHeightOpt: Option[Int],
       stopBlockHash: DoubleSha256DigestBE,
       peer: Peer)(implicit ec: ExecutionContext): Future[Boolean] = {
     for {
       filterSyncMarkerOpt <-
-        chainApi.nextFilterHeaderBatchRange(stopBlockHash, filterBatchSize)
+        chainApi.nextFilterHeaderBatchRange(stopBlockHash = stopBlockHash,
+                                            batchSize = filterBatchSize,
+                                            startHeightOpt = startHeightOpt)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           logger.info(

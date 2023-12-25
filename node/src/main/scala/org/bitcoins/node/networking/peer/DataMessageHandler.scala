@@ -196,13 +196,12 @@ case class DataMessageHandler(
                 logger.debug(
                   s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
                 for {
-                  stopBlockHashVec <- chainApi.getHeadersAtHeight(
-                    newFilterHeight)
-                  stopBlockHash = stopBlockHashVec.head
+                  bestBlockHash <- chainApi.getBestBlockHash()
                   fssOpt <- sendNextGetCompactFilterCommand(
-                    peerMessageSenderApi,
-                    stopBlockHash.hashBE,
-                    filterSyncState)
+                    peerMessageSenderApi = peerMessageSenderApi,
+                    startHeightOpt = None,
+                    stopBlockHash = bestBlockHash,
+                    fs = filterSyncState)
                 } yield {
                   fssOpt
                 }
@@ -492,6 +491,7 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
+      startHeightOpt: Option[Int],
       stopBlockHash: DoubleSha256DigestBE,
       fs: NodeState.FilterSync): Future[Option[NodeState.FilterSync]] = {
 
@@ -500,6 +500,7 @@ case class DataMessageHandler(
         peerMessageSenderApi = peerMessageSenderApi,
         chainApi = chainApi,
         filterBatchSize = chainConfig.filterBatchSize,
+        startHeightOpt = startHeightOpt,
         stopBlockHash = stopBlockHash,
         peer = fs.syncPeer
       )
@@ -518,6 +519,7 @@ case class DataMessageHandler(
   private def sendFirstGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       stopBlockHash: DoubleSha256DigestBE,
+      startHeight: Int,
       syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
     logger.info(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
 
@@ -528,6 +530,7 @@ case class DataMessageHandler(
     }
 
     sendNextGetCompactFilterCommand(peerMessageSenderApi = peerMessageSenderApi,
+                                    startHeightOpt = Some(startHeight),
                                     stopBlockHash = stopBlockHash,
                                     fs = fs)
   }
@@ -568,7 +571,8 @@ case class DataMessageHandler(
     for {
       (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
         chainApi)
-
+      //_ = logger.warn(
+      //  s"isFiltersSynced() newFilterHeadersHeight=$newFilterHeaderHeight newFilterHeight=$newFilterHeight filterBatch.size=${filterBatch.size}")
       isSynced <-
         if (newFilterHeight == 0 && walletCreationTimeOpt.isDefined) {
           //if we have zero filters in our database and are syncing filters after a wallet creation time
@@ -786,13 +790,14 @@ case class DataMessageHandler(
             stopHash = bestBlockHash).map(_ => filterHeaderSync)
         } else {
           for {
-            /*            startHeight <- PeerManager.getCompactFilterStartHeight(
+            startHeight <- PeerManager.getCompactFilterStartHeight(
               chainApi,
-              walletCreationTimeOpt)*/ // come back and look at this, i believe i need it for wallet startup optimization
+              walletCreationTimeOpt)
             bestBlockHash <- bestBlockHashF
             filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
               peerMessageSenderApi = peerMessageSenderApi,
               stopBlockHash = bestBlockHash,
+              startHeight = startHeight,
               syncNodeState = filterHeaderSync)
           } yield {
             filterSyncStateOpt match {
