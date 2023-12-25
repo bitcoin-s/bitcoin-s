@@ -369,12 +369,12 @@ case class DataMessageHandler(
   /** syncs filter headers in case the header chain is still ahead post filter sync */
   private def syncIfHeadersAhead(
       syncNodeState: SyncNodeState): Future[NodeState] = {
-    val bestBlockHashF = chainApi.getBestBlockHash()
+    val bestBlockHeaderDbF = chainApi.getBestBlockHeader()
     for {
       headerHeight <- chainApi.getBestHashBlockHeight()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
-      bestBlockHash <- bestBlockHashF
+      bestBlockHeaderDb <- bestBlockHeaderDbF
       newState <- {
         require(headerHeight >= Math.max(filterHeaderCount, filterCount),
                 "Header chain cannot be behind filter or filter header chain")
@@ -390,11 +390,11 @@ case class DataMessageHandler(
 
           for {
             syncingFilterHeadersState <- PeerManager
-              .sendFirstGetCompactFilterHeadersCommand(peerMessageSenderApi =
-                                                         peerMessageSenderApi,
-                                                       chainApi = chainApi,
-                                                       state = fhs,
-                                                       stopHash = bestBlockHash)
+              .sendFirstGetCompactFilterHeadersCommand(
+                peerMessageSenderApi = peerMessageSenderApi,
+                chainApi = chainApi,
+                state = fhs,
+                stopBlockHeaderDb = bestBlockHeaderDb)
           } yield {
             syncingFilterHeadersState.getOrElse(
               DoneSyncing(syncNodeState.peers,
@@ -693,11 +693,18 @@ case class DataMessageHandler(
           // headers are synced now with the current sync peer, now move to validating it for all peers
           require(syncPeer == peer, s"syncPeer=$syncPeer peer=$peer")
 
-          val fhsOptF = PeerManager.fetchCompactFilterHeaders(
-            state = state,
-            chainApi = chainApi,
-            peerMessageSenderApi = peerMessageSenderApi,
-            stopHash = lastHeader.hashBE)
+          val fhsOptF = {
+            for {
+              lastBlockHeaderDbOpt <- chainApi.getHeader(lastHash.flip)
+              fhs <- PeerManager.fetchCompactFilterHeaders(
+                state = state,
+                chainApi = chainApi,
+                peerMessageSenderApi = peerMessageSenderApi,
+                stopBlockHeaderDb = lastBlockHeaderDbOpt.get)
+            } yield {
+              fhs
+            }
+          }
           fhsOptF.map {
             case Some(s) => s
             case None    =>
