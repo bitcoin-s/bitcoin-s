@@ -571,8 +571,6 @@ case class DataMessageHandler(
     for {
       (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
         chainApi)
-      //_ = logger.warn(
-      //  s"isFiltersSynced() newFilterHeadersHeight=$newFilterHeaderHeight newFilterHeight=$newFilterHeight filterBatch.size=${filterBatch.size}")
       isSynced <-
         if (newFilterHeight == 0 && walletCreationTimeOpt.isDefined) {
           //if we have zero filters in our database and are syncing filters after a wallet creation time

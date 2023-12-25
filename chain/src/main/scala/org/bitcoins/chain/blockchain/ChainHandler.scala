@@ -250,14 +250,6 @@ class ChainHandler(
       }
       syncMarkerOpt
     }
-
-    /*    for {
-      blockchains <- blockHeaderDAO.getBlockchains()
-      syncMarkerOpt <- nextBlockHeaderBatchRangeWithChains(prevStopHash,
-                                                           batchSize,
-                                                           blockchains)
-    } yield syncMarkerOpt*/
-
   }
 
   /** Finds the next header in the chain. Uses chain work to break ties
