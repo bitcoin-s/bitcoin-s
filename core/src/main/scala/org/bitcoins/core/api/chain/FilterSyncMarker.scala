@@ -1,6 +1,6 @@
 package org.bitcoins.core.api.chain
 
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 /** This is a helper class for syncing block filters following the
   * BIP157 protocol. This indicates the starting block height we are
@@ -11,6 +11,8 @@ import org.bitcoins.crypto.DoubleSha256Digest
 case class FilterSyncMarker(
     startHeight: Int,
     stopBlockHash: DoubleSha256Digest) {
+
+  val stopBlockHashBE: DoubleSha256DigestBE = stopBlockHash.flip
 
   override def toString: String =
     s"FilterSyncMarker(startHeight=$startHeight,stopBlockHashBE=${stopBlockHash.flip.hex})"
