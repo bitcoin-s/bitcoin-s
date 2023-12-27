@@ -1060,7 +1060,7 @@ object PeerManager extends Logging {
       chainAppConfig: ChainAppConfig): Future[
     Option[NodeState.FilterHeaderSync]] = {
     logger.info(
-      s"Now syncing filter headers from ${state.syncPeer} in state=${state}")
+      s"Now syncing filter headers from ${state.syncPeer} in state=${state} stopBlockHashBE=${stopBlockHeaderDb.hashBE}")
     for {
       newSyncingStateOpt <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMessageSenderApi,
@@ -1096,7 +1096,7 @@ object PeerManager extends Logging {
     chainApi.getBestFilter().flatMap {
       case Some(f) =>
         //we have already started syncing filters, return the height of the last filter seen
-        Future.successful(f.height)
+        Future.successful(f.height + 1)
       case None =>
         walletCreationTimeOpt match {
           case Some(instant) =>

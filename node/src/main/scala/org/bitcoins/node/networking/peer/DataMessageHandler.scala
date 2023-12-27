@@ -173,12 +173,14 @@ case class DataMessageHandler(
             (newBatch: Set[CompactFilterMessage], newChainApi) <- {
               if (isFiltersSynced || batchSizeFull) {
 
-                logger.debug(s"Processing ${filterBatch.size} filters")
                 val sortedBlockFiltersF =
                   sortBlockFiltersByBlockHeight(filterBatch)
                 for {
                   sortedBlockFilters <- sortedBlockFiltersF
                   sortedFilterMessages = sortedBlockFilters.map(_._2)
+                  _ = logger.debug(
+                    s"Processing ${filterBatch.size} filters bestBlockHashBE=${sortedFilterMessages.lastOption
+                      .map(_.blockHashBE)}")
                   newChainApi <- chainApi.processFilters(sortedFilterMessages)
                   sortedGolombFilters = sortedBlockFilters.map(x =>
                     (x._1, x._3))
@@ -189,8 +191,6 @@ case class DataMessageHandler(
                 } yield (Set.empty, newChainApi)
               } else Future.successful((filterBatch, chainApi))
             }
-            (_, newFilterHeight) <-
-              calcFilterHeaderFilterHeight(newChainApi)
             filterHeaderSyncStateOpt <-
               if (batchSizeFull) {
                 logger.debug(
