@@ -453,7 +453,6 @@ class ChainHandler(
             }
           }
         } yield {
-          println(s"fsmOptVec=$fsmOptVec")
           fsmOptVec.flatten.headOption
         }
       case None =>
