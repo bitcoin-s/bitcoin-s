@@ -784,6 +784,28 @@ class ChainHandlerTest extends ChainDbUnitTest {
       assert3F
   }
 
+  it must "nextFilterHeaderBatchRange must honor the startHeightOpt parameter" in {
+    chainHandler =>
+      val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
+      val chainHandlerF = reorgFixtureF.map(_.chainApi)
+      val newHeaderCF = reorgFixtureF.map(_.headerDb2)
+      val assert1F = for {
+        chainHandler <- chainHandlerF
+        newHeaderC <- newHeaderCF
+        rangeOpt <- chainHandler.nextFilterHeaderBatchRange(stopBlockHash =
+                                                              newHeaderC.hashBE,
+                                                            batchSize = 2,
+                                                            startHeightOpt =
+                                                              Some(0))
+      } yield {
+        assert(rangeOpt.nonEmpty, s"rangeOpt=$rangeOpt")
+        val range = rangeOpt.get
+        assert(range.startHeight == 0)
+        assert(range.stopBlockHashBE == newHeaderC.hashBE)
+      }
+      assert1F
+  }
+
   it must "read compact filters for the database" in {
     chainHandler: ChainHandler =>
       for {

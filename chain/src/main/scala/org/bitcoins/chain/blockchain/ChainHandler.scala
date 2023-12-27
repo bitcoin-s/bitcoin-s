@@ -416,7 +416,10 @@ class ChainHandler(
     val startHeadersOptF: Future[Option[Vector[BlockHeaderDb]]] =
       startHeightOpt match {
         case Some(startHeight) =>
-          getHeadersAtHeight(startHeight).map(Some(_))
+          getHeadersAtHeight(startHeight - 1).map { headers =>
+            if (headers.isEmpty) None
+            else Some(headers)
+          }
         case None =>
           getBestFilter().flatMap {
             case Some(bestFilter) =>
@@ -437,11 +440,12 @@ class ChainHandler(
           fsmOptVec <- {
             startHeadersOpt match {
               case Some(startHeaders) =>
-                Future.traverse(startHeaders)(h =>
-                  findNextHeader(Some(h),
-                                 stopBlockHeaderDb,
-                                 batchSize,
-                                 blockchains))
+                Future.traverse(startHeaders) { h =>
+                  findNextHeader(prevBlockHeaderOpt = Some(h),
+                                 stopBlockHeaderDb = stopBlockHeaderDb,
+                                 batchSize = batchSize,
+                                 blockchains = blockchains)
+                }
 
               case None =>
                 val fsmOptF = findNextHeader(prevBlockHeaderOpt = None,
