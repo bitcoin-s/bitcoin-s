@@ -157,7 +157,7 @@ case class DataMessageHandler(
             .map(s => copy(state = s))
 
         case filter: CompactFilterMessage =>
-          logger.info(
+          logger.debug(
             s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state")
           val filterSyncState = state match {
             case f: FilterSync => f
@@ -344,7 +344,7 @@ case class DataMessageHandler(
                 }
               } else {
                 logger.info(
-                  s"Received block=${block.blockHeader.hash.flip.hex} state=$state isIBD=$isIBD headerOpt=${headerOpt.isDefined}")
+                  s"Received block=${block.blockHeader.hash.flip.hex} state=$state")
                 appConfig.callBacks
                   .executeOnBlockReceivedCallbacks(block)
                   .map(_ => this)
