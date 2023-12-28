@@ -289,7 +289,7 @@ case class DataMessageHandler(
 
             case x @ (_: FilterHeaderSync | _: FilterSync) =>
               logger.warn(
-                s"Ignoring headers msg with size=${headers.size} while in state=$x")
+                s"Ignoring headers msg with size=${headers.size} while in state=$x from peer=$peer")
               Some(x)
             case x @ (_: MisbehavingPeer | _: RemovePeers) =>
               sys.error(s"Invalid state to receive headers in, got=$x")
@@ -401,21 +401,16 @@ case class DataMessageHandler(
           //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
-            isIBD <- chainApi.isIBD()
             d = DoneSyncing(syncNodeState.peers,
                             syncNodeState.waitingForDisconnection)
             newState <- {
-              if (isIBD) {
-                peerManager
-                  .gossipGetHeadersMessage(Vector(bestBlockHash))
-                  .map { _ =>
-                    //set to done syncing since we are technically done with IBD
-                    //we just need to sync blocks that occurred while we were doing IBD
-                    d
-                  }
-              } else {
-                Future.successful(d)
-              }
+              peerManager
+                .gossipGetHeadersMessage(Vector(bestBlockHash))
+                .map { _ =>
+                  //set to done syncing since we are technically done with IBD
+                  //we just need to sync blocks that occurred while we were doing IBD
+                  d
+                }
             }
           } yield newState
         }
