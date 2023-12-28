@@ -615,8 +615,16 @@ case class PeerManager(
         } else {
           Future
             .traverse(gossipPeers) { p =>
-              val sender = PeerMessageSender(getPeerConnection(p).get)
-              sender.sendMsg(msg)
+              getPeerConnection(p) match {
+                case Some(pc) =>
+                  val sender = PeerMessageSender(pc)
+                  sender.sendMsg(msg)
+                case None =>
+                  logger.warn(
+                    s"Attempting to gossip to peer that is availble in state.peers, but not peerDataMap? state=$state peerDataMap=${peerDataMap
+                      .map(_._1)}")
+                  Future.unit
+              }
             }
             .map(_ => state)
         }
