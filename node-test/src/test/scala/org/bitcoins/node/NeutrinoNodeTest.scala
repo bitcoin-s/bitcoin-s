@@ -394,17 +394,18 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         nodeUri1 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
         _ <- bitcoind1.disconnectNode(nodeUri1)
         bestBlockHash0 <- bitcoind0.getBestBlockHash()
+        //invalidate blockhash to force a reorg when next block is generated
         _ <- bitcoind0.invalidateBlock(bestBlockHash0)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          node.getConnectionCount.map(_ == 1))
+        _ <- AsyncUtil.retryUntilSatisfiedF(
+          () => node.getConnectionCount.map(_ == 1),
+          1.second)
         //now generate a block, make sure we sync with them
-        hashes <- bitcoind0.generate(1)
+        hashes0 <- bitcoind0.generate(1)
         chainApi <- node.chainApiFromDb()
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          chainApi.getHeader(hashes.head).map(_.isDefined))
+          chainApi.getHeader(hashes0.head).map(_.isDefined))
         //generate another block to make sure the reorg is complete
         hashes1 <- bitcoind0.generate(1)
-        _ = logger.info(s"hashes1=$hashes1")
         _ <- NodeTestUtil.awaitAllSync(node = node,
                                        bitcoind = bitcoind0,
                                        bestBlockHashBE = Some(hashes1.head))
