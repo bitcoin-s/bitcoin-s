@@ -312,7 +312,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
           _ <- bitcoind1.disconnectNode(nodeUri)
           _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-            node.getConnectionCount.map(_ == 1))
+            node.getConnectionCount.map(_ == 1), 1.second)
           //generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
