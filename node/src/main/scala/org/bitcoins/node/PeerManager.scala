@@ -600,6 +600,34 @@ case class PeerManager(
         onQueryTimeout(q.payload, q.peer, state).map(_ => state)
       case (dmh, srt: SendResponseTimeout) =>
         sendResponseTimeout(srt.peer, srt.payload).map(_ => dmh)
+      case (state, gossipMessage: GossipMessage) =>
+        val msg = gossipMessage.msg.payload
+        val gossipPeers = gossipMessage.excludePeerOpt match {
+          case Some(excludedPeer) =>
+            state.peers
+              .filterNot(_ == excludedPeer)
+          case None => state.peers
+        }
+        if (gossipPeers.isEmpty) {
+          logger.warn(
+            s"We have 0 peers to gossip message=${msg.commandName} to state=$state.")
+          Future.successful(state)
+        } else {
+          Future
+            .traverse(gossipPeers) { p =>
+              getPeerConnection(p) match {
+                case Some(pc) =>
+                  val sender = PeerMessageSender(pc)
+                  sender.sendMsg(msg)
+                case None =>
+                  logger.warn(
+                    s"Attempting to gossip to peer that is availble in state.peers, but not peerDataMap? state=$state peerDataMap=${peerDataMap
+                      .map(_._1)}")
+                  Future.unit
+              }
+            }
+            .map(_ => state)
+        }
     }
   }
 
@@ -878,26 +906,10 @@ case class PeerManager(
   override def gossipMessage(
       msg: NetworkPayload,
       excludedPeerOpt: Option[Peer]): Future[Unit] = {
-    val gossipPeers = excludedPeerOpt match {
-      case Some(excludedPeer) =>
-        peerDataMap
-          .filterNot(_._1 == excludedPeer)
-          .map(_._2)
-      case None => peerDataMap.map(_._2)
-    }
-    if (gossipPeers.isEmpty) {
-      logger.warn(
-        s"We have 0 peers to gossip message=${msg.commandName} to peerDataMap=${peerDataMap
-          .map(_._1)}.")
-      Future.unit
-    } else {
-      Future
-        .traverse(gossipPeers) { p =>
-          val sender = PeerMessageSender(p.peerConnection)
-          sender.sendMsg(msg)
-        }
-        .map(_ => ())
-    }
+    val m = NetworkMessage(chainAppConfig.network, msg)
+    queue
+      .offer(GossipMessage(m, excludedPeerOpt))
+      .map(_ => ())
   }
 
   override def gossipGetHeadersMessage(

@@ -37,5 +37,8 @@ object NodeStreamMessage {
   case class StartSync(peerOpt: Option[Peer]) extends NodeStreamMessage
   case class SendToPeer(msg: NetworkMessage, peerOpt: Option[Peer])
 
+  case class GossipMessage(msg: NetworkMessage, excludePeerOpt: Option[Peer])
+      extends NodeStreamMessage
+
   case class Initialized(peer: Peer)
 }
