@@ -100,13 +100,15 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
       Future.successful(this)
 
     override def nextBlockHeaderBatchRange(
+        prevStopHash: DoubleSha256DigestBE,
         stopHash: DoubleSha256DigestBE,
         batchSize: Int): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
 
     override def nextFilterHeaderBatchRange(
-        startHeight: Int,
-        batchSize: Int): Future[Option[FilterSyncMarker]] =
+        stopBlockHash: DoubleSha256DigestBE,
+        batchSize: Int,
+        startHeightOpt: Option[Int]): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
 
     override def processFilters(

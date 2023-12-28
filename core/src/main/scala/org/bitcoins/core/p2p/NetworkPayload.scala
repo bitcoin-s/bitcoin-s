@@ -1101,6 +1101,8 @@ case class CompactFilterMessage(
     filterBytes: ByteVector
 ) extends DataPayload {
 
+  val blockHashBE: DoubleSha256DigestBE = blockHash.flip
+
   /** The number of filter bytes in this message */
   val numFilterBytes: CompactSizeUInt = CompactSizeUInt(
     UInt64(filterBytes.length))

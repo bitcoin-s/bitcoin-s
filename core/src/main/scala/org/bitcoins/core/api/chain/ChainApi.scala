@@ -75,16 +75,37 @@ trait ChainApi extends ChainQueryApi {
 
   /** Generates a block range in form of (startHeight, stopHash) by the given stop hash.
     * Returns None if we are synced
+    *
+    * @param prevStopHash our previous block hash where filter header sync stopped
+    * @param stopHash the block hash we want to sync the new batch of filters to
+    * @param batchSize the batch size of filter headers
+    * @return
     */
   def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
+      stopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[FilterSyncMarker]]
 
   /** Generates a filter header range in form of (startHeight, stopHash) by the given stop hash.
     */
+  final def nextFilterHeaderBatchRange(
+      stopBlockHash: DoubleSha256DigestBE,
+      batchSize: Int): Future[Option[FilterSyncMarker]] = {
+    nextFilterHeaderBatchRange(stopBlockHash = stopBlockHash,
+                               batchSize = batchSize,
+                               startHeightOpt = None)
+  }
+
+  /** Generates a query for a range of compact filters
+    * @param stopBlockHash the block hash to stop receiving filters at
+    * @param batchSize
+    * @param startHeightOpt the block height to start syncing filters from. If None, we query our chainstate for the last filter we've seen
+    * @return
+    */
   def nextFilterHeaderBatchRange(
-      startHeight: Int,
-      batchSize: Int): Future[Option[FilterSyncMarker]]
+      stopBlockHash: DoubleSha256DigestBE,
+      batchSize: Int,
+      startHeightOpt: Option[Int]): Future[Option[FilterSyncMarker]]
 
   /** Adds a compact filter into the filter database.
     */

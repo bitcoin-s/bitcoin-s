@@ -79,14 +79,18 @@ case class PeerManager(
       case None =>
         sys.error(s"Could not find peer=$syncPeer")
     }
-    val sendCompactFilterHeaderMsgF =
+    val bestBlockHashF = chainApi.getBestBlockHash()
+    val sendCompactFilterHeaderMsgF = bestBlockHashF.flatMap { bestBlockHash =>
       PeerManager.sendNextGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMsgSender,
         chainApi = chainApi,
         peer = syncPeer,
         filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
-        prevStopHash = bestFilterHeader.blockHashBE
+        prevStopHash = bestFilterHeader.blockHashBE,
+        stopHash = bestBlockHash
       )
+    }
+
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
       // If we have started syncing filters
       if (
@@ -97,7 +101,8 @@ case class PeerManager(
             peerMessageSenderApi = peerMsgSender,
             chainApi = chainApi,
             filterBatchSize = chainAppConfig.filterBatchSize,
-            startHeight = compactFilterStartHeight,
+            startHeightOpt = Some(compactFilterStartHeight),
+            stopBlockHash = bestFilterHeader.blockHashBE,
             peer = syncPeer
           )
           .map(_ => ())
@@ -846,6 +851,7 @@ case class PeerManager(
                   .sendFirstGetCompactFilterHeadersCommand(
                     peerMessageSenderApi = peerMsgSender,
                     chainApi = chainApi,
+                    stopBlockHeaderDb = bestBlockHeader,
                     state = fhs)
                   .map(_ => ())
               case x @ (_: FilterSync | _: HeaderSync) =>
@@ -942,6 +948,7 @@ object PeerManager extends Logging {
   def sendFirstGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
+      stopBlockHeaderDb: BlockHeaderDb,
       state: SyncNodeState)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[
@@ -952,13 +959,27 @@ object PeerManager extends Logging {
           .getBestFilterHeader()
       blockHash = bestFilterHeaderOpt match {
         case Some(filterHeaderDb) =>
-          filterHeaderDb.blockHashBE
+          //need to check for reorg scenarios here
+          val isSameHeight = filterHeaderDb.height == stopBlockHeaderDb.height
+          val isNotSameBlockHash =
+            filterHeaderDb.blockHashBE != stopBlockHeaderDb.hashBE
+          if (isSameHeight && isNotSameBlockHash) {
+            //need to start from previous header has to sync filter headers
+            //correctly in a reorg scenario
+            stopBlockHeaderDb.previousBlockHashBE
+          } else {
+            filterHeaderDb.blockHashBE
+          }
+
         case None =>
           DoubleSha256DigestBE.empty
       }
-      hashHeightOpt <- chainApi.nextBlockHeaderBatchRange(
-        prevStopHash = blockHash,
-        batchSize = chainConfig.filterHeaderBatchSize)
+      hashHeightOpt <- {
+        chainApi.nextBlockHeaderBatchRange(prevStopHash = blockHash,
+                                           stopHash = stopBlockHeaderDb.hashBE,
+                                           batchSize =
+                                             chainConfig.filterHeaderBatchSize)
+      }
       res <- hashHeightOpt match {
         case Some(filterSyncMarker) =>
           peerMessageSenderApi
@@ -981,11 +1002,13 @@ object PeerManager extends Logging {
       chainApi: ChainApi,
       peer: Peer,
       filterHeaderBatchSize: Int,
-      prevStopHash: DoubleSha256DigestBE)(implicit
+      prevStopHash: DoubleSha256DigestBE,
+      stopHash: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     for {
       filterSyncMarkerOpt <- chainApi.nextBlockHeaderBatchRange(
         prevStopHash = prevStopHash,
+        stopHash = stopHash,
         batchSize = filterHeaderBatchSize)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
@@ -1006,11 +1029,14 @@ object PeerManager extends Logging {
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
       filterBatchSize: Int,
-      startHeight: Int,
+      startHeightOpt: Option[Int],
+      stopBlockHash: DoubleSha256DigestBE,
       peer: Peer)(implicit ec: ExecutionContext): Future[Boolean] = {
     for {
       filterSyncMarkerOpt <-
-        chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
+        chainApi.nextFilterHeaderBatchRange(stopBlockHash = stopBlockHash,
+                                            batchSize = filterBatchSize,
+                                            startHeightOpt = startHeightOpt)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           logger.info(
@@ -1028,16 +1054,18 @@ object PeerManager extends Logging {
   def fetchCompactFilterHeaders(
       state: SyncNodeState, //can we tighten this type up?
       chainApi: ChainApi,
-      peerMessageSenderApi: PeerMessageSenderApi)(implicit
+      peerMessageSenderApi: PeerMessageSenderApi,
+      stopBlockHeaderDb: BlockHeaderDb)(implicit
       ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[
     Option[NodeState.FilterHeaderSync]] = {
     logger.info(
-      s"Now syncing filter headers from ${state.syncPeer} in state=${state}")
+      s"Now syncing filter headers from ${state.syncPeer} in state=${state} stopBlockHashBE=${stopBlockHeaderDb.hashBE}")
     for {
       newSyncingStateOpt <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMessageSenderApi,
         chainApi = chainApi,
+        stopBlockHeaderDb = stopBlockHeaderDb,
         state = state)
     } yield {
       newSyncingStateOpt
@@ -1068,7 +1096,7 @@ object PeerManager extends Logging {
     chainApi.getBestFilter().flatMap {
       case Some(f) =>
         //we have already started syncing filters, return the height of the last filter seen
-        Future.successful(f.height)
+        Future.successful(f.height + 1)
       case None =>
         walletCreationTimeOpt match {
           case Some(instant) =>

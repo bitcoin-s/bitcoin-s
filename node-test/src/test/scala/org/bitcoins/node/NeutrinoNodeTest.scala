@@ -303,11 +303,17 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //2023-05-01T21:46:46Z [net] Failed to find block filter hashes in index: filter_type=basic, start_height=208, stop_hash=303cc906bf99b5370581e7f23285378c18005745882c6112dbbf3e61a82aeddb
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
+      val bitcoind1 = nodeConnectedWithBitcoind.bitcoinds(1)
 
       //start syncing node
       val numBlocks = 5
       val genBlocksF = {
         for {
+          nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
+          _ <- bitcoind1.disconnectNode(nodeUri)
+          _ <- AsyncUtil.retryUntilSatisfiedF(
+            () => node.getConnectionCount.map(_ == 1),
+            1.second)
           //generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
