@@ -157,7 +157,7 @@ case class DataMessageHandler(
             .map(s => copy(state = s))
 
         case filter: CompactFilterMessage =>
-          logger.debug(
+          logger.warn(
             s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state")
           val filterSyncState = state match {
             case f: FilterSync => f
@@ -524,7 +524,7 @@ case class DataMessageHandler(
   private def sendFirstGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       stopBlockHash: DoubleSha256DigestBE,
-      startHeight: Int,
+      startHeightOpt: Option[Int],
       syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
     logger.info(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
 
@@ -538,7 +538,7 @@ case class DataMessageHandler(
     }
 
     sendNextGetCompactFilterCommand(peerMessageSenderApi = peerMessageSenderApi,
-                                    startHeightOpt = Some(startHeight),
+                                    startHeightOpt = startHeightOpt,
                                     stopBlockHash = stopBlockHash,
                                     fs = fs)
   }
@@ -807,14 +807,14 @@ case class DataMessageHandler(
             stopHash = bestBlockHash).map(_ => filterHeaderSync)
         } else {
           for {
-            startHeight <- PeerManager.getCompactFilterStartHeight(
+            startHeightOpt <- PeerManager.getCompactFilterStartHeight(
               chainApi,
               walletCreationTimeOpt)
             bestBlockHash <- bestBlockHashF
             filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
               peerMessageSenderApi = peerMessageSenderApi,
               stopBlockHash = filterHeader.stopHashBE,
-              startHeight = startHeight,
+              startHeightOpt = startHeightOpt,
               syncNodeState = filterHeaderSync)
           } yield {
             filterSyncStateOpt match {
