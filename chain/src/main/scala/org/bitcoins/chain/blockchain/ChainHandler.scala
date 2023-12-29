@@ -118,7 +118,8 @@ class ChainHandler(
         headersWeAlreadyHave.exists(_.hashBE == h.hashBE))
 
       if (filteredHeaders.isEmpty) {
-        return Future.failed(DuplicateHeaders(s"Received duplicate headers."))
+        return Future.failed(
+          DuplicateHeaders(s"Received duplicate block headers."))
       }
 
       val blockchainUpdates: Vector[BlockchainUpdate] = {

@@ -85,7 +85,7 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     val innerText =
       if (nodeNone) "none"
       else
-        s"network=$nodeNetwork, compactFilters=$nodeCompactFilters, getUtxo=$nodeGetUtxo, bloom=$nodeBloom, witness=$nodeWitness, xthin=$nodeXthin, networkLimited=$nodeNetworkLimited"
+        s"network=$nodeNetwork,compactFilters=$nodeCompactFilters,getUtxo=$nodeGetUtxo,bloom=$nodeBloom,witness=$nodeWitness,xthin=$nodeXthin,networkLimited=$nodeNetworkLimited"
     s"ServiceIdentifier($innerText)"
   }
 

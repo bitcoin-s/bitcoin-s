@@ -3,7 +3,7 @@ package org.bitcoins.node
 import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer._
@@ -20,6 +20,10 @@ sealed trait PeerData {
 
   implicit protected def system: ActorSystem
   def peer: Peer
+
+  def peerWithServicesOpt: Option[PeerWithServices] = {
+    _serviceIdentifier.map(PeerWithServices(peer, _))
+  }
 
   def peerMessageSender: PeerMessageSender
 

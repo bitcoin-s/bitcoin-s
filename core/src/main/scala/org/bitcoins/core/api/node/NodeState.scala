@@ -1,23 +1,34 @@
 package org.bitcoins.core.api.node
 
-import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
+
+import scala.util.Random
 
 sealed abstract class NodeState {
   def isSyncing: Boolean
 
+  def peersWithServices: Set[PeerWithServices]
+
   /** All peers the node is currently connected to */
-  def peers: Set[Peer]
+  def peers: Set[Peer] = peersWithServices.map(_.peer)
 
   def waitingForDisconnection: Set[Peer]
 
-  def replacePeers(newPeers: Set[Peer]): NodeState = this match {
-    case h: NodeState.HeaderSync        => h.copy(peers = newPeers)
-    case fh: NodeState.FilterHeaderSync => fh.copy(peers = newPeers)
-    case fs: NodeState.FilterSync       => fs.copy(peers = newPeers)
-    case d: NodeState.DoneSyncing       => d.copy(peers = newPeers)
-    case rm: NodeState.RemovePeers      => rm.copy(peers = newPeers)
-    case m: NodeState.MisbehavingPeer   => m.copy(peers = newPeers)
-  }
+  def replacePeers(peerWithServices: Set[PeerWithServices]): NodeState =
+    this match {
+      case h: NodeState.HeaderSync =>
+        h.copy(peersWithServices = peerWithServices)
+      case fh: NodeState.FilterHeaderSync =>
+        fh.copy(peersWithServices = peerWithServices)
+      case fs: NodeState.FilterSync =>
+        fs.copy(peersWithServices = peerWithServices)
+      case d: NodeState.DoneSyncing =>
+        d.copy(peersWithServices = peerWithServices)
+      case rm: NodeState.RemovePeers =>
+        rm.copy(peersWithServices = peerWithServices)
+      case m: NodeState.MisbehavingPeer =>
+        m.copy(peersWithServices = peerWithServices)
+    }
 
   def replaceWaitingForDisconnection(
       newWaitingForDisconnection: Set[Peer]): NodeState = {
@@ -37,6 +48,24 @@ sealed abstract class NodeState {
     }
   }
 
+  def randomPeer(
+      excludePeers: Set[Peer],
+      services: ServiceIdentifier): Option[Peer] = {
+    val filteredPeers =
+      peersWithServices
+        .filterNot(p => excludePeers.exists(_ == p.peer))
+        //don't give peer a peer that we are waiting to disconnect
+        .filterNot(p => waitingForDisconnection.exists(_ == p.peer))
+        .filter(p => p.services.hasServicesOf(services))
+        .toVector
+
+    val peerOpt = if (filteredPeers.nonEmpty) {
+      Some(filteredPeers(Random.nextInt(filteredPeers.length)))
+    } else {
+      None
+    }
+    peerOpt.map(_.peer)
+  }
 }
 
 /** State to indicate that we are syncing the blockchain */
@@ -61,19 +90,19 @@ object NodeState {
 
   case class HeaderSync(
       syncPeer: Peer,
-      peers: Set[Peer],
+      peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer])
       extends SyncNodeState
 
   case class FilterHeaderSync(
       syncPeer: Peer,
-      peers: Set[Peer],
+      peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer])
       extends SyncNodeState
 
   case class FilterSync(
       syncPeer: Peer,
-      peers: Set[Peer],
+      peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage])
       extends SyncNodeState {
@@ -85,7 +114,7 @@ object NodeState {
 
   case class MisbehavingPeer(
       badPeer: Peer,
-      peers: Set[Peer],
+      peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer])
       extends NodeState {
     if (peers.nonEmpty) {
@@ -100,7 +129,7 @@ object NodeState {
 
   case class RemovePeers(
       peersToRemove: Vector[Peer],
-      peers: Set[Peer],
+      peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer],
       isSyncing: Boolean)
       extends NodeState {
@@ -110,7 +139,9 @@ object NodeState {
   }
 
   /** State to indicate we are not currently syncing with a peer */
-  case class DoneSyncing(peers: Set[Peer], waitingForDisconnection: Set[Peer])
+  case class DoneSyncing(
+      peersWithServices: Set[PeerWithServices],
+      waitingForDisconnection: Set[Peer])
       extends NodeState {
     override val isSyncing: Boolean = false
   }
