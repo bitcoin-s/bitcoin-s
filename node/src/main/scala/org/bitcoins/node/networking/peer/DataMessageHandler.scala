@@ -182,9 +182,10 @@ case class DataMessageHandler(
                 for {
                   sortedBlockFilters <- sortedBlockFiltersF
                   sortedFilterMessages = sortedBlockFilters.map(_._2)
+                  filterBestBlockHashBE=sortedFilterMessages.lastOption
+                    .map(_.blockHashBE)
                   _ = logger.debug(
-                    s"Processing ${filterBatch.size} filters bestBlockHashBE=${sortedFilterMessages.lastOption
-                      .map(_.blockHashBE)}")
+                    s"Processing ${filterBatch.size} filters bestBlockHashBE=${filterBestBlockHashBE}")
                   newChainApi <- chainApi.processFilters(sortedFilterMessages)
                   sortedGolombFilters = sortedBlockFilters.map(x =>
                     (x._1, x._3))
@@ -756,7 +757,9 @@ case class DataMessageHandler(
     val recoveredStateF: Future[NodeState] = getHeadersF.recoverWith {
       case _: DuplicateHeaders =>
         logger.warn(s"Received duplicate headers from ${peer} in state=$state")
-        Future.successful(headerSyncState)
+        val d = DoneSyncing(headerSyncState.peers,
+                            headerSyncState.waitingForDisconnection)
+        Future.successful(d)
       case _: InvalidBlockHeader =>
         logger.warn(
           s"Invalid headers of count $count sent from ${peer} in state=$state")
