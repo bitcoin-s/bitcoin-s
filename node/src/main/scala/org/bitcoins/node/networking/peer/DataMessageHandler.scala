@@ -157,7 +157,7 @@ case class DataMessageHandler(
             .map(s => copy(state = s))
 
         case filter: CompactFilterMessage =>
-          logger.warn(
+          logger.debug(
             s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state")
           val filterSyncState = state match {
             case f: FilterSync => f
@@ -810,7 +810,6 @@ case class DataMessageHandler(
             startHeightOpt <- PeerManager.getCompactFilterStartHeight(
               chainApi,
               walletCreationTimeOpt)
-            bestBlockHash <- bestBlockHashF
             filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
               peerMessageSenderApi = peerMessageSenderApi,
               stopBlockHash = filterHeader.stopHashBE,
