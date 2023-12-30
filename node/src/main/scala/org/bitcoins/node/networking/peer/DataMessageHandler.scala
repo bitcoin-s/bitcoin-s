@@ -576,10 +576,10 @@ case class DataMessageHandler(
   private def isFiltersSynced(
       chainApi: ChainApi,
       filterBatch: Set[CompactFilterMessage]): Future[Boolean] = {
+    val bestBlockHashBEF = chainApi.getBestBlockHash()
     for {
       (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
         chainApi)
-      bestBlockHashBE <- chainApi.getBestBlockHash()
       isSynced <-
         if (newFilterHeight == 0 && walletCreationTimeOpt.isDefined) {
           //if we have zero filters in our database and are syncing filters after a wallet creation time
@@ -603,21 +603,9 @@ case class DataMessageHandler(
           //fully syncing all filters
           Future.successful(filterBatch.size == newFilterHeaderHeight + 1)
         } else {
-          val fbExistsBestHashBE =
-            filterBatch.exists(_.blockHashBE == bestBlockHashBE)
-          filterBatch.lastOption match {
-            case None => Future.successful(false)
-            case Some(f) =>
-              chainApi.getHeader(f.blockHashBE).map {
-                case Some(h) =>
-                  h.height == newFilterHeaderHeight || fbExistsBestHashBE
-                case None =>
-                  val exn = new RuntimeException(
-                    s"Could not find blockheader associated with blockHash=${f.blockHashBE}")
-                  throw exn
-              }
-
-          }
+          for {
+            bestBlockHashBE <- bestBlockHashBEF
+          } yield filterBatch.exists(_.blockHashBE == bestBlockHashBE)
         }
     } yield {
       isSynced
