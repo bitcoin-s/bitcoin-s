@@ -603,6 +603,8 @@ case class DataMessageHandler(
           //fully syncing all filters
           Future.successful(filterBatch.size == newFilterHeaderHeight + 1)
         } else {
+          val fbExistsBestHashBE =
+            filterBatch.exists(_.blockHashBE == bestBlockHashBE)
           filterBatch.lastOption match {
             case None => Future.successful(false)
             case Some(f) =>

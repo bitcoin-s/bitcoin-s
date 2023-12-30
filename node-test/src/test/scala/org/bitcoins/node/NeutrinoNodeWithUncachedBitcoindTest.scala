@@ -165,7 +165,6 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         bitcoinds <- bitcoindsF
         bitcoind0 = bitcoinds(0)
         bitcoind1 = bitcoinds(1)
-        bitcoind1BestHash <- bitcoind1.getBestBlockHash()
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind1)
         //disconnect bitcoind(0) as its not needed for this test
         node0Uri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind0)
