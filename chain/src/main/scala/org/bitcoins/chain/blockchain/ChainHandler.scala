@@ -192,6 +192,9 @@ class ChainHandler(
     getBestBlockHeader().map(_.hashBE)
   }
 
+  override def getBestChainTips(): Future[Vector[BlockHeaderDb]] =
+    blockHeaderDAO.getBestChainTips
+
   /** @inheritdoc */
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,

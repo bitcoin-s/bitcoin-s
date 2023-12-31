@@ -214,6 +214,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   override def getHeadersAtHeight(height: Int): Future[Vector[BlockHeaderDb]] =
     getHeaderAtHeight(height).map(header => Vector(header))
 
+  override def getBestChainTips(): Future[Vector[BlockHeaderDb]] = {
+    ???
+  }
+
   override def getBestBlockHeader(): Future[BlockHeaderDb] =
     for {
       hash <- getBestBlockHash()
