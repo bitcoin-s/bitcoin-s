@@ -79,6 +79,29 @@ abstract class NodeTestUtil extends P2PLogger {
     }
   }
 
+  private def isSameBestFilter(
+      node: NeutrinoNode,
+      rpc: BitcoindRpcClient,
+      bestBlockHashBEOpt: Option[DoubleSha256DigestBE])(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+
+    val bestBlockHashBEF = bestBlockHashBEOpt match {
+      case Some(bestBlockHash) => Future.successful(bestBlockHash)
+      case None                => rpc.getBestBlockHash()
+    }
+
+    for {
+      bestBlockHashBE <- bestBlockHashBEF
+      chainApi <- node.chainApiFromDb()
+      bestFilterOpt <- chainApi.getBestFilter()
+    } yield {
+      bestFilterOpt match {
+        case Some(bestFilter) => bestFilter.blockHashBE == bestBlockHashBE
+        case None             => false
+      }
+    }
+  }
+
   def isSameBestFilterHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount()
@@ -137,24 +160,35 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** Awaits sync between the given node and bitcoind client */
-  def awaitCompactFiltersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
-      implicit sys: ActorSystem): Future[Unit] = {
+  def awaitCompactFiltersSync(
+      node: NeutrinoNode,
+      rpc: BitcoindRpcClient,
+      bestBlockHashBEOpt: Option[DoubleSha256DigestBE] = None)(implicit
+      sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestFilterHeight(node, rpc),
-                            1.second,
-                            maxTries = syncTries)
+      .retryUntilSatisfiedF(
+        () => isSameBestFilter(node, rpc, bestBlockHashBEOpt),
+        1.second,
+        maxTries = syncTries)
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */
-  def awaitBestHash(node: Node, bitcoind: BitcoindRpcClient)(implicit
+  def awaitBestHash(
+      node: Node,
+      bitcoind: BitcoindRpcClient,
+      bestHashOpt: Option[DoubleSha256DigestBE] = None)(implicit
       system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     def bestBitcoinSHashF: Future[DoubleSha256DigestBE] = {
       node.chainApiFromDb().flatMap(_.getBestBlockHash())
     }
-    def bestBitcoindHashF: Future[DoubleSha256DigestBE] =
-      bitcoind.getBestBlockHash()
+    def bestBitcoindHashF: Future[DoubleSha256DigestBE] = {
+      bestHashOpt match {
+        case Some(bestHash) => Future.successful(bestHash)
+        case None           => bitcoind.getBestBlockHash()
+      }
+    }
 
     TestAsyncUtil.retryUntilSatisfiedF(
       () => {
@@ -168,14 +202,22 @@ abstract class NodeTestUtil extends P2PLogger {
     )
   }
 
-  /** Awaits header, filter header and filter sync between the neutrino node and rpc client */
-  def awaitAllSync(node: NeutrinoNode, bitcoind: BitcoindRpcClient)(implicit
+  /** Awaits header, filter header and filter sync between the neutrino node and rpc client
+    * @param the node we are syncing
+    * @param bitcoind the node we are syncing against
+    * @param bestBlockHashBE the best block hash we are expected to sync to, this is useful for reorg situations.
+    *                        If None given, we use bitcoind's best block header
+    */
+  def awaitAllSync(
+      node: NeutrinoNode,
+      bitcoind: BitcoindRpcClient,
+      bestBlockHashBE: Option[DoubleSha256DigestBE] = None)(implicit
       system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     for {
-      _ <- NodeTestUtil.awaitBestHash(node, bitcoind)
+      _ <- NodeTestUtil.awaitBestHash(node, bitcoind, bestBlockHashBE)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind, bestBlockHashBE)
     } yield ()
   }
 

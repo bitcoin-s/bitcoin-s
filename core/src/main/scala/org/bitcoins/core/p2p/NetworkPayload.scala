@@ -1181,6 +1181,8 @@ case class CompactFilterHeadersMessage(
     filterHashes: Vector[DoubleSha256Digest])
     extends DataPayload {
 
+  val stopHashBE: DoubleSha256DigestBE = stopHash.flip
+
   /** The number of hashes in this message */
   val filterHashesLength: CompactSizeUInt = CompactSizeUInt(
     UInt64(filterHashes.length))

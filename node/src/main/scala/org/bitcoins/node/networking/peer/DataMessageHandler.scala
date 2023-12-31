@@ -182,9 +182,10 @@ case class DataMessageHandler(
                 for {
                   sortedBlockFilters <- sortedBlockFiltersF
                   sortedFilterMessages = sortedBlockFilters.map(_._2)
+                  filterBestBlockHashBE = sortedFilterMessages.lastOption
+                    .map(_.blockHashBE)
                   _ = logger.debug(
-                    s"Processing ${filterBatch.size} filters bestBlockHashBE=${sortedFilterMessages.lastOption
-                      .map(_.blockHashBE)}")
+                    s"Processing ${filterBatch.size} filters bestBlockHashBE=${filterBestBlockHashBE}")
                   newChainApi <- chainApi.processFilters(sortedFilterMessages)
                   sortedGolombFilters = sortedBlockFilters.map(x =>
                     (x._1, x._3))
@@ -524,7 +525,7 @@ case class DataMessageHandler(
   private def sendFirstGetCompactFilterCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       stopBlockHash: DoubleSha256DigestBE,
-      startHeight: Int,
+      startHeightOpt: Option[Int],
       syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
     logger.info(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
 
@@ -538,7 +539,7 @@ case class DataMessageHandler(
     }
 
     sendNextGetCompactFilterCommand(peerMessageSenderApi = peerMessageSenderApi,
-                                    startHeightOpt = Some(startHeight),
+                                    startHeightOpt = startHeightOpt,
                                     stopBlockHash = stopBlockHash,
                                     fs = fs)
   }
@@ -756,7 +757,9 @@ case class DataMessageHandler(
     val recoveredStateF: Future[NodeState] = getHeadersF.recoverWith {
       case _: DuplicateHeaders =>
         logger.warn(s"Received duplicate headers from ${peer} in state=$state")
-        Future.successful(headerSyncState)
+        val d = DoneSyncing(headerSyncState.peersWithServices,
+                            headerSyncState.waitingForDisconnection)
+        Future.successful(d)
       case _: InvalidBlockHeader =>
         logger.warn(
           s"Invalid headers of count $count sent from ${peer} in state=$state")
@@ -792,8 +795,7 @@ case class DataMessageHandler(
     val blockCountF = chainApi.getBlockCount()
     val bestBlockHashF = chainApi.getBestBlockHash()
     for {
-      _ <- chainApi.processFilterHeaders(filterHeaders,
-                                         filterHeader.stopHash.flip)
+      _ <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHashBE)
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       blockCount <- blockCountF
       bestBlockHash <- bestBlockHashF
@@ -804,18 +806,17 @@ case class DataMessageHandler(
           sendNextGetCompactFilterHeadersCommand(
             peerMessageSenderApi = peerMessageSenderApi,
             syncPeer = peer,
-            prevStopHash = filterHeader.stopHash.flip,
+            prevStopHash = filterHeader.stopHashBE,
             stopHash = bestBlockHash).map(_ => filterHeaderSync)
         } else {
           for {
-            startHeight <- PeerManager.getCompactFilterStartHeight(
+            startHeightOpt <- PeerManager.getCompactFilterStartHeight(
               chainApi,
               walletCreationTimeOpt)
-            bestBlockHash <- bestBlockHashF
             filterSyncStateOpt <- sendFirstGetCompactFilterCommand(
               peerMessageSenderApi = peerMessageSenderApi,
-              stopBlockHash = bestBlockHash,
-              startHeight = startHeight,
+              stopBlockHash = filterHeader.stopHashBE,
+              startHeightOpt = startHeightOpt,
               syncNodeState = filterHeaderSync)
           } yield {
             filterSyncStateOpt match {
