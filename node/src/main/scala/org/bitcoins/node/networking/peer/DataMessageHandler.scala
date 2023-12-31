@@ -576,7 +576,8 @@ case class DataMessageHandler(
   private def isFiltersSynced(
       chainApi: ChainApi,
       filterBatch: Set[CompactFilterMessage]): Future[Boolean] = {
-    val bestBlockHashBEF = chainApi.getBestBlockHash()
+    val bestChainTipsF = chainApi.getBestChainTips()
+
     for {
       (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
         chainApi)
@@ -604,8 +605,9 @@ case class DataMessageHandler(
           Future.successful(filterBatch.size == newFilterHeaderHeight + 1)
         } else {
           for {
-            bestBlockHashBE <- bestBlockHashBEF
-          } yield filterBatch.exists(_.blockHashBE == bestBlockHashBE)
+            bestChainTips <- bestChainTipsF
+          } yield filterBatch.exists(f =>
+            bestChainTips.exists(_.hashBE == f.blockHashBE))
         }
     } yield {
       isSynced

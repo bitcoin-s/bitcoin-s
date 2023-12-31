@@ -57,6 +57,9 @@ trait ChainApi extends ChainQueryApi {
   /** Gets the best block header we have */
   def getBestBlockHeader(): Future[BlockHeaderDb]
 
+  /** Gets all chain tips with the heaviest work */
+  def getBestChainTips(): Future[Vector[BlockHeaderDb]]
+
   /** Adds a compact filter header into the filter header chain and returns a new [[ChainApi chain api]]
     * that contains this header
     */

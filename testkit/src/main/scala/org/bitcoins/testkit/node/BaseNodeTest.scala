@@ -161,6 +161,10 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
       Future.successful(DoubleSha256DigestBE.empty)
 
+    override def getBestChainTips(): Future[Vector[BlockHeaderDb]] = {
+      Future.successful(Vector.empty)
+    }
+
     override def getNumberOfConfirmations(
         blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
       Future.successful(None)
