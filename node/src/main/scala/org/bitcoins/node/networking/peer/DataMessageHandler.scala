@@ -177,7 +177,6 @@ case class DataMessageHandler(
             // If we are not syncing or our filter batch is full, process the filters
             (newBatch: Set[CompactFilterMessage], newChainApi) <- {
               if (isFiltersSynced || batchSizeFull) {
-
                 val sortedBlockFiltersF =
                   sortBlockFiltersByBlockHeight(filterBatch)
                 for {
@@ -577,6 +576,7 @@ case class DataMessageHandler(
   private def isFiltersSynced(
       chainApi: ChainApi,
       filterBatch: Set[CompactFilterMessage]): Future[Boolean] = {
+    val bestBlockHashBEF = chainApi.getBestBlockHash()
     for {
       (newFilterHeaderHeight, newFilterHeight) <- calcFilterHeaderFilterHeight(
         chainApi)
@@ -603,8 +603,9 @@ case class DataMessageHandler(
           //fully syncing all filters
           Future.successful(filterBatch.size == newFilterHeaderHeight + 1)
         } else {
-          Future.successful(
-            (newFilterHeight + filterBatch.size) == newFilterHeaderHeight)
+          for {
+            bestBlockHashBE <- bestBlockHashBEF
+          } yield filterBatch.exists(_.blockHashBE == bestBlockHashBE)
         }
     } yield {
       isSynced
