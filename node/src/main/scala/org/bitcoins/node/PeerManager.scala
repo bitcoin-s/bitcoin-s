@@ -753,7 +753,7 @@ case class PeerManager(
                   sender.sendMsg(msg)
                 case None =>
                   logger.warn(
-                    s"Attempting to gossip to peer that is availble in state.peers, but not peerDataMap? state=$state peerDataMap=${peerDataMap
+                    s"Attempting to gossip to peer that is available in state.peers, but not peerDataMap? state=$state peerDataMap=${state.peerDataMap
                       .map(_._1)}")
                   Future.unit
               }
