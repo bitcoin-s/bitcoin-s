@@ -13,7 +13,7 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.node.NodeState._
+import NodeState._
 import org.bitcoins.core.api.node._
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
@@ -60,6 +60,10 @@ case class PeerManager(
 
   def peersWithServices: Set[PeerWithServices] = {
     peerDataMap.map(_._2.peerWithServicesOpt).flatten.toSet
+  }
+
+  def peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData] = {
+    peerDataMap.map(t => (t._2.peerWithServicesOpt.get, t._2))
   }
 
   /** Starts sync compact filter headers.
@@ -329,7 +333,7 @@ case class PeerManager(
     }
 
     stateF.map { s =>
-      s.replacePeers(peersWithServices)
+      s.replacePeers(peerWithServicesDataMap)
     }
   }
 
@@ -415,13 +419,14 @@ case class PeerManager(
             case Some(p) => s.replaceSyncPeer(p)
             case None    =>
               //switch to state DoneSyncing since we have no peers to sync from
-              DoneSyncing(peersWithServices, state.waitingForDisconnection)
+              DoneSyncing(peerWithServicesDataMap,
+                          state.waitingForDisconnection)
           }
         } else {
-          s.replacePeers(peersWithServices)
+          s.replacePeers(peerWithServicesDataMap)
         }
       case runningState: NodeRunningState =>
-        runningState.replacePeers(peersWithServices)
+        runningState.replacePeers(peerWithServicesDataMap)
     }
   }
 
@@ -522,7 +527,7 @@ case class PeerManager(
                 Future.successful(Some(s))
               case d: DoneSyncing =>
                 val h =
-                  HeaderSync(p, d.peersWithServices, d.waitingForDisconnection)
+                  HeaderSync(p, d.peerDataMap, d.waitingForDisconnection)
                 syncFromNewPeer(h)
             }
           case None =>
@@ -535,9 +540,8 @@ case class PeerManager(
                 d.randomPeer(Set.empty,
                              ServiceIdentifier.NODE_COMPACT_FILTERS) match {
                   case Some(p) =>
-                    val h = HeaderSync(p,
-                                       d.peersWithServices,
-                                       d.waitingForDisconnection)
+                    val h =
+                      HeaderSync(p, d.peerDataMap, d.waitingForDisconnection)
                     syncFromNewPeer(h)
                   case None =>
                     Future.successful(None)
@@ -677,7 +681,7 @@ case class PeerManager(
                   case Some(s) => s
                   case None    =>
                     //we don't have a state to represent no connected peers atm, so switch to DoneSyncing?
-                    DoneSyncing(peersWithServices = Set.empty,
+                    DoneSyncing(peerDataMap = Map.empty,
                                 runningState.waitingForDisconnection)
                 }
               }
@@ -825,7 +829,7 @@ case class PeerManager(
           Future.unit
         } else {
           val fhs = FilterHeaderSync(syncPeer = syncPeer,
-                                     peersWithServices = peersWithServices,
+                                     peerDataMap = peerWithServicesDataMap,
                                      waitingForDisconnection = Set.empty)
           syncFilters(
             bestFilterHeaderOpt = bestFilterHeaderOpt,
@@ -1041,7 +1045,7 @@ case class PeerManager(
                 s.replaceSyncPeer(syncPeer)
               case d: DoneSyncing =>
                 HeaderSync(syncPeer,
-                           d.peersWithServices,
+                           d.peerDataMap,
                            d.waitingForDisconnection)
               case x @ (_: MisbehavingPeer | _: RemovePeers |
                   _: NodeShuttingDown) =>
@@ -1135,7 +1139,7 @@ object PeerManager extends Logging {
             .map(_ =>
               Some(
                 FilterHeaderSync(syncPeer = state.syncPeer,
-                                 peersWithServices = state.peersWithServices,
+                                 peerDataMap = state.peerDataMap,
                                  waitingForDisconnection =
                                    state.waitingForDisconnection)))
         case None =>

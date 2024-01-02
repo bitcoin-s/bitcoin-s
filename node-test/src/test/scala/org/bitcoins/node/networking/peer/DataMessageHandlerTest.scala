@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
-import org.bitcoins.core.api.node.NodeState.HeaderSync
+import NodeState.HeaderSync
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{
@@ -58,7 +58,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           walletCreationTimeOpt = None,
           peerMessageSenderApi = peerMsgSender,
           peerManager = peerManager,
-          state = HeaderSync(peer, peerManager.peersWithServices, Set.empty)
+          state =
+            HeaderSync(peer, peerManager.peerWithServicesDataMap, Set.empty)
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest

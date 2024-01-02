@@ -18,8 +18,8 @@ import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.node.NodeState.DoneSyncing
-import org.bitcoins.core.api.node.{NodeState, NodeType, Peer}
+import NodeState.DoneSyncing
+import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
@@ -94,8 +94,7 @@ case class NeutrinoNode(
   override def start(): Future[NeutrinoNode] = {
     isStarted.set(true)
     val initState =
-      DoneSyncing(peersWithServices = Set.empty,
-                  waitingForDisconnection = Set.empty)
+      DoneSyncing(peerDataMap = Map.empty, waitingForDisconnection = Set.empty)
     val (queue, source) =
       dataMessageStreamSource.preMaterialize()
 
