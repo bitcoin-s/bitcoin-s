@@ -2,6 +2,8 @@ package org.bitcoins.node
 
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
 
 import scala.util.Random
 
@@ -18,6 +20,19 @@ sealed trait NodeRunningState extends NodeState {
 
   def waitingForDisconnection: Set[Peer]
   def isSyncing: Boolean
+
+  def getPeerConnection(peer: Peer): Option[PeerConnection] = {
+    peerDataMap.find(_._1.peer == peer).map(_._2.peerConnection) match {
+      case Some(peerConnection) => Some(peerConnection)
+      case None                 => None
+    }
+  }
+
+  def getPeerMsgSender(peer: Peer)(implicit
+      nodeAppConfig: NodeAppConfig): Option[PeerMessageSender] = {
+    val randomPeerOpt = getPeerConnection(peer)
+    randomPeerOpt.map(PeerMessageSender(_))
+  }
 
   def replacePeers(
       peerDataMap: Map[PeerWithServices, PersistentPeerData]): NodeRunningState =

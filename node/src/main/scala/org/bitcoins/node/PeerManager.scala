@@ -732,6 +732,32 @@ case class PeerManager(
                   }
                 }
                 .map(_ => state)
+=======
+        val msg = gossipMessage.msg.payload
+        val gossipPeers = gossipMessage.excludePeerOpt match {
+          case Some(excludedPeer) =>
+            state.peers
+              .filterNot(_ == excludedPeer)
+          case None => state.peers
+        }
+        if (gossipPeers.isEmpty) {
+          logger.warn(
+            s"We have 0 peers to gossip message=${msg.commandName} to state=$state.")
+          Future.successful(state)
+        } else {
+          Future
+            .traverse(gossipPeers) { p =>
+              state.getPeerConnection(p) match {
+                case Some(pc) =>
+                  val sender = PeerMessageSender(pc)
+                  sender.sendMsg(msg)
+                case None =>
+                  logger.warn(
+                    s"Attempting to gossip to peer that is availble in state.peers, but not peerDataMap? state=$state peerDataMap=${peerDataMap
+                      .map(_._1)}")
+                  Future.unit
+              }
+>>>>>>> e13a58f1e9 (More usage of state.peerDataMap in stream)
             }
         }
       case (state, NodeShutdown) =>
