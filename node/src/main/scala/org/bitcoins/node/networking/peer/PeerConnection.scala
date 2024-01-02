@@ -307,6 +307,10 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         .map(_ => ())
       offerF.onComplete(offerP.complete(_))
     }
+
+    offerP.future.failed.foreach(err =>
+      logger.error(s"Failed to handleStreamComplete()", err))
+
     offerP.future
   }
 
