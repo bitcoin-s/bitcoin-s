@@ -58,11 +58,6 @@ case class NeutrinoNode(
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
-  private[node] lazy val peerFinder: PeerFinder = PeerFinder(
-    paramPeers = paramPeers,
-    queue = this,
-    skipPeers = () => Set.empty)
-
   override lazy val peerManager: PeerManager = {
     PeerManager(paramPeers = paramPeers,
                 walletCreationTimeOpt = walletCreationTimeOpt,
@@ -92,14 +87,18 @@ case class NeutrinoNode(
 
   override def start(): Future[NeutrinoNode] = {
     isStarted.set(true)
-    val initState =
-      DoneSyncing(peerDataMap = Map.empty,
-                  waitingForDisconnection = Set.empty,
-                  peerFinder)
     val (queue, source) =
       dataMessageStreamSource.preMaterialize()
 
     queueOpt = Some(queue)
+    val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
+                                            queue = queue,
+                                            skipPeers = () => Set.empty)
+    val initState =
+      DoneSyncing(peerDataMap = Map.empty,
+                  waitingForDisconnection = Set.empty,
+                  peerFinder)
+
     val graph =
       buildDataMessageStreamGraph(initState = initState, source = source)
     val stateF = graph.run()
@@ -127,12 +126,11 @@ case class NeutrinoNode(
       val start = System.currentTimeMillis()
       inactivityCancellableOpt.map(_.cancel())
       for {
-        _ <- peerFinder.stop()
         _ <- peerManager.stop()
         _ = queueOpt.map(_.complete())
         _ <- {
           val finishedF = streamDoneFOpt match {
-            case Some(f) => f
+            case Some(f) => f.flatMap(_.peerFinder.stop())
             case None    => Future.successful(Done)
           }
           finishedF
