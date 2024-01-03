@@ -757,7 +757,6 @@ case class PeerManager(
                       .map(_._1)}")
                   Future.unit
               }
->>>>>>> e13a58f1e9 (More usage of state.peerDataMap in stream)
             }
         }
       case (state, NodeShutdown) =>
