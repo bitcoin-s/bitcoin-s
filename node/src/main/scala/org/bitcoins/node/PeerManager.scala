@@ -52,14 +52,8 @@ case class PeerManager(
   def connectedPeerCount: Int = _peerDataMap.size
 
   override def connectPeer(peer: Peer): Future[Unit] = {
-    val curPeerData = finder.popFromCache(peer).get
-    _peerDataMap.put(peer, curPeerData)
-    val hasCf =
-      if (curPeerData.serviceIdentifier.nodeCompactFilters) "with filters"
-      else ""
-    logger.info(
-      s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
-    Future.unit
+    val c = ConnectPeer(peer)
+    queue.offer(c).map(_ => ())
   }
 
   override def peers: Set[Peer] = _peerDataMap.keys.toSet
@@ -96,7 +90,7 @@ case class PeerManager(
     }
 
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
-      // If we have started syncing filters
+      // If we have starteCd syncing filters
       if (!isSyncFilterHeaders) {
         PeerManager
           .sendNextGetCompactFilterCommand(
@@ -270,7 +264,6 @@ case class PeerManager(
         //if we have slots remaining, connect
         if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
           connectPeer(peer)
-            .flatMap(_ => syncHelper(peer))
         } else {
           val notCf = peerDataMap
             .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
@@ -555,6 +548,19 @@ case class PeerManager(
               s"Cannot find a new peer to fulfill sync request, reverting to old state=$state")
             state
         }
+      case (state, c: ConnectPeer) =>
+        val peer = c.peer
+        val curPeerData = finder.popFromCache(peer).get
+        _peerDataMap.put(peer, curPeerData)
+        val hasCf =
+          if (curPeerData.serviceIdentifier.nodeCompactFilters) "with filters"
+          else ""
+        val newPeersWithSvcs =
+          state.peersWithServices + curPeerData.peerWithServicesOpt.get
+        val newState = state.replacePeers(newPeersWithSvcs)
+        logger.info(
+          s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
+        syncHelper(c.peer).map(_ => newState)
       case (state, i: InitializeDisconnect) =>
         val client: PeerData = peerDataMap(i.peer)
         _peerDataMap.remove(i.peer)
