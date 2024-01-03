@@ -90,7 +90,7 @@ case class PeerManager(
     }
 
     sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
-      // If we have starteCd syncing filters
+      // If we have started syncing filters
       if (!isSyncFilterHeaders) {
         PeerManager
           .sendNextGetCompactFilterCommand(
