@@ -58,16 +58,15 @@ case class NeutrinoNode(
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
-  private lazy val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
-                                                       queue = this,
-                                                       skipPeers =
-                                                         () => Set.empty)
+  private[node] lazy val peerFinder: PeerFinder = PeerFinder(
+    paramPeers = paramPeers,
+    queue = this,
+    skipPeers = () => Set.empty)
 
   override lazy val peerManager: PeerManager = {
     PeerManager(paramPeers = paramPeers,
                 walletCreationTimeOpt = walletCreationTimeOpt,
-                queue = this,
-                finder = peerFinder)
+                queue = this)
   }
 
   private[this] var queueOpt: Option[
@@ -94,7 +93,9 @@ case class NeutrinoNode(
   override def start(): Future[NeutrinoNode] = {
     isStarted.set(true)
     val initState =
-      DoneSyncing(peerDataMap = Map.empty, waitingForDisconnection = Set.empty)
+      DoneSyncing(peerDataMap = Map.empty,
+                  waitingForDisconnection = Set.empty,
+                  peerFinder)
     val (queue, source) =
       dataMessageStreamSource.preMaterialize()
 
