@@ -245,13 +245,19 @@ case class DataMessageHandler(
               val s = if (count.toInt != 0) {
                 //why do we sometimes get empty HeadersMessage?
                 d.toHeaderSync(peer)
-              } else
+              } else {
                 DoneSyncing(d.peerDataMap,
                             d.waitingForDisconnection,
                             d.peerFinder)
+              }
               Some(s)
             case headerSync: HeaderSync =>
-              if (headerSync.syncPeer == peer) {
+              if (count.toInt == 0) {
+                val d = DoneSyncing(headerSync.peerDataMap,
+                                    headerSync.waitingForDisconnection,
+                                    headerSync.peerFinder)
+                Some(d)
+              } else if (headerSync.syncPeer == peer) {
                 Some(headerSync)
               } else {
                 //means we received a headers message from a peer we aren't syncing with, so ignore for now
@@ -268,7 +274,6 @@ case class DataMessageHandler(
             case x @ (_: MisbehavingPeer | _: RemovePeers) =>
               sys.error(s"Invalid state to receive headers in, got=$x")
           }
-
           newStateOpt match {
             case Some(h: HeaderSync) =>
               handleHeadersMessage(h, headers, peerData)

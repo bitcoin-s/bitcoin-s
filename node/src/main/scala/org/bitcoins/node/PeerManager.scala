@@ -598,11 +598,10 @@ case class PeerManager(
               runningState.peerDataMap.+((peerWithSvcs, curPeerData))
             val replacePeers = runningState.replacePeers(newPdm)
             logger.info(
-              s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
+              s"Connected to peer $peer $hasCf. Connected peer count ${replacePeers.peerDataMap.size}")
             replacePeers match {
               case s: SyncNodeState =>
-                val x = s.replaceSyncPeer(c.peer)
-                syncHelper(x).map(_ => x)
+                syncHelper(s).map(_ => s)
               case d: DoneSyncing =>
                 val x = d.toHeaderSync(c.peer)
                 syncHelper(x).map(_ => x)
@@ -680,7 +679,7 @@ case class PeerManager(
                   }
                 resultF.map { r =>
                   logger.debug(
-                    s"Done processing ${payload.commandName} in peer=${peer}")
+                    s"Done processing ${payload.commandName} in peer=${peer} state=${r.state}")
                   r.state
                 }
             }
@@ -770,13 +769,13 @@ case class PeerManager(
             } else {
               Future
                 .traverse(gossipPeers) { p =>
-                  getPeerConnection(p) match {
+                  runningState.getPeerConnection(p) match {
                     case Some(pc) =>
                       val sender = PeerMessageSender(pc)
                       sender.sendMsg(msg)
                     case None =>
                       logger.warn(
-                        s"Attempting to gossip to peer that is availble in state.peers, but not peerDataMap? state=$state peerDataMap=${peerDataMap
+                        s"Attempting to gossip to peer that is available in state.peers, but not peerDataMap? state=$state peerDataMap=${peerDataMap
                           .map(_._1)}")
                       Future.unit
                   }
@@ -847,7 +846,8 @@ case class PeerManager(
   }
 
   /** If [[syncPeerOpt]] is given, we send getheaders to only that peer, if no sync peer given we gossip getheaders to all our peers */
-  private def getHeaderSyncHelper(syncPeerOpt: Option[Peer]): Future[Unit] = {
+  private def getHeaderSyncHelper(
+      syncNodeState: SyncNodeState): Future[Unit] = {
     val blockchainsF =
       BlockHeaderDAO()(ec, chainAppConfig).getBlockchains()
 
@@ -856,11 +856,11 @@ case class PeerManager(
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE)
       _ <- {
-        syncPeerOpt match {
-          case Some(peer) =>
-            val peerMsgSender = getPeerMsgSender(peer).get //check this .get
+        syncNodeState.getPeerMsgSender(syncNodeState.syncPeer) match {
+          case Some(peerMsgSender) =>
             peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-          case None => gossipGetHeadersMessage(cachedHeaders)
+          case None =>
+            gossipGetHeadersMessage(cachedHeaders)
         }
       }
     } yield ()
@@ -920,7 +920,7 @@ case class PeerManager(
     val filterCountF = chainApi.getFilterCount()
     for {
       _ <- chainApi.setSyncing(true)
-      _ <- getHeaderSyncHelper(Some(syncPeer))
+      _ <- getHeaderSyncHelper(syncNodeState)
       _ = {
         if (isStarted.get) {
           //in certain cases, we can schedule this job while the peer manager is attempting to shutdown
