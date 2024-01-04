@@ -122,31 +122,37 @@ case class NeutrinoNode(
 
   override def stop(): Future[NeutrinoNode] = {
     logger.info(s"Stopping NeutrinoNode")
-    isStarted.set(false)
-    val start = System.currentTimeMillis()
-    inactivityCancellableOpt.map(_.cancel())
-    for {
-      _ <- peerFinder.stop()
-      _ <- peerManager.stop()
-      _ = queueOpt.map(_.complete())
-      _ <- {
-        val finishedF = streamDoneFOpt match {
-          case Some(f) => f
-          case None    => Future.successful(Done)
+    if (isStarted.get()) {
+      isStarted.set(false)
+      val start = System.currentTimeMillis()
+      inactivityCancellableOpt.map(_.cancel())
+      for {
+        _ <- peerFinder.stop()
+        _ <- peerManager.stop()
+        _ = queueOpt.map(_.complete())
+        _ <- {
+          val finishedF = streamDoneFOpt match {
+            case Some(f) => f
+            case None    => Future.successful(Done)
+          }
+          finishedF
         }
-        finishedF
+        _ = {
+          //reset all variables
+          streamDoneFOpt = None
+          inactivityCancellableOpt = None
+          queueOpt = None
+        }
+      } yield {
+        logger.info(
+          s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
+        this
       }
-      _ = {
-        //reset all variables
-        streamDoneFOpt = None
-        inactivityCancellableOpt = None
-        queueOpt = None
-      }
-    } yield {
-      logger.info(
-        s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
-      this
+    } else {
+      logger.info(s"NeutrinoNode is already stopped")
+      Future.successful(this)
     }
+
   }
 
   /** Starts to sync our node with our peer
