@@ -1,20 +1,24 @@
 package org.bitcoins.core.api.node
 
+import org.bitcoins.core.api.node.NodeState.NodeShuttingDown
 import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
 
 import scala.util.Random
 
-sealed abstract class NodeState {
-  def isSyncing: Boolean
+sealed abstract class NodeState
 
+/** Means our node has been started and is running */
+sealed trait NodeRunningState extends NodeState {
   def peersWithServices: Set[PeerWithServices]
 
   /** All peers the node is currently connected to */
   def peers: Set[Peer] = peersWithServices.map(_.peer)
 
   def waitingForDisconnection: Set[Peer]
+  def isSyncing: Boolean
 
-  def replacePeers(peerWithServices: Set[PeerWithServices]): NodeState =
+  def replacePeers(
+      peerWithServices: Set[PeerWithServices]): NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
         h.copy(peersWithServices = peerWithServices)
@@ -28,10 +32,13 @@ sealed abstract class NodeState {
         rm.copy(peersWithServices = peerWithServices)
       case m: NodeState.MisbehavingPeer =>
         m.copy(peersWithServices = peerWithServices)
+      case s: NodeShuttingDown =>
+        s.copy(peersWithServices = peersWithServices)
     }
+  }
 
   def replaceWaitingForDisconnection(
-      newWaitingForDisconnection: Set[Peer]): NodeState = {
+      newWaitingForDisconnection: Set[Peer]): NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
         h.copy(waitingForDisconnection = newWaitingForDisconnection)
@@ -45,6 +52,8 @@ sealed abstract class NodeState {
         rm.copy(waitingForDisconnection = newWaitingForDisconnection)
       case m: NodeState.MisbehavingPeer =>
         m.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case s: NodeShuttingDown =>
+        s.copy(waitingForDisconnection = newWaitingForDisconnection)
     }
   }
 
@@ -69,7 +78,7 @@ sealed abstract class NodeState {
 }
 
 /** State to indicate that we are syncing the blockchain */
-sealed abstract class SyncNodeState extends NodeState {
+sealed abstract class SyncNodeState extends NodeRunningState {
   require(
     peers.exists(_ == syncPeer),
     s"syncPeer must be a member of peers, syncPeer=$syncPeer peers=$peers")
@@ -116,7 +125,7 @@ object NodeState {
       badPeer: Peer,
       peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer])
-      extends NodeState {
+      extends NodeRunningState {
     if (peers.nonEmpty) {
       //needed for the case where the last peer we are connected to is the bad peer
       require(
@@ -132,7 +141,7 @@ object NodeState {
       peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer],
       isSyncing: Boolean)
-      extends NodeState {
+      extends NodeRunningState {
     require(
       peersToRemove.forall(rm => peers.exists(_ == rm)),
       s"peersToRemove must be subset of peers, peersToRemove=$peersToRemove peers=$peers")
@@ -142,7 +151,16 @@ object NodeState {
   case class DoneSyncing(
       peersWithServices: Set[PeerWithServices],
       waitingForDisconnection: Set[Peer])
-      extends NodeState {
+      extends NodeRunningState {
     override val isSyncing: Boolean = false
   }
+
+  /** means our node is in the process of shutting down */
+  case class NodeShuttingDown(
+      peersWithServices: Set[PeerWithServices],
+      waitingForDisconnection: Set[Peer])
+      extends NodeRunningState {
+    override val isSyncing: Boolean = false
+  }
+
 }
