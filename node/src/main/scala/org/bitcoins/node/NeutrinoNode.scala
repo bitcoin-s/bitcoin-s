@@ -130,8 +130,11 @@ case class NeutrinoNode(
         _ = queueOpt.map(_.complete())
         _ <- {
           val finishedF = streamDoneFOpt match {
-            case Some(f) => f.flatMap(_.peerFinder.stop())
-            case None    => Future.successful(Done)
+            case Some(f) =>
+              f.flatMap { case r: NodeRunningState =>
+                r.peerFinder.stop()
+              }
+            case None => Future.successful(Done)
           }
           finishedF
         }

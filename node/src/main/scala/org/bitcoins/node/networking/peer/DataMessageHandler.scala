@@ -5,30 +5,17 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
-import org.bitcoins.core.api.node.{
-  NodeRunningState,
-  NodeState,
-  NodeType,
-  Peer,
-  SyncNodeState
-}
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.node.NodeState._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.NodeState._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{
-  NodeState,
-  P2PLogger,
-  PeerManager,
-  PersistentPeerData,
-  SyncNodeState
-}
+import org.bitcoins.node._
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -160,9 +147,9 @@ case class DataMessageHandler(
           state match {
             case s @ (_: HeaderSync | _: DoneSyncing) =>
               val filterHeaderSync = FilterHeaderSync(peer,
-                s.peerDataMap,
-                s.waitingForDisconnection,
-                s.peerFinder)
+                                                      s.peerDataMap,
+                                                      s.waitingForDisconnection,
+                                                      s.peerFinder)
               handleFilterHeadersMessage(filterHeaderSync,
                                          filterHeader,
                                          chainApi,
@@ -192,9 +179,10 @@ case class DataMessageHandler(
                 .map(s => copy(state = s))
             case s @ (_: DoneSyncing | _: FilterHeaderSync) =>
               val f = FilterSync(peer,
-                                 s.peersWithServices,
+                                 s.peerDataMap,
                                  s.waitingForDisconnection,
-                                 Set.empty)
+                                 Set.empty,
+                                 s.peerFinder)
               handleFilterMessage(f, filter)
                 .map(s => copy(state = s))
             case x @ (_: HeaderSync | _: NodeShuttingDown) =>
@@ -872,8 +860,9 @@ case class DataMessageHandler(
             case Some(filterSyncState) =>
               filterSyncState.copy(filterBatchCache = newBatch)
             case None =>
-              val d = DoneSyncing(filterSyncState.peersWithServices,
-                                  filterSyncState.waitingForDisconnection)
+              val d = DoneSyncing(filterSyncState.peerDataMap,
+                                  filterSyncState.waitingForDisconnection,
+                                  filterSyncState.peerFinder)
               d
           }
           Future.successful(res)

@@ -37,7 +37,9 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def replacePeers(
-      peerDataMap: Map[PeerWithServices, PersistentPeerData]): NodeRunningState =
+      peerDataMap: Map[
+        PeerWithServices,
+        PersistentPeerData]): NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
         h.copy(peerDataMap = peerDataMap)
@@ -198,8 +200,9 @@ object NodeState {
 
   /** means our node is in the process of shutting down */
   case class NodeShuttingDown(
-      peersWithServices: Set[PeerWithServices],
-      waitingForDisconnection: Set[Peer])
+      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      waitingForDisconnection: Set[Peer],
+      peerFinder: PeerFinder)
       extends NodeRunningState {
     override val isSyncing: Boolean = false
   }
