@@ -42,5 +42,7 @@ object NodeStreamMessage {
   case class GossipMessage(msg: NetworkMessage, excludePeerOpt: Option[Peer])
       extends NodeStreamMessage
 
+  case object NodeShutdown extends NodeStreamMessage
+
   case class Initialized(peer: Peer)
 }

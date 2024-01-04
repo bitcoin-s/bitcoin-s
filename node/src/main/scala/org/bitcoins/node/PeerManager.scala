@@ -198,7 +198,7 @@ case class PeerManager(
     syncFilterCancellableOpt.map(_.cancel())
 
     val stopF = for {
-      _ <- Future.traverse(peers)(disconnectPeer)
+      _ <- queue.offer(NodeShutdown)
       _ <- AsyncUtil.retryUntilSatisfied(
         _peerDataMap.isEmpty,
         interval = 1.seconds,
@@ -730,6 +730,20 @@ case class PeerManager(
                 }
                 .map(_ => state)
             }
+        }
+      case (state, NodeShutdown) =>
+        state match {
+          case s: NodeShuttingDown =>
+            logger.warn(
+              s"Shut down already requested, ignoring new shutdown request")
+            Future.successful(s)
+          case r: NodeRunningState =>
+            val shutdownState =
+              NodeShuttingDown(r.peersWithServices, r.waitingForDisconnection)
+            Future
+              .traverse(r.peers)(disconnectPeer(_))
+              .map(_ => shutdownState)
+
         }
 
     }
