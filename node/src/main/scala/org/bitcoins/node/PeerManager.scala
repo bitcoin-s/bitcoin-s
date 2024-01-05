@@ -366,26 +366,14 @@ case class PeerManager(
         val isShuttingDown = state.isInstanceOf[NodeShuttingDown]
         val shouldReconnect =
           (forceReconnect || connectedPeerCount == 0) && isStarted.get && !isShuttingDown
-        if (peers.exists(_ != peer)) {
-          val randomPeerOpt =
-            state.randomPeer(excludePeers = Set(peer),
-                             ServiceIdentifier.NODE_COMPACT_FILTERS)
-          randomPeerOpt match {
-            case Some(peer) =>
-              state match {
-                case syncState: SyncNodeState =>
-                  switchSyncToPeer(oldSyncState = syncState, newPeer = peer)
-                case d: DoneSyncing =>
-                  //defensively try to sync with the new peer
-                  syncHelper(peer).map(_ => d)
-                case x @ (_: MisbehavingPeer | _: RemovePeers |
-                    _: NodeShuttingDown) =>
-                  Future.successful(x)
-              }
-            case None =>
-              //if we have no new peers should we just switch to DoneSyncing?
-              Future.successful(state)
+        if (state.peers.exists(_ != peer)) {
+          state match {
+            case s: SyncNodeState => switchSyncToRandomPeer(s, Some(peer))
+            case x @ (_: DoneSyncing | _: NodeShuttingDown |
+                _: MisbehavingPeer | _: RemovePeers) =>
+              Future.successful(x)
           }
+
         } else if (syncPeerOpt.isDefined) {
           if (shouldReconnect) {
             finder.reconnect(peer).map(_ => state)
@@ -404,7 +392,14 @@ case class PeerManager(
       } else if (state.waitingForDisconnection.contains(peer)) {
         //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
         val removed = state.waitingForDisconnection.removedAll(Set(peer))
-        Future.successful(state.replaceWaitingForDisconnection(removed))
+        val newState = state.replaceWaitingForDisconnection(removed)
+        newState match {
+          case s: SyncNodeState =>
+            switchSyncToRandomPeer(s, Some(peer))
+          case x @ (_: DoneSyncing | _: NodeShuttingDown | _: MisbehavingPeer |
+              _: RemovePeers) =>
+            Future.successful(x)
+        }
       } else {
         logger.warn(s"onP2PClientStopped called for unknown $peer")
         Future.successful(state)
@@ -746,6 +741,21 @@ case class PeerManager(
 
         }
 
+    }
+  }
+
+  private def switchSyncToRandomPeer(
+      state: SyncNodeState,
+      excludePeerOpt: Option[Peer]): Future[NodeState] = {
+    val randomPeerOpt =
+      state.randomPeer(excludePeers = excludePeerOpt.toSet,
+                       ServiceIdentifier.NODE_COMPACT_FILTERS)
+    randomPeerOpt match {
+      case Some(peer) =>
+        switchSyncToPeer(oldSyncState = state, newPeer = peer)
+      case None =>
+        //if we have no new peers should we just switch to DoneSyncing?
+        Future.successful(state)
     }
   }
 

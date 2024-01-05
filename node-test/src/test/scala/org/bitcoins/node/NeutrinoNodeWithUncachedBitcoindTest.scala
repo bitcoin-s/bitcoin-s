@@ -63,14 +63,14 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
-      def peers = node.peerManager.peers
 
       for {
         bitcoindPeers <- bitcoinPeersF
         _ <- node.start()
-        _ <- AsyncUtil.retryUntilSatisfied(peers.size == 2,
-                                           maxTries = 30,
-                                           interval = 1.second)
+        _ <- AsyncUtil.retryUntilSatisfiedF(
+          () => node.getConnectionCount.map(_ == 2),
+          maxTries = 30,
+          interval = 1.second)
         //sync from first bitcoind
         peer0 = bitcoindPeers(0)
         _ <- node.peerManager.disconnectPeer(peer0)
