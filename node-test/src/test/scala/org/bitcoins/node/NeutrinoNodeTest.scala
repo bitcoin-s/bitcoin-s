@@ -309,8 +309,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val numBlocks = 5
       val genBlocksF = {
         for {
-          nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
-          _ <- bitcoind1.disconnectNode(nodeUri)
+          peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind1)
+          _ <- node.peerManager.disconnectPeer(peer1)
           _ <- AsyncUtil.retryUntilSatisfiedF(
             () => node.getConnectionCount.map(_ == 1),
             1.second)
@@ -391,8 +391,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       for {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind0)
         //disconnect bitcoind1 as we don't need it
-        nodeUri1 <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind1)
-        _ <- bitcoind1.disconnectNode(nodeUri1)
+        peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind1)
+        _ <- node.peerManager.disconnectPeer(peer1)
         bestBlockHash0 <- bitcoind0.getBestBlockHash()
         //invalidate blockhash to force a reorg when next block is generated
         _ <- bitcoind0.invalidateBlock(bestBlockHash0)
