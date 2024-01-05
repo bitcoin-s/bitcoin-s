@@ -367,7 +367,7 @@ case class PeerManager(
         if (state.peers.exists(_ != peer)) {
           state match {
             case s: SyncNodeState => switchSyncToRandomPeer(s, Some(peer))
-            case d: DoneSyncing =>
+            case d: DoneSyncing   =>
               //defensively try to sync with the new peer
               val hs = d.toHeaderSync(peer)
               switchSyncToRandomPeer(hs, Some(peer))
@@ -800,7 +800,7 @@ case class PeerManager(
       excludePeerOpt: Option[Peer]): Future[NodeState] = {
     val randomPeerOpt =
       state.randomPeer(excludePeers = excludePeerOpt.toSet,
-        ServiceIdentifier.NODE_COMPACT_FILTERS)
+                       ServiceIdentifier.NODE_COMPACT_FILTERS)
     randomPeerOpt match {
       case Some(peer) =>
         switchSyncToPeer(oldSyncState = state, newPeer = peer)
