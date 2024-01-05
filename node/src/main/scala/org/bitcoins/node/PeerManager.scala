@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Random
 
 case class PeerManager(
     paramPeers: Vector[Peer],
@@ -116,24 +115,6 @@ case class PeerManager(
       case Some(peerConnection) => Some(peerConnection)
       case None                 => None
     }
-  }
-
-  private def randomPeerConnection(
-      services: ServiceIdentifier): Option[PeerConnection] = {
-    val potentialPeers =
-      peerDataMap.filter(_._2.serviceIdentifier.hasServicesOf(services))
-
-    val peerOpt = {
-      if (potentialPeers.nonEmpty) {
-        val randIdx = Random.nextInt(potentialPeers.size)
-        Some(potentialPeers.keys.toVector(randIdx))
-      } else {
-        None
-      }
-    }
-
-    val peerConnectionOpt = peerOpt.flatMap(getPeerConnection(_))
-    peerConnectionOpt
   }
 
   private def getPeerMsgSender(peer: Peer): Option[PeerMessageSender] = {
@@ -783,6 +764,16 @@ case class PeerManager(
                 .map(_ => state)
             }
         }
+      case (state, stp: SendToPeer) =>
+        state match {
+          case _: NodeShuttingDown =>
+            logger.warn(
+              s"Cannot send to peer when we are shutting down! stp=$stp state=$state")
+            Future.successful(state)
+          case r: NodeRunningState =>
+            sendToPeerHelper(r, stp)
+        }
+
       case (state, NodeShutdown) =>
         state match {
           case s: NodeShuttingDown =>
@@ -809,12 +800,35 @@ case class PeerManager(
       excludePeerOpt: Option[Peer]): Future[NodeState] = {
     val randomPeerOpt =
       state.randomPeer(excludePeers = excludePeerOpt.toSet,
-                       ServiceIdentifier.NODE_COMPACT_FILTERS)
+        ServiceIdentifier.NODE_COMPACT_FILTERS)
     randomPeerOpt match {
       case Some(peer) =>
         switchSyncToPeer(oldSyncState = state, newPeer = peer)
       case None =>
         //if we have no new peers should we just switch to DoneSyncing?
+        Future.successful(state)
+    }
+  }
+
+  private def sendToPeerHelper(
+      state: NodeRunningState,
+      stp: SendToPeer): Future[NodeRunningState] = {
+    val peerMsgSenderOpt = stp.peerOpt match {
+      case Some(p) =>
+        state.getPeerMsgSender(p)
+      case None =>
+        state.randomPeerMessageSender(Set.empty,
+                                      ServiceIdentifier.NODE_COMPACT_FILTERS)
+    }
+
+    peerMsgSenderOpt match {
+      case Some(pms) =>
+        pms
+          .sendMsg(stp.msg.payload)
+          .map(_ => state)
+      case None =>
+        logger.warn(
+          s"Unable to find peer to send message=${stp.msg.payload} to, state=$state")
         Future.successful(state)
     }
   }
@@ -1133,16 +1147,11 @@ case class PeerManager(
   }
 
   override def sendToRandomPeer(payload: NetworkPayload): Future[Unit] = {
-    val randomPeerOpt = randomPeerConnection(
-      ServiceIdentifier.NODE_COMPACT_FILTERS)
-    randomPeerOpt match {
-      case Some(p) =>
-        val peerMsgSender = PeerMessageSender(p)
-        peerMsgSender.sendMsg(payload)
-      case None =>
-        logger.warn(s"Cannot find peer to send message=${payload.commandName}")
-        Future.unit
-    }
+    val msg = NetworkMessage(nodeAppConfig.network, payload)
+    val stp = SendToPeer(msg, None)
+    queue
+      .offer(stp)
+      .map(_ => ())
   }
 }
 

@@ -96,6 +96,15 @@ sealed trait NodeRunningState extends NodeState {
     }
     peerOpt.map(_.peer)
   }
+
+  def randomPeerMessageSender(
+      excludePeers: Set[Peer],
+      services: ServiceIdentifier)(implicit
+      nodeAppConfig: NodeAppConfig): Option[PeerMessageSender] = {
+    randomPeer(excludePeers, services).flatMap { p =>
+      getPeerMsgSender(p)
+    }
+  }
 }
 
 /** State to indicate that we are syncing the blockchain */
