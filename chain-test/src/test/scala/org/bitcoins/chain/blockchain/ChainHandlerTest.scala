@@ -10,7 +10,6 @@ import org.bitcoins.core.api.chain.db.{
   BlockHeaderDbHelper,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -595,8 +594,6 @@ class ChainHandlerTest extends ChainDbUnitTest {
         _ <- assert2F
         chainHandler <- chainHandlerF
         headerD <- headerDF
-        _ = println(
-          s"regtest.diffInternval=${RegTest.chainParams.difficultyChangeInterval}")
         blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
           stopHash = headerD.hashBE,

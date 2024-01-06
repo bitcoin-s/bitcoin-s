@@ -265,7 +265,10 @@ class ChainHandler(
       candidateStartHeader: BlockHeaderDb,
       stopBlockHeader: BlockHeaderDb,
       batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val blockchainOptF = blockHeaderDAO.getBlockchainFrom(stopBlockHeader)
+    val blockchainOptF = blockHeaderDAO.getBlockchainFrom(
+      header = stopBlockHeader,
+      startHeight = candidateStartHeader.height
+    )
     for {
       blockchainOpt <- blockchainOptF
       fsmOpt <- {
@@ -330,7 +333,7 @@ class ChainHandler(
     }
     val resultOpt = nextBlockHeaderOpt
 
-    resultOpt
+    Future.successful(resultOpt)
   }
 
   private def hasBothBlockHeaderHashes(
