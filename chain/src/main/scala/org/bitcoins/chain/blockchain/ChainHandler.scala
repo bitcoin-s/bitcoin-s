@@ -265,8 +265,6 @@ class ChainHandler(
       candidateStartHeader: BlockHeaderDb,
       stopBlockHeader: BlockHeaderDb,
       batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    logger.warn(
-      s"getFilterSyncStopHash() candidateStartHeader=${candidateStartHeader} stopBlockHeaderOpt=$stopBlockHeader")
     val blockchainOptF = blockHeaderDAO.getBlockchainFrom(stopBlockHeader)
     for {
       blockchainOpt <- blockchainOptF
@@ -321,7 +319,6 @@ class ChainHandler(
 
     val startHeight = candidateStartHeaderHeight
 
-    println(s"startHeight=$startHeight batchSize=$batchSize")
     val nextBlockHeaderOpt = {
       if (isInBatchSize) {
         Some(FilterSyncMarker(startHeight, stopBlockHeaderDb.hash))

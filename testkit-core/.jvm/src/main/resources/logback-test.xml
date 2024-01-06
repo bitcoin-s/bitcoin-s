@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="OFF">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -77,7 +77,7 @@
 
     <!-- See queries received by chain handler, as well as result of  -->
     <!-- connecting new block headers to chain -->
-    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
+    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="WARN"/>
 
     <logger name="org.bitcoins.chain.validation" level="WARN"/>
 
