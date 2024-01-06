@@ -779,7 +779,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         newHeaderC <- newHeaderCF
         blockHeaderBatchOpt <- chainHandler.nextFilterHeaderBatchRange(
           stopBlockHash = newHeaderC.hashBE,
-          batchSize = 1)
+          batchSize = 2)
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
         val marker = blockHeaderBatchOpt.get
@@ -794,7 +794,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         newHeaderCF.map(headerC => BlockHeaderHelper.buildNextHeader(headerC))
       }
       //now let's build a new block header ontop of C and process it
-      //when we call chainHandler.nextFilterHeaderBatchRange with batchSize=2
+      //when we call chainHandler.nextFilterHeaderBatchRange with batchSize=3
       //should get D's hash back as the stop hash
       val assert3F = for {
         _ <- assert1F
@@ -803,7 +803,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         chainApiD <- chainHandler.processHeader(headerD.blockHeader)
         blockHeaderBatchOpt <- chainApiD.nextFilterHeaderBatchRange(
           stopBlockHash = headerD.hashBE,
-          batchSize = 2)
+          batchSize = 3)
       } yield {
         assert(blockHeaderBatchOpt.isDefined)
         val marker = blockHeaderBatchOpt.get

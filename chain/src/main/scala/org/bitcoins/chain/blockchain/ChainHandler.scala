@@ -321,6 +321,7 @@ class ChainHandler(
 
     val startHeight = candidateStartHeaderHeight
 
+    println(s"startHeight=$startHeight batchSize=$batchSize")
     val nextBlockHeaderOpt = {
       if (isInBatchSize) {
         Some(FilterSyncMarker(startHeight, stopBlockHeaderDb.hash))
@@ -390,32 +391,15 @@ class ChainHandler(
       startHeightOpt: Option[Int]): Future[Option[FilterSyncMarker]] = {
     val stopBlockHeaderDbOptF = getHeader(stopBlockHash)
 
-    val tupleOptF: Future[Option[(BlockHeaderDb, Blockchain)]] = for {
-      stopBlockHeaderDbOpt <- stopBlockHeaderDbOptF
-      tupleOpt = stopBlockHeaderDbOpt.map { s =>
-        val blockchainOptF = blockHeaderDAO.getBlockchainFrom(s)
-        blockchainOptF.map {
-          case Some(b) => Some((s, b))
-          case None    => None
-        }
-      }
-      result <- tupleOpt match {
-        case Some(t) => t
-        case None    => Future.successful(None)
-      }
-    } yield {
-      result
-    }
-
     for {
-      tupleOpt <- tupleOptF
+      stopBlockHeaderDbOpt <- stopBlockHeaderDbOptF
       fsmOpt <- {
-        tupleOpt match {
-          case Some((stopBlockHeaderDb, blockchain)) =>
-            getFilterSyncMarkerFromStopBlockHeader(stopBlockHeaderDb =
-                                                     stopBlockHeaderDb,
-                                                   blockchain = blockchain,
-                                                   batchSize = batchSize)
+        stopBlockHeaderDbOpt match {
+          case Some(stopBlockHeaderDb) =>
+            getFilterSyncMarkerFromStopBlockHeader(
+              stopBlockHeaderDb = stopBlockHeaderDb,
+              startHeightOpt = startHeightOpt,
+              batchSize = batchSize)
           case None =>
             val exn = new RuntimeException(
               s"Could not find stopBlockHeaderHash=$stopBlockHash in chaindb")
@@ -432,26 +416,43 @@ class ChainHandler(
     */
   private def getFilterSyncMarkerFromStopBlockHeader(
       stopBlockHeaderDb: BlockHeaderDb,
-      blockchain: Blockchain,
+      startHeightOpt: Option[Int],
       batchSize: Int): Future[Option[FilterSyncMarker]] = {
+    val candidateStartHeadersF: Future[Vector[BlockHeaderDb]] =
+      startHeightOpt match {
+        case Some(height) => getHeadersAtHeight(height)
+        case None =>
+          for {
+            bestFilterOpt <- getBestFilter()
+            candidateHeaders <- {
+              bestFilterOpt match {
+                case Some(filter) =>
+                  getHeadersAtHeight(filter.height)
+                    .flatMap(headers =>
+                      Future
+                        .traverse(headers)(h => getImmediateChildren(h.hashBE))
+                        .map(_.flatten))
+                case None => getHeadersAtHeight(0)
+              }
+            }
+          } yield candidateHeaders
+      }
 
-    //walk backwards until we find a filter associated with our stopBlockHeaderDb
-    val bestFilterOptF: Future[Option[CompactFilterDb]] = {
-      Future.find(blockchain.map(b => getFilter(b.hashBE)))(_.isDefined)
-    }.map(_.flatten)
-
-    //get blockheader associated with the best filter associated with stopBlockHeaderDb
-    val bestHeaderOptF: Future[Option[BlockHeaderDb]] = bestFilterOptF.flatMap {
-      case Some(bestFilter) => getHeader(bestFilter.blockHashBE)
-      case None             => Future.successful(None)
-    }
-
+    val blockchainOptF = blockHeaderDAO.getBlockchainFrom(stopBlockHeaderDb)
     for {
-      bestHeaderOpt <- bestHeaderOptF
-      fsmOpt <- findBestFilterSyncMarker(bestHeaderOpt.toVector,
-                                         stopBlockHeaderDb,
-                                         blockchain,
-                                         batchSize)
+      candidateStartHeaders <- candidateStartHeadersF
+      blockchainOpt <- blockchainOptF
+      blockchain = {
+        blockchainOpt.getOrElse {
+          sys.error(
+            s"Could not find blockchain associated with stopBlockHeaderDb=$stopBlockHeaderDb")
+        }
+      }
+      fsmOpt <- findBestFilterSyncMarker(candidateStartHeaders =
+                                           candidateStartHeaders,
+                                         stopBlockHeaderDb = stopBlockHeaderDb,
+                                         blockchain = blockchain,
+                                         batchSize = batchSize)
     } yield fsmOpt
   }
 
