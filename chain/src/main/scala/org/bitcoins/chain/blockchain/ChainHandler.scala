@@ -338,8 +338,6 @@ class ChainHandler(
     val isInBatchSize =
       (stopBlockHeaderDb.height - candidateStartHeaderHeight) < batchSize
 
-    //val candidateStartHeaderHashBE = candidateStartHeader.hashBE
-
     val startHeight = candidateStartHeaderHeight
 
     val nextBlockHeaderOpt = {
@@ -373,36 +371,6 @@ class ChainHandler(
     }
 
   }
-
-  /** Given a vector of blockchains, this method finds the chain with the most chain work
-    * and then returns the given height and hash of the block header included in that chain
-    * This is useful for reorg situations where you aren't sure what header is included in a chain
-    * at a specific height
-    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1919
-    */
-  /*  private def getBestChainAtHeight(
-      startHeight: Int,
-      batchSize: Int,
-      blockchains: Vector[Blockchain]): Option[FilterSyncMarker] = {
-    //ok, we need to select the header that is contained in the chain
-    //with the most chain work
-    val targetHeight = startHeight + batchSize - 1
-    val mostWorkChainOpt = org.bitcoins.core
-      .seqUtil(blockchains)
-      .maxByOption(_.tip.chainWork)
-    val hashHeightOpt = mostWorkChainOpt.flatMap { mostWorkChain =>
-      val maxHeight = mostWorkChain.tip.height
-      if (targetHeight >= maxHeight) {
-        val marker = FilterSyncMarker(startHeight, mostWorkChain.tip.hash)
-        Some(marker)
-      } else {
-        mostWorkChain
-          .find(_.height == targetHeight)
-          .map(h => FilterSyncMarker(startHeight, h.hash))
-      }
-    }
-    hashHeightOpt
-  }*/
 
   /** @inheritdoc */
   override def nextFilterHeaderBatchRange(
