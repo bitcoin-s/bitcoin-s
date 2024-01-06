@@ -10,6 +10,7 @@ import org.bitcoins.core.api.chain.db.{
   BlockHeaderDbHelper,
   CompactFilterHeaderDb
 }
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -22,7 +23,11 @@ import org.bitcoins.crypto.{
   ECPrivateKey
 }
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{
+  BlockHeaderHelper,
+  ChainDbUnitTest,
+  ChainUnitTest
+}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.{Assertion, Assertions, FutureOutcome}
@@ -565,6 +570,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(newHeaderC.hashBE == marker.stopBlockHash.flip)
       }
 
+      val headerDF = newHeaderCF.map(BlockHeaderHelper.buildNextHeader)
       //now let's build a new block header ontop of C and process it
       //when we call chainHandler.nextBlockHeaderBatchRange it
       //should be C's hash instead of D's hash due to batchSize
@@ -572,7 +578,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         _ <- assert1F
         chainHandler <- chainHandlerF
         headerC <- newHeaderCF
-        headerD = BlockHeaderHelper.buildNextHeader(headerC)
+        headerD <- headerDF
         chainApiD <- chainHandler.processHeader(headerD.blockHeader)
         blockHeaderBatchOpt <- chainApiD.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
@@ -585,16 +591,13 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(headerC.hashBE == marker.stopBlockHashBE)
       }
 
-      val headerDF = {
-        newHeaderCF.map(headerC => BlockHeaderHelper.buildNextHeader(headerC))
-      }
-
       val assert3F = for {
         _ <- assert2F
         chainHandler <- chainHandlerF
         headerD <- headerDF
-        chainApiD <- chainHandler.processHeader(headerD.blockHeader)
-        blockHeaderBatchOpt <- chainApiD.nextBlockHeaderBatchRange(
+        _ = println(
+          s"regtest.diffInternval=${RegTest.chainParams.difficultyChangeInterval}")
+        blockHeaderBatchOpt <- chainHandler.nextBlockHeaderBatchRange(
           prevStopHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
           stopHash = headerD.hashBE,
           batchSize = 2)
@@ -618,6 +621,33 @@ class ChainHandlerTest extends ChainDbUnitTest {
                                                  batchSize = 1)
       } yield {
         assert(blockHeaderBatchOpt.isEmpty)
+      }
+  }
+
+  it must "generate the next range of block headers correctly if its outside of our in memory blockchain" in {
+    chainHandler =>
+      //need to generate a bunch of block headers first
+      val target =
+        2500 //our limit for in memory blockchains is 2016 headers currently (difficulty interval)
+      val buildF = ChainUnitTest.buildNHeaders(chainHandler, target)
+      val chainParams = chainHandler.chainConfig.network.chainParams
+      val batchSize = 2000
+      val prevStopHash = chainParams.genesisHashBE
+      val startHeight = 1
+      for {
+        _ <- buildF
+        stopBlockHeaderDb <- chainHandler.getBestBlockHeader()
+        expectedStopHash <- chainHandler
+          .getHeadersAtHeight(batchSize)
+          .map(_.head.hashBE)
+        range <- chainHandler.nextBlockHeaderBatchRange(
+          prevStopHash = prevStopHash,
+          stopHash = stopBlockHeaderDb.hashBE,
+          batchSize = batchSize)
+      } yield {
+        assert(range.nonEmpty)
+        assert(range.get.startHeight == startHeight)
+        assert(range.get.stopBlockHashBE == expectedStopHash)
       }
   }
 

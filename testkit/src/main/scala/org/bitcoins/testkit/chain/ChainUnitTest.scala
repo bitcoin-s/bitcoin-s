@@ -1,6 +1,8 @@
 package org.bitcoins.testkit.chain
 
 import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.ChainVerificationLogger
@@ -741,5 +743,29 @@ object ChainUnitTest extends ChainVerificationLogger {
       system: ActorSystem,
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     ChainUnitTest.destroyAllTables()(chainAppConfig, system.dispatcher)
+  }
+
+  def buildNHeaders(chainHandler: ChainHandler, target: Int)(implicit
+      ec: ExecutionContext,
+      mat: Materializer): Future[Unit] = {
+    val bestHeaderF = chainHandler.getBestBlockHeader()
+    val builtHeaderDbsF: Future[Vector[BlockHeaderDb]] = bestHeaderF
+      .flatMap { bestHeader =>
+        val builder = Vector.newBuilder[BlockHeaderDb]
+        val doneF = Source(0.until(target))
+          .fold(bestHeader) { case (bestHeader, _) =>
+            val nextHeader = BlockHeaderHelper.buildNextHeader(bestHeader)
+            builder.addOne(nextHeader)
+            nextHeader
+          }
+          .runWith(Sink.ignore)
+
+        doneF.map(_ => builder.result())
+      }
+
+    for {
+      builtHeaderDbs <- builtHeaderDbsF
+      _ <- chainHandler.processHeaders(builtHeaderDbs.map(_.blockHeader))
+    } yield ()
   }
 }
