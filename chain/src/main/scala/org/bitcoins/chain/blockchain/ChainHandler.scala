@@ -265,11 +265,31 @@ class ChainHandler(
       candidateStartHeader: BlockHeaderDb,
       stopBlockHeader: BlockHeaderDb,
       batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val blockchainOptF = blockHeaderDAO.getBlockchainFrom(
-      header = stopBlockHeader,
-      startHeight = candidateStartHeader.height
-    )
+
+    val isInBatchSize =
+      stopBlockHeader.height - candidateStartHeader.height <= batchSize
+    val stopHeaderWithinBatchSizeF = if (isInBatchSize) {
+      Future.successful(stopBlockHeader)
+    } else {
+      //as an optimization only fetch teh last blockheader
+      //within candidateStartHeight + batchSize , we don't have a way to guarantee
+      //this hash ultimately ends up connected to stopBlockHeaderDb though
+      //we have to assume its buried under enough work a reorg is unlikely
+      getHeadersAtHeight(candidateStartHeader.height + batchSize)
+        .map(_.head)
+    }
+
+    val blockchainOptF = {
+      for {
+        stopHeaderWithinBatchSize <- stopHeaderWithinBatchSizeF
+        blockchainOpt <- blockHeaderDAO.getBlockchainFrom(
+          header = stopHeaderWithinBatchSize,
+          startHeight = candidateStartHeader.height
+        )
+      } yield blockchainOpt
+    }
     for {
+      stopHeaderWithinBatchSize <- stopHeaderWithinBatchSizeF
       blockchainOpt <- blockchainOptF
       fsmOpt <- {
         blockchainOpt match {
@@ -277,10 +297,10 @@ class ChainHandler(
             val isConnected = hasBothBlockHeaderHashes(
               blockchain = blockchain,
               prevBlockHeaderHashBE = candidateStartHeader.hashBE,
-              stopBlockHeaderHashBE = stopBlockHeader.hashBE)
+              stopBlockHeaderHashBE = stopHeaderWithinBatchSize.hashBE)
             if (isConnected) {
               findNextHeader(candidateStartHeader = candidateStartHeader,
-                             stopBlockHeaderDb = stopBlockHeader,
+                             stopBlockHeaderDb = stopHeaderWithinBatchSize,
                              batchSize = batchSize,
                              blockchain = blockchain)
             } else {
