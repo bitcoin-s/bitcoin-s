@@ -310,24 +310,42 @@ class ChainHandler(
 
     val startHeight = candidateStartHeaderHeight + 1
 
-    val nextBlockHeaderOpt = {
+    val nextBlockHeaderOptF = {
       chainOpt match {
-        case Some(chain) =>
+        case Some(_) =>
           if (isInBatchSize) {
-            Some(FilterSyncMarker(startHeight, stopBlockHeaderDb.hash))
+            Future.successful(
+              Some(FilterSyncMarker(startHeight, stopBlockHeaderDb.hash)))
           } else {
             //means our requested stopBlockHeader is outside of batchSize
             //we need to find an intermediate header within batchSize to sync against
-            getBestChainAtHeight(startHeight = startHeight,
-                                 batchSize = batchSize,
-                                 blockchains = Vector(chain))
+
+            //this can be optimized to avoid db looks up by just walking
+            //backwards in the in memmory blockchain?
+            for {
+              headers <- getHeadersAtHeight(startHeight + batchSize)
+              chains <- Future
+                .traverse(headers)(blockHeaderDAO.getBlockchainFrom)
+                .map(_.flatten)
+            } yield getBestChainAtHeight(startHeight = startHeight,
+                                         batchSize = batchSize,
+                                         blockchains = chains)
           }
         case None =>
           //means prevBlockHeader and stopBlockHeader do not form a blockchain
-          None
+          //means our requested stopBlockHeader is outside of batchSize
+          //we need to find an intermediate header within batchSize to sync against
+          for {
+            headers <- getHeadersAtHeight(startHeight + batchSize)
+            chains <- Future
+              .traverse(headers)(blockHeaderDAO.getBlockchainFrom)
+              .map(_.flatten)
+          } yield getBestChainAtHeight(startHeight = startHeight,
+                                       batchSize = batchSize,
+                                       blockchains = chains)
       }
     }
-    val resultOpt = nextBlockHeaderOpt match {
+    val resultOpt = nextBlockHeaderOptF.map {
       case Some(next) =>
         //this means we are synced, so return None
         val isSynced =
@@ -335,13 +353,13 @@ class ChainHandler(
         if (isSynced) {
           None
         } else {
-          nextBlockHeaderOpt
+          Some(next)
         }
       case None =>
         None
     }
 
-    Future.successful(resultOpt)
+    resultOpt
   }
 
   private def hasBothBlockHeaderHashes(
