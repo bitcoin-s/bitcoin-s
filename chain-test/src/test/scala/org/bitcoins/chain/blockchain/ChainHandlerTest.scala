@@ -1,9 +1,6 @@
 package org.bitcoins.chain.blockchain
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.chain.blockchain.ChainHandlerTest.buildNHeaders
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.chain.{ChainCallbacks, OnSyncFlagChanged}
 import org.bitcoins.core.api.chain.ChainApi
@@ -19,20 +16,24 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.{TimeUtil}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKey
 }
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{
+  BlockHeaderHelper,
+  ChainDbUnitTest,
+  ChainUnitTest
+}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.{Assertion, Assertions, FutureOutcome}
 import play.api.libs.json.Json
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 class ChainHandlerTest extends ChainDbUnitTest {
 
@@ -628,7 +629,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       //need to generate a bunch of block headers first
       val target =
         2500 //our limit for in memory blockchains is 2016 headers currently (difficulty interval)
-      val buildF = buildNHeaders(chainHandler, target)
+      val buildF = ChainUnitTest.buildNHeaders(chainHandler, target)
       val chainParams = chainHandler.chainConfig.network.chainParams
       val batchSize = 2000
       val prevStopHash = chainParams.genesisHashBE
@@ -1072,23 +1073,5 @@ object ChainHandlerTest {
     //how the database serves up the data
     //just make sure it is one of the two headers
     Assertions.assert(Vector(header1.hashBE, header2.hashBE).contains(bestHash))
-  }
-
-  def buildNHeaders(chainHandler: ChainHandler, target: Int)(implicit
-      ec: ExecutionContext,
-      mat: Materializer): Future[Unit] = {
-    val bestHeaderF = chainHandler.getBestBlockHeader()
-    bestHeaderF
-      .flatMap { bestHeader =>
-        Source(0.until(target))
-          .foldAsync(bestHeader) { case (bestHeader, _) =>
-            val nextHeader = BlockHeaderHelper.buildNextHeader(bestHeader)
-            chainHandler
-              .processHeader(nextHeader.blockHeader)
-              .map(_ => nextHeader)
-          }
-          .runWith(Sink.seq)
-      }
-      .map(_ => ())
   }
 }
