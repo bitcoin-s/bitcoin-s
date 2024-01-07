@@ -420,8 +420,15 @@ case class BlockHeaderDAO()(implicit
       ec: ExecutionContext): Future[Option[Blockchain]] = {
     val diffInterval = appConfig.chain.difficultyChangeInterval
     val height = Math.max(0, header.height - diffInterval)
+    getBlockchainFrom(header = header, startHeight = height)
+  }
+
+  def getBlockchainFrom(header: BlockHeaderDb, startHeight: Int)(implicit
+      ec: ExecutionContext): Future[Option[Blockchain]] = {
+    require(startHeight >= 0,
+            s"Can only have positive  startHeight=$startHeight")
     val blockchainsF =
-      getBlockchainsBetweenHeights(from = height, to = header.height)
+      getBlockchainsBetweenHeights(from = startHeight, to = header.height)
 
     for {
       blockchains <- blockchainsF
