@@ -833,6 +833,30 @@ class ChainHandlerTest extends ChainDbUnitTest {
       assert1F
   }
 
+  it must "generate the next range of filters correctly if its outside of our in memory blockchain" in {
+    chainHandler =>
+      //need to generate a bunch of block headers first
+      val target =
+        2500 //our limit for in memory blockchains is 2016 headers currently (difficulty interval)
+      val buildF = ChainUnitTest.buildNHeaders(chainHandler, target)
+      val batchSize = 2000
+      val startHeight = 0
+      for {
+        _ <- buildF
+        stopBlockHeaderDb <- chainHandler.getBestBlockHeader()
+        expectedStopHash <- chainHandler
+          .getHeadersAtHeight(batchSize - 1)
+          .map(_.head.hashBE)
+        range <- chainHandler.nextFilterHeaderBatchRange(
+          stopBlockHash = stopBlockHeaderDb.hashBE,
+          batchSize = batchSize)
+      } yield {
+        assert(range.nonEmpty)
+        assert(range.get.startHeight == startHeight)
+        assert(range.get.stopBlockHashBE == expectedStopHash)
+      }
+  }
+
   it must "read compact filters for the database" in {
     chainHandler: ChainHandler =>
       for {

@@ -426,52 +426,20 @@ class ChainHandler(
           } yield candidateHeaders
       }
 
-    val blockchainOptF = blockHeaderDAO.getBlockchainFrom(stopBlockHeaderDb)
     for {
       candidateStartHeaders <- candidateStartHeadersF
-      blockchainOpt <- blockchainOptF
-      blockchain = {
-        blockchainOpt.getOrElse {
-          sys.error(
-            s"Could not find blockchain associated with stopBlockHeaderDb=$stopBlockHeaderDb")
-        }
-      }
-      fsmOpt <- findBestFilterSyncMarker(candidateStartHeaders =
-                                           candidateStartHeaders,
-                                         stopBlockHeaderDb = stopBlockHeaderDb,
-                                         blockchain = blockchain,
-                                         batchSize = batchSize)
-    } yield fsmOpt
-  }
-
-  private def findBestFilterSyncMarker(
-      candidateStartHeaders: Vector[BlockHeaderDb],
-      stopBlockHeaderDb: BlockHeaderDb,
-      blockchain: Blockchain,
-      batchSize: Int): Future[Option[FilterSyncMarker]] = {
-    val fsmOptF: Future[Option[FilterSyncMarker]] = {
-      val startHeaderOpt = {
-        candidateStartHeaders.find(h =>
-          hasBothBlockHeaderHashes(blockchain = blockchain,
-                                   prevBlockHeaderHashBE = h.hashBE,
-                                   stopBlockHeaderHashBE =
-                                     stopBlockHeaderDb.hashBE))
-      }
-
-      startHeaderOpt match {
-        case Some(startHeader) =>
-          findNextHeader(candidateStartHeader = startHeader,
-                         stopBlockHeaderDb = stopBlockHeaderDb,
-                         batchSize = batchSize,
-                         blockchain = blockchain)
-        case None =>
-          logger.warn(
-            s"Could not find candidate headers connected to blockchain for stopBlockHeader=${stopBlockHeaderDb}, candidateHeaders=$candidateStartHeaders")
-          Future.successful(None)
+      fsmOptVec <- Future.traverse(candidateStartHeaders)(h =>
+        getFilterSyncStopHash(h, stopBlockHeaderDb, batchSize))
+    } yield {
+      val flatten = fsmOptVec.flatten
+      if (flatten.length > 1) {
+        logger.warn(
+          s"Multiple filter sync makers!!! choosing first one fsmOptVec=$fsmOptVec")
+        flatten.headOption
+      } else {
+        flatten.headOption
       }
     }
-
-    fsmOptF
   }
 
   /** @inheritdoc */
