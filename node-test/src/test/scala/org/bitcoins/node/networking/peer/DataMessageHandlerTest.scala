@@ -1,11 +1,14 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.config.SigNet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
+import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.node.NodeState.HeaderSync
 import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -39,7 +42,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
     new FutureOutcome(outcome)
   }
 
-  /*  it must "catch errors and not fail when processing an invalid payload" in {
+  it must "catch errors and not fail when processing an invalid payload" in {
     param: FixtureParam =>
       val node = param.node
 
@@ -50,6 +53,12 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         chainApi <- node.chainApiFromDb()
         _ = require(peerManager.getPeerData(peer).isDefined)
         peerMsgSender = peerManager.getPeerData(peer).get.peerMessageSender
+        peerFinder = PeerFinder(paramPeers = Vector.empty,
+                                queue = node,
+                                skipPeers = () => Set.empty)(system.dispatcher,
+                                                             system,
+                                                             node.nodeConfig,
+                                                             node.chainConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -58,7 +67,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           state = HeaderSync(peer,
                              peerManager.peerWithServicesDataMap,
                              Set.empty,
-                             node.peerFinder)
+                             peerFinder)
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
@@ -72,7 +81,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         peerData = peerManager.getPeerData(peer).get
         _ <- dataMessageHandler.handleDataPayload(invalidPayload, peerData)
       } yield succeed
-  }*/
+  }
 
   it must "verify OnBlockReceived callbacks are executed" in {
     param: FixtureParam =>
