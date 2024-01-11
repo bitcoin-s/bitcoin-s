@@ -99,7 +99,7 @@ sealed abstract class LockTimeInterpreter {
           program.updateScript(program.script.tail)
         case s: ScriptNumber
             if isLockTimeBitOff(
-              s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion =>
+              s) && program.txSignatureComponent.transaction.version.toUInt32 < TransactionConstants.validLockVersion =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
