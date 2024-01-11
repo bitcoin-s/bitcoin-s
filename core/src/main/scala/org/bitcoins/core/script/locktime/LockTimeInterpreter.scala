@@ -99,7 +99,7 @@ sealed abstract class LockTimeInterpreter {
           program.updateScript(program.script.tail)
         case s: ScriptNumber
             if isLockTimeBitOff(
-              s) && program.txSignatureComponent.transaction.version.toUInt32 < TransactionConstants.validLockVersion =>
+              s) && program.txSignatureComponent.transaction.version.toUInt32 < TransactionConstants.validLockVersion.toUInt32 =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
@@ -144,7 +144,7 @@ sealed abstract class LockTimeInterpreter {
     // Fail if the transaction's version number is not set high
     // enough to trigger BIP 68 rules.
     if (
-      program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion
+      program.txSignatureComponent.transaction.version.toUInt32 < TransactionConstants.validLockVersion.toUInt32
     ) {
       return false
     }
