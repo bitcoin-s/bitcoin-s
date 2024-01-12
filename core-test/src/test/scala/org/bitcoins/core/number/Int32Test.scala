@@ -65,4 +65,10 @@ class Int32Test extends BitcoinSUnitTest {
   it must "have the correct maximum number representation" in {
     Int32.max.toInt must be(2147483647)
   }
+
+  it must "convert to UInt32" in {
+    Int32.zero.toUInt32 must be(UInt32.zero)
+    Int32.negOne.toUInt32 must be(UInt32.max)
+    Int32.two.toUInt32 must be(UInt32.two)
+  }
 }

@@ -167,6 +167,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override val andMask = 0xffffffff
   override val bytes: ByteVector = ByteVector.fromInt(i = toInt, size = 4)
+  def toUInt32: UInt32 = UInt32.fromBytes(bytes)
 }
 
 /** Represents a int64_t in C
