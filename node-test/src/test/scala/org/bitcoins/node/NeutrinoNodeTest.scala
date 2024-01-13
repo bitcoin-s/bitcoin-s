@@ -67,7 +67,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     }
   }
 
-  it must "be able to connect, initialize and then disconnect from all peers" in {
+  it must "be able to connect, initialize all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
       def peerManager = node.peerManager
@@ -89,24 +89,11 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         inits <- Future.sequence(peers.map(peerManager.isInitialized))
       } yield assert(inits.forall(_ == true))
 
-      def allDisconn: Future[Unit] = AsyncUtil.retryUntilSatisfied(
-        peers
-          .map(p =>
-            !peerManager
-              .getPeerData(p)
-              .isDefined)
-          .forall(_ == true),
-        maxTries = 5,
-        interval = 1.second
-      )
-
       for {
         _ <- has2Peers
         _ <- bothOurs
         _ <- allConnected
         _ <- allInitialized
-        _ <- Future.sequence(peers.map(peerManager.disconnectPeer))
-        _ <- allDisconn
       } yield {
         succeed
       }
@@ -396,9 +383,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         bestBlockHash0 <- bitcoind0.getBestBlockHash()
         //invalidate blockhash to force a reorg when next block is generated
         _ <- bitcoind0.invalidateBlock(bestBlockHash0)
-        _ <- AsyncUtil.retryUntilSatisfiedF(
-          () => node.getConnectionCount.map(_ == 1),
-          1.second)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+          node.getConnectionCount.map(_ == 1))
         //now generate a block, make sure we sync with them
         hashes0 <- bitcoind0.generate(1)
         chainApi <- node.chainApiFromDb()

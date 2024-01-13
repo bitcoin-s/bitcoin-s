@@ -18,8 +18,8 @@ import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.node.NodeState.DoneSyncing
-import org.bitcoins.core.api.node.{NodeState, NodeType, Peer}
+import NodeState.DoneSyncing
+import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
@@ -58,16 +58,10 @@ case class NeutrinoNode(
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
   }
 
-  private lazy val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
-                                                       queue = this,
-                                                       skipPeers =
-                                                         () => Set.empty)
-
   override lazy val peerManager: PeerManager = {
     PeerManager(paramPeers = paramPeers,
                 walletCreationTimeOpt = walletCreationTimeOpt,
-                queue = this,
-                finder = peerFinder)
+                queue = this)
   }
 
   private[this] var queueOpt: Option[
@@ -93,13 +87,18 @@ case class NeutrinoNode(
 
   override def start(): Future[NeutrinoNode] = {
     isStarted.set(true)
-    val initState =
-      DoneSyncing(peersWithServices = Set.empty,
-                  waitingForDisconnection = Set.empty)
     val (queue, source) =
       dataMessageStreamSource.preMaterialize()
 
     queueOpt = Some(queue)
+    val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
+                                            queue = queue,
+                                            skipPeers = () => Set.empty)
+    val initState =
+      DoneSyncing(peerDataMap = Map.empty,
+                  waitingForDisconnection = Set.empty,
+                  peerFinder)
+
     val graph =
       buildDataMessageStreamGraph(initState = initState, source = source)
     val stateF = graph.run()
@@ -127,13 +126,15 @@ case class NeutrinoNode(
       val start = System.currentTimeMillis()
       inactivityCancellableOpt.map(_.cancel())
       for {
-        _ <- peerFinder.stop()
         _ <- peerManager.stop()
         _ = queueOpt.map(_.complete())
         _ <- {
           val finishedF = streamDoneFOpt match {
-            case Some(f) => f
-            case None    => Future.successful(Done)
+            case Some(f) =>
+              f.flatMap { case r: NodeRunningState =>
+                r.peerFinder.stop()
+              }
+            case None => Future.successful(Done)
           }
           finishedF
         }
