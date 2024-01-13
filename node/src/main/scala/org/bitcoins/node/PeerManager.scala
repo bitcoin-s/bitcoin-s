@@ -553,6 +553,10 @@ case class PeerManager(
         }
       case (state, c: ConnectPeer) =>
         state match {
+          case s: NodeShuttingDown =>
+            logger.warn(
+              s"Ignoring connect peer request as node is shutting down, c=$c")
+            Future.successful(s)
           case runningState: NodeRunningState =>
             val peer = c.peer
             val curPeerData = finder.popFromCache(peer).get
