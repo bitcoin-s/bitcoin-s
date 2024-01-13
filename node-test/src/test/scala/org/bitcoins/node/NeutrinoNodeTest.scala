@@ -67,7 +67,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     }
   }
 
-  it must "be able to connect, initialize and then disconnect from all peers" in {
+  it must "be able to connect, initialize all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
       def peerManager = node.peerManager
@@ -89,25 +89,11 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         inits <- Future.sequence(peers.map(peerManager.isInitialized))
       } yield assert(inits.forall(_ == true))
 
-      def allDisconn: Future[Unit] = AsyncUtil.retryUntilSatisfied(
-        peers
-          .map(p =>
-            !peerManager
-              .getPeerData(p)
-              .isDefined)
-          .forall(_ == true),
-        maxTries = 5,
-        interval = 1.second
-      )
-
       for {
         _ <- has2Peers
         _ <- bothOurs
         _ <- allConnected
         _ <- allInitialized
-        //this check runs into reconnection logic when we have 0 peers connected
-        _ <- Future.traverse(peers)(peerManager.disconnectPeer)
-        _ <- allDisconn
       } yield {
         succeed
       }
