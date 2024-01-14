@@ -127,7 +127,16 @@ sealed abstract class CryptoGenerators {
       pass <- bip39Password
     } yield BIP39Seed.fromMnemonic(code, pass)
 
-  def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
+  def privateKey: Gen[ECPrivateKey] = {
+    //purposefully don't reach for cryptographically strong
+    //number generation, we want determinism to reproduce failed
+    //test cases. If we don't generate the private key with scalacheck
+    //we won't be able to reproduce the test case with a seed
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/1339
+    NumberGenerator.bytevector(32).map { vec =>
+      ECPrivateKey.fromBytes(vec)
+    }
+  }
 
   def fieldElement: Gen[FieldElement] = privateKey.map(_.fieldElement)
 
