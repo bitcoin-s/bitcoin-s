@@ -95,16 +95,16 @@
 <p>The following code shows a two-party MuSig execution:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-comment">// Alice and Bob generate and exchange nonce data (new nonces for every sig)</span>
 <span class="hljs-keyword">val</span> aliceNoncePriv = <span class="hljs-type">MuSigNoncePriv</span>.gen()
-<span class="hljs-keyword">val</span> aliceNonce = aliceNoncePriv.toPublicNonces <span class="hljs-comment">// Alice sends this to Bob // Alice sends this to Bob</span>
+<span class="hljs-keyword">val</span> aliceNonce = aliceNoncePriv.toPublicNonces <span class="hljs-comment">// Alice sends this to Bob</span>
 <span class="hljs-keyword">val</span> bobNoncePriv = <span class="hljs-type">MuSigNoncePriv</span>.gen()
-<span class="hljs-keyword">val</span> bobNonce = bobNoncePriv.toPublicNonces <span class="hljs-comment">// Bob sends this to Alice // Bob sends this to Alice</span>
+<span class="hljs-keyword">val</span> bobNonce = bobNoncePriv.toPublicNonces <span class="hljs-comment">// Bob sends this to Alice</span>
 
 <span class="hljs-comment">// The aggregate musig nonce can be computed from Alice's and Bob's</span>
 <span class="hljs-keyword">val</span> aggMuSigNonce = <span class="hljs-type">MuSigNoncePub</span>.aggregate(<span class="hljs-type">Vector</span>(aliceNonce, bobNonce))
 
 <span class="hljs-comment">// Any party can (non-interactively) compute the aggregate public key</span>
 <span class="hljs-keyword">val</span> pubKeys = <span class="hljs-type">Vector</span>(alicePubKey, bobPubKey)
-<span class="hljs-keyword">val</span> keySet = <span class="hljs-type">KeySet</span>(pubKeys, tweaks) <span class="hljs-comment">// This is where you put MuSigTweaks // This is where you put MuSigTweaks</span>
+<span class="hljs-keyword">val</span> keySet = <span class="hljs-type">KeySet</span>(pubKeys, tweaks) <span class="hljs-comment">// This is where you put MuSigTweaks</span>
 <span class="hljs-keyword">val</span> aggPubKey = keySet.aggPubKey.schnorrPublicKey
 
 <span class="hljs-comment">// Alice generates a partial signature for the message</span>

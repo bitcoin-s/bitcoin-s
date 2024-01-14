@@ -119,8 +119,8 @@ connect to a testnet <code>bitcoind</code>, the default port is '18332'</p>
 ready to create the connection with our RPC client</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.global
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"System"</span>)
-<span class="hljs-keyword">val</span> username = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this username comes from 'rpcuser' in your bitcoin.conf file //this username comes from 'rpcuser' in your bitcoin.conf file</span>
-<span class="hljs-keyword">val</span> password = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this password comes from your 'rpcpassword' in your bitcoin.conf file //this password comes from your 'rpcpassword' in your bitcoin.conf file</span>
+<span class="hljs-keyword">val</span> username = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this username comes from 'rpcuser' in your bitcoin.conf file</span>
+<span class="hljs-keyword">val</span> password = <span class="hljs-string">"FILL_ME_IN"</span> <span class="hljs-comment">//this password comes from your 'rpcpassword' in your bitcoin.conf file</span>
 
 <span class="hljs-keyword">val</span> authCredentials = <span class="hljs-type">BitcoindAuthCredentials</span>.<span class="hljs-type">PasswordBased</span>(
   username = username,
