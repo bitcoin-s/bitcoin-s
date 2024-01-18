@@ -33,6 +33,7 @@ jobs:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v13
         with:
+          # from https://github.com/graalvm/graalvm-ce-builds/releases
           java-version: graalvm@21.0.2=tgz+https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-21.0.2/graalvm-community-jdk-21.0.2_${{runner.os}}-x64_bin.tar.gz
       - run: git fetch --tags || true
       - run: sbt cli/nativeImage
