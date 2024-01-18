@@ -4,6 +4,8 @@ Universal / packageName := CommonSettings.buildPackageName((Universal /packageNa
 
 libraryDependencies ++= Deps.cli.value
 
+nativeImageInstalled := true
+
 nativeImageOptions ++= Seq(
   "-H:+ReportExceptionStackTraces",
   "--initialize-at-build-time",
