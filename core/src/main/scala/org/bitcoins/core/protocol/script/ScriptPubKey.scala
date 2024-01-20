@@ -505,7 +505,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
                    OP_CHECKLOCKTIMEVERIFY,
                    OP_DROP) =>
             //can only have up to 5 byte numbers for CLTV
-            s.byteSize < 5 && validScriptAfterLockTime(tailTokens)
+            s.byteSize <= 5 && validScriptAfterLockTime(tailTokens)
           case _ => false
         }
       }
