@@ -99,7 +99,9 @@ trait ScriptNumberUtil {
   }
 
   private def parseLong(bytes: ByteVector): Long =
-    bytes.toLong(signed = true)
+    parseLong(BytesUtil.encodeHex(bytes))
+
+  private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
   /** Converts a long number to the representation of number inside of Bitcoin script's number system
     *

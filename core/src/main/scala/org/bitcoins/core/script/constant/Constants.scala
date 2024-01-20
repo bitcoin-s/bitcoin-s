@@ -116,8 +116,7 @@ object ScriptNumber
     if (bytes.isEmpty) zero
     else if (BitcoinScriptUtil.isShortestEncoding(bytes)) {
       //if it's the shortest encoding possible, use our cache
-      val l = ScriptNumberUtil.toLong(bytes)
-      checkCached(l)
+      checkCached(ScriptNumberUtil.toLong(bytes))
     } else {
       //else we need to preserve the byte level encoding
       //as Script at the consensus level does not

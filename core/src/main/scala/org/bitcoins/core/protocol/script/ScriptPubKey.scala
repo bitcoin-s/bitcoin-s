@@ -516,7 +516,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKLOCKTIMEVERIFY)
       ) {
-        return false
+        false
       } else {
         asm.slice(0, 3) match {
           case Seq(_: ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) =>
