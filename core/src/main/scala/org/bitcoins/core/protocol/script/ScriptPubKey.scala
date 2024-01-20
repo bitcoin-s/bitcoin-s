@@ -20,6 +20,7 @@ import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.util._
 import org.bitcoins.crypto._
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 12/26/15.
@@ -235,9 +236,9 @@ object MultiSignatureScriptPubKey
           case Some(token) =>
             //this is for the case that we have more than 16 public keys, the
             //first operation will be a push op, the second operation being the actual number of keys
-            if (token.isInstanceOf[BytesToPushOntoStack])
+            if (token.isInstanceOf[BytesToPushOntoStack]) {
               isValidPubKeyNumber(asm.tail.head)
-            else isValidPubKeyNumber(token)
+            } else isValidPubKeyNumber(token)
         }
       }
       //the second to last asm operation should be the maximum amount of public keys
@@ -273,14 +274,17 @@ object MultiSignatureScriptPubKey
     * public keys we can have in a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]]
     */
-  private def isValidPubKeyNumber(token: ScriptToken): Boolean =
+  @tailrec private def isValidPubKeyNumber(token: ScriptToken): Boolean = {
     token match {
+      case sn: ScriptNumber =>
+        sn >= ScriptNumber.zero && sn <= ScriptNumber(
+          Consensus.maxPublicKeysPerMultiSig)
       case constant: ScriptConstant =>
-        constant.isInstanceOf[ScriptNumber] ||
-          ScriptNumber(constant.bytes) <= ScriptNumber(
-            Consensus.maxPublicKeysPerMultiSig)
+        val sn = ScriptNumber(constant.bytes)
+        isValidPubKeyNumber(sn)
       case _: ScriptToken => false
     }
+  }
 }
 
 /** Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
