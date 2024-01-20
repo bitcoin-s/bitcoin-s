@@ -596,25 +596,35 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKSEQUENCEVERIFY)
-      ) return false
-      asm.slice(0, 4) match {
-        case Seq(_: BytesToPushOntoStack,
-                 _: ScriptConstant,
-                 OP_CHECKSEQUENCEVERIFY,
-                 OP_DROP) =>
-          CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
-        case _ => false
+      ) {
+        false
+      } else {
+        asm.slice(0, 4) match {
+          case Seq(_: BytesToPushOntoStack,
+                   s: ScriptConstant,
+                   OP_CHECKSEQUENCEVERIFY,
+                   OP_DROP) =>
+            //check that the byteSize of the ScriptNum is less than or equal to 5
+            //as per BIP112
+            s.byteSize <= 5 &&
+              CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
+          case _ => false
+        }
       }
+
     } else {
       val tailTokens = asm.slice(3, asm.length)
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKSEQUENCEVERIFY)
-      ) return false
-      asm.slice(0, 3) match {
-        case Seq(_: ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
-          CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
-        case _ => false
+      ) {
+        false
+      } else {
+        asm.slice(0, 3) match {
+          case Seq(_: ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
+            CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
+          case _ => false
+        }
       }
     }
   }
