@@ -405,6 +405,15 @@ class TransactionTest extends BitcoinSUnitTest {
     assert(tx.hex == hex)
   }
 
+  it must "parse 1c1f50eb03c28c56ea0f2abdff483e836a8110f365cd678af1ae892a550f71eb" in {
+    val hex =
+      "0100000001c5b9f89aeebb94f6838d9e8b0c0876dd7b62249a14f7c3acd466a4a6682c2530010000006b483045022068d7ba61ae4670fe857ca4617413e2a8f666c7a30dbee9ad52a77406f62fd4bb0221009ed0034c8005b17b8e85e5b5d9cd35a79914665863c1ea85201ff0b42ec1f48b01210291b3da73ea3ce05d942315135d10532b58175568092116da909da0cb42006a54ffffffff0248cf9700000000001976a91452b5f62ff6a34dc0937baa262314649b22caebec88ace8030000000000001714e41346a0f116a7d04984c2780a396b18b0e47ea7b17500000000"
+    val tx = Transaction.fromHex(hex)
+    tx.inputs.foreach(println)
+    tx.outputs.foreach(println)
+    assert(tx.hex == hex)
+  }
+
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint): Option[(TransactionInput, Int)] = {
