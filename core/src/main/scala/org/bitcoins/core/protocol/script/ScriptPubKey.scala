@@ -418,7 +418,7 @@ sealed trait LockTimeScriptPubKey extends RawScriptPubKey {
     asm.head match {
       case scriptNumOp: ScriptNumberOperation =>
         ScriptNumber(scriptNumOp.toLong)
-      case _: BytesToPushOntoStack => ScriptNumber(asm(1).hex)
+      case _: BytesToPushOntoStack => ScriptNumber(asm(1).bytes)
       case _: ScriptConstant | _: ScriptOperation =>
         throw new IllegalArgumentException(
           "In a LockTimeScriptPubKey, " +
@@ -496,26 +496,35 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKLOCKTIMEVERIFY)
-      ) return false
-      asm.slice(0, 4) match {
-        case Seq(_: BytesToPushOntoStack,
-                 _: ScriptConstant,
-                 OP_CHECKLOCKTIMEVERIFY,
-                 OP_DROP) =>
-          validScriptAfterLockTime(tailTokens)
-        case _ => false
+      ) {
+        false
+      } else {
+        asm.slice(0, 4) match {
+          case Seq(_: BytesToPushOntoStack,
+                   s: ScriptConstant,
+                   OP_CHECKLOCKTIMEVERIFY,
+                   OP_DROP) =>
+            //can only have up to 5 byte numbers for CLTV
+            s.byteSize <= 5 && validScriptAfterLockTime(tailTokens)
+          case _ => false
+        }
       }
+
     } else {
       val tailTokens = asm.slice(3, asm.length)
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKLOCKTIMEVERIFY)
-      ) return false
-      asm.slice(0, 3) match {
-        case Seq(_: ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) =>
-          validScriptAfterLockTime(tailTokens)
-        case _ => false
+      ) {
+        false
+      } else {
+        asm.slice(0, 3) match {
+          case Seq(_: ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) =>
+            validScriptAfterLockTime(tailTokens)
+          case _ => false
+        }
       }
+
     }
   }
 
@@ -587,25 +596,35 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKSEQUENCEVERIFY)
-      ) return false
-      asm.slice(0, 4) match {
-        case Seq(_: BytesToPushOntoStack,
-                 _: ScriptConstant,
-                 OP_CHECKSEQUENCEVERIFY,
-                 OP_DROP) =>
-          CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
-        case _ => false
+      ) {
+        false
+      } else {
+        asm.slice(0, 4) match {
+          case Seq(_: BytesToPushOntoStack,
+                   s: ScriptConstant,
+                   OP_CHECKSEQUENCEVERIFY,
+                   OP_DROP) =>
+            //check that the byteSize of the ScriptNum is less than or equal to 5
+            //as per BIP112
+            s.byteSize <= 5 &&
+              CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
+          case _ => false
+        }
       }
+
     } else {
       val tailTokens = asm.slice(3, asm.length)
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
           .contains(OP_CHECKSEQUENCEVERIFY)
-      ) return false
-      asm.slice(0, 3) match {
-        case Seq(_: ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
-          CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
-        case _ => false
+      ) {
+        false
+      } else {
+        asm.slice(0, 3) match {
+          case Seq(_: ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
+            CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
+          case _ => false
+        }
       }
     }
   }
