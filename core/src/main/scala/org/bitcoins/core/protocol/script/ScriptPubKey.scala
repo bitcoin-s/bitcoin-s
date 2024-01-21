@@ -118,9 +118,16 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs - 2)
     numSigsRequired match {
       case x: ScriptNumber => x.toInt
-      case c: ScriptConstant
-          if ScriptNumber(c.hex).toLong <= Consensus.maxPublicKeysPerMultiSig =>
-        ScriptNumber(c.hex).toInt
+      case c: ScriptConstant =>
+        val sn = ScriptNumber(c.bytes).toInt
+        val inBounds =
+          sn >= 0 && sn <= Consensus.maxPublicKeysPerMultiSig
+        if (inBounds) {
+          sn
+        } else {
+          sys.error(
+            s"Negative numSignaturesRequired given for MultiSignatureSPK, got=$sn")
+        }
       case _ =>
         throw new RuntimeException(
           "The first element of the multisignature pubkey must be a script number operation\n" +
@@ -137,10 +144,16 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     } else {
       asm(checkMultiSigIndex - 1) match {
         case x: ScriptNumber => x.toInt
-        case c: ScriptConstant
-            if ScriptNumber(
-              c.hex).toLong <= Consensus.maxPublicKeysPerMultiSig =>
-          ScriptNumber(c.hex).toInt
+        case c: ScriptConstant =>
+          val maxSigs = ScriptNumber(c.bytes).toInt
+          val inBounds =
+            maxSigs >= 0 && maxSigs <= Consensus.maxPublicKeysPerMultiSig
+          if (inBounds) {
+            maxSigs
+          } else {
+            sys.error(
+              s"Negative maxSigs given for MultiSignatureSPK, got=$maxSigs")
+          }
         case x =>
           throw new RuntimeException(
             "The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
@@ -225,8 +238,10 @@ object MultiSignatureScriptPubKey
 
   /** Determines if the given script tokens are a multisignature `scriptPubKey` */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    val containsMultiSigOp =
-      asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
+    val cmsIdx = if (asm.contains(OP_CHECKMULTISIG)) {
+      asm.indexOf(OP_CHECKMULTISIG)
+    } else asm.indexOf(OP_CHECKMULTISIGVERIFY)
+    val containsMultiSigOp = cmsIdx != -1
 
     if (asm.nonEmpty && containsMultiSigOp) {
       //we need either the first or second asm operation to indicate how many signatures are required
@@ -242,9 +257,18 @@ object MultiSignatureScriptPubKey
         }
       }
       //the second to last asm operation should be the maximum amount of public keys
-      val hasMaximumSignaturesTry = Try {
-        asm(asm.length - 2) match {
-          case token: ScriptToken => isValidPubKeyNumber(token)
+      val hasMaximumSignaturesTry = {
+        val maxSigsIdx = asm.length - 2
+        if (maxSigsIdx >= cmsIdx) {
+          val exn = new IllegalAccessException(
+            s"maxSigsIdx is after OP_CHECKMULTISIG/OP_CHECKMULTISIGVERIFY, maxSigsIx=$maxSigsIdx")
+          Failure(exn)
+        } else {
+          Try {
+            asm(maxSigsIdx) match {
+              case token: ScriptToken => isValidPubKeyNumber(token)
+            }
+          }
         }
       }
 
