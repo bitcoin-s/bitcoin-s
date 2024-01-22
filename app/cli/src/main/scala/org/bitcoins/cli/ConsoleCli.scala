@@ -1991,15 +1991,20 @@ object ConsoleCli extends Logging {
       case Left(err)       => err
       case Right(response) => response
     }
-
-    val jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]] = {
+    Iterator.apply()
+    val jsObjT: Try[
+      scala.collection.mutable.LinkedHashMap[String, ujson.Value]] = {
       Try(ujson.read(rawBody).obj)
-        .transform[mutable.LinkedHashMap[String, ujson.Value]](
-          Success(_),
+        .transform[scala.collection.mutable.LinkedHashMap[String, ujson.Value]](
+          { case v: upickle.core.LinkedHashMap[String, ujson.Value] =>
+            Success(
+              scala.collection.mutable.LinkedHashMap.from(v.iterator.toVector))
+          },
           _ =>
             Success(
-              mutable.LinkedHashMap[String, ujson.Value](
-                "error" -> Str(rawBody))))
+              scala.collection.mutable.LinkedHashMap[String, ujson.Value](
+                "error" -> Str(rawBody)))
+        )
     }
 
     (getKey("result", jsObjT), getKey("error", jsObjT)) match {

@@ -18,7 +18,6 @@ import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 import upickle.default._
 
-import scala.collection.mutable
 import scala.concurrent.Future
 
 case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
@@ -140,7 +139,7 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
 
             val jsonVec: Vector[(String, Value)] =
               inputJson ++ optionalsJson ++ nextRoleJson
-            val jsonMap = mutable.LinkedHashMap(jsonVec: _*)
+            val jsonMap = upickle.core.LinkedHashMap(jsonVec)
             val json = Obj(jsonMap)
 
             Server.httpSuccess(json)
