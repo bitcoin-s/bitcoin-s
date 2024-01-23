@@ -177,10 +177,7 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
 
   /** Returns the public keys encoded into the `scriptPubKey` */
   def publicKeys: Seq[ECPublicKeyBytes] = {
-    asm
-      .filter(_.isInstanceOf[ScriptConstant])
-      .slice(1, maxSigs + 1)
-      .map(key => ECPublicKeyBytes(key.bytes))
+    MultiSignatureScriptPubKey.parsePublicKeys(maxSigs, asm)
   }
 
   override def toString = s"multi($requiredSigs,${publicKeys.mkString(",")})"
@@ -252,36 +249,35 @@ object MultiSignatureScriptPubKey
     val containsMultiSigOp = cmsIdx != -1
 
     if (asm.nonEmpty && containsMultiSigOp) {
+
       //we need either the first or second asm operation to indicate how many signatures are required
-      val hasRequiredSignaturesTry = Try {
+      val hasRequiredSignaturesTry: Option[Int] = {
         asm.headOption match {
-          case None        => false
+          case None        => None
           case Some(token) =>
             //this is for the case that we have more than 16 public keys, the
             //first operation will be a push op, the second operation being the actual number of keys
-            if (token.isInstanceOf[BytesToPushOntoStack]) {
-              isValidPubKeyNumber(asm.tail.head)
-            } else isValidPubKeyNumber(token)
+            token match {
+              case _: BytesToPushOntoStack =>
+                isValidPubKeyNumber(asm.tail.head)
+              case _ => isValidPubKeyNumber(token)
+            }
         }
       }
       //the second to last asm operation should be the maximum amount of public keys
-      val hasMaximumSignaturesTry = {
+      val hasMaximumSignaturesTry: Option[Int] = {
         val maxSigsIdx = asm.length - 2
         if (maxSigsIdx >= cmsIdx) {
-          val exn = new IllegalAccessException(
-            s"maxSigsIdx is after OP_CHECKMULTISIG/OP_CHECKMULTISIGVERIFY, maxSigsIx=$maxSigsIdx")
-          Failure(exn)
+          None
         } else {
-          Try {
-            asm(maxSigsIdx) match {
-              case token: ScriptToken => isValidPubKeyNumber(token)
-            }
+          asm(maxSigsIdx) match {
+            case token: ScriptToken => isValidPubKeyNumber(token)
           }
         }
       }
 
       (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
-        case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
+        case (Some(_), Some(maximumSignatures)) =>
           val isStandardOps = asm.forall(op =>
             op.isInstanceOf[ScriptConstant] || op
               .isInstanceOf[BytesToPushOntoStack] || op
@@ -289,32 +285,57 @@ object MultiSignatureScriptPubKey
               op == OP_CHECKMULTISIGVERIFY)
 
           val result =
-            asm.nonEmpty && containsMultiSigOp && hasRequiredSignatures &&
-              hasMaximumSignatures && isStandardOps
+            asm.nonEmpty && containsMultiSigOp &&
+              hasMaximumSignatures(maximumSignatures, asm) && isStandardOps
           result
-        case (Success(_), Failure(_)) => false
-        case (Failure(_), Success(_)) => false
-        case (Failure(_), Failure(_)) => false
+        case (Some(_), None) => false
+        case (None, Some(_)) => false
+        case (None, None)    => false
       }
     } else {
       false
     }
+  }
 
+  def parsePublicKeys(
+      maxSigs: Int,
+      asm: Seq[ScriptToken]): Seq[ECPublicKeyBytes] = {
+    asm
+      .filter(_.isInstanceOf[ScriptConstant])
+      .slice(1, maxSigs + 1)
+      .map(t => ECPublicKeyBytes(t.bytes))
+  }
+
+  private def hasMaximumSignatures(
+      maxSigs: Int,
+      asm: Seq[ScriptToken]): Boolean = {
+    parsePublicKeys(maxSigs, asm).size == maxSigs
   }
 
   /** Checks that the given script token is with the range of the maximum amount of
     * public keys we can have in a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]]
     */
-  @tailrec private def isValidPubKeyNumber(token: ScriptToken): Boolean = {
+  @tailrec private def isValidPubKeyNumber(token: ScriptToken): Option[Int] = {
     token match {
       case sn: ScriptNumber =>
-        sn >= ScriptNumber.zero && sn <= ScriptNumber(
-          Consensus.maxPublicKeysPerMultiSig)
+        if (
+          sn >= ScriptNumber.zero && sn <= ScriptNumber(
+            Consensus.maxPublicKeysPerMultiSig)
+        ) {
+          Some(sn.toInt)
+        } else {
+          None
+        }
       case constant: ScriptConstant =>
-        val sn = ScriptNumber(constant.bytes)
-        isValidPubKeyNumber(sn)
-      case _: ScriptToken => false
+        //Consensus.maxPublicKeysPerMultiSig is at most 20, which can be represented by 2 bytes
+        if (constant.bytes.size <= 2) {
+          val sn = ScriptNumber.fromBytes(constant.bytes)
+          isValidPubKeyNumber(sn)
+        } else {
+          None
+        }
+      case _: ScriptToken => None
     }
   }
 }
