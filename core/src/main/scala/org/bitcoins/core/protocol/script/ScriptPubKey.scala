@@ -251,7 +251,7 @@ object MultiSignatureScriptPubKey
     if (asm.nonEmpty && containsMultiSigOp) {
 
       //we need either the first or second asm operation to indicate how many signatures are required
-      val hasRequiredSignaturesTry: Option[Int] = {
+      val hasRequiredSignaturesOpt: Option[Int] = {
         asm.headOption match {
           case None        => None
           case Some(token) =>
@@ -265,7 +265,7 @@ object MultiSignatureScriptPubKey
         }
       }
       //the second to last asm operation should be the maximum amount of public keys
-      val hasMaximumSignaturesTry: Option[Int] = {
+      val hasMaximumSignaturesOpt: Option[Int] = {
         val maxSigsIdx = asm.length - 2
         if (maxSigsIdx >= cmsIdx) {
           None
@@ -276,7 +276,7 @@ object MultiSignatureScriptPubKey
         }
       }
 
-      (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
+      (hasRequiredSignaturesOpt, hasMaximumSignaturesOpt) match {
         case (Some(_), Some(maximumSignatures)) =>
           val isStandardOps = asm.forall(op =>
             op.isInstanceOf[ScriptConstant] || op
