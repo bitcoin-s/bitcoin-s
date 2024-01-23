@@ -107,8 +107,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   */
 sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
 
-  /** Returns the amount of required signatures for this multisignature script pubkey output */
-  def requiredSigs: Int = {
+  def requiredSigsScriptNumber: ScriptNumber = {
     val asmWithoutPushOps = asm.filterNot(_.isInstanceOf[BytesToPushOntoStack])
     val opCheckMultiSigIndex =
       if (asm.indexOf(OP_CHECKMULTISIG) != -1)
@@ -117,11 +116,11 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs - 2)
     numSigsRequired match {
-      case x: ScriptNumber => x.toInt
+      case x: ScriptNumber => x
       case c: ScriptConstant =>
-        val sn = ScriptNumber(c.bytes).toInt
+        val sn = ScriptNumber(c.bytes)
         val inBounds =
-          sn >= 0 && sn <= Consensus.maxPublicKeysPerMultiSig
+          sn >= ScriptNumber.zero && sn.toInt <= Consensus.maxPublicKeysPerMultiSig
         if (inBounds) {
           sn
         } else {
@@ -136,18 +135,22 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     }
   }
 
-  /** The maximum amount of signatures for this multisignature script pubkey output */
-  def maxSigs: Int = {
+  /** Returns the amount of required signatures for this multisignature script pubkey output */
+  def requiredSigs: Int = {
+    requiredSigsScriptNumber.toInt
+  }
+
+  def maxSigsScriptNumber: ScriptNumber = {
     if (checkMultiSigIndex == -1 || checkMultiSigIndex == 0) {
       //means that we do not have a max signature requirement
-      0
+      OP_0
     } else {
       asm(checkMultiSigIndex - 1) match {
-        case x: ScriptNumber => x.toInt
+        case x: ScriptNumber => x
         case c: ScriptConstant =>
-          val maxSigs = ScriptNumber(c.bytes).toInt
+          val maxSigs = ScriptNumber(c.bytes)
           val inBounds =
-            maxSigs >= 0 && maxSigs <= Consensus.maxPublicKeysPerMultiSig
+            maxSigs >= ScriptNumber.zero && maxSigs.toInt <= Consensus.maxPublicKeysPerMultiSig
           if (inBounds) {
             maxSigs
           } else {
@@ -159,6 +162,11 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
             "The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
       }
     }
+  }
+
+  /** The maximum amount of signatures for this multisignature script pubkey output */
+  def maxSigs: Int = {
+    maxSigsScriptNumber.toInt
   }
 
   /** Gives the `OP_CHECKMULTISIG` or `OP_CHECKMULTISIGVERIFY` index inside of asm */
