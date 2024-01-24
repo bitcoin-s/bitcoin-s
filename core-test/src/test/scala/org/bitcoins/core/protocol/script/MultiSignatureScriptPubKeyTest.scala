@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.script
 
+import org.bitcoins.core.script.crypto.OP_CHECKMULTISIG
 import org.bitcoins.crypto.ECPublicKeyBytes
 import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
@@ -61,6 +62,11 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
     multiSigScriptPubKey.maxSigs must be(3)
     multiSigScriptPubKey.requiredSigs must be(2)
 
+  }
+
+  it must "not throw an exception with a script with ONLY OP_CHECKMULTISIG" in {
+    val asm = Vector(OP_CHECKMULTISIG)
+    assert(MultiSignatureScriptPubKey.isValidAsm(asm) == false)
   }
 
   it must "serialization symmetry" in {
