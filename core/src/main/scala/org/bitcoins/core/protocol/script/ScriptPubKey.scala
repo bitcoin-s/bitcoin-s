@@ -177,7 +177,7 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
 
   /** Returns the public keys encoded into the `scriptPubKey` */
   def publicKeys: Seq[ECPublicKeyBytes] = {
-    MultiSignatureScriptPubKey.parsePublicKeys(maxSigs, asm)
+    MultiSignatureScriptPubKey.parsePublicKeys(asm)
   }
 
   override def toString = s"multi($requiredSigs,${publicKeys.mkString(",")})"
@@ -241,15 +241,12 @@ object MultiSignatureScriptPubKey
 
   def apply(asm: Seq[ScriptToken]): MultiSignatureScriptPubKey = fromAsm(asm)
 
+  private val opCmsOPs = Vector(OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY)
+
   /** Determines if the given script tokens are a multisignature `scriptPubKey` */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    val cmsIdx = if (asm.contains(OP_CHECKMULTISIG)) {
-      asm.indexOf(OP_CHECKMULTISIG)
-    } else asm.indexOf(OP_CHECKMULTISIGVERIFY)
-    val containsMultiSigOp = cmsIdx != -1
-
-    if (asm.nonEmpty && containsMultiSigOp) {
-
+    if (asm.nonEmpty && opCmsOPs.exists(_ == asm.last)) {
+      val cmsIdx = asm.size - 1
       //we need either the first or second asm operation to indicate how many signatures are required
       val hasRequiredSignaturesOpt: Option[Int] = {
         asm.headOption match {
@@ -285,7 +282,7 @@ object MultiSignatureScriptPubKey
               op == OP_CHECKMULTISIGVERIFY)
 
           val result =
-            asm.nonEmpty && containsMultiSigOp &&
+            asm.nonEmpty &&
               hasMaximumSignatures(maximumSignatures, asm) && isStandardOps
           result
         case (Some(_), None) => false
@@ -297,19 +294,19 @@ object MultiSignatureScriptPubKey
     }
   }
 
-  def parsePublicKeys(
-      maxSigs: Int,
-      asm: Seq[ScriptToken]): Seq[ECPublicKeyBytes] = {
-    asm
+  def parsePublicKeys(asm: Seq[ScriptToken]): Seq[ECPublicKeyBytes] = {
+    val keys = asm
+      .dropRight(2) //drop maxSigs, OP_CMS op
       .filter(_.isInstanceOf[ScriptConstant])
-      .slice(1, maxSigs + 1)
+      .slice(1, asm.length) // drop requiredSigs
       .map(t => ECPublicKeyBytes(t.bytes))
+    keys
   }
 
   private def hasMaximumSignatures(
       maxSigs: Int,
       asm: Seq[ScriptToken]): Boolean = {
-    parsePublicKeys(maxSigs, asm).size == maxSigs
+    parsePublicKeys(asm).size == maxSigs
   }
 
   /** Checks that the given script token is with the range of the maximum amount of
