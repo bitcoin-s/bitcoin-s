@@ -267,7 +267,7 @@ object MultiSignatureScriptPubKey
       //the second to last asm operation should be the maximum amount of public keys
       val hasMaximumSignaturesOpt: Option[Int] = {
         val maxSigsIdx = asm.length - 2
-        if (maxSigsIdx >= cmsIdx) {
+        if (maxSigsIdx >= cmsIdx || maxSigsIdx <= 0) {
           None
         } else {
           asm(maxSigsIdx) match {
