@@ -8,11 +8,7 @@ import scodec.bits.ByteVector
 
 case class TransactionOutput(value: CurrencyUnit, scriptPubKey: ScriptPubKey)
     extends NetworkElement {
-
-  //https://bitcoin.org/en/developer-reference#txout
-  override lazy val byteSize: Long = scriptPubKey.byteSize + 8
-
-  override lazy val bytes: ByteVector = RawTransactionOutputParser.write(this)
+  override val bytes: ByteVector = RawTransactionOutputParser.write(this)
 }
 
 final object EmptyTransactionOutput

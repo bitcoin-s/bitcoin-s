@@ -15,7 +15,7 @@ sealed abstract class TransactionInput extends NetworkElement {
 
   def scriptSignature: ScriptSignature
   def sequence: UInt32
-  override lazy val bytes: ByteVector = RawTransactionInputParser.write(this)
+  override val bytes: ByteVector = RawTransactionInputParser.write(this)
 }
 
 case object EmptyTransactionInput extends TransactionInput {
