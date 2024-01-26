@@ -5,7 +5,6 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.{CryptoBytesUtil, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-import java.io.ByteArrayOutputStream
 import scala.annotation.tailrec
 
 trait BytesUtil extends CryptoBytesUtil {
