@@ -10,9 +10,8 @@ import scala.annotation.tailrec
 trait BytesUtil extends CryptoBytesUtil {
 
   def writeCmpctSizeUInt[T <: NetworkElement](ts: Seq[T]): ByteVector = {
-    val serialized = ts.map(_.bytes).foldLeft(ByteVector.empty)(_ ++ _)
     val cmpct = CompactSizeUInt(UInt64(ts.size))
-    cmpct.bytes ++ serialized
+    ByteVector.concat(cmpct.bytes +: ts.map(_.bytes))
   }
 
   /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
