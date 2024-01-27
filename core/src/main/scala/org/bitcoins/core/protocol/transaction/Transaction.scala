@@ -99,7 +99,7 @@ sealed abstract class Transaction extends NetworkElement {
 
   lazy val totalOutput: CurrencyUnit = outputs.map(_.value).sum
 
-  def toBaseTx: BaseTransaction = {
+  lazy val toBaseTx: BaseTransaction = {
     BaseTransaction(version, inputs, outputs, lockTime)
   }
 }

@@ -65,7 +65,6 @@ class BlockTest extends BitcoinSJvmTest {
       "/00000000ce4a4666cce2205d760d37b5579cdedf3ac9e4295557e8ac962cde55.txt"
     val lines = Source.fromURL(getClass.getResource(fileName)).mkString.trim
     val block = Block.fromHex(lines)
-    block.transactions.foreach(tx => println(s"tx.txIdBE=${tx.txIdBE}"))
     assert(block.hex == lines)
   }
 
