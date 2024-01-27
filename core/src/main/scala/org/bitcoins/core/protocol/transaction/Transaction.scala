@@ -99,7 +99,7 @@ sealed abstract class Transaction extends NetworkElement {
 
   lazy val totalOutput: CurrencyUnit = outputs.map(_.value).sum
 
-  def toBaseTx: BaseTransaction = {
+  lazy val toBaseTx: BaseTransaction = {
     BaseTransaction(version, inputs, outputs, lockTime)
   }
 }
@@ -145,6 +145,8 @@ sealed abstract class NonWitnessTransaction extends Transaction {
 
     versionBytes ++ inputBytes ++ outputBytes ++ lockTimeBytes
   }
+
+  override val txId: DoubleSha256Digest = super.txId
 }
 
 case class BaseTransaction(
@@ -176,7 +178,7 @@ object BaseTransaction extends Factory[BaseTransaction] {
 }
 
 case object EmptyTransaction extends NonWitnessTransaction {
-  override def txId: DoubleSha256Digest = DoubleSha256Digest.empty
+  override val txId: DoubleSha256Digest = DoubleSha256Digest.empty
   override def version: Int32 = TransactionConstants.version
   override def inputs: Vector[TransactionInput] = Vector.empty
   override def outputs: Vector[TransactionOutput] = Vector.empty
