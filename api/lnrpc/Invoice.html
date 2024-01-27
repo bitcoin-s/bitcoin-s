@@ -50,18 +50,18 @@ var toRoot = '../';</script></head><body><div id="search"><span id="doc-title"><
  Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">amtPaid</dt><dd class="cmt"><p>
   Deprecated, use amt_paid_sat or amt_paid_msat.</p></dd><dt class="param">amtPaidSat</dt><dd class="cmt"><p>
  The amount that was accepted for this invoice, in satoshis. This will ONLY
- be set if this invoice has been settled. We provide this field as if the
- invoice was created with a zero value, then we need to record what amount
- was ultimately accepted. Additionally, it's possible that the sender paid
- MORE that was specified in the original invoice. So we'll record that here
- as well.
- Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">amtPaidMsat</dt><dd class="cmt"><p>
- The amount that was accepted for this invoice, in millisatoshis. This will
- ONLY be set if this invoice has been settled. We provide this field as if
- the invoice was created with a zero value, then we need to record what
+ be set if this invoice has been settled or accepted. We provide this field
+ as if the invoice was created with a zero value, then we need to record what
  amount was ultimately accepted. Additionally, it's possible that the sender
  paid MORE that was specified in the original invoice. So we'll record that
  here as well.
+ Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">amtPaidMsat</dt><dd class="cmt"><p>
+ The amount that was accepted for this invoice, in millisatoshis. This will
+ ONLY be set if this invoice has been settled or accepted. We provide this
+ field as if the invoice was created with a zero value, then we need to
+ record what amount was ultimately accepted. Additionally, it's possible that
+ the sender paid MORE that was specified in the original invoice. So we'll
+ record that here as well.
  Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">state</dt><dd class="cmt"><p>
  The state the invoice is in.
  Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">htlcs</dt><dd class="cmt"><p>
@@ -133,18 +133,18 @@ var toRoot = '../';</script></head><body><div id="search"><span id="doc-title"><
  Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">amtPaid</dt><dd class="cmt"><p>
   Deprecated, use amt_paid_sat or amt_paid_msat.</p></dd><dt class="param">amtPaidSat</dt><dd class="cmt"><p>
  The amount that was accepted for this invoice, in satoshis. This will ONLY
- be set if this invoice has been settled. We provide this field as if the
- invoice was created with a zero value, then we need to record what amount
- was ultimately accepted. Additionally, it's possible that the sender paid
- MORE that was specified in the original invoice. So we'll record that here
- as well.
- Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">amtPaidMsat</dt><dd class="cmt"><p>
- The amount that was accepted for this invoice, in millisatoshis. This will
- ONLY be set if this invoice has been settled. We provide this field as if
- the invoice was created with a zero value, then we need to record what
+ be set if this invoice has been settled or accepted. We provide this field
+ as if the invoice was created with a zero value, then we need to record what
  amount was ultimately accepted. Additionally, it's possible that the sender
  paid MORE that was specified in the original invoice. So we'll record that
  here as well.
+ Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">amtPaidMsat</dt><dd class="cmt"><p>
+ The amount that was accepted for this invoice, in millisatoshis. This will
+ ONLY be set if this invoice has been settled or accepted. We provide this
+ field as if the invoice was created with a zero value, then we need to
+ record what amount was ultimately accepted. Additionally, it's possible that
+ the sender paid MORE that was specified in the original invoice. So we'll
+ record that here as well.
  Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">state</dt><dd class="cmt"><p>
  The state the invoice is in.
  Note: Output only, don't specify for creating an invoice.</p></dd><dt class="param">htlcs</dt><dd class="cmt"><p>
