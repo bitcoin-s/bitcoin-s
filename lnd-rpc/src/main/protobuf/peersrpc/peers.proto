@@ -35,7 +35,7 @@ service Peers {
   and broadcasts a new version of the node announcement to its peers.
   */
   rpc UpdateNodeAnnouncement (NodeAnnouncementUpdateRequest)
-      returns (NodeAnnouncementUpdateResponse);
+          returns (NodeAnnouncementUpdateResponse);
 }
 
 // UpdateAction is used to determine the kind of action we are referring to.
