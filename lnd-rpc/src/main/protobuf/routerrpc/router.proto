@@ -83,14 +83,14 @@ service Router {
   slate.
   */
   rpc ResetMissionControl (ResetMissionControlRequest)
-      returns (ResetMissionControlResponse);
+          returns (ResetMissionControlResponse);
 
   /*
   QueryMissionControl exposes the internal mission control state to callers.
   It is a development feature.
   */
   rpc QueryMissionControl (QueryMissionControlRequest)
-      returns (QueryMissionControlResponse);
+          returns (QueryMissionControlResponse);
 
   /*
   XImportMissionControl is an experimental API that imports the state provided
@@ -99,20 +99,20 @@ service Router {
   in-memory, and will not be persisted across restarts.
   */
   rpc XImportMissionControl (XImportMissionControlRequest)
-      returns (XImportMissionControlResponse);
+          returns (XImportMissionControlResponse);
 
   /*
   GetMissionControlConfig returns mission control's current config.
   */
   rpc GetMissionControlConfig (GetMissionControlConfigRequest)
-      returns (GetMissionControlConfigResponse);
+          returns (GetMissionControlConfigResponse);
 
   /*
   SetMissionControlConfig will set mission control's config, if the config
   provided is valid.
   */
   rpc SetMissionControlConfig (SetMissionControlConfigRequest)
-      returns (SetMissionControlConfigResponse);
+          returns (SetMissionControlConfigResponse);
 
   /*
   Deprecated. QueryProbability returns the current success probability
@@ -121,7 +121,7 @@ service Router {
   HTLC constraints.
   */
   rpc QueryProbability (QueryProbabilityRequest)
-      returns (QueryProbabilityResponse);
+          returns (QueryProbabilityResponse);
 
   /*
   BuildRoute builds a fully specified route based on a list of hop public
@@ -135,7 +135,7 @@ service Router {
   the client which delivers a stream of htlc events.
   */
   rpc SubscribeHtlcEvents (SubscribeHtlcEventsRequest)
-      returns (stream HtlcEvent);
+          returns (stream HtlcEvent);
 
   /*
   Deprecated, use SendPaymentV2. SendPayment attempts to route a payment
@@ -162,7 +162,7 @@ service Router {
   resumed later by using the ResolveHoldForward endpoint.
   */
   rpc HtlcInterceptor (stream ForwardHtlcInterceptResponse)
-      returns (stream ForwardHtlcInterceptRequest);
+          returns (stream ForwardHtlcInterceptRequest);
 
   /*
   UpdateChanStatus attempts to manually set the state of a channel
@@ -171,7 +171,7 @@ service Router {
   "enable" or "auto".
   */
   rpc UpdateChanStatus (UpdateChanStatusRequest)
-      returns (UpdateChanStatusResponse);
+          returns (UpdateChanStatusResponse);
 }
 
 message SendPaymentRequest {

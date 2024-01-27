@@ -10,6 +10,9 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.UnknownTLV
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -339,6 +342,35 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
 
     val spk = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
     val output = TransactionOutput(Satoshis(10000), spk)
+    val unsignedTx = BaseTransaction(version = Int32.one,
+                                     inputs = Vector.empty,
+                                     outputs = Vector(output),
+                                     lockTime = UInt32.zero)
+
+    for {
+      unsignedPsbt <- lnd.fundPSBT(PSBT.fromUnsignedTx(unsignedTx),
+                                   SatoshisPerVirtualByte.one,
+                                   spendUnconfirmed = true)
+      signed <- lnd.finalizePSBT(unsignedPsbt)
+      transaction <- Future.fromTry(signed.extractTransactionAndValidate)
+      errorOpt <- lnd.publishTransaction(transaction)
+    } yield assert(errorOpt.isEmpty)
+  }
+
+  it must "fund a OP_RETURN psbt" in { params =>
+    val (_, lnd, _) = params
+
+    val spk = {
+      val message = "Hello world"
+      val messageBytes = ByteVector(message.getBytes)
+
+      val asm = OP_RETURN +: BitcoinScriptUtil.calculatePushOp(
+        messageBytes) :+ ScriptConstant.fromBytes(messageBytes)
+
+      ScriptPubKey(asm.toVector)
+    }
+
+    val output = TransactionOutput(Satoshis.zero, spk)
     val unsignedTx = BaseTransaction(version = Int32.one,
                                      inputs = Vector.empty,
                                      outputs = Vector(output),
