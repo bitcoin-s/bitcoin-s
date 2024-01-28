@@ -179,7 +179,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       val duration = config.getDuration("bitcoin-s.node.try-peers-start-delay")
       TimeUtil.durationToFiniteDuration(duration)
     } else {
-      println(s"couldn't find config for try-peers-start-delay")
       30.seconds
     }
   }
