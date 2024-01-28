@@ -101,6 +101,16 @@ case class DisconnectedPeerConnection(
     }
   }
 
+  private def sendVersionMsg(
+      mergeHubSink: Sink[ByteString, NotUsed]): Future[ByteString] = {
+    versionMsgF.map { versionMsg =>
+      Source
+        .single(ByteString(versionMsg.bytes.toArray))
+        .runWith(mergeHubSink)
+      ByteString.empty
+    }
+  }
+
   private def parseHelper(
       unalignedBytes: ByteString,
       byteVec: ByteString): (ByteString, Vector[NetworkMessage]) = {
@@ -196,12 +206,7 @@ case class DisconnectedPeerConnection(
                     case Socks5ConnectionState.Connected =>
                       //need to send version message when we are first
                       //connected to initiate bitcoin protocol handshake
-                      versionMsgF.map { versionMsg =>
-                        Source
-                          .single(ByteString(versionMsg.bytes.toArray))
-                          .runWith(mergeHubSink)
-                        ByteString.empty
-                      }
+                      sendVersionMsg(mergeHubSink)
                     case Socks5ConnectionState.Disconnected |
                         Socks5ConnectionState.Authenticating |
                         Socks5ConnectionState.Greeted =>

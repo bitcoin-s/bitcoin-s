@@ -39,9 +39,11 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         peer <- NodeUnitTest.createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNode(peer, None)(system,
-                                                            appConfig.chainConf,
-                                                            appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(peer = peer,
+                                                walletCreationTimeOpt = None)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
         started <- node.start()
         _ <- NodeTestUtil.awaitConnectionCount(node = node,
                                                expectedConnectionCount = 1)
