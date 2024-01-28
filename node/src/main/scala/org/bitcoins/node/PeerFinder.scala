@@ -100,11 +100,6 @@ case class PeerFinder(
     peers
   }
 
-  private def getPeersFromParam: Vector[Peer] = {
-    logger.debug(s"Param peers: $paramPeers")
-    paramPeers
-  }
-
   private def stringsToPeers(addresses: Vector[String]): Vector[Peer] = {
     val formatStrings = addresses.map { s =>
       //assumes strings are valid, todo: add util functions to check fully for different addresses
@@ -128,7 +123,7 @@ case class PeerFinder(
 
   private val maxPeerSearchCount: Int = 8
 
-  private val initialDelay: FiniteDuration = 12.hour
+  private val initialDelay: FiniteDuration = nodeAppConfig.tryPeersStartDelay
 
   private val isConnectionSchedulerRunning = new AtomicBoolean(false)
 
@@ -137,14 +132,17 @@ case class PeerFinder(
       initialDelay = initialDelay,
       delay = nodeAppConfig.tryNextPeersInterval) { () =>
       {
+        logger.info(s"Running peerConnectionScheduler")
         if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
           logger.info(s"Querying p2p network for peers...")
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
           if (_peersToTry.size < maxPeerSearchCount)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
 
+          //in case of less _peersToTry.size than maxPeerSearchCount
+          val max = Math.min(maxPeerSearchCount, _peersToTry.size)
           val peers = (
-            1.to(maxPeerSearchCount)
+            1.to(max)
               .map(_ => _peersToTry.pop()))
             .distinct
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
@@ -167,14 +165,15 @@ case class PeerFinder(
     }
 
   override def start(): Future[PeerFinder] = {
-    logger.debug(s"Starting PeerFinder")
+    logger.info(
+      s"Starting PeerFinder initialDelay=${initialDelay} paramPeers=$paramPeers")
+    val start = System.currentTimeMillis()
     isStarted.set(true)
-    val peersToTry = (getPeersFromParam ++ getPeersFromConfig).distinct
-    val initPeerF = Future.traverse(peersToTry)(tryPeer)
+    val peersToTry = (paramPeers ++ getPeersFromConfig).distinct
+    _peersToTry.pushAll(peersToTry)
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
-        _ <- initPeerF
         (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
         _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -189,13 +188,14 @@ case class PeerFinder(
       startedF
     } else {
       logger.info("Peer discovery disabled.")
-      initPeerF.map(_ => this)
+      peerConnectionScheduler //start scheduler
+      Future.successful(this)
     }
 
     for {
-      _ <- initPeerF
       peerFinder <- peerDiscoveryF
-      _ = logger.info(s"Done starting PeerFinder")
+      _ = logger.info(
+        s"Done starting PeerFinder, it took ${System.currentTimeMillis() - start}ms")
     } yield peerFinder
   }
 

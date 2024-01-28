@@ -174,6 +174,16 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 10.seconds
   }
 
+  lazy val tryPeersStartDelay: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.try-peers-start-delay")) {
+      val duration = config.getDuration("bitcoin-s.node.try-peers-start-delay")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else {
+      println(s"couldn't find config for try-peers-start-delay")
+      30.seconds
+    }
+  }
+
   /** time interval for trying next set of peers in peer discovery */
   lazy val tryNextPeersInterval: FiniteDuration = {
     if (config.hasPath("bitcoin-s.node.try-peers-interval")) {
