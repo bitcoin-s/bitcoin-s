@@ -173,7 +173,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     //get a node that isn't started
     val nodeF = nodeConf.createNode(
-      peers = Vector.empty,
+      peers = nodeConf.peers,
       walletCreationTimeOpt = Some(creationTime))(chainConf, system)
 
     val defaultApi =

@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{SourceQueue}
+import akka.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
@@ -14,6 +14,7 @@ import org.bitcoins.node.networking.peer.{
   PeerConnection,
   PeerMessageSender
 }
+import org.bitcoins.node.util.BitcoinSNodeUtil
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -55,7 +56,7 @@ case class PeerFinder(
       })
       .distinct
       .map(_.getHostAddress)
-    stringsToPeers(addresses.toVector)
+    BitcoinSNodeUtil.stringsToPeers(addresses.toVector)
   }
 
   /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
@@ -65,7 +66,7 @@ case class PeerFinder(
       .getLines()
       .toVector
       .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val peers = stringsToPeers(addresses)
+    val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
     Random.shuffle(peers)
   }
 
@@ -93,30 +94,9 @@ case class PeerFinder(
     * case it returns those.
     */
   private def getPeersFromConfig: Vector[Peer] = {
-    val addresses = nodeAppConfig.peers.filter(
-      nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val peers = stringsToPeers(addresses)
-    logger.debug(s"Config peers: $peers")
-    peers
-  }
-
-  private def getPeersFromParam: Vector[Peer] = {
-    logger.debug(s"Param peers: $paramPeers")
-    paramPeers
-  }
-
-  private def stringsToPeers(addresses: Vector[String]): Vector[Peer] = {
-    val formatStrings = addresses.map { s =>
-      //assumes strings are valid, todo: add util functions to check fully for different addresses
-      if (s.count(_ == ':') > 1 && s(0) != '[') //ipv6
-        "[" + s + "]"
-      else s
-    }
-    val inetSockets = formatStrings.map(
-      NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
-    val peers =
-      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    peers
+    val addresses = nodeAppConfig.peers.filter(p =>
+      nodeAppConfig.torConf.enabled || !p.toString.contains(".onion"))
+    addresses
   }
 
   //for the peers we try
@@ -126,9 +106,9 @@ case class PeerFinder(
 
   private val _peersToTry: PeerStack = PeerStack()
 
-  private val maxPeerSearchCount: Int = 8
+  private val maxPeerSearchCount: Int = 2
 
-  private val initialDelay: FiniteDuration = 12.hour
+  private val initialDelay: FiniteDuration = nodeAppConfig.tryPeersStartDelay
 
   private val isConnectionSchedulerRunning = new AtomicBoolean(false)
 
@@ -137,14 +117,17 @@ case class PeerFinder(
       initialDelay = initialDelay,
       delay = nodeAppConfig.tryNextPeersInterval) { () =>
       {
+        logger.info(s"Running peerConnectionScheduler")
         if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
           logger.info(s"Querying p2p network for peers...")
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
           if (_peersToTry.size < maxPeerSearchCount)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
 
+          //in case of less _peersToTry.size than maxPeerSearchCount
+          val max = Math.min(maxPeerSearchCount, _peersToTry.size)
           val peers = (
-            1.to(maxPeerSearchCount)
+            0.until(max)
               .map(_ => _peersToTry.pop()))
             .distinct
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
@@ -167,14 +150,16 @@ case class PeerFinder(
     }
 
   override def start(): Future[PeerFinder] = {
-    logger.debug(s"Starting PeerFinder")
+    logger.info(
+      s"Starting PeerFinder initialDelay=${initialDelay} paramPeers=$paramPeers")
+    val start = System.currentTimeMillis()
     isStarted.set(true)
-    val peersToTry = (getPeersFromParam ++ getPeersFromConfig).distinct
-    val initPeerF = Future.traverse(peersToTry)(tryPeer)
+    val peersToTry = (paramPeers ++ getPeersFromConfig).distinct
+    //higher priority for param peers
+    _peersToTry.pushAll(peersToTry, priority = 2)
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
-        _ <- initPeerF
         (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
         _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -189,13 +174,14 @@ case class PeerFinder(
       startedF
     } else {
       logger.info("Peer discovery disabled.")
-      initPeerF.map(_ => this)
+      peerConnectionScheduler //start scheduler
+      Future.successful(this)
     }
 
     for {
-      _ <- initPeerF
       peerFinder <- peerDiscoveryF
-      _ = logger.info(s"Done starting PeerFinder")
+      _ = logger.info(
+        s"Done starting PeerFinder, it took ${System.currentTimeMillis() - start}ms")
     } yield peerFinder
   }
 

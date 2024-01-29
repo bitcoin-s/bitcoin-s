@@ -12,10 +12,11 @@ import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.node.db.NodeDbManagement
+import org.bitcoins.node.util.BitcoinSNodeUtil
 import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
-import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.TorParams
+import org.bitcoins.tor.config.TorAppConfig
 
 import java.nio.file.Path
 import java.time.{Duration, Instant}
@@ -97,13 +98,13 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   /** List of peers
     */
-  lazy val peers: Vector[String] = {
+  lazy val peers: Vector[Peer] = {
     val list = config.getStringList("bitcoin-s.node.peers")
     val strs = 0
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     val result = strs.map(_.replace("localhost", "127.0.0.1"))
-    if (result.isEmpty && useDefaultPeers) {
+    val strPeers = if (result.isEmpty && useDefaultPeers) {
       logger.info(
         s"No peers found in configuration, resorting to default peers")
       network match {
@@ -115,6 +116,8 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else {
       result
     }
+
+    BitcoinSNodeUtil.stringsToPeers(strPeers)(this)
   }
 
   lazy val torConf: TorAppConfig =
@@ -174,6 +177,15 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 10.seconds
   }
 
+  lazy val tryPeersStartDelay: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.try-peers-start-delay")) {
+      val duration = config.getDuration("bitcoin-s.node.try-peers-start-delay")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else {
+      30.seconds
+    }
+  }
+
   /** time interval for trying next set of peers in peer discovery */
   lazy val tryNextPeersInterval: FiniteDuration = {
     if (config.hasPath("bitcoin-s.node.try-peers-interval")) {
@@ -205,9 +217,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(
-      peers: Vector[Peer] = Vector.empty[Peer],
-      walletCreationTimeOpt: Option[Instant])(
+  def createNode(peers: Vector[Peer], walletCreationTimeOpt: Option[Instant])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
     NodeAppConfig.createNode(peers, walletCreationTimeOpt)(this,
