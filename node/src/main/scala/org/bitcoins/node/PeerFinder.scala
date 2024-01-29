@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{SourceQueue}
+import akka.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
@@ -14,6 +14,7 @@ import org.bitcoins.node.networking.peer.{
   PeerConnection,
   PeerMessageSender
 }
+import org.bitcoins.node.util.BitcoinSNodeUtil
 
 import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -55,7 +56,7 @@ case class PeerFinder(
       })
       .distinct
       .map(_.getHostAddress)
-    stringsToPeers(addresses.toVector)
+    BitcoinSNodeUtil.stringsToPeers(addresses.toVector)
   }
 
   /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
@@ -65,7 +66,7 @@ case class PeerFinder(
       .getLines()
       .toVector
       .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val peers = stringsToPeers(addresses)
+    val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
     Random.shuffle(peers)
   }
 
@@ -93,25 +94,9 @@ case class PeerFinder(
     * case it returns those.
     */
   private def getPeersFromConfig: Vector[Peer] = {
-    val addresses = nodeAppConfig.peers.filter(
-      nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val peers = stringsToPeers(addresses)
-    logger.debug(s"Config peers: $peers")
-    peers
-  }
-
-  private def stringsToPeers(addresses: Vector[String]): Vector[Peer] = {
-    val formatStrings = addresses.map { s =>
-      //assumes strings are valid, todo: add util functions to check fully for different addresses
-      if (s.count(_ == ':') > 1 && s(0) != '[') //ipv6
-        "[" + s + "]"
-      else s
-    }
-    val inetSockets = formatStrings.map(
-      NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
-    val peers =
-      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    peers
+    val addresses = nodeAppConfig.peers.filter(p =>
+      nodeAppConfig.torConf.enabled || !p.toString.contains(".onion"))
+    addresses
   }
 
   //for the peers we try
@@ -142,7 +127,7 @@ case class PeerFinder(
           //in case of less _peersToTry.size than maxPeerSearchCount
           val max = Math.min(maxPeerSearchCount, _peersToTry.size)
           val peers = (
-            1.to(max)
+            0.until(max)
               .map(_ => _peersToTry.pop()))
             .distinct
             .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
