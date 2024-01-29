@@ -106,7 +106,7 @@ case class PeerFinder(
 
   private val _peersToTry: PeerStack = PeerStack()
 
-  private val maxPeerSearchCount: Int = 8
+  private val maxPeerSearchCount: Int = 2
 
   private val initialDelay: FiniteDuration = nodeAppConfig.tryPeersStartDelay
 
@@ -155,7 +155,8 @@ case class PeerFinder(
     val start = System.currentTimeMillis()
     isStarted.set(true)
     val peersToTry = (paramPeers ++ getPeersFromConfig).distinct
-    _peersToTry.pushAll(peersToTry)
+    //higher priority for param peers
+    _peersToTry.pushAll(peersToTry, priority = 2)
 
     val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
       val startedF = for {
