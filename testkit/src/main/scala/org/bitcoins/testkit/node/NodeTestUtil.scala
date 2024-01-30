@@ -246,6 +246,18 @@ abstract class NodeTestUtil extends P2PLogger {
 
   }
 
+  /** returns a Future that isn't completed until the peer manager has [[expectedConnectionCount]] connections */
+  def awaitConnectionCount(
+      node: Node,
+      expectedConnectionCount: Int,
+      interval: FiniteDuration = 1.second,
+      maxTries: Int = 30)(implicit ec: ExecutionContext): Future[Unit] = {
+    AsyncUtil.retryUntilSatisfiedF(
+      () => node.getConnectionCount.map(_ == expectedConnectionCount),
+      interval = interval,
+      maxTries = maxTries)
+  }
+
   /** get our neutrino node's uri from a test bitcoind instance to send rpc commands for our node.
     * The peer must be initialized by the node.
     */

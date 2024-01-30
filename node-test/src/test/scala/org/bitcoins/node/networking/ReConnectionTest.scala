@@ -44,8 +44,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
       val connectedF = for {
         _ <- node.start()
         //wait until we are fully connected before continuing test
-        _ <- AsyncUtil.retryUntilSatisfiedF(conditionF = () =>
-          node.getConnectionCount.map(_ == 1))
+        _ <- NodeTestUtil.awaitConnectionCount(node, 1)
         nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind)
         peer <- NodeTestUtil.getBitcoindPeer(bitcoind)
         _ <- bitcoind.disconnectNode(nodeUri)
@@ -68,14 +67,14 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
                                             timeout)
       for {
         started <- startedF
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          started.getConnectionCount.map(_ == 1))
+        _ <- NodeTestUtil.awaitConnectionCount(node = started,
+                                               expectedConnectionCount = 1)
         //let sync occur so we aren't receiving blockchain data over the network
         _ <- NodeTestUtil.awaitAllSync(started, bitcoind)
         //wait until there is a timeout for inactivity
         _ <- AsyncUtil.nonBlockingSleep(timeout)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          started.getConnectionCount.map(_ == 0))
+        _ <- NodeTestUtil.awaitConnectionCount(node = started,
+                                               expectedConnectionCount = 0)
         _ <- started.stop()
         _ <- started.nodeConfig.stop()
       } yield {
@@ -93,20 +92,15 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
                                             timeout)
       for {
         started <- startedF
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          started.getConnectionCount.map(_ == 1))
+        _ <- NodeTestUtil.awaitConnectionCount(started, 1)
         //explicitly disconnect it
         bitcoindPeer <- NodeTestUtil.getBitcoindPeer(bitcoind)
         _ <- started.peerManager.disconnectPeer(bitcoindPeer)
         //wait until we have zero connections
-        _ <- AsyncUtil.retryUntilSatisfiedF(
-          () => started.getConnectionCount.map(_ == 0),
-          1.second)
+        _ <- NodeTestUtil.awaitConnectionCount(started, 0)
 
         //wait until there is a timeout for inactivity
-        _ <- AsyncUtil.retryUntilSatisfiedF(
-          () => started.getConnectionCount.map(_ == 1),
-          1.second)
+        _ <- NodeTestUtil.awaitConnectionCount(started, 1)
         _ <- started.stop()
         _ <- started.nodeConfig.stop()
       } yield {
