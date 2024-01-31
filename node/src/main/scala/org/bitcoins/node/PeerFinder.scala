@@ -193,12 +193,23 @@ case class PeerFinder(
     }
   }
 
+  def connect(peer: Peer): Future[Unit] = {
+    logger.info(s"Attempting to connect peer=$peer")
+    if (isStarted.get()) {
+      tryPeer(peer)
+    } else {
+      logger.warn(
+        s"Ignoring connect attempt to peer=$peer as PeerFinder is not started")
+      Future.unit
+    }
+  }
+
   def reconnect(peer: Peer): Future[Unit] = {
     logger.info(s"Attempting to reconnect peer=$peer")
     if (isStarted.get) {
       tryToReconnectPeer(peer)
     } else {
-      logger.error(
+      logger.warn(
         s"Ignoring reconnect attempt to peer=$peer as PeerFinder is not started")
       Future.unit
     }

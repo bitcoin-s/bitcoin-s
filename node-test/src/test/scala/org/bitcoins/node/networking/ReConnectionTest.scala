@@ -36,28 +36,6 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   behavior of "ReConnectionTest"
 
-  it must "attempt to reconnect if max connections are full" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
-      val bitcoind = nodeConnectedWithBitcoind.bitcoind
-      val node = nodeConnectedWithBitcoind.node
-
-      val connectedF = for {
-        _ <- node.start()
-        //wait until we are fully connected before continuing test
-        _ <- NodeTestUtil.awaitConnectionCount(node, 1)
-        nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind)
-        peer <- NodeTestUtil.getBitcoindPeer(bitcoind)
-        _ <- bitcoind.disconnectNode(nodeUri)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          node.peerManager.isDisconnected(peer))
-        //make sure we re-connect
-        _ <- AsyncUtil.retryUntilSatisfiedF(conditionF = () =>
-          node.peerManager.isConnected(peer))
-      } yield succeed
-
-      connectedF
-  }
-
   it must "disconnect a peer after a period of inactivity" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val bitcoind = nodeConnectedWithBitcoind.bitcoind

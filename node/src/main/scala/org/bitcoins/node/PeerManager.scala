@@ -362,8 +362,6 @@ case class PeerManager(
             None
         }
         val isShuttingDown = state.isInstanceOf[NodeShuttingDown]
-        val shouldReconnect =
-          (forceReconnect || connectedPeerCount == 0) && isStarted.get && !isShuttingDown
         if (state.peers.exists(_ != peer)) {
           state match {
             case s: SyncNodeState => switchSyncToRandomPeer(s, Some(peer))
@@ -377,7 +375,7 @@ case class PeerManager(
           }
 
         } else if (syncPeerOpt.isDefined) {
-          if (shouldReconnect) {
+          if (forceReconnect && !isShuttingDown) {
             finder.reconnect(peer).map(_ => state)
           } else {
             val exn = new RuntimeException(
@@ -385,7 +383,7 @@ case class PeerManager(
             Future.failed(exn)
           }
         } else {
-          if (shouldReconnect) {
+          if (forceReconnect && !isShuttingDown) {
             finder.reconnect(peer).map(_ => state)
           } else {
             Future.successful(state)
@@ -567,29 +565,37 @@ case class PeerManager(
             Future.successful(s)
           case runningState: NodeRunningState =>
             val peer = c.peer
-            val curPeerData = runningState.peerFinder.popFromCache(peer).get
-            _peerDataMap.put(peer, curPeerData)
-            val hasCf =
-              if (curPeerData.serviceIdentifier.nodeCompactFilters)
-                "with filters"
-              else ""
+            val curPeerDataOpt = runningState.peerFinder.popFromCache(peer)
 
-            val peerWithSvcs = curPeerData.peerWithServicesOpt.get
-            val newPdm =
-              runningState.peerDataMap.+((peerWithSvcs, curPeerData))
-            val replacePeers = runningState.replacePeers(newPdm)
-            logger.info(
-              s"Connected to peer $peer $hasCf. Connected peer count ${replacePeers.peerDataMap.size}")
-            replacePeers match {
-              case s: SyncNodeState =>
-                syncHelper(s).map(_ => s)
-              case d: DoneSyncing =>
-                val x = d.toHeaderSync(c.peer)
-                syncHelper(x).map(_ => x)
-              case x @ (_: MisbehavingPeer | _: RemovePeers |
-                  _: NodeShuttingDown) =>
-                Future.successful(x)
+            curPeerDataOpt match {
+              case None =>
+                val connectF = runningState.peerFinder.connect(c.peer)
+                connectF.map(_ => runningState)
+              case Some(curPeerData) =>
+                _peerDataMap.put(peer, curPeerData)
+                val hasCf =
+                  if (curPeerData.serviceIdentifier.nodeCompactFilters)
+                    "with filters"
+                  else ""
+
+                val peerWithSvcs = curPeerData.peerWithServicesOpt.get
+                val newPdm =
+                  runningState.peerDataMap.+((peerWithSvcs, curPeerData))
+                val replacePeers = runningState.replacePeers(newPdm)
+                logger.info(
+                  s"Connected to peer $peer $hasCf. Connected peer count ${replacePeers.peerDataMap.size}")
+                replacePeers match {
+                  case s: SyncNodeState =>
+                    syncHelper(s).map(_ => s)
+                  case d: DoneSyncing =>
+                    val x = d.toHeaderSync(c.peer)
+                    syncHelper(x).map(_ => x)
+                  case x @ (_: MisbehavingPeer | _: RemovePeers |
+                      _: NodeShuttingDown) =>
+                    Future.successful(x)
+                }
             }
+
         }
 
       case (state, i: InitializeDisconnect) =>
