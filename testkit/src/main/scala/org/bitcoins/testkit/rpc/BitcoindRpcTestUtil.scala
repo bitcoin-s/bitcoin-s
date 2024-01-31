@@ -354,7 +354,7 @@ trait BitcoindRpcTestUtil extends Logging {
       system: ActorSystem): Future[Unit] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
 
-    val serverStops = servers.map { s =>
+    val serverStopsF = Future.traverse(servers) { s =>
       val stopF = s.stop()
       stopF.onComplete {
         case Failure(exception) =>
@@ -367,7 +367,7 @@ trait BitcoindRpcTestUtil extends Logging {
         _ <- removeDataDirectory(s)
       } yield ()
     }
-    Future.sequence(serverStops).map(_ => ())
+    serverStopsF.map(_ => ())
   }
 
   /** Stops the given server and deletes its data directory
