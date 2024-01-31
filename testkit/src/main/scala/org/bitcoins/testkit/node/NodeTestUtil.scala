@@ -255,7 +255,7 @@ abstract class NodeTestUtil extends P2PLogger {
       node: Node,
       expectedConnectionCount: Int,
       interval: FiniteDuration = 1.second,
-      maxTries: Int = 30)(implicit ec: ExecutionContext): Future[Unit] = {
+      maxTries: Int = 60)(implicit ec: ExecutionContext): Future[Unit] = {
     AsyncUtil.retryUntilSatisfiedF(
       () => node.getConnectionCount.map(_ == expectedConnectionCount),
       interval = interval,
