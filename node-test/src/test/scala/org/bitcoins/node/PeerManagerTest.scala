@@ -37,9 +37,9 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "add the default peer to the peer manager" in {
-    nodeConnectedWithBitcoinds =>
-      val node = nodeConnectedWithBitcoinds.node
-      val bitcoind = nodeConnectedWithBitcoinds.bitcoind
+    nodeConnectedWithBitcoind =>
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val peerF = NodeTestUtil.getBitcoindPeer(bitcoind)
 
       for {
@@ -53,6 +53,27 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         assert(
           peerManager.paramPeers.nonEmpty
         ) //make sure we had a peer passed as a param
+      }
+  }
+
+  it must "connect a peer that PeerFinder doesn't know about" in {
+    nodeConnectedWithBitcoind =>
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val peerF = NodeTestUtil.getBitcoindPeer(bitcoind)
+
+      for {
+        _ <- node.start()
+        peer <- peerF
+        peerManager = node.peerManager
+        _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
+        //disconnect
+        _ <- peerManager.disconnectPeer(peer)
+        _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+        _ <- node.peerManager.connectPeer(peer)
+        _ <- NodeTestUtil.awaitConnectionCount(node, 1)
+      } yield {
+        succeed
       }
   }
 
