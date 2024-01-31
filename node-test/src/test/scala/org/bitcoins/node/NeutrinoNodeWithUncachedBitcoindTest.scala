@@ -67,10 +67,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       for {
         bitcoindPeers <- bitcoinPeersF
         _ <- node.start()
-        _ <- AsyncUtil.retryUntilSatisfiedF(
-          () => node.getConnectionCount.map(_ == 2),
-          maxTries = 30,
-          interval = 1.second)
+        _ <- NodeTestUtil.awaitConnectionCount(node, bitcoinds.size)
         //sync from first bitcoind
         peer0 = bitcoindPeers(0)
         _ <- node.peerManager.disconnectPeer(peer0)
@@ -88,13 +85,10 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
-      val peerManager = node.peerManager
-
-      def peers = peerManager.peers
 
       for {
         _ <- node.start()
-        _ <- AsyncUtil.retryUntilSatisfied(peers.size == 2)
+        _ <- NodeTestUtil.awaitConnectionCount(node, bitcoinds.size)
         _ <- bitcoinds(1).generateToAddress(1, junkAddress)
         h1 <- bitcoinds(0).getBestHashBlockHeight()
         h2 <- bitcoinds(1).getBestHashBlockHeight()
@@ -113,7 +107,9 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
       for {
         _ <- node.start()
-        _ <- AsyncUtil.retryUntilSatisfied(node.peerManager.peers.size == 2)
+        _ <- NodeTestUtil.awaitConnectionCount(node = node,
+                                               expectedConnectionCount =
+                                                 bitcoinds.size)
         peers <- bitcoinPeersF
         peer = peers.head
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
@@ -134,6 +130,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
   it must "disconnect a peer that keeps sending invalid headers" in {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
+      val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
       val peerManager = node.peerManager
 
       def sendInvalidHeaders(peer: Peer): Future[Unit] = {
@@ -157,7 +154,9 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
       for {
         _ <- node.start()
-        _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 2)
+        _ <- NodeTestUtil.awaitConnectionCount(node = node,
+                                               expectedConnectionCount =
+                                                 bitcoinds.size)
         peers <- bitcoinPeersF
         peer = peers(1)
         _ <- node.peerManager.isConnected(peer).map(assert(_))

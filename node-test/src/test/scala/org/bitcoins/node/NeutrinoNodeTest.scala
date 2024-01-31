@@ -298,9 +298,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         for {
           peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind1)
           _ <- node.peerManager.disconnectPeer(peer1)
-          _ <- AsyncUtil.retryUntilSatisfiedF(
-            () => node.getConnectionCount.map(_ == 1),
-            1.second)
+          _ <- NodeTestUtil.awaitConnectionCount(node, 1)
           //generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
@@ -334,8 +332,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- AsyncUtil.retryUntilSatisfiedF(
           () => node.peerManager.isDisconnected(peer0),
           1.second)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          node.getConnectionCount.map(_ == 1))
+        _ <- NodeTestUtil.awaitConnectionCount(node, 1)
       } yield succeed
   }
 
@@ -382,8 +379,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         bestBlockHash0 <- bitcoind0.getBestBlockHash()
         //invalidate blockhash to force a reorg when next block is generated
         _ <- bitcoind0.invalidateBlock(bestBlockHash0)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          node.getConnectionCount.map(_ == 1))
+        _ <- NodeTestUtil.awaitConnectionCount(node, 1)
         //now generate a block, make sure we sync with them
         hashes0 <- bitcoind0.generate(1)
         chainApi <- node.chainApiFromDb()

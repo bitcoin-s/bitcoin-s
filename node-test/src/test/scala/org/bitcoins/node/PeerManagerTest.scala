@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
@@ -47,11 +46,10 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- node.start()
         peer <- peerF
         peerManager = node.peerManager
-        //wait until the initialization of the peer is done
-        _ <- AsyncUtil.retryUntilSatisfied {
-          peerManager.peers.exists(_ == peer)
-        }
+        _ <- NodeTestUtil.awaitConnectionCount(node = node,
+                                               expectedConnectionCount = 1)
       } yield {
+        assert(peerManager.peers.exists(_ == peer))
         assert(
           peerManager.paramPeers.nonEmpty
         ) //make sure we had a peer passed as a param

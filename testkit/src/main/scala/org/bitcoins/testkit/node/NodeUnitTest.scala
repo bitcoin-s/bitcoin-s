@@ -20,7 +20,6 @@ import org.scalatest.FutureOutcome
 
 import java.net.InetSocketAddress
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 trait NodeUnitTest extends BaseNodeTest {
@@ -301,10 +300,8 @@ object NodeUnitTest extends P2PLogger {
         walletCallbacks = walletCallbacks)
 
       startedNode <- node.start()
-      _ <- AsyncUtil
-        .retryUntilSatisfied(node.peerManager.connectedPeerCount == 1,
-                             interval = 1.second,
-                             maxTries = 30)
+      _ <- NodeTestUtil.awaitConnectionCount(node = node,
+                                             expectedConnectionCount = 1)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
