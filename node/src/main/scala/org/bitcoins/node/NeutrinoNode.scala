@@ -86,42 +86,48 @@ case class NeutrinoNode(
   }
 
   override def start(): Future[NeutrinoNode] = {
-    isStarted.set(true)
-    val (queue, source) =
-      dataMessageStreamSource.preMaterialize()
+    if (isStarted.get()) {
+      logger.warn(s"NeutrinoNode already started")
+      Future.successful(this)
+    } else {
+      isStarted.set(true)
+      val (queue, source) =
+        dataMessageStreamSource.preMaterialize()
 
-    queueOpt = Some(queue)
-    val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
-                                            queue = queue,
-                                            skipPeers = () => Set.empty)
-    val initState =
-      DoneSyncing(peerDataMap = Map.empty,
-                  waitingForDisconnection = Set.empty,
-                  peerFinder)
+      queueOpt = Some(queue)
+      val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
+                                              queue = queue,
+                                              skipPeers = () => Set.empty)
+      val initState =
+        DoneSyncing(peerDataMap = Map.empty,
+                    waitingForDisconnection = Set.empty,
+                    peerFinder)
 
-    val graph =
-      buildDataMessageStreamGraph(initState = initState, source = source)
-    val stateF = graph.run()
-    streamDoneFOpt = Some(stateF)
-    val res = for {
-      node <- super.start()
-      _ <- peerFinder.start()
-      _ = {
-        val inactivityCancellable = startInactivityChecksJob()
-        inactivityCancellableOpt = Some(inactivityCancellable)
+      val graph =
+        buildDataMessageStreamGraph(initState = initState, source = source)
+      val stateF = graph.run()
+      streamDoneFOpt = Some(stateF)
+      val res = for {
+        node <- super.start()
+        _ <- peerFinder.start()
+        _ = {
+          val inactivityCancellable = startInactivityChecksJob()
+          inactivityCancellableOpt = Some(inactivityCancellable)
+        }
+      } yield {
+        node.asInstanceOf[NeutrinoNode]
       }
-    } yield {
-      node.asInstanceOf[NeutrinoNode]
+
+      res.failed.foreach(logger.error("Cannot start Neutrino node", _))
+
+      res
     }
 
-    res.failed.foreach(logger.error("Cannot start Neutrino node", _))
-
-    res
   }
 
   override def stop(): Future[NeutrinoNode] = {
-    logger.info(s"Stopping NeutrinoNode")
     if (isStarted.get()) {
+      logger.info(s"Stopping NeutrinoNode")
       isStarted.set(false)
       val start = System.currentTimeMillis()
       inactivityCancellableOpt.map(_.cancel())
