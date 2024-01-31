@@ -45,10 +45,10 @@ class BitcoindBlockPollingTest
         _ = assert(firstBalance == Satoshis.zero)
 
         // Setup block polling
-        _ = BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
-                                                             bitcoind,
-                                                             None,
-                                                             1.second)
+        cancellable = BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
+                                                                       bitcoind,
+                                                                       None,
+                                                                       1.second)
         _ <- bitcoind.generateToAddress(6, bech32Address)
 
         // Wait for it to process
@@ -57,6 +57,7 @@ class BitcoindBlockPollingTest
           1.second)
 
         balance <- wallet.getConfirmedBalance()
+        _ = cancellable.cancel()
       } yield assert(balance == amountToSend)
   }
 
@@ -83,9 +84,10 @@ class BitcoindBlockPollingTest
         txid1 <- bitcoind.sendToAddress(addr, amountToSend)
 
         // Setup block polling
-        _ = BitcoindRpcBackendUtil.startBitcoindMempoolPolling(wallet,
-                                                               bitcoind,
-                                                               1.second) { tx =>
+        cancellable = BitcoindRpcBackendUtil.startBitcoindMempoolPolling(
+          wallet,
+          bitcoind,
+          1.second) { tx =>
           mempoolTxs += tx
           FutureUtil.unit
         }
@@ -101,6 +103,7 @@ class BitcoindBlockPollingTest
               _.txIdBE == txid2)
           },
           1.second)
+        _ = cancellable.cancel()
       } yield succeed
   }
 }
