@@ -42,12 +42,10 @@ import org.bitcoins.util.ListUtil
 import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
-import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
-import scala.util.control.NonFatal
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends Logging {
@@ -332,7 +330,7 @@ trait BitcoindRpcTestUtil extends Logging {
 
   def startServers(servers: Vector[BitcoindRpcClient])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val startedServers = servers.map { server =>
+    val startedServersF = Future.traverse(servers) { server =>
       server.start().flatMap { res =>
         val createWalletF = for {
           version <- server.version
@@ -341,16 +339,13 @@ trait BitcoindRpcTestUtil extends Logging {
               false
             case V23 | V24 => true
           }
-          _ <- res.createWallet("", descriptors = true)
+          _ <- res.createWallet("", descriptors = descriptors)
         } yield res
 
-        createWalletF.recoverWith { case NonFatal(_) =>
-          Future.successful(res)
-        }
+        createWalletF
       }
     }
-
-    Future.sequence(startedServers).map(_ => ())
+    startedServersF.map(_ => ())
   }
 
   /** Stops the given servers and deletes their data directories
