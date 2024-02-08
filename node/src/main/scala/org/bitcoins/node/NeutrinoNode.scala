@@ -114,8 +114,6 @@ case class NeutrinoNode(
           inactivityCancellableOpt = Some(inactivityCancellable)
         }
       } yield {
-        logger.info(
-          s"inactivity-timeout=${nodeAppConfig.inactivityTimeout.toSeconds}")
         node.asInstanceOf[NeutrinoNode]
       }
 
