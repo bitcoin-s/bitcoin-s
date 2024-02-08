@@ -20,7 +20,6 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import NodeState.DoneSyncing
 import org.bitcoins.core.api.node.{NodeType, Peer}
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 
@@ -115,6 +114,8 @@ case class NeutrinoNode(
           inactivityCancellableOpt = Some(inactivityCancellable)
         }
       } yield {
+        logger.info(
+          s"inactivity-timeout=${nodeAppConfig.inactivityTimeout.toSeconds}")
         node.asInstanceOf[NeutrinoNode]
       }
 
@@ -201,7 +202,7 @@ case class NeutrinoNode(
 
   private def inactivityChecksRunnable(): Runnable = { () =>
     val peers = peerManager.peers
-    logger.debug(s"Running inactivity checks for peers=${peers}")
+    logger.info(s"Running inactivity checks for peers=${peers}")
     val resultF = if (peers.nonEmpty) {
       Future.unit //do nothing?
     } else if (isStarted.get) {
@@ -220,11 +221,7 @@ case class NeutrinoNode(
   }
 
   private def startInactivityChecksJob(): Cancellable = {
-    //the interval is set shorter for some unit test cases
-    val interval = nodeAppConfig.network match {
-      case MainNet | TestNet3 | SigNet => 5.minute
-      case RegTest                     => nodeAppConfig.inactivityTimeout
-    }
+    val interval = nodeAppConfig.inactivityTimeout
     system.scheduler.scheduleAtFixedRate(
       initialDelay = interval,
       interval = interval)(inactivityChecksRunnable())

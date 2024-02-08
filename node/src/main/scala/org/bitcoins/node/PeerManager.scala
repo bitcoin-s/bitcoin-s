@@ -378,9 +378,9 @@ case class PeerManager(
           if (forceReconnect && !isShuttingDown) {
             finder.reconnect(peer).map(_ => state)
           } else {
-            val exn = new RuntimeException(
+            logger.warn(
               s"No new peers to sync from, cannot start new sync. Terminated sync with peer=$peer current syncPeer=$syncPeerOpt state=${state} peers=$peers")
-            Future.failed(exn)
+            Future.successful(state)
           }
         } else {
           if (forceReconnect && !isShuttingDown) {

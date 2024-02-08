@@ -79,6 +79,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
         //wait until there is a timeout for inactivity
         _ <- NodeTestUtil.awaitConnectionCount(started, 1)
+        _ <- started.peerManager.isConnected(bitcoindPeer)
         _ <- started.stop()
         _ <- started.nodeConfig.stop()
       } yield {
