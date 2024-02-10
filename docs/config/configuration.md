@@ -151,11 +151,7 @@ bitcoin-s {
         # a list of peer addresses in form "hostname:portnumber"
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
-        # by default we provide a testnet peer to connect to
-        peers = ["neutrino.testnet3.suredbits.com:18333"] 
-        
-        # use the defauls suredbits neutrino node as a peer
-        use-default-peers = false
+        peers = [""]
         
         # try to connect to peers from dns seeds, database, addr messages etc
         enable-peer-discovery = true
