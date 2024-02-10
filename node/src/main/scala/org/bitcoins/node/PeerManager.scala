@@ -228,7 +228,7 @@ case class PeerManager(
     peerData match {
       case _: PersistentPeerData =>
         //if we have slots remaining, connect
-        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
+        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers && hasCf) {
           connectPeer(peer)
         } else {
           val notCf = peerDataMap
@@ -260,6 +260,7 @@ case class PeerManager(
       peer: Peer,
       state: NodeRunningState): Future[NodeState] = {
     val finder = state.peerFinder
+
     val stateF: Future[NodeRunningState] = {
       require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
               s"$peer cannot be both a test and a persistent peer")
@@ -545,24 +546,17 @@ case class PeerManager(
                 val newPdm =
                   runningState.peerDataMap.+((peerWithSvcs, persistent))
                 val replacePeers = runningState.replacePeers(newPdm)
-                if (curPeerData.serviceIdentifier.nodeCompactFilters) {
-                  logger.info(
-                    s"Connected to peer $peer with compact filter support. Connected peer count ${replacePeers.peerDataMap.size}")
-                  replacePeers match {
-                    case s: SyncNodeState =>
-                      syncHelper(s).map(_ => s)
-                    case d: DoneSyncing =>
-                      val x = d.toHeaderSync(c.peer)
-                      syncHelper(x).map(_ => x)
-                    case x @ (_: MisbehavingPeer | _: RemovePeers |
-                        _: NodeShuttingDown) =>
-                      Future.successful(x)
-                  }
-                } else {
-                  logger.info(
-                    s"Connect to peer=$peer with no compact filter support, disconnecting")
-                  disconnectPeer(peer)
-                    .map(_ => replacePeers)
+                logger.info(
+                  s"Connected to peer $peer with compact filter support. Connected peer count ${replacePeers.peerDataMap.size}")
+                replacePeers match {
+                  case s: SyncNodeState =>
+                    syncHelper(s).map(_ => s)
+                  case d: DoneSyncing =>
+                    val x = d.toHeaderSync(c.peer)
+                    syncHelper(x).map(_ => x)
+                  case x @ (_: MisbehavingPeer | _: RemovePeers |
+                      _: NodeShuttingDown) =>
+                    Future.successful(x)
                 }
             }
         }
