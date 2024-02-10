@@ -228,7 +228,7 @@ case class PeerManager(
     peerData match {
       case _: PersistentPeerData =>
         //if we have slots remaining, connect
-        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers && hasCf) {
+        if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
           connectPeer(peer)
             .flatMap(_ => peerData.peerMessageSender.sendGetAddrMessage())
         } else {
@@ -542,12 +542,17 @@ case class PeerManager(
                 connectF.map(_ => runningState)
               case Some(curPeerData) =>
                 _peerDataMap.put(peer, curPeerData)
+                val hasCf =
+                  if (curPeerData.serviceIdentifier.nodeCompactFilters)
+                    "with filters"
+                  else ""
+
                 val peerWithSvcs = curPeerData.peerWithServicesOpt.get
                 val newPdm =
                   runningState.peerDataMap.+((peerWithSvcs, persistent))
                 val replacePeers = runningState.replacePeers(newPdm)
                 logger.info(
-                  s"Connected to peer $peer with compact filter support. Connected peer count ${replacePeers.peerDataMap.size}")
+                  s"Connected to peer $peer $hasCf. Connected peer count ${replacePeers.peerDataMap.size}")
                 replacePeers match {
                   case s: SyncNodeState =>
                     syncHelper(s).map(_ => s)
