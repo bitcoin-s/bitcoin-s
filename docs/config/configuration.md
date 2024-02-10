@@ -155,7 +155,7 @@ bitcoin-s {
         peers = ["neutrino.testnet3.suredbits.com:18333"] 
         
         # use the defauls suredbits neutrino node as a peer
-        use-default-peers = true
+        use-default-peers = false
         
         # try to connect to peers from dns seeds, database, addr messages etc
         enable-peer-discovery = true
