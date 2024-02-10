@@ -230,6 +230,7 @@ case class PeerManager(
         //if we have slots remaining, connect
         if (connectedPeerCount < nodeAppConfig.maxConnectedPeers && hasCf) {
           connectPeer(peer)
+            .flatMap(_ => peerData.peerMessageSender.sendGetAddrMessage())
         } else {
           val notCf = peerDataMap
             .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
@@ -272,13 +273,12 @@ case class PeerManager(
       if (finder.hasPeer(peer)) {
         //one of the peers we tries got initialized successfully
         val peerData = finder.getPeerData(peer).get
-        val peerMsgSender = PeerMessageSender(peerData.peerConnection)
         val serviceIdentifer = peerData.serviceIdentifier
         val hasCf = serviceIdentifer.nodeCompactFilters
         logger.debug(s"Initialized peer $peer with $hasCf")
 
         for {
-          _ <- peerMsgSender.sendGetAddrMessage()
+
           _ <- createInDb(peer, peerData.serviceIdentifier)
           _ <- managePeerAfterInitialization(finder = finder,
                                              peerData = peerData,
