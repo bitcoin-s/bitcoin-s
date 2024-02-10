@@ -48,6 +48,7 @@ object BitcoinSTestAppConfig {
          |  node {
          |     mode = neutrino
          |     relay = true
+         |     enable-peer-discovery = false
          |  }
          |  wallet {
          |    allowExternalDLCAddresses = true
@@ -78,6 +79,7 @@ object BitcoinSTestAppConfig {
            |  node {
            |     mode = neutrino
            |     relay = true
+           |     enable-peer-discovery = false
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
@@ -111,6 +113,7 @@ object BitcoinSTestAppConfig {
            |     mode = neutrino
            |     relay = true
            |     maxConnectedPeers = 8
+           |     enable-peer-discovery = false
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled

@@ -540,36 +540,32 @@ case class PeerManager(
                 val connectF = runningState.peerFinder.connect(c.peer)
                 connectF.map(_ => runningState)
               case Some(curPeerData) =>
-                val persistent = curPeerData match {
-                  case a: AttemptToConnectPeerData => a.toPersistentPeerData
-                  case p: PersistentPeerData       => p
-                }
-                _peerDataMap.put(peer, persistent)
-                val hasCf =
-                  if (curPeerData.serviceIdentifier.nodeCompactFilters)
-                    "with filters"
-                  else ""
-
+                _peerDataMap.put(peer, curPeerData)
                 val peerWithSvcs = curPeerData.peerWithServicesOpt.get
                 val newPdm =
                   runningState.peerDataMap.+((peerWithSvcs, persistent))
                 val replacePeers = runningState.replacePeers(newPdm)
-                logger.info(
-                  s"Connected to peer $peer $hasCf. Connected peer count ${replacePeers.peerDataMap.size}")
-                replacePeers match {
-                  case s: SyncNodeState =>
-                    syncHelper(s).map(_ => s)
-                  case d: DoneSyncing =>
-                    val x = d.toHeaderSync(c.peer)
-                    syncHelper(x).map(_ => x)
-                  case x @ (_: MisbehavingPeer | _: RemovePeers |
-                      _: NodeShuttingDown) =>
-                    Future.successful(x)
+                if (curPeerData.serviceIdentifier.nodeCompactFilters) {
+                  logger.info(
+                    s"Connected to peer $peer with compact filter support. Connected peer count ${replacePeers.peerDataMap.size}")
+                  replacePeers match {
+                    case s: SyncNodeState =>
+                      syncHelper(s).map(_ => s)
+                    case d: DoneSyncing =>
+                      val x = d.toHeaderSync(c.peer)
+                      syncHelper(x).map(_ => x)
+                    case x @ (_: MisbehavingPeer | _: RemovePeers |
+                        _: NodeShuttingDown) =>
+                      Future.successful(x)
+                  }
+                } else {
+                  logger.info(
+                    s"Connect to peer=$peer with no compact filter support, disconnecting")
+                  disconnectPeer(peer)
+                    .map(_ => replacePeers)
                 }
             }
-
         }
-
       case (state, i: InitializeDisconnect) =>
         state match {
           case r: NodeRunningState =>
