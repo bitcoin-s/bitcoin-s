@@ -267,7 +267,7 @@ case class PeerFinder(
   }
 
   def removePeer(peer: Peer): Future[Option[PeerData]] = {
-    Future {
+    Future.successful {
       logger.debug(s"Removing peer=$peer")
       _peerData.remove(peer) //peer must be a member of _peerData
     }
