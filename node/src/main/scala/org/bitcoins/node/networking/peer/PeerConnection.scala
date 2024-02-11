@@ -390,9 +390,10 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       case Some(g) =>
         sendMsg(msg.bytes, g.mergeHubSink)
       case None =>
-        val exn = new RuntimeException(
-          s"Could not send msg=${msg.payload.commandName} because we do not have an active connection to peer=${peer} socket=$socket")
-        Future.failed(exn)
+        val log =
+          s"Could not send msg=${msg.payload.commandName} because we do not have an active connection to peer=${peer} socket=$socket"
+        logger.warn(log)
+        Future.unit
     }
   }
 
