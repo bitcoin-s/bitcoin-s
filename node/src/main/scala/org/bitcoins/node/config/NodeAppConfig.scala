@@ -193,7 +193,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.inactivity-timeout")) {
       val duration = config.getDuration("bitcoin-s.node.inactivity-timeout")
       TimeUtil.durationToFiniteDuration(duration)
-    } else 20.minute
+    } else 5.minute
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
