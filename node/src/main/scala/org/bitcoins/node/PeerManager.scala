@@ -798,6 +798,15 @@ case class PeerManager(
 
         }
 
+      case (state, NodeStreamMessage.PeerHealthCheck) =>
+        state match {
+          case s: NodeShuttingDown =>
+            logger.trace(s"Ignorinng peer health check as we are shutting down")
+            Future.successful(s)
+          case r: NodeRunningState =>
+            PeerManager.handleHealthCheck(r)
+        }
+
     }
   }
 
@@ -1345,6 +1354,22 @@ object PeerManager extends Logging {
             Future.successful(None)
         }
     }
+  }
 
+  def handleHealthCheck(runningState: NodeRunningState)(implicit
+      ec: ExecutionContext): Future[NodeRunningState] = {
+    val blockFilterPeers = runningState.peerDataMap.filter(
+      _._2.serviceIdentifier.hasServicesOf(
+        ServiceIdentifier.NODE_COMPACT_FILTERS))
+    if (blockFilterPeers.nonEmpty) {
+      //do nothing
+      Future.successful(runningState)
+    } else {
+      val peerFinder = runningState.peerFinder
+      for {
+        _ <- peerFinder.stop()
+        _ <- peerFinder.start()
+      } yield runningState
+    }
   }
 }
