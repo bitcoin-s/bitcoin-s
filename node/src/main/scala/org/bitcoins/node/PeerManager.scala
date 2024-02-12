@@ -220,7 +220,6 @@ case class PeerManager(
 
   /** Helper method to determine what action to take after a peer is initialized, such as beginning sync with that peer */
   private def managePeerAfterInitialization(
-      finder: PeerFinder,
       peerData: PeerData,
       hasCf: Boolean): Future[Unit] = {
     val peer = peerData.peer
@@ -230,7 +229,6 @@ case class PeerManager(
         //if we have slots remaining, connect
         if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
           connectPeer(peer)
-            .flatMap(_ => peerData.peerMessageSender.sendGetAddrMessage())
         } else {
           val notCf = peerDataMap
             .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
@@ -240,19 +238,13 @@ case class PeerManager(
           if (hasCf && notCf.nonEmpty)
             replacePeer(replacePeer = notCf.head, withPeer = peer)
           else {
-            peerData
-              .stop()
-              .map(_ => ())
+            //don't disconnect until we receive addr message
+            Future.unit
           }
         }
-      case q: AttemptToConnectPeerData =>
-        if (finder.hasPeer(q.peer)) {
-          //if we still have an active connection with this peer, stop it
-          q.stop().map(_ => ())
-        } else {
-          //else it already has been deleted because of connection issues
-          Future.unit
-        }
+      case _: AttemptToConnectPeerData =>
+        //don't disconnect until we receive addr message
+        Future.unit
     }
 
   }
@@ -278,11 +270,9 @@ case class PeerManager(
         logger.debug(s"Initialized peer $peer with $hasCf")
 
         for {
-
+          _ <- peerData.peerMessageSender.sendGetAddrMessage()
           _ <- createInDb(peer, peerData.serviceIdentifier)
-          _ <- managePeerAfterInitialization(finder = finder,
-                                             peerData = peerData,
-                                             hasCf = hasCf)
+          _ <- managePeerAfterInitialization(peerData = peerData, hasCf = hasCf)
         } yield state
 
       } else if (peerDataMap.contains(peer)) {
@@ -641,7 +631,7 @@ case class PeerManager(
       case (state, ControlMessageWrapper(payload, peer)) =>
         state match {
           case runningState: NodeRunningState =>
-            val peerMsgSenderApiOpt: Option[PeerMessageSenderApi] =
+            val peerMsgSenderApiOpt: Option[PeerMessageSenderApi] = {
               runningState.getPeerMsgSender(peer) match {
                 case Some(p) => Some(p)
                 case None =>
@@ -650,14 +640,28 @@ case class PeerManager(
                     case None    => None
                   }
               }
+            }
             peerMsgSenderApiOpt match {
               case Some(peerMsgSenderApi) =>
                 val resultOptF = runningState.peerFinder.controlMessageHandler
                   .handleControlPayload(payload,
                                         peerMsgSenderApi = peerMsgSenderApi)
                 resultOptF.flatMap {
-                  case Some(i) =>
+                  case Some(i: ControlMessageHandler.Initialized) =>
                     onInitialization(i.peer, runningState)
+                  case Some(ControlMessageHandler.ReceivedAddrMessage) =>
+                    if (runningState.peerFinder.hasPeer(peer)) {
+                      //got to disconnect it since it hasn't been promoted to a persistent peer
+                      runningState.peerFinder.getPeerData(peer) match {
+                        case Some(pd: AttemptToConnectPeerData) =>
+                          pd.stop().map(_ => runningState)
+                        case None | Some(_: PersistentPeerData) =>
+                          Future.successful(runningState)
+                      }
+                    } else {
+                      //do nothing as its a persistent peer
+                      Future.successful(runningState)
+                    }
                   case None =>
                     Future.successful(state)
                 }
