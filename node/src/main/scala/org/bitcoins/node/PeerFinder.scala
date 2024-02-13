@@ -288,6 +288,7 @@ case class PeerFinder(
       logger.warn(s"onVersionMessage called for unknown $peer")
     }
   }
+
   def buildPeerData(p: Peer, isPersistent: Boolean): PeerData = {
     val peerConnection = PeerConnection(p, queue)
     val peerMessageSender = PeerMessageSender(peerConnection)
