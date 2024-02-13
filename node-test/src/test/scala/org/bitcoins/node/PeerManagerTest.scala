@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import org.bitcoins.node.models.{PeerDAO, PeerDAOHelper}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
@@ -10,6 +11,7 @@ import org.bitcoins.testkit.node.{
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
+import java.time.Instant
 import scala.concurrent.Future
 
 class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
@@ -74,6 +76,30 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)
       } yield {
         succeed
+      }
+  }
+
+  it must "update last time a peer was seen on disconnect" in {
+    nodeConnectedWithBitcoind =>
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val peerF = NodeTestUtil.getBitcoindPeer(bitcoind)
+
+      for {
+        _ <- node.start()
+        peer <- peerF
+        peerManager = node.peerManager
+        _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
+        //disconnect
+        timestamp = Instant.now()
+        _ <- peerManager.disconnectPeer(peer)
+        _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+        addrBytes = PeerDAOHelper.getAddrBytes(peer)
+        peerDb <- PeerDAO()(system.dispatcher, node.nodeConfig)
+          .read(addrBytes)
+          .map(_.get)
+      } yield {
+        assert(timestamp.isBefore(peerDb.lastSeen))
       }
   }
 
