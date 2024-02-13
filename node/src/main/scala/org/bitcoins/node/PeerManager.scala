@@ -231,9 +231,8 @@ case class PeerManager(
       .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
       .keys
     val availableFilterSlot = hasCf && notCfPeers.nonEmpty
-    if (
-      connectedPeerCount < nodeAppConfig.maxConnectedPeers || availableFilterSlot
-    ) {
+    val hasConnectionSlot = connectedPeerCount < nodeAppConfig.maxConnectedPeers
+    if (hasConnectionSlot || availableFilterSlot) {
       val persistentPeerData = peerData match {
         case p: PersistentPeerData       => p
         case a: AttemptToConnectPeerData => a.toPersistentPeerData
