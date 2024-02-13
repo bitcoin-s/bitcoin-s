@@ -1351,8 +1351,8 @@ object PeerManager extends Logging {
     }
   }
 
-  def handleHealthCheck(runningState: NodeRunningState)(implicit
-      ec: ExecutionContext): Future[NodeRunningState] = {
+  def handleHealthCheck(
+      runningState: NodeRunningState): Future[NodeRunningState] = {
     val blockFilterPeers = runningState.peerDataMap.filter(
       _._2.serviceIdentifier.hasServicesOf(
         ServiceIdentifier.NODE_COMPACT_FILTERS))
@@ -1361,10 +1361,8 @@ object PeerManager extends Logging {
       Future.successful(runningState)
     } else {
       val peerFinder = runningState.peerFinder
-      for {
-        _ <- peerFinder.stop()
-        _ <- peerFinder.start()
-      } yield runningState
+      peerFinder.queryForPeerConnections()
+      Future.successful(runningState)
     }
   }
 }
