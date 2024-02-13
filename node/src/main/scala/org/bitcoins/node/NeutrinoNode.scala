@@ -202,7 +202,7 @@ case class NeutrinoNode(
   private def inactivityChecksRunnable(): Runnable = { () =>
     val peers = peerManager.peers
     logger.info(s"Running inactivity checks for peers=${peers}")
-    val resultF = if (peers.nonEmpty) {
+    val resultF = if (peers.nonEmpty || isStarted.get) {
       queueOpt match {
         case Some(q) =>
           q.offer(NodeStreamMessage.PeerHealthCheck)
@@ -211,11 +211,6 @@ case class NeutrinoNode(
           logger.warn(s"No queue defined for inactivity check")
           Future.unit
       }
-    } else if (isStarted.get) {
-      //stop and restart to get more peers
-      stop()
-        .flatMap(_.start())
-        .map(_ => ())
     } else {
       start().map(_ => ())
     }
