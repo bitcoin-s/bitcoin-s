@@ -1,11 +1,15 @@
 package org.bitcoins.node.models
 
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.node.config.NodeAppConfig
 import scodec.bits.ByteVector
+import slick.dbio.DBIOAction
 import slick.lifted.ProvenShape
 
+import java.net.InetAddress
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -81,6 +85,20 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     }
   }
 
+  def updateLastSeenTime(address: ByteVector): Future[Option[PeerDb]] = {
+    val action = table.filter(_.address === address).result.headOption
+    val updatedLastSeenA = action.flatMap {
+      case Some(peerDb) =>
+        updateAction(peerDb.copy(lastSeen = Instant.now()))
+          .map(Some(_))
+      case None => DBIOAction.successful(None)
+    }
+
+    for {
+      result <- safeDatabase.run(updatedLastSeenA)
+    } yield result
+  }
+
   class PeerTable(tag: Tag) extends Table[PeerDb](tag, schemaName, "peers") {
 
     def address: Rep[ByteVector] = column("address")
@@ -101,5 +119,17 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       (address, port, lastSeen, firstSeen, networkId, serviceBytes).<>(
         PeerDb.tupled,
         PeerDb.unapply)
+  }
+}
+
+object PeerDAOHelper {
+
+  def getAddrBytes(peer: Peer): ByteVector = {
+    val addrBytes =
+      if (peer.socket.getHostString.contains(".onion"))
+        NetworkUtil.torV3AddressToBytes(peer.socket.getHostString)
+      else
+        InetAddress.getByName(peer.socket.getHostString).getAddress
+    ByteVector(addrBytes)
   }
 }

@@ -13,19 +13,17 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import NodeState._
 import org.bitcoins.core.api.node._
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.node.NodeState._
 import org.bitcoins.node.NodeStreamMessage._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{PeerDAO, PeerDb}
+import org.bitcoins.node.models.{PeerDAO, PeerDAOHelper, PeerDb}
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import scodec.bits.ByteVector
 
-import java.net.InetAddress
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
@@ -126,11 +124,7 @@ case class PeerManager(
       peer: Peer,
       serviceIdentifier: ServiceIdentifier): Future[PeerDb] = {
     logger.debug(s"Adding peer to db $peer")
-    val addrBytes =
-      if (peer.socket.getHostString.contains(".onion"))
-        NetworkUtil.torV3AddressToBytes(peer.socket.getHostString)
-      else
-        InetAddress.getByName(peer.socket.getHostString).getAddress
+    val addrBytes = PeerDAOHelper.getAddrBytes(peer)
     val networkByte = addrBytes.length match {
       case AddrV2Message.IPV4_ADDR_LENGTH   => AddrV2Message.IPV4_NETWORK_BYTE
       case AddrV2Message.IPV6_ADDR_LENGTH   => AddrV2Message.IPV6_NETWORK_BYTE
@@ -140,7 +134,7 @@ case class PeerManager(
           s"Unsupported address type of size $unknownSize bytes")
     }
     PeerDAO()
-      .upsertPeer(ByteVector(addrBytes),
+      .upsertPeer(addrBytes,
                   peer.socket.getPort,
                   networkByte,
                   serviceIdentifier)
@@ -342,6 +336,8 @@ case class PeerManager(
       s"Disconnected peer=$peer peers=$peers state=$state forceReconnect=$forceReconnect peerDataMap=${peerDataMap
         .map(_._1)}")
     val finder = state.peerFinder
+    val addrBytes = PeerDAOHelper.getAddrBytes(peer)
+    val updateLastSeenF = PeerDAO().updateLastSeenTime(addrBytes)
     val stateF = {
       require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
               s"$peer cannot be both a test and a persistent peer")
@@ -406,7 +402,7 @@ case class PeerManager(
       }
     }
 
-    stateF.map {
+    val replacedPeersStateF = stateF.map {
       case s: SyncNodeState =>
         if (s.syncPeer == peer) {
           //the peer being disconnected is our sync peer
@@ -426,6 +422,11 @@ case class PeerManager(
       case runningState: NodeRunningState =>
         runningState.replacePeers(peerWithServicesDataMap)
     }
+
+    for {
+      state <- replacedPeersStateF
+      _ <- updateLastSeenF
+    } yield state
   }
 
   private def onQueryTimeout(
