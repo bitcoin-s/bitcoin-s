@@ -94,9 +94,8 @@ case class NeutrinoNode(
         dataMessageStreamSource.preMaterialize()
 
       queueOpt = Some(queue)
-      val peerFinder: PeerFinder = PeerFinder(paramPeers = paramPeers,
-                                              queue = queue,
-                                              skipPeers = () => Set.empty)
+      val peerFinder: PeerFinder =
+        PeerFinder(paramPeers = paramPeers, queue = queue)
       val initState =
         DoneSyncing(peerDataMap = Map.empty,
                     waitingForDisconnection = Set.empty,

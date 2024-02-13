@@ -26,8 +26,7 @@ import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
     paramPeers: Vector[Peer],
-    queue: SourceQueue[NodeStreamMessage],
-    skipPeers: () => Set[Peer])(implicit
+    queue: SourceQueue[NodeStreamMessage])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
@@ -132,7 +131,6 @@ case class PeerFinder(
             0.until(max)
               .map(_ => _peersToTry.pop()))
             .distinct
-            .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
           val peersF = Future.traverse(peers)(tryPeer)
@@ -309,6 +307,10 @@ case class PeerFinder(
     } else {
       logger.warn(s"onVersionMessage called for unknown $peer")
     }
+  }
+
+  override def toString: String = {
+    s"PeerFinder(paramPeers=$paramPeers)"
   }
 }
 
