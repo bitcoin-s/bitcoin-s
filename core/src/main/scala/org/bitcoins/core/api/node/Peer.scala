@@ -15,6 +15,8 @@ case class Peer(
     this.copy(id = Some(id))
   }
 
+  def port: Int = socket.getPort
+
   override def toString(): String =
     s"Peer(${socket.getHostString()}:${socket.getPort()})"
 

@@ -96,7 +96,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitConnectionCount(node, 0)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)
         peerDb <- PeerDAO()(system.dispatcher, node.nodeConfig)
-          .read(addrBytes)
+          .read((addrBytes, peer.port))
           .map(_.get)
       } yield {
         assert(timestamp.isBefore(peerDb.lastSeen))
