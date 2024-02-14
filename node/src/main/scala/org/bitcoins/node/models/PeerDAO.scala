@@ -89,7 +89,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
 
   def updateLastSeenTime(peer: Peer): Future[Option[PeerDb]] = {
     val address = PeerDAOHelper.getAddrBytes(peer)
-    val port = peer.socket.getPort
+    val port = peer.port
     val action = findByPrimaryKey((address, port)).result.headOption
     val updatedLastSeenA = action.flatMap {
       case Some(peerDb) =>

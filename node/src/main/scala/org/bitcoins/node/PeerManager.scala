@@ -134,10 +134,7 @@ case class PeerManager(
           s"Unsupported address type of size $unknownSize bytes")
     }
     PeerDAO()
-      .upsertPeer(addrBytes,
-                  peer.socket.getPort,
-                  networkByte,
-                  serviceIdentifier)
+      .upsertPeer(addrBytes, peer.port, networkByte, serviceIdentifier)
   }
 
   private def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
