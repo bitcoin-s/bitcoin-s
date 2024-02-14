@@ -23,8 +23,8 @@ case class PeerDb(
 )
 
 case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
-    extends CRUD[PeerDb, ByteVector]
-    with SlickUtil[PeerDb, ByteVector] {
+    extends CRUD[PeerDb, (ByteVector, Int)]
+    with SlickUtil[PeerDb, (ByteVector, Int)] {
 
   import profile.api._
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -37,13 +37,15 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[ByteVector]): Query[PeerTable, PeerDb, Seq] = {
-    table.filter(_.address.inSet(ids))
+      ids: Vector[(ByteVector, Int)]): Query[PeerTable, PeerDb, Seq] = {
+    //from: https://stackoverflow.com/questions/26815913/how-to-do-or-filter-in-slick
+    table.filter(r =>
+      ids.map(i => r.address === i._1 && r.port === i._2).reduceLeft(_ || _))
   }
 
   override protected def findAll(
       ts: Vector[PeerDb]): Query[Table[PeerDb], PeerDb, Seq] =
-    findByPrimaryKeys(ts.map(_.address))
+    findByPrimaryKeys(ts.map(t => (t.address, t.port)))
 
   def deleteByKey(address: String): Future[Int] = {
     val bytes = ByteVector(address.getBytes)
@@ -64,7 +66,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       networkId: Byte,
       serviceIdentifier: ServiceIdentifier): Future[PeerDb] = {
     val lastSeen: Instant = Instant.now
-    val existingF = read(address)
+    val existingF = read((address, port))
     existingF.flatMap {
       case Some(value) =>
         upsert(
@@ -85,8 +87,10 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     }
   }
 
-  def updateLastSeenTime(address: ByteVector): Future[Option[PeerDb]] = {
-    val action = table.filter(_.address === address).result.headOption
+  def updateLastSeenTime(peer: Peer): Future[Option[PeerDb]] = {
+    val address = PeerDAOHelper.getAddrBytes(peer)
+    val port = peer.socket.getPort
+    val action = findByPrimaryKey((address, port)).result.headOption
     val updatedLastSeenA = action.flatMap {
       case Some(peerDb) =>
         updateAction(peerDb.copy(lastSeen = Instant.now()))

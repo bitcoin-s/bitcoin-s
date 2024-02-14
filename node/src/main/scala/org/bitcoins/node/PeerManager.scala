@@ -336,8 +336,8 @@ case class PeerManager(
       s"Disconnected peer=$peer peers=$peers state=$state forceReconnect=$forceReconnect peerDataMap=${peerDataMap
         .map(_._1)}")
     val finder = state.peerFinder
-    val addrBytes = PeerDAOHelper.getAddrBytes(peer)
-    val updateLastSeenF = PeerDAO().updateLastSeenTime(addrBytes)
+
+    val updateLastSeenF = PeerDAO().updateLastSeenTime(peer)
     val stateF = {
       require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
               s"$peer cannot be both a test and a persistent peer")

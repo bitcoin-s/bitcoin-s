@@ -24,7 +24,7 @@ class PeerDAOTest extends NodeDAOFixture {
 
     for {
       created <- peerDAO.create(peer)
-      read <- peerDAO.read(peer.address)
+      read <- peerDAO.read((peer.address, peer.port))
     } yield {
       assert(
         read.get.address == created.address &&
