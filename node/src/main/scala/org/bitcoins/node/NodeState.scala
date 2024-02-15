@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
+import org.bitcoins.node.NodeState.DoneSyncing
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
 
@@ -104,6 +105,16 @@ sealed trait NodeRunningState extends NodeState {
     randomPeer(excludePeers, services).flatMap { p =>
       getPeerMsgSender(p)
     }
+  }
+
+  def isConnected(peer: Peer): Boolean = {
+    peerDataMap.filter(_._1.peer == peer).nonEmpty || peerFinder.hasPeer(peer)
+  }
+
+  def isDisconnected(peer: Peer): Boolean = !isConnected(peer)
+
+  def toDoneSyncing: DoneSyncing = {
+    DoneSyncing(peerDataMap, waitingForDisconnection, peerFinder)
   }
 }
 
