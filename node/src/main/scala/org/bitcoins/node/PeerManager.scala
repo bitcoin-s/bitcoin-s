@@ -339,8 +339,14 @@ case class PeerManager(
             case s: SyncNodeState => switchSyncToRandomPeer(s, Some(peer))
             case d: DoneSyncing   =>
               //defensively try to sync with the new peer
-              val hs = d.toHeaderSync
-              syncHelper(hs).map(_ => hs)
+              val hsOpt = d.toHeaderSync
+              hsOpt match {
+                case Some(hs) => syncHelper(hs).map(_ => hs)
+                case None     =>
+                  //no peers available to sync with, so return DoneSyncing
+                  Future.successful(d)
+              }
+
             case x @ (_: DoneSyncing | _: NodeShuttingDown |
                 _: MisbehavingPeer | _: RemovePeers) =>
               Future.successful(x)
