@@ -347,7 +347,18 @@ case class PeerManager(
         } else {
           if (forceReconnect && !isShuttingDown) {
             finder.reconnect(peer).map(_ => state)
+          } else if (!isShuttingDown) {
+            logger.info(
+              s"No new peers to connect to, querying for new connections... state=${state} peers=$peers")
+            finder.queryForPeerConnections(Set(peer)) match {
+              case Some(_) => Future.successful(state)
+              case None =>
+                logger.debug(
+                  s"Could not query for more peer connections as previous job is still running")
+                Future.successful(state)
+            }
           } else {
+            //if shutting down, do nothing
             Future.successful(state)
           }
         }
@@ -611,15 +622,17 @@ case class PeerManager(
                         //disconnect the misbehaving peer
                         for {
                           _ <- disconnectPeer(m.badPeer)
-                        } yield newDmh.state
+                        } yield {
+                          runningState
+                        }
                       case removePeers: RemovePeers =>
                         for {
                           _ <- Future.traverse(removePeers.peers)(
                             disconnectPeer)
                         } yield newDmh.state
-                      case _: SyncNodeState | _: DoneSyncing |
-                          _: NodeShuttingDown =>
-                        Future.successful(newDmh.state)
+                      case x @ (_: SyncNodeState | _: DoneSyncing |
+                          _: NodeShuttingDown) =>
+                        Future.successful(x)
                     }
                   }
                 resultF.map { r =>
@@ -1363,7 +1376,7 @@ object PeerManager extends Logging {
       Future.successful(runningState)
     } else {
       val peerFinder = runningState.peerFinder
-      peerFinder.queryForPeerConnections()
+      peerFinder.queryForPeerConnections(excludePeers = Set.empty)
       Future.successful(runningState)
     }
   }
