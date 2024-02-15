@@ -222,7 +222,7 @@ case class PeerManager(
   private def managePeerAfterInitialization(
       state: NodeRunningState,
       peer: Peer): Future[NodeRunningState] = {
-    val curPeerDataOpt = state.peerFinder.popFromCache(peer)
+    val curPeerDataOpt = state.peerFinder.getPeerData(peer)
     require(curPeerDataOpt.isDefined,
             s"Could not find peer=$peer in PeerFinder!")
     val peerData = curPeerDataOpt.get
@@ -233,6 +233,8 @@ case class PeerManager(
     val availableFilterSlot = hasCf && notCfPeers.nonEmpty
     val hasConnectionSlot = connectedPeerCount < nodeAppConfig.maxConnectedPeers
     if (hasConnectionSlot || availableFilterSlot) {
+      //we want to promote this peer, so pop from cache
+      val _ = state.peerFinder.popFromCache(peer)
       val persistentPeerData = peerData match {
         case p: PersistentPeerData       => p
         case a: AttemptToConnectPeerData => a.toPersistentPeerData
