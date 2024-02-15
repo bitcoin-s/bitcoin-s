@@ -72,7 +72,7 @@ case class PeerManager(
       nodeState: SyncNodeState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     val syncPeer = nodeState.syncPeer
-    val peerMsgSender = getPeerMsgSender(syncPeer) match {
+    val peerMsgSender = nodeState.getPeerMsgSender(syncPeer) match {
       case Some(p) => p
       case None =>
         sys.error(s"Could not find peer=$syncPeer")
@@ -106,18 +106,6 @@ case class PeerManager(
         Future.unit
       }
     }
-  }
-
-  private def getPeerConnection(peer: Peer): Option[PeerConnection] = {
-    _peerDataMap.find(_._1 == peer).map(_._2.peerConnection) match {
-      case Some(peerConnection) => Some(peerConnection)
-      case None                 => None
-    }
-  }
-
-  private def getPeerMsgSender(peer: Peer): Option[PeerMessageSender] = {
-    val randomPeerOpt = getPeerConnection(peer)
-    randomPeerOpt.map(PeerMessageSender(_))
   }
 
   private def createInDb(
@@ -1032,7 +1020,7 @@ case class PeerManager(
             nodeState match {
               case fhs: FilterHeaderSync =>
                 val peerMsgSender =
-                  getPeerMsgSender(fhs.syncPeer).get //check this .get
+                  nodeState.getPeerMsgSender(fhs.syncPeer).get
                 PeerManager
                   .sendFirstGetCompactFilterHeadersCommand(
                     peerMessageSenderApi = peerMsgSender,
