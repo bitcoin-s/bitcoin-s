@@ -192,18 +192,18 @@ case class PeerManager(
     stopF
   }
 
-  def isConnected(peer: Peer): Future[Boolean] = {
+  override def isConnected(peer: Peer): Future[Boolean] = {
     peerDataMap.get(peer) match {
       case None    => Future.successful(false)
       case Some(p) => p.peerConnection.isConnected()
     }
   }
 
-  def isDisconnected(peer: Peer): Future[Boolean] = {
+  override def isDisconnected(peer: Peer): Future[Boolean] = {
     isConnected(peer).map(b => !b)
   }
 
-  def isInitialized(peer: Peer): Future[Boolean] = {
+  override def isInitialized(peer: Peer): Future[Boolean] = {
     Future.successful(peerDataMap.exists(_._1 == peer))
   }
 
@@ -340,11 +340,8 @@ case class PeerManager(
               s"$peer cannot be both a test and a persistent peer")
 
       if (finder.hasPeer(peer)) {
-        if (peers.isEmpty) {
-          finder.reconnect(peer).map(_ => state)
-        } else {
-          finder.removePeer(peer).map(_ => state)
-        }
+        finder.removePeer(peer)
+        Future.successful(state)
       } else if (peerDataMap.contains(peer)) {
         _peerDataMap.remove(peer)
         val isShuttingDown = state.isInstanceOf[NodeShuttingDown]
@@ -1088,7 +1085,7 @@ case class PeerManager(
       }
     }
   }
-  
+
   /** Attempts to start syncing from a new peer. Returns None if we have no new peers to sync with */
   private def syncFromNewPeer(
       state: NodeRunningState): Future[Option[NodeRunningState]] = {

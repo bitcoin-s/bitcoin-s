@@ -95,4 +95,11 @@ case class AttemptToConnectPeerData(
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,
     override val chainAppConfig: ChainAppConfig)
-    extends PeerData
+    extends PeerData {
+
+  def toPersistentPeerData: PersistentPeerData = {
+    val p = PersistentPeerData(peer, peerMessageSender)
+    p.setServiceIdentifier(serviceIdentifier = serviceIdentifier)
+    p
+  }
+}

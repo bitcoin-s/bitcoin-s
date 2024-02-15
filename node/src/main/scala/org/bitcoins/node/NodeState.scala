@@ -107,6 +107,12 @@ sealed trait NodeRunningState extends NodeState {
     }
   }
 
+  def isConnected(peer: Peer): Boolean = {
+    peerDataMap.filter(_._1.peer == peer).nonEmpty || peerFinder.hasPeer(peer)
+  }
+
+  def isDisconnected(peer: Peer): Boolean = !isConnected(peer)
+
   def toDoneSyncing: DoneSyncing = {
     DoneSyncing(peerDataMap, waitingForDisconnection, peerFinder)
   }
