@@ -423,7 +423,10 @@ class ChainHandler(
                       //we must be in a reorg scenario
                       getHeadersAtHeight(filter.height)
                     } else {
-                      Future.successful(headers)
+                      //remove the bestFilter's block header
+                      val filtered =
+                        headers.filter(_.hashBE != filter.blockHashBE)
+                      Future.successful(filtered)
                     }
                   }
                 case None => getHeadersAtHeight(0)
