@@ -271,7 +271,7 @@ class ChainHandler(
     val stopHeaderWithinBatchSizeF = if (isInBatchSize) {
       Future.successful(stopBlockHeader)
     } else {
-      //as an optimization only fetch teh last blockheader
+      //as an optimization only fetch the last blockheader
       //within candidateStartHeight + batchSize , we don't have a way to guarantee
       //this hash ultimately ends up connected to stopBlockHeaderDb though
       //we have to assume its buried under enough work a reorg is unlikely
@@ -286,7 +286,9 @@ class ChainHandler(
           header = stopHeaderWithinBatchSize,
           startHeight = candidateStartHeader.height
         )
-      } yield blockchainOpt
+      } yield {
+        blockchainOpt
+      }
     }
     for {
       stopHeaderWithinBatchSize <- stopHeaderWithinBatchSizeF
@@ -415,7 +417,15 @@ class ChainHandler(
             candidateHeaders <- {
               bestFilterOpt match {
                 case Some(filter) =>
-                  getHeadersAtHeight(filter.height)
+                  getHeadersAtHeight(filter.height + 1).flatMap { headers =>
+                    if (headers.isEmpty) {
+                      //if we have no headers at height + 1
+                      //we must be in a reorg scenario
+                      getHeadersAtHeight(filter.height)
+                    } else {
+                      Future.successful(headers)
+                    }
+                  }
                 case None => getHeadersAtHeight(0)
               }
             }
