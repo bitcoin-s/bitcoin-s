@@ -1192,6 +1192,9 @@ object PeerManager extends Logging {
                                            batchSize =
                                              chainConfig.filterHeaderBatchSize)
       }
+      //needed to work around this bug in bitcoin core:
+      //https://github.com/bitcoin/bitcoin/issues/27085
+      _ <- AsyncUtil.nonBlockingSleep(1.second)
       res <- hashHeightOpt match {
         case Some(filterSyncMarker) =>
           peerMessageSenderApi

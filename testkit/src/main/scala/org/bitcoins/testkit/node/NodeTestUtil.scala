@@ -195,7 +195,9 @@ abstract class NodeTestUtil extends P2PLogger {
         for {
           bestBitcoindHash <- bestBitcoindHashF
           bestBitcoinSHash <- bestBitcoinSHashF
-        } yield bestBitcoinSHash == bestBitcoindHash
+        } yield {
+          bestBitcoinSHash == bestBitcoindHash
+        }
       },
       interval = 1.second,
       maxTries = syncTries

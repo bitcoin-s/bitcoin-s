@@ -416,14 +416,12 @@ class ChainHandler(
               bestFilterOpt match {
                 case Some(filter) =>
                   getHeadersAtHeight(filter.height)
-                    .flatMap(headers =>
-                      Future
-                        .traverse(headers)(h => getImmediateChildren(h.hashBE))
-                        .map(_.flatten))
                 case None => getHeadersAtHeight(0)
               }
             }
-          } yield candidateHeaders
+          } yield {
+            candidateHeaders
+          }
       }
 
     for {
