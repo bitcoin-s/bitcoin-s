@@ -202,7 +202,8 @@ object NodeState {
     override val isSyncing: Boolean = false
 
     /** Selects a random peer and returns us a header sync state
-      * returns None if we don't have a peer ot sync with */
+      * returns None if we don't have a peer ot sync with
+      */
     def toHeaderSync: Option[HeaderSync] = {
       val syncPeerOpt =
         randomPeer(Set.empty, ServiceIdentifier.NODE_COMPACT_FILTERS)
