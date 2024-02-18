@@ -540,7 +540,11 @@ case class PeerManager(
                 val connectF = runningState.peerFinder.connect(c.peer)
                 connectF.map(_ => runningState)
               case Some(curPeerData) =>
-                _peerDataMap.put(peer, curPeerData)
+                val persistent = curPeerData match {
+                  case a: AttemptToConnectPeerData => a.toPersistentPeerData
+                  case p: PersistentPeerData       => p
+                }
+                _peerDataMap.put(peer, persistent)
                 val hasCf =
                   if (curPeerData.serviceIdentifier.nodeCompactFilters)
                     "with filters"
@@ -548,7 +552,7 @@ case class PeerManager(
 
                 val peerWithSvcs = curPeerData.peerWithServicesOpt.get
                 val newPdm =
-                  runningState.peerDataMap.+((peerWithSvcs, curPeerData))
+                  runningState.peerDataMap.+((peerWithSvcs, persistent))
                 val replacePeers = runningState.replacePeers(newPdm)
                 logger.info(
                   s"Connected to peer $peer $hasCf. Connected peer count ${replacePeers.peerDataMap.size}")

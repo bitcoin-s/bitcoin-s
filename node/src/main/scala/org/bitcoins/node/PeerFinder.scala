@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.node.{Peer, PeerManagerApi}
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
@@ -25,6 +25,7 @@ import scala.io.Source
 import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
+    peerManagerApi: PeerManagerApi,
     paramPeers: Vector[Peer],
     queue: SourceQueue[NodeStreamMessage])(implicit
     ec: ExecutionContext,
@@ -78,12 +79,15 @@ case class PeerFinder(
       !ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters))
 
     def toPeers(peerDbs: Vector[PeerDb]): Vector[Peer] = {
-      val inetSockets = peerDbs.map(a => {
+      //try to connect to lastSeen peers first
+      val lastSeen = peerDbs.sortBy(_.lastSeen).reverse
+      val inetSockets = lastSeen.map(a => {
         NetworkUtil.parseInetSocketAddress(a.address, a.port)
       })
+
       val peers =
         inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-      Random.shuffle(peers)
+      peers
     }
 
     partitionF.map(p => (toPeers(p._1), toPeers(p._2)))
@@ -105,7 +109,7 @@ case class PeerFinder(
 
   private val _peersToTry: PeerStack = PeerStack()
 
-  private val maxPeerSearchCount: Int = 2
+  private val maxPeerSearchCount: Int = 8
 
   private val initialDelay: FiniteDuration = nodeAppConfig.tryPeersStartDelay
 
@@ -118,34 +122,8 @@ case class PeerFinder(
       initialDelay = initialDelay,
       delay = nodeAppConfig.tryNextPeersInterval) { () =>
       {
-        logger.info(s"Running peerConnectionScheduler")
-        if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
-          logger.info(s"Querying p2p network for peers...")
-          logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
-          if (_peersToTry.size < maxPeerSearchCount)
-            _peersToTry.pushAll(getPeersFromDnsSeeds)
-
-          //in case of less _peersToTry.size than maxPeerSearchCount
-          val max = Math.min(maxPeerSearchCount, _peersToTry.size)
-          val peers = (
-            0.until(max)
-              .map(_ => _peersToTry.pop()))
-            .distinct
-
-          logger.debug(s"Trying next set of peers $peers")
-          val peersF = Future.traverse(peers)(tryPeer)
-          peersF.onComplete {
-            case Success(_) =>
-              isConnectionSchedulerRunning.set(false)
-            case Failure(err) =>
-              isConnectionSchedulerRunning.set(false)
-              logger.debug(
-                s"Failed to connect to peers=$peers errMsg=${err.getMessage}")
-          }
-        } else {
-          logger.warn(
-            s"Previous connection scheduler is still running, skipping this run, it will run again in ${nodeAppConfig.tryNextPeersInterval}")
-        }
+        queryForPeerConnections(excludePeers = Set.empty)
+        ()
       }
     }
   }
@@ -153,23 +131,24 @@ case class PeerFinder(
   override def start(): Future[PeerFinder] = {
     if (!isStarted.get()) {
       logger.info(
-        s"Starting PeerFinder initialDelay=${initialDelay} paramPeers=$paramPeers")
+        s"Starting PeerFinder initialDelay=${initialDelay.toSeconds} seconds tryPeersInterval=${nodeAppConfig.tryNextPeersInterval.toMinutes} minutes paramPeers=$paramPeers")
       val start = System.currentTimeMillis()
       isStarted.set(true)
       val peersToTry = (paramPeers ++ getPeersFromConfig).distinct
+      val pds = peersToTry.map(p => buildPeerData(p, isPersistent = true))
       //higher priority for param peers
-      _peersToTry.pushAll(peersToTry, priority = 2)
+      _peersToTry.pushAll(pds, priority = 2)
 
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
         val startedF = for {
           (dbNonCf, dbCf) <- getPeersFromDb
         } yield {
-          _peersToTry.pushAll(getPeersFromDnsSeeds)
-          _peersToTry.pushAll(getPeersFromResources)
-          _peersToTry.pushAll(dbNonCf)
-          _peersToTry.pushAll(dbCf, priority = 1)
+          val peers = getPeersFromDnsSeeds ++ getPeersFromResources ++ dbNonCf
+          val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+          _peersToTry.pushAll(pds)
+          val dbPds = dbCf.map(p => buildPeerData(p, isPersistent = false))
+          _peersToTry.pushAll(dbPds, priority = 1)
           peerConnectionCancellableOpt = Some(peerConnectionScheduler())
-
           this
         }
 
@@ -194,7 +173,7 @@ case class PeerFinder(
   def connect(peer: Peer): Future[Unit] = {
     logger.info(s"Attempting to connect peer=$peer")
     if (isStarted.get()) {
-      tryPeer(peer)
+      tryPeer(peer, isPersistent = true)
     } else {
       logger.warn(
         s"Ignoring connect attempt to peer=$peer as PeerFinder is not started")
@@ -226,18 +205,23 @@ case class PeerFinder(
       val stopF = for {
         _ <- Future.traverse(_peerData.map(_._1))(removePeer(_))
         _ <- AsyncUtil
-          .retryUntilSatisfied(_peerData.isEmpty,
-                               interval = 1.seconds,
-                               maxTries = 30)
+          .retryUntilSatisfied(
+            {
+              //there seems to be some sort of bug in mutable.Map.isEmpty
+              //convert it to an immutable Map with .toMap and then check isEmpty
+              _peerData.toMap.isEmpty
+            },
+            interval = 1.seconds,
+            maxTries = 30
+          )
       } yield {
         logger.info(s"Done stopping PeerFinder")
         this
       }
 
       stopF.failed.foreach { e =>
-        logger.error(
-          s"Failed to stop peer finder. Peers: ${_peerData.map(_._1)}",
-          e)
+        logger.error(s"Failed to stop peer finder. Peers: ${_peerData.toMap}",
+                     e)
       }
       stopF
     } else {
@@ -248,11 +232,15 @@ case class PeerFinder(
   }
 
   /** creates and initialises a new test peer */
-  private def tryPeer(peer: Peer): Future[Unit] = {
+  private def tryPeer(peer: Peer, isPersistent: Boolean): Future[Unit] = {
     logger.debug(s"tryPeer=$peer")
     val peerConnection = PeerConnection(peer, queue)
     val peerMessageSender = PeerMessageSender(peerConnection)
-    _peerData.put(peer, PersistentPeerData(peer, peerMessageSender))
+    val pd = isPersistent match {
+      case true  => PersistentPeerData(peer, peerMessageSender)
+      case false => AttemptToConnectPeerData(peer, peerMessageSender)
+    }
+    _peerData.put(peer, pd)
     peerConnection.connect()
   }
 
@@ -277,16 +265,8 @@ case class PeerFinder(
     _peerData(peer).setServiceIdentifier(serviceIdentifier)
   }
 
-  def popFromCache(peer: Peer): Option[PersistentPeerData] = {
-    _peerData.get(peer) match {
-      case Some(persistentPeerData: PersistentPeerData) =>
-        _peerData.remove(peer)
-        Some(persistentPeerData)
-      case Some(_: AttemptToConnectPeerData) => None
-      case None =>
-        logger.debug(s"removeFromCache: $peer not found in peerData")
-        None
-    }
+  def popFromCache(peer: Peer): Option[PeerData] = {
+    _peerData.remove(peer)
   }
 
   def hasPeer(peer: Peer): Boolean = {
@@ -297,7 +277,7 @@ case class PeerFinder(
     _peerData.get(peer)
   }
 
-  def addToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
+  def addToTry(peers: Vector[PeerData], priority: Int = 0): Unit = {
     _peersToTry.pushAll(peers, priority)
   }
 
@@ -309,14 +289,82 @@ case class PeerFinder(
     }
   }
 
+  def buildPeerData(p: Peer, isPersistent: Boolean): PeerData = {
+    val peerConnection = PeerConnection(p, queue)
+    val peerMessageSender = PeerMessageSender(peerConnection)
+    if (isPersistent) {
+      PersistentPeerData(peer = p, peerMessageSender = peerMessageSender)
+    } else {
+      AttemptToConnectPeerData(p, peerMessageSender)
+    }
+  }
+
+  /** Attempts to connect to various peers on the p2p network. Try to get more peers for our node. */
+  def queryForPeerConnections(excludePeers: Set[Peer]): Option[Unit] = {
+    if (
+      isConnectionSchedulerRunning.compareAndSet(false, true) && isStarted.get()
+    ) {
+      logger.info(
+        s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
+      if (_peersToTry.size < maxPeerSearchCount) {
+        val paramPds = paramPeers.map { p =>
+          buildPeerData(p, isPersistent = true)
+        }
+        val pds = getPeersFromDnsSeeds.map { p =>
+          buildPeerData(p, isPersistent = false)
+        }
+        _peersToTry.pushAll(paramPds ++ pds)
+      }
+
+      //in case of less _peersToTry.size than maxPeerSearchCount
+      val max = Math.min(maxPeerSearchCount, _peersToTry.size)
+      val peers = (
+        0.until(max)
+          .map(_ => _peersToTry.pop()))
+        .distinct
+        .filterNot(p => excludePeers.exists(_ == p.peer))
+
+      logger.debug(s"Trying next set of peers $peers")
+      val peersF = Future.traverse(peers) { p =>
+        //check if we already have an active connection
+        val isDisconnectedF = peerManagerApi.isDisconnected(p.peer)
+        for {
+          isDisconnected <- isDisconnectedF
+          _ <- {
+            if (isDisconnected) {
+              tryPeer(peer = p.peer,
+                      isPersistent = p.isInstanceOf[PersistentPeerData])
+            } else {
+              //do nothing, we are already connected
+              Future.unit
+            }
+          }
+        } yield ()
+      }
+      peersF.onComplete {
+        case Success(_) =>
+          isConnectionSchedulerRunning.set(false)
+        case Failure(err) =>
+          isConnectionSchedulerRunning.set(false)
+          logger.debug(
+            s"Failed to connect to peers=$peers errMsg=${err.getMessage}")
+      }
+      Some(())
+    } else {
+      logger.warn(
+        s"Previous connection scheduler is still running or PeerFinder not started, skipping this run, it will run again in ${nodeAppConfig.tryNextPeersInterval}")
+      None
+    }
+  }
+
   override def toString: String = {
     s"PeerFinder(paramPeers=$paramPeers)"
   }
 }
 
-case class PeerStack() {
+case class PeerOrdering(peer: PeerData, priority: Int, id: Int)
 
-  case class PeerOrdering(peer: Peer, priority: Int, id: Int)
+case class PeerStack() {
 
   implicit def ordering: Ordering[PeerOrdering] =
     (x: PeerOrdering, y: PeerOrdering) => {
@@ -331,7 +379,7 @@ case class PeerStack() {
   private val set: mutable.SortedSet[PeerOrdering] =
     mutable.SortedSet[PeerOrdering]().empty
 
-  def push(peer: Peer, priority: Int = 0): Unit = {
+  def push(peer: PeerData, priority: Int = 0): Unit = {
     if (set.size == maxSize) {
       if (set.head.priority < priority) {
         set.remove(set.head)
@@ -345,7 +393,7 @@ case class PeerStack() {
     ()
   }
 
-  def pop(): Peer = {
+  def pop(): PeerData = {
     val res = set.last.peer
     set.remove(set.last)
     res
@@ -355,7 +403,7 @@ case class PeerStack() {
 
   def clear(): Unit = set.clear()
 
-  def pushAll(peers: Vector[Peer], priority: Int = 0): Unit = {
+  def pushAll(peers: Vector[PeerData], priority: Int = 0): Unit = {
     peers.foreach(push(_, priority))
   }
 }
