@@ -299,16 +299,6 @@ case class PeerFinder(
     }
   }
 
-  def buildPeerData(p: Peer, isPersistent: Boolean): PeerData = {
-    val peerConnection = PeerConnection(p, queue)
-    val peerMessageSender = PeerMessageSender(peerConnection)
-    if (isPersistent) {
-      PersistentPeerData(peer = p, peerMessageSender = peerMessageSender)
-    } else {
-      AttemptToConnectPeerData(p, peerMessageSender)
-    }
-  }
-
   /** Attempts to connect to various peers on the p2p network. Try to get more peers for our node. */
   def queryForPeerConnections(excludePeers: Set[Peer]): Option[Unit] = {
     if (
