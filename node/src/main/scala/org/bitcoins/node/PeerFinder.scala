@@ -205,18 +205,23 @@ case class PeerFinder(
       val stopF = for {
         _ <- Future.traverse(_peerData.map(_._1))(removePeer(_))
         _ <- AsyncUtil
-          .retryUntilSatisfied(_peerData.isEmpty,
-                               interval = 1.seconds,
-                               maxTries = 30)
+          .retryUntilSatisfied(
+            {
+              //there seems to be some sort of bug in mutable.Map.isEmpty
+              //convert it to an immutable Map with .toMap and then check isEmpty
+              _peerData.toMap.isEmpty
+            },
+            interval = 1.seconds,
+            maxTries = 30
+          )
       } yield {
         logger.info(s"Done stopping PeerFinder")
         this
       }
 
       stopF.failed.foreach { e =>
-        logger.error(
-          s"Failed to stop peer finder. Peers: ${_peerData.map(_._1)}",
-          e)
+        logger.error(s"Failed to stop peer finder. Peers: ${_peerData.toMap}",
+                     e)
       }
       stopF
     } else {
@@ -296,7 +301,9 @@ case class PeerFinder(
 
   /** Attempts to connect to various peers on the p2p network. Try to get more peers for our node. */
   def queryForPeerConnections(excludePeers: Set[Peer]): Option[Unit] = {
-    if (isConnectionSchedulerRunning.compareAndSet(false, true)) {
+    if (
+      isConnectionSchedulerRunning.compareAndSet(false, true) && isStarted.get()
+    ) {
       logger.info(
         s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
       if (_peersToTry.size < maxPeerSearchCount) {
@@ -345,7 +352,7 @@ case class PeerFinder(
       Some(())
     } else {
       logger.warn(
-        s"Previous connection scheduler is still running, skipping this run, it will run again in ${nodeAppConfig.tryNextPeersInterval}")
+        s"Previous connection scheduler is still running or PeerFinder not started, skipping this run, it will run again in ${nodeAppConfig.tryNextPeersInterval}")
       None
     }
   }
