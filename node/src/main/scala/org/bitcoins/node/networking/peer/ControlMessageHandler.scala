@@ -76,7 +76,8 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           val peer = Peer.fromSocket(socket = inetAddress,
                                      socks5ProxyParams =
                                        nodeAppConfig.socks5ProxyParams)
-          peerFinder.addToTry(Vector(peer), 0)
+          val pd = peerFinder.buildPeerData(peer, isPersistent = false)
+          peerFinder.addToTry(Vector(pd), 0)
         }
       case addr: AddrV2Message =>
         val bytes = addr.bytes
@@ -90,10 +91,13 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
         val priority = if (services.nodeCompactFilters) 1 else 0
         addr match {
           case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
-            peerFinder.addToTry(Vector(peer), priority = priority)
+            val pd = peerFinder.buildPeerData(peer, isPersistent = false)
+            peerFinder.addToTry(Vector(pd), priority = priority)
           case TorV3AddrV2Message(_, _, _, _) =>
-            if (nodeAppConfig.torConf.enabled)
-              peerFinder.addToTry(Vector(peer), priority)
+            if (nodeAppConfig.torConf.enabled) {
+              val pd = peerFinder.buildPeerData(peer, isPersistent = false)
+              peerFinder.addToTry(Vector(pd), priority)
+            }
           case n => logger.info(s"Unsupported network. Skipping. network=$n")
         }
     }
