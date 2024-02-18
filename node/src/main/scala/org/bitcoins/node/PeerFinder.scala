@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.node.{Peer, PeerManagerApi}
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
@@ -25,6 +25,7 @@ import scala.io.Source
 import scala.util.{Failure, Random, Success}
 
 case class PeerFinder(
+    peerManagerApi: PeerManagerApi,
     paramPeers: Vector[Peer],
     queue: SourceQueue[NodeStreamMessage])(implicit
     ec: ExecutionContext,
@@ -318,8 +319,20 @@ case class PeerFinder(
 
       logger.debug(s"Trying next set of peers $peers")
       val peersF = Future.traverse(peers) { p =>
-        tryPeer(peer = p.peer,
-                isPersistent = p.isInstanceOf[PersistentPeerData])
+        //check if we already have an active connection
+        val isDisconnectedF = peerManagerApi.isDisconnected(p.peer)
+        for {
+          isDisconnected <- isDisconnectedF
+          _ <- {
+            if (isDisconnected) {
+              tryPeer(peer = p.peer,
+                      isPersistent = p.isInstanceOf[PersistentPeerData])
+            } else {
+              //do nothing, we are already connected
+              Future.unit
+            }
+          }
+        } yield ()
       }
       peersF.onComplete {
         case Success(_) =>
