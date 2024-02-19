@@ -320,7 +320,7 @@ object LnTag {
         RoutingInfo.fromU5s(payload)
 
       case LnTagPrefix.Features =>
-        LnTag.FeaturesTag(bytes)
+        LnTag.FeaturesTag(payload)
 
       case prefix: LnTagPrefix.Unknown =>
         LnTag.UnknownTag(prefix, payload)
@@ -329,12 +329,24 @@ object LnTag {
     tag
   }
 
-  case class FeaturesTag(features: ByteVector) extends LnTag {
+  case class FeaturesTag(encoded: Vector[UInt5]) extends LnTag {
     override def prefix: LnTagPrefix = LnTagPrefix.Features
 
-    /** The payload for the tag without any meta information encoded with it */
-    override def encoded: Vector[UInt5] = {
-      Bech32.from8bitTo5bit(features)
+    def features: ByteVector = {
+      val u8s = Bech32.from5bitTo8bit(encoded)
+      UInt8.toBytes(u8s)
+    }
+  }
+
+  object FeaturesTag {
+
+    def apply(features: ByteVector): FeaturesTag = {
+      fromBytes(features)
+    }
+
+    def fromBytes(bytes: ByteVector): FeaturesTag = {
+      val u5s = Bech32.from8bitTo5bit(bytes)
+      FeaturesTag(u5s)
     }
   }
 
