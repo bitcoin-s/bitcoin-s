@@ -577,4 +577,12 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     assert(invoice.nodeId == NodeId(priv.publicKey))
   }
+
+  it must "parse an invoice with minimally encoded features" in {
+    val str =
+      "lnbc2u1pjaxtm0dqqpp5g7xpa2xz7jkfcaczxkr0c7k0hxeh8y30f6ec0rvj0qe6xzmcuyxssp5nqd0ac3ctaruwkykjzdqm9jks20wp93e5m0xt35ae7zp7jf4hrsq9qrsgqcqpjnp4qddsxf0zurpkk6uxe7fmlllsypajk0cwuqcmsv6g958am7fhsx24zxqrrssrzjqte649ct9zh8ecjylt7w3a5d9mvpdchtgsgecu22yycumagdx3uukqqqqqqqqqqqqyqqqqqqqqqqqqqqrc5sgm8xfdg57alvd4s83rgqrzvm95c76az5d5c7cr6jldxex4p0qhdesrwrhvtqfkh9mdv6vd75qam8v5dcsj5wx7tfx7576m6wx8f2sq64klgu"
+
+    val invoiceT = LnInvoice.fromStringT(str)
+    assert(invoiceT.isSuccess)
+  }
 }
