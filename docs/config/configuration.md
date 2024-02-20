@@ -151,11 +151,7 @@ bitcoin-s {
         # a list of peer addresses in form "hostname:portnumber"
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
-        # by default we provide a testnet peer to connect to
-        peers = ["neutrino.testnet3.suredbits.com:18333"] 
-        
-        # use the defauls suredbits neutrino node as a peer
-        use-default-peers = true
+        peers = [""]
         
         # try to connect to peers from dns seeds, database, addr messages etc
         enable-peer-discovery = true
@@ -185,7 +181,7 @@ bitcoin-s {
         
         # if a node doesn't send a message in this time frame 
         # we disconnect them and try to connect to a new peer
-        inactivity-timeout = 20 minutes
+        inactivity-timeout = 5 minutes
     }
 
     proxy {

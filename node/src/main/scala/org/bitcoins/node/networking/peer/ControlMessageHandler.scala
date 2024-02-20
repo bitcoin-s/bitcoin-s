@@ -3,10 +3,10 @@ package org.bitcoins.node.networking.peer
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
-import org.bitcoins.node.NodeStreamMessage.Initialized
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.networking.peer.ControlMessageHandler.ControlMessageHandlerState
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{NodeStreamMessage, P2PLogger, PeerFinder}
+import org.bitcoins.node.{P2PLogger, PeerFinder}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -18,7 +18,8 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
 
   def handleControlPayload(
       payload: ControlPayload,
-      peerMsgSenderApi: PeerMessageSenderApi): Future[Option[Initialized]] = {
+      peerMsgSenderApi: PeerMessageSenderApi): Future[
+    Option[ControlMessageHandlerState]] = {
     val peer = peerMsgSenderApi.peer
     payload match {
 
@@ -30,7 +31,7 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           .map(_ => None)
 
       case VerAckMessage =>
-        val i = NodeStreamMessage.Initialized(peer)
+        val i = ControlMessageHandler.Initialized(peer)
         Future.successful(Some(i))
       case ping: PingMessage =>
         peerMsgSenderApi
@@ -44,7 +45,7 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           .map(_ => None)
       case msg: GossipAddrMessage =>
         handleGossipAddrMessage(msg)
-        Future.successful(None)
+        Future.successful(Some(ControlMessageHandler.ReceivedAddrMessage))
       case SendAddrV2Message =>
         peerMsgSenderApi
           .sendSendAddrV2Message()
@@ -102,4 +103,11 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
         }
     }
   }
+}
+
+object ControlMessageHandler {
+  sealed trait ControlMessageHandlerState
+  case class Initialized(peer: Peer) extends ControlMessageHandlerState
+
+  case object ReceivedAddrMessage extends ControlMessageHandlerState
 }

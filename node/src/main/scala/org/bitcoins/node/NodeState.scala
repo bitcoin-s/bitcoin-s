@@ -201,16 +201,13 @@ object NodeState {
       extends NodeRunningState {
     override val isSyncing: Boolean = false
 
-    /** selects a random peer and returns us a header sync state */
-    def toHeaderSync: HeaderSync = {
+    /** Selects a random peer and returns us a header sync state
+      * returns None if we don't have a peer ot sync with
+      */
+    def toHeaderSync: Option[HeaderSync] = {
       val syncPeerOpt =
         randomPeer(Set.empty, ServiceIdentifier.NODE_COMPACT_FILTERS)
-      syncPeerOpt match {
-        case Some(p) => toHeaderSync(p)
-        case None =>
-          sys.error(
-            s"Could not find a peer to transition from DoneSyncing -> HeaderSync")
-      }
+      syncPeerOpt.map(toHeaderSync)
     }
 
     def toHeaderSync(syncPeer: Peer): HeaderSync = {

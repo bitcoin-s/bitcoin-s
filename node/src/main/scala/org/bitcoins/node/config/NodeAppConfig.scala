@@ -6,7 +6,6 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.api.tor.Socks5ProxyParams
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
@@ -96,28 +95,15 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   lazy val nodeType: NodeType =
     NodeType.fromString(config.getString("bitcoin-s.node.mode"))
 
-  /** List of peers
-    */
+  /** List of peers hardcoded in our configuration files */
   lazy val peers: Vector[Peer] = {
     val list = config.getStringList("bitcoin-s.node.peers")
     val strs = 0
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     val result = strs.map(_.replace("localhost", "127.0.0.1"))
-    val strPeers = if (result.isEmpty && useDefaultPeers) {
-      logger.info(
-        s"No peers found in configuration, resorting to default peers")
-      network match {
-        case MainNet  => Vector("neutrino.suredbits.com:8333")
-        case TestNet3 => Vector("neutrino.testnet3.suredbits.com:18333")
-        case n @ (RegTest | SigNet) =>
-          sys.error(s"Cannot configure any peers by default on $n")
-      }
-    } else {
-      result
-    }
 
-    BitcoinSNodeUtil.stringsToPeers(strPeers)(this)
+    BitcoinSNodeUtil.stringsToPeers(result)(this)
   }
 
   lazy val torConf: TorAppConfig =
@@ -153,12 +139,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.peer-discovery-timeout"))
       config.getDuration("bitcoin-s.node.peer-discovery-timeout")
     else Duration.ofMinutes(10)
-  }
-
-  lazy val useDefaultPeers: Boolean = {
-    if (config.hasPath("bitcoin-s.node.use-default-peers"))
-      config.getBoolean("bitcoin-s.node.use-default-peers")
-    else true
   }
 
   /** timeout for tcp connection in P2PClient */
@@ -213,7 +193,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.inactivity-timeout")) {
       val duration = config.getDuration("bitcoin-s.node.inactivity-timeout")
       TimeUtil.durationToFiniteDuration(duration)
-    } else 20.minute
+    } else 5.minute
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
