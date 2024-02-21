@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.util
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration

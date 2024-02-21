@@ -1,12 +1,12 @@
 package org.bitcoins.lnurl
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.client.RequestBuilding.Get
-import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{HttpRequest, MediaTypes}
-import akka.util.ByteString
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.client.RequestBuilding.Get
+import org.apache.pekko.http.scaladsl.model.{HttpRequest, MediaTypes}
+import org.apache.pekko.http.scaladsl.model.headers.Accept
+import org.apache.pekko.util.ByteString
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.ln.LnInvoice

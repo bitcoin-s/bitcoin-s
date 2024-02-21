@@ -1,8 +1,8 @@
 package org.bitcoins.server
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.server.Directives.complete
+import org.apache.pekko.http.scaladsl.server.Route
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.node.Node
 import org.bitcoins.rpc.client.common.BitcoindRpcClient

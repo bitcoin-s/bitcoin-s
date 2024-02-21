@@ -1,14 +1,20 @@
 package org.bitcoins.rpc.client.common
 
-import akka.actor.ActorSystem
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.StreamTcpException
 import com.fasterxml.jackson.core.JsonParseException
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.javadsl.model.headers.HttpCredentials
+import org.apache.pekko.http.scaladsl.{Http, HttpExt}
+import org.apache.pekko.http.scaladsl.model.{
+  ContentTypes,
+  HttpEntity,
+  HttpMethods,
+  HttpRequest,
+  HttpResponse
+}
+import org.apache.pekko.http.scaladsl.settings.ConnectionPoolSettings
+import org.apache.pekko.http.scaladsl.unmarshalling.Unmarshal
+import org.apache.pekko.stream.StreamTcpException
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._

@@ -1,8 +1,8 @@
 package org.bitcoins.server.util
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.{
   ChainCallbacks,

@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.node
 
-import akka.actor.ActorRef
-import akka.testkit.{TestActorRef, TestProbe}
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Socks5ProxyParams

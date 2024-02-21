@@ -1,8 +1,15 @@
 package org.bitcoins.dlc.node
 
-import akka.actor._
-import akka.event.LoggingReceive
-import akka.io.{IO, Tcp}
+import org.apache.pekko.actor.{
+  Actor,
+  ActorLogging,
+  ActorRef,
+  ActorSystem,
+  Props,
+  Terminated
+}
+import org.apache.pekko.event.LoggingReceive
+import org.apache.pekko.io.{IO, Tcp}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Socks5ProxyParams

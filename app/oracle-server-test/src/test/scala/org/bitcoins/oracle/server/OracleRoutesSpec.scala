@@ -1,7 +1,7 @@
 package org.bitcoins.oracle.server
 
-import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.apache.pekko.http.scaladsl.model.ContentTypes._
+import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config._

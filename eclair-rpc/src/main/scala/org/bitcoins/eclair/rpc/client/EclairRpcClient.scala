@@ -1,14 +1,27 @@
 package org.bitcoins.eclair.rpc.client
 
-import akka.Done
-import akka.actor.ActorSystem
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.util.ByteString
+import org.apache.pekko.Done
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.javadsl.model.headers.HttpCredentials
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.headers.{
+  Authorization,
+  BasicHttpCredentials
+}
+import org.apache.pekko.http.scaladsl.model.ws.{
+  Message,
+  TextMessage,
+  WebSocketRequest
+}
+import org.apache.pekko.http.scaladsl.model.{
+  FormData,
+  HttpMethods,
+  HttpRequest,
+  HttpResponse,
+  StatusCodes
+}
+import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonReaders._

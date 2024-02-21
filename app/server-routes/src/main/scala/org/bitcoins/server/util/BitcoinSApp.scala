@@ -1,7 +1,7 @@
 package org.bitcoins.server.util
 
-import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 
 trait BitcoinSApp {
   def actorSystemName: String

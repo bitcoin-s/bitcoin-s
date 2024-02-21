@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.Cancellable
+import org.apache.pekko.actor.Cancellable
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.models.{CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.api.node.Peer

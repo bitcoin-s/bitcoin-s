@@ -1,8 +1,11 @@
 package org.bitcoins.server
 
-import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.http.scaladsl.model.ContentTypes._
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.testkit.{
+  RouteTestTimeout,
+  ScalatestRouteTest
+}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.wallet.db._

@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.clightning
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient
 import com.bitcoins.clightning.rpc.config.CLightningInstanceLocal
 import grizzled.slf4j.Logging

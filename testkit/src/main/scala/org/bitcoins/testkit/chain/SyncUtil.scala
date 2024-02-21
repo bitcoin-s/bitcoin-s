@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.chain
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.{

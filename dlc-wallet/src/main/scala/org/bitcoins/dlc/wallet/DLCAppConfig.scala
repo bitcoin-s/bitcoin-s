@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi

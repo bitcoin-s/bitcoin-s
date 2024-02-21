@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.node
 
-import akka.actor.{ActorRef, ActorSystem}
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.api.node.Peer

@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.internal
 
-import akka.NotUsed
-import akka.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,

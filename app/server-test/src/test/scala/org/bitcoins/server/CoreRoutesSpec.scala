@@ -1,7 +1,7 @@
 package org.bitcoins.server
 
-import akka.http.scaladsl.model.ContentTypes
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.apache.pekko.http.scaladsl.model.ContentTypes
+import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkitcore.dlc.DLCTestUtil

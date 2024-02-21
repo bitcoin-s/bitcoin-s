@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.client.v24
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetTxSpendingPrevOutResult,
   SimulateRawTransactionResult

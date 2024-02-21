@@ -3,7 +3,7 @@ id: node-api title: Node API
 ---
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.node._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.blockchain.Block

@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import akka.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.hd.HDAccount

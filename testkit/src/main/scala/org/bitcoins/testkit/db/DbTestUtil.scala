@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.db
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db._
 import org.bitcoins.db.models.MasterXPubDAO

@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.wallet
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.AppConfig

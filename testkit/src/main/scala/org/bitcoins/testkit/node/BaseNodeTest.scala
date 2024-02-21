@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.node
 
-import akka.actor.{ActorSystem, Cancellable}
+import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,

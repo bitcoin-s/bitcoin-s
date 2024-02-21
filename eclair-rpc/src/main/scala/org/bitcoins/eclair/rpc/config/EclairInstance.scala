@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc.config
 
-import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}

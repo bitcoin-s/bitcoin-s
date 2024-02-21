@@ -1,8 +1,11 @@
 package org.bitcoins.oracle.server
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.server.Directives.{complete, reject}
+import org.apache.pekko.http.scaladsl.server.{
+  StandardRoute,
+  ValidationRejection
+}
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number._

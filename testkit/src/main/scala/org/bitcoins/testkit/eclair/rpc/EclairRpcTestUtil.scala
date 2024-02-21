@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.eclair.rpc
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.eclair.{

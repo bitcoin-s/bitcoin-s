@@ -1,8 +1,8 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{Sink, SourceQueue}
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.{ActorSystem, Cancellable}
+import org.apache.pekko.stream.scaladsl.{Sink, SourceQueue}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig

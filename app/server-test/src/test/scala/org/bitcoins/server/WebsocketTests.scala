@@ -1,15 +1,18 @@
 package org.bitcoins.server
 
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.ws.{
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.headers.{
+  Authorization,
+  BasicHttpCredentials
+}
+import org.apache.pekko.http.scaladsl.model.ws.{
   Message,
   TextMessage,
   WebSocketRequest,
   WebSocketUpgradeResponse
 }
-import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import org.apache.pekko.http.scaladsl.model.{HttpHeader, StatusCodes}
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.ConsoleCli.exec
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{

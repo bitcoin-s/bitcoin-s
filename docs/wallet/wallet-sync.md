@@ -64,7 +64,7 @@ Given these for things, we can use [`WalletSync.syncFullBlocks`](https://github.
 Here is a code example
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 
 import scala.concurrent._
 

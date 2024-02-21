@@ -1,7 +1,7 @@
 package org.bitcoins.oracle.server
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.Source
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig

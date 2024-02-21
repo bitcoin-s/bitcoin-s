@@ -1,6 +1,6 @@
 package com.bitcoins.clightning.rpc.config
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased

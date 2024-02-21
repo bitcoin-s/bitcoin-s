@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.util
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil

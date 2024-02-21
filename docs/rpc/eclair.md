@@ -34,7 +34,7 @@ We will default to using the `binary` field first when trying to start the jar, 
 Here is an example of how to start eclair:
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import java.nio.file.Paths

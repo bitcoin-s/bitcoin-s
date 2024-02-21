@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.util
 
-import akka.testkit.{ImplicitSender, TestKitBase}
+import org.apache.pekko.testkit.{ImplicitSender, TestKitBase}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
 import org.scalatest.matchers.must.Matchers

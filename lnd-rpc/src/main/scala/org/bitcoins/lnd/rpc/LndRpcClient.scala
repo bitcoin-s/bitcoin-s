@@ -1,9 +1,8 @@
 package org.bitcoins.lnd.rpc
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.grpc.{GrpcClientSettings, SSLContextUtils}
-import akka.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import chainrpc._
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
@@ -13,6 +12,7 @@ import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
 import lnrpc._
+import org.apache.pekko.grpc.{GrpcClientSettings, SSLContextUtils}
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._

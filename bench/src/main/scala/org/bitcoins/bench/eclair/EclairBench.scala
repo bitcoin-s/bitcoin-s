@@ -3,7 +3,7 @@ package org.bitcoins.bench.eclair
 import java.io.File
 import java.nio.file.{Files, StandardOpenOption}
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.jsonmodels.eclair.PaymentId
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.testkit.async.TestAsyncUtil

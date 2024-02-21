@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import akka.stream.StreamDetachedException
+import org.apache.pekko.stream.StreamDetachedException
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest

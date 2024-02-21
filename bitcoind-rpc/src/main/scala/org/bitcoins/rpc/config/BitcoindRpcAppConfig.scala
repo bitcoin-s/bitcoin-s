@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.config
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.core.api.tor.Socks5ProxyParams

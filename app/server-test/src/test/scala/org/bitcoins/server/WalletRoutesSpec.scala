@@ -1,7 +1,7 @@
 package org.bitcoins.server
 
-import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.apache.pekko.http.scaladsl.model.ContentTypes._
+import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}

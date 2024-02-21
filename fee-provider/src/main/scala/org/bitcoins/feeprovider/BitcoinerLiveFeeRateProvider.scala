@@ -1,7 +1,7 @@
 package org.bitcoins.feeprovider
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model.Uri
 import org.bitcoins.commons.jsonmodels.wallet.BitcoinerLiveResult
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.api.tor.Socks5ProxyParams

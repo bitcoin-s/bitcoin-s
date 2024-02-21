@@ -1,9 +1,9 @@
 package org.bitcoins.testkit.util
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
-import akka.util.Timeout
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.util.Timeout
 import grizzled.slf4j.Logging
+import org.apache.pekko.testkit.TestKit
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkitcore.util.BaseAsyncTest

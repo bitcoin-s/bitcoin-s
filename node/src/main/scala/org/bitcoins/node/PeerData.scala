@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
-import akka.Done
-import akka.actor.ActorSystem
+import org.apache.pekko.Done
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.ServiceIdentifier

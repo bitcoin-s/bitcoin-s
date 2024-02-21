@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.lnd
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.lnd.rpc._
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.client.common.BitcoindRpcClient

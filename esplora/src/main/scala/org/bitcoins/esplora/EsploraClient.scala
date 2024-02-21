@@ -1,10 +1,10 @@
 package org.bitcoins.esplora
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl._
-import akka.http.scaladsl.client.RequestBuilding.Post
-import akka.http.scaladsl.model._
-import akka.util.ByteString
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.client.RequestBuilding.Post
+import org.apache.pekko.http.scaladsl.model.{HttpMethods, HttpRequest}
+import org.apache.pekko.http.scaladsl.{Http, HttpExt}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}

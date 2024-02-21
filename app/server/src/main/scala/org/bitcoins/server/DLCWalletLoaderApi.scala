@@ -1,7 +1,7 @@
 package org.bitcoins.server
 
-import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi

@@ -1,8 +1,8 @@
 package org.bitcoins.server
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.server.Directives.complete
+import org.apache.pekko.http.scaladsl.server.Route
 import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
 import org.bitcoins.commons.rpc.GetBlockHeader
 import org.bitcoins.commons.serializers.Picklers

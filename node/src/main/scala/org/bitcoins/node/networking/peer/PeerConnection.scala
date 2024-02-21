@@ -1,10 +1,12 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.event.Logging
-import akka.io.Inet.SocketOption
-import akka.io.Tcp.SO.KeepAlive
-import akka.stream.scaladsl.{
+import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.actor.{ActorSystem, Cancellable}
+import org.apache.pekko.event.Logging
+import org.apache.pekko.io.Inet.SocketOption
+import org.apache.pekko.io.Tcp.SO.KeepAlive
+import org.apache.pekko.stream.{Attributes, KillSwitches, UniqueKillSwitch}
+import org.apache.pekko.stream.scaladsl.{
   BidiFlow,
   Flow,
   Keep,
@@ -15,9 +17,7 @@ import akka.stream.scaladsl.{
   SourceQueue,
   Tcp
 }
-import akka.stream.{Attributes, KillSwitches, UniqueKillSwitch}
-import akka.util.ByteString
-import akka.{Done, NotUsed}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer

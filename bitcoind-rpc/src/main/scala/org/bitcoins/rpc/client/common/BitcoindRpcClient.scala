@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.common
 
-import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   CompactFilterDb,

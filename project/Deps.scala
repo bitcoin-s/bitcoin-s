@@ -124,6 +124,8 @@ object Deps {
     val akkaTestkit =
       "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
 
+    val pekkoGrpc = "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources() withJavadoc()
+
     //https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
 
@@ -541,6 +543,7 @@ object Deps {
 /*    Compile.akkaHttp2,*/
     Compile.akkaStream,
     Compile.akkaDiscovery,
+    Compile.pekkoGrpc,
     Compile.playJson,
     Compile.slf4j,
     Compile.grizzledSlf4j

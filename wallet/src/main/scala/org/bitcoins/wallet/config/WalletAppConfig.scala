@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.config
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}

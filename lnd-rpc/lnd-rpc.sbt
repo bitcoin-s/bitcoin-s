@@ -8,7 +8,7 @@ libraryDependencies ++= Deps.lndRpc
 
 CommonSettings.prodSettings
 
-enablePlugins(AkkaGrpcPlugin)
+enablePlugins(PekkoGrpcPlugin)
 
 // Disable deprecation and unused imports warning otherwise generated files will cause errors
 Compile / scalacOptions ++= Seq(

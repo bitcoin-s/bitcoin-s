@@ -1,6 +1,6 @@
 package org.bitcoins.server.routes
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.util.{EnvUtil, StartStopAsync}

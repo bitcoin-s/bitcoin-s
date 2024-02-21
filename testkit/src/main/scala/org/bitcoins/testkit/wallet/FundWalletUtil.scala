@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.wallet
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
