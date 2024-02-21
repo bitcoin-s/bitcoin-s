@@ -17,7 +17,7 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
-import org.bitcoins.testkit.util.AkkaUtil
+import org.bitcoins.testkit.util.PekkoUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
@@ -64,7 +64,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <- RpcUtil.awaitServerShutdown(walletClient)
       // Very rarely we are prevented from starting the client again because Core
       // hasn't released its locks on the datadir. This is prevent that.
-      _ <- AkkaUtil.nonBlockingSleep(1.second)
+      _ <- PekkoUtil.nonBlockingSleep(1.second)
       started <- walletClient.start()
       _ <- walletClient.loadWallet(walletName)
 

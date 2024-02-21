@@ -11,7 +11,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
-import org.bitcoins.testkit.util.{AkkaUtil, TorUtil}
+import org.bitcoins.testkit.util.{PekkoUtil, TorUtil}
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -240,7 +240,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       for {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
-        _ <- AkkaUtil.nonBlockingSleep(3.seconds)
+        _ <- PekkoUtil.nonBlockingSleep(3.seconds)
         //have to generate the block headers independent of one another
         //rather than just calling generateToAddress(2,junkAddress)
         //because of this bitcoin core bug: https://github.com/bitcoin-s/bitcoin-s/issues/1098

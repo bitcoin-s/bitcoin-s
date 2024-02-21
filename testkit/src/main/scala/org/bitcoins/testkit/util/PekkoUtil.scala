@@ -5,7 +5,7 @@ import org.apache.pekko.actor.ActorSystem
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
 
-trait AkkaUtil {
+trait PekkoUtil {
 
   /** Returns a future that will sleep until the given duration has passed */
   def nonBlockingSleep(duration: FiniteDuration)(implicit
@@ -18,4 +18,4 @@ trait AkkaUtil {
 
 }
 
-object AkkaUtil extends AkkaUtil
+object PekkoUtil extends PekkoUtil

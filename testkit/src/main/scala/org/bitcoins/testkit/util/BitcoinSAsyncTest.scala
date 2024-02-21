@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext
 /** A bitcoin-s async test trait, that uses akka's actor system
   * execution context to run the scalatest test suites
   */
-trait BitcoinSAkkaAsyncTest extends BaseAsyncTest with Logging {
+trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with Logging {
   this: AsyncTestSuite =>
   implicit lazy val akkaTimeout: Timeout = Timeout(duration)
 
@@ -43,7 +43,7 @@ trait BitcoinSAkkaAsyncTest extends BaseAsyncTest with Logging {
   *
   * This test trait should be used for async tests that do NOT use a fixture.
   */
-trait BitcoinSAsyncTest extends AsyncFlatSpec with BitcoinSAkkaAsyncTest
+trait BitcoinSAsyncTest extends AsyncFlatSpec with BitcoinSPekkoAsyncTest
 
 /** A trait that uses [[FixtureAsyncFlatSpec AsyncFlatSpec]] to execute tests
   * This is different than [[BitcoinSAsyncTest BitcoinSAsyncTest]] as you can use a fixture
@@ -51,4 +51,4 @@ trait BitcoinSAsyncTest extends AsyncFlatSpec with BitcoinSAkkaAsyncTest
   */
 trait BitcoinSAsyncFixtureTest
     extends FixtureAsyncFlatSpec
-    with BitcoinSAkkaAsyncTest
+    with BitcoinSPekkoAsyncTest

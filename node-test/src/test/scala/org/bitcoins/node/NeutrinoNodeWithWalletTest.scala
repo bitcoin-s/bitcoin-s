@@ -15,7 +15,7 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeTestWithCachedBitcoindNewest
 }
-import org.bitcoins.testkit.util.AkkaUtil
+import org.bitcoins.testkit.util.PekkoUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.{FutureOutcome, Outcome}
 
@@ -278,7 +278,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       //broadcast tx
       _ <- bitcoind.sendRawTransaction(tx)
       _ <- bitcoind.generateToAddress(1, bitcoindAddr)
-      _ <- AkkaUtil.nonBlockingSleep(3.seconds)
+      _ <- PekkoUtil.nonBlockingSleep(3.seconds)
 
       //bring node back online
       startedNode <- stoppedNode.start()
