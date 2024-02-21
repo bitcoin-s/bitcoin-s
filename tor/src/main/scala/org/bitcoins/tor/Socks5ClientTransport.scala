@@ -1,18 +1,23 @@
 package org.bitcoins.tor
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.http.scaladsl.ClientTransport.TCP
-import akka.http.scaladsl.settings.{
+import grizzled.slf4j.Logging
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.ClientTransport.TCP
+import org.apache.pekko.http.scaladsl.{ClientTransport, Http}
+import org.apache.pekko.http.scaladsl.settings.{
   ClientConnectionSettings,
   ConnectionPoolSettings
 }
-import akka.http.scaladsl.{ClientTransport, Http}
-import akka.stream.scaladsl.{BidiFlow, Flow, Keep}
-import akka.stream.stage._
-import akka.stream.{Attributes, BidiShape, Inlet, Outlet}
-import akka.util.ByteString
-import grizzled.slf4j.Logging
+import org.apache.pekko.stream.{Attributes, BidiShape, Inlet, Outlet}
+import org.apache.pekko.stream.scaladsl.{BidiFlow, Flow, Keep}
+import org.apache.pekko.stream.stage.{
+  GraphStage,
+  GraphStageLogic,
+  InHandler,
+  StageLogging
+}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.NetworkUtil
 

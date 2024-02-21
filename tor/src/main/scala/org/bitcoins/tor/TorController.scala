@@ -1,7 +1,9 @@
 package org.bitcoins.tor
 
-import akka.Done
-import akka.actor.{
+import org.apache.pekko.Done
+import org.apache.pekko.util.ByteString
+import grizzled.slf4j.Logging
+import org.apache.pekko.actor.{
   Actor,
   ActorLogging,
   ActorSystem,
@@ -10,9 +12,7 @@ import akka.actor.{
   SupervisorStrategy,
   Terminated
 }
-import akka.io.{IO, Tcp}
-import akka.util.ByteString
-import grizzled.slf4j.Logging
+import org.apache.pekko.io.{IO, Tcp}
 import org.bitcoins.tor.TorProtocolHandler.Authentication
 
 import java.io.IOException
