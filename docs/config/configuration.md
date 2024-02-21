@@ -413,7 +413,7 @@ bitcoin-s {
 }
 
 
-akka {
+pekko {
     loglevel = "OFF"
     stdout-loglevel = "OFF"
     http {

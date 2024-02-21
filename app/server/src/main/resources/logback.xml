@@ -107,16 +107,16 @@
     <!-- Get rid of messages like this:
     Connection attempt failed. Backing off new connection
     attempts for at least 800 milliseconds. -->
-    <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
+    <logger name="org.apache.pekko.http.impl.engine.client.PoolGateway" level="OFF"/>
 
     <!-- get rid of "Slf4jLogger started" messages -->
-    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
+    <logger name="org.apache.pekko.event.slf4j.Slf4jLogger" level="OFF"/>
 
     <!-- get rid of "Running CoordinatedShutdown Phase" messages -->
-    <logger name="akka.actor.slf4j.CoordinatedShutdown" level="OFF"/>
+    <logger name="org.apache.pekko.actor.slf4j.CoordinatedShutdown" level="OFF"/>
 
     <!-- get rid of akka dead letter messages -->
-    <logger name="akka.actor.RepointableActorRef" level="OFF"/>
-    <logger name="akka.actor.LocalActorRef" level="OFF"/>
+    <logger name="org.apache.pekko.actor.RepointableActorRef" level="OFF"/>
+    <logger name="org.apache.pekko.actor.LocalActorRef" level="OFF"/>
 
 </configuration>

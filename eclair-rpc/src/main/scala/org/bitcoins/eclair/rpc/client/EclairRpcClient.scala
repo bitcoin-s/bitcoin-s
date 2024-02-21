@@ -830,8 +830,8 @@ class EclairRpcClient(
   /** Pings eclair to see if a invoice has been paid
     * If the invoice has been paid or the payment has failed, we publish a
     * [[OutgoingPayment]]
-    * event to the [[akka.actor.ActorSystem ActorSystem]]'s
-    * [[akka.event.EventStream ActorSystem.eventStream]]
+    * event to the [[org.apache.pekko.actor.ActorSystem ActorSystem]]'s
+    * [[org.apache.pekko.event.EventStream ActorSystem.eventStream]]
     *
     * We also return a Future[PaymentResult] that is completed when one of three things is true
     * 1. The payment has succeeded
