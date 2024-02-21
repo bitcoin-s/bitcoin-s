@@ -108,7 +108,7 @@ case class PeerFinder(
   }
 
   //for the peers we try
-  private val _peerData: mutable.Map[Peer, PeerData] = {
+  private val _peerData: mutable.Map[Peer, ConnectedPeerData] = {
     mutable.Map.empty
   }
 
@@ -140,7 +140,8 @@ case class PeerFinder(
       val start = System.currentTimeMillis()
       isStarted.set(true)
       val peersToTry = (paramPeers ++ getPeersFromConfig).distinct
-      val pds = peersToTry.map(p => buildPeerData(p, isPersistent = true))
+      val pds =
+        peersToTry.map(p => DisconnectedPeerData(p, isPersistent = true))
       //higher priority for param peers
       _peersToTry.pushAll(pds, priority = 2)
 
@@ -152,7 +153,8 @@ case class PeerFinder(
         } yield {
           val pds = peers.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
-          val dbPds = dbCf.map(p => buildPeerData(p, isPersistent = false))
+          val dbPds =
+            dbCf.map(p => DisconnectedPeerData(p, isPersistent = false))
           _peersToTry.pushAll(dbPds, priority = 1)
           peerConnectionCancellableOpt = Some(peerConnectionScheduler())
           this
@@ -239,7 +241,9 @@ case class PeerFinder(
   }
 
   /** creates and initialises a new test peer */
-  private def tryPeer(peer: Peer, isPersistent: Boolean): Future[ActivePeerConnection] = {
+  private def tryPeer(
+      peer: Peer,
+      isPersistent: Boolean): Future[ActivePeerConnection] = {
     logger.debug(s"tryPeer=$peer")
     val peerConnection = DisconnectedPeerConnection(peer, queue)
 
@@ -285,11 +289,11 @@ case class PeerFinder(
     _peerData.contains(peer)
   }
 
-  def getPeerData(peer: Peer): Option[PeerData] = {
+  def getPeerData(peer: Peer): Option[ConnectedPeerData] = {
     _peerData.get(peer)
   }
 
-  def addToTry(peers: Vector[PeerData], priority: Int = 0): Unit = {
+  def addToTry(peers: Vector[DisconnectedPeerData], priority: Int = 0): Unit = {
     _peersToTry.pushAll(peers, priority)
   }
 
@@ -301,19 +305,9 @@ case class PeerFinder(
     }
   }
 
-  def buildPeerData(p: Peer, isPersistent: Boolean): PeerData = {
-    val peerConnection = PeerConnection(p, queue)
-    val peerMessageSender = PeerMessageSender(peerConnection)
-    if (isPersistent) {
-      PersistentPeerData(peer = p, peerMessageSender = peerMessageSender)
-    } else {
-      AttemptToConnectPeerData(p, peerMessageSender)
-    }
-  }
-
   /** Attempts to connect to various peers on the p2p network. Try to get more peers for our node. */
   def queryForPeerConnections(excludePeers: Set[Peer]): Option[Unit] = {
-    if (
+    val shouldRun =
       isConnectionSchedulerRunning.compareAndSet(false, true) && isStarted.get()
     ) {
       logger.debug(
@@ -389,7 +383,7 @@ case class PeerFinder(
   }
 }
 
-case class PeerOrdering(peer: PeerData, priority: Int, id: Int)
+case class PeerOrdering(peer: DisconnectedPeerData, priority: Int, id: Int)
 
 case class PeerStack() {
 
@@ -406,7 +400,7 @@ case class PeerStack() {
   private val set: mutable.SortedSet[PeerOrdering] =
     mutable.SortedSet[PeerOrdering]().empty
 
-  def push(peer: PeerData, priority: Int = 0): Unit = {
+  def push(peer: DisconnectedPeerData, priority: Int = 0): Unit = {
     if (set.size == maxSize) {
       if (set.head.priority < priority) {
         set.remove(set.head)
@@ -420,7 +414,7 @@ case class PeerStack() {
     ()
   }
 
-  def pop(): PeerData = {
+  def pop(): DisconnectedPeerData = {
     val res = set.last.peer
     set.remove(set.last)
     res
@@ -430,7 +424,7 @@ case class PeerStack() {
 
   def clear(): Unit = set.clear()
 
-  def pushAll(peers: Vector[PeerData], priority: Int = 0): Unit = {
+  def pushAll(peers: Vector[DisconnectedPeerData], priority: Int = 0): Unit = {
     peers.foreach(push(_, priority))
   }
 }

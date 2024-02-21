@@ -1,20 +1,24 @@
 package org.bitcoins.node.networking.peer
 
+import akka.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.ControlMessageHandler.ControlMessageHandlerState
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node.{P2PLogger, PeerFinder}
+import org.bitcoins.node.{DisconnectedPeerData, P2PLogger, PeerFinder}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Future}
 import scala.util.{Failure, Success, Try}
 
 case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
-    ec: ExecutionContext,
+    system: ActorSystem,
+    chainAppConfig: ChainAppConfig,
     nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
+  import system.dispatcher
 
   def handleControlPayload(
       payload: ControlPayload,
@@ -77,7 +81,7 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           val peer = Peer.fromSocket(socket = inetAddress,
                                      socks5ProxyParams =
                                        nodeAppConfig.socks5ProxyParams)
-          val pd = peerFinder.buildPeerData(peer, isPersistent = false)
+          val pd = DisconnectedPeerData(peer, isPersistent = false)
           peerFinder.addToTry(Vector(pd), 0)
         }
       case addr: AddrV2Message =>
@@ -92,11 +96,11 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
         val priority = if (services.nodeCompactFilters) 1 else 0
         addr match {
           case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
-            val pd = peerFinder.buildPeerData(peer, isPersistent = false)
+            val pd = DisconnectedPeerData(peer, isPersistent = false)
             peerFinder.addToTry(Vector(pd), priority = priority)
           case TorV3AddrV2Message(_, _, _, _) =>
             if (nodeAppConfig.torConf.enabled) {
-              val pd = peerFinder.buildPeerData(peer, isPersistent = false)
+              val pd = DisconnectedPeerData(peer, isPersistent = false)
               peerFinder.addToTry(Vector(pd), priority)
             }
           case n => logger.info(s"Unsupported network. Skipping. network=$n")

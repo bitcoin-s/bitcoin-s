@@ -19,6 +19,9 @@ sealed trait PeerData {
 
   implicit protected def system: ActorSystem
   def peer: Peer
+}
+
+sealed trait ConnectedPeerData extends PeerData {
 
   def peerWithServicesOpt: Option[PeerWithServices] = {
     _serviceIdentifier.map(PeerWithServices(peer, _))
@@ -55,7 +58,7 @@ case class PersistentPeerData(
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,
     override val chainAppConfig: ChainAppConfig)
-    extends PeerData {
+    extends ConnectedPeerData {
 
   private var _invalidMessagesCount: Int = 0
 
@@ -94,11 +97,33 @@ case class AttemptToConnectPeerData(
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,
     override val chainAppConfig: ChainAppConfig)
-    extends PeerData {
+    extends ConnectedPeerData {
 
   def toPersistentPeerData: PersistentPeerData = {
     val p = PersistentPeerData(peer, peerMessageSender)
     p.setServiceIdentifier(serviceIdentifier = serviceIdentifier)
     p
+  }
+}
+
+case class DisconnectedPeerData(peer: Peer, isPersistent: Boolean)(implicit
+    override val system: ActorSystem,
+    override val nodeAppConfig: NodeAppConfig,
+    override val chainAppConfig: ChainAppConfig)
+    extends PeerData {
+  import system.dispatcher
+
+  /** Establishes a connection to [[peer]] */
+  def connect(
+      queue: SourceQueue[NodeStreamMessage]): Future[ConnectedPeerData] = {
+    val pc = DisconnectedPeerConnection(peer, queue)
+    pc.connect().map { apc =>
+      val peerMessageSender = PeerMessageSender(apc)
+      if (isPersistent) {
+        PersistentPeerData(peer, peerMessageSender)
+      } else {
+        AttemptToConnectPeerData(peer, peerMessageSender)
+      }
+    }
   }
 }
