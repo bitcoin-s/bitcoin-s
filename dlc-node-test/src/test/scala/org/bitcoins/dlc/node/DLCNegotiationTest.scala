@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.node
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BigSizeUInt

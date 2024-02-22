@@ -49,7 +49,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.testkit.node.MockNodeApi
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 ```

@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.node
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.node.Node
 import org.bitcoins.rpc.client.common.BitcoindRpcClient

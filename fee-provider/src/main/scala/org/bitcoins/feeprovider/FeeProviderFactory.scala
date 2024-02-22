@@ -1,7 +1,7 @@
 package org.bitcoins.feeprovider
 
-import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.BitcoinNetwork

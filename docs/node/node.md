@@ -41,7 +41,7 @@ For your node to be able to service these filters you will need set
 `blockfilterindex=1` and `peerblockfilters=1` in your `bitcoin.conf` file.
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.node._
 import org.bitcoins.rpc.client.common.BitcoindVersion

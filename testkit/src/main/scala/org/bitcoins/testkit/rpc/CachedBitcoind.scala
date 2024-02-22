@@ -1,14 +1,14 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v19.{V19BlockFilterRpc}
+import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
+import org.bitcoins.testkit.util.BitcoinSPekkoAsyncTest
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.concurrent.{Await, Future}
@@ -21,7 +21,7 @@ import scala.concurrent.{Await, Future}
   * This does mean that test cases have to be written in such a way where assertions
   * are not dependent on specific bitcoind state.
   */
-trait CachedBitcoind[T <: BitcoindRpcClient] { _: BitcoinSAkkaAsyncTest =>
+trait CachedBitcoind[T <: BitcoindRpcClient] { _: BitcoinSPekkoAsyncTest =>
 
   /** Flag to indicate if the bitcoind was used
     *
@@ -41,7 +41,7 @@ trait CachedBitcoind[T <: BitcoindRpcClient] { _: BitcoinSAkkaAsyncTest =>
   * testing at certain times when we need to make sure bitcoind is ONLY initialized, no chain state.
   */
 trait CachedBitcoindNoFunds[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
   def cachedBitcoind: Future[T]
 
   override def afterAll(): Unit = {
@@ -61,7 +61,7 @@ trait CachedBitcoindNoFunds[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
 
 trait CachedBitcoindNoFundsNewest
     extends CachedBitcoindNoFunds[BitcoindRpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override lazy val cachedBitcoind: Future[BitcoindRpcClient] = {
     val _ = isBitcoindUsed.set(true)
@@ -71,7 +71,7 @@ trait CachedBitcoindNoFundsNewest
 }
 
 trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   /** The bitcoind instance, lazyily created */
   protected lazy val cachedBitcoindWithFundsF: Future[BitcoindRpcClient] = {
@@ -99,7 +99,7 @@ trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
 }
 
 trait CachedBitcoindNewest extends CachedBitcoindFunded[BitcoindRpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindRpcClient] = {
@@ -110,7 +110,7 @@ trait CachedBitcoindNewest extends CachedBitcoindFunded[BitcoindRpcClient] {
 }
 
 trait CachedBitcoindNewestNoP2pBlockFilters extends CachedBitcoindNewest {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindRpcClient] = {
@@ -122,7 +122,7 @@ trait CachedBitcoindNewestNoP2pBlockFilters extends CachedBitcoindNewest {
 
 trait CachedBitcoindBlockFilterRpcNewest
     extends CachedBitcoindFunded[BitcoindRpcClient with V19BlockFilterRpc] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindRpcClient with V19BlockFilterRpc] = {
@@ -133,7 +133,7 @@ trait CachedBitcoindBlockFilterRpcNewest
 }
 
 trait CachedBitcoindV21 extends CachedBitcoindFunded[BitcoindV21RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindV21RpcClient] = {
@@ -145,7 +145,7 @@ trait CachedBitcoindV21 extends CachedBitcoindFunded[BitcoindV21RpcClient] {
 }
 
 trait CachedBitcoindV22 extends CachedBitcoindFunded[BitcoindV22RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindV22RpcClient] = {
@@ -157,7 +157,7 @@ trait CachedBitcoindV22 extends CachedBitcoindFunded[BitcoindV22RpcClient] {
 }
 
 trait CachedBitcoindV23 extends CachedBitcoindFunded[BitcoindV23RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindV23RpcClient] = {
@@ -169,7 +169,7 @@ trait CachedBitcoindV23 extends CachedBitcoindFunded[BitcoindV23RpcClient] {
 }
 
 trait CachedBitcoindV24 extends CachedBitcoindFunded[BitcoindV24RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[
     BitcoindV24RpcClient] = {
@@ -182,7 +182,7 @@ trait CachedBitcoindV24 extends CachedBitcoindFunded[BitcoindV24RpcClient] {
 
 trait CachedBitcoindCollection[T <: BitcoindRpcClient]
     extends CachedBitcoind[T] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   /** The version of bitcoind we are creating in the collection
     * By default, we just use the newest version of bitcoind
@@ -223,7 +223,7 @@ trait CachedBitcoindCollection[T <: BitcoindRpcClient]
 
 trait CachedBitcoindPair[T <: BitcoindRpcClient]
     extends CachedBitcoindCollection[T] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   lazy val clientsF: Future[NodePair[T]] = {
     BitcoindRpcTestUtil
@@ -240,7 +240,7 @@ trait CachedBitcoindPair[T <: BitcoindRpcClient]
 
 trait CachedBitcoindPairV21
     extends CachedBitcoindCollection[BitcoindV21RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override val version: BitcoindVersion = BitcoindVersion.V21
 
@@ -259,7 +259,7 @@ trait CachedBitcoindPairV21
 
 trait CachedBitcoindPairV22
     extends CachedBitcoindCollection[BitcoindV22RpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override val version: BitcoindVersion = BitcoindVersion.V22
 
@@ -278,7 +278,7 @@ trait CachedBitcoindPairV22
 
 trait CachedBitcoindPairNewest
     extends CachedBitcoindCollection[BitcoindRpcClient] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   override val version: BitcoindVersion = BitcoindVersion.newest
 
@@ -297,7 +297,7 @@ trait CachedBitcoindPairNewest
 
 trait CachedBitcoindTriple[T <: BitcoindRpcClient]
     extends CachedBitcoindCollection[T] {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   lazy val clientsF: Future[NodeTriple[T]] = {
     BitcoindRpcTestUtil

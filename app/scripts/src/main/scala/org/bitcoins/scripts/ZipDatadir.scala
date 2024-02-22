@@ -1,6 +1,6 @@
 package org.bitcoins.scripts
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.db.DatadirUtil
 import org.bitcoins.server.BitcoinSAppConfig

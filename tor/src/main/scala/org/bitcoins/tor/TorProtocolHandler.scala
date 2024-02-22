@@ -1,8 +1,8 @@
 package org.bitcoins.tor
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
-import akka.io.Tcp.Connected
-import akka.util.ByteString
+import org.apache.pekko.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
+import org.apache.pekko.io.Tcp.Connected
+import org.apache.pekko.util.ByteString
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.tor.TorProtocolHandler.Authentication
 import scodec.bits.ByteVector

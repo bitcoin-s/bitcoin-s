@@ -1,7 +1,7 @@
 package org.bitcoins.server.util
 
-import akka.actor.Cancellable
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.Cancellable
 
 case class BitcoindPollingCancellable(
     blockPollingCancellable: Cancellable,

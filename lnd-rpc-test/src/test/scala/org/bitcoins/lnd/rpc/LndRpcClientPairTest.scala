@@ -1,7 +1,7 @@
 package org.bitcoins.lnd.rpc
 
-import akka.stream._
-import akka.stream.scaladsl._
+import org.apache.pekko.stream._
+import org.apache.pekko.stream.scaladsl._
 import lnrpc._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number._

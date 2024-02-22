@@ -19,7 +19,7 @@ The resolved configuration gets parsed by
 projects. Here's some examples of how to construct a wallet configuration:
 
 ```scala mdoc:compile-only
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.wallet.config.WalletAppConfig
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Paths
@@ -413,7 +413,7 @@ bitcoin-s {
 }
 
 
-akka {
+pekko {
     loglevel = "OFF"
     stdout-loglevel = "OFF"
     http {

@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.SourceQueue
+import org.apache.pekko.actor.{ActorSystem, Cancellable}
+import org.apache.pekko.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerManagerApi}

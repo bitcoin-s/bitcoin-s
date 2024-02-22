@@ -1,12 +1,12 @@
 package org.bitcoins.tor
 
-import akka.NotUsed
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
-import akka.io.Tcp
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.util.ByteString
 import grizzled.slf4j.Logging
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
+import org.apache.pekko.io.Tcp
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.core.api.tor.Credentials
 import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
@@ -257,11 +257,14 @@ object Socks5Connection extends Logging {
       socket: InetSocketAddress,
       source: Source[
         ByteString,
-        (Future[akka.stream.scaladsl.Tcp.OutgoingConnection], MatSource)],
+        (
+            Future[org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection],
+            MatSource)],
       sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
       mergeHubSink: Sink[ByteString, NotUsed],
-      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Future[
-    ((akka.stream.scaladsl.Tcp.OutgoingConnection, MatSource), MatSink)] = {
+      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Future[(
+      (org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection, MatSource),
+      MatSink)] = {
 
     val flowState: Flow[
       ByteString,

@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.tor
 
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.{BitcoinSAkkaAsyncTest, TorUtil}
+import org.bitcoins.testkit.util.{BitcoinSPekkoAsyncTest, TorUtil}
 import org.bitcoins.tor.config.TorAppConfig
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -13,7 +13,7 @@ import scala.concurrent.{Await, Future}
   * new test is run.
   */
 trait CachedTor {
-  _: BitcoinSAkkaAsyncTest =>
+  _: BitcoinSPekkoAsyncTest =>
 
   implicit protected lazy val torConfig: TorAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig().torConf

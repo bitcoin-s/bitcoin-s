@@ -32,7 +32,7 @@ that you are notified of the event. For instance, if your DLC transitions from
 Here is an example of constructing a wallet and registering a callback, so you can be notified of an event.
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._

@@ -1,12 +1,12 @@
 package org.bitcoins.tor
 
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.settings.{
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.HttpRequest
+import org.apache.pekko.http.scaladsl.settings.{
   ClientConnectionSettings,
   ConnectionPoolSettings
 }
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TorUtil}
 

@@ -1,24 +1,24 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.{
+import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import NodeState.DoneSyncing
+import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.actor.{ActorSystem, Cancellable}
+import org.apache.pekko.stream.{
+  ActorAttributes,
+  OverflowStrategy,
+  QueueOfferResult,
+  Supervision
+}
+import org.apache.pekko.stream.scaladsl.{
   Keep,
   RunnableGraph,
   Source,
   SourceQueue,
   SourceQueueWithComplete
 }
-import akka.stream.{
-  ActorAttributes,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision
-}
-import akka.{Done, NotUsed}
-import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import NodeState.DoneSyncing
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig

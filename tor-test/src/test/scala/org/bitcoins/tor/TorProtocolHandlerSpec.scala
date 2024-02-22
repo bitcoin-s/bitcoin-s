@@ -1,9 +1,9 @@
 package org.bitcoins.tor
 
-import akka.actor.ActorSystem
-import akka.io.Tcp.Connected
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
-import akka.util.ByteString
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.io.Tcp.Connected
+import org.apache.pekko.testkit.{ImplicitSender, TestActorRef, TestKit}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.crypto.CryptoUtil
 import org.scalatest._
 import org.scalatest.funsuite.AnyFunSuiteLike

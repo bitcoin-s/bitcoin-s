@@ -1,14 +1,27 @@
 package org.bitcoins.eclair.rpc.client
 
-import akka.Done
-import akka.actor.ActorSystem
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.util.ByteString
+import org.apache.pekko.Done
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.javadsl.model.headers.HttpCredentials
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.headers.{
+  Authorization,
+  BasicHttpCredentials
+}
+import org.apache.pekko.http.scaladsl.model.ws.{
+  Message,
+  TextMessage,
+  WebSocketRequest
+}
+import org.apache.pekko.http.scaladsl.model.{
+  FormData,
+  HttpMethods,
+  HttpRequest,
+  HttpResponse,
+  StatusCodes
+}
+import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+import org.apache.pekko.util.ByteString
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonReaders._
@@ -817,8 +830,8 @@ class EclairRpcClient(
   /** Pings eclair to see if a invoice has been paid
     * If the invoice has been paid or the payment has failed, we publish a
     * [[OutgoingPayment]]
-    * event to the [[akka.actor.ActorSystem ActorSystem]]'s
-    * [[akka.event.EventStream ActorSystem.eventStream]]
+    * event to the [[org.apache.pekko.actor.ActorSystem ActorSystem]]'s
+    * [[org.apache.pekko.event.EventStream ActorSystem.eventStream]]
     *
     * We also return a Future[PaymentResult] that is completed when one of three things is true
     * 1. The payment has succeeded

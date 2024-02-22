@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.node.config
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi

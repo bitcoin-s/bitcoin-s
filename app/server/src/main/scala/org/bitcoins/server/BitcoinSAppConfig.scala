@@ -1,8 +1,8 @@
 package org.bitcoins.server
 
-import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.config.AppConfig.DEFAULT_BITCOIN_S_CONF_FILE
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}

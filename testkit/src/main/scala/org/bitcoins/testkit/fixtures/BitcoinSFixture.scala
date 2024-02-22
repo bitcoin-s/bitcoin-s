@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.fixtures
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil

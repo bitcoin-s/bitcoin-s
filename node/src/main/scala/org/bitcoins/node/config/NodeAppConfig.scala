@@ -1,7 +1,7 @@
 package org.bitcoins.node.config
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}

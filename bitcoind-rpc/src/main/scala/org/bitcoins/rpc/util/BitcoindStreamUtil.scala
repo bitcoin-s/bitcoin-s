@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.util
 
-import akka.NotUsed
-import akka.stream.scaladsl.Flow
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Flow
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.crypto.DoubleSha256Digest

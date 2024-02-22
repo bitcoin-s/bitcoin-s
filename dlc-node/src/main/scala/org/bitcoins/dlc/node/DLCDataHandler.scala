@@ -1,7 +1,14 @@
 package org.bitcoins.dlc.node
 
-import akka.actor._
-import akka.event.LoggingReceive
+import org.apache.pekko.actor.{
+  Actor,
+  ActorContext,
+  ActorLogging,
+  ActorRef,
+  Props,
+  Terminated
+}
+import org.apache.pekko.event.LoggingReceive
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.tlv._
 

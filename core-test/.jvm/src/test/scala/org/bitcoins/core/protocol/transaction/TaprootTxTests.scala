@@ -21,7 +21,7 @@ class TaprootTxTests extends BitcoinSAsyncTest {
   override lazy val timeLimit: Span = 10.minutes
 
   implicit override val executionContext: ExecutionContext =
-    system.dispatchers.lookup("akka.actor.multi-core-dispatcher")
+    system.dispatchers.lookup("pekko.actor.multi-core-dispatcher")
 
   //these tests are from
   //https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json

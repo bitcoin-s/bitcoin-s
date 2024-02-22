@@ -12,7 +12,7 @@ There are other examples of these in the Scala ecosystem like the `akka-testkit`
 We use this testkit to test bitcoin-s it self.
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.testkit.rpc._

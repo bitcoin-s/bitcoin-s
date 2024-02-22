@@ -1,15 +1,18 @@
 package org.bitcoins.server
 
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.ws.{
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.headers.{
+  Authorization,
+  BasicHttpCredentials
+}
+import org.apache.pekko.http.scaladsl.model.ws.{
   Message,
   TextMessage,
   WebSocketRequest,
   WebSocketUpgradeResponse
 }
-import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import org.apache.pekko.http.scaladsl.model.{HttpHeader, StatusCodes}
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.ConsoleCli.exec
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
@@ -36,7 +39,7 @@ import org.bitcoins.testkit.server.{
   BitcoinSServerMainBitcoindFixture,
   ServerWithBitcoind
 }
-import org.bitcoins.testkit.util.AkkaUtil
+import org.bitcoins.testkit.util.PekkoUtil
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
@@ -163,7 +166,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
 
       for {
-        _ <- AkkaUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- walletNotificationsF
       } yield {
@@ -203,7 +206,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         getTxCmd = GetTransaction(expectedTxId)
         expectedTxStr = ConsoleCli.exec(getTxCmd, cliConfig)
         expectedTx = Transaction.fromHex(expectedTxStr.get)
-        _ <- AkkaUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
@@ -242,7 +245,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         getTxCmd = GetTransaction(expectedTxId)
         expectedTxStr = ConsoleCli.exec(getTxCmd, cliConfig)
         expectedTx = Transaction.fromHex(expectedTxStr.get)
-        _ <- AkkaUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
@@ -276,7 +279,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
         Picklers.getBlockHeaderResultPickler)
-      _ <- AkkaUtil.nonBlockingSleep(timeout)
+      _ <- PekkoUtil.nonBlockingSleep(timeout)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
@@ -312,7 +315,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       ConsoleCli.exec(unlockCmd, cliConfig)
 
       for {
-        _ <- AkkaUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
@@ -353,7 +356,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         .get
 
       for {
-        _ <- AkkaUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- walletNotificationsF
       } yield {
@@ -392,7 +395,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                      ignoreCreationTime = false)
     val _ = ConsoleCli.exec(cmd, cliConfig)
     for {
-      _ <- AkkaUtil.nonBlockingSleep(10.second)
+      _ <- PekkoUtil.nonBlockingSleep(10.second)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
@@ -415,7 +418,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val promise = tuple._2._2
 
     for {
-      _ <- AkkaUtil.nonBlockingSleep(15.seconds)
+      _ <- PekkoUtil.nonBlockingSleep(15.seconds)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
@@ -438,7 +441,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
     for {
-      _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+      _ <- PekkoUtil.nonBlockingSleep(2.seconds)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
@@ -479,7 +482,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     for {
       _ <- setupF
       _ = ConsoleCli.exec(acceptMsg, cliConfig)
-      _ <- AkkaUtil.nonBlockingSleep(500.millis)
+      _ <- PekkoUtil.nonBlockingSleep(500.millis)
       _ = promise.success(None)
       notifications <- walletNotificationsF
     } yield {
@@ -512,7 +515,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val promise = tuple._2._2
 
       for {
-        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+        _ <- PekkoUtil.nonBlockingSleep(2.seconds)
         _ = promise.success(None)
         notifications <- notificationsF
       } yield assert(notifications.isEmpty)

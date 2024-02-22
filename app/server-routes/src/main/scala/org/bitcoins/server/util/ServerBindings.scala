@@ -1,7 +1,7 @@
 package org.bitcoins.server.util
 
-import akka.http.scaladsl.Http
 import grizzled.slf4j.Logging
+import org.apache.pekko.http.scaladsl.Http
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}

@@ -24,7 +24,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain._
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import scala.concurrent._
 import java.nio.file.Files
 ```

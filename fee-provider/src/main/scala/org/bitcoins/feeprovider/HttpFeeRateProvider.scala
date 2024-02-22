@@ -1,10 +1,11 @@
 package org.bitcoins.feeprovider
 
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.{HttpRequest, Uri}
+import org.apache.pekko.util.ByteString
+
 import java.time.{Duration, Instant}
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, Uri}
-import akka.util.ByteString
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.TimeUtil

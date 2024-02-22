@@ -30,7 +30,7 @@ We will default to using the `binary` field first when trying to start the jar, 
 Here is an example of how to start lnd:
 
 ```scala mdoc:invisible
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.lnd.rpc._
 import org.bitcoins.lnd.rpc.config._
 import java.nio.file.Paths

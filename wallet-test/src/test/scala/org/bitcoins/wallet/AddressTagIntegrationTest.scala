@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InternalAddressTag, StorageLocationTag}
 import org.bitcoins.server.BitcoindRpcBackendUtil
-import org.bitcoins.testkit.util.AkkaUtil
+import org.bitcoins.testkit.util.PekkoUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletTestUtil,
@@ -139,7 +139,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         _ <- wallet.processTransaction(tx, None)
         _ <- bitcoind.sendRawTransaction(tx)
         bitcoindAddr <- bitcoindAddrF
-        _ <- AkkaUtil.nonBlockingSleep(1.second)
+        _ <- PekkoUtil.nonBlockingSleep(1.second)
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
         _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet, None)
       } yield succeed

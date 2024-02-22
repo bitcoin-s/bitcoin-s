@@ -1,6 +1,6 @@
 package org.bitcoins.testkit
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config._
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig

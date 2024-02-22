@@ -1,8 +1,8 @@
 package org.bitcoins.rpc.config
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.api.commons.{InstanceFactory, InstanceFactoryLocal}
 import org.bitcoins.core.api.tor.Socks5ProxyParams

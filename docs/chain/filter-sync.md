@@ -22,7 +22,7 @@ Our internal infrastructure depends on one function to be implemented to be able
 ```scala mdoc:invisible
 import scala.concurrent.Future
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 
 import org.bitcoins.core.gcs._
 import org.bitcoins.core.protocol.blockchain.BlockHeader

@@ -69,7 +69,7 @@ import org.bitcoins.wallet.Wallet
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Files
 import scala.concurrent._
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 
 val chainApi = new ChainQueryApi {
     override def epochSecondToBlockHeight(time: Long): Future[Int] = Future.successful(0)

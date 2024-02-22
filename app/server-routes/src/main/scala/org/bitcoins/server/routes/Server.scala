@@ -1,25 +1,43 @@
 package org.bitcoins.server.routes
 
-import akka.actor.ActorSystem
-import akka.event.Logging
-import akka.http.scaladsl._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.Credentials.Missing
-import akka.http.scaladsl.server.directives.{
+import de.heikoseeberger.akkahttpupickle.UpickleSupport._
+import grizzled.slf4j.Logging
+import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.event.Logging
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.model.ws.{Message, TextMessage}
+import org.apache.pekko.http.scaladsl.model.{
+  ContentTypes,
+  HttpEntity,
+  HttpResponse,
+  StatusCode,
+  StatusCodes
+}
+import org.apache.pekko.http.scaladsl.server.Directives.{
+  authenticateBasic,
+  complete,
+  handleExceptions,
+  handleRejections
+}
+import org.apache.pekko.http.scaladsl.server.directives.{
   Credentials,
   DebuggingDirectives,
   MarshallingDirectives,
   MethodDirectives,
   PathDirectives
 }
-import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.{Done, NotUsed}
-import de.heikoseeberger.akkahttpupickle.UpickleSupport._
-import grizzled.slf4j.Logging
+import org.apache.pekko.http.scaladsl.server.directives.Credentials.Missing
+import org.apache.pekko.http.scaladsl.server.{
+  Directive1,
+  Directives,
+  ExceptionHandler,
+  RejectionHandler,
+  Route,
+  StandardRoute
+}
+import org.apache.pekko.http.scaladsl.unmarshalling.FromRequestUnmarshaller
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
@@ -197,7 +215,7 @@ case class Server(
   private val eventsRoute = "events"
 
   private def wsRoutes: Route = {
-    val commonRoute = path(eventsRoute) {
+    val commonRoute = Directives.path(eventsRoute) {
       Directives.handleWebSocketMessages(wsHandler)
     }
 

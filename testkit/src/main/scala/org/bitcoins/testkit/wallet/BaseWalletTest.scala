@@ -1,19 +1,20 @@
 package org.bitcoins.testkit.wallet
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
-import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
+import org.bitcoins.testkit.util.BitcoinSPekkoAsyncTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.Suite
 
 /** Base test trait for all the tests in our walletTest module */
-trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
+trait BaseWalletTest extends EmbeddedPg {
+  _: Suite with BitcoinSPekkoAsyncTest =>
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)

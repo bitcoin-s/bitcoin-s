@@ -47,8 +47,8 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.4")
 
 // gRPC
-//https://github.com/akka/akka-grpc
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.6")
+//https://pekko.apache.org/docs/pekko-grpc/current/server/walkthrough.html#setting-up
+addSbtPlugin("org.apache.pekko" % "pekko-grpc-sbt-plugin" % "1.0.2")
 
 // Scala.js
 //https://www.scala-js.org/doc/project/

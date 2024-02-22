@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.wallet.{
   BlockSyncState,
   CoinSelectionAlgo,

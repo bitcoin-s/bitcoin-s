@@ -1,9 +1,15 @@
 package org.bitcoins.dlc.node
 
-import akka.actor._
-import akka.event.LoggingReceive
-import akka.io.{IO, Tcp}
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.{
+  Actor,
+  ActorLogging,
+  ActorRef,
+  ActorSystem,
+  Props
+}
+import org.apache.pekko.event.LoggingReceive
+import org.apache.pekko.io.{IO, Tcp}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.tor._

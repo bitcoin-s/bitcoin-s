@@ -24,9 +24,9 @@ object Deps {
     val spray = "1.3.6"
     val zeromq = "0.6.0"
     val scalapb = "0.11.15"
-    val akkav = "10.2.10"
+    val akkav = "1.0.1"
     val playv = "2.10.4" //https://github.com/playframework/play-json/releases
-    val akkaStreamv = "2.6.20"
+    val akkaStreamv = "1.0.2"
     val jUnixSocketV = "2.9.0"
     val scodecV = "1.1.38"
     val junitV = "0.13.3"
@@ -104,25 +104,27 @@ object Deps {
       "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb % "protobuf"
 
     val akkaHttp =
-      "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-http" % V.akkav withSources () withJavadoc ()
 
-    val akkaHttp2 =
-      "com.typesafe.akka" %% "akka-http2-support" % V.akkav withSources () withJavadoc ()
+/*    val akkaHttp2 =
+      "org.apache.pekko" %% "pekko-http2-support" % V.akkav withSources () withJavadoc ()*/
 
     val akkaStream =
-      "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-stream" % V.akkaStreamv withSources () withJavadoc ()
 
     val akkaDiscovery =
-      "com.typesafe.akka" %% "akka-discovery" % V.akkaStreamv withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-discovery" % V.akkaStreamv withSources () withJavadoc ()
 
     val akkaActor =
-      "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-actor" % V.akkaStreamv withSources () withJavadoc ()
 
     val akkaSlf4j =
-      "com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-slf4j" % V.akkaStreamv withSources () withJavadoc ()
 
     val akkaTestkit =
-      "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
+
+    val pekkoGrpc = "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources() withJavadoc()
 
     //https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
@@ -271,10 +273,10 @@ object Deps {
       "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
 
     val akkaHttpTestkit =
-      "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
 
     val akkaStream =
-      "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
     val playJson = Compile.playJson % "test"
 
     val scalameter =
@@ -287,7 +289,7 @@ object Deps {
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
 
     val akkaTestkit =
-      "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
   }
 
   def asyncUtils = Def.setting {
@@ -538,9 +540,10 @@ object Deps {
   val lndRpc = List(
     Compile.scalapb,
     Compile.akkaHttp,
-    Compile.akkaHttp2,
+/*    Compile.akkaHttp2,*/
     Compile.akkaStream,
     Compile.akkaDiscovery,
+    Compile.pekkoGrpc,
     Compile.playJson,
     Compile.slf4j,
     Compile.grizzledSlf4j

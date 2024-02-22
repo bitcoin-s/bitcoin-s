@@ -44,7 +44,7 @@ import org.bitcoins.rpc.BitcoindWalletException
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 ```
 
 ```scala mdoc:compile-only

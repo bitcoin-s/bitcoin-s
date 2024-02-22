@@ -1,7 +1,7 @@
 package org.bitcoins.server.routes
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.server.Directives.complete
+import org.apache.pekko.http.scaladsl.server.Route
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.db.DatadirUtil
 

@@ -1,7 +1,7 @@
 package com.bitcoins.clightning.rpc
 
-import akka.http.scaladsl.model._
-import akka.util._
+import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity}
+import org.apache.pekko.util.ByteString
 import org.newsclub.net.unix.AFUNIXSocketAddress
 import play.api.libs.json._
 
