@@ -25,10 +25,13 @@ abstract class RpcUtil extends AsyncUtil {
   /** Genreates a zmq config with unused ports */
   def zmqConfig: ZmqConfig = {
     ZmqConfig(
-      hashBlock = Some(new InetSocketAddress(randomPort)),
-      hashTx = Some(new InetSocketAddress(randomPort)),
-      rawTx = Some(new InetSocketAddress(randomPort)),
-      rawBlock = Some(new InetSocketAddress(randomPort))
+      hashBlock =
+        Some(InetSocketAddress.createUnresolved("127.0.0.1", randomPort)),
+      hashTx =
+        Some(InetSocketAddress.createUnresolved("127.0.0.1", randomPort)),
+      rawTx = Some(InetSocketAddress.createUnresolved("127.0.0.1", randomPort)),
+      rawBlock =
+        Some(InetSocketAddress.createUnresolved("127.0.0.1", randomPort))
     )
   }
 }

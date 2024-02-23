@@ -30,7 +30,7 @@ class ZMQSubscriber(
     extends Logging
     with StartStop[Unit] {
 
-  private var running = true
+  private var isConnected = false
   private val context = ZMQ.context(1)
 
   private val subscriber: ZMQ.Socket = context.socket(SocketType.SUB)
@@ -40,54 +40,24 @@ class ZMQSubscriber(
   private case object SubscriberRunnable extends Runnable {
 
     override def run(): Unit = {
-      logger.info(s"ZmqSubscriber connecting to uri=$uri")
-      subscriber.setLinger(2000)
-      val isConnected = subscriber.connect(s"tcp://$uri")
-
-      if (isConnected) {
-        hashTxListener.foreach { _ =>
-          subscriber.subscribe(HashTx.topic.getBytes(ZMQ.CHARSET))
-          logger.debug("subscribed to the transaction hashes from zmq")
-        }
-
-        rawTxListener.foreach { _ =>
-          subscriber.subscribe(RawTx.topic.getBytes(ZMQ.CHARSET))
-          logger.debug("subscribed to raw transactions from zmq")
-        }
-
-        hashBlockListener.foreach { _ =>
-          subscriber.subscribe(HashBlock.topic.getBytes(ZMQ.CHARSET))
-          logger.debug("subscribed to the hashblock stream from zmq")
-        }
-
-        rawBlockListener.foreach { _ =>
-          subscriber.subscribe(RawBlock.topic.getBytes(ZMQ.CHARSET))
-          logger.debug("subscribed to raw block stream from zmq")
-        }
-
-        while (running && !subscriberThread.isInterrupted) {
-          try {
-            val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
-            if (zmsg != null) {
-              val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
-              val body = zmsg.pop().getData
-              processMsg(notificationTypeStr, body)
-            } else {
-              Thread.sleep(100)
-            }
-          } catch {
-            case e: ZMQException if e.getErrorCode == ZMQ.Error.ETERM.getCode =>
-              context.term()
-              logger.info(s"Done terminating zmq context msg=${e.getMessage}")
-            case e: Exception =>
-              context.term()
-              logger.info(s"Done terminating zmq context msg=${e.getMessage}")
+      while (isConnected && !subscriberThread.isInterrupted) {
+        try {
+          val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
+          if (zmsg != null) {
+            val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
+            val body = zmsg.pop().getData
+            processMsg(notificationTypeStr, body)
+          } else {
+            Thread.sleep(1)
           }
+        } catch {
+          case e: ZMQException if e.getErrorCode == ZMQ.Error.ETERM.getCode =>
+            context.term()
+            logger.info(s"Done terminating zmq context msg=${e.getMessage}")
+          case e: Exception =>
+            context.term()
+            logger.info(s"Done terminating zmq context msg=${e.getMessage}")
         }
-        logger.info(s"Terminated")
-      } else {
-        logger.error(s"Failed to connect to zmq socket ${uri}")
-        throw new RuntimeException(s"Failed to connect to zmq socket ${uri}")
       }
 
     }
@@ -99,8 +69,38 @@ class ZMQSubscriber(
   subscriberThread.setDaemon(true)
 
   override def start(): Unit = {
-    logger.info("starting zmq")
+    logger.info(s"ZmqSubscriber connecting to uri=$uri")
+
+    isConnected = subscriber.connect(s"tcp://$uri")
     subscriberThread.start()
+    if (isConnected) {
+      hashTxListener.foreach { _ =>
+        val result = subscriber.subscribe(HashTx.topic.getBytes(ZMQ.CHARSET))
+        if (result) logger.debug("subscribed to hashtxs stream from zmq")
+        else logger.error(s"Failed to subscribe to ${HashTx.topic}")
+      }
+
+      rawTxListener.foreach { _ =>
+        val result = subscriber.subscribe(RawTx.topic.getBytes(ZMQ.CHARSET))
+        if (result) logger.debug("subscribed to rawtxs stream from zmq")
+        else logger.error(s"Failed to subscribe to ${RawTx.topic}")
+      }
+
+      hashBlockListener.foreach { _ =>
+        val result = subscriber.subscribe(HashBlock.topic.getBytes(ZMQ.CHARSET))
+        if (result) logger.debug("subscribed to hashblock stream from zmq")
+        else logger.error(s"Failed to subscribe to ${HashBlock.topic}")
+      }
+
+      rawBlockListener.foreach { _ =>
+        val result = subscriber.subscribe(RawBlock.topic.getBytes(ZMQ.CHARSET))
+        if (result) logger.debug("subscribed to raw block stream from zmq")
+        else logger.error(s"Failed to subscribe to ${RawBlock.topic}")
+      }
+    } else {
+      logger.error(s"Failed to connect to zmq socket ${uri}")
+      throw new RuntimeException(s"Failed to connect to zmq socket ${uri}")
+    }
   }
 
   /** Stops running the zmq subscriber and cleans up after zmq
@@ -111,7 +111,7 @@ class ZMQSubscriber(
     //i think this could technically not work, because currently we are blocking
     //on Zmsg.recvMsg in our while loop. If we don't get another message we won't
     //be able toe evaluate the while loop again. Moving forward with this for now.
-    running = false
+    isConnected = false
     subscriber.close()
     logger.info("Attempting to terminate context")
     context.term()
