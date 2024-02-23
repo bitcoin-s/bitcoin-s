@@ -25,7 +25,7 @@ object Deps {
     val zeromq = "0.6.0"
     val scalapb = "0.11.15"
     val akkav = "1.0.1"
-    val playv = "2.10.4" //https://github.com/playframework/play-json/releases
+    val playv = "3.0.2" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "1.0.2"
     val jUnixSocketV = "2.9.0"
     val scodecV = "1.1.38"
@@ -106,7 +106,7 @@ object Deps {
     val akkaHttp =
       "org.apache.pekko" %% "pekko-http" % V.akkav withSources () withJavadoc ()
 
-/*    val akkaHttp2 =
+    /*    val akkaHttp2 =
       "org.apache.pekko" %% "pekko-http2-support" % V.akkav withSources () withJavadoc ()*/
 
     val akkaStream =
@@ -124,7 +124,8 @@ object Deps {
     val akkaTestkit =
       "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
 
-    val pekkoGrpc = "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources() withJavadoc()
+    val pekkoGrpc =
+      "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources () withJavadoc ()
 
     //https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
@@ -162,7 +163,7 @@ object Deps {
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
 
     val playJson =
-      "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
+      "org.playframework" %% "play-json" % V.playv withSources () withJavadoc ()
 
     val typesafeConfig =
       "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
@@ -540,7 +541,7 @@ object Deps {
   val lndRpc = List(
     Compile.scalapb,
     Compile.akkaHttp,
-/*    Compile.akkaHttp2,*/
+    /*    Compile.akkaHttp2,*/
     Compile.akkaStream,
     Compile.akkaDiscovery,
     Compile.pekkoGrpc,
