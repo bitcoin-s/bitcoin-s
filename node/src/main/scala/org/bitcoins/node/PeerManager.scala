@@ -1374,11 +1374,12 @@ object PeerManager extends Logging {
     }
   }
 
-  def handleHealthCheck(
-      runningState: NodeRunningState): Future[NodeRunningState] = {
-    val nonBlockFilterPeers = runningState.peerDataMap.filterNot(
-      _._2.serviceIdentifier.nodeCompactFilters)
-    if (runningState.peerDataMap.nonEmpty && nonBlockFilterPeers.isEmpty) {
+  def handleHealthCheck(runningState: NodeRunningState)(implicit
+      nodeAppConfig: NodeAppConfig): Future[NodeRunningState] = {
+    val blockFilterPeers =
+      runningState.peerDataMap.filter(_._2.serviceIdentifier.nodeCompactFilters)
+    val slotsFull = blockFilterPeers.size == nodeAppConfig.maxConnectedPeers
+    if (runningState.peerDataMap.nonEmpty && slotsFull) {
       //do nothing
       Future.successful(runningState)
     } else {
