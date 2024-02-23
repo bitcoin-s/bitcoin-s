@@ -111,7 +111,7 @@ case class NeutrinoNode(
         node <- super.start()
         _ <- peerFinder.start()
         _ = {
-          val inactivityCancellable = startInactivityChecksJob()
+          val inactivityCancellable = startHealthChecksJob()
           inactivityCancellableOpt = Some(inactivityCancellable)
         }
       } yield {
@@ -199,9 +199,9 @@ case class NeutrinoNode(
   @volatile private[this] var inactivityCancellableOpt: Option[Cancellable] =
     None
 
-  private def inactivityChecksRunnable(): Runnable = { () =>
+  private def healthChecksRunnable(): Runnable = { () =>
     val peers = peerManager.peers
-    logger.info(s"Running inactivity checks for peers=${peers}")
+    logger.info(s"Running health checks for peers=${peers}")
     val resultF = if (peers.nonEmpty || isStarted.get) {
       queueOpt match {
         case Some(q) =>
@@ -221,11 +221,11 @@ case class NeutrinoNode(
     Await.result(resultF, INACTIVITY_CHECK_TIMEOUT)
   }
 
-  private def startInactivityChecksJob(): Cancellable = {
-    val interval = nodeAppConfig.inactivityTimeout
+  private def startHealthChecksJob(): Cancellable = {
+    val interval = nodeAppConfig.healthCheckInterval
     system.scheduler.scheduleAtFixedRate(
       initialDelay = interval,
-      interval = interval)(inactivityChecksRunnable())
+      interval = interval)(healthChecksRunnable())
   }
 
   override def offer(elem: NodeStreamMessage): Future[QueueOfferResult] = {

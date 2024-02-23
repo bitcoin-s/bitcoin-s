@@ -189,11 +189,18 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 10
   }
 
-  lazy val inactivityTimeout: FiniteDuration = {
-    if (config.hasPath("bitcoin-s.node.inactivity-timeout")) {
-      val duration = config.getDuration("bitcoin-s.node.inactivity-timeout")
+  lazy val healthCheckInterval: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.health-check-interval")) {
+      val duration = config.getDuration("bitcoin-s.node.health-check-interval")
       TimeUtil.durationToFiniteDuration(duration)
-    } else 5.minute
+    } else 1.minute
+  }
+
+  lazy val peerTimeout: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.peer-timeout")) {
+      val duration = config.getDuration("bitcoin-s.node.peer-timeout")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else 20.minute
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
