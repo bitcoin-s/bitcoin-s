@@ -1376,13 +1376,14 @@ object PeerManager extends Logging {
 
   def handleHealthCheck(
       runningState: NodeRunningState): Future[NodeRunningState] = {
-    val blockFilterPeers = runningState.peerDataMap.filter(
-      _._2.serviceIdentifier.hasServicesOf(
-        ServiceIdentifier.NODE_COMPACT_FILTERS))
-    if (blockFilterPeers.nonEmpty) {
+    val nonBlockFilterPeers = runningState.peerDataMap.filterNot(
+      _._2.serviceIdentifier.nodeCompactFilters)
+    if (runningState.peerDataMap.nonEmpty && nonBlockFilterPeers.isEmpty) {
       //do nothing
       Future.successful(runningState)
     } else {
+      //keep querying for block filter peers until our connection
+      //slots are full of block filter peers
       val peerFinder = runningState.peerFinder
       peerFinder.queryForPeerConnections(excludePeers = Set.empty)
       Future.successful(runningState)
