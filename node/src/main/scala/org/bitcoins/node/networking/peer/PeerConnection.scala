@@ -142,7 +142,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Vector[NetworkMessage],
     (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
     connection
-      .idleTimeout(nodeAppConfig.inactivityTimeout)
+      .idleTimeout(nodeAppConfig.peerTimeout)
       .joinMat(bidiFlow)(Keep.left)
 
   private def connectionGraph(

@@ -41,8 +41,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val timeout = 5.seconds
       val startedF =
-        getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node,
-                                            timeout)
+        getSmallHealthCheckNeutrinoNode(nodeConnectedWithBitcoind.node, timeout)
       for {
         started <- startedF
         _ <- NodeTestUtil.awaitConnectionCount(node = started,
@@ -66,8 +65,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val timeout = 5.second
       val startedF =
-        getSmallInactivityCheckNeutrinoNode(nodeConnectedWithBitcoind.node,
-                                            timeout)
+        getSmallHealthCheckNeutrinoNode(nodeConnectedWithBitcoind.node, timeout)
       for {
         started <- startedF
         _ <- NodeTestUtil.awaitConnectionCount(started, 1)
@@ -87,15 +85,19 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
       }
   }
 
-  private def getSmallInactivityCheckNeutrinoNode(
+  private def getSmallHealthCheckNeutrinoNode(
       initNode: NeutrinoNode,
       timeout: FiniteDuration): Future[NeutrinoNode] = {
 
     //make a custom config, set the inactivity timeout very low
     //so we will disconnect our peer organically
+    val str =
+      s"""
+         |bitcoin-s.node.health-check-interval = ${timeout.toString()}
+         |bitcoin-s.node.peer-timeout = ${timeout.toString()}
+         |""".stripMargin
     val config =
-      ConfigFactory.parseString(
-        s"bitcoin-s.node.inactivity-timeout=${timeout.toString}")
+      ConfigFactory.parseString(str)
     val stoppedConfigF = initNode.nodeConfig.stop()
     val newNodeAppConfigF =
       stoppedConfigF.map(_ => initNode.nodeConfig.withOverrides(config))
