@@ -198,6 +198,7 @@ case class PeerManager(
   private def onInitializationTimeout(
       peer: Peer,
       state: NodeRunningState): Future[Unit] = {
+    logger.debug(s"onInitializationTimeout() peer=$peer state=$state")
     val finder = state.peerFinder
     require(!finder.hasPeer(peer) || !peerDataMap.contains(peer),
             s"$peer cannot be both a test and a persistent peer")
