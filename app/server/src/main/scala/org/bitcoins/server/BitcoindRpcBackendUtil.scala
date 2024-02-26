@@ -221,13 +221,15 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def startZMQWalletCallbacks(
       wallet: NeutrinoHDWalletApi,
-      zmqConfig: ZmqConfig)(implicit ec: ExecutionContext): Unit = {
+      zmqConfig: ZmqConfig)(implicit
+      ec: ExecutionContext): WalletZmqSubscribers = {
     require(zmqConfig != ZmqConfig.empty,
             "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
-    zmqConfig.rawTx.foreach { zmq =>
+    val rawTxSub = zmqConfig.rawTx.map { zmq =>
       val rawTxListener: Option[Transaction => Unit] = Some {
         { tx: Transaction =>
+          println(s"Received tx ${tx.txIdBE.hex}, processing")
           logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
           val f = wallet.processTransaction(tx, None)
           f.failed.foreach { err =>
@@ -241,14 +243,15 @@ object BitcoindRpcBackendUtil extends Logging {
                         hashTxListener = None,
                         hashBlockListener = None,
                         rawTxListener = rawTxListener,
-                        rawBlockListener = None).start()
+                        rawBlockListener = None)
     }
 
-    zmqConfig.rawBlock.foreach { zmq =>
+    val rawBlockSub = zmqConfig.rawBlock.map { zmq =>
       val rawBlockListener: Option[Block => Unit] = Some {
         { block: Block =>
           logger.info(
             s"Received block ${block.blockHeader.hashBE.hex}, processing")
+          println(s"Received block ${block.blockHeader.hashBE.hex}, processing")
           val f = wallet.processBlock(block)
           f.failed.foreach { err =>
             logger.error("failed to process raw block zmq message", err)
@@ -261,8 +264,12 @@ object BitcoindRpcBackendUtil extends Logging {
                         hashTxListener = None,
                         hashBlockListener = None,
                         rawTxListener = None,
-                        rawBlockListener = rawBlockListener).start()
+                        rawBlockListener = rawBlockListener)
     }
+
+    val subs = WalletZmqSubscribers(rawTxSub, rawBlockSub)
+    subs.start()
+    subs
   }
 
   def createDLCWalletWithBitcoindCallbacks(

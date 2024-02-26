@@ -60,7 +60,7 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ = assert(firstBalance == Satoshis.zero)
 
       // Setup zmq subscribers
-      _ = BitcoindRpcBackendUtil.startZMQWalletCallbacks(
+      zmqSubs = BitcoindRpcBackendUtil.startZMQWalletCallbacks(
         wallet,
         bitcoind.instance.zmqConfig)
       _ <- AsyncUtil.nonBlockingSleep(5.seconds)
@@ -72,9 +72,10 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       confirmed <- wallet.getConfirmedBalance()
       _ = assert(confirmed == Satoshis.zero)
 
-      _ <- attemptZMQBlock(6, wallet)
+      _ <- attemptZMQBlock(walletAppConfig.requiredConfirmations, wallet)
 
       balance <- wallet.getConfirmedBalance()
+      _ = zmqSubs.stop()
     } yield {
       // use >= because of multiple attempts
       assert(balance >= amountToSend)
