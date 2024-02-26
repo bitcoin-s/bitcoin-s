@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p._
@@ -10,7 +10,7 @@ import org.bitcoins.node.networking.peer.ControlMessageHandler.ControlMessageHan
 import org.bitcoins.node.util.PeerMessageSenderApi
 import org.bitcoins.node.{DisconnectedPeerData, P2PLogger, PeerFinder}
 
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 case class ControlMessageHandler(peerFinder: PeerFinder)(implicit

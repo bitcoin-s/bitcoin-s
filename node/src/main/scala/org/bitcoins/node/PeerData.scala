@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.SourceQueue
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.ServiceIdentifier
