@@ -595,7 +595,7 @@ case class PeerManager(
 
             //now send request to stop actor which will be completed some time in future
             client.stop().map { _ =>
-              val _ = _peerDataMap.remove(i.peer)
+              //val _ = _peerDataMap.remove(i.peer)
               val newWaiting = r.waitingForDisconnection.+(i.peer)
               val newPdm = r.peerDataMap.filterNot(_._1.peer == i.peer)
               val newState = r
