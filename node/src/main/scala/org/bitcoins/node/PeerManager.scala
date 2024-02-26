@@ -334,9 +334,11 @@ case class PeerManager(
         Future.successful(state)
       } else if (peerDataMap.contains(peer)) {
         _peerDataMap.remove(peer)
+        val rm = state.waitingForDisconnection.-(peer)
+        val rmWaitingForDisconnect = state.replaceWaitingForDisconnection(rm)
         val isShuttingDown = state.isInstanceOf[NodeShuttingDown]
         if (state.peers.exists(_ != peer)) {
-          state match {
+          rmWaitingForDisconnect match {
             case s: SyncNodeState => switchSyncToRandomPeer(s, Some(peer))
             case d: DoneSyncing   =>
               //defensively try to sync with the new peer
@@ -355,16 +357,16 @@ case class PeerManager(
 
         } else {
           if (forceReconnect && !isShuttingDown) {
-            finder.reconnect(peer).map(_ => state)
+            finder.reconnect(peer).map(_ => rmWaitingForDisconnect)
           } else if (!isShuttingDown) {
             logger.info(
               s"No new peers to connect to, querying for new connections... state=${state} peers=$peers")
             finder.queryForPeerConnections(Set(peer)) match {
-              case Some(_) => Future.successful(state)
+              case Some(_) => Future.successful(rmWaitingForDisconnect)
               case None =>
                 logger.debug(
                   s"Could not query for more peer connections as previous job is still running")
-                Future.successful(state)
+                Future.successful(rmWaitingForDisconnect)
             }
           } else {
             //if shutting down, do nothing
@@ -373,7 +375,7 @@ case class PeerManager(
         }
       } else if (state.waitingForDisconnection.contains(peer)) {
         //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
-        val removed = state.waitingForDisconnection.removedAll(Set(peer))
+        val removed = state.waitingForDisconnection.-(peer)
         val newState = state.replaceWaitingForDisconnection(removed)
         newState match {
           case s: SyncNodeState =>
@@ -593,6 +595,7 @@ case class PeerManager(
 
             //now send request to stop actor which will be completed some time in future
             client.stop().map { _ =>
+              val _ = _peerDataMap.remove(i.peer)
               val newWaiting = r.waitingForDisconnection.+(i.peer)
               val newPdm = r.peerDataMap.filterNot(_._1.peer == i.peer)
               val newState = r
