@@ -291,27 +291,11 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 
   private def handleStreamComplete(): Future[Unit] = {
-    val f = if (connectionGraphOpt.isDefined) {
-      //if our peer initiated the disconnect
-      //we need to call disconnect() to reset connectionGraphOpt
-      disconnect()
-    } else {
-      //if we initiated the disconnect we've already called disconnect(), so don't do it twice
-      Future.unit
-    }
-    val offerP = Promise[Unit]()
-    f.onComplete { _ =>
-      val disconnectedPeer = DisconnectedPeer(peer, false)
-      val offerF = queue
-        .offer(disconnectedPeer)
-        .map(_ => ())
-      offerF.onComplete(offerP.complete(_))
-    }
-
-    offerP.future.failed.foreach(err =>
-      logger.error(s"Failed to handleStreamComplete()", err))
-
-    offerP.future
+    val disconnectedPeer = DisconnectedPeer(peer, false)
+    val offerF = queue
+      .offer(disconnectedPeer)
+      .map(_ => ())
+    offerF
   }
 
   /** resets reconnect state after connecting to a peer */
