@@ -149,14 +149,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 5.seconds
   }
 
-  /** initialization timeout once connected, reconnections reset this */
-  lazy val initializationTimeout: FiniteDuration = {
-    if (config.hasPath("bitcoin-s.node.initialization-timeout")) {
-      val duration = config.getDuration("bitcoin-s.node.initialization-timeout")
-      TimeUtil.durationToFiniteDuration(duration)
-    } else 10.seconds
-  }
-
   lazy val tryPeersStartDelay: FiniteDuration = {
     if (config.hasPath("bitcoin-s.node.try-peers-start-delay")) {
       val duration = config.getDuration("bitcoin-s.node.try-peers-start-delay")

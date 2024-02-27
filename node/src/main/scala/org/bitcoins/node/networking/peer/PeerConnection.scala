@@ -235,15 +235,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
           buildConnectionGraph()
         }
 
-        val initializationCancellable =
-          system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout) {
-            val offerF =
-              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
-            offerF.failed.foreach(err =>
-              logger.error(s"Failed to offer initialize timeout for peer=$peer",
-                           err))
-          }
-
         outgoingConnectionF.onComplete {
           case scala.util.Success(o) =>
             val tcp = o._1._1
@@ -252,6 +243,11 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
           case scala.util.Failure(err) =>
             logger.info(
               s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
+            val offerF =
+              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
+            offerF.failed.foreach(err =>
+              logger.error(s"Failed to offer initialize timeout for peer=$peer",
+                           err))
         }
 
         val resultF: Future[Unit] = {
@@ -261,8 +257,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               mergeHubSink = mergeHubSink,
               connectionF = outgoingConnectionF.map(_._1._1),
               streamDoneF = outgoingConnection._2,
-              killswitch = outgoingConnection._1._2,
-              initializationCancellable = initializationCancellable
+              killswitch = outgoingConnection._1._2
             )
             _ = {
               connectionGraphOpt = Some(graph)
@@ -277,7 +272,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                 }
             }
             _ = resetReconnect()
-            _ = initializationCancellable.cancel()
             _ <- {
               nodeAppConfig.socks5ProxyParams match {
                 case Some(_) => Future.unit
@@ -291,27 +285,11 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 
   private def handleStreamComplete(): Future[Unit] = {
-    val f = if (connectionGraphOpt.isDefined) {
-      //if our peer initiated the disconnect
-      //we need to call disconnect() to reset connectionGraphOpt
-      disconnect()
-    } else {
-      //if we initiated the disconnect we've already called disconnect(), so don't do it twice
-      Future.unit
-    }
-    val offerP = Promise[Unit]()
-    f.onComplete { _ =>
-      val disconnectedPeer = DisconnectedPeer(peer, false)
-      val offerF = queue
-        .offer(disconnectedPeer)
-        .map(_ => ())
-      offerF.onComplete(offerP.complete(_))
-    }
-
-    offerP.future.failed.foreach(err =>
-      logger.error(s"Failed to handleStreamComplete()", err))
-
-    offerP.future
+    val disconnectedPeer = DisconnectedPeer(peer, false)
+    val offerF = queue
+      .offer(disconnectedPeer)
+      .map(_ => ())
+    offerF
   }
 
   /** resets reconnect state after connecting to a peer */
@@ -368,9 +346,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         connectionGraphOpt = None
         cg.stop()
       case None =>
-        val err =
-          s"Cannot disconnect client that is not connected to peer=${peer}!"
-        logger.warn(err)
         Future.successful(Done)
     }
   }
@@ -419,12 +394,10 @@ object PeerConnection {
       mergeHubSink: Sink[ByteString, NotUsed],
       connectionF: Future[Tcp.OutgoingConnection],
       streamDoneF: Future[Done],
-      killswitch: UniqueKillSwitch,
-      initializationCancellable: Cancellable) {
+      killswitch: UniqueKillSwitch) {
 
     def stop(): Future[Done] = {
       killswitch.shutdown()
-      initializationCancellable.cancel()
       streamDoneF
     }
   }
