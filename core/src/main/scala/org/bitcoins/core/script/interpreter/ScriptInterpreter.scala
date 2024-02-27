@@ -1248,8 +1248,7 @@ sealed abstract class ScriptInterpreter {
             case newProgram: ExecutedScriptProgram =>
               //script was marked invalid for other reasons, don't need to update the opcount
               (newProgram, opCount)
-            case newProgram @ (_: ExecutionInProgressScriptProgram |
-                _: PreExecutionScriptProgram) =>
+            case newProgram: ExecutionInProgressScriptProgram =>
               val programOrError = newProgram
               val newOpCount =
                 calcOpCount(opCount, OP_CHECKMULTISIG) + BitcoinScriptUtil
@@ -1263,8 +1262,7 @@ sealed abstract class ScriptInterpreter {
             case newProgram: ExecutedScriptProgram =>
               //script was marked invalid for other reasons, don't need to update the opcount
               (newProgram, opCount)
-            case newProgram @ (_: ExecutionInProgressScriptProgram |
-                _: PreExecutionScriptProgram) =>
+            case newProgram: ExecutionInProgressScriptProgram =>
               val programOrError = newProgram
               val newOpCount =
                 calcOpCount(opCount, OP_CHECKMULTISIGVERIFY) + BitcoinScriptUtil

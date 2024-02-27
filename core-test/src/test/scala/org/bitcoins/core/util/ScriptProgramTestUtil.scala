@@ -3,7 +3,6 @@ package org.bitcoins.core.util
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   ExecutionInProgressScriptProgram,
-  PreExecutionScriptProgram,
   StartedScriptProgram
 }
 
@@ -17,7 +16,7 @@ trait ScriptProgramTestUtil {
   def toExecutedScriptProgram(p: StartedScriptProgram): ExecutedScriptProgram =
     p match {
       case e: ExecutedScriptProgram => e
-      case _: PreExecutionScriptProgram | _: ExecutionInProgressScriptProgram =>
+      case _: ExecutionInProgressScriptProgram =>
         throw new RuntimeException("Should be an executed script program")
     }
 
@@ -26,7 +25,7 @@ trait ScriptProgramTestUtil {
       p: StartedScriptProgram): ExecutionInProgressScriptProgram =
     p match {
       case e: ExecutionInProgressScriptProgram => e
-      case _: PreExecutionScriptProgram | _: ExecutedScriptProgram =>
+      case _: ExecutedScriptProgram =>
         throw new RuntimeException(
           "Must be an execution in progress script program")
     }
