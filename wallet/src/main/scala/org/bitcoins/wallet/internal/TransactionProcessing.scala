@@ -65,7 +65,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     val isEmptyF = isEmpty()
     val heightF = chainQueryApi.getBlockHeight(block.blockHeader.hashBE)
     heightF.foreach { heightOpt =>
-      logger.info(
+      logger.debug(
         s"Processing block=${block.blockHeader.hash.flip.hex} heightOpt=$heightOpt")
     }
 
