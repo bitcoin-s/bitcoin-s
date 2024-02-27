@@ -178,7 +178,6 @@ case class DisconnectedPeerConnection(
   }
 
   private def buildActivePeerConnection(): Future[ActivePeerConnection] = {
-
     val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
       Flow[Vector[NetworkMessage]]
         .mapConcat(identity)
@@ -268,6 +267,11 @@ case class DisconnectedPeerConnection(
       case scala.util.Failure(err) =>
         logger.debug(
           s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
+        val offerF =
+          queue.offer(NodeStreamMessage.InitializationTimeout(peer))
+        offerF.failed.foreach(err =>
+          logger.error(s"Failed to offer initialize timeout for peer=$peer",
+                       err))
     }
 
     val resultF: Future[ActivePeerConnection] = {
