@@ -278,6 +278,8 @@ trait ChainUnitTest
     val subscribedF = for {
       chainHandler <- chainHandlerF
       addr <- bitcoind.getNewAddress
+      //wait for zmq to get setup
+      _ <- AsyncUtil.nonBlockingSleep(5.second)
       hash +: _ <- bitcoind.generateToAddress(1, addr)
       //wait until we see the hash, to make sure the subscription is started
       _ <- AsyncUtil.retryUntilSatisfiedF(
