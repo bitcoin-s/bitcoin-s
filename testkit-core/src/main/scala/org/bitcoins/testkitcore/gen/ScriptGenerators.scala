@@ -857,12 +857,9 @@ sealed abstract class ScriptGenerators {
                                            Some(0),
                                            hashType)
         (cltvScriptSig.asInstanceOf[CLTVScriptSignature], cltv, privKeys)
-      case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
-        throw new IllegalArgumentException(
-          "Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
-      case _: P2SHScriptPubKey | _: CLTVScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: CSVScriptPubKey |
-          _: NonStandardScriptPubKey | _: WitnessCommitment =>
+      case _: CLTVScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: CSVScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment =>
         throw new IllegalArgumentException(
           "We only " +
             "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
@@ -910,12 +907,9 @@ sealed abstract class ScriptGenerators {
         val csvScriptSig =
           lockTimeHelper(None, sequence, csv, privKeys, Some(0), hashType)
         (csvScriptSig.asInstanceOf[CSVScriptSignature], csv, privKeys)
-      case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
-        throw new IllegalArgumentException(
-          "Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
-      case _: P2SHScriptPubKey | _: CLTVScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: CSVScriptPubKey |
-          _: NonStandardScriptPubKey | _: WitnessCommitment =>
+      case _: CLTVScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: CSVScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment =>
         throw new IllegalArgumentException(
           "We only " +
             "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
@@ -1108,14 +1102,10 @@ sealed abstract class ScriptGenerators {
         ConditionalScriptSignature(scriptSig, true)
       case EmptyScriptPubKey =>
         CSVScriptSignature(TrivialTrueScriptSignature)
-      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-        //bare segwit always has an empty script sig, see BIP141
-        CSVScriptSignature(EmptyScriptSignature)
       case _: LockTimeScriptPubKey | _: P2PKWithTimeoutScriptPubKey =>
         throw new IllegalArgumentException(
           "Cannot have a nested locktimeScriptPubKey inside a lockTimeScriptPubKey")
-      case x @ (_: NonStandardScriptPubKey | _: P2SHScriptPubKey |
-          _: WitnessCommitment) =>
+      case x @ (_: NonStandardScriptPubKey | _: WitnessCommitment) =>
         throw new IllegalArgumentException(
           "A NonStandardScriptPubKey/P2SHScriptPubKey/WitnessCommitment cannot be" +
             "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
