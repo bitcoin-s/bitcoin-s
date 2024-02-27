@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="OFF">
+    <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -29,7 +29,7 @@
 
     <logger name="org.bitcoins.chain" level="WARN"/>
 
-    <logger name="org.bitcoins.wallet" level="WARN"/>
+    <logger name="org.bitcoins.wallet" level="INFO"/>
 
     <!-- see what slick is compiling to in sql -->
     <logger name="slick" level="OFF"/>
