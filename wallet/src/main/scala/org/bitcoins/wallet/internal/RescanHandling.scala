@@ -395,7 +395,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def downloadAndProcessBlocks(
       blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
-    logger.info(s"Requesting ${blocks.size} block(s)")
+    logger.debug(s"Requesting ${blocks.size} block(s)")
     blocks.foldLeft(Future.unit) { (prevF, blockHash) =>
       val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
       for {
@@ -502,7 +502,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     Flow[Vector[Int]].mapAsync(1) { case range: Vector[Int] =>
       val startHeight = range.head
       val endHeight = range.last
-      logger.info(
+      logger.debug(
         s"Searching filters from start=$startHeight to end=$endHeight")
       chainQueryApi.getFiltersBetweenHeights(startHeight = startHeight,
                                              endHeight = endHeight)
@@ -534,7 +534,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
       _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
-      logger.info(
+      logger.debug(
         s"Found ${filtered.length} matches from start=$startHeightOpt to end=$endHeightOpt")
       filtered
     }
