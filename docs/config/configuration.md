@@ -162,8 +162,6 @@ bitcoin-s {
         # peers discovery configs, ideally you would not want to change this
         # timeout for tcp connection
         connection-timeout = 5s
-        # initialization timeout once connected, reconnections resets this
-        initialization-timeout = 10s
         # time interval for trying next set of peers in peer discovery
         try-peers-interval = 12 hour
         
