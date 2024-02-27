@@ -116,6 +116,10 @@ sealed trait NodeRunningState extends NodeState {
   def toDoneSyncing: DoneSyncing = {
     DoneSyncing(peerDataMap, waitingForDisconnection, peerFinder)
   }
+
+  override def toString: String = {
+    s"${getClass.getSimpleName}(peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
+  }
 }
 
 /** State to indicate that we are syncing the blockchain */
