@@ -93,7 +93,8 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     val action = findByPrimaryKey((address, port)).result.headOption
     val updatedLastSeenA = action.flatMap {
       case Some(peerDb) =>
-        updateAction(peerDb.copy(lastSeen = Instant.now()))
+        val now = Instant.now()
+        updateAction(peerDb.copy(lastSeen = now))
           .map(Some(_))
       case None => DBIOAction.successful(None)
     }

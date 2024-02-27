@@ -1,9 +1,11 @@
 package org.bitcoins.node.models
 
+import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.testkit.fixtures.NodeDAOFixture
 import scodec.bits.ByteVector
 
+import java.net.InetSocketAddress
 import java.time.Instant
 
 class PeerDAOTest extends NodeDAOFixture {
@@ -33,6 +35,28 @@ class PeerDAOTest extends NodeDAOFixture {
           && read.get.firstSeen.getEpochSecond == created.firstSeen.getEpochSecond
           && read.get.networkId == AddrV2Message.IPV4_NETWORK_BYTE
       )
+    }
+  }
+
+  it must "update last seen time" in { daos =>
+    val peerDAO = daos.peerDAO
+    val bytes = ByteVector(Array[Byte](127, 0, 0, 1))
+    val start = Instant.now
+    val peer = PeerDb(
+      address = bytes,
+      port = 8333,
+      lastSeen = start,
+      firstSeen = start,
+      networkId = AddrV2Message.IPV4_NETWORK_BYTE,
+      serviceBytes = ServiceIdentifier.NODE_COMPACT_FILTERS.bytes
+    )
+    for {
+      _ <- peerDAO.create(peer)
+      _ <- peerDAO.read((peer.address, peer.port))
+      socket = InetSocketAddress.createUnresolved("127.0.0.1", peer.port)
+      updated <- peerDAO.updateLastSeenTime(Peer(socket, None))
+    } yield {
+      assert(updated.get.lastSeen.isAfter(start))
     }
   }
 }
