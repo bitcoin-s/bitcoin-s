@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import grizzled.slf4j.Logging
+import org.apache.pekko.Done
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.stream.scaladsl.{Sink, SourceQueue}
 import org.bitcoins.asyncutil.AsyncUtil
@@ -594,13 +595,18 @@ case class PeerManager(
             //leading to a memory leak may happen
 
             //now send request to stop actor which will be completed some time in future
-            client.stop().map { _ =>
-              //val _ = _peerDataMap.remove(i.peer)
-              val newWaiting = r.waitingForDisconnection.+(i.peer)
-              val newPdm = r.peerDataMap.filterNot(_._1.peer == i.peer)
-              val newState = r
-                .replaceWaitingForDisconnection(newWaiting)
-                .replacePeers(newPdm)
+            val _ = _peerDataMap.remove(i.peer)
+            val newWaiting = r.waitingForDisconnection.+(i.peer)
+            val newPdm = r.peerDataMap.filterNot(_._1.peer == i.peer)
+            val newState = r
+              .replaceWaitingForDisconnection(newWaiting)
+              .replacePeers(newPdm)
+            val stopF: Future[Done] = client.stop().recoverWith {
+              case scala.util.control.NonFatal(err) =>
+                logger.error(s"Failed to stop peer=${client.peer}", err)
+                Future.successful(Done)
+            }
+            stopF.map { _ =>
               newState
             }
         }
