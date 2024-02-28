@@ -95,7 +95,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- bitcoind.disconnectNode(uri)
         _ <- NodeTestUtil.awaitConnectionCount(node, 0)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)
-        peerDb <- PeerDAO()(system.dispatcher, node.nodeConfig)
+        peerDb <- PeerDAO()(node.nodeConfig, system.dispatcher)
           .read((addrBytes, peer.port))
           .map(_.get)
       } yield {

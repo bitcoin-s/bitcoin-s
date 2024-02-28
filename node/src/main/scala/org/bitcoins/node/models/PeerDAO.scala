@@ -22,7 +22,7 @@ case class PeerDb(
     serviceBytes: ByteVector
 )
 
-case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
+case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
     extends CRUD[PeerDb, (ByteVector, Int)]
     with SlickUtil[PeerDb, (ByteVector, Int)] {
 
