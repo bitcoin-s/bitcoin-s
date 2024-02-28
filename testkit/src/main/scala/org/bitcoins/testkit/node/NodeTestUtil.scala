@@ -264,15 +264,16 @@ abstract class NodeTestUtil extends P2PLogger {
   /** get our neutrino node's uri from a test bitcoind instance to send rpc commands for our node.
     * The peer must be initialized by the node.
     */
-  def getNodeURIFromBitcoind(bitcoind: BitcoindRpcClient)(implicit
+  def getNodeURIFromBitcoind(
+      bitcoind: BitcoindRpcClient,
+      localAddressBitcoinS: InetSocketAddress)(implicit
       system: ActorSystem): Future[URI] = {
     import system.dispatcher
     bitcoind.getPeerInfo.map { peerInfo =>
       val localFilter = peerInfo.filter { p =>
         p.networkInfo.addrlocal.isDefined && p.subver.contains(
-          NodeConstants.userAgent)
+          NodeConstants.userAgent) && p.networkInfo.addr.getPort == localAddressBitcoinS.getPort
       }
-      println(s"getNodeURIFromBitcoind.localFilter=$localFilter")
       val result = localFilter.head.networkInfo.addr
       result
     }
