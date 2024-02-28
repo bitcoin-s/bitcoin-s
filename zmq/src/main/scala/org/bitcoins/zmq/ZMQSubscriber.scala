@@ -48,7 +48,8 @@ class ZMQSubscriber(
             val body = zmsg.pop().getData
             processMsg(notificationTypeStr, body)
           } else {
-            Thread.sleep(10)
+            //Thread.sleep(10)
+            ()
           }
         } catch {
           case e: ZMQException if e.getErrorCode == ZMQ.Error.ETERM.getCode =>
