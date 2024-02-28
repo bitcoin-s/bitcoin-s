@@ -220,6 +220,13 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     runningStream
   }
 
+  def getLocalAddress: Future[Option[InetSocketAddress]] = {
+    connectionGraphOpt match {
+      case Some(g) => g.connectionF.map(c => Some(c.localAddress))
+      case None    => Future.successful(None)
+    }
+  }
+
   @volatile private[this] var connectionGraphOpt: Option[ConnectionGraph] = None
 
   /** Initiates a connection with the given peer */

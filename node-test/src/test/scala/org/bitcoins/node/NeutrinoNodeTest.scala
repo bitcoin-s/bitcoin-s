@@ -139,7 +139,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- assertConnAndInit
         ourPeers <- Future.sequence(
           nodeConnectedWithBitcoind.bitcoinds.map(NodeTestUtil.getBitcoindPeer))
-        peerDbs <- PeerDAO()(executionContext, node.nodeAppConfig).findAll()
+        peerDbs <- PeerDAO()(node.nodeAppConfig, executionContext).findAll()
       } yield {
 
         val allInDb = ourPeers.forall { p =>
