@@ -70,7 +70,8 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         peerManager = node.peerManager
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
         //disconnect
-        _ <- peerManager.disconnectPeer(peer)
+        nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind)
+        _ <- bitcoind.disconnectNode(nodeUri)
         _ <- NodeTestUtil.awaitConnectionCount(node, 0)
         _ <- node.peerManager.connectPeer(peer)
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)

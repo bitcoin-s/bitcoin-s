@@ -790,6 +790,8 @@ case class PeerManager(
               s"Shut down already requested, ignoring new shutdown request")
             Future.successful(s)
           case r: NodeRunningState =>
+            logger.info(
+              s"Received NodeShutdown message, beginning shutdown procedures")
             val shutdownState =
               NodeShuttingDown(peerDataMap = r.peerDataMap,
                                waitingForDisconnection =

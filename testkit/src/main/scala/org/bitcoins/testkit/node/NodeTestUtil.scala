@@ -5,6 +5,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -267,7 +268,10 @@ abstract class NodeTestUtil extends P2PLogger {
       system: ActorSystem): Future[URI] = {
     import system.dispatcher
     bitcoind.getPeerInfo.map { peerInfo =>
-      val localFilter = peerInfo.filter(_.networkInfo.addrlocal.isDefined)
+      val localFilter = peerInfo.filter { p =>
+        p.networkInfo.addrlocal.isDefined && p.subver.contains(
+          NodeConstants.userAgent)
+      }
       val result = localFilter.head.networkInfo.addr
       result
     }
