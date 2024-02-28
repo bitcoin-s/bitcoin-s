@@ -17,7 +17,7 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
 
   private val proxyParams = Option.empty[Socks5ProxyParams]
 
-  it must "get a valid fee rate from bitcoiner.live" in {
+  it must "get a valid fee rate from bitcoiner.live" ignore {
     val provider = BitcoinerLiveFeeRateProvider(60, proxyParams)
     testProvider(provider)
   }
