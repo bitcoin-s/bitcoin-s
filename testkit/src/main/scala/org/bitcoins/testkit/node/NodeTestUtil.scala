@@ -272,6 +272,7 @@ abstract class NodeTestUtil extends P2PLogger {
         p.networkInfo.addrlocal.isDefined && p.subver.contains(
           NodeConstants.userAgent)
       }
+      println(s"getNodeURIFromBitcoind.localFilter=$localFilter")
       val result = localFilter.head.networkInfo.addr
       result
     }
