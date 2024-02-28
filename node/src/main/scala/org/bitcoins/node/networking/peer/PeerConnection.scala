@@ -367,6 +367,10 @@ case class ActivePeerConnection(
     }
   }
 
+  def getLocalAddress: Future[InetSocketAddress] = {
+    connectionGraph.connectionF.map(_.localAddress)
+  }
+
   private[node] def sendMsg(msg: NetworkPayload): Future[Unit] = {
     //version or verack messages are the only messages that
     //can be sent before we are fully initialized
