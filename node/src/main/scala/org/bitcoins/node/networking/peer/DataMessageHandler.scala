@@ -44,8 +44,6 @@ case class DataMessageHandler(
 
   private val txDAO = BroadcastAbleTransactionDAO()
 
-  private val syncing: Boolean = state.isSyncing
-
   private def isChainIBD: Future[Boolean] = {
     chainApi.isIBD()
   }
@@ -522,22 +520,36 @@ case class DataMessageHandler(
   private def handleInventoryMsg(
       invMsg: InventoryMessage): Future[DataMessageHandler] = {
     logger.debug(s"Received inv=${invMsg}")
-    val getData = GetDataMessage(invMsg.inventories.flatMap {
-      case Inventory(TypeIdentifier.MsgBlock, hash) =>
-        appConfig.nodeType match {
-          case NodeType.NeutrinoNode | NodeType.FullNode =>
-            if (syncing) {
-              logger.info(s"Ignoring inv message=$invMsg while in state=$state")
-              None
-            } else Some(Inventory(TypeIdentifier.MsgWitnessBlock, hash))
-          case NodeType.BitcoindBackend =>
-            throw new RuntimeException("This is impossible")
-        }
-      case Inventory(TypeIdentifier.MsgTx, hash) =>
-        Some(Inventory(TypeIdentifier.MsgWitnessTx, hash))
-      case other: Inventory => Some(other)
-    })
-    peerMessageSenderApi.sendMsg(getData).map(_ => this)
+    val invsOptF: Future[Seq[Option[Inventory]]] =
+      Future.traverse(invMsg.inventories) {
+        case Inventory(TypeIdentifier.MsgBlock, hash) =>
+          appConfig.nodeType match {
+            case NodeType.NeutrinoNode | NodeType.FullNode =>
+              for {
+                isIBD <- isChainIBD
+              } yield {
+                if (isIBD) {
+                  logger.info(
+                    s"Ignoring inv while in IBD message=$invMsg while in state=$state")
+                  None
+                } else Some(Inventory(TypeIdentifier.MsgWitnessBlock, hash))
+              }
+
+            case NodeType.BitcoindBackend =>
+              val exn = new RuntimeException("This is impossible")
+              Future.failed(exn)
+          }
+        case Inventory(TypeIdentifier.MsgTx, hash) =>
+          val s = Some(Inventory(TypeIdentifier.MsgWitnessTx, hash))
+          Future.successful(s)
+        case other: Inventory =>
+          Future.successful(Some(other))
+      }
+
+    for {
+      getData <- invsOptF.map(_.flatten).map(GetDataMessage(_))
+      _ <- peerMessageSenderApi.sendMsg(getData)
+    } yield this
   }
 
   private def calcFilterHeaderFilterHeight(
