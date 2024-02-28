@@ -31,6 +31,9 @@
 
     <logger name="org.bitcoins.wallet" level="INFO"/>
 
+    <logger name="org.bitcoins.zmq" level="DEBUG"/>
+    <logger name="org.bitcoins.server.BitcoindRpcBackendUtil" level="DEBUG"/>
+
     <!-- see what slick is compiling to in sql -->
     <logger name="slick" level="OFF"/>
 
