@@ -42,7 +42,7 @@ class ZMQSubscriber(
     override def run(): Unit = {
       while (isConnected && !subscriberThread.isInterrupted) {
         try {
-          val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
+          val zmsg = ZMsg.recvMsg(subscriber)
           if (zmsg != null) {
             val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
             val body = zmsg.pop().getData
