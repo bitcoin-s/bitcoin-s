@@ -8,7 +8,7 @@ object Deps {
     val bouncyCastle = "1.77"
     val dropwizardMetricsV = "4.2.25" //https://github.com/dropwizard/metrics
 
-    val logback = "1.5.0" //https://github.com/qos-ch/logback
+    val logback = "1.5.1" //https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
@@ -106,7 +106,7 @@ object Deps {
     val akkaHttp =
       "org.apache.pekko" %% "pekko-http" % V.akkav withSources () withJavadoc ()
 
-/*    val akkaHttp2 =
+    /*    val akkaHttp2 =
       "org.apache.pekko" %% "pekko-http2-support" % V.akkav withSources () withJavadoc ()*/
 
     val akkaStream =
@@ -124,7 +124,8 @@ object Deps {
     val akkaTestkit =
       "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
 
-    val pekkoGrpc = "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources() withJavadoc()
+    val pekkoGrpc =
+      "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources () withJavadoc ()
 
     //https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
@@ -540,7 +541,7 @@ object Deps {
   val lndRpc = List(
     Compile.scalapb,
     Compile.akkaHttp,
-/*    Compile.akkaHttp2,*/
+    /*    Compile.akkaHttp2,*/
     Compile.akkaStream,
     Compile.akkaDiscovery,
     Compile.pekkoGrpc,
