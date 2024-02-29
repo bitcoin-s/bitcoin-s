@@ -155,50 +155,50 @@ trait ChainUnitTest
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createBlockHeaderDAO(),
-                destroy = () => ChainUnitTest.destroyAllTables())(test)
+                destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createFilterHeaderDAO(),
-                destroy = () => ChainUnitTest.destroyAllTables())(test)
+                destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createFilterDAO(),
-                destroy = () => ChainUnitTest.destroyAllTables())(test)
+                destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createPopulatedBlockHeaderDAO(),
-                destroy = () => ChainUnitTest.destroyAllTables())(test)
+                destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
   def withChainStateDescriptorDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createChainStateDescriptorDAO(),
-                destroy = () => ChainUnitTest.destroyAllTables())(test)
+                destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => ChainUnitTest.createChainHandler(),
-                () => ChainUnitTest.destroyAllTables())(test)
+                () => ChainUnitTest.destroyChainApi())(test)
   }
 
   def withChainHandlerCached(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => ChainUnitTest.createChainHandlerCached(),
-                () => ChainUnitTest.destroyAllTables())(test)
+                () => ChainUnitTest.destroyChainApi())(test)
   }
 
   def withChainHandlerGenesisFilter(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => createChainHandlerWithGenesisFilter(),
-                () => ChainUnitTest.destroyAllTables())(test)
+                () => ChainUnitTest.destroyChainApi())(test)
   }
 
   def withChainHandlerCachedGenesisFilter(
       test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => createChainHandlerCachedWithGenesisFilter(),
-                destroy = () => ChainUnitTest.destroyAllTables())(test)
+                destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
@@ -742,7 +742,12 @@ object ChainUnitTest extends ChainVerificationLogger {
   def destroyChainApi()(implicit
       system: ActorSystem,
       chainAppConfig: ChainAppConfig): Future[Unit] = {
-    ChainUnitTest.destroyAllTables()(chainAppConfig, system.dispatcher)
+    import system.dispatcher
+    for {
+      _ <- ChainUnitTest.destroyAllTables()
+      _ = chainAppConfig.clearCallbacks()
+    } yield ()
+
   }
 
   def buildNHeaders(chainHandler: ChainHandler, target: Int)(implicit
