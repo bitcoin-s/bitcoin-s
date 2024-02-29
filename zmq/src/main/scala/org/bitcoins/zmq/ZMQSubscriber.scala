@@ -125,7 +125,9 @@ class ZMQSubscriber(
     * applies the appropriate listener to that message.
     */
   private def processMsg(topic: String, body: Array[Byte]): Unit = {
+    logger.info(s"topic=$topic body=${body.length}")
     val notification = ZMQNotification.fromString(topic)
+    logger.info(s"notification=$notification")
     notification.foreach {
       case HashTx =>
         hashTxListener.foreach { f =>
