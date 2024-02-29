@@ -3,13 +3,14 @@ package org.bitcoins.server
 import grizzled.slf4j.Logging
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
-import org.apache.pekko.stream.BoundedSourceQueue
+import org.apache.pekko.stream.{OverflowStrategy}
 import org.apache.pekko.stream.scaladsl.{
   Flow,
   Keep,
   RunnableGraph,
   Sink,
-  Source
+  Source,
+  SourceQueueWithComplete
 }
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
@@ -478,7 +479,8 @@ object BitcoindRpcBackendUtil extends Logging {
       system: ActorSystem): Future[Option[Future[Done]]] = {
     import system.dispatcher
     val atomicPrevCount = new AtomicInteger(prevCount)
-    val queueSource: Source[Int, BoundedSourceQueue[Int]] = Source.queue(100)
+    val queueSource: Source[Int, SourceQueueWithComplete[Int]] =
+      Source.queue[Int](100, OverflowStrategy.backpressure)
     val numParallelism = FutureUtil.getParallelism
 
     val fetchBlocksFlow =
