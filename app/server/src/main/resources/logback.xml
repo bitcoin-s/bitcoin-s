@@ -34,23 +34,12 @@
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="ASYNC-FILE"/>
     </root>
-
-    <!-- ╔═══════════════════════╗ -->
-    <!-- ║   Bitcoin-S logging   ║-->
-    <!-- ╚═══════════════════════╝ -->
-
-    <!-- ╔═══════════════════╗ -->
-    <!-- ║   Configuration   ║ -->
-    <!-- ╚═══════════════════╝ -->
-
     <!-- inspect resolved DB connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
     <logger name="org.bitcoins.node.config" level="INFO"/>
-    <logger name="org.bitcoins.wallet.config" level="INFO"/>
 
     <logger name="org.bitcoins.node.db" level="WARN" />
-    <logger name="org.bitcoins.wallet.db" level="WARN" />
 
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
@@ -76,6 +65,7 @@
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->
     <!-- ╚═════════════════════╝ -->
+    <logger name="org.bitcoins.wallet" level="INFO"/>
 
     <!-- ╔═══════════════════════════╗ -->
     <!-- ║   Bitcoin-S logging end   ║-->

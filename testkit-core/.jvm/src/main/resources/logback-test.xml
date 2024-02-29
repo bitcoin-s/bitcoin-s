@@ -37,10 +37,8 @@
     <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
     <logger name="org.bitcoins.node.config" level="WARN"/>
-    <logger name="org.bitcoins.wallet.config" level="WARN"/>
 
     <logger name="org.bitcoins.node.db" level="WARN"/>
-    <logger name="org.bitcoins.wallet.db" level="WARN"/>
 
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
@@ -63,7 +61,9 @@
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->
 
-    <logger name="org.bitcoins.chain" level="INFO"/>
+    <logger name="org.bitcoins.chain" level="WARN"/>
+
+    <logger name="org.bitcoins.wallet" level="WARN"/>
 
     <!-- see what slick is compiling to in sql -->
     <logger name="slick" level="OFF"/>
