@@ -94,7 +94,7 @@ abstract class ChainSync extends ChainVerificationLogger {
     val bestHeaderF = getBlockHeaderFunc(bestBlockHash)
 
     bestHeaderF.map { bestHeader =>
-      logger.info(
+      logger.debug(
         s"Best tip from third party=${bestHeader.hashBE.hex} currentTips=${tips
           .map(_.hashBE.hex)}")
     }

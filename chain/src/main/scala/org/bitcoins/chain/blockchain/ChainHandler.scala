@@ -902,7 +902,7 @@ class ChainHandler(
   override def getHeadersBetween(
       from: BlockHeaderDb,
       to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] = {
-    logger.info(s"Finding headers from=$from to=$to")
+    logger.debug(s"Finding headers from=$from to=$to")
     def loop(
         currentF: Future[BlockHeaderDb],
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
@@ -1036,7 +1036,7 @@ class ChainHandler(
       for {
         headersToCalc <- headersToCalcF
         _ = headersToCalc.headOption.map { h =>
-          logger.info(
+          logger.trace(
             s"Recalculating chain work... current height: ${h.height} maxHeight=$maxHeight")
         }
         headersWithWork = {
@@ -1073,7 +1073,7 @@ class ChainHandler(
   }
 
   def recalculateChainWork: Future[ChainHandler] = {
-    logger.info("Calculating chain work for previous blocks")
+    logger.trace("Calculating chain work for previous blocks")
 
     val maxHeightF = blockHeaderDAO.maxHeight
     val startHeightF = blockHeaderDAO.getLowestNoWorkHeight
@@ -1098,7 +1098,7 @@ class ChainHandler(
       start <- startF
       _ <- runRecalculateChainWork(maxHeight, start.head)
     } yield {
-      logger.info("Finished calculating chain work")
+      logger.trace("Finished calculating chain work")
       ChainHandler(
         blockHeaderDAO = blockHeaderDAO,
         filterHeaderDAO = filterHeaderDAO,
