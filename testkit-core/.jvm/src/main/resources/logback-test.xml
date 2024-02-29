@@ -73,29 +73,8 @@
 
     <logger name="org.bitcoins.chain.validation" level="WARN"/>
 
-    <!-- ╔═════════════════════╗ -->
-    <!-- ║   Wallet module     ║ -->
-    <!-- ╚═════════════════════╝ -->
-
-    <!-- ╔═══════════════════════════╗ -->
-    <!-- ║   Bitcoin-S logging end   ║-->
-    <!-- ╚═══════════════════════════╝ -->
-
-    <!-- ╔═════════════════════════╗ -->
-    <!-- ║   External libraries    ║ -->
-    <!-- ╚═════════════════════════╝ -->
-
-    <!-- see how long statements took to execute by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.benchmark" level="OFF"/>
-
-    <!-- see what statements are executed by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.statement" level="OFF"/>
-
     <!-- see what slick is compiling to in sql -->
-    <logger name="slick.compiler" level="OFF"/>
-
-    <!-- see what's returned by Slick -->
-    <logger name="slick.jdbc.StatementInvoker.result" level="OFF"/>
+    <logger name="slick" level="OFF"/>
 
     <!-- Get rid of messages like this:
     Connection attempt failed. Backing off new connection
