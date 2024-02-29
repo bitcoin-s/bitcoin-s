@@ -37,25 +37,12 @@
     <!-- inspect resolved DB connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
-    <logger name="org.bitcoins.node.config" level="INFO"/>
-
-    <logger name="org.bitcoins.node.db" level="WARN" />
-
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
     <!-- ╚═════════════════╝ -->
 
-    <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerConnection" level="INFO"/>
-
-    <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
-
-    <!-- See peer details -->
-    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
-
     <!-- See node status messages  -->
-    <logger name="org.bitcoins.node.NeutrinoNode" level="INFO"/>
+    <logger name="org.bitcoins.node" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
