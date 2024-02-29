@@ -50,9 +50,6 @@
     <!-- ║   Node module   ║ -->
     <!-- ╚═════════════════╝ -->
 
-    <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="WARN"/>
-
     <!-- See outgoing message names and the peer it's sent to -->
     <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="WARN"/>
 
@@ -60,11 +57,6 @@
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
 
     <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="WARN"/>
-    <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
-
-    <!-- See exceptions thrown in actor-->
-    <logger name="org.bitcoins.node.networking.P2PClientSupervisor" level="WARN"/>
 
     <logger name="org.bitcoins.node.PeerManager" level="WARN"/>
 
