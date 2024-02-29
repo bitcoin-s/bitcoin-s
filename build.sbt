@@ -480,8 +480,7 @@ lazy val chainTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
-    libraryDependencies ++= Deps.chainTest,
-    parallelExecution := false
+    libraryDependencies ++= Deps.chainTest
   )
   .dependsOn(chain, coreJVM % testAndCompile, testkit, zmq)
 
@@ -742,8 +741,7 @@ lazy val walletTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",
-    libraryDependencies ++= Deps.walletTest,
-    parallelExecution := false
+    libraryDependencies ++= Deps.walletTest
   )
   .dependsOn(coreJVM % testAndCompile, testkit, wallet)
 
