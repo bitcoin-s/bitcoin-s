@@ -59,3 +59,10 @@ case class CallbackHandler[C, T <: Callback[C]](
     Future.sequence(executeFs).map(_ => ())
   }
 }
+
+object CallbackHandler {
+
+  def empty[C, T <: Callback[C]]: CallbackHandler[C, T] = {
+    CallbackHandler("empty", Vector.empty)
+  }
+}
