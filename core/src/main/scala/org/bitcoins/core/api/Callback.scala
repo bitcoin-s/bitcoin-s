@@ -38,9 +38,16 @@ case class CallbackHandler[C, T <: Callback[C]](
     extends SeqWrapper[T] {
 
   def ++(other: CallbackHandler[C, T]): CallbackHandler[C, T] = {
-    require(name == other.name,
-            "Cannot combine callback handlers with different names")
-    CallbackHandler(name, wrapped ++ other.wrapped)
+    if (name == CallbackHandler.emptyName) {
+      CallbackHandler(other.name, wrapped ++ other.wrapped)
+    } else if (other.name == CallbackHandler.emptyName) {
+      this
+    } else {
+      require(
+        name == other.name,
+        s"Cannot combine callback handlers with different names name=$name other.name=${other.name}")
+      CallbackHandler(name, wrapped ++ other.wrapped)
+    }
   }
 
   /** Executes the callbacks synchronously, if any fail, they are recovered by recoverFunc */
@@ -57,5 +64,14 @@ case class CallbackHandler[C, T <: Callback[C]](
     }
 
     Future.sequence(executeFs).map(_ => ())
+  }
+}
+
+object CallbackHandler {
+
+  final val emptyName: String = "empty"
+
+  def empty[C, T <: Callback[C]]: CallbackHandler[C, T] = {
+    CallbackHandler(emptyName, Vector.empty)
   }
 }

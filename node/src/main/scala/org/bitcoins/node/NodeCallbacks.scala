@@ -1,12 +1,14 @@
 package org.bitcoins.node
 
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.node.callback.NodeCallbackStreamManager
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -131,41 +133,46 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
   }
 
   /** Constructs a set of callbacks that only acts on TX received */
-  def onTxReceived(f: OnTxReceived): NodeCallbacks =
+  def onTxReceived(f: OnTxReceived)(implicit
+      system: ActorSystem): NodeCallbacks =
     NodeCallbacks(onTxReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on block received */
-  def onBlockReceived(f: OnBlockReceived): NodeCallbacks =
+  def onBlockReceived(f: OnBlockReceived)(implicit
+      system: ActorSystem): NodeCallbacks =
     NodeCallbacks(onBlockReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on merkle block received */
-  def onMerkleBlockReceived(f: OnMerkleBlockReceived): NodeCallbacks =
+  def onMerkleBlockReceived(f: OnMerkleBlockReceived)(implicit
+      system: ActorSystem): NodeCallbacks =
     NodeCallbacks(onMerkleBlockReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on compact filter received */
-  def onCompactFilterReceived(f: OnCompactFiltersReceived): NodeCallbacks =
+  def onCompactFilterReceived(f: OnCompactFiltersReceived)(implicit
+      system: ActorSystem): NodeCallbacks =
     NodeCallbacks(onCompactFiltersReceived = Vector(f))
 
   /** Constructs a set of callbacks that only acts on block headers received */
-  def onBlockHeadersReceived(f: OnBlockHeadersReceived): NodeCallbacks =
+  def onBlockHeadersReceived(f: OnBlockHeadersReceived)(implicit
+      system: ActorSystem): NodeCallbacks =
     NodeCallbacks(onBlockHeadersReceived = Vector(f))
 
   /** Empty callbacks that does nothing with the received data */
   override val empty: NodeCallbacks =
-    NodeCallbacks(Vector.empty,
-                  Vector.empty,
-                  Vector.empty,
-                  Vector.empty,
-                  Vector.empty)
+    NodeCallbacksImpl(CallbackHandler.empty,
+                      CallbackHandler.empty,
+                      CallbackHandler.empty,
+                      CallbackHandler.empty,
+                      CallbackHandler.empty)
 
   def apply(
       onCompactFiltersReceived: Vector[OnCompactFiltersReceived] = Vector.empty,
       onTxReceived: Vector[OnTxReceived] = Vector.empty,
       onBlockReceived: Vector[OnBlockReceived] = Vector.empty,
       onMerkleBlockReceived: Vector[OnMerkleBlockReceived] = Vector.empty,
-      onBlockHeadersReceived: Vector[OnBlockHeadersReceived] =
-        Vector.empty): NodeCallbacks = {
-    NodeCallbacksImpl(
+      onBlockHeadersReceived: Vector[OnBlockHeadersReceived] = Vector.empty)(
+      implicit system: ActorSystem): NodeCallbacks = {
+    val n = NodeCallbacksImpl(
       onCompactFiltersReceived =
         CallbackHandler[Vector[(DoubleSha256Digest, GolombFilter)],
                         OnCompactFiltersReceived]("onCompactFilterReceived",
@@ -184,5 +191,6 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
           "onCompactFilterReceived",
           onBlockHeadersReceived)
     )
+    NodeCallbackStreamManager(n)
   }
 }
