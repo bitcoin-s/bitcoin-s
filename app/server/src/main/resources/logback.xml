@@ -34,35 +34,13 @@
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="ASYNC-FILE"/>
     </root>
-    <!-- inspect resolved DB connection -->
-    <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
-    <!-- ╔═════════════════╗ -->
-    <!-- ║   Node module   ║ -->
-    <!-- ╚═════════════════╝ -->
-
-    <!-- See node status messages  -->
     <logger name="org.bitcoins.node" level="INFO"/>
 
-    <!-- ╔════════════════════╗ -->
-    <!-- ║   Chain module     ║ -->
-    <!-- ╚════════════════════╝ -->
     <logger name="org.bitcoins.chain" level="INFO"/>
 
-    <!-- ╔═════════════════════╗ -->
-    <!-- ║   Wallet module     ║ -->
-    <!-- ╚═════════════════════╝ -->
     <logger name="org.bitcoins.wallet" level="INFO"/>
 
-    <!-- ╔═══════════════════════════╗ -->
-    <!-- ║   Bitcoin-S logging end   ║-->
-    <!-- ╚═══════════════════════════╝ -->
-
-    <!-- ╔═════════════════════════╗ -->
-    <!-- ║   External libraries    ║ -->
-    <!-- ╚═════════════════════════╝ -->
-
-    <!-- Disable slick logging in server -->
     <logger name="slick" level="OFF"/>
     <logger name="com.zaxxer" level="INFO"/>
 

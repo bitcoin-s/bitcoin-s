@@ -25,17 +25,6 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <!-- ╔═══════════════════════╗ -->
-    <!-- ║   Bitcoin-S logging   ║-->
-    <!-- ╚═══════════════════════╝ -->
-
-    <!-- ╔═══════════════════╗ -->
-    <!-- ║   Configuration   ║ -->
-    <!-- ╚═══════════════════╝ -->
-
-    <!-- inspect resolved DB connection -->
-    <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
-
     <logger name="org.bitcoins.node" level="WARN"/>
 
     <logger name="org.bitcoins.chain" level="WARN"/>
