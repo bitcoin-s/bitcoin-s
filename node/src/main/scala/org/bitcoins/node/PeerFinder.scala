@@ -307,15 +307,16 @@ case class PeerFinder(
       logger.info(
         s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
       if (_peersToTry.size < maxPeerSearchCount) {
-        val paramPds = paramPeers.map { p =>
-          buildPeerData(p, isPersistent = true)
-        }
         val pds = getPeersFromDnsSeeds.map { p =>
           buildPeerData(p, isPersistent = false)
         }
-        _peersToTry.pushAll(paramPds ++ pds)
+        _peersToTry.pushAll(pds)
       }
-
+      val paramPds = paramPeers.map { p =>
+        buildPeerData(p, isPersistent = true)
+      }
+      //always try to conenct to the peers given to us as parameters
+      _peersToTry.pushAll(paramPds)
       //in case of less _peersToTry.size than maxPeerSearchCount
       val max = Math.min(maxPeerSearchCount, _peersToTry.size)
       val peers = (
