@@ -55,9 +55,9 @@ class ZMQSubscriber(
           case e: ZMQException if e.getErrorCode == ZMQ.Error.ETERM.getCode =>
             context.term()
             logger.info(s"Done terminating zmq context msg=${e.getMessage}")
-          case e: Exception =>
+          case scala.util.control.NonFatal(e) =>
             context.term()
-            logger.info(s"Done terminating zmq context msg=${e.getMessage}")
+            logger.error(s"Done terminating zmq context msg=${e.getMessage}", e)
         }
       }
 
