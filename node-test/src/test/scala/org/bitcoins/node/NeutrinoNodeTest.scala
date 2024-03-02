@@ -405,6 +405,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         node <- nodeF
         _ <- AsyncUtil.nonBlockingSleep(5.second)
         connCount <- node.getConnectionCount
+        _ <- node.stop()
+        _ <- node.nodeConfig.stop()
       } yield {
         assert(connCount == max)
       }
