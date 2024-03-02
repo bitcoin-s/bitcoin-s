@@ -98,25 +98,6 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
          |""".stripMargin
     val config =
       ConfigFactory.parseString(str)
-    val stoppedConfigF = initNode.nodeConfig.stop()
-    val newNodeAppConfigF =
-      stoppedConfigF.map(_ => initNode.nodeConfig.withOverrides(config))
-    val nodeF = {
-      for {
-        newNodeAppConfig <- newNodeAppConfigF
-        _ <- newNodeAppConfig.start()
-      } yield {
-        NeutrinoNode(
-          walletCreationTimeOpt = initNode.walletCreationTimeOpt,
-          nodeConfig = newNodeAppConfig,
-          chainConfig = initNode.chainAppConfig,
-          actorSystem = initNode.system,
-          paramPeers = initNode.paramPeers
-        )
-      }
-    }
-
-    val startedF = nodeF.flatMap(_.start())
-    startedF
+    NodeTestUtil.getStartedNodeCustomConfig(initNode, config)
   }
 }

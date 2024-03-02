@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.node
 
+import com.typesafe.config.Config
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.Peer
@@ -277,6 +278,33 @@ abstract class NodeTestUtil extends P2PLogger {
       val result = localFilter.head.networkInfo.addr
       result
     }
+  }
+
+  def getStartedNodeCustomConfig(initNode: NeutrinoNode, config: Config)(
+      implicit ec: ExecutionContext): Future[NeutrinoNode] = {
+    val stoppedConfigF = for {
+      _ <- initNode.stop()
+      _ <- initNode.nodeConfig.stop()
+    } yield ()
+    val newNodeAppConfigF =
+      stoppedConfigF.map(_ => initNode.nodeConfig.withOverrides(config))
+    val nodeF = {
+      for {
+        newNodeAppConfig <- newNodeAppConfigF
+        _ <- newNodeAppConfig.start()
+      } yield {
+        NeutrinoNode(
+          walletCreationTimeOpt = initNode.walletCreationTimeOpt,
+          nodeConfig = newNodeAppConfig,
+          chainConfig = initNode.chainAppConfig,
+          actorSystem = initNode.system,
+          paramPeers = initNode.paramPeers
+        )
+      }
+    }
+
+    val startedF = nodeF.flatMap(_.start())
+    startedF
   }
 }
 
