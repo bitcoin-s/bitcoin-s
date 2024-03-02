@@ -348,42 +348,15 @@ case class PeerManager(
         //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
         val removed = state.waitingForDisconnection.-(peer)
         val newState = state.replaceWaitingForDisconnection(removed)
-        newState match {
-          case s: SyncNodeState =>
-            switchSyncToRandomPeer(state = s, excludePeerOpt = Some(peer))
-          case x @ (_: DoneSyncing | _: NodeShuttingDown | _: MisbehavingPeer |
-              _: RemovePeers) =>
-            Future.successful(x)
-        }
+        Future.successful(newState)
       } else {
         logger.warn(s"onP2PClientStopped called for unknown $peer")
         Future.successful(state)
       }
     }
 
-    val replacedPeersStateF = stateF.map {
-      case s: SyncNodeState =>
-        if (s.syncPeer == peer) {
-          //the peer being disconnected is our sync peer
-          s.randomPeer(excludePeers = Set(peer),
-                       ServiceIdentifier.NODE_COMPACT_FILTERS) match {
-            case Some(p) => s.replaceSyncPeer(p)
-            case None    =>
-              //switch to state DoneSyncing since we have no peers to sync from
-              DoneSyncing(peerDataMap = peerWithServicesDataMap,
-                          waitingForDisconnection =
-                            state.waitingForDisconnection,
-                          peerFinder = s.peerFinder)
-          }
-        } else {
-          s.replacePeers(peerWithServicesDataMap)
-        }
-      case runningState: NodeRunningState =>
-        runningState.replacePeers(peerWithServicesDataMap)
-    }
-
     for {
-      state <- replacedPeersStateF
+      state <- stateF
       _ <- updateLastSeenF
     } yield state
   }
