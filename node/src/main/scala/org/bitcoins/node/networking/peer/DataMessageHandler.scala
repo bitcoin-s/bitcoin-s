@@ -58,7 +58,7 @@ case class DataMessageHandler(
             val syncPeer = state.syncPeer
             if (peerData.peer != syncPeer) {
               //ignore message from peers that we aren't syncing with during IBD
-              logger.warn(
+              logger.info(
                 s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
               Future.successful(this)
             } else {
@@ -266,7 +266,7 @@ case class DataMessageHandler(
 
             case x @ (_: FilterHeaderSync | _: FilterSync |
                 _: NodeShuttingDown) =>
-              logger.warn(
+              logger.debug(
                 s"Ignoring headers msg with size=${headers.size} while in state=$x from peer=$peer")
               Some(x)
             case x @ (_: MisbehavingPeer | _: RemovePeers) =>
