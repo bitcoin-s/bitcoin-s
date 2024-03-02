@@ -307,9 +307,7 @@ case class PeerManager(
       }
     }
 
-    stateF.map { s =>
-      s.replacePeers(peerWithServicesDataMap)
-    }
+    stateF
   }
 
   /** @param peer the peer we were disconencted from
