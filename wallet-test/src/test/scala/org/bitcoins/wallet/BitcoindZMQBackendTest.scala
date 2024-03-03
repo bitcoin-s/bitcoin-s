@@ -27,7 +27,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         // Wait for it to process
         _ <- TestAsyncUtil.awaitConditionF(
           () => wallet.getUnconfirmedBalance().map(_ > Satoshis.zero),
-          interval = 1.second)
+          interval = 1.second,
+          maxTries = 120)
       } yield ()
     }
 
@@ -37,7 +38,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         // Wait for it to process
         _ <- TestAsyncUtil.awaitConditionF(
           () => wallet.getConfirmedBalance().map(_ > Satoshis.zero),
-          interval = 1.second)
+          interval = 1.second,
+          maxTries = 120)
       } yield ()
     }
 

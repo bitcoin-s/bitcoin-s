@@ -284,7 +284,7 @@ trait ChainUnitTest
         () => {
           chainHandler.getHeader(hash).map(_.isDefined)
         },
-        250.millis)
+        1.second)
     } yield (chainHandler, zmqSubscriber)
     subscribedF
   }

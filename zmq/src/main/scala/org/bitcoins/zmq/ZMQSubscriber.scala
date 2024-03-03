@@ -42,21 +42,23 @@ class ZMQSubscriber(
     override def run(): Unit = {
       while (isConnected && !subscriberThread.isInterrupted) {
         try {
-          val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
+          val zmsg = ZMsg.recvMsg(subscriber)
           if (zmsg != null) {
             val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
             val body = zmsg.pop().getData
             processMsg(notificationTypeStr, body)
           } else {
-            Thread.sleep(1)
+            ()
           }
         } catch {
           case e: ZMQException if e.getErrorCode == ZMQ.Error.ETERM.getCode =>
             context.term()
             logger.info(s"Done terminating zmq context msg=${e.getMessage}")
-          case e: Exception =>
+          case scala.util.control.NonFatal(e) =>
             context.term()
-            logger.info(s"Done terminating zmq context msg=${e.getMessage}")
+            logger.error(
+              s"Failed to terminate zmq context gracefully msg=${e.getMessage}",
+              e)
         }
       }
 
@@ -64,8 +66,8 @@ class ZMQSubscriber(
   }
 
   private val subscriberThread = new Thread(SubscriberRunnable)
-  subscriberThread.setName(
-    s"ZMQSubscriber-thread-${System.currentTimeMillis()}")
+  subscriberThread.setName(s"ZMQSubscriber-thread-${System
+    .currentTimeMillis()}")
   subscriberThread.setDaemon(true)
 
   override def start(): Unit = {
@@ -113,10 +115,8 @@ class ZMQSubscriber(
     //be able toe evaluate the while loop again. Moving forward with this for now.
     isConnected = false
     subscriber.close()
-    logger.info("Attempting to terminate context")
     context.term()
     subscriberThread.interrupt()
-    logger.info(s"Done with closing zmq")
     ()
   }
 
