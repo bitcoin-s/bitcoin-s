@@ -64,6 +64,27 @@ sealed trait NodeRunningState extends NodeState {
     }
   }
 
+  def addPeer(peer: Peer): NodeRunningState = {
+    val peerDataOpt = peerFinder.popFromCache(peer)
+    peerDataOpt match {
+      case None =>
+        //do we just want to ignore the attempt if
+        //the peer does not exist??
+        this
+      case Some(peerData) =>
+        val persistentPeerData = peerData match {
+          case p: PersistentPeerData       => p
+          case a: AttemptToConnectPeerData => a.toPersistentPeerData
+        }
+        val peerWithSvcs = persistentPeerData.peerWithServicesOpt.get
+        val newPdm =
+          peerDataMap.+((peerWithSvcs, persistentPeerData))
+        val newState = replacePeers(newPdm)
+        newState
+    }
+
+  }
+
   /** Removes the peer from our [[peerDataMap]] */
   def removePeer(peer: Peer): NodeRunningState = {
     val filtered = peerDataMap.filterNot(_._1.peer == peer)

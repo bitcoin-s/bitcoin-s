@@ -236,17 +236,10 @@ case class PeerManager(
     val hasConnectionSlot = connectedPeerCount < nodeAppConfig.maxConnectedPeers
     if (hasConnectionSlot || availableFilterSlot) {
       //we want to promote this peer, so pop from cache
-      val _ = state.peerFinder.popFromCache(peer)
-      val persistentPeerData = peerData match {
-        case p: PersistentPeerData       => p
-        case a: AttemptToConnectPeerData => a.toPersistentPeerData
-      }
+      val newState = state.addPeer(peer)
+      val persistentPeerData =
+        newState.peerDataMap.filter(_._1.peer == peer).head._2
       _peerDataMap.put(peer, persistentPeerData)
-
-      val peerWithSvcs = persistentPeerData.peerWithServicesOpt.get
-      val newPdm =
-        state.peerDataMap.+((peerWithSvcs, persistentPeerData))
-      val newState = state.replacePeers(newPdm)
       if (availableFilterSlot) {
         replacePeer(replacePeer = notCfPeers.head, withPeer = peer)
           .map(_ => newState)
