@@ -229,23 +229,26 @@ case class PeerManager(
             s"Could not find peer=$peer in PeerFinder!")
     val peerData = curPeerDataOpt.get
     val hasCf = peerData.serviceIdentifier.nodeCompactFilters
-    val notCfPeers = peerDataMap
+    val notCfPeers = state.peerDataMap
       .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
       .keys
     val availableFilterSlot = hasCf && notCfPeers.nonEmpty
-    val hasConnectionSlot = connectedPeerCount < nodeAppConfig.maxConnectedPeers
-    if (hasConnectionSlot || availableFilterSlot) {
+    val hasConnectionSlot =
+      state.connectedPeerCount < nodeAppConfig.maxConnectedPeers
+    if (hasConnectionSlot) {
       //we want to promote this peer, so pop from cache
       val newState = state.addPeer(peer)
       val persistentPeerData =
         newState.peerDataMap.filter(_._1.peer == peer).head._2
       _peerDataMap.put(peer, persistentPeerData)
-      if (availableFilterSlot) {
-        replacePeer(replacePeer = notCfPeers.head, withPeer = peer)
-          .map(_ => newState)
-      } else {
-        connectPeer(peer).map(_ => newState)
-      }
+      connectPeer(peer).map(_ => newState)
+    } else if (availableFilterSlot) {
+      val newState = state.addPeer(peer)
+      val persistentPeerData =
+        newState.peerDataMap.filter(_._1.peer == peer).head._2
+      _peerDataMap.put(peer, persistentPeerData)
+      replacePeer(replacePeer = notCfPeers.head.peer, withPeer = peer)
+        .map(_ => newState)
     } else {
       Future.successful(state)
     }
