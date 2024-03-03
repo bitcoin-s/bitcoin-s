@@ -48,7 +48,6 @@ class ZMQSubscriber(
             val body = zmsg.pop().getData
             processMsg(notificationTypeStr, body)
           } else {
-            //Thread.sleep(10)
             ()
           }
         } catch {
@@ -57,7 +56,7 @@ class ZMQSubscriber(
             logger.info(s"Done terminating zmq context msg=${e.getMessage}")
           case scala.util.control.NonFatal(e) =>
             context.term()
-            logger.error(s"Done terminating zmq context msg=${e.getMessage}", e)
+            logger.error(s"Failed to terminate zmq context gracefully msg=${e.getMessage}", e)
         }
       }
 
@@ -66,7 +65,7 @@ class ZMQSubscriber(
 
   private val subscriberThread = new Thread(SubscriberRunnable)
   subscriberThread.setName(s"ZMQSubscriber-thread-${System
-    .currentTimeMillis()}-${scala.util.Random.between(0, 1000000)}")
+    .currentTimeMillis()}")
   subscriberThread.setDaemon(true)
 
   override def start(): Unit = {
@@ -114,10 +113,8 @@ class ZMQSubscriber(
     //be able toe evaluate the while loop again. Moving forward with this for now.
     isConnected = false
     subscriber.close()
-    logger.info("Attempting to terminate context")
     context.term()
     subscriberThread.interrupt()
-    logger.info(s"Done with closing zmq")
     ()
   }
 
@@ -125,9 +122,7 @@ class ZMQSubscriber(
     * applies the appropriate listener to that message.
     */
   private def processMsg(topic: String, body: Array[Byte]): Unit = {
-    logger.info(s"topic=$topic body=${body.length}")
     val notification = ZMQNotification.fromString(topic)
-    logger.info(s"notification=$notification")
     notification.foreach {
       case HashTx =>
         hashTxListener.foreach { f =>
