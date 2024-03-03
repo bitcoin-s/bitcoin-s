@@ -56,7 +56,9 @@ class ZMQSubscriber(
             logger.info(s"Done terminating zmq context msg=${e.getMessage}")
           case scala.util.control.NonFatal(e) =>
             context.term()
-            logger.error(s"Failed to terminate zmq context gracefully msg=${e.getMessage}", e)
+            logger.error(
+              s"Failed to terminate zmq context gracefully msg=${e.getMessage}",
+              e)
         }
       }
 
