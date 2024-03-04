@@ -96,6 +96,8 @@ sealed trait NodeRunningState extends NodeState {
         val persistentPeerData = peerData match {
           case p: PersistentPeerData       => p
           case a: AttemptToConnectPeerData => a.toPersistentPeerData
+          case d: DisconnectedPeerData =>
+            sys.error(s"Cannot add peer that has is disconnected, got=$d")
         }
         val peerWithSvcs = persistentPeerData.peerWithServicesOpt.get
         val newPdm =
