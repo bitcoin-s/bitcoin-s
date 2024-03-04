@@ -909,10 +909,12 @@ case class PeerManager(
           //after we are done syncing block headers
           Future.unit
         } else {
-          val fhs = FilterHeaderSync(syncPeer = syncNodeState.syncPeer,
-                                     peerDataMap = peerWithServicesDataMap,
-                                     waitingForDisconnection = Set.empty,
-                                     syncNodeState.peerFinder)
+          val fhs = FilterHeaderSync(
+            syncPeer = syncNodeState.syncPeer,
+            peerDataMap = syncNodeState.peerDataMap,
+            waitingForDisconnection = syncNodeState.waitingForDisconnection,
+            syncNodeState.peerFinder
+          )
           syncFilters(
             bestFilterHeaderOpt = bestFilterHeaderOpt,
             bestFilterOpt = bestFilterOpt,

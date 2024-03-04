@@ -248,7 +248,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
             logger.info(
               s"Connected to remote=${tcp.remoteAddress}  local=${tcp.localAddress}")
           case scala.util.Failure(err) =>
-            logger.info(
+            logger.debug(
               s"Failed to connect to peer=$peer with errMsg=${err.getMessage}")
             val offerF =
               queue.offer(NodeStreamMessage.InitializationTimeout(peer))
