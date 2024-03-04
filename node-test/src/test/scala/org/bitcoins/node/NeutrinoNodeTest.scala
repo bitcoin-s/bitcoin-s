@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.Cancellable
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.models.{CompactFilterDAO, CompactFilterHeaderDAO}
@@ -391,5 +392,40 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
                                        bitcoind = bitcoind0,
                                        bestBlockHashBE = Some(hashes1.head))
       } yield succeed
+  }
+
+  it must "honor bitcoin-s.node.maxConnectedPeers" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      val max = 1
+      val nodeF = getCustomMaxConnectedPeers(initNode =
+                                               nodeConnectedWithBitcoind.node,
+                                             maxConnectedPeers = max)
+
+      for {
+        node <- nodeF
+        _ <- AsyncUtil.nonBlockingSleep(5.second)
+        connCount <- node.getConnectionCount
+        _ <- node.stop()
+        _ <- node.nodeConfig.stop()
+      } yield {
+        assert(connCount == max)
+      }
+  }
+
+  private def getCustomMaxConnectedPeers(
+      initNode: NeutrinoNode,
+      maxConnectedPeers: Int): Future[NeutrinoNode] = {
+
+    require(initNode.nodeConfig.maxConnectedPeers != maxConnectedPeers,
+            s"maxConnectedPeers must be different")
+    //make a custom config, set the inactivity timeout very low
+    //so we will disconnect our peer organically
+    val str =
+      s"""
+         |bitcoin-s.node.maxConnectedPeers = $maxConnectedPeers
+         |""".stripMargin
+    val config =
+      ConfigFactory.parseString(str)
+    NodeTestUtil.getStartedNodeCustomConfig(initNode, config)
   }
 }

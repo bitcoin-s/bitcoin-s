@@ -2,7 +2,12 @@ package org.bitcoins.node
 
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
-import org.bitcoins.node.NodeState.DoneSyncing
+import org.bitcoins.node.NodeState.{
+  DoneSyncing,
+  MisbehavingPeer,
+  NodeShuttingDown,
+  RemovePeers
+}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
 
@@ -23,6 +28,8 @@ sealed trait NodeRunningState extends NodeState {
   def isSyncing: Boolean
 
   def peerFinder: PeerFinder
+
+  def connectedPeerCount: Int = peers.size
 
   def getPeerConnection(peer: Peer): Option[PeerConnection] = {
     peerDataMap.find(_._1.peer == peer).map(_._2.peerConnection) match {
@@ -56,6 +63,48 @@ sealed trait NodeRunningState extends NodeState {
         m.copy(peerDataMap = peerDataMap)
       case s: NodeState.NodeShuttingDown =>
         s.copy(peerDataMap = peerDataMap)
+    }
+  }
+
+  def addPeer(peer: Peer): NodeRunningState = {
+    val peerDataOpt = peerFinder.popFromCache(peer)
+    peerDataOpt match {
+      case None =>
+        //do we just want to ignore the attempt if
+        //the peer does not exist??
+        this
+      case Some(peerData) =>
+        val persistentPeerData = peerData match {
+          case p: PersistentPeerData       => p
+          case a: AttemptToConnectPeerData => a.toPersistentPeerData
+        }
+        val peerWithSvcs = persistentPeerData.peerWithServicesOpt.get
+        val newPdm =
+          peerDataMap.+((peerWithSvcs, persistentPeerData))
+        val newState = replacePeers(newPdm)
+        newState
+    }
+
+  }
+
+  /** Removes the peer from our [[peerDataMap]] */
+  def removePeer(peer: Peer): NodeRunningState = {
+    val filtered = peerDataMap.filterNot(_._1.peer == peer)
+    this match {
+      case sync: SyncNodeState =>
+        if (sync.syncPeer == peer) {
+          sync.replaceSyncPeer match {
+            case Some(newSyncNodeState) =>
+              newSyncNodeState.replacePeers(filtered)
+            case None =>
+              toDoneSyncing.replacePeers(filtered)
+          }
+        } else {
+          sync.replacePeers(filtered)
+        }
+      case x @ (_: DoneSyncing | _: MisbehavingPeer | _: RemovePeers |
+          _: NodeShuttingDown) =>
+        x.replacePeers(filtered)
     }
   }
 
@@ -136,6 +185,16 @@ sealed abstract class SyncNodeState extends NodeRunningState {
       case h: NodeState.HeaderSync        => h.copy(syncPeer = newSyncPeer)
       case fh: NodeState.FilterHeaderSync => fh.copy(syncPeer = newSyncPeer)
       case fs: NodeState.FilterSync       => fs.copy(syncPeer = newSyncPeer)
+    }
+  }
+
+  /** Replaces the current sync peer with a new sync peer,
+    * returns None if there is not a new peer available
+    */
+  def replaceSyncPeer: Option[SyncNodeState] = {
+    randomPeer(excludePeers = Set(syncPeer),
+               ServiceIdentifier.NODE_COMPACT_FILTERS).map { p =>
+      replaceSyncPeer(p)
     }
   }
 }
