@@ -303,11 +303,7 @@ case class PeerManager(
       }
     }
 
-    stateF.map { s =>
-      require(s.peers == peers,
-              s"Peer mismatch s.peers=${s.peers} peers=$peers")
-      s
-    }
+    stateF
   }
 
   /** @param peer the peer we were disconencted from
@@ -355,8 +351,6 @@ case class PeerManager(
     for {
       state <- stateF
       _ <- updateLastSeenF
-      _ = require(state.peers == peers,
-                  s"Peer mismatch s.peers=${state.peers} peers=$peers")
     } yield state
   }
 
