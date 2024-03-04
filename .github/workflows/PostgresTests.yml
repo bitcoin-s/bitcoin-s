@@ -34,4 +34,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-postgres-cache
       - name: run tests
-        run: sbt "zmq/test;chainTest/testOnly *Zmq*; walletTest/testOnly *ZMQ*"
+        run: sbt dbCommonsTest/test walletTest/test dlcWalletTest/test chainTest/test dlcOracleTest/test nodeTest/test
