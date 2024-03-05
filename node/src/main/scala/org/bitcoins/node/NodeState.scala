@@ -188,6 +188,7 @@ sealed abstract class SyncNodeState extends NodeRunningState {
 
   def syncPeer: Peer
 
+  /** Services of our [[syncPeer]] */
   def services: ServiceIdentifier = getPeerServices(syncPeer).get
 
   def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {
