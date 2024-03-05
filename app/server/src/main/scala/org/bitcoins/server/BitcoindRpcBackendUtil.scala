@@ -1,9 +1,8 @@
 package org.bitcoins.server
 
 import grizzled.slf4j.Logging
-import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
-import org.apache.pekko.stream.{OverflowStrategy}
+import org.apache.pekko.stream.OverflowStrategy
 import org.apache.pekko.stream.scaladsl.{
   Flow,
   Keep,
@@ -12,6 +11,7 @@ import org.apache.pekko.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
+import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.node.NodeApi
@@ -20,13 +20,13 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.wallet.Wallet
 import org.bitcoins.rpc.util.BitcoindStreamUtil
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -167,7 +167,7 @@ object BitcoindRpcBackendUtil extends Logging {
     //feeding blockchain hashes into this sync
     //will sync our wallet with those blockchain hashes
     val syncWalletSinkF: Future[
-      Sink[DoubleSha256Digest, Future[NeutrinoHDWalletApi]]] = {
+      Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]]] = {
 
       for {
         hasFilters <- hasFiltersF
@@ -175,7 +175,7 @@ object BitcoindRpcBackendUtil extends Logging {
         if (hasFilters) {
           filterSyncSink(bitcoind.asInstanceOf[V19BlockFilterRpc], wallet)
         } else {
-          Flow[DoubleSha256Digest]
+          Flow[DoubleSha256DigestBE]
             .batch(100, hash => Vector(hash))(_ :+ _)
             .mapAsync(1)(wallet.nodeApi.downloadBlocks(_).map(_ => wallet))
             .toMat(Sink.last)(Keep.right)
@@ -183,12 +183,12 @@ object BitcoindRpcBackendUtil extends Logging {
       }
 
     }
-    val fetchBlockHashesFlow: Flow[Int, DoubleSha256Digest, NotUsed] = Flow[Int]
-      .mapAsync[DoubleSha256Digest](numParallelism) { case height =>
-        bitcoind
-          .getBlockHash(height)
-          .map(_.flip)
-      }
+    val fetchBlockHashesFlow: Flow[Int, DoubleSha256DigestBE, NotUsed] =
+      Flow[Int]
+        .mapAsync(numParallelism) { case height =>
+          bitcoind
+            .getBlockHash(height)
+        }
     for {
       syncWalletSink <- syncWalletSinkF
     } yield fetchBlockHashesFlow.toMat(syncWalletSink)(Keep.right)
@@ -298,16 +298,16 @@ object BitcoindRpcBackendUtil extends Logging {
   private def filterSyncSink(
       bitcoindRpcClient: V19BlockFilterRpc,
       wallet: NeutrinoHDWalletApi)(implicit system: ActorSystem): Sink[
-    DoubleSha256Digest,
+    DoubleSha256DigestBE,
     Future[NeutrinoHDWalletApi]] = {
     import system.dispatcher
 
     val numParallelism = FutureUtil.getParallelism
-    val sink: Sink[DoubleSha256Digest, Future[NeutrinoHDWalletApi]] =
-      Flow[DoubleSha256Digest]
+    val sink: Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]] =
+      Flow[DoubleSha256DigestBE]
         .mapAsync(parallelism = numParallelism) { hash =>
-          bitcoindRpcClient.getBlockFilter(hash.flip, FilterType.Basic).map {
-            res => (hash, res.filter)
+          bitcoindRpcClient.getBlockFilter(hash, FilterType.Basic).map { res =>
+            (hash, res.filter)
           }
         }
         .batch(1000, filter => Vector(filter))(_ :+ _)
@@ -331,7 +331,7 @@ object BitcoindRpcBackendUtil extends Logging {
     new NodeApi {
 
       override def downloadBlocks(
-          blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+          blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
         val numParallelism = FutureUtil.getParallelism
         val source = Source(blockHashes)
@@ -504,13 +504,13 @@ object BitcoindRpcBackendUtil extends Logging {
       }
     }
 
-    val fetchAndProcessBlockSink: Sink[DoubleSha256Digest, Future[Done]] = {
+    val fetchAndProcessBlockSink: Sink[DoubleSha256DigestBE, Future[Done]] = {
       fetchBlocksFlow.toMat(processBlockSink)(Keep.right)
     }
 
     val (queue, doneF) = queueSource
       .mapAsync(parallelism = numParallelism) { height: Int =>
-        bitcoind.getBlockHash(height).map(_.flip)
+        bitcoind.getBlockHash(height)
       }
       .map { hash =>
         val _ = atomicPrevCount.incrementAndGet()

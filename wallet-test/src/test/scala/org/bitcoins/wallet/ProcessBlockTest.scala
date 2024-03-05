@@ -110,7 +110,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       hashes <- bitcoind.generateToAddress(102, addr)
       filters <- FutureUtil.sequentially(hashes)(
         bitcoind.getBlockFilter(_, FilterType.Basic))
-      filtersWithBlockHash = hashes.map(_.flip).zip(filters.map(_.filter))
+      filtersWithBlockHash = hashes.zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
       coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)

@@ -16,7 +16,7 @@ import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet._
 
 import scala.concurrent.{Future, Promise}
@@ -95,7 +95,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         }
 
         f.onComplete(failure =>
-          signalBlockProcessingCompletion(block.blockHeader.hash, failure))
+          signalBlockProcessingCompletion(block.blockHeader.hashBE, failure))
 
         f.foreach { _ =>
           val stop = TimeUtil.currentEpochMs
@@ -292,15 +292,15 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   // Private methods
 
   private var blockProcessingSignals =
-    Map.empty[DoubleSha256Digest, Promise[DoubleSha256Digest]]
+    Map.empty[DoubleSha256DigestBE, Promise[DoubleSha256DigestBE]]
 
   private[wallet] def subscribeForBlockProcessingCompletionSignal(
-      blockHash: DoubleSha256Digest): Future[DoubleSha256Digest] =
+      blockHash: DoubleSha256DigestBE): Future[DoubleSha256DigestBE] =
     synchronized {
       blockProcessingSignals.get(blockHash) match {
         case Some(existingSignal) => existingSignal.future
         case None =>
-          val newSignal = Promise[DoubleSha256Digest]()
+          val newSignal = Promise[DoubleSha256DigestBE]()
           blockProcessingSignals =
             blockProcessingSignals.updated(blockHash, newSignal)
           newSignal.future
@@ -308,7 +308,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     }
 
   private def signalBlockProcessingCompletion(
-      blockHash: DoubleSha256Digest,
+      blockHash: DoubleSha256DigestBE,
       failure: Try[_]): Unit =
     synchronized {
       logger.debug(

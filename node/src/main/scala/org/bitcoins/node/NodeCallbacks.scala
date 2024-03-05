@@ -7,7 +7,7 @@ import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.callback.NodeCallbackStreamManager
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with Logging {
 
   def onCompactFiltersReceived: CallbackHandler[
-    Vector[(DoubleSha256Digest, GolombFilter)],
+    Vector[(DoubleSha256DigestBE, GolombFilter)],
     OnCompactFiltersReceived]
 
   def onTxReceived: CallbackHandler[Transaction, OnTxReceived]
@@ -65,7 +65,7 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with Logging {
   }
 
   def executeOnCompactFiltersReceivedCallbacks(
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(implicit
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])(implicit
       ec: ExecutionContext): Future[Unit] = {
     onCompactFiltersReceived.execute(
       blockFilters,
@@ -97,7 +97,7 @@ trait OnTxReceived extends Callback[Transaction]
 
 /** Callback for handling a received compact block filter */
 trait OnCompactFiltersReceived
-    extends Callback[Vector[(DoubleSha256Digest, GolombFilter)]]
+    extends Callback[Vector[(DoubleSha256DigestBE, GolombFilter)]]
 
 /** Callback for handling a received block header */
 trait OnBlockHeadersReceived extends Callback[Vector[BlockHeader]]
@@ -107,7 +107,7 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
   // Use Impl pattern here to enforce the correct names on the CallbackHandlers
   private case class NodeCallbacksImpl(
       onCompactFiltersReceived: CallbackHandler[
-        Vector[(DoubleSha256Digest, GolombFilter)],
+        Vector[(DoubleSha256DigestBE, GolombFilter)],
         OnCompactFiltersReceived],
       onTxReceived: CallbackHandler[Transaction, OnTxReceived],
       onBlockReceived: CallbackHandler[Block, OnBlockReceived],
@@ -174,7 +174,7 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
       implicit system: ActorSystem): NodeCallbacks = {
     val n = NodeCallbacksImpl(
       onCompactFiltersReceived =
-        CallbackHandler[Vector[(DoubleSha256Digest, GolombFilter)],
+        CallbackHandler[Vector[(DoubleSha256DigestBE, GolombFilter)],
                         OnCompactFiltersReceived]("onCompactFilterReceived",
                                                   onCompactFiltersReceived),
       onTxReceived = CallbackHandler[Transaction, OnTxReceived]("onTxReceived",

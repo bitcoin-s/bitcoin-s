@@ -585,7 +585,7 @@ case class DataMessageHandler(
           val filterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
             Future
               .traverse(filterBatch)(f =>
-                chainApi.getFilterHeader(f.blockHash.flip))
+                chainApi.getFilterHeader(f.blockHashBE))
               .map(_.flatten.toVector)
           }
 
@@ -857,7 +857,7 @@ case class DataMessageHandler(
             _ = logger.debug(
               s"Processing ${filterBatch.size} filters bestBlockHashBE=${filterBestBlockHashBE}")
             newChainApi <- chainApi.processFilters(sortedFilterMessages)
-            sortedGolombFilters = sortedBlockFilters.map(x => (x._1, x._3))
+            sortedGolombFilters = sortedBlockFilters.map(x => (x._1.flip, x._3))
             _ <-
               appConfig.callBacks
                 .executeOnCompactFiltersReceivedCallbacks(sortedGolombFilters)

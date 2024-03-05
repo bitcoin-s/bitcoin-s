@@ -15,7 +15,7 @@ import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node._
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -32,13 +32,13 @@ case class NodeCallbackStreamManager(
   import system.dispatcher
 
   private val filterQueueSource: Source[
-    Vector[(DoubleSha256Digest, GolombFilter)],
-    SourceQueueWithComplete[Vector[(DoubleSha256Digest, GolombFilter)]]] = {
+    Vector[(DoubleSha256DigestBE, GolombFilter)],
+    SourceQueueWithComplete[Vector[(DoubleSha256DigestBE, GolombFilter)]]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
   private val filterSink: Sink[
-    Vector[(DoubleSha256Digest, GolombFilter)],
+    Vector[(DoubleSha256DigestBE, GolombFilter)],
     Future[Done]] = {
     Sink.foreachAsync(1) { case vec =>
       callbacks.executeOnCompactFiltersReceivedCallbacks(vec)
@@ -158,7 +158,7 @@ case class NodeCallbackStreamManager(
   }
 
   override def onCompactFiltersReceived: CallbackHandler[
-    Vector[(DoubleSha256Digest, GolombFilter)],
+    Vector[(DoubleSha256DigestBE, GolombFilter)],
     OnCompactFiltersReceived] = {
     callbacks.onCompactFiltersReceived
   }
@@ -193,7 +193,7 @@ case class NodeCallbackStreamManager(
   }
 
   override def executeOnCompactFiltersReceivedCallbacks(
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(implicit
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])(implicit
       ec: ExecutionContext): Future[Unit] = {
     filterQueue
       .offer(blockFilters)

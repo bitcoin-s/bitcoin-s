@@ -140,7 +140,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       filterResult <- bitcoind.getBlockFilter(header.hashBE, FilterType.Basic)
       filter = filterResult.filter
-      _ <- wallet.processCompactFilter(header.hash, filter)
+      _ <- wallet.processCompactFilter(header.hashBE, filter)
 
       balance <- wallet.getBalance()
     } yield {
@@ -176,7 +176,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
         filterResult <- bitcoind.getBlockFilter(header.hashBE, FilterType.Basic)
         filter = filterResult.filter
-        _ <- wallet.processCompactFilter(header.hash, filter)
+        _ <- wallet.processCompactFilter(header.hashBE, filter)
 
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
         confirmedBalance <- wallet.getConfirmedBalance()
