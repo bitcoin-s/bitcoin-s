@@ -1,7 +1,7 @@
 package org.bitcoins.core.api.node
 
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.{DoubleSha256DigestBE}
 
 import scala.concurrent.Future
 
@@ -20,7 +20,7 @@ trait NodeApi {
 
   /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
     */
-  def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit]
+  def downloadBlocks(blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit]
 
   def getConnectionCount: Future[Int]
 }

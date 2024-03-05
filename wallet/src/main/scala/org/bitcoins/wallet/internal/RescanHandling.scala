@@ -16,7 +16,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.rescan.RescanState.RescanTerminatedEarly
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
@@ -394,7 +394,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   private def downloadAndProcessBlocks(
-      blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
+      blocks: Vector[DoubleSha256DigestBE]): Future[Unit] = {
     logger.debug(s"Requesting ${blocks.size} block(s)")
     blocks.foldLeft(Future.unit) { (prevF, blockHash) =>
       val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
@@ -532,7 +532,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val endHeightOpt = filtersResponse.lastOption.map(_.blockHeight)
     for {
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
-      _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
+      _ <- downloadAndProcessBlocks(filtered.map(_.blockHash))
     } yield {
       logger.debug(
         s"Found ${filtered.length} matches from start=$startHeightOpt to end=$endHeightOpt")

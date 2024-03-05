@@ -8,7 +8,7 @@ import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node._
 import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.wallet.WalletNotInitialized
@@ -29,8 +29,8 @@ object CallbackUtil extends Logging {
     }
 
     val compactFilterSink = {
-      Sink.foreachAsync[Vector[(DoubleSha256Digest, GolombFilter)]](1) {
-        case blockFilters: Vector[(DoubleSha256Digest, GolombFilter)] =>
+      Sink.foreachAsync[Vector[(DoubleSha256DigestBE, GolombFilter)]](1) {
+        case blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)] =>
           logger.debug(
             s"Executing onCompactFilters callback with filter count=${blockFilters.length}")
           wallet

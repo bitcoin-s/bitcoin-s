@@ -17,11 +17,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  StringFactory
-}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
@@ -174,7 +170,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     FutureUtil.sequentially(transactions)(sendRawTransaction(_)).map(_ => ())
 
   override def downloadBlocks(
-      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.unit
+      blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = Future.unit
 
   override def processHeaders(headers: Vector[BlockHeader]): Future[ChainApi] =
     Future.successful(this)

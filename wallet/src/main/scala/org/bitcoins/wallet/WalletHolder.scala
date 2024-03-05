@@ -20,13 +20,7 @@ import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.dlc.models.{
-  ContractInfo,
-  DLCMessage,
-  DLCState,
-  DLCStatus,
-  OracleSignatures
-}
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -49,11 +43,7 @@ import org.bitcoins.core.wallet.utxo.{
   AddressTagType,
   TxoState
 }
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  Sha256Digest
-}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
@@ -116,7 +106,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     delegate(_.processBlock(block))
 
   override def processCompactFilters(
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]): Future[
     NeutrinoHDWalletApi] = {
     delegate(_.processCompactFilters(blockFilters))
   }
@@ -715,7 +705,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     _.getBalance(account))
 
   override def processCompactFilter(
-      blockHash: DoubleSha256Digest,
+      blockHash: DoubleSha256DigestBE,
       blockFilter: GolombFilter): Future[NeutrinoHDWalletApi] =
     delegate(_.processCompactFilter(blockHash, blockFilter))
 

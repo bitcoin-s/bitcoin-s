@@ -155,11 +155,11 @@ abstract class Wallet
   }
 
   override def processCompactFilters(
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]): Future[
     Wallet] = {
     val utxosF = listUtxos()
     val spksF = listScriptPubKeys()
-    val blockHashOpt = blockFilters.lastOption.map(_._1.flip)
+    val blockHashOpt = blockFilters.lastOption.map(_._1)
     val heightOptF = blockHashOpt match {
       case Some(blockHash) =>
         chainQueryApi.getBlockHeight(blockHash)
@@ -187,7 +187,7 @@ abstract class Wallet
         }
       }
       _ <- nodeApi.downloadBlocks(blockHashToDownload)
-      hash = blockFilters.last._1.flip
+      hash = blockFilters.last._1
       heightOpt <- heightOptF
       _ <- {
         heightOpt match {
@@ -214,8 +214,8 @@ abstract class Wallet
   }
 
   private def searchFilterMatches(spks: Vector[ScriptPubKey])(
-      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    Vector[DoubleSha256Digest]] = FutureUtil.makeAsync { () =>
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]): Future[
+    Vector[DoubleSha256DigestBE]] = FutureUtil.makeAsync { () =>
     val asmVec = spks.map(_.asmBytes)
     blockFilters.flatMap { case (blockHash, blockFilter) =>
       val matcher = SimpleFilterMatcher(blockFilter)

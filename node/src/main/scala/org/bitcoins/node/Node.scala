@@ -14,7 +14,7 @@ import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 
@@ -134,13 +134,13 @@ trait Node
   /** Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
     */
   override def downloadBlocks(
-      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+      blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
       val typeIdentifier = TypeIdentifier.MsgWitnessBlock
       val inventories =
-        blockHashes.map(hash => Inventory(typeIdentifier, hash))
+        blockHashes.map(hash => Inventory(typeIdentifier, hash.flip))
       val message = GetDataMessage(inventories)
       for {
         _ <- peerManager.sendToRandomPeer(message)

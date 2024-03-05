@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.chain
 
-import org.apache.pekko.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.{
   ChainSync,
@@ -17,7 +17,7 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.server.BitcoindRpcBackendUtil
@@ -77,9 +77,9 @@ abstract class SyncUtil extends Logging {
       /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
         */
       override def downloadBlocks(
-          blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+          blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
-        val f: Vector[DoubleSha256Digest] => Future[Vector[Unit]] = {
+        val f: Vector[DoubleSha256DigestBE] => Future[Vector[Unit]] = {
           case hashes =>
             val blocks: Vector[Future[Unit]] = hashes.map {
               bitcoindRpcClient

@@ -37,7 +37,7 @@ The functions that the NodeApi supports are:
 trait NodeApi {
 
   /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]] */
-    def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit]
+    def downloadBlocks(blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit]
 }
 ```
 
@@ -84,7 +84,7 @@ val exampleCallback = createCallback(exampleProcessBlock)
     }
 
     override def downloadBlocks(
-        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+        blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
       val blockFs = blockHashes.map(hash => bitcoind.getBlockRaw(hash))
       Future.sequence(blockFs).map(_ => ())
     }
@@ -97,7 +97,7 @@ val wallet =
     Wallet(nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
 
 // Then to trigger the event we can run
-val exampleBlock = DoubleSha256Digest(
+val exampleBlock = DoubleSha256DigestBE(
     "000000000010dc23dc0d5acad64667a7a2b3010b6e02da4868bf392c90b6431d")
 wallet.nodeApi.downloadBlocks(Vector(exampleBlock))
 

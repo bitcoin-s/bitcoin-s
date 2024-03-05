@@ -7,7 +7,7 @@ import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.NodeState.HeaderSync
 import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig
@@ -101,7 +101,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
-        _ <- node.downloadBlocks(Vector(hash.flip))
+        _ <- node.downloadBlocks(Vector(hash))
         result = Await.result(resultP.future, 30.seconds)
       } yield assert(result.blockHeader.hashBE == hash)
   }
@@ -137,10 +137,10 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
       val node = param.node
       val bitcoind = param.bitcoind
 
-      val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
+      val resultP: Promise[Vector[(DoubleSha256DigestBE, GolombFilter)]] =
         Promise()
       val callback: OnCompactFiltersReceived = {
-        (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+        (filters: Vector[(DoubleSha256DigestBE, GolombFilter)]) =>
           Future {
             resultP.success(filters)
             ()
@@ -155,7 +155,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
         result = Await.result(resultP.future, 30.seconds)
-      } yield assert(result == Vector((hash.flip, filter.filter)))
+      } yield assert(result == Vector((hash, filter.filter)))
   }
 
   it must "verify OnTxReceived callbacks are executed" in {
