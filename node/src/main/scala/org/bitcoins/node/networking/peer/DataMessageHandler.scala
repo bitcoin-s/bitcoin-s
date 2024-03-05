@@ -495,7 +495,7 @@ case class DataMessageHandler(
       stopBlockHash: DoubleSha256DigestBE,
       startHeightOpt: Option[Int],
       syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
-    logger.info(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
+    logger.debug(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
 
     val fs = syncNodeState match {
       case x @ (_: HeaderSync | _: FilterHeaderSync) =>
