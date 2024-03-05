@@ -148,7 +148,7 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
 // wallet
 val wallet = Wallet(new NodeApi {
     override def broadcastTransactions(txs: Vector[Transaction]): Future[Unit] = Future.successful(())
-    override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
+    override def downloadBlocks(blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = Future.successful(())
     override def getConnectionCount: Future[Int] = Future.successful(0)
   }, chainApi, ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
 val walletF: Future[WalletApi] = configF.flatMap { _ =>
