@@ -310,11 +310,7 @@ case class DataMessageHandler(
                   HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
                 val newDmhF = handleDataPayload(payload = headersMessage,
                                                 peerData = peerData)
-                newDmhF.flatMap { dmh =>
-                  appConfig.callBacks
-                    .executeOnBlockReceivedCallbacks(block)
-                    .map(_ => dmh)
-                }
+                newDmhF
               } else {
                 logger.info(
                   s"Received block=${block.blockHeader.hash.flip.hex} state=$state")
@@ -508,7 +504,7 @@ case class DataMessageHandler(
       stopBlockHash: DoubleSha256DigestBE,
       startHeightOpt: Option[Int],
       syncNodeState: SyncNodeState): Future[Option[NodeState.FilterSync]] = {
-    logger.info(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
+    logger.debug(s"Beginning to sync filters to stopBlockHashBE=$stopBlockHash")
 
     val fs = syncNodeState match {
       case x @ (_: HeaderSync | _: FilterHeaderSync) =>
