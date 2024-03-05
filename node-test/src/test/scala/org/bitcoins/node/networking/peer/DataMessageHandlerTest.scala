@@ -101,7 +101,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
-        _ <- node.downloadBlocks(Vector(hash.flip))
+        _ <- node.downloadBlocks(Vector(hash))
         result = Await.result(resultP.future, 30.seconds)
       } yield assert(result.blockHeader.hashBE == hash)
   }
