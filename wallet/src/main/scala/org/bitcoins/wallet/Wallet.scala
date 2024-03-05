@@ -168,7 +168,7 @@ abstract class Wallet
     for {
       utxos <- utxosF
       scripts <- spksF
-      _ = logger.info(
+      _ = logger.debug(
         s"Processing ${blockFilters.length} block filters for ${utxos.length} utxos and ${scripts.length} scripts")
       scriptPubKeys =
         utxos.flatMap(_.redeemScriptOpt).toSet ++ scripts.map(_.scriptPubKey)

@@ -1288,7 +1288,7 @@ object PeerManager extends Logging {
                                             batchSize = filterBatchSize,
                                             startHeightOpt = startHeightOpt)
       _ = logger.info(
-        s"Requesting compact filters from $filterSyncMarkerOpt with peer=$peer startHeightOpt=$startHeightOpt stopBlockHashBE=$stopBlockHash")
+        s"Requesting compact filters from with peer=$peer stopBlockHashBE=${stopBlockHash.hex}")
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           peerMessageSenderApi
