@@ -303,11 +303,7 @@ case class DataMessageHandler(
                   HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
                 val newDmhF = handleDataPayload(payload = headersMessage,
                                                 peerData = peerData)
-                newDmhF.flatMap { dmh =>
-                  appConfig.callBacks
-                    .executeOnBlockReceivedCallbacks(block)
-                    .map(_ => dmh)
-                }
+                newDmhF
               } else {
                 logger.info(
                   s"Received block=${block.blockHeader.hash.flip.hex} state=$state")
