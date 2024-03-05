@@ -155,7 +155,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
         result = Await.result(resultP.future, 30.seconds)
-      } yield assert(result == Vector((hash.flip, filter.filter)))
+      } yield assert(result == Vector((hash, filter.filter)))
   }
 
   it must "verify OnTxReceived callbacks are executed" in {
