@@ -72,40 +72,46 @@ case class PeerManager(
       compactFilterStartHeightOpt: Option[Int],
       nodeState: SyncNodeState)(implicit
       chainAppConfig: ChainAppConfig): Future[Unit] = {
-    val syncPeer = nodeState.syncPeer
-    val peerMsgSender = nodeState.getPeerMsgSender(syncPeer) match {
-      case Some(p) => p
-      case None =>
-        sys.error(s"Could not find peer=$syncPeer")
-    }
-    val bestBlockHashF = chainApi.getBestBlockHash()
-    val sendCompactFilterHeaderMsgF = bestBlockHashF.flatMap { bestBlockHash =>
-      PeerManager.sendNextGetCompactFilterHeadersCommand(
-        peerMessageSenderApi = peerMsgSender,
-        chainApi = chainApi,
-        peer = syncPeer,
-        filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
-        prevStopHash = bestFilterHeader.blockHashBE,
-        stopHash = bestBlockHash
-      )
-    }
-
-    sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
-      // If we have started syncing filters
-      if (!isSyncFilterHeaders) {
-        PeerManager
-          .sendNextGetCompactFilterCommand(
+    if (nodeState.services.nodeCompactFilters) {
+      val syncPeer = nodeState.syncPeer
+      val peerMsgSender = nodeState.getPeerMsgSender(syncPeer) match {
+        case Some(p) => p
+        case None =>
+          sys.error(s"Could not find peer=$syncPeer")
+      }
+      val bestBlockHashF = chainApi.getBestBlockHash()
+      val sendCompactFilterHeaderMsgF = bestBlockHashF.flatMap {
+        bestBlockHash =>
+          PeerManager.sendNextGetCompactFilterHeadersCommand(
             peerMessageSenderApi = peerMsgSender,
             chainApi = chainApi,
-            filterBatchSize = chainAppConfig.filterBatchSize,
-            startHeightOpt = compactFilterStartHeightOpt,
-            stopBlockHash = bestFilterHeader.blockHashBE,
-            peer = syncPeer
+            filterHeaderBatchSize = chainAppConfig.filterHeaderBatchSize,
+            prevStopHash = bestFilterHeader.blockHashBE,
+            stopHash = bestBlockHash
           )
-          .map(_ => ())
-      } else {
-        Future.unit
       }
+
+      sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
+        // If we have started syncing filters
+        if (!isSyncFilterHeaders) {
+          PeerManager
+            .sendNextGetCompactFilterCommand(
+              peerMessageSenderApi = peerMsgSender,
+              chainApi = chainApi,
+              filterBatchSize = chainAppConfig.filterBatchSize,
+              startHeightOpt = compactFilterStartHeightOpt,
+              stopBlockHash = bestFilterHeader.blockHashBE,
+              peer = syncPeer
+            )
+            .map(_ => ())
+        } else {
+          Future.unit
+        }
+      }
+    } else {
+      logger.warn(
+        s"Cannot syncCompactFilters() with peer=${nodeState.syncPeer} as the peer doesn't support block filters")
+      Future.unit
     }
   }
 
@@ -1186,7 +1192,8 @@ case class ResponseTimeout(payload: NetworkPayload)
 object PeerManager extends Logging {
 
   /** Sends first getcfheader message.
-    * Returns None if are our filter headers are in sync with our block headers
+    * Returns None if are our filter headers are in sync with our block headers or
+    * if the peer we are attempting to send messages to does not support block filters
     */
   def sendFirstGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
@@ -1196,63 +1203,80 @@ object PeerManager extends Logging {
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[
     Option[NodeState.FilterHeaderSync]] = {
-    for {
-      bestFilterHeaderOpt <-
-        chainApi
-          .getBestFilterHeader()
-      blockHash = bestFilterHeaderOpt match {
-        case Some(filterHeaderDb) =>
-          //need to check for reorg scenarios here
-          val isSameHeight = filterHeaderDb.height == stopBlockHeaderDb.height
-          val isNotSameBlockHash =
-            filterHeaderDb.blockHashBE != stopBlockHeaderDb.hashBE
-          if (isSameHeight && isNotSameBlockHash) {
-            //need to start from previous header has to sync filter headers
-            //correctly in a reorg scenario
-            stopBlockHeaderDb.previousBlockHashBE
-          } else {
-            filterHeaderDb.blockHashBE
-          }
+    val peer = peerMessageSenderApi.peer
+    val servicesOpt = state.getPeerServices(peer)
+    servicesOpt match {
+      case None =>
+        val exn = new RuntimeException(
+          s"Cannot find peer=$peer in state=$state")
+        Future.failed(exn)
+      case Some(services) =>
+        if (services.nodeCompactFilters) {
+          for {
+            bestFilterHeaderOpt <-
+              chainApi
+                .getBestFilterHeader()
+            blockHash = bestFilterHeaderOpt match {
+              case Some(filterHeaderDb) =>
+                //need to check for reorg scenarios here
+                val isSameHeight =
+                  filterHeaderDb.height == stopBlockHeaderDb.height
+                val isNotSameBlockHash =
+                  filterHeaderDb.blockHashBE != stopBlockHeaderDb.hashBE
+                if (isSameHeight && isNotSameBlockHash) {
+                  //need to start from previous header has to sync filter headers
+                  //correctly in a reorg scenario
+                  stopBlockHeaderDb.previousBlockHashBE
+                } else {
+                  filterHeaderDb.blockHashBE
+                }
 
-        case None =>
-          DoubleSha256DigestBE.empty
-      }
-      hashHeightOpt <- {
-        chainApi.nextBlockHeaderBatchRange(prevStopHash = blockHash,
-                                           stopHash = stopBlockHeaderDb.hashBE,
-                                           batchSize =
-                                             chainConfig.filterHeaderBatchSize)
-      }
-      //needed to work around this bug in bitcoin core:
-      //https://github.com/bitcoin/bitcoin/issues/27085
-      _ <- AsyncUtil.nonBlockingSleep(1.second)
-      res <- hashHeightOpt match {
-        case Some(filterSyncMarker) =>
-          peerMessageSenderApi
-            .sendGetCompactFilterHeadersMessage(filterSyncMarker)
-            .map(_ =>
-              Some(
-                FilterHeaderSync(syncPeer = state.syncPeer,
-                                 peerDataMap = state.peerDataMap,
-                                 waitingForDisconnection =
-                                   state.waitingForDisconnection,
-                                 state.peerFinder)))
-        case None =>
-          logger.info(
-            s"Filter headers are synced! filterHeader.blockHashBE=$blockHash")
+              case None =>
+                DoubleSha256DigestBE.empty
+            }
+            hashHeightOpt <- {
+              chainApi.nextBlockHeaderBatchRange(
+                prevStopHash = blockHash,
+                stopHash = stopBlockHeaderDb.hashBE,
+                batchSize = chainConfig.filterHeaderBatchSize)
+            }
+            //needed to work around this bug in bitcoin core:
+            //https://github.com/bitcoin/bitcoin/issues/27085
+            _ <- AsyncUtil.nonBlockingSleep(1.second)
+            res <- hashHeightOpt match {
+              case Some(filterSyncMarker) =>
+                peerMessageSenderApi
+                  .sendGetCompactFilterHeadersMessage(filterSyncMarker)
+                  .map(_ =>
+                    Some(
+                      FilterHeaderSync(syncPeer = state.syncPeer,
+                                       peerDataMap = state.peerDataMap,
+                                       waitingForDisconnection =
+                                         state.waitingForDisconnection,
+                                       state.peerFinder)))
+              case None =>
+                logger.info(
+                  s"Filter headers are synced! filterHeader.blockHashBE=$blockHash")
+                Future.successful(None)
+            }
+          } yield res
+        } else {
+          logger.debug(
+            s"Cannot send compact filter messages to peer=$peer as it does not support compact filters")
           Future.successful(None)
-      }
-    } yield res
+        }
+    }
+
   }
 
   def sendNextGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
-      peer: Peer,
       filterHeaderBatchSize: Int,
       prevStopHash: DoubleSha256DigestBE,
       stopHash: DoubleSha256DigestBE)(implicit
       ec: ExecutionContext): Future[Boolean] = {
+    val peer = peerMessageSenderApi.peer
     for {
       filterSyncMarkerOpt <- chainApi.nextBlockHeaderBatchRange(
         prevStopHash = prevStopHash,
