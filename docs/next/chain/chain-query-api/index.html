@@ -110,7 +110,7 @@ want.</p>
 <span class="hljs-comment">// a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks</span>
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">createCallbacks</span></span>(
       processTransaction: <span class="hljs-type">Transaction</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>],
-      processCompactFilters: (<span class="hljs-type">Vector</span>[(<span class="hljs-type">DoubleSha256Digest</span>, <span class="hljs-type">GolombFilter</span>)]) =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>],
+      processCompactFilters: (<span class="hljs-type">Vector</span>[(<span class="hljs-type">DoubleSha256DigestBE</span>, <span class="hljs-type">GolombFilter</span>)]) =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>],
       processBlock: <span class="hljs-type">Block</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>]): <span class="hljs-type">NodeCallbacks</span> = {
     <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onTx: <span class="hljs-type">OnTxReceived</span> = { tx =&gt;
       processTransaction(tx)
@@ -137,7 +137,7 @@ want.</p>
     <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>))
 
 <span class="hljs-keyword">val</span> exampleProcessFilters =
-    (filters: <span class="hljs-type">Vector</span>[(<span class="hljs-type">DoubleSha256Digest</span>, <span class="hljs-type">GolombFilter</span>)]) =&gt;
+    (filters: <span class="hljs-type">Vector</span>[(<span class="hljs-type">DoubleSha256DigestBE</span>, <span class="hljs-type">GolombFilter</span>)]) =&gt;
       <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received filter: <span class="hljs-subst">${filters.head._1.flip.hex}</span> <span class="hljs-subst">${filters.head._2.hash.flip.hex}</span>"</span>))
 
 <span class="hljs-keyword">val</span> exampleCallbacks =
