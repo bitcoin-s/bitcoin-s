@@ -52,7 +52,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         peer = node.peerManager.peers.head
         chainApi <- node.chainApiFromDb()
         _ = require(peerManager.getPeerData(peer).isDefined)
-        peerMsgSender = peerManager.getPeerData(peer).get.peerMessageSender
         peerFinder = PeerFinder(peerManagerApi = peerManager,
                                 paramPeers = Vector.empty,
                                 queue = node)(system.dispatcher,
@@ -62,7 +61,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
-          peerMessageSenderApi = peerMsgSender,
           peerManager = peerManager,
           state = HeaderSync(peer,
                              peerManager.peerWithServicesDataMap,

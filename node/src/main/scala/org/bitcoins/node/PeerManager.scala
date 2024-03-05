@@ -616,11 +616,9 @@ case class PeerManager(
                   s"Ignoring received msg=${payload.commandName} from peer=$peer because it was disconnected, peers=$peers state=${state}")
                 Future.successful(state)
               case Some(peerData) =>
-                val peerMsgSender = PeerMessageSender(peerData.peerConnection)
                 val dmh = DataMessageHandler(
                   chainApi = ChainHandler.fromDatabase(),
                   walletCreationTimeOpt = walletCreationTimeOpt,
-                  peerMessageSenderApi = peerMsgSender,
                   peerManager = this,
                   state = runningState
                 )
