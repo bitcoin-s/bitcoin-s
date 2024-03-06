@@ -5,17 +5,17 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
-import org.bitcoins.core.api.node.{NodeType, Peer}
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.NodeState._
+import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.util.PeerMessageSenderApi
-import org.bitcoins.node._
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -458,13 +458,11 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterHeadersCommand(
       peerMessageSenderApi: PeerMessageSenderApi,
-      syncPeer: Peer,
       prevStopHash: DoubleSha256DigestBE,
       stopHash: DoubleSha256DigestBE): Future[Boolean] =
     PeerManager.sendNextGetCompactFilterHeadersCommand(
       peerMessageSenderApi = peerMessageSenderApi,
       chainApi = chainApi,
-      peer = syncPeer,
       filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
       prevStopHash = prevStopHash,
       stopHash = stopHash
@@ -789,7 +787,6 @@ case class DataMessageHandler(
       filterHeader: CompactFilterHeadersMessage,
       chainApi: ChainApi,
       peerMessageSenderApi: PeerMessageSenderApi): Future[NodeRunningState] = {
-    val peer = peerMessageSenderApi.peer
     val filterHeaders = filterHeader.filterHeaders
     val blockCountF = chainApi.getBlockCount()
     val bestBlockHashF = chainApi.getBestBlockHash()
@@ -804,7 +801,6 @@ case class DataMessageHandler(
             s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
           sendNextGetCompactFilterHeadersCommand(
             peerMessageSenderApi = peerMessageSenderApi,
-            syncPeer = peer,
             prevStopHash = filterHeader.stopHashBE,
             stopHash = bestBlockHash).map(_ => filterHeaderSync)
         } else {

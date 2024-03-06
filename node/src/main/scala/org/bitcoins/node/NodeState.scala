@@ -48,6 +48,10 @@ sealed trait NodeRunningState extends NodeState {
     randomPeerOpt.map(PeerMessageSender(_))
   }
 
+  def getPeerServices(peer: Peer): Option[ServiceIdentifier] = {
+    peersWithServices.find(_.peer == peer).map(_.services)
+  }
+
   def replacePeers(
       peerDataMap: Map[
         PeerWithServices,
@@ -183,6 +187,9 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   override def isSyncing: Boolean = true
 
   def syncPeer: Peer
+
+  /** Services of our [[syncPeer]] */
+  def services: ServiceIdentifier = getPeerServices(syncPeer).get
 
   def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {
     this match {
