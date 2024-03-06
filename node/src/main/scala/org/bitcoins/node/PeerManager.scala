@@ -1322,8 +1322,6 @@ object PeerManager extends Logging {
       ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[
     Option[NodeState.FilterHeaderSync]] = {
-    logger.info(
-      s"Now syncing filter headers from ${state.syncPeer} in state=${state} stopBlockHashBE=${stopBlockHeaderDb.hashBE}")
     for {
       newSyncingStateOpt <- PeerManager.sendFirstGetCompactFilterHeadersCommand(
         peerMessageSenderApi = peerMessageSenderApi,
