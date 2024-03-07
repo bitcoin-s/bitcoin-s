@@ -881,14 +881,9 @@ case class PeerManager(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE)
-      _ <- {
-        headerSync.getPeerMsgSender(headerSync.syncPeer) match {
-          case Some(peerMsgSender) =>
-            peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-          case None =>
-            gossipGetHeadersMessage(cachedHeaders)
-        }
-      }
+      _ <- headerSync
+        .syncPeerMessageSender()
+        .sendGetHeadersMessage(cachedHeaders)
     } yield headerSync
   }
 
@@ -1087,7 +1082,7 @@ case class PeerManager(
             fofhs match {
               case fhs: FilterHeaderSync =>
                 val peerMsgSender =
-                  fofhs.getPeerMsgSender(fhs.syncPeer).get
+                  fofhs.syncPeerMessageSender()
                 PeerManager
                   .sendFirstGetCompactFilterHeadersCommand(
                     peerMessageSenderApi = peerMsgSender,
