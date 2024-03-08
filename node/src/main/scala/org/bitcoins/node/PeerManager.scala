@@ -961,7 +961,6 @@ case class PeerManager(
               Future.successful(job._1)
           }
         } else {
-          //come back and review this, i don't think this is right
           val exn = new RuntimeException(
             s"Cannot start sync when PeerManager is not started")
           Future.failed(exn)
@@ -1318,7 +1317,7 @@ object PeerManager extends Logging {
   }
 
   def fetchCompactFilterHeaders(
-      state: FilterHeaderSync, //can we tighten this type up?
+      state: FilterHeaderSync,
       chainApi: ChainApi,
       peerMessageSenderApi: PeerMessageSenderApi,
       stopBlockHeaderDb: BlockHeaderDb)(implicit
