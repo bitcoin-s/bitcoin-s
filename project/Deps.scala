@@ -40,7 +40,7 @@ object Deps {
     val postgresV = "42.7.2" //https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
-    val slickV = "3.4.1"
+    val slickV = "3.5.0"
     val sqliteV = "3.45.1.0" //https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"

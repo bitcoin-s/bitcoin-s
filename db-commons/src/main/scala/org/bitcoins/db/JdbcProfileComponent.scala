@@ -2,7 +2,7 @@ package org.bitcoins.db
 
 import grizzled.slf4j.Logging
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.{JdbcBackend, JdbcProfile}
 
 import scala.concurrent.duration.Duration
 
@@ -18,12 +18,11 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends Logging {
   }
 
   lazy val profile: JdbcProfile = dbConfig.profile
-  import profile.api._
 
   lazy val numThreads: Int = dbConfig.config.getInt("db.numThreads")
 
   /** The database we are connecting to */
-  lazy val database: Database = {
+  lazy val database: JdbcBackend#Database = {
     dbConfig.db
   }
 
