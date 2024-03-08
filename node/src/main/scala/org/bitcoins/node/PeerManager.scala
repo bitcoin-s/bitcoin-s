@@ -951,11 +951,10 @@ case class PeerManager(
           //
           // the filter sync job gets scheduled _after_ PeerManager.stop() has been called
           syncFilterCancellableOpt match {
-            case _: Some[(Peer, Cancellable)] =>
+            case Some((p, _)) =>
               //do nothing as we already have a job scheduled
-              Future.successful(
-                fofhs
-              ) //what if sync peer and job peer is not the same?
+              val replaced = fofhs.replaceSyncPeer(p)
+              Future.successful(replaced)
             case None =>
               val jobOpt = createFilterSyncJob(chainApi, fofhs)
               syncFilterCancellableOpt = jobOpt.map(j => (j._1.syncPeer, j._2))
