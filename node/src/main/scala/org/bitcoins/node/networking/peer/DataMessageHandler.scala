@@ -359,10 +359,7 @@ case class DataMessageHandler(
         if (headerHeight > filterHeaderCount) {
           logger.info(
             s"Starting to fetch filter headers in data message handler")
-          val fhs = FilterHeaderSync(syncNodeState.syncPeer,
-                                     syncNodeState.peerDataMap,
-                                     syncNodeState.waitingForDisconnection,
-                                     syncNodeState.peerFinder)
+          val fhs = syncNodeState.toFilterHeaderSync
 
           for {
             syncingFilterHeadersState <- PeerManager
@@ -485,13 +482,7 @@ case class DataMessageHandler(
       )
       .map { isSyncing =>
         if (isSyncing) {
-          val newState = NodeState.FilterSync(
-            syncPeer = fs.syncPeer,
-            peerDataMap = fs.peerDataMap,
-            waitingForDisconnection = fs.waitingForDisconnection,
-            filterBatchCache = fs.filterBatchCache,
-            peerFinder = fs.peerFinder
-          )
+          val newState = fs.toFilterSync
           Some(newState)
         } else None
       }
@@ -506,11 +497,7 @@ case class DataMessageHandler(
 
     val fs = syncNodeState match {
       case x @ (_: HeaderSync | _: FilterHeaderSync) =>
-        FilterSync(x.syncPeer,
-                   x.peerDataMap,
-                   x.waitingForDisconnection,
-                   Set.empty,
-                   x.peerFinder)
+        x.toFilterSync
       case fs: FilterSync => fs
     }
 
@@ -701,7 +688,7 @@ case class DataMessageHandler(
             for {
               lastBlockHeaderDbOpt <- chainApi.getHeader(lastHash.flip)
               fhs <- PeerManager.fetchCompactFilterHeaders(
-                state = state,
+                state = state.toFilterHeaderSync,
                 chainApi = chainApi,
                 peerMessageSenderApi = peerMessageSenderApi,
                 stopBlockHeaderDb = lastBlockHeaderDbOpt.get)

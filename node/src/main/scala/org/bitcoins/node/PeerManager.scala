@@ -1208,7 +1208,7 @@ object PeerManager extends Logging {
       peerMessageSenderApi: PeerMessageSenderApi,
       chainApi: ChainApi,
       stopBlockHeaderDb: BlockHeaderDb,
-      state: SyncNodeState)(implicit
+      state: FilterHeaderSync)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[
     Option[NodeState.FilterHeaderSync]] = {
@@ -1249,13 +1249,7 @@ object PeerManager extends Logging {
           case Some(filterSyncMarker) =>
             peerMessageSenderApi
               .sendGetCompactFilterHeadersMessage(filterSyncMarker)
-              .map(_ =>
-                Some(
-                  FilterHeaderSync(syncPeer = state.syncPeer,
-                                   peerDataMap = state.peerDataMap,
-                                   waitingForDisconnection =
-                                     state.waitingForDisconnection,
-                                   state.peerFinder)))
+              .map(_ => Some(state))
           case None =>
             logger.info(
               s"Filter headers are synced! filterHeader.blockHashBE=$blockHash")
@@ -1324,7 +1318,7 @@ object PeerManager extends Logging {
   }
 
   def fetchCompactFilterHeaders(
-      state: SyncNodeState, //can we tighten this type up?
+      state: FilterHeaderSync, //can we tighten this type up?
       chainApi: ChainApi,
       peerMessageSenderApi: PeerMessageSenderApi,
       stopBlockHeaderDb: BlockHeaderDb)(implicit
