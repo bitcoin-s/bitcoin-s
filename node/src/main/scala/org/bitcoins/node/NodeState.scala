@@ -4,6 +4,8 @@ import org.bitcoins.core.api.node.{Peer, PeerWithServices}
 import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
 import org.bitcoins.node.NodeState.{
   DoneSyncing,
+  FilterHeaderSync,
+  FilterSync,
   MisbehavingPeer,
   NodeShuttingDown,
   RemovePeers
@@ -191,6 +193,9 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   /** Services of our [[syncPeer]] */
   def services: ServiceIdentifier = getPeerServices(syncPeer).get
 
+  def syncPeerMessageSender()(implicit nodeAppConfig: NodeAppConfig) =
+    getPeerMsgSender(syncPeer).get
+
   def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {
     this match {
       case h: NodeState.HeaderSync        => h.copy(syncPeer = newSyncPeer)
@@ -208,7 +213,22 @@ sealed abstract class SyncNodeState extends NodeRunningState {
       replaceSyncPeer(p)
     }
   }
+
+  def toFilterHeaderSync: FilterHeaderSync = {
+    FilterHeaderSync(syncPeer, peerDataMap, waitingForDisconnection, peerFinder)
+  }
+
+  def toFilterSync: FilterSync = {
+    FilterSync(syncPeer = syncPeer,
+               peerDataMap = peerDataMap,
+               waitingForDisconnection = waitingForDisconnection,
+               filterBatchCache = Set.empty,
+               peerFinder = peerFinder)
+  }
 }
+
+/** Either we are syncing [[NodeState.FilterHeaderSync]] or [[NodeState.FilterSync]] */
+sealed trait FilterOrFilterHeaderSync extends SyncNodeState
 
 object NodeState {
 
@@ -224,7 +244,7 @@ object NodeState {
       peerDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder)
-      extends SyncNodeState
+      extends FilterOrFilterHeaderSync
 
   case class FilterSync(
       syncPeer: Peer,
@@ -232,7 +252,7 @@ object NodeState {
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage],
       peerFinder: PeerFinder)
-      extends SyncNodeState {
+      extends FilterOrFilterHeaderSync {
 
     override def toString: String = {
       s"FilterSync(syncPeer=$syncPeer,peers=$peers,waitingForDisconnection=$waitingForDisconnection,filterBatchCache.size=${filterBatchCache.size})"
