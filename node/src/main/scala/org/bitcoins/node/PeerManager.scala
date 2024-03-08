@@ -956,18 +956,15 @@ case class PeerManager(
               val replaced = fofhs.replaceSyncPeer(p)
               Future.successful(replaced)
             case None =>
-              val jobOpt = createFilterSyncJob(chainApi, fofhs)
-              syncFilterCancellableOpt = jobOpt.map(j => (j._1.syncPeer, j._2))
-              jobOpt match {
-                case Some(job) => Future.successful(job._1)
-                case None      =>
-                  //what if this is None? come back and review this
-                  Future.successful(fofhs)
-              }
+              val job = createFilterSyncJob(chainApi, fofhs)
+              syncFilterCancellableOpt = Some((job._1.syncPeer, job._2))
+              Future.successful(job._1)
           }
         } else {
           //come back and review this, i don't think this is right
-          Future.successful(syncNodeState)
+          val exn = new RuntimeException(
+            s"Cannot start sync when PeerManager is not started")
+          Future.failed(exn)
         }
     }
 
@@ -1004,8 +1001,9 @@ case class PeerManager(
 
   private def createFilterSyncJob(
       chainApi: ChainApi,
-      fofhs: FilterOrFilterHeaderSync): Option[
-    (FilterOrFilterHeaderSync, Cancellable)] = {
+      fofhs: FilterOrFilterHeaderSync): (
+      FilterOrFilterHeaderSync,
+      Cancellable) = {
     require(
       syncFilterCancellableOpt.isEmpty,
       s"Cannot schedule a syncFilterCancellable as one is already scheduled")
@@ -1053,8 +1051,7 @@ case class PeerManager(
       ()
     }
 
-    //come back and review this, do we want to return Option[Future[]] to represent if the job was scheduled?
-    Some((fofhs, cancellable))
+    (fofhs, cancellable)
   }
 
   /** Returns true if filter are in sync with their old counts, but out of sync with our block count */
