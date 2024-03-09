@@ -556,14 +556,12 @@ case class PeerManager(
               val connectF = runningState.peerFinder.connect(c.peer)
               connectF.map(_ => runningState)
             } else {
-              val hasCf = runningState.peerDataMap
-                .filter(_._1.peer == peer)
-                .headOption match {
-                case Some(p) => p._1.services.nodeCompactFilters
-                case None    => false
-              }
+              val hasCf = runningState
+                .getPeerServices(peer)
+                .map(_.nodeCompactFilters)
+                .getOrElse(false)
               logger.info(
-                s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${runningState.peerDataMap.size}")
+                s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${runningState.peerDataMap.size} state=$state")
               state match {
                 case s: SyncNodeState =>
                   syncHelper(s)
@@ -580,8 +578,8 @@ case class PeerManager(
         state match {
           case running: NodeRunningState =>
             val client: PeerData =
-              running.peerDataMap.find(_._1.peer == i.peer) match {
-                case Some((_, p)) => p
+              running.getPeerData(i.peer) match {
+                case Some(p) => p
                 case None =>
                   sys.error(
                     s"Cannot find peer=${i.peer} for InitializeDisconnect=$i")
