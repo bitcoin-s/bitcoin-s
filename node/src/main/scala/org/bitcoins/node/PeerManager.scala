@@ -74,7 +74,7 @@ case class PeerManager(
   chainAppConfig: ChainAppConfig): Future[Option[FilterOrFilterHeaderSync]] = {
     if (syncNodeState.services.nodeCompactFilters) {
       val syncPeer = syncNodeState.syncPeer
-      val peerMsgSender = syncNodeState.syncPeerMessageSender()
+      val peerMsgSender = syncNodeState.syncPeerMessageSender
       val bestBlockHashF = chainApi.getBestBlockHash()
       val sendCompactFilterHeaderMsgF: Future[Option[FilterHeaderSync]] =
         bestBlockHashF.flatMap { bestBlockHash =>
@@ -879,8 +879,7 @@ case class PeerManager(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE)
-      _ <- headerSync
-        .syncPeerMessageSender()
+      _ <- headerSync.syncPeerMessageSender
         .sendGetHeadersMessage(cachedHeaders)
     } yield headerSync
   }
@@ -1075,7 +1074,7 @@ case class PeerManager(
             fofhs match {
               case fhs: FilterHeaderSync =>
                 val peerMsgSender =
-                  fofhs.syncPeerMessageSender()
+                  fofhs.syncPeerMessageSender
                 PeerManager
                   .sendFirstGetCompactFilterHeadersCommand(
                     peerMessageSenderApi = peerMsgSender,
@@ -1301,10 +1300,10 @@ object PeerManager extends Logging {
         chainApi.nextFilterHeaderBatchRange(stopBlockHash = stopBlockHash,
                                             batchSize = filterBatchSize,
                                             startHeightOpt = startHeightOpt)
-      _ = logger.info(
-        s"Requesting compact filters from with peer=$peer stopBlockHashBE=${stopBlockHash.hex}")
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
+          logger.info(
+            s"Requesting compact filters from with peer=$peer stopBlockHashBE=${filterSyncMarker.stopBlockHashBE.hex}")
           peerMessageSenderApi
             .sendGetCompactFiltersMessage(filterSyncMarker)
             .map(_ => true)
