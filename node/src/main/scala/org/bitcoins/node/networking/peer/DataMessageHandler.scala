@@ -848,7 +848,7 @@ case class DataMessageHandler(
         } else Future.successful((filterBatch, chainApi))
       }
       filterHeaderSyncStateOpt <-
-        if (batchSizeFull) {
+        if (batchSizeFull && !isFiltersSynced) {
           logger.debug(
             s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
           for {
