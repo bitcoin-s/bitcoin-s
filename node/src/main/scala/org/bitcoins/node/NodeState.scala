@@ -10,7 +10,6 @@ import org.bitcoins.node.NodeState.{
   NodeShuttingDown,
   RemovePeers
 }
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
 
 import scala.util.Random
@@ -44,8 +43,7 @@ sealed trait NodeRunningState extends NodeState {
     }
   }
 
-  def getPeerMsgSender(peer: Peer)(implicit
-      nodeAppConfig: NodeAppConfig): Option[PeerMessageSender] = {
+  def getPeerMsgSender(peer: Peer): Option[PeerMessageSender] = {
     val randomPeerOpt = getPeerConnection(peer)
     randomPeerOpt.map(PeerMessageSender(_))
   }
@@ -159,8 +157,7 @@ sealed trait NodeRunningState extends NodeState {
 
   def randomPeerMessageSender(
       excludePeers: Set[Peer],
-      services: ServiceIdentifier)(implicit
-      nodeAppConfig: NodeAppConfig): Option[PeerMessageSender] = {
+      services: ServiceIdentifier): Option[PeerMessageSender] = {
     randomPeer(excludePeers, services).flatMap { p =>
       getPeerMsgSender(p)
     }
@@ -193,7 +190,7 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   /** Services of our [[syncPeer]] */
   def services: ServiceIdentifier = getPeerServices(syncPeer).get
 
-  def syncPeerMessageSender()(implicit nodeAppConfig: NodeAppConfig) =
+  def syncPeerMessageSender =
     getPeerMsgSender(syncPeer).get
 
   def replaceSyncPeer(newSyncPeer: Peer): SyncNodeState = {

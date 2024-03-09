@@ -10,34 +10,25 @@ import org.bitcoins.core.p2p.{
   InetAddress,
   Inventory,
   InventoryMessage,
-  NetworkMessage,
   NetworkPayload,
   TypeIdentifier,
   VersionMessage
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.NodeStreamMessage.SendToPeer
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class PeerMessageSender(peerConnection: PeerConnection)(implicit
-    nodeAppConfig: NodeAppConfig)
+case class PeerMessageSender(peerConnection: PeerConnection)
     extends PeerMessageSenderApi
     with P2PLogger {
 
   override val peer: Peer = peerConnection.peer
 
   override def sendMsg(msg: NetworkPayload): Future[Unit] = {
-    val networkMessage = NetworkMessage(nodeAppConfig.network, msg)
-
-    val sendToPeer = SendToPeer(networkMessage, Some(peer))
-    logger.debug(
-      s"Sending message ${sendToPeer.msg.payload.commandName} to peerOpt=${sendToPeer.peerOpt}")
-
     peerConnection.sendMsg(msg)
   }
 
