@@ -10,7 +10,7 @@ import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.NodeState.{DoneSyncing, FilterHeaderSync, HeaderSync}
+import org.bitcoins.node.NodeState.{FilterHeaderSync, HeaderSync}
 import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
