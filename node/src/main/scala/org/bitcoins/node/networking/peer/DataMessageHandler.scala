@@ -251,16 +251,12 @@ case class DataMessageHandler(
                 //why do we sometimes get empty HeadersMessage?
                 d.toHeaderSync(peer)
               } else {
-                DoneSyncing(d.peerDataMap,
-                            d.waitingForDisconnection,
-                            d.peerFinder)
+                d
               }
               Some(s)
             case headerSync: HeaderSync =>
               if (count.toInt == 0) {
-                val d = DoneSyncing(headerSync.peerDataMap,
-                                    headerSync.waitingForDisconnection,
-                                    headerSync.peerFinder)
+                val d = headerSync.toDoneSyncing
                 Some(d)
               } else if (headerSync.syncPeer == peer) {
                 Some(headerSync)
