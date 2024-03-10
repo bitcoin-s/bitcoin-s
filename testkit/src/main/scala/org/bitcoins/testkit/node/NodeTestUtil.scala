@@ -280,6 +280,23 @@ abstract class NodeTestUtil extends P2PLogger {
     }
   }
 
+  def disconnectNode(bitcoind: BitcoindRpcClient, node: NeutrinoNode)(implicit
+      system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    for {
+      peer <- NodeTestUtil.getBitcoindPeer(bitcoind)
+      address <- node.peerManager
+        .getPeerData(peer)
+        .get
+        .peerConnection
+        .getLocalAddress
+        .map(_.get)
+      uri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind, address)
+      _ <- bitcoind.disconnectNode(uri)
+      _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+    } yield ()
+  }
+
   def getStartedNodeCustomConfig(initNode: NeutrinoNode, config: Config)(
       implicit ec: ExecutionContext): Future[NeutrinoNode] = {
     val stoppedConfigF = for {

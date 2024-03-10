@@ -55,14 +55,24 @@ case class DataMessageHandler(
         syncState match {
           case state @ (_: HeaderSync | _: FilterHeaderSync | _: FilterSync) =>
             val syncPeer = state.syncPeer
-            if (peerData.peer != syncPeer) {
+            val isQueryTimedOut = state.isQueryTimedOut(appConfig.queryWaitTime)
+            if (peerData.peer != syncPeer && !isQueryTimedOut) {
               //ignore message from peers that we aren't syncing with during IBD
               logger.info(
                 s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
               Future.successful(this)
             } else {
+              val dmh = if (isQueryTimedOut) {
+                //if query is timed out, we need to transition back to DoneSyncing
+                //to avoid getting stuck in a state when a peer does not respond to us
+                //see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
+                logger.info(s"Query timed out with in state=$state")
+                copy(state = state.toDoneSyncing)
+              } else {
+                this
+              }
               val resultF =
-                handleDataPayloadValidState(payload, peerData)
+                dmh.handleDataPayloadValidState(payload, peerData)
               resultF.failed.foreach { err =>
                 logger.error(
                   s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
@@ -143,10 +153,13 @@ case class DataMessageHandler(
             s"Got ${filterHeader.filterHashes.size} compact filter header hashes, state=$state")
           state match {
             case s @ (_: HeaderSync | _: DoneSyncing) =>
-              val filterHeaderSync = FilterHeaderSync(peer,
-                                                      s.peerDataMap,
-                                                      s.waitingForDisconnection,
-                                                      s.peerFinder)
+              val filterHeaderSync =
+                FilterHeaderSync(syncPeer = peer,
+                                 peerDataMap = s.peerDataMap,
+                                 waitingForDisconnection =
+                                   s.waitingForDisconnection,
+                                 peerFinder = s.peerFinder,
+                                 sentQuery = Instant.now())
               handleFilterHeadersMessage(filterHeaderSync = filterHeaderSync,
                                          filterHeader = filterHeader,
                                          chainApi = chainApi,
@@ -180,11 +193,14 @@ case class DataMessageHandler(
                                     peerData.peerMessageSender)
                 .map(s => copy(state = s))
             case s @ (_: DoneSyncing | _: FilterHeaderSync) =>
-              val f = FilterSync(peer,
-                                 s.peerDataMap,
-                                 s.waitingForDisconnection,
-                                 Set.empty,
-                                 s.peerFinder)
+              val f = FilterSync(
+                syncPeer = peer,
+                peerDataMap = s.peerDataMap,
+                waitingForDisconnection = s.waitingForDisconnection,
+                filterBatchCache = Set.empty,
+                peerFinder = s.peerFinder,
+                sentQuery = Instant.now()
+              )
               handleFilterMessage(filterSyncState = f,
                                   filter = filter,
                                   peerMessageSenderApi =
