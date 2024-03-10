@@ -827,8 +827,13 @@ case class PeerManager(
       case Some(p) =>
         state.getPeerMsgSender(p)
       case None =>
-        state.randomPeerMessageSender(Set.empty,
+        state match {
+          case s: SyncNodeState => Some(s.syncPeerMessageSender)
+          case x @ (_: DoneSyncing | _: MisbehavingPeer | _: NodeShuttingDown |
+              _: RemovePeers) =>
+            x.randomPeerMessageSender(Set.empty,
                                       ServiceIdentifier.NODE_COMPACT_FILTERS)
+        }
     }
 
     peerMsgSenderOpt match {
