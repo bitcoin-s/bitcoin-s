@@ -329,6 +329,20 @@ object NodeState {
                  peerFinder = peerFinder,
                  sentQuery = Instant.now())
     }
+
+    def toFilterHeaderSync: Option[FilterHeaderSync] = {
+      val syncPeerOpt =
+        randomPeer(Set.empty, ServiceIdentifier.NODE_COMPACT_FILTERS)
+      syncPeerOpt.map(toFilterHeaderSync)
+    }
+
+    def toFilterHeaderSync(syncPeer: Peer): FilterHeaderSync = {
+      FilterHeaderSync(syncPeer = syncPeer,
+        peerDataMap = peerDataMap,
+        waitingForDisconnection = waitingForDisconnection,
+        peerFinder = peerFinder,
+        sentQuery = Instant.now())
+    }
   }
 
   /** means our node is in the process of shutting down */
