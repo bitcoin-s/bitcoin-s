@@ -240,6 +240,10 @@ sealed abstract class SyncNodeState extends NodeRunningState {
     val timeout = Instant.now().minus(duration.toMillis, ChronoUnit.MILLIS)
     sentQuery.isBefore(timeout)
   }
+
+  override def toString: String = {
+    s"${getClass.getSimpleName}(syncPeer=$syncPeer,peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
+  }
 }
 
 /** Either we are syncing [[NodeState.FilterHeaderSync]] or [[NodeState.FilterSync]] */
