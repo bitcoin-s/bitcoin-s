@@ -41,22 +41,26 @@ case class PeerFinder(
     ControlMessageHandler(this)
 
   /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
-  private def getPeersFromDnsSeeds: Vector[Peer] = {
+  private def getPeersFromDnsSeeds: Future[Vector[Peer]] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
-    val addresses = dnsSeeds
-      .flatMap(seed => {
-        try {
-          InetAddress
-            .getAllByName(seed)
-        } catch {
-          case _: UnknownHostException =>
-            logger.debug(s"DNS seed $seed is unavailable.")
-            Vector.empty
+    val addressesF: Future[Vector[String]] = Future
+      .traverse(dnsSeeds) { seed =>
+        Future {
+          try {
+            InetAddress
+              .getAllByName(seed)
+              .map(_.toString)
+              .toVector
+          } catch {
+            case _: UnknownHostException =>
+              logger.debug(s"DNS seed $seed is unavailable.")
+              Vector.empty[String]
+          }
         }
-      })
-      .distinct
-      .map(_.getHostAddress)
-    BitcoinSNodeUtil.stringsToPeers(addresses.toVector)
+      }
+      .map(_.flatten.toVector)
+    addressesF.map(BitcoinSNodeUtil.stringsToPeers(_))
+
   }
 
   /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
@@ -142,8 +146,8 @@ case class PeerFinder(
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
         val startedF = for {
           (dbNonCf, dbCf) <- getPeersFromDb
+          peers <- getPeersFromDnsSeeds.map (dns => dns ++ getPeersFromResources ++ dbNonCf)
         } yield {
-          val peers = getPeersFromDnsSeeds ++ getPeersFromResources ++ dbNonCf
           val pds = peers.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
           val dbPds = dbCf.map(p => buildPeerData(p, isPersistent = false))
