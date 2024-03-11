@@ -690,7 +690,7 @@ case class DataMessageHandler(
     val count = headersMessage.count
     val peer = peerData.peer
     val headers = headersMessage.headers
-    logger.info(
+    logger.debug(
       s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
     val newStateOpt: Option[NodeRunningState] = state match {
       case d: DoneSyncing =>
