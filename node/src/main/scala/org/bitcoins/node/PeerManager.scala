@@ -508,11 +508,7 @@ case class PeerManager(
                   s"Ignoring sync request as our node is shutting down, state=$s")
                 Future.successful(Some(s))
               case d: DoneSyncing =>
-                val h =
-                  HeaderSync(p,
-                             d.peerDataMap,
-                             d.waitingForDisconnection,
-                             d.peerFinder)
+                val h = d.toHeaderSync(p)
                 syncFromNewPeer(h)
             }
           case None =>
@@ -526,10 +522,7 @@ case class PeerManager(
                              ServiceIdentifier.NODE_COMPACT_FILTERS) match {
                   case Some(p) =>
                     val h =
-                      HeaderSync(p,
-                                 d.peerDataMap,
-                                 d.waitingForDisconnection,
-                                 d.peerFinder)
+                      d.toHeaderSync(p)
                     syncFromNewPeer(h)
                   case None =>
                     Future.successful(None)
@@ -1015,6 +1008,7 @@ case class PeerManager(
     val oldFilterHeaderCountF = chainApi.getFilterHeaderCount()
     val oldFilterCountF = chainApi.getFilterCount()
     val cancellable = system.scheduler.scheduleOnce(10.seconds) {
+      logger.info(s"Running filter sync job with state=$fofhs")
       val filterSyncF = {
         for {
           oldFilterHeaderCount <- oldFilterHeaderCountF
@@ -1156,10 +1150,7 @@ case class PeerManager(
               val newState = sns.replaceSyncPeer(syncPeer)
               syncHelper(newState).map(Some(_))
             case d: DoneSyncing =>
-              val hs = HeaderSync(syncPeer,
-                                  d.peerDataMap,
-                                  d.waitingForDisconnection,
-                                  d.peerFinder)
+              val hs = d.toHeaderSync(syncPeer)
               syncHelper(hs).map(Some(_))
             case x @ (_: MisbehavingPeer | _: RemovePeers |
                 _: NodeShuttingDown) =>

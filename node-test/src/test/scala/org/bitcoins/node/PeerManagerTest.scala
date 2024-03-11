@@ -71,15 +71,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
 
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
         //disconnect
-        address <- peerManager
-          .getPeerData(peer)
-          .get
-          .peerConnection
-          .getLocalAddress
-          .map(_.get)
-        nodeUri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind, address)
-        _ <- bitcoind.disconnectNode(nodeUri)
-        _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+        _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         _ <- node.peerManager.connectPeer(peer)
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)
       } yield {
@@ -99,15 +91,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
         //disconnect
         timestamp = Instant.now()
-        address <- node.peerManager
-          .getPeerData(peer)
-          .get
-          .peerConnection
-          .getLocalAddress
-          .map(_.get)
-        uri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind, address)
-        _ <- bitcoind.disconnectNode(uri)
-        _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+        _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)
         peerDb <- PeerDAO()(node.nodeConfig, system.dispatcher)
           .read((addrBytes, peer.port))

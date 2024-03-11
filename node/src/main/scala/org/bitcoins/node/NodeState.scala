@@ -12,6 +12,9 @@ import org.bitcoins.node.NodeState.{
 }
 import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
 
+import java.time.Instant
+import java.time.temporal.{ChronoUnit}
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 sealed abstract class NodeState
@@ -212,15 +215,30 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   }
 
   def toFilterHeaderSync: FilterHeaderSync = {
-    FilterHeaderSync(syncPeer, peerDataMap, waitingForDisconnection, peerFinder)
+    FilterHeaderSync(syncPeer,
+                     peerDataMap = peerDataMap,
+                     waitingForDisconnection = waitingForDisconnection,
+                     peerFinder = peerFinder,
+                     sentQuery = Instant.now())
   }
 
   def toFilterSync: FilterSync = {
-    FilterSync(syncPeer = syncPeer,
-               peerDataMap = peerDataMap,
-               waitingForDisconnection = waitingForDisconnection,
-               filterBatchCache = Set.empty,
-               peerFinder = peerFinder)
+    FilterSync(
+      syncPeer = syncPeer,
+      peerDataMap = peerDataMap,
+      waitingForDisconnection = waitingForDisconnection,
+      filterBatchCache = Set.empty,
+      peerFinder = peerFinder,
+      sentQuery = Instant.now
+    )
+  }
+
+  /** The time when we sent the last query */
+  def sentQuery: Instant
+
+  def isQueryTimedOut(duration: FiniteDuration): Boolean = {
+    val timeout = Instant.now().minus(duration.toMillis, ChronoUnit.MILLIS)
+    sentQuery.isBefore(timeout)
   }
 }
 
@@ -233,14 +251,16 @@ object NodeState {
       syncPeer: Peer,
       peerDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
-      peerFinder: PeerFinder)
+      peerFinder: PeerFinder,
+      sentQuery: Instant)
       extends SyncNodeState
 
   case class FilterHeaderSync(
       syncPeer: Peer,
       peerDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
-      peerFinder: PeerFinder)
+      peerFinder: PeerFinder,
+      sentQuery: Instant)
       extends FilterOrFilterHeaderSync
 
   case class FilterSync(
@@ -248,7 +268,8 @@ object NodeState {
       peerDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage],
-      peerFinder: PeerFinder)
+      peerFinder: PeerFinder,
+      sentQuery: Instant)
       extends FilterOrFilterHeaderSync {
 
     override def toString: String = {
@@ -302,7 +323,11 @@ object NodeState {
     }
 
     def toHeaderSync(syncPeer: Peer): HeaderSync = {
-      HeaderSync(syncPeer, peerDataMap, waitingForDisconnection, peerFinder)
+      HeaderSync(syncPeer = syncPeer,
+                 peerDataMap = peerDataMap,
+                 waitingForDisconnection = waitingForDisconnection,
+                 peerFinder = peerFinder,
+                 sentQuery = Instant.now())
     }
   }
 
