@@ -338,10 +338,10 @@ object NodeState {
 
     def toFilterHeaderSync(syncPeer: Peer): FilterHeaderSync = {
       FilterHeaderSync(syncPeer = syncPeer,
-        peerDataMap = peerDataMap,
-        waitingForDisconnection = waitingForDisconnection,
-        peerFinder = peerFinder,
-        sentQuery = Instant.now())
+                       peerDataMap = peerDataMap,
+                       waitingForDisconnection = waitingForDisconnection,
+                       peerFinder = peerFinder,
+                       sentQuery = Instant.now())
     }
   }
 
