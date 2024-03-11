@@ -219,8 +219,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
                              sentQuery = Instant.now())
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
-        //use bitcoind to generate a block, and then try to resend that header
-        //directly via the queue and make sure we get DoneSyncing back
+        //disconnect our node from bitcoind, then
+        //use bitcoind to generate 2 blocks, and then try to send the headers
+        //via directly via our queue. We should still be able to process
+        //the second header even though our NodeState is FilterHeaderSync
+        //this is because the getcfheaders timed out
         peerData = peerManager.getPeerData(peer).get
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         initBlockCount <- chainApi.getBlockCount()
@@ -230,7 +233,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         payload0 =
           HeadersMessage(Vector(blockHeader0))
         payload1 = HeadersMessage(Vector(blockHeader1))
-        //should time out, transitioning us to DoneSyncing
         newDmh0 <- dataMessageHandler.handleDataPayload(payload0, peerData)
         _ = assert(newDmh0.state.isInstanceOf[FilterHeaderSync])
         _ <- AsyncUtil.nonBlockingSleep(queryWaitTime)
