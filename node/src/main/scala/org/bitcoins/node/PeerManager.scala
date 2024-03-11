@@ -908,6 +908,7 @@ case class PeerManager(
   /** Helper method to sync the blockchain over the network
     *
     * @param syncNodeState the state we should attempt to sync with
+    * @return None if we did not start a sync attempt, else the new [[SyncNodeState]] corresponding with our new sync
     */
   private def syncHelper(
       syncNodeState: SyncNodeState): Future[Option[SyncNodeState]] = {
