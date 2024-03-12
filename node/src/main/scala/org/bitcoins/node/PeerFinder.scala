@@ -47,18 +47,18 @@ case class PeerFinder(
       .traverse(dnsSeeds) { seed =>
         Future {
           try {
-            InetAddress
+            val r = InetAddress
               .getAllByName(seed)
-              .map(_.toString)
               .toVector
+            r
           } catch {
             case _: UnknownHostException =>
               logger.debug(s"DNS seed $seed is unavailable.")
-              Vector.empty[String]
+              Vector.empty[InetAddress]
           }
         }
       }
-      .map(_.flatten.toVector)
+      .map(_.flatten.distinct.map(_.getHostAddress).toVector)
     addressesF.map(BitcoinSNodeUtil.stringsToPeers(_))
 
   }

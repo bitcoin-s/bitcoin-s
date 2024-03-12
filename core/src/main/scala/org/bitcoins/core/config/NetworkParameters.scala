@@ -68,11 +68,11 @@ sealed abstract class MainNet extends BitcoinNetwork {
     */
   override def dnsSeeds: Vector[String] = {
     Vector(
-      "seed.bitcoin.sipa.be",
+      //"seed.bitcoin.sipa.be", very slow, commenting out for now
       "dnsseed.bluematt.me",
       "dnsseed.bitcoin.dashjr.org",
       "seed.bitcoinstats.com",
-      "seed.btc.petertodd.org",
+      //"seed.btc.petertodd.net", very slow, commenting out for now
       "seed.bitcoin.jonasschnelli.ch",
       "seed.bitcoin.sprovoost.nl",
       "dnsseed.emzy.de",
