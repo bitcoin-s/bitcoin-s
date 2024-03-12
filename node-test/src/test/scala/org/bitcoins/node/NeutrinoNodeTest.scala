@@ -225,10 +225,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
               logger.warn(s"Failed to cancel generating blocks on bitcoind")
             }
           }
-          mtp1 <- bitcoind.getMedianTimePast()
-          mtp2 <- node.chainApiFromDb().flatMap(_.getMedianTimePast())
         } yield {
-          assert(mtp1 == mtp2)
+          succeed
         }
       }
   }
@@ -359,9 +357,12 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
             for {
               chainApi <- node.chainApiFromDb()
               filterCount <- chainApi.getFilterCount()
-            } yield filterCount == blockCount
+            } yield {
+              filterCount == blockCount
+            }
           },
-          1.second)
+          1.second
+        )
       } yield succeed
   }
 

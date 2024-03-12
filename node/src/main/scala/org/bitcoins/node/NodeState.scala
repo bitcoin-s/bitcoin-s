@@ -240,6 +240,10 @@ sealed abstract class SyncNodeState extends NodeRunningState {
     val timeout = Instant.now().minus(duration.toMillis, ChronoUnit.MILLIS)
     sentQuery.isBefore(timeout)
   }
+
+  override def toString: String = {
+    s"${getClass.getSimpleName}(syncPeer=$syncPeer,peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
+  }
 }
 
 /** Either we are syncing [[NodeState.FilterHeaderSync]] or [[NodeState.FilterSync]] */
@@ -328,6 +332,20 @@ object NodeState {
                  waitingForDisconnection = waitingForDisconnection,
                  peerFinder = peerFinder,
                  sentQuery = Instant.now())
+    }
+
+    def toFilterHeaderSync: Option[FilterHeaderSync] = {
+      val syncPeerOpt =
+        randomPeer(Set.empty, ServiceIdentifier.NODE_COMPACT_FILTERS)
+      syncPeerOpt.map(toFilterHeaderSync)
+    }
+
+    def toFilterHeaderSync(syncPeer: Peer): FilterHeaderSync = {
+      FilterHeaderSync(syncPeer = syncPeer,
+                       peerDataMap = peerDataMap,
+                       waitingForDisconnection = waitingForDisconnection,
+                       peerFinder = peerFinder,
+                       sentQuery = Instant.now())
     }
   }
 

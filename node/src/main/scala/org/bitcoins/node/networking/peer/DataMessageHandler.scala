@@ -258,50 +258,8 @@ case class DataMessageHandler(
 
           }
           Future.successful(this)
-        case HeadersMessage(count, headers) =>
-          logger.info(
-            s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
-          val newStateOpt: Option[NodeRunningState] = state match {
-            case d: DoneSyncing =>
-              val s = if (count.toInt != 0) {
-                //why do we sometimes get empty HeadersMessage?
-                d.toHeaderSync(peer)
-              } else {
-                d
-              }
-              Some(s)
-            case headerSync: HeaderSync =>
-              if (count.toInt == 0) {
-                val d = headerSync.toDoneSyncing
-                Some(d)
-              } else if (headerSync.syncPeer == peer) {
-                Some(headerSync)
-              } else {
-                //means we received a headers message from a peer we aren't syncing with, so ignore for now
-                logger.debug(
-                  s"Ignoring headers from peer=$peer while we are syncing with syncPeer=${headerSync.syncPeer}")
-                None
-              }
-
-            case x @ (_: FilterHeaderSync | _: FilterSync |
-                _: NodeShuttingDown) =>
-              logger.debug(
-                s"Ignoring headers msg with size=${headers.size} while in state=$x from peer=$peer")
-              Some(x)
-            case x @ (_: MisbehavingPeer | _: RemovePeers) =>
-              sys.error(s"Invalid state to receive headers in, got=$x")
-          }
-          newStateOpt match {
-            case Some(h: HeaderSync) =>
-              handleHeadersMessage(h, headers, peerData)
-                .map(s => copy(state = s))
-            case Some(
-                  x @ (_: FilterHeaderSync | _: FilterSync | _: DoneSyncing |
-                  _: MisbehavingPeer | _: RemovePeers | _: NodeShuttingDown)) =>
-              Future.successful(copy(state = x))
-            case None =>
-              Future.successful(this)
-          }
+        case h: HeadersMessage =>
+          handleHeadersMessage(h, peerData)
         case msg: BlockMessage =>
           val block = msg.block
 
@@ -727,6 +685,65 @@ case class DataMessageHandler(
   }
 
   private def handleHeadersMessage(
+      headersMessage: HeadersMessage,
+      peerData: PersistentPeerData): Future[DataMessageHandler] = {
+    val count = headersMessage.count
+    val peer = peerData.peer
+    val headers = headersMessage.headers
+    logger.debug(
+      s"Received headers message with ${count.toInt} headers from peer=$peer state=$state")
+    val newStateOpt: Option[NodeRunningState] = state match {
+      case d: DoneSyncing =>
+        val s = if (count.toInt != 0) {
+          //why do we sometimes get empty HeadersMessage?
+          d.toHeaderSync(peer)
+        } else {
+          d
+        }
+        Some(s)
+      case headerSync: HeaderSync =>
+        if (count.toInt == 0) {
+          val d = headerSync.toDoneSyncing
+          Some(d)
+        } else if (headerSync.syncPeer == peer) {
+          Some(headerSync)
+        } else {
+          //means we received a headers message from a peer we aren't syncing with, so ignore for now
+          logger.debug(
+            s"Ignoring block headers from peer=$peer while we are syncing with syncPeer=${headerSync.syncPeer}")
+          None
+        }
+      case x @ (_: FilterHeaderSync | _: FilterSync | _: NodeShuttingDown) =>
+        logger.debug(
+          s"Ignoring block headers msg with size=${headers.size} while in state=$x from peer=$peer")
+        Some(x)
+      case x @ (_: MisbehavingPeer | _: RemovePeers) =>
+        sys.error(s"Invalid state to receive headers in, got=$x")
+    }
+    newStateOpt match {
+      case Some(h: HeaderSync) =>
+        handleHeadersMessageValidState(h, headers, peerData)
+          .map(s => copy(state = s))
+      case Some(d: DoneSyncing) =>
+        val newStateF = d.toFilterHeaderSync match {
+          case Some(fhSync) =>
+            peerManager
+              .startFilterSync(chainApi, fhSync)
+              .map(_.getOrElse(d))
+          case None => Future.successful(d)
+        }
+        newStateF.map(s => copy(state = s))
+      case Some(x @ (_: FilterHeaderSync | _: FilterSync)) =>
+        Future.successful(copy(state = x))
+      case Some(
+            x @ (_: MisbehavingPeer | _: RemovePeers | _: NodeShuttingDown)) =>
+        Future.successful(copy(state = x))
+      case None =>
+        Future.successful(this)
+    }
+  }
+
+  private def handleHeadersMessageValidState(
       headerSyncState: HeaderSync,
       headers: Vector[BlockHeader],
       peerData: PersistentPeerData): Future[NodeRunningState] = {

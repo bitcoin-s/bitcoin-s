@@ -67,9 +67,9 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
       // our lines
       val oldConfStr = this.config.asReadableJson
 
-      logger.debug(s"Creating AppConfig with $numOverrides override(s) ")
-      logger.debug(s"Old config:")
-      logger.debug(oldConfStr)
+      logger.trace(s"Creating AppConfig with $numOverrides override(s) ")
+      logger.trace(s"Old config:")
+      logger.trace(oldConfStr)
     }
 
     if (logger.logger.isTraceEnabled()) {
@@ -94,8 +94,8 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
       // force lazy load before we print
       val newConfStr = newConf.config.asReadableJson
 
-      logger.debug("New config:")
-      logger.debug(newConfStr)
+      logger.trace("New config:")
+      logger.trace(newConfStr)
     }
 
     newConf
