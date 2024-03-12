@@ -359,9 +359,12 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
             for {
               chainApi <- node.chainApiFromDb()
               filterCount <- chainApi.getFilterCount()
-            } yield filterCount == blockCount
+            } yield {
+              filterCount == blockCount
+            }
           },
-          1.second)
+          1.second
+        )
       } yield succeed
   }
 

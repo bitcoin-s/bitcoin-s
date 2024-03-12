@@ -725,35 +725,14 @@ case class DataMessageHandler(
         handleHeadersMessageValidState(h, headers, peerData)
           .map(s => copy(state = s))
       case Some(d: DoneSyncing) =>
-        val fhCountF = chainApi.getFilterHeaderCount()
-        val bestBlockHeaderDbF = chainApi.getBestBlockHeader()
-        for {
-          fhCount <- fhCountF
-          bestBlockHeaderDb <- bestBlockHeaderDbF
-          state <- {
-            if (fhCount < bestBlockHeaderDb.height) {
-              val fhSyncOpt = d.toFilterHeaderSync
-              //need to sync filter headers
-              fhSyncOpt match {
-                case Some(fhSync) =>
-                  PeerManager
-                    .sendFirstGetCompactFilterHeadersCommand(
-                      peerData.peerMessageSender,
-                      chainApi,
-                      stopBlockHeaderDb = bestBlockHeaderDb,
-                      state = fhSync)
-                    //.get is safe because .toFilterHeaderSync returns None if we have no filter peers
-                    .map(_.get)
-                case None =>
-                  logger.warn(
-                    s"Could not find peer to begin syncing filter headers with, state=$d")
-                  Future.successful(d)
-              }
-            } else {
-              Future.successful(d)
-            }
-          }
-        } yield copy(state = state)
+        val newStateF = d.toFilterHeaderSync match {
+          case Some(fhSync) =>
+            peerManager
+              .startFilterSync(chainApi, fhSync)
+              .map(_.getOrElse(d))
+          case None => Future.successful(d)
+        }
+        newStateF.map(s => copy(state = s))
       case Some(x @ (_: FilterHeaderSync | _: FilterSync)) =>
         Future.successful(copy(state = x))
       case Some(

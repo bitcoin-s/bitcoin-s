@@ -847,8 +847,7 @@ case class PeerManager(
         }
       case fofhs: FilterOrFilterHeaderSync =>
         if (oldSyncState.syncPeer != newPeer) {
-          filterSyncHelper(chainApi = ChainHandler.fromDatabase(),
-                           fofhs = fofhs)
+          startFilterSync(chainApi = ChainHandler.fromDatabase(), fofhs = fofhs)
         } else {
           //if its same peer we don't need to switch
           Future.successful(Some(fofhs))
@@ -872,7 +871,8 @@ case class PeerManager(
     } yield headerSync
   }
 
-  private def filterSyncHelper(
+  /** Starts a filter header or filter sync is necesssary. Returns None if no sync is started */
+  def startFilterSync(
       chainApi: ChainApi,
       fofhs: FilterOrFilterHeaderSync): Future[
     Option[FilterOrFilterHeaderSync]] = {
@@ -921,7 +921,7 @@ case class PeerManager(
       case h: HeaderSync =>
         getHeaderSyncHelper(h).map(Some(_))
       case fofhs: FilterOrFilterHeaderSync =>
-        filterSyncHelper(chainApi, fofhs)
+        startFilterSync(chainApi, fofhs)
     }
 
     for {
