@@ -41,22 +41,26 @@ case class PeerFinder(
     ControlMessageHandler(this)
 
   /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
-  private def getPeersFromDnsSeeds: Vector[Peer] = {
+  private def getPeersFromDnsSeeds: Future[Vector[Peer]] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
-    val addresses = dnsSeeds
-      .flatMap(seed => {
-        try {
-          InetAddress
-            .getAllByName(seed)
-        } catch {
-          case _: UnknownHostException =>
-            logger.debug(s"DNS seed $seed is unavailable.")
-            Vector.empty
+    val addressesF: Future[Vector[String]] = Future
+      .traverse(dnsSeeds) { seed =>
+        Future {
+          try {
+            val r = InetAddress
+              .getAllByName(seed)
+              .toVector
+            r
+          } catch {
+            case _: UnknownHostException =>
+              logger.debug(s"DNS seed $seed is unavailable.")
+              Vector.empty[InetAddress]
+          }
         }
-      })
-      .distinct
-      .map(_.getHostAddress)
-    BitcoinSNodeUtil.stringsToPeers(addresses.toVector)
+      }
+      .map(_.flatten.distinct.map(_.getHostAddress).toVector)
+    addressesF.map(BitcoinSNodeUtil.stringsToPeers(_))
+
   }
 
   /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
@@ -142,8 +146,9 @@ case class PeerFinder(
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
         val startedF = for {
           (dbNonCf, dbCf) <- getPeersFromDb
+          peers <- getPeersFromDnsSeeds.map(dns =>
+            dns ++ getPeersFromResources ++ dbNonCf)
         } yield {
-          val peers = getPeersFromDnsSeeds ++ getPeersFromResources ++ dbNonCf
           val pds = peers.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
           val dbPds = dbCf.map(p => buildPeerData(p, isPersistent = false))
@@ -306,38 +311,54 @@ case class PeerFinder(
     ) {
       logger.info(
         s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
-      if (_peersToTry.size < maxPeerSearchCount) {
-        val pds = getPeersFromDnsSeeds.map { p =>
-          buildPeerData(p, isPersistent = false)
-        }
+      val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
+        val pdsF = getPeersFromDnsSeeds
+          .map { peers =>
+            val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+            _peersToTry.pushAll(pds)
+          }
+          .map(_ => ())
+        pdsF
+      } else {
+        Future.unit
+      }
+      val paramPdsF = for {
+        _ <- dnsPeersF
+      } yield {
+        val pds = paramPeers.map(buildPeerData(_, true))
         _peersToTry.pushAll(pds)
       }
-      val paramPds = paramPeers.map { p =>
-        buildPeerData(p, isPersistent = true)
-      }
-      //always try to conenct to the peers given to us as parameters
-      _peersToTry.pushAll(paramPds)
-      //in case of less _peersToTry.size than maxPeerSearchCount
-      val max = Math.min(maxPeerSearchCount, _peersToTry.size)
-      val peers = (
-        0.until(max)
-          .map(_ => _peersToTry.pop()))
-        .distinct
-        .filterNot(p => excludePeers.exists(_ == p.peer))
 
-      logger.debug(s"Trying next set of peers $peers")
-      val peersF = Future.traverse(peers) { p =>
-        //check if we already have an active connection
-        val isDisconnectedF = peerManagerApi.isDisconnected(p.peer)
+      //in case of less _peersToTry.size than maxPeerSearchCount
+      val peersToTryF = paramPdsF.map { _ =>
+        val max = Math.min(maxPeerSearchCount, _peersToTry.size)
+        val peers = (
+          0.until(max)
+            .map(_ => _peersToTry.pop()))
+          .distinct
+          .filterNot(p => excludePeers.exists(_ == p.peer))
+        peers
+      }
+      val peersF = {
         for {
-          isDisconnected <- isDisconnectedF
+          peers <- peersToTryF
+          _ = logger.debug(s"Trying next set of peers $peers")
           _ <- {
-            if (isDisconnected) {
-              tryPeer(peer = p.peer,
-                      isPersistent = p.isInstanceOf[PersistentPeerData])
-            } else {
-              //do nothing, we are already connected
-              Future.unit
+            Future.traverse(peers) { p =>
+              //check if we already have an active connection
+              val isDisconnectedF = peerManagerApi.isDisconnected(p.peer)
+              for {
+                isDisconnected <- isDisconnectedF
+                _ <- {
+                  if (isDisconnected) {
+                    tryPeer(peer = p.peer,
+                            isPersistent = p.isInstanceOf[PersistentPeerData])
+                  } else {
+                    //do nothing, we are already connected
+                    Future.unit
+                  }
+                }
+              } yield ()
             }
           }
         } yield ()
@@ -345,10 +366,8 @@ case class PeerFinder(
       peersF.onComplete {
         case Success(_) =>
           isConnectionSchedulerRunning.set(false)
-        case Failure(err) =>
+        case Failure(_) =>
           isConnectionSchedulerRunning.set(false)
-          logger.debug(
-            s"Failed to connect to peers=$peers errMsg=${err.getMessage}")
       }
       Some(())
     } else {
