@@ -65,11 +65,13 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           chainApi = chainApi,
           walletCreationTimeOpt = None,
           peerManager = peerManager,
-          state = HeaderSync(syncPeer = peer,
-                             peerDataMap = peerManager.peerWithServicesDataMap,
-                             waitingForDisconnection = Set.empty,
-                             peerFinder = peerFinder,
-                             sentQuery = Instant.now())
+          state = HeaderSync(
+            syncPeer = peer,
+            peerWithServicesDataMap = peerManager.peerWithServicesDataMap,
+            waitingForDisconnection = Set.empty,
+            peerFinder = peerFinder,
+            sentQuery = Instant.now()
+          )
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
@@ -212,11 +214,13 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           chainApi = chainApi,
           walletCreationTimeOpt = None,
           peerManager = peerManager,
-          state = HeaderSync(syncPeer = peer,
-                             peerDataMap = peerManager.peerWithServicesDataMap,
-                             waitingForDisconnection = Set.empty,
-                             peerFinder = peerFinder,
-                             sentQuery = Instant.now())
+          state = HeaderSync(
+            syncPeer = peer,
+            peerWithServicesDataMap = peerManager.peerWithServicesDataMap,
+            waitingForDisconnection = Set.empty,
+            peerFinder = peerFinder,
+            sentQuery = Instant.now()
+          )
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
         //disconnect our node from bitcoind, then

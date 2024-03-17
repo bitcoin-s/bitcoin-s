@@ -98,7 +98,7 @@ case class DataMessageHandler(
 
       case m: MisbehavingPeer =>
         val badPeer = m.badPeer
-        val pdm = m.peerDataMap
+        val pdm = m.peerWithServicesDataMap
         if (badPeer == peerData.peer) {
           Future.failed(
             new RuntimeException(
@@ -111,12 +111,11 @@ case class DataMessageHandler(
         }
       case r: RemovePeers =>
         val badPeers = r.peersToRemove
-        val pdm = r.peerDataMap
         if (badPeers.exists(_ == peerData.peer)) {
           Future.failed(new RuntimeException(
             s"Cannot continue processing p2p messages from peer we were suppose to remove, peer=${peerData.peer}"))
         } else {
-          val d = DoneSyncing(pdm, r.waitingForDisconnection, r.peerFinder)
+          val d = r.toDoneSyncing
           copy(state = d).handleDataPayload(payload, peerData)
         }
 
@@ -154,12 +153,13 @@ case class DataMessageHandler(
           state match {
             case s @ (_: HeaderSync | _: DoneSyncing) =>
               val filterHeaderSync =
-                FilterHeaderSync(syncPeer = peer,
-                                 peerDataMap = s.peerDataMap,
-                                 waitingForDisconnection =
-                                   s.waitingForDisconnection,
-                                 peerFinder = s.peerFinder,
-                                 sentQuery = Instant.now())
+                FilterHeaderSync(
+                  syncPeer = peer,
+                  peerWithServicesDataMap = s.peerWithServicesDataMap,
+                  waitingForDisconnection = s.waitingForDisconnection,
+                  peerFinder = s.peerFinder,
+                  sentQuery = Instant.now()
+                )
               handleFilterHeadersMessage(filterHeaderSync = filterHeaderSync,
                                          filterHeader = filterHeader,
                                          chainApi = chainApi,
@@ -195,7 +195,7 @@ case class DataMessageHandler(
             case s @ (_: DoneSyncing | _: FilterHeaderSync) =>
               val f = FilterSync(
                 syncPeer = peer,
-                peerDataMap = s.peerDataMap,
+                peerWithServicesDataMap = s.peerWithServicesDataMap,
                 waitingForDisconnection = s.waitingForDisconnection,
                 filterBatchCache = Set.empty,
                 peerFinder = s.peerFinder,
@@ -339,10 +339,7 @@ case class DataMessageHandler(
                 state = fhs,
                 stopBlockHeaderDb = bestBlockHeaderDb)
           } yield {
-            syncingFilterHeadersState.getOrElse(
-              DoneSyncing(syncNodeState.peerDataMap,
-                          syncNodeState.waitingForDisconnection,
-                          syncNodeState.peerFinder))
+            syncingFilterHeadersState.getOrElse(fhs.toDoneSyncing)
           }
 
         } else {
@@ -356,9 +353,7 @@ case class DataMessageHandler(
           //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
-            d = DoneSyncing(syncNodeState.peerDataMap,
-                            syncNodeState.waitingForDisconnection,
-                            syncNodeState.peerFinder)
+            d = syncNodeState.toDoneSyncing
             newState <- {
               peerManager
                 .gossipGetHeadersMessage(Vector(bestBlockHash))
@@ -385,11 +380,11 @@ case class DataMessageHandler(
           logger.warn(
             s"$peer exceeded max limit of invalid messages. Disconnecting. peers=${state.peers}")
 
-          val m = MisbehavingPeer(badPeer = peer,
-                                  peerDataMap = state.peerDataMap,
-                                  waitingForDisconnection =
-                                    state.waitingForDisconnection,
-                                  state.peerFinder)
+          val m = MisbehavingPeer(
+            badPeer = peer,
+            peerWithServicesDataMap = state.peerWithServicesDataMap,
+            waitingForDisconnection = state.waitingForDisconnection,
+            state.peerFinder)
           Future.successful(m)
         } else {
 
@@ -404,10 +399,7 @@ case class DataMessageHandler(
               val queryF =
                 peerManager.gossipGetHeadersMessage(cachedHeaders)
               //switch to DoneSyncing state until we receive a valid header from our peers
-              val d =
-                DoneSyncing(state.peerDataMap,
-                            state.waitingForDisconnection,
-                            state.peerFinder)
+              val d = state.toDoneSyncing
               queryF.map(_ => d)
             }
           } yield newState
@@ -670,10 +662,7 @@ case class DataMessageHandler(
             case Some(s) => s
             case None    =>
               //is this right? If we don't send cfheaders to our peers, are we done syncing?
-              DoneSyncing(peerDataMap = state.peerDataMap,
-                          waitingForDisconnection =
-                            state.waitingForDisconnection,
-                          peerFinder = state.peerFinder)
+              state.toDoneSyncing
           }
         }
       } else {
@@ -768,9 +757,7 @@ case class DataMessageHandler(
     val recoveredStateF: Future[NodeRunningState] = getHeadersF.recoverWith {
       case _: DuplicateHeaders =>
         logger.warn(s"Received duplicate headers from ${peer} in state=$state")
-        val d = DoneSyncing(headerSyncState.peerDataMap,
-                            headerSyncState.waitingForDisconnection,
-                            headerSyncState.peerFinder)
+        val d = headerSyncState.toDoneSyncing
         Future.successful(d)
       case _: InvalidBlockHeader =>
         logger.warn(
@@ -833,10 +820,7 @@ case class DataMessageHandler(
             filterSyncStateOpt match {
               case Some(filterSyncState) => filterSyncState
               case None =>
-                val d =
-                  DoneSyncing(filterHeaderSync.peerDataMap,
-                              filterHeaderSync.waitingForDisconnection,
-                              filterHeaderSync.peerFinder)
+                val d = filterHeaderSync.toDoneSyncing
                 d
             }
           }
@@ -899,9 +883,7 @@ case class DataMessageHandler(
             case Some(filterSyncState) =>
               filterSyncState.copy(filterBatchCache = newBatch)
             case None =>
-              val d = DoneSyncing(filterSyncState.peerDataMap,
-                                  filterSyncState.waitingForDisconnection,
-                                  filterSyncState.peerFinder)
+              val d = filterSyncState.toDoneSyncing
               d
           }
           Future.successful(res)
