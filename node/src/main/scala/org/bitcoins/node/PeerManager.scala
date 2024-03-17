@@ -241,15 +241,15 @@ case class PeerManager(
       //we want to promote this peer, so pop from cache
       val newState = state.addPeer(peer)
       val persistentPeerData =
-        newState.peerDataMap.filter(_._1.peer == peer).head._2
+        newState.peerDataMap.filter(_._1 == peer).head._2
       _peerDataMap.put(peer, persistentPeerData)
       connectPeer(peer).map(_ => newState)
     } else if (availableFilterSlot) {
       val newState = state.addPeer(peer)
       val persistentPeerData =
-        newState.peerDataMap.filter(_._1.peer == peer).head._2
+        newState.peerDataMap.filter(_._1 == peer).head._2
       _peerDataMap.put(peer, persistentPeerData)
-      replacePeer(replacePeer = notCfPeers.head.peer, withPeer = peer)
+      replacePeer(replacePeer = notCfPeers.head, withPeer = peer)
         .map(_ => newState)
     } else {
       Future.successful(state)
@@ -599,7 +599,7 @@ case class PeerManager(
         state match {
           case runningState: NodeRunningState =>
             val peerDataOpt = runningState.peerDataMap
-              .find(_._1.peer == peer)
+              .find(_._1 == peer)
               .map(_._2)
             peerDataOpt match {
               case None =>
@@ -696,7 +696,7 @@ case class PeerManager(
                   case Some(s) => s
                   case None    =>
                     //we don't have a state to represent no connected peers atm, so switch to DoneSyncing?
-                    DoneSyncing(peerDataMap = Map.empty,
+                    DoneSyncing(peerWithServicesDataMap = Map.empty,
                                 runningState.waitingForDisconnection,
                                 runningState.peerFinder)
                 }
@@ -781,7 +781,8 @@ case class PeerManager(
             logger.info(
               s"Received NodeShutdown message, beginning shutdown procedures")
             val shutdownState =
-              NodeShuttingDown(peerDataMap = r.peerDataMap,
+              NodeShuttingDown(peerWithServicesDataMap =
+                                 r.peerWithServicesDataMap,
                                waitingForDisconnection =
                                  r.waitingForDisconnection,
                                peerFinder = r.peerFinder)

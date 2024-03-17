@@ -99,7 +99,7 @@ case class NeutrinoNode(
                    paramPeers = paramPeers,
                    queue = queue)
       val initState =
-        DoneSyncing(peerDataMap = Map.empty,
+        DoneSyncing(peerWithServicesDataMap = Map.empty,
                     waitingForDisconnection = Set.empty,
                     peerFinder)
 

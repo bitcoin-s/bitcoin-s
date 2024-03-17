@@ -21,9 +21,14 @@ sealed abstract class NodeState
 
 /** Means our node has been started and is running */
 sealed trait NodeRunningState extends NodeState {
-  def peerDataMap: Map[PeerWithServices, PersistentPeerData]
+  def peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData]
 
-  def peersWithServices: Set[PeerWithServices] = peerDataMap.map(_._1).toSet
+  def peerDataMap: Map[Peer, PersistentPeerData] = peerWithServicesDataMap.map {
+    case (k, v) => (k.peer, v)
+  }
+
+  def peersWithServices: Set[PeerWithServices] =
+    peerWithServicesDataMap.map(_._1).toSet
 
   /** All peers the node is currently connected to */
   def peers: Set[Peer] = peersWithServices.map(_.peer)
@@ -36,11 +41,11 @@ sealed trait NodeRunningState extends NodeState {
   def connectedPeerCount: Int = peers.size
 
   def getPeerData(peer: Peer): Option[PersistentPeerData] = {
-    peerDataMap.find(_._1.peer == peer).map(_._2)
+    peerDataMap.find(_._1 == peer).map(_._2)
   }
 
   def getPeerConnection(peer: Peer): Option[PeerConnection] = {
-    peerDataMap.find(_._1.peer == peer).map(_._2.peerConnection) match {
+    peerDataMap.find(_._1 == peer).map(_._2.peerConnection) match {
       case Some(peerConnection) => Some(peerConnection)
       case None                 => None
     }
@@ -56,24 +61,24 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def replacePeers(
-      peerDataMap: Map[
+      peerWithServicesDataMap: Map[
         PeerWithServices,
         PersistentPeerData]): NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
-        h.copy(peerDataMap = peerDataMap)
+        h.copy(peerWithServicesDataMap = peerWithServicesDataMap)
       case fh: NodeState.FilterHeaderSync =>
-        fh.copy(peerDataMap = peerDataMap)
+        fh.copy(peerWithServicesDataMap = peerWithServicesDataMap)
       case fs: NodeState.FilterSync =>
-        fs.copy(peerDataMap = peerDataMap)
+        fs.copy(peerWithServicesDataMap = peerWithServicesDataMap)
       case d: NodeState.DoneSyncing =>
-        d.copy(peerDataMap = peerDataMap)
+        d.copy(peerWithServicesDataMap = peerWithServicesDataMap)
       case rm: NodeState.RemovePeers =>
-        rm.copy(peerDataMap = peerDataMap)
+        rm.copy(peerWithServicesDataMap = peerWithServicesDataMap)
       case m: NodeState.MisbehavingPeer =>
-        m.copy(peerDataMap = peerDataMap)
+        m.copy(peerWithServicesDataMap = peerWithServicesDataMap)
       case s: NodeState.NodeShuttingDown =>
-        s.copy(peerDataMap = peerDataMap)
+        s.copy(peerWithServicesDataMap = peerWithServicesDataMap)
     }
   }
 
@@ -91,7 +96,7 @@ sealed trait NodeRunningState extends NodeState {
         }
         val peerWithSvcs = persistentPeerData.peerWithServicesOpt.get
         val newPdm =
-          peerDataMap.+((peerWithSvcs, persistentPeerData))
+          peerWithServicesDataMap.+((peerWithSvcs, persistentPeerData))
         val newState = replacePeers(newPdm)
         newState
     }
@@ -100,7 +105,7 @@ sealed trait NodeRunningState extends NodeState {
 
   /** Removes the peer from our [[peerDataMap]] */
   def removePeer(peer: Peer): NodeRunningState = {
-    val filtered = peerDataMap.filterNot(_._1.peer == peer)
+    val filtered = peerWithServicesDataMap.filterNot(_._1.peer == peer)
     this match {
       case sync: SyncNodeState =>
         if (sync.syncPeer == peer) {
@@ -167,13 +172,13 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def isConnected(peer: Peer): Boolean = {
-    peerDataMap.filter(_._1.peer == peer).nonEmpty || peerFinder.hasPeer(peer)
+    peerDataMap.filter(_._1 == peer).nonEmpty || peerFinder.hasPeer(peer)
   }
 
   def isDisconnected(peer: Peer): Boolean = !isConnected(peer)
 
   def toDoneSyncing: DoneSyncing = {
-    DoneSyncing(peerDataMap, waitingForDisconnection, peerFinder)
+    DoneSyncing(peerWithServicesDataMap, waitingForDisconnection, peerFinder)
   }
 
   override def toString: String = {
@@ -215,17 +220,19 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   }
 
   def toFilterHeaderSync: FilterHeaderSync = {
-    FilterHeaderSync(syncPeer,
-                     peerDataMap = peerDataMap,
-                     waitingForDisconnection = waitingForDisconnection,
-                     peerFinder = peerFinder,
-                     sentQuery = Instant.now())
+    FilterHeaderSync(
+      syncPeer,
+      peerWithServicesDataMap = peerWithServicesDataMap,
+      waitingForDisconnection = waitingForDisconnection,
+      peerFinder = peerFinder,
+      sentQuery = Instant.now()
+    )
   }
 
   def toFilterSync: FilterSync = {
     FilterSync(
       syncPeer = syncPeer,
-      peerDataMap = peerDataMap,
+      peerWithServicesDataMap = peerWithServicesDataMap,
       waitingForDisconnection = waitingForDisconnection,
       filterBatchCache = Set.empty,
       peerFinder = peerFinder,
@@ -253,7 +260,7 @@ object NodeState {
 
   case class HeaderSync(
       syncPeer: Peer,
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder,
       sentQuery: Instant)
@@ -261,7 +268,7 @@ object NodeState {
 
   case class FilterHeaderSync(
       syncPeer: Peer,
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder,
       sentQuery: Instant)
@@ -269,7 +276,7 @@ object NodeState {
 
   case class FilterSync(
       syncPeer: Peer,
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage],
       peerFinder: PeerFinder,
@@ -283,7 +290,7 @@ object NodeState {
 
   case class MisbehavingPeer(
       badPeer: Peer,
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder)
       extends NodeRunningState {
@@ -299,7 +306,7 @@ object NodeState {
 
   case class RemovePeers(
       peersToRemove: Vector[Peer],
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       isSyncing: Boolean,
       peerFinder: PeerFinder)
@@ -311,7 +318,7 @@ object NodeState {
 
   /** State to indicate we are not currently syncing with a peer */
   case class DoneSyncing(
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder)
       extends NodeRunningState {
@@ -327,11 +334,13 @@ object NodeState {
     }
 
     def toHeaderSync(syncPeer: Peer): HeaderSync = {
-      HeaderSync(syncPeer = syncPeer,
-                 peerDataMap = peerDataMap,
-                 waitingForDisconnection = waitingForDisconnection,
-                 peerFinder = peerFinder,
-                 sentQuery = Instant.now())
+      HeaderSync(
+        syncPeer = syncPeer,
+        peerWithServicesDataMap = peerWithServicesDataMap,
+        waitingForDisconnection = waitingForDisconnection,
+        peerFinder = peerFinder,
+        sentQuery = Instant.now()
+      )
     }
 
     def toFilterHeaderSync: Option[FilterHeaderSync] = {
@@ -341,17 +350,19 @@ object NodeState {
     }
 
     def toFilterHeaderSync(syncPeer: Peer): FilterHeaderSync = {
-      FilterHeaderSync(syncPeer = syncPeer,
-                       peerDataMap = peerDataMap,
-                       waitingForDisconnection = waitingForDisconnection,
-                       peerFinder = peerFinder,
-                       sentQuery = Instant.now())
+      FilterHeaderSync(
+        syncPeer = syncPeer,
+        peerWithServicesDataMap = peerWithServicesDataMap,
+        waitingForDisconnection = waitingForDisconnection,
+        peerFinder = peerFinder,
+        sentQuery = Instant.now()
+      )
     }
   }
 
   /** means our node is in the process of shutting down */
   case class NodeShuttingDown(
-      peerDataMap: Map[PeerWithServices, PersistentPeerData],
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder)
       extends NodeRunningState {
