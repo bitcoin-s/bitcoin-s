@@ -236,7 +236,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         logger.warn(s"Connected already to peer=${peer}")
         Future.unit
       case None =>
-        logger.info(s"Attempting to connect to peer=${peer}")
+        logger.debug(s"Attempting to connect to peer=${peer}")
 
         val outgoingConnectionF = {
           buildConnectionGraph()
