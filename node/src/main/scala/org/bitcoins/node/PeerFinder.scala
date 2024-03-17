@@ -309,7 +309,7 @@ case class PeerFinder(
     if (
       isConnectionSchedulerRunning.compareAndSet(false, true) && isStarted.get()
     ) {
-      logger.info(
+      logger.debug(
         s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
       val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
         val pdsF = getPeersFromDnsSeeds
