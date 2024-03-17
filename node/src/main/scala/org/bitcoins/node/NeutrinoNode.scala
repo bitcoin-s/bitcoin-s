@@ -201,7 +201,7 @@ case class NeutrinoNode(
 
   private def healthChecksRunnable(): Runnable = { () =>
     val peers = peerManager.peers
-    logger.info(s"Running health checks for peers=${peers}")
+    logger.debug(s"Running health checks for peers=${peers}")
     val resultF = if (peers.nonEmpty || isStarted.get) {
       queueOpt match {
         case Some(q) =>
