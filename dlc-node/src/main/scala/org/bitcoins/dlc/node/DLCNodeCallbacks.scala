@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.node
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.crypto.Sha256Digest
@@ -9,7 +9,9 @@ import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Callbacks for responding to events in the DLC node. */
-trait DLCNodeCallbacks extends ModuleCallbacks[DLCNodeCallbacks] with Logging {
+trait DLCNodeCallbacks
+    extends ModuleCallbacks[DLCNodeCallbacks]
+    with BitcoinSLogger {
 
   def onPeerConnectionInitiated: CallbackHandler[
     InetSocketAddress,

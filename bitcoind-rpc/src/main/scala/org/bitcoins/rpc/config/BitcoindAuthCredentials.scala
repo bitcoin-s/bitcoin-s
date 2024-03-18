@@ -1,9 +1,10 @@
 package org.bitcoins.rpc.config
 
+import org.bitcoins.commons.util.BitcoinSLogger
+
 import java.io.File
 import java.nio.file.{Files, Paths}
 import org.bitcoins.core.config._
-import grizzled.slf4j.Logging
 import org.bitcoins.crypto.MaskedToString
 
 /** This trait contains the information we need to authenticate
@@ -15,7 +16,7 @@ sealed trait BitcoindAuthCredentials {
   def username: String
 }
 
-object BitcoindAuthCredentials extends Logging {
+object BitcoindAuthCredentials extends BitcoinSLogger {
   import org.bitcoins.core.compat.JavaConverters._
 
   /** Authenticate by providing a username and password.

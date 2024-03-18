@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.internal
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.hd._
@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.sorted.{OrderedAnnouncements}
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.SafeDatabase
@@ -30,7 +30,7 @@ import scala.util.Try
 /** Handles fetching and constructing different DLC datastructures from the database */
 case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     ec: ExecutionContext)
-    extends Logging {
+    extends BitcoinSLogger {
   val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
   private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO

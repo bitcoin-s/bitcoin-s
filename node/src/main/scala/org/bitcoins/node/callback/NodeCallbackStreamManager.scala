@@ -1,6 +1,5 @@
 package org.bitcoins.node.callback
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.OverflowStrategy
@@ -10,6 +9,7 @@ import org.apache.pekko.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -28,7 +28,7 @@ case class NodeCallbackStreamManager(
     maxBufferSize: Int = 16)(implicit system: ActorSystem)
     extends NodeCallbacks
     with StartStopAsync[Unit]
-    with Logging {
+    with BitcoinSLogger {
   import system.dispatcher
 
   private val filterQueueSource: Source[

@@ -1,12 +1,12 @@
 package org.bitcoins.db
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 import java.io.IOException
 import java.nio.file.{Files, LinkOption, Path}
 import scala.util.matching.Regex
 
-object SQLiteUtil extends Logging {
+object SQLiteUtil extends BitcoinSLogger {
 
   Class.forName("org.sqlite.JDBC")
 

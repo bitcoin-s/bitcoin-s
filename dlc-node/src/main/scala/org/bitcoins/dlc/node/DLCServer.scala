@@ -1,6 +1,5 @@
 package org.bitcoins.dlc.node
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.{
   Actor,
   ActorLogging,
@@ -10,6 +9,7 @@ import org.apache.pekko.actor.{
 }
 import org.apache.pekko.event.LoggingReceive
 import org.apache.pekko.io.{IO, Tcp}
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.tor._
@@ -78,7 +78,7 @@ class DLCServer(
 
 }
 
-object DLCServer extends Logging {
+object DLCServer extends BitcoinSLogger {
 
   case object Disconnect
 

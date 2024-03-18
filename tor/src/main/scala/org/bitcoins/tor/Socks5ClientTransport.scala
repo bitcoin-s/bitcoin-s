@@ -1,6 +1,5 @@
 package org.bitcoins.tor
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.ClientTransport.TCP
@@ -18,6 +17,7 @@ import org.apache.pekko.stream.stage.{
   StageLogging
 }
 import org.apache.pekko.util.ByteString
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.NetworkUtil
 
@@ -121,7 +121,7 @@ class Socks5ProxyGraphStage(
     proxyParams: Socks5ProxyParams)
     extends GraphStage[
       BidiShape[ByteString, ByteString, ByteString, ByteString]]
-    with Logging {
+    with BitcoinSLogger {
 
   val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")
   val bytesOut: Outlet[ByteString] = Outlet("OutgoingTCP.out")

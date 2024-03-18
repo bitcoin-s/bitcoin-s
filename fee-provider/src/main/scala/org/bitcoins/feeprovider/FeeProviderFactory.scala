@@ -1,7 +1,7 @@
 package org.bitcoins.feeprovider
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.BitcoinNetwork
@@ -20,7 +20,7 @@ trait FeeProviderFactory[T <: FeeRateApi] {
       implicit system: ActorSystem): T
 }
 
-object FeeProviderFactory extends Logging {
+object FeeProviderFactory extends BitcoinSLogger {
 
   /** Gets a Fee Provider from the given wallet app config
     * Returns default if there is no config set

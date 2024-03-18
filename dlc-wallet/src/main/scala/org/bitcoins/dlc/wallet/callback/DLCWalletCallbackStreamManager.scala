@@ -1,6 +1,5 @@
 package org.bitcoins.dlc.wallet.callback
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.OverflowStrategy
@@ -10,6 +9,7 @@ import org.apache.pekko.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
@@ -25,7 +25,7 @@ case class DLCWalletCallbackStreamManager(
     maxBufferSize: Int = 16)(implicit system: ActorSystem)
     extends DLCWalletCallbacks
     with StartStopAsync[Unit]
-    with Logging {
+    with BitcoinSLogger {
 
   import system.dispatcher
 

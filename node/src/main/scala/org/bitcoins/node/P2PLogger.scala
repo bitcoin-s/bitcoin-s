@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 /** Exposes access to the P2P submodule logger */
-private[bitcoins] trait P2PLogger extends Logging
+private[bitcoins] trait P2PLogger extends BitcoinSLogger

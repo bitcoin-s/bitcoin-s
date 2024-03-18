@@ -1,12 +1,12 @@
 package org.bitcoins.node
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.{Sink, SourceQueue}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
@@ -1084,7 +1084,7 @@ case class PeerManager(
 
 case class ResponseTimeout(payload: NetworkPayload)
 
-object PeerManager extends Logging {
+object PeerManager extends BitcoinSLogger {
 
   /** Sends first getcfheader message.
     * Returns None if are our filter headers are in sync with our block headers or

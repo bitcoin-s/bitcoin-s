@@ -1,7 +1,7 @@
 package org.bitcoins.commons.config
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.StartStopAsync
@@ -9,6 +9,7 @@ import org.bitcoins.core.util.StartStopAsync
 import java.nio.file._
 import scala.concurrent.Future
 import org.bitcoins.core.compat.JavaConverters._
+
 import scala.util.Properties
 import scala.util.matching.Regex
 
@@ -18,7 +19,7 @@ import scala.util.matching.Regex
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends StartStopAsync[Unit] with Logging {
+abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
   /** Starts this project.
     * After this future resolves, all operations should be
@@ -62,7 +63,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
     */
   def withOverrides(configOverrides: Vector[Config]): ConfigType = {
     val numOverrides = configOverrides.length
-    if (logger.logger.isDebugEnabled()) {
+    if (logger.isDebugEnabled()) {
       // force lazy evaluation before we print
       // our lines
       val oldConfStr = this.config.asReadableJson
@@ -72,7 +73,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
       logger.trace(oldConfStr)
     }
 
-    if (logger.logger.isTraceEnabled()) {
+    if (logger.isTraceEnabled()) {
       configOverrides.zipWithIndex.foreach { case (c, idx) =>
         logger.trace(s"Override no. $idx: ${c.asReadableJson}")
       }
@@ -90,7 +91,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
     }
 
     // to avoid non-necessary lazy load
-    if (logger.logger.isDebugEnabled()) {
+    if (logger.isDebugEnabled()) {
       // force lazy load before we print
       val newConfStr = newConf.config.asReadableJson
 
@@ -159,7 +160,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
   }
 }
 
-object AppConfig extends Logging {
+object AppConfig extends BitcoinSLogger {
 
   def safePathToString(path: Path): String = {
     val pathStr = path.toString.replace("\\", "/")

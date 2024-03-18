@@ -1,6 +1,6 @@
 package org.bitcoins.keymanager.bip39
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.keymanager.{
   BIP39KeyManagerApi,
   BIP39KeyManagerCreateApi,
@@ -70,7 +70,7 @@ class BIP39KeyManager(
 
 object BIP39KeyManager
     extends BIP39KeyManagerCreateApi[BIP39KeyManager]
-    with Logging {
+    with BitcoinSLogger {
 
   def fromMnemonic(
       mnemonic: MnemonicCode,

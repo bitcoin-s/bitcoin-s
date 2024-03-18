@@ -1,13 +1,13 @@
 package org.bitcoins.server.util
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.Cancellable
+import org.bitcoins.commons.util.BitcoinSLogger
 
 case class BitcoindPollingCancellable(
     blockPollingCancellable: Cancellable,
     mempoolPollingCancelable: Cancellable)
     extends Cancellable
-    with Logging {
+    with BitcoinSLogger {
 
   override def cancel(): Boolean = {
     logger.info(s"Cancelling bitcoind polling jobs")

@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.apache.pekko.actor.ActorSystem
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.HDWalletApi
@@ -27,7 +27,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait FundWalletUtil extends Logging {
+trait FundWalletUtil extends BitcoinSLogger {
 
   /** Funds the given wallet with money from the given bitcoind */
   def fundWalletWithBitcoind[T <: WalletWithBitcoind[_ <: BitcoindRpcClient]](

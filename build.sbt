@@ -543,7 +543,8 @@ lazy val zmq = project
   .settings(name := "bitcoin-s-zmq",
             libraryDependencies ++= Deps.bitcoindZmq.value)
   .dependsOn(
-    coreJVM % testAndCompile
+    coreJVM % testAndCompile,
+    appCommons
   )
 
 def isCI = {

@@ -1,6 +1,6 @@
 package org.bitcoins.commons.file
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 import java.io.{FileOutputStream, IOException}
 import java.nio.file.attribute.BasicFileAttributes
@@ -9,7 +9,7 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 import scala.reflect.io.Directory
 import scala.util.matching.Regex
 
-object FileUtil extends Logging {
+object FileUtil extends BitcoinSLogger {
 
   /** Zips the [[directory]] into a zip file and then stores it at [[target]]
     *

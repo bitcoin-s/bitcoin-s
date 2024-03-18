@@ -1,8 +1,8 @@
 package org.bitcoins.server.util
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.GolombFilter
@@ -15,7 +15,7 @@ import org.bitcoins.wallet.WalletNotInitialized
 
 import scala.concurrent.Future
 
-object CallbackUtil extends Logging {
+object CallbackUtil extends BitcoinSLogger {
 
   def createNeutrinoNodeCallbacksForWallet(
       wallet: WalletApi with NeutrinoWalletApi)(implicit

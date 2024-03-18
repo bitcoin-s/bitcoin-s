@@ -1,6 +1,6 @@
 package org.bitcoins.db
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.DatabaseDriver._
 import org.flywaydb.core.Flyway
@@ -9,7 +9,7 @@ import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait DbManagement extends Logging {
+trait DbManagement extends BitcoinSLogger {
   _: JdbcProfileComponent[DbAppConfig] =>
   import profile.api._
 

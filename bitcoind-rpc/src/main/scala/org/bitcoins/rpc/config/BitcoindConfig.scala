@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.config
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 
@@ -25,7 +25,7 @@ import scala.util.Properties
 case class BitcoindConfig(
     private[bitcoins] val lines: Seq[String],
     datadir: File)
-    extends Logging {
+    extends BitcoinSLogger {
 
   //create datadir and config if it DNE on disk
   if (!datadir.exists()) {
@@ -285,7 +285,9 @@ case class BitcoindConfig(
 
 }
 
-object BitcoindConfig extends ConfigFactory[BitcoindConfig] with Logging {
+object BitcoindConfig
+    extends ConfigFactory[BitcoindConfig]
+    with BitcoinSLogger {
 
   /** The empty `bitcoind` config */
   lazy val empty: BitcoindConfig = BitcoindConfig("", DEFAULT_DATADIR)

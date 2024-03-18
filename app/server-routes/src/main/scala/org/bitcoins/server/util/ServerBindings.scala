@@ -1,7 +1,7 @@
 package org.bitcoins.server.util
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.http.scaladsl.Http
+import org.bitcoins.commons.util.BitcoinSLogger
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ServerBindings(
     httpServer: Http.ServerBinding,
     webSocketServerOpt: Option[Http.ServerBinding])
-    extends Logging {
+    extends BitcoinSLogger {
 
   private val terminateTimeout = 5.seconds
 

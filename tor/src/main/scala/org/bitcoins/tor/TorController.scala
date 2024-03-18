@@ -2,7 +2,6 @@ package org.bitcoins.tor
 
 import org.apache.pekko.Done
 import org.apache.pekko.util.ByteString
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.{
   Actor,
   ActorLogging,
@@ -13,6 +12,7 @@ import org.apache.pekko.actor.{
   Terminated
 }
 import org.apache.pekko.io.{IO, Tcp}
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.tor.TorProtocolHandler.Authentication
 
 import java.io.IOException
@@ -85,7 +85,7 @@ class TorController(
 
 }
 
-object TorController extends Logging {
+object TorController extends BitcoinSLogger {
 
   def props(
       address: InetSocketAddress,

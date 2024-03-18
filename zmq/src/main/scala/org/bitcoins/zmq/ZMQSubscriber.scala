@@ -1,6 +1,6 @@
 package org.bitcoins.zmq
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.StartStop
@@ -27,7 +27,7 @@ class ZMQSubscriber(
     hashBlockListener: Option[DoubleSha256DigestBE => Unit],
     rawTxListener: Option[Transaction => Unit],
     rawBlockListener: Option[Block => Unit])
-    extends Logging
+    extends BitcoinSLogger
     with StartStop[Unit] {
 
   private var isConnected = false

@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.oracle
 
 import com.typesafe.config.Config
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.config.{BitcoinNetwork, MainNet}
@@ -36,7 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     extends DLCOracleApi
-    with Logging {
+    with BitcoinSLogger {
 
   implicit private val ec: ExecutionContext = conf.ec
 

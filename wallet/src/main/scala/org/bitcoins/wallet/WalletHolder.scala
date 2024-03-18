@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.{
@@ -55,7 +55,7 @@ class WalletNotInitialized extends Exception("The wallet is not initialized")
 class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     ec: ExecutionContext)
     extends DLCNeutrinoHDWalletApi
-    with Logging {
+    with BitcoinSLogger {
 
   @volatile private var walletOpt: Option[DLCNeutrinoHDWalletApi] =
     initWalletOpt

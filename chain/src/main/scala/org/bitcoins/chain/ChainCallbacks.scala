@@ -1,14 +1,16 @@
 package org.bitcoins.chain
 
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import slick.util.Logging
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ChainCallbacks extends ModuleCallbacks[ChainCallbacks] with Logging {
+trait ChainCallbacks
+    extends ModuleCallbacks[ChainCallbacks]
+    with BitcoinSLogger {
 
   def onBlockHeaderConnected: CallbackHandler[
     Vector[(Int, BlockHeader)],

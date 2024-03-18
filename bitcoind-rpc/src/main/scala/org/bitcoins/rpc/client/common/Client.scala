@@ -1,7 +1,6 @@
 package org.bitcoins.rpc.client.common
 
 import com.fasterxml.jackson.core.JsonParseException
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.javadsl.model.headers.HttpCredentials
 import org.apache.pekko.http.scaladsl.{Http, HttpExt}
@@ -18,7 +17,7 @@ import org.apache.pekko.stream.StreamTcpException
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.commons.util.NativeProcessFactory
+import org.bitcoins.commons.util.{BitcoinSLogger, NativeProcessFactory}
 import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.StartStopAsync
@@ -53,7 +52,7 @@ import scala.util.{Failure, Success}
   * and whether or not the client is started.
   */
 trait Client
-    extends Logging
+    extends BitcoinSLogger
     with StartStopAsync[BitcoindRpcClient]
     with NativeProcessFactory {
   def version: Future[BitcoindVersion]

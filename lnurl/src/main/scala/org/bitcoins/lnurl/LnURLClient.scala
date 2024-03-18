@@ -1,12 +1,12 @@
 package org.bitcoins.lnurl
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.client.RequestBuilding.Get
 import org.apache.pekko.http.scaladsl.model.{HttpRequest, MediaTypes}
 import org.apache.pekko.http.scaladsl.model.headers.Accept
 import org.apache.pekko.util.ByteString
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.ln.LnInvoice
@@ -21,7 +21,7 @@ import scala.concurrent._
 
 class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
     system: ActorSystem)
-    extends Logging {
+    extends BitcoinSLogger {
   implicit protected val ec: ExecutionContext = system.dispatcher
 
   private val http = Http(system)

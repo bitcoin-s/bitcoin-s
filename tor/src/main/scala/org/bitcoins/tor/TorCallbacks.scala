@@ -1,6 +1,6 @@
 package org.bitcoins.tor
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 
@@ -8,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait OnTorStarted extends Callback[Unit]
 
-trait TorCallbacks extends ModuleCallbacks[TorCallbacks] with Logging {
+trait TorCallbacks extends ModuleCallbacks[TorCallbacks] with BitcoinSLogger {
   def onTorStarted: CallbackHandler[Unit, OnTorStarted]
 
   def executeOnTorStarted()(implicit ec: ExecutionContext): Future[Unit] = {

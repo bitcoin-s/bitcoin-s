@@ -1,6 +1,6 @@
 package org.bitcoins.keymanager
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 /** Exposes access to the key manager logger */
-private[bitcoins] trait KeyManagerLogger extends Logging
+private[bitcoins] trait KeyManagerLogger extends BitcoinSLogger

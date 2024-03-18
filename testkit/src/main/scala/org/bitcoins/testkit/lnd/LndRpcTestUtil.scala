@@ -1,8 +1,8 @@
 package org.bitcoins.testkit.lnd
 
 import org.apache.pekko.actor.ActorSystem
-import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -29,7 +29,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
-trait LndRpcTestUtil extends Logging {
+trait LndRpcTestUtil extends BitcoinSLogger {
 
   val sbtBinaryDirectory: Path =
     TestkitBinaries.baseBinaryDirectory.resolve("lnd")

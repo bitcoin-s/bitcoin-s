@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.callback
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
@@ -15,7 +15,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * The appropriate callback is executed whenever the wallet finishes,
   * the corresponding function.
   */
-trait WalletCallbacks extends ModuleCallbacks[WalletCallbacks] with Logging {
+trait WalletCallbacks
+    extends ModuleCallbacks[WalletCallbacks]
+    with BitcoinSLogger {
 
   def onTransactionProcessed: CallbackHandler[
     Transaction,

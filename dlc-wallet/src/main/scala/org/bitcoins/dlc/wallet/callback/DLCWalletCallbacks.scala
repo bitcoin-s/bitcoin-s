@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.callback
 
-import grizzled.slf4j.{Logging}
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait DLCWalletCallbacks
     extends ModuleCallbacks[DLCWalletCallbacks]
-    with Logging {
+    with BitcoinSLogger {
 
   def onStateChange: CallbackHandler[DLCStatus, OnDLCStateChange]
 

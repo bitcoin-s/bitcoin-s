@@ -1,9 +1,8 @@
 package org.bitcoins.rpc.config
 
 import com.typesafe.config.ConfigFactory
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
-import org.bitcoins.commons.util.NativeProcessFactory
+import org.bitcoins.commons.util.{BitcoinSLogger, NativeProcessFactory}
 import org.bitcoins.core.api.commons.{InstanceFactory, InstanceFactoryLocal}
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.config.NetworkParameters
@@ -17,7 +16,7 @@ import scala.util.{Failure, Properties, Success, Try}
 
 /** Created by chris on 4/29/17.
   */
-sealed trait BitcoindInstance extends Logging {
+sealed trait BitcoindInstance extends BitcoinSLogger {
 
   def network: NetworkParameters
   def uri: URI

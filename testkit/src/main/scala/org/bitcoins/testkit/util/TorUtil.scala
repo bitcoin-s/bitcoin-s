@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.util
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.util.NetworkUtil.portIsBound
 import org.bitcoins.tor.TorParams
 
 import java.net.{InetAddress, InetSocketAddress}
 import scala.util.Properties
 
-object TorUtil extends Logging {
+object TorUtil extends BitcoinSLogger {
 
   val torEnabled: Boolean = Properties
     .envOrNone("TOR")
