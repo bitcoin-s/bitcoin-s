@@ -1,12 +1,11 @@
 package org.bitcoins.tor.client
 
-import grizzled.slf4j.Logging
-import org.bitcoins.commons.util.NativeProcessFactory
+import org.bitcoins.commons.util.{BitcoinSLogger, NativeProcessFactory}
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.tor.TorProtocolHandler._
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.tor.{TorParams}
+import org.bitcoins.tor.TorParams
 
 import java.io.{File, FileNotFoundException}
 import java.net.{InetAddress, InetSocketAddress}
@@ -19,7 +18,7 @@ class TorClient()(implicit
     val executionContext: ExecutionContext,
     conf: TorAppConfig)
     extends NativeProcessFactory
-    with Logging {
+    with BitcoinSLogger {
 
   lazy val socks5ProxyParams: Socks5ProxyParams = conf.socks5ProxyParams match {
     case Some(params) => params
@@ -75,7 +74,7 @@ class TorClient()(implicit
 
 }
 
-object TorClient extends Logging {
+object TorClient extends BitcoinSLogger {
 
   // made by doing ./tor --version
   val TOR_VERSION = "Tor 0.4.7.10 (git-f732a91a73be3ca6)"

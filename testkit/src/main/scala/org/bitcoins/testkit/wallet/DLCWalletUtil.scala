@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.wallet
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency._
@@ -35,7 +35,7 @@ import scodec.bits.ByteVector
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
-object DLCWalletUtil extends Logging {
+object DLCWalletUtil extends BitcoinSLogger {
   lazy val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
 
   lazy val kValues: Vector[ECPrivateKey] = {

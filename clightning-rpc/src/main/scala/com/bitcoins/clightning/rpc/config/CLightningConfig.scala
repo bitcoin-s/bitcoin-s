@@ -1,6 +1,6 @@
 package com.bitcoins.clightning.rpc.config
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
@@ -24,7 +24,7 @@ import scala.util.Properties
 case class CLightningConfig(
     private[bitcoins] val lines: Seq[String],
     datadir: File)
-    extends Logging {
+    extends BitcoinSLogger {
 
   //create datadir and config if it DNE on disk
   if (!datadir.exists()) {
@@ -142,7 +142,9 @@ case class CLightningConfig(
   )
 }
 
-object CLightningConfig extends ConfigFactory[CLightningConfig] with Logging {
+object CLightningConfig
+    extends ConfigFactory[CLightningConfig]
+    with BitcoinSLogger {
 
   /** The empty `lightning` config */
   override lazy val empty: CLightningConfig =

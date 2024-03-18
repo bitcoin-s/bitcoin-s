@@ -1,6 +1,6 @@
 package org.bitcoins.server.routes
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 /** Exposes access to the HTTP RPC server logger */
-private[bitcoins] trait HttpLogger extends Logging
+private[bitcoins] trait HttpLogger extends BitcoinSLogger

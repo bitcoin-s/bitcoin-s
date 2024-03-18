@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * The appropriate callback is executed whenever the node receives
   * a `getdata` message matching it.
   */
-trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with Logging {
+trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
 
   def onCompactFiltersReceived: CallbackHandler[
     Vector[(DoubleSha256DigestBE, GolombFilter)],

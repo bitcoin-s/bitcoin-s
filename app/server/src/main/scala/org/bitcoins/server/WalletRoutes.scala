@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.server.Directives.complete
@@ -8,6 +7,7 @@ import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.stream.Materializer
 import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
@@ -39,7 +39,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
     extends ServerRoute
-    with Logging {
+    with BitcoinSLogger {
   import system.dispatcher
 
   /** The loaded wallet that requests should be directed against */

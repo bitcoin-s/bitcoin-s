@@ -2,13 +2,13 @@ package org.bitcoins.testkit.eclair.rpc
 
 import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.eclair.{
   IncomingPaymentStatus,
   OutgoingPayment,
   OutgoingPaymentStatus,
   PaymentId
 }
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
@@ -51,7 +51,7 @@ import scala.util.{Failure, Success}
   * Each double sided arrow represents a P2P connection as well as a funded
   * channel
   */
-trait EclairRpcTestUtil extends Logging {
+trait EclairRpcTestUtil extends BitcoinSLogger {
 
   def randomEclairDatadir(): File =
     new File(s"/tmp/eclair-test/${FileUtil.randomDirName}/.eclair/")

@@ -1,6 +1,6 @@
 package org.bitcoins.chain
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 /** Exposes access to the chain verification logger */
-private[bitcoins] trait ChainVerificationLogger extends Logging
+private[bitcoins] trait ChainVerificationLogger extends BitcoinSLogger

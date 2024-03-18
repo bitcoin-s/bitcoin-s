@@ -1,12 +1,11 @@
 package org.bitcoins.server
 
 import com.typesafe.config.{Config, ConfigFactory}
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.config.AppConfig.DEFAULT_BITCOIN_S_CONF_FILE
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
-import org.bitcoins.commons.util.ServerArgParser
+import org.bitcoins.commons.util.{BitcoinSLogger, ServerArgParser}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.{StartStopAsync, TimeUtil}
 import org.bitcoins.db.DbManagement
@@ -41,7 +40,7 @@ case class BitcoinSAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config])(implicit system: ActorSystem)
     extends StartStopAsync[AppConfigMarker]
-    with Logging {
+    with BitcoinSLogger {
   import system.dispatcher
 
   lazy val walletConf: WalletAppConfig =
@@ -194,7 +193,7 @@ case class BitcoinSAppConfig(
 /** Implicit conversions that allow a unified configuration
   * to be passed in wherever a specializes one is required
   */
-object BitcoinSAppConfig extends Logging {
+object BitcoinSAppConfig extends BitcoinSLogger {
 
   def fromConfig(config: Config)(implicit
       system: ActorSystem): BitcoinSAppConfig = {

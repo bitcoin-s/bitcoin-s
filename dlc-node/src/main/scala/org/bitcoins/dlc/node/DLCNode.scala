@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.node
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.api.node.Peer
@@ -20,7 +20,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     system: ActorSystem,
     val config: DLCNodeAppConfig)
     extends DLCNodeApi
-    with Logging {
+    with BitcoinSLogger {
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 

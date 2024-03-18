@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.chain
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.{
@@ -10,6 +9,7 @@ import org.bitcoins.chain.blockchain.sync.{
 }
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.node
 import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.api.wallet.WalletApi
@@ -32,7 +32,7 @@ import org.bitcoins.wallet.sync.WalletSync
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Useful utilities to use in the chain project for syncing things against bitcoind */
-abstract class SyncUtil extends Logging {
+abstract class SyncUtil extends BitcoinSLogger {
 
   /** Creates a function that will retrun bitcoin's best block hash when called */
   def getBestBlockHashFunc(

@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -25,7 +25,7 @@ import scala.concurrent.Future
 
 class UTXOLifeCycleTest
     extends BitcoinSWalletTestCachedBitcoindNewest
-    with Logging {
+    with BitcoinSLogger {
 
   behavior of "Wallet Txo States"
 

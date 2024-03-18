@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 
 /** Exposes access to the wallet logger */
-private[bitcoins] trait WalletLogger extends Logging
+private[bitcoins] trait WalletLogger extends BitcoinSLogger

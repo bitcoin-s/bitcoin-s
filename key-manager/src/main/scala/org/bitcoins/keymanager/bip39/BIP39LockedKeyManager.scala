@@ -1,5 +1,6 @@
 package org.bitcoins.keymanager.bip39
 
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerParams,
   KeyManagerUnlockError
@@ -10,10 +11,9 @@ import org.bitcoins.keymanager.ReadMnemonicError.{
   JsonParsingError
 }
 import org.bitcoins.keymanager._
-import grizzled.slf4j.Logging
 
 /** Represents a */
-object BIP39LockedKeyManager extends Logging {
+object BIP39LockedKeyManager extends BitcoinSLogger {
 
   /** Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
     * @param passphrase the password to decrypt the wallet

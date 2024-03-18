@@ -1,7 +1,7 @@
 package org.bitcoins.server.util
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.commons.util.BitcoinSLogger
 
 trait BitcoinSApp {
   def actorSystemName: String
@@ -15,6 +15,6 @@ trait BitcoinSApp {
 }
 
 /** Trait for using BitcoinS app with a daemon backend */
-trait BitcoinSAppScalaDaemon extends App with BitcoinSApp with Logging {
+trait BitcoinSAppScalaDaemon extends App with BitcoinSApp with BitcoinSLogger {
   final override def commandLineArgs: Array[String] = args
 }

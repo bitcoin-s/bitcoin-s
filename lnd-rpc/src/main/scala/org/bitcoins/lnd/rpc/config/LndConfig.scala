@@ -1,6 +1,6 @@
 package org.bitcoins.lnd.rpc.config
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 import scodec.bits.ByteVector
@@ -22,7 +22,7 @@ import scala.util.Properties
   * requests.
   */
 case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
-    extends Logging {
+    extends BitcoinSLogger {
 
   //create datadir and config if it DNE on disk
   if (!datadir.exists()) {
@@ -170,7 +170,7 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
   }
 }
 
-object LndConfig extends ConfigFactory[LndConfig] with Logging {
+object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
 
   /** The empty `lnd` config */
   override lazy val empty: LndConfig = LndConfig("", DEFAULT_DATADIR)

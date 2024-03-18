@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.rpc
 
 import org.apache.pekko.actor.ActorSystem
-import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.commons.jsonmodels.bitcoind.{
@@ -10,6 +9,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   RpcOpts,
   SignRawTransactionResult
 }
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
@@ -48,7 +48,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
 
 //noinspection AccessorLikeMethodIsEmptyParen
-trait BitcoindRpcTestUtil extends Logging {
+trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 

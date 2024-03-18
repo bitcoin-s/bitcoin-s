@@ -1,7 +1,6 @@
 package org.bitcoins.server.routes
 
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
-import grizzled.slf4j.Logging
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.event.Logging
@@ -40,6 +39,7 @@ import org.apache.pekko.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.{default => up}
 
@@ -245,7 +245,7 @@ case class Server(
 
 }
 
-object Server extends Logging {
+object Server extends BitcoinSLogger {
 
   // TODO id parameter
   case class Response(

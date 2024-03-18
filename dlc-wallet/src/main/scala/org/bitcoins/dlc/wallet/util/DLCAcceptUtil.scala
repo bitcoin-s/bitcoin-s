@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.util
 
-import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.config.NetworkParameters
@@ -32,7 +32,7 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object DLCAcceptUtil extends Logging {
+object DLCAcceptUtil extends BitcoinSLogger {
 
   /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
   def buildAcceptWithoutSigs(

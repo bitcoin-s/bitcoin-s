@@ -1,12 +1,12 @@
 package org.bitcoins.tor
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import org.apache.pekko.io.Tcp
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.tor.Credentials
 import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
@@ -27,7 +27,7 @@ class Socks5Connection(
     target: Socks5Connect)
     extends Actor
     with ActorLogging
-    with Logging {
+    with BitcoinSLogger {
 
   import Socks5Connection._
 
@@ -108,7 +108,7 @@ class Socks5Connection(
 
 }
 
-object Socks5Connection extends Logging {
+object Socks5Connection extends BitcoinSLogger {
 
   def props(
       tcpConnection: ActorRef,

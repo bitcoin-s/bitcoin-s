@@ -2,8 +2,8 @@ package org.bitcoins.testkit.util
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.util.Timeout
-import grizzled.slf4j.Logging
 import org.apache.pekko.testkit.TestKit
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkitcore.util.BaseAsyncTest
@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext
 /** A bitcoin-s async test trait, that uses akka's actor system
   * execution context to run the scalatest test suites
   */
-trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with Logging {
+trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with BitcoinSLogger {
   this: AsyncTestSuite =>
   implicit lazy val akkaTimeout: Timeout = Timeout(duration)
 

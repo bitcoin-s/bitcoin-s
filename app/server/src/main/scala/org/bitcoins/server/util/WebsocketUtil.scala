@@ -1,6 +1,5 @@
 package org.bitcoins.server.util
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.chain.config.ChainAppConfig
@@ -24,6 +23,7 @@ import org.bitcoins.commons.jsonmodels.ws.{
   WalletWsType,
   WsNotification
 }
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
@@ -65,7 +65,7 @@ import org.bitcoins.wallet.callback.{
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object WebsocketUtil extends Logging {
+object WebsocketUtil extends BitcoinSLogger {
 
   private def sendHeadersToWs(
       notifications: Vector[ChainNotification[_]],

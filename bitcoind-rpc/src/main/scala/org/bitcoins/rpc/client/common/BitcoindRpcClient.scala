@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.common
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   CompactFilterDb,
@@ -385,7 +385,9 @@ object BitcoindRpcClient {
 
 sealed trait BitcoindVersion
 
-object BitcoindVersion extends StringFactory[BitcoindVersion] with Logging {
+object BitcoindVersion
+    extends StringFactory[BitcoindVersion]
+    with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
   val newest: BitcoindVersion = V24

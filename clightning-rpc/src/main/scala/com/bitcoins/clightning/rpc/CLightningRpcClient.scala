@@ -2,10 +2,9 @@ package com.bitcoins.clightning.rpc
 
 import com.bitcoins.clightning.rpc.CLightningRpcClient.feeRateToJson
 import com.bitcoins.clightning.rpc.config._
-import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.commons.util.NativeProcessFactory
+import org.bitcoins.commons.util.{BitcoinSLogger, NativeProcessFactory}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol._
@@ -30,7 +29,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
     extends CLightningUnixSocketHandler
     with NativeProcessFactory
     with StartStopAsync[CLightningRpcClient]
-    with Logging {
+    with BitcoinSLogger {
 
   // documentation: https://lightning.readthedocs.io/index.html
 

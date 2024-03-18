@@ -3,8 +3,8 @@ package org.bitcoins.testkit.clightning
 import org.apache.pekko.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient
 import com.bitcoins.clightning.rpc.config.CLightningInstanceLocal
-import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels.FundChannelResult
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -22,7 +22,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
-trait CLightningRpcTestUtil extends Logging {
+trait CLightningRpcTestUtil extends BitcoinSLogger {
 
   val sbtBinaryDirectory: Path =
     TestkitBinaries.baseBinaryDirectory.resolve("clightning")

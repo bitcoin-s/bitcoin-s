@@ -1,10 +1,10 @@
 package org.bitcoins.dlc.node
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import org.apache.pekko.event.LoggingReceive
 import org.apache.pekko.io.Tcp
 import org.apache.pekko.util.ByteString
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.tlv._
@@ -132,7 +132,7 @@ class DLCConnectionHandler(
   }
 }
 
-object DLCConnectionHandler extends Logging {
+object DLCConnectionHandler extends BitcoinSLogger {
 
   case object CloseConnection
   case class WriteFailed(cause: Option[Throwable])

@@ -1,6 +1,5 @@
 package org.bitcoins.commons.util
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.util.FutureUtil
 
 import java.io.File
@@ -8,7 +7,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.{Process, ProcessBuilder, ProcessLogger}
 
 /** A trait that helps start bitcoind/eclair when it is started via bitcoin-s */
-trait NativeProcessFactory extends Logging {
+trait NativeProcessFactory extends BitcoinSLogger {
   implicit protected def executionContext: ExecutionContext
 
   private[this] var processOpt: Option[Process] = None
@@ -66,7 +65,7 @@ trait NativeProcessFactory extends Logging {
 
 }
 
-object NativeProcessFactory extends Logging {
+object NativeProcessFactory extends BitcoinSLogger {
 
   val processLogger: ProcessLogger =
     ProcessLogger(logger.info(_), logger.error(_))

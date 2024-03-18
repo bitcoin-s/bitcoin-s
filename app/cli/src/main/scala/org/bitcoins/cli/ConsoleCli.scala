@@ -1,12 +1,12 @@
 package org.bitcoins.cli
 
-import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.cli.ConsoleCli.RequestParam
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
@@ -42,7 +42,7 @@ import java.util.Date
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-object ConsoleCli extends Logging {
+object ConsoleCli extends BitcoinSLogger {
 
   def parser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]

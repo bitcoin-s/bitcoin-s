@@ -1,18 +1,18 @@
 package org.bitcoins.zmq
 
-import java.net.InetSocketAddress
+import org.bitcoins.commons.util.BitcoinSLogger
 
+import java.net.InetSocketAddress
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import grizzled.slf4j.Logging
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.zeromq.{SocketType, ZFrame, ZMQ, ZMsg}
 
 import scala.concurrent.Promise
 
-class ZMQSubscriberTest extends AsyncFlatSpec with Logging {
+class ZMQSubscriberTest extends AsyncFlatSpec with BitcoinSLogger {
 
   behavior of "ZMQSubscriber"
 

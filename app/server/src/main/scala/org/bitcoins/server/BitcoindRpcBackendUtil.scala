@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.stream.OverflowStrategy
 import org.apache.pekko.stream.scaladsl.{
@@ -14,6 +13,7 @@ import org.apache.pekko.stream.scaladsl.{
 import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
 import org.bitcoins.core.gcs.FilterType
@@ -34,7 +34,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
-object BitcoindRpcBackendUtil extends Logging {
+object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(

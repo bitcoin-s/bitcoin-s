@@ -1,7 +1,7 @@
 package org.bitcoins.server
 
-import grizzled.slf4j.Logging
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
@@ -25,7 +25,9 @@ import scala.concurrent.{ExecutionContext, Future}
 /** A trait used to help load a different load and discard the current wallet in memory
   * This trait encapsulates the heavy lifting done in the 'loadwallet' RPC command
   */
-sealed trait DLCWalletLoaderApi extends Logging with StartStopAsync[Unit] {
+sealed trait DLCWalletLoaderApi
+    extends BitcoinSLogger
+    with StartStopAsync[Unit] {
 
   override def start(): Future[Unit] = Future.unit
   def conf: BitcoinSAppConfig

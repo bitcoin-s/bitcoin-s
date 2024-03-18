@@ -1,13 +1,12 @@
 package org.bitcoins.server.routes
 
 import org.apache.pekko.actor.ActorSystem
-import grizzled.slf4j.Logging
-import org.bitcoins.commons.util.ServerArgParser
+import org.bitcoins.commons.util.{BitcoinSLogger, ServerArgParser}
 import org.bitcoins.core.util.{EnvUtil, StartStopAsync}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait BitcoinSRunner[T] extends StartStopAsync[T] with Logging {
+trait BitcoinSRunner[T] extends StartStopAsync[T] with BitcoinSLogger {
 
   implicit def system: ActorSystem
 
