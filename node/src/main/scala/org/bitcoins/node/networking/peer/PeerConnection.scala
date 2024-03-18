@@ -245,7 +245,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         outgoingConnectionF.onComplete {
           case scala.util.Success(o) =>
             val tcp = o._1._1
-            logger.info(
+            logger.debug(
               s"Connected to remote=${tcp.remoteAddress}  local=${tcp.localAddress}")
           case scala.util.Failure(err) =>
             logger.debug(
@@ -349,7 +349,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   def disconnect(): Future[Done] = {
     connectionGraphOpt match {
       case Some(cg) =>
-        logger.info(s"Disconnecting peer=${peer}")
+        logger.debug(s"Disconnecting peer=${peer}")
         connectionGraphOpt = None
         cg.stop()
       case None =>
