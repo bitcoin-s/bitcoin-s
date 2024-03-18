@@ -316,8 +316,7 @@ case class PeerManager(
       peer: Peer,
       forceReconnect: Boolean,
       state: NodeRunningState): Future[NodeState] = {
-    logger.info(
-      s"Disconnected peer=$peer peers=$peers state=$state forceReconnect=$forceReconnect")
+    logger.info(s"Disconnected peer=$peer state=$state")
     val finder = state.peerFinder
     val updateLastSeenF = PeerDAO().updateLastSeenTime(peer)
     val stateF: Future[NodeRunningState] = {
