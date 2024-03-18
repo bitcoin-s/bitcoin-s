@@ -18,7 +18,7 @@ import org.bitcoins.tor.TorParams
 import org.bitcoins.tor.config.TorAppConfig
 
 import java.nio.file.Path
-import java.time.{Duration, Instant}
+import java.time.{Instant}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -132,21 +132,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.enable-peer-discovery"))
       config.getBoolean("bitcoin-s.node.enable-peer-discovery")
     else false
-  }
-
-  // https://github.com/lightbend/config/blob/master/HOCON.md#duration-format
-  lazy val peerDiscoveryTimeout: Duration = {
-    if (config.hasPath("bitcoin-s.node.peer-discovery-timeout"))
-      config.getDuration("bitcoin-s.node.peer-discovery-timeout")
-    else Duration.ofMinutes(10)
-  }
-
-  /** timeout for tcp connection in P2PClient */
-  lazy val connectionTimeout: FiniteDuration = {
-    if (config.hasPath("bitcoin-s.node.connection-timeout")) {
-      val duration = config.getDuration("bitcoin-s.node.connection-timeout")
-      TimeUtil.durationToFiniteDuration(duration)
-    } else 5.seconds
   }
 
   lazy val tryPeersStartDelay: FiniteDuration = {
