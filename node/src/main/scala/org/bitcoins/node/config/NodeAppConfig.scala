@@ -141,14 +141,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     else Duration.ofMinutes(10)
   }
 
-  /** timeout for tcp connection in P2PClient */
-  lazy val connectionTimeout: FiniteDuration = {
-    if (config.hasPath("bitcoin-s.node.connection-timeout")) {
-      val duration = config.getDuration("bitcoin-s.node.connection-timeout")
-      TimeUtil.durationToFiniteDuration(duration)
-    } else 5.seconds
-  }
-
   lazy val tryPeersStartDelay: FiniteDuration = {
     if (config.hasPath("bitcoin-s.node.try-peers-start-delay")) {
       val duration = config.getDuration("bitcoin-s.node.try-peers-start-delay")

@@ -159,9 +159,6 @@ bitcoin-s {
         # number of persistent peer connections to maintain for node use
         maxConnectedPeers = 1
         
-        # peers discovery configs, ideally you would not want to change this
-        # timeout for tcp connection
-        connection-timeout = 5s
         # time interval for trying next set of peers in peer discovery
         try-peers-interval = 12 hour
         
