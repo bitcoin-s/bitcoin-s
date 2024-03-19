@@ -273,7 +273,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                   case scala.util.Success(_) =>
                     handleStreamComplete()
                   case scala.util.Failure(err) =>
-                    logger.info(
+                    logger.debug(
                       s"Connection with peer=$peer failed with err=${err.getMessage}")
                     handleStreamComplete()
                 }
