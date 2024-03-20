@@ -73,6 +73,8 @@ c6524b9246 remove usages of new URL() as constructor is deprecated on jdk 20+ (#
 
 ## App server
 
+00c84a9c25 Set max-open-requests = 64 for appServerTest (#5442)
+c407c2e874 2024 02 29 cleanup logback files (#5441)
 b0cf3d8146 Fix race condition between `NodeAppConfig.migrate()` calls when `bitcoin-s.tor.enabled=false` (#5120)
 4fd7af04ca Remove check to see if seed exists when loading a wallet, the key manager can initiate the seed if it dne (#5094)
 447c6d03de Implement `getconnectioncount` rpc (#5048)
@@ -82,6 +84,7 @@ e993335f03 Improve error logging on server (#4896)
 
 ## bitcoind rpc
 
+a18bd70369 Upgrade to bitcoind `24.2` (#5284)
 fa34cb4f4d Bump bitcoind minor versions to `24.1`/`23.2` (#5088)
 3db663a387 Remove `v20` bitcoind support (#4992)
 af349d2179 Remove support for `v19` of bitcoind (#4991)
@@ -93,6 +96,15 @@ f4244d7a0e Add bitcoind v24 (#4902)
 
 ## Build
 
+9aa730dd0a Revert yml files (#5449)
+dd7131306c Consolidate disabled secp256k1 workflow into Compile workflow (#5445)
+1317adfdad Add zmq/test and chainTest/test to OS's we weren't previously running on (#5443)
+1b25994fc2 Re-add java.sql module to cli jlink image to fix #5411 (#5412)
+83a27e2775 Add new macOS CI matrix to try and speed up mac jobs (#5364)
+db21b8873e Set flag nativeImageInstalled =: true so we don't overwrite system's nativeimage (#5358)
+a7b67fc78d 2024 01 18 fix native image build (#5357)
+16fb5d2dad 2023 12 19 compiler opts (#5330)
+1084be80ad Upgrade cache action to v3 (#5326)
 a93954cc4e Only generate scaladoc on CI to decrease build time (#5220)
 a18dc6c55f Add java.instrument to jlink dev builds (#5210)
 dd77eb0566 Add jdk.management.agent module on dev builds (#5115)
@@ -100,6 +112,14 @@ cb272ddf83 Fix build by ignoring junit transitive dep (#5071)
 
 ## chain
 
+8b23b1f4f6 Add delay to wait for zmq to get setup in chainTest (#5427)
+8f812c644f Fix Promise already completed errors in chainTest (#5440)
+748121fe8a 2023 01 06 small chainhandler bug fixes (#5345)
+3a927edee1 Fix bug when requesting `FilterSyncMarker` for filter headers (#5344)
+5e81ec5ed2 Add `ChainApi.getBestChainTips()` (#5338)
+f1775c46d3 Simplify ChainHandler.nextFilterHeaderBatchRange() (#5336)
+af361167a4 Refactor `ChainHandler.findNextHeader()` to only take 1 blockchain (#5335)
+d983a1bac4 2023 12 24 Make filter headers / filters sync work with block header reorgs (#5333)
 3e6ff52194 2023 09 27 issue 5139 (#5247)
 e15bf6cc9d reduce default `bitcoin-s.chain.neutrino.filter-batch-size` to `250` (#5230)
 0e2fddcc57 Optimize bestFilterHeaderHeightQuery (#5223)
@@ -121,6 +141,19 @@ d53ed7d487 Bump clightning version to `v23.02.2` (#5025)
 
 ## Core
 
+55e4dab86e Rework `NodeApi.downloadBlocks()` to use `DoubleSha256DigestBE`  (#5456)
+b27cebca1c 2024 02 23 `TaprootKeyPath.isValid()` bug (#5421)
+195cfbd273 Fix handling invoice with minimal encoding of feature bits (#5405)
+d641c3da55 2024 01 25 Cache txid (#5374)
+5885f4e99e 2024 01 26 rm lazy bytes (#5373)
+be1ec842c2 Fix bug in classifying things as `MultiSigSPK` that do not have enough public keys in the Script (#5371)
+a66925dba0 Fix bug where IndexOutOfBoundsException was occuring when parsing a script with only OP_CMS (#5370)
+fd09724f48 2024 01 23 Validate we have `maxSigs` number of public keys in `MultiSignatureScriptPubKey` (#5369)
+039144c2c8 Add access to underlying MultiSignatureScriptPubKey scriptNumbers represents requiredSigs, maxSigs (#5366)
+0f95a1f7bb Fix bounds checking for MultiSignatureScriptPubKey.maxSigsRequired (#5365)
+73785706d8 2024 01 20 Fix bug in parsing `OP_CLTV` and `OP_CSV` (#5363)
+618e1ca2d2 Fix bug in script parsing logic where we weren't checking if a ScriptNumber was negative for a MultiSignatureScriptPubKey (#5362)
+421970dcf5 2024 01 11 bip68 bip112 txversion bug (#5346)
 522821869d Move filterBatchCache into NodeState.FilterSync (#5253)
 4972d0a368 Move NodeState to core (#5249)
 99ca1b7abf Add PeerManagerApi.peers (#5170)
@@ -147,6 +180,10 @@ c92f2ed009 Add db mapper for ECDigitalSignature (#5002)
 
 ## DLC Oracle
 
+## DLC Server
+
+556c5e0c39 Fix NullPointerException inside of DLCServer (#5287)
+
 ## DLC wallet
 
 ## Eclair rpc
@@ -161,6 +198,7 @@ c92f2ed009 Add db mapper for ECDigitalSignature (#5002)
 
 ## Lnd rpc
 
+f01987160d Lnd v0.17.3 (#5375)
 008dd42a08 Upgrade lnd to `0.16.4` (#5194)
 08757d536f Lnd 0.16.0 rpc (#5005)
 
@@ -173,6 +211,79 @@ f8247c427d Add LNURL writers (#4927)
 
 ## node
 
+3cfe700fad Reduce stream failure log to DEBUG to avoid tor spam (#5483)
+a875f08d2e Reduce log level of PeerConnection logs to DEBUG (#5481)
+af342dd6c1 2024 03 18 rm unused configs (#5480)
+d44344f07b Check if peer is waitingForDisconnection when receiving InitializeDisconnect() message (#5479)
+f7dd69bec3 refactor: Use 'peerWithServicesDataMap' name consistently across NodeState and PeerManager (#5478)
+db64a6d136 Reduce various log levels to DEBUG (#5477)
+5c247e65a5 Reduce 'Attempting to connect' log to DEBUG (#5476)
+9a71a96fb8 2024 03 11 Remove filtersync job (#5471)
+23337b7137 2024 03 11 `PeerFinder.getPeersFromDnsSeeds` async (#5472)
+708ce41f24 Re-implement `bitcoin-s.node.query-wait-time` (#5470)
+54a356b300 Don't unnecessarily create new NodeState objects, use helper methods to state transition (#5469)
+fa6cb1ba3a Send p2p messages to syncPeer when we are in  and a specific peer is not set in SendToPeer (#5468)
+9e50c5fd12 Fix bug where we weren't checking if isFiltersSynced is true before sending our next getcfilters to our peer (#5466)
+16aeb56df5 Remove implicit NodeAppConfig from PeerMessageSender (#5465)
+567c2400ca Small refactors to use RunningNodeState methods, improve logs (#5463)
+5967caeca7 2024 03 07 Add `NodeState.FilterOrFilterHeaderSync`, refactor `PeerManager` to use it (#5459)
+e793c53dd7 Add guards on sending blockfilter messages to non-blockfilter peers (#5457)
+898d2b44ee Fix bug where we were executing block callbacks when we hadn't seen a block header (#5455)
+238948e185 Remove PeerMessageSenderApi param from DataMessageHandler (#5453)
+ddb6f01d65 Simplify / reduce log level for compact filter logs (#5452)
+367285d9b9 Reduce reliance of `PeerManager._peerDataMap` in favor of `NodeState.peerDataMap` (#5451)
+0d2e0a98f0 fix bug where we weren't properly transferring state to FilterHeaderSync, reduce log level of peer we fail to connect to (#5450)
+ae3a634703 2024 03 01 Fix `syncPeer` exceptions (#5446)
+1f0af696f6 Reduce DataMessageHandler log levels (#5447)
+951bdc5b34 Always try to attempt to connect to our param peers in PeerFinder (#5444)
+8fb62ad21c Use `NodeCallbackStreamManager` when calling `NodeCallbacks` constructors (#5439)
+70f983213c Ignore invs while in IBD rather than when syncing (#5433)
+d1ecd35e63 Fix `PeerDb.lastSeen` race condition in unit tests (#5435)
+ab0b0e2209 Fix bug where we weren't removing peer from `NodeRunningState.waitingForDisconnection` (#5425)
+0053ccd853 Rework NodeState.toString() (#5432)
+8a0c00637c Remove duplicate `PeerConnection.disconnect()` call (#5426)
+6934b33474 Fix bug in health checks were we wouldn't attempt to connect NodeAppConfig.maxConnectedPeers if we didn't have any non compact filter peers connected (#5422)
+90b9e76e56 Keeping finding peers until all peers are blockfilter peers (#5417)
+783ed1903d Rename bitcoin-s.node.inactivity-timeout -> bitcoin-s.node.health-check-interval (#5418)
+3177ee405f Move away from suredbits provided peers by default (#5390)
+b89b31fe09 2024 02 18 peerfinder duplicate connect (#5403)
+155b4fbc76 Fix case were we weren't cancelling the syncFilter job onDisconnect() (#5402)
+f5087c5e3f Remove PeerManager.{getPeerMessageSender(), getPeerConnection()}, use NodeState.{getPeerMessageSender(), getPeerConnection()} (#5400)
+e4fbfe73e6 2024 02 16 fix get filter sync marker from stop block header bug (#5401)
+bc94a8b01f 2024 02 15 Fix duplicate sync bug when we have a misbehaving peer (#5399)
+fe33c2919c Fix inconsistency of `PeerDAO` primary key usage (#5398)
+536cc26ba5 Update last seen value in PeerDb on disconnect (#5397)
+05d03e7da6 Remove skipPeers, better PeerFinder.toString() (#5396)
+2d3e481ce0 Use Future.successful() when removing peer as there is no underlying async computation (#5394)
+9d58c9eb89 Implement health checks for peers, first check is if we have any blockfilter peers (#5393)
+d4ae659887 Log instead of throwing exception when sending message to peer without an active connection (#5392)
+cac546bb57 Fix bug where we were only setting `bitcoin-s.node.inactivity-timeout` on regtest (#5389)
+451e019225 2024 01 31 Fix `PeerManager.connect()` bug where `PeerFinder` was unaware of peer (#5381)
+75881191d1 Guard NeutrinoNode.start() with isStarted flag (#5380)
+75f6a3b4ec Refactor PeerFinder.peerConnectionScheduler() into method (#5377)
+76e468c5c4 2024 01 28 Refactor `PeerFinder.start()` to avoid initializing connections (#5376)
+f26e6f7c5a initiate disconnect from PeerManager rather than bitcoind in connection (#5354)
+9cd60d5366 2024 01 02 encapsulate state p2psink (#5342)
+56b1a557a8 Add carve out to ignore ConnectPeer request if state is NodeShuttingDown (#5352)
+3c5bace825 Dont initiate disconnect logic from bitcoind, its flakey for some reason (#5343)
+d6c1491ba8 2024 01 03 shuttingdown nodestate (#5341)
+30876c2cde Move `PeerManager.connectPeer()` logic into stream (#5340)
+d27dcb38f4 Add logging to PeerConnection.handleStreamComplete so exceptions aren't dropping on the floor (#5339)
+a3e1267484 2023 12 30 isfiltersync bug (#5337)
+06dfd9cea4 Rework `randomPeerWithServices()` to be inside of `NodeState` (#5331)
+0ace6dfd2e Make `PeerManager.gossipMessage()` queue to avoid gossiping messages to peers being disconnected (#5334)
+54f303efb0 Rework various private methods in `DataMessagehandler` to return `NodeState` (#5329)
+ce154fc5fd Remove unecessary helper method in `PeerFinder` (#5327)
+747389e77d Rework `ConnectionGraph.stop()` to return `Future[Done]` (#5325)
+01537185bd 2023 12 13 mv connectioncount check fixtures (#5324)
+7f337073c9 Improve `ReConnectionTest` (#5323)
+f4db40897b Fix bug where `PeerConnection.connectionGraphOpt` does not get reset on disconnect (#5307)
+bd3ad1df21 2023 12 07 mat socks5handler (#5322)
+47c433f365 Replace inactivity logic with `Flow.idleTimeout` (#5311)
+16c41c3b2e Added LnURLClient accept header to request (#5318)
+4913b12431 2023 11 10 peermanager refactor (#5303)
+7f5ed15521 Reduce inactivity level to `DEBUG` (#5286)
+7b8df425fb Reset `PeerConnection.connectionGraphOpt = None` when connection is disconnected (#5290)
 be30da578d Bump timeout for checking when peer is disconnected (#5277)
 cff757cb55 2023 10 03 node refactors (#5256)
 2863b3f5cc Change PeerManager to keep NodeState in Sink.foldAsync() rather than DataMessageHandler (#5255)
@@ -293,8 +404,13 @@ f2be536211 Delay querying for peers for 30 minutes (#4897)
 
 ## Oracle Explorer Client
 
+c0e8d376eb Remove oracle explorer client (#5308)
+
 ## wallet
 
+320773a99c Add `OverflowStrategy.backpressure` on `Source.queue` in bitcoind polling job (#5437)
+42e5e87350 Reduce various logs in org.bitcoins.wallet to DEBUG (#5434)
+af74450c62 Cancel polling job after walletTest is executed (#5379)
 5c2c8ee30b 2023 10 19 recursive rescan state (#5269)
 b252c2d6a2 2023 10 16 Implement `WalletCallbackStreamManager,` `DLCWalletCallbackStreamManager` (#5263)
 36f30c5915 Fix bug where `bip39Password` was not passed as param in test case (#5040)
@@ -304,8 +420,14 @@ d297311814 Catch non RescanTerminatedEarly errors when rescan is terminated with
 
 ## testkit-core
 
+deb79c5994 Make another instance of `Gen[ECPrivateKey]` be deterministic (#5353)
+
 ## testkit
 
+1685c84eea 2024 01 31 Refactor `BitcoindRpcTestUtil.{startSevers(),stopSevers()}` to use `Future.traverse()` (#5382)
+018631dad4 Create NodeTestUtil.awaitConnectionCount() (#5378)
+b39736fb8d Rework `NodeTestUtil` to use a specific `bestBlockHash` (#5332)
+579318cad0 Make `Gen[ECPrivateKey]` in scalacheck to use randomness from scalacheck to preserve reproducibility of test cases (#5285)
 531c909597 Use BitcoindRpcBackendUtil.buildBitcoindNodeApi() in wallet test fixtures, re-implement getConfirmationsForBlocks() to use akka streams to avoid max-open-requests limit inside of akka (#5259)
 12e5dfc021 Fix chain fixtures to use `ChainHandler` rather than always using `ChainHandlerCached` (#5243)
 458a80d854 Destroy wallet config when tearing down node (#5105)
@@ -316,12 +438,71 @@ d297311814 Catch non RescanTerminatedEarly errors when rescan is terminated with
 
 ## tor
 
+ef20d5ec83 Rework Socks5Connection.socks5Handler() to emit Socks5ConnectionState downstream (#5315)
+
 ## Website
 
 f8143f3e02 init 1.9.8 release notes
 
+## ZMQ
+
+cb26f6de07 Add WalletZmqSubscribers (#5423)
+
+
 ## Dependencies
 
+177542a13c Remove grizzled.sl4fj was its no longer maintained (#5482)
+d1ba4737d6 Update sbt-assembly to 2.2.0 (#5473)
+270f3cf624 Update postgresql to 42.7.3 (#5475)
+b7d7baaa20 Update sqlite-jdbc to 3.45.2.0 (#5474)
+dcb177b4a7 Update slick, slick-hikaricp to 3.5.0 (#5461)
+c2fb5d2657 Update client3:core, ... to 3.9.4 (#5460)
+f77b4efe11 Update logback-classic to 1.5.3 (#5448)
+5ab8da9adc Update logback-classic to 1.5.1 (#5438)
+87003eb703 Update sbt-scalafmt to 2.5.2 (#5218)
+3ed78b5270 Upgrade to scala 2.13.13, fix compiler errors (#5428)
+dae6ebf9aa Update sbt-scoverage to 2.0.11 (#5424)
+3c2184156b Update sbt to 1.9.9 (#5419)
+0a96f72c5e Update postgresql to 42.7.2 (#5414)
+1dff918848 2023 02 21 pekko (#5413)
+caeb8d559c Update sbt-scoverage to 2.0.10 (#5409)
+1efede0401 Update junixsocket-core to 2.9.0 (#5407)
+b059c2f57e Update jeromq to 0.6.0 (#5410)
+7c8acc4484 Update client3:core, ... to 3.9.3 (#5408)
+7ea72f279f Update logback-classic to 1.5.0 (#5406)
+3f22e42ad4 Update scalatest to 3.2.18 (#5395)
+5544a2efc4 Update janino to 3.1.12 (#5387)
+e30d1b1cad Update slf4j-api to 2.0.12 (#5388)
+b45b8b7eb0 Update sbt-bloop to 1.5.15 (#5386)
+843e9ee23a Update sqlite-jdbc to 3.45.1.0 (#5384)
+5bd5cc51dc Update metrics-core, metrics-healthchecks, ... to 4.2.25 (#5372)
+62012b1ee6 Upgrade microPickle to 3.1.4 (#5368)
+217914432e Update scalapb-runtime to 0.11.15 (#5367)
+f6648a1cc3 Update metrics-core, metrics-healthchecks, ... to 4.2.24 (#5360)
+3c6fd85f4d Update sqlite-jdbc to 3.45.0.0 (#5361)
+e6ceda44f2 Update play-json to 2.10.4 (#5356)
+1ad2778ab2 Update client3:core, ... to 3.9.2 (#5355)
+510ac32db5 Update metrics-core, metrics-healthchecks, ... to 4.2.23 (#5320)
+495197d380 Update postgresql to 42.7.1 (#5321)
+001a2f0970 Update slf4j-api to 2.0.11 (#5351)
+589fc0c98b Update sbt-scalajs, scalajs-compiler, ... to 1.15.0 (#5348)
+e8052e5a91 Update sbt-assembly to 2.1.5 (#5305)
+63b1f05b2e Update sbt-bloop to 1.5.13 (#5319)
+329241b332 Update sbt-mdoc to 2.5.2 (#5350)
+37eaabab22 Update jna to 5.14.0 (#5347)
+7a3834dc80 Update sbt to 1.9.8 (#5349)
+ecbd024465 Update janino to 3.1.11 (#5313)
+39b127be8c Update sbt-bloop to 1.5.12 (#5309)
+bb549b46d4 Update logback-classic to 1.4.14 (#5314)
+23cc9c9acc Update junixsocket-core to 2.8.3 (#5300)
+36d27704b4 Update bcprov-jdk18on to 1.77 (#5302)
+a21b0a1741 Update client3:core, ... to 3.9.1 (#5296)
+222ad3b60d Update sbt-mdoc to 2.5.1 (#5298)
+7861bce71a Update native-lib-loader to 2.5.0 (#5297)
+c1baad9f06 Update sbt-mdoc to 2.5.0 (#5289)
+665727f165 Update play-json to 2.10.3 (#5282)
+33087f6ec1 Update metrics-core, metrics-healthchecks, ... to 4.2.22 (#5283)
+5273af05d8 Upgrade website dependencies (#5279)
 336cb60c51 Update sbt-assembly to 2.1.4 (#5275)
 a513cab030 Update sbt-bloop to 1.5.11 (#5226)
 763da5619c Update junixsocket-core to 2.8.2 (#5276)
@@ -447,3 +628,9 @@ dac72f53d8 Update metrics-core, metrics-healthchecks, ... to 4.2.13 (#4893)
 dbd54ca55f 2022 11 11 sbt 1.8.0 (#4883)
 4df71ea9d8 Update sbt-scalajs-bundler to 0.21.1 (#4887)
 1127c56a98 Bump versions to 1.9.7 (#4886)
+
+
+
+
+
+
