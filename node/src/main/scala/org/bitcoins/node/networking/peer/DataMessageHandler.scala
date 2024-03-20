@@ -58,7 +58,7 @@ case class DataMessageHandler(
             val isQueryTimedOut = state.isQueryTimedOut(appConfig.queryWaitTime)
             if (peerData.peer != syncPeer && !isQueryTimedOut) {
               //ignore message from peers that we aren't syncing with during IBD
-              logger.info(
+              logger.debug(
                 s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
               Future.successful(this)
             } else {
