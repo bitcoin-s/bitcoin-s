@@ -48,7 +48,7 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def getPeerConnection(peer: Peer): Option[ActivePeerConnection] = {
-    peerDataMap.find(_._1.peer == peer).map(_._2.peerConnection) match {
+    peerDataMap.find(_._1 == peer).map(_._2.peerConnection) match {
       case Some(peerConnection) => Some(peerConnection)
       case None                 => None
     }

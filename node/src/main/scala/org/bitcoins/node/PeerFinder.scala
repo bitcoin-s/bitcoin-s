@@ -151,7 +151,8 @@ case class PeerFinder(
           peers <- getPeersFromDnsSeeds.map(dns =>
             dns ++ getPeersFromResources ++ dbNonCf)
         } yield {
-          val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+          val pds =
+            peers.map(p => DisconnectedPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
           val dbPds =
             dbCf.map(p => DisconnectedPeerData(p, isPersistent = false))
@@ -309,13 +310,14 @@ case class PeerFinder(
   def queryForPeerConnections(excludePeers: Set[Peer]): Option[Unit] = {
     val shouldRun =
       isConnectionSchedulerRunning.compareAndSet(false, true) && isStarted.get()
-    ) {
+    if (shouldRun) {
       logger.debug(
         s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
       val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
         val pdsF = getPeersFromDnsSeeds
           .map { peers =>
-            val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+            val pds =
+              peers.map(p => DisconnectedPeerData(p, isPersistent = false))
             _peersToTry.pushAll(pds)
           }
           .map(_ => ())
@@ -326,7 +328,7 @@ case class PeerFinder(
       val paramPdsF = for {
         _ <- dnsPeersF
       } yield {
-        val pds = paramPeers.map(buildPeerData(_, true))
+        val pds = paramPeers.map(p => DisconnectedPeerData(p, true))
         _peersToTry.pushAll(pds)
       }
 
@@ -352,8 +354,7 @@ case class PeerFinder(
                 isDisconnected <- isDisconnectedF
                 _ <- {
                   if (isDisconnected) {
-                    tryPeer(peer = p.peer,
-                            isPersistent = p.isInstanceOf[PersistentPeerData])
+                    tryPeer(peer = p.peer, isPersistent = false)
                   } else {
                     //do nothing, we are already connected
                     Future.unit

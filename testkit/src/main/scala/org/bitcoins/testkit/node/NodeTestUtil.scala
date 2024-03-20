@@ -290,7 +290,6 @@ abstract class NodeTestUtil extends P2PLogger {
         .get
         .peerConnection
         .getLocalAddress
-        .map(_.get)
       uri <- NodeTestUtil.getNodeURIFromBitcoind(bitcoind, address)
       _ <- bitcoind.disconnectNode(uri)
       _ <- NodeTestUtil.awaitConnectionCount(node, 0)

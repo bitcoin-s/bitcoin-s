@@ -571,7 +571,7 @@ case class PeerManager(
                 s"Attempting to intialize disconnect of peer=${i.peer} we are already waitingForDisconnection, state=$running")
               Future.successful(running)
             } else {
-              val client: PeerData =
+              val client: ConnectedPeerData =
                 running.getPeerData(i.peer) match {
                   case Some(p) => p
                   case None =>
@@ -593,11 +593,13 @@ case class PeerManager(
                     updated
                       .replaceWaitingForDisconnection(newWaiting)
                 }
-              val stopF: Future[Done] = client.stop().recoverWith {
-                case scala.util.control.NonFatal(err) =>
+              val stopF: Future[Done] = client
+                .stop()
+                .map(_ => Done)
+                .recoverWith { case scala.util.control.NonFatal(err) =>
                   logger.error(s"Failed to stop peer=${client.peer}", err)
                   Future.successful(Done)
-              }
+                }
 
               stopF.flatMap { _ =>
                 newStateF
