@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import org.apache.pekko.actor.ActorSystem
-import org.bitcoins.chain.blockchain.ChainHandlerCached
+import org.bitcoins.chain.blockchain.{ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
@@ -48,11 +48,12 @@ trait Node
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     */
   def chainApiFromDb()(implicit
-      executionContext: ExecutionContext): Future[ChainHandlerCached] = {
-    ChainHandlerCached.fromDatabase(BlockHeaderDAO(),
-                                    CompactFilterHeaderDAO(),
-                                    CompactFilterDAO(),
-                                    ChainStateDescriptorDAO())
+      executionContext: ExecutionContext): Future[ChainApi] = {
+    val c = ChainHandler.fromDatabase(BlockHeaderDAO(),
+                                      CompactFilterHeaderDAO(),
+                                      CompactFilterDAO(),
+                                      ChainStateDescriptorDAO())
+    Future.successful(c)
   }
 
   /** Starts our node */
