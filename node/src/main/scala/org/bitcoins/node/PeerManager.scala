@@ -608,7 +608,7 @@ case class PeerManager(
               .map(_._2)
             peerDataOpt match {
               case None =>
-                logger.warn(
+                logger.debug(
                   s"Ignoring received msg=${payload.commandName} from peer=$peer because it was disconnected, peers=$peers state=${state}")
                 Future.successful(state)
               case Some(peerData) =>
