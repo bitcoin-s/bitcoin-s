@@ -180,6 +180,14 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 20.minute
   }
 
+  lazy val connectionAttemptCooldownPeriod: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.connection-attempt-cool-down-period")) {
+      val duration =
+        config.getDuration("bitcoin-s.node.connection-attempt-cool-down-period")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else 5.minute
+  }
+
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peers: Vector[Peer], walletCreationTimeOpt: Option[Instant])(
       chainConf: ChainAppConfig,
