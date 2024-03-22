@@ -1165,7 +1165,7 @@ object PeerManager extends BitcoinSLogger {
         batchSize = filterHeaderBatchSize)
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
-          logger.info(
+          logger.debug(
             s"Requesting next compact filter headers from $filterSyncMarker with peer=$peer")
           peerMessageSenderApi
             .sendGetCompactFilterHeadersMessage(filterSyncMarker)
