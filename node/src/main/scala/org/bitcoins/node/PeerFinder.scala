@@ -6,7 +6,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerManagerApi}
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
-import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
+import org.bitcoins.core.util.{StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.{
@@ -17,6 +17,7 @@ import org.bitcoins.node.networking.peer.{
 import org.bitcoins.node.util.BitcoinSNodeUtil
 
 import java.net.{InetAddress, UnknownHostException}
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -75,26 +76,29 @@ case class PeerFinder(
   }
 
   /** Returns tuple (non-filter peer, filter peers) from all peers stored in database */
-  private def getPeersFromDb: Future[(Vector[Peer], Vector[Peer])] = {
+  private def getPeersFromDb: Future[(Vector[PeerDb], Vector[PeerDb])] = {
     val dbF: Future[Vector[PeerDb]] =
       PeerDAO().findAllWithTorFilter(nodeAppConfig.torConf.enabled)
 
     val partitionF = dbF.map(_.partition(b =>
       !ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters))
 
-    def toPeers(peerDbs: Vector[PeerDb]): Vector[Peer] = {
-      //try to connect to lastSeen peers first
-      val lastSeen = peerDbs.sortBy(_.lastSeen).reverse
-      val inetSockets = lastSeen.map(a => {
-        NetworkUtil.parseInetSocketAddress(a.address, a.port)
-      })
-
-      val peers =
-        inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-      peers
+    partitionF.map { p =>
+      val sorted1 = p._1.sortBy(_.lastSeen).reverse
+      val sorted2 = p._2.sortBy(_.lastSeen).reverse
+      (sorted1, sorted2)
     }
+  }
 
-    partitionF.map(p => (toPeers(p._1), toPeers(p._2)))
+  /** Gets last seen peers before a given cool down a period so we don't keep automatically
+    * reconnecting to peers we just disconnected
+    */
+  private def getLastSeenBlockFilterPeers(
+      dbSlots: Int): Future[Vector[PeerDb]] = {
+    val cooldown = Instant
+      .now()
+      .minusMillis(nodeAppConfig.connectionAttemptCooldownPeriod.toMillis)
+    getPeersFromDb.map(_._2.filter(_.lastSeen.isBefore(cooldown)).take(dbSlots))
   }
 
   /** Returns peers from bitcoin-s.config file unless peers are supplied as an argument to [[PeerManager]] in which
@@ -145,11 +149,13 @@ case class PeerFinder(
 
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
         val startedF = for {
-          (dbNonCf, dbCf) <- getPeersFromDb
-          peers <- getPeersFromDnsSeeds.map(dns =>
+          (dbNonCfPeerDb, dbCfPeerDb) <- getPeersFromDb
+          dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
+          dbCf = dbCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
+          peersDbs <- getPeersFromDnsSeeds.map(dns =>
             dns ++ getPeersFromResources ++ dbNonCf)
         } yield {
-          val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+          val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
           val dbPds = dbCf.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(dbPds, priority = 1)
@@ -311,6 +317,9 @@ case class PeerFinder(
     ) {
       logger.debug(
         s"Attempting to find more peers to connect to... stack.size=${_peersToTry.size}")
+      val dbSlots = nodeAppConfig.maxConnectedPeers
+      val dbPeersDbF =
+        getLastSeenBlockFilterPeers(dbSlots)
       val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
         val pdsF = getPeersFromDnsSeeds
           .map { peers =>
@@ -324,13 +333,16 @@ case class PeerFinder(
       }
       val paramPdsF = for {
         _ <- dnsPeersF
+        dbPeersDb <- dbPeersDbF
+        dbPeers = dbPeersDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
       } yield {
         val pds = paramPeers.map(buildPeerData(_, true))
-        _peersToTry.pushAll(pds)
+        val dbPds = dbPeers.map(buildPeerData(_, false))
+        _peersToTry.pushAll(pds ++ dbPds)
       }
 
-      //in case of less _peersToTry.size than maxPeerSearchCount
       val peersToTryF = paramPdsF.map { _ =>
+        //in case of less _peersToTry.size than maxPeerSearchCount
         val max = Math.min(maxPeerSearchCount, _peersToTry.size)
         val peers = (
           0.until(max)

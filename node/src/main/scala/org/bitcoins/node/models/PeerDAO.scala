@@ -1,6 +1,7 @@
 package org.bitcoins.node.models
 
 import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -9,7 +10,7 @@ import scodec.bits.ByteVector
 import slick.dbio.DBIOAction
 import slick.lifted.ProvenShape
 
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,7 +21,16 @@ case class PeerDb(
     firstSeen: Instant,
     networkId: Byte,
     serviceBytes: ByteVector
-)
+) {
+
+  def inetSocketAddress: InetSocketAddress = {
+    NetworkUtil.parseInetSocketAddress(address, port)
+  }
+
+  def peer(socks5ProxyParamsOpt: Option[Socks5ProxyParams]): Peer = {
+    Peer.fromSocket(inetSocketAddress, socks5ProxyParamsOpt)
+  }
+}
 
 case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
     extends CRUD[PeerDb, (ByteVector, Int)]

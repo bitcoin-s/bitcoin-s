@@ -180,6 +180,10 @@ bitcoin-s {
         # if the peer does not send us a message within this duration
         # we disconnect it for inactivity
         peer-timeout = 20 minute
+        
+        # how long we wait until we attempt to re-connect to a peer we have
+        # in our database that we have connected to previously
+        connection-attempt-cool-down-period = 5 minutes
     }
 
     proxy {
