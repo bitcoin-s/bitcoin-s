@@ -98,7 +98,10 @@ case class PeerFinder(
     val cooldown = Instant
       .now()
       .minusMillis(nodeAppConfig.connectionAttemptCooldownPeriod.toMillis)
-    getPeersFromDb.map(_._2.filter(_.lastSeen.isBefore(cooldown)).take(dbSlots))
+    for {
+      potentialPeerDbs <- getPeersFromDb.map(_._2)
+      filtered = potentialPeerDbs.filter(_.lastSeen.isBefore(cooldown))
+    } yield Random.shuffle(filtered).take(dbSlots)
   }
 
   /** Returns peers from bitcoin-s.config file unless peers are supplied as an argument to [[PeerManager]] in which
