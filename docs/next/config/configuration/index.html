@@ -214,6 +214,10 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># if the peer does not send us a message within this duration</span>
         <span class="hljs-comment"># we disconnect it for inactivity</span>
         <span class="hljs-attr">peer-timeout</span> = <span class="hljs-number">20</span> minute
+        
+        <span class="hljs-comment"># how long we wait until we attempt to re-connect to a peer we have</span>
+        <span class="hljs-comment"># in our database that we have connected to previously</span>
+        <span class="hljs-attr">connection-attempt-cool-down-period</span> = <span class="hljs-number">5</span> minutes
     }
 
     proxy {
