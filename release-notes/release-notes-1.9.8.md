@@ -10,6 +10,9 @@ If you are a typescript developer, [you can access the backend via our typescrip
 
 # Executive Summary
 
+This release reworks the `node` implementation to use pekko streams. This release of bitcoin-s
+also moves away from akka to pekko due to akka's licensing changes.
+
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
@@ -73,6 +76,8 @@ c6524b9246 remove usages of new URL() as constructor is deprecated on jdk 20+ (#
 
 ## App server
 
+Implements a `getconnectioncount` RPC to query how many peers we are connected to.
+
 b25cc8a8a5e Fix start rescan race condition, previously we would attempt to fetch blocks before our NodeApi had any peers (#5491)
 00c84a9c25 Set max-open-requests = 64 for appServerTest (#5442)
 c407c2e874 2024 02 29 cleanup logback files (#5441)
@@ -84,6 +89,8 @@ e3e1c7f949 Try bumping timeout to 1 second to avoid false positives test failure
 e993335f03 Improve error logging on server (#4896)
 
 ## bitcoind rpc
+
+Adds support for bitcoind v24. Removes support for bitcoind v19 and v20 as they are past EOL.
 
 a18bd70369 Upgrade to bitcoind `24.2` (#5284)
 fa34cb4f4d Bump bitcoind minor versions to `24.1`/`23.2` (#5088)
@@ -115,6 +122,8 @@ cb272ddf83 Fix build by ignoring junit transitive dep (#5071)
 
 ## chain
 
+Fixes a few bugs with filter's and reorgs.
+
 8b23b1f4f6 Add delay to wait for zmq to get setup in chainTest (#5427)
 8f812c644f Fix Promise already completed errors in chainTest (#5440)
 748121fe8a 2023 01 06 small chainhandler bug fixes (#5345)
@@ -143,6 +152,8 @@ d1c9228361 Fix getpeers -> getconnectioncount in cli (#5052)
 d53ed7d487 Bump clightning version to `v23.02.2` (#5025)
 
 ## Core
+
+Fixes parsing bugs, caches txid computation to avoid re-computing large transaction's txid.
 
 55e4dab86e Rework `NodeApi.downloadBlocks()` to use `DoubleSha256DigestBE`  (#5456)
 b27cebca1c 2024 02 23 `TaprootKeyPath.isValid()` bug (#5421)
@@ -213,6 +224,9 @@ ffee1a804e Check lnurl pay invoice description hash (#4931)
 f8247c427d Add LNURL writers (#4927)
 
 ## node
+
+Reworks the node implementation to use pekko streams. `NodeState` is now tracked
+internally in a stateless manner inside the stream.
 
 9fef2c505c2 Add `bitcoin-s.node.connection-attempt-cool-down-period` (#5489)
 7e2a4c97e64 Reduce requesting next cfheaders log level to DEBUG (#5490)
@@ -454,7 +468,6 @@ f8143f3e02 init 1.9.8 release notes
 ## ZMQ
 
 cb26f6de07 Add WalletZmqSubscribers (#5423)
-
 
 ## Dependencies
 
