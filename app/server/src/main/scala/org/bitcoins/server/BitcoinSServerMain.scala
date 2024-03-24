@@ -199,40 +199,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
     }
 
-    val configuredWalletF: Future[
-      (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-      for {
-        walletNameOpt <- getLastLoadedWalletName()
-        neutrinoWalletLoader <- neutrinoWalletLoaderF
-        walletWithConfigs <- neutrinoWalletLoader.load(
-          walletNameOpt = walletNameOpt,
-          aesPasswordOpt = conf.walletConf.aesPasswordOpt)
-      } yield walletWithConfigs
-    }
-
-    //add callbacks to our uninitialized node
-    val configuredNodeF = for {
-      node <- nodeF
-      _ <- configuredWalletF
-    } yield {
-      logger.info(
-        s"Done configuring node, it took=${System.currentTimeMillis() - start}ms")
-      node
-    }
-
-    val dlcNodeF = for {
-      (wallet, _, _) <- configuredWalletF
-      node = dlcNodeConf.createDLCNode(wallet)
-    } yield node
-
     val tuple = buildWsSource
 
     val wsQueue: SourceQueueWithComplete[WsNotification[_]] = tuple._1
     val wsSource: Source[WsNotification[_], NotUsed] = tuple._2
-
-    val callbacksF: Future[Unit] = for {
-      (_, walletConfig, dlcConfig) <- configuredWalletF
-    } yield buildNeutrinoCallbacks(wsQueue, chainApi, walletConfig, dlcConfig)
 
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     torConf.addCallbacks(torCallbacks)
@@ -248,9 +218,30 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       for {
         _ <- startedTorConfigF
         _ <- isTorStartedF
-        started <- configuredNodeF.flatMap(_.start())
+        node <- nodeF
+        started <- node.start()
       } yield started
     }
+
+    val configuredWalletF = for {
+      walletNameOpt <- getLastLoadedWalletName()
+      neutrinoWalletLoader <- neutrinoWalletLoaderF
+      _ <- startedNodeF
+      walletWithConfigs <- neutrinoWalletLoader.load(
+        walletNameOpt = walletNameOpt,
+        aesPasswordOpt = conf.walletConf.aesPasswordOpt)
+    } yield {
+      walletWithConfigs
+    }
+
+    val callbacksF: Future[Unit] = for {
+      (_, walletConfig, dlcConfig) <- configuredWalletF
+    } yield buildNeutrinoCallbacks(wsQueue, chainApi, walletConfig, dlcConfig)
+
+    val dlcNodeF = for {
+      (wallet, _, _) <- configuredWalletF
+      node = dlcNodeConf.createDLCNode(wallet)
+    } yield node
 
     val startedDLCNodeF = {
       for {
