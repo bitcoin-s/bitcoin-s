@@ -73,6 +73,7 @@ c6524b9246 remove usages of new URL() as constructor is deprecated on jdk 20+ (#
 
 ## App server
 
+b25cc8a8a5e Fix start rescan race condition, previously we would attempt to fetch blocks before our NodeApi had any peers (#5491)
 00c84a9c25 Set max-open-requests = 64 for appServerTest (#5442)
 c407c2e874 2024 02 29 cleanup logback files (#5441)
 b0cf3d8146 Fix race condition between `NodeAppConfig.migrate()` calls when `bitcoin-s.tor.enabled=false` (#5120)
@@ -96,6 +97,8 @@ f4244d7a0e Add bitcoind v24 (#4902)
 
 ## Build
 
+0bd59789e30 Remove neutrino.suredbits.com:8333 from docker-compose.yml (#5492)
+58adf4c6fd3 Fix build warnings for --compress flag in jlink (#5485)
 9aa730dd0a Revert yml files (#5449)
 dd7131306c Consolidate disabled secp256k1 workflow into Compile workflow (#5445)
 1317adfdad Add zmq/test and chainTest/test to OS's we weren't previously running on (#5443)
@@ -211,6 +214,10 @@ f8247c427d Add LNURL writers (#4927)
 
 ## node
 
+9fef2c505c2 Add `bitcoin-s.node.connection-attempt-cool-down-period` (#5489)
+7e2a4c97e64 Reduce requesting next cfheaders log level to DEBUG (#5490)
+47c7680d8c2 Refactor `Node.chainApiFromDb()` to return `ChainApi` (#5484)
+3cfe700fad5 Reduce stream failure log to DEBUG to avoid tor spam (#5483)
 3cfe700fad Reduce stream failure log to DEBUG to avoid tor spam (#5483)
 a875f08d2e Reduce log level of PeerConnection logs to DEBUG (#5481)
 af342dd6c1 2024 03 18 rm unused configs (#5480)
@@ -451,6 +458,9 @@ cb26f6de07 Add WalletZmqSubscribers (#5423)
 
 ## Dependencies
 
+c51c6a8f391 Update sbt-buildinfo to 0.12.0 (#5486)
+a2b354c6943 Update client3:core, ... to 3.9.5 (#5487)
+1e0cd1bed39 Update sbt-scalajs, scalajs-compiler, ... to 1.16.0 (#5488)
 177542a13c Remove grizzled.sl4fj was its no longer maintained (#5482)
 d1ba4737d6 Update sbt-assembly to 2.2.0 (#5473)
 270f3cf624 Update postgresql to 42.7.3 (#5475)
@@ -628,9 +638,3 @@ dac72f53d8 Update metrics-core, metrics-healthchecks, ... to 4.2.13 (#4893)
 dbd54ca55f 2022 11 11 sbt 1.8.0 (#4883)
 4df71ea9d8 Update sbt-scalajs-bundler to 0.21.1 (#4887)
 1127c56a98 Bump versions to 1.9.7 (#4886)
-
-
-
-
-
-
