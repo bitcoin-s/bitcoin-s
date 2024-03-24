@@ -122,7 +122,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   override def stop(): Future[WalletHolder] = {
-    logger.error(s"Exiting process")
+    logger.info(s"Exiting process")
     for {
       _ <- {
         bitcoindSyncStateOpt match {
@@ -135,7 +135,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         case Some(node) => node.stop()
         case None       => Future.unit
       }
-      _ <- conf.stop()
       _ <- walletLoaderApiOpt match {
         case Some(l) => l.stop()
         case None    => Future.unit
@@ -144,6 +143,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         case Some(bindings) => bindings.stop()
         case None           => Future.unit
       }
+      _ <- conf.stop()
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
     } yield {
       resetState()
