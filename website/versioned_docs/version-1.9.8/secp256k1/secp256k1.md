@@ -71,13 +71,13 @@ val privKey = ECPrivateKey.freshPrivateKey
 // privKey: ECPrivateKey = Masked(ECPrivateKey)
 // calls bouncy castle indirectly via CryptoContext
 val publicKey = privKey.publicKey
-// publicKey: ECPublicKey = ECPublicKey(03d5b1b4485835ca72d06ed8d2463a66bcfcec3053e870e903b72039292701d534)
+// publicKey: ECPublicKey = ECPublicKey(034a31c9db5f65304bf9024ae116ba6e6ecca73de32869bcb4ace2f3c0e0490f3d)
 val dataToSign = DoubleSha256Digest.empty
 // dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)
 
 // calls bouncy castle indirectly via CryptoContext
 val signature = privKey.sign(dataToSign.bytes)
-// signature: ECDigitalSignature = ECDigitalSignature(3045022100d5015cbf603d9e5d65564714b218a5e55d10344eeeae37691755eb3ef0ec306102201a230ac5261cc1bc1b6ca6141464dd4358bfca4649866cda5a53d344b72f4b6e)
+// signature: ECDigitalSignature = ECDigitalSignature(30440220418c3218dc209f98871be65c4deba4061e8ef2beefd0cc0b71e84022954c248902205f8361ac18f8b499bef321c8bc17e5f3a3ccb68ad8ed1cd6a7f44264befebf22)
 
 // calls bouncy castle indirectly via CryptoContext
 val verified = publicKey.verify(dataToSign.bytes, signature)

@@ -20,7 +20,7 @@ The resolved configuration gets parsed by
 projects. Here's some examples of how to construct a wallet configuration:
 
 ```scala
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.wallet.config.WalletAppConfig
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Paths
@@ -152,11 +152,7 @@ bitcoin-s {
         # a list of peer addresses in form "hostname:portnumber"
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
-        # by default we provide a testnet peer to connect to
-        peers = ["neutrino.testnet3.suredbits.com:18333"] 
-        
-        # use the defauls suredbits neutrino node as a peer
-        use-default-peers = true
+        peers = [""]
         
         # try to connect to peers from dns seeds, database, addr messages etc
         enable-peer-discovery = true
@@ -167,10 +163,11 @@ bitcoin-s {
         # peers discovery configs, ideally you would not want to change this
         # timeout for tcp connection
         connection-timeout = 5s
-        # initialization timeout once connected, reconnections resets this
-        initialization-timeout = 10s
         # time interval for trying next set of peers in peer discovery
-        try-peers-interval = 1 hour
+        try-peers-interval = 12 hour
+        
+        # the delay until we start attempting to connect to peers
+        try-peers-start-delay = 1 second
         
         # wait time for queries like getheaders etc before switching to another
         query-wait-time = 120s
@@ -180,6 +177,13 @@ bitcoin-s {
         
         # whether to have p2p peers relay us unconfirmed txs
         relay = false
+        
+        # how often we run health checks for our peers
+        health-check-interval = 1 minutes
+        
+        # if the peer does not send us a message within this duration
+        # we disconnect it for inactivity
+        peer-timeout = 20 minute
     }
 
     proxy {
@@ -411,7 +415,7 @@ bitcoin-s {
 }
 
 
-akka {
+pekko {
     loglevel = "OFF"
     stdout-loglevel = "OFF"
     http {

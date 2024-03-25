@@ -62,7 +62,7 @@ val nodeApi = MockNodeApi.mock
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks
 def createCallbacks(
       processTransaction: Transaction => Future[Unit],
-      processCompactFilters: (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit],
+      processCompactFilters: (Vector[(DoubleSha256DigestBE, GolombFilter)]) => Future[Unit],
       processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onTx: OnTxReceived = { tx =>
       processTransaction(tx)
@@ -89,7 +89,7 @@ val exampleProcessBlock = (block: Block) =>
     Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 
 val exampleProcessFilters =
-    (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+    (filters: Vector[(DoubleSha256DigestBE, GolombFilter)]) =>
       Future.successful(println(s"Received filter: ${filters.head._1.flip.hex} ${filters.head._2.hash.flip.hex}"))
 
 val exampleCallbacks =

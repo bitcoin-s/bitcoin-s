@@ -97,7 +97,7 @@ libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.9.7"
 
 You can also run on the bleeding edge of Bitcoin-S, by
 adding a snapshot build to your `build.sbt`. The most
-recent snapshot published is `1.9.7-201-93bcdb50-SNAPSHOT`.
+recent snapshot published is `1.9.7-468-ad4bfdd5-SNAPSHOT`.
 
 
 
