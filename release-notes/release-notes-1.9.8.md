@@ -78,6 +78,7 @@ c6524b9246 remove usages of new URL() as constructor is deprecated on jdk 20+ (#
 
 Implements a `getconnectioncount` RPC to query how many peers we are connected to.
 
+4501e138a4 Stop BitcoinSAppConfig last in BitcoinSServerMain.stop() (#5493)
 b25cc8a8a5e Fix start rescan race condition, previously we would attempt to fetch blocks before our NodeApi had any peers (#5491)
 00c84a9c25 Set max-open-requests = 64 for appServerTest (#5442)
 c407c2e874 2024 02 29 cleanup logback files (#5441)
