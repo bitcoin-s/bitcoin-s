@@ -2,18 +2,30 @@ package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi}
+import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindVersion._
-import play.api.libs.json.{JsBoolean, JsNumber, JsString}
+import play.api.libs.json.{
+  JsBoolean,
+  JsNumber,
+  JsString,
+  JsSuccess,
+  Json,
+  Reads
+}
 
 import scala.concurrent.Future
 
 /** RPC calls related to querying the state of the blockchain
   */
-trait BlockchainRpc { self: Client =>
+trait BlockchainRpc extends ChainApi { self: Client =>
 
-  def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
+  override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
     bitcoindCall[DoubleSha256DigestBE]("getbestblockhash")
   }
 
@@ -36,7 +48,7 @@ trait BlockchainRpc { self: Client =>
     }
   }
 
-  def getBlockCount(): Future[Int] = {
+  override def getBlockCount(): Future[Int] = {
     bitcoindCall[Int]("getblockcount")
   }
 
@@ -260,5 +272,117 @@ trait BlockchainRpc { self: Client =>
     */
   def syncWithValidationInterfaceQueue(): Future[Unit] = {
     bitcoindCall[Unit](command = "syncwithvalidationinterfacequeue", List.empty)
+  }
+
+  implicit private val filterHeaderReads: Reads[FilterHeader] = { str =>
+    JsSuccess(FilterHeader.fromHex(str.asInstanceOf[JsString].value))
+  }
+
+  /** This is needed because we need the block hash to create a GolombFilter.
+    * We use an intermediary data type to hold our data so we can add the block hash
+    * we were given after the RPC call
+    */
+  private case class TempBlockFilterResult(filter: String, header: FilterHeader)
+
+  implicit
+  private val tempBlockFilterResultReads: Reads[TempBlockFilterResult] =
+    Json.reads[TempBlockFilterResult]
+
+  def getBlockFilter(
+      blockhash: DoubleSha256DigestBE,
+      filtertype: FilterType): Future[GetBlockFilterResult] = {
+    bitcoindCall[TempBlockFilterResult](
+      "getblockfilter",
+      List(JsString(blockhash.hex), JsString(filtertype.toString.toLowerCase)))
+      .map { tempBlockFilterResult =>
+        GetBlockFilterResult(
+          BlockFilter.fromHex(tempBlockFilterResult.filter, blockhash.flip),
+          tempBlockFilterResult.header)
+      }
+  }
+
+  override def getFiltersBetweenHeights(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
+    val allHeights = startHeight.to(endHeight)
+
+    def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
+      val filterFs = range.map { height =>
+        for {
+          hash <- getBlockHash(height)
+          filter <- getBlockFilter(hash, FilterType.Basic)
+        } yield {
+          FilterResponse(filter.filter, hash, height)
+        }
+      }
+      Future.sequence(filterFs)
+    }
+
+    FutureUtil.batchAndSyncExecute(elements = allHeights.toVector,
+                                   f = f,
+                                   batchSize = FutureUtil.getParallelism)
+  }
+
+  override def getFilterCount(): Future[Int] = getBlockCount()
+
+  override def getFilterHeaderCount(): Future[Int] = getBlockCount()
+
+  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] = {
+    for {
+      height <- getFilterHeaderCount()
+      blockHash <- getBlockHash(height)
+      fhOpt <- getFilterHeader(blockHash)
+    } yield fhOpt
+  }
+
+  override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
+    Option[CompactFilterHeaderDb]] = {
+    for {
+      blockHeader <- getBlockHeader(blockHash)
+      filterOpt <- getFilter(blockHash)
+    } yield {
+      filterOpt.map { filter =>
+        CompactFilterHeaderDb(hashBE = null,
+                              filterHashBE = filter.hashBE,
+                              previousFilterHeaderBE = null,
+                              blockHashBE = filter.blockHashBE,
+                              height = blockHeader.height)
+      }
+    }
+  }
+
+  override def getFilterHeadersAtHeight(
+      height: Int): Future[Vector[CompactFilterHeaderDb]] = {
+    getBlockHash(height)
+      .flatMap { blockHashBE =>
+        getFilterHeader(blockHashBE)
+      }
+      .map(_.toVector)
+  }
+
+  override def getFilter(
+      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
+    for {
+      header <- getBlockHeader(hash)
+      filter <- getBlockFilter(hash, FilterType.Basic)
+    } yield Some(filter.filterDb(header.height, header.hash))
+  }
+
+  override def getFiltersAtHeight(
+      height: Int): Future[Vector[CompactFilterDb]] = {
+    for {
+      hash <- getBlockHash(height)
+      filter <- getBlockFilter(hash, FilterType.Basic)
+    } yield Vector(filter.filterDb(height, hash))
+  }
+
+  override def getBestFilter(): Future[Option[CompactFilterDb]] = {
+    for {
+      filterCount <- getFilterCount()
+      blockHashBE <- getBlockHash(filterCount)
+      filterOpt <- getFilter(blockHashBE)
+    } yield {
+      filterOpt
+    }
   }
 }

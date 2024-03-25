@@ -4,20 +4,14 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.chain.db.CompactFilterDb
-import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, HashType}
+import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
   DescriptorRpc,
   PsbtRpc
 }
-import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.config.BitcoindInstance
 import play.api.libs.json._
@@ -32,51 +26,8 @@ class BitcoindV21RpcClient(override val instance: BitcoindInstance)(implicit
     extends BitcoindRpcClient(instance)
     with DescriptorRpc
     with PsbtRpc
-    with V19BlockFilterRpc
     with V20MultisigRpc
     with V20AssortedRpc {
-
-  override def getFiltersBetweenHeights(
-      startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
-    val allHeights = startHeight.to(endHeight)
-
-    def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
-      val filterFs = range.map { height =>
-        for {
-          hash <- getBlockHash(height)
-          filter <- getBlockFilter(hash, FilterType.Basic)
-        } yield {
-          FilterResponse(filter.filter, hash, height)
-        }
-      }
-      Future.sequence(filterFs)
-    }
-
-    FutureUtil.batchAndSyncExecute(elements = allHeights.toVector,
-                                   f = f,
-                                   batchSize = FutureUtil.getParallelism)
-  }
-
-  override def getFilterCount(): Future[Int] = getBlockCount()
-
-  override def getFilterHeaderCount(): Future[Int] = getBlockCount()
-
-  override def getFilter(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
-    for {
-      header <- getBlockHeader(hash)
-      filter <- getBlockFilter(hash, FilterType.Basic)
-    } yield Some(filter.filterDb(header.height))
-  }
-
-  override def getFiltersAtHeight(
-      height: Int): Future[Vector[CompactFilterDb]] = {
-    for {
-      hash <- getBlockHash(height)
-      filter <- getBlockFilter(hash, FilterType.Basic)
-    } yield Vector(filter.filterDb(height))
-  }
 
   override lazy val version: Future[BitcoindVersion] =
     Future.successful(BitcoindVersion.V21)

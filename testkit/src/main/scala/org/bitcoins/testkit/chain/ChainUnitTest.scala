@@ -18,7 +18,6 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.testkit.chain.ChainUnitTest.{
   createChainHandler,
   createChainHandlerCached
@@ -690,50 +689,6 @@ object ChainUnitTest extends ChainVerificationLogger {
     }
 
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
-  }
-
-  def createBitcoindBlockFilterRpcChainHandler(
-      bitcoindV19RpcClient: BitcoindRpcClient with V19BlockFilterRpc)(implicit
-      ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[
-    BitcoindBlockFilterRpcChainHandler] = {
-
-    val chainApiWithBitcoindF = createChainApiWithBitcoindBlockFilterRpc(
-      bitcoindV19RpcClient)
-
-    //now sync the chain api to the bitcoind node
-    val syncedBitcoindWithChainHandlerF = for {
-      chainApiWithBitcoind <- chainApiWithBitcoindF
-      bitcoindWithChainHandler <- SyncUtil.syncBitcoindV19WithChainHandler(
-        chainApiWithBitcoind)
-    } yield bitcoindWithChainHandler
-
-    syncedBitcoindWithChainHandlerF
-  }
-
-  private def createChainApiWithBitcoindBlockFilterRpc(
-      bitcoind: BitcoindRpcClient with V19BlockFilterRpc)(implicit
-      ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[
-    BitcoindBlockFilterRpcChainHandler] = {
-    val handlerWithGenesisHeaderF =
-      ChainUnitTest.setupHeaderTableWithGenesisHeader()
-
-    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
-
-    chainHandlerF.map { handler =>
-      BitcoindBlockFilterRpcChainHandler(bitcoind, handler)
-    }
-  }
-
-  def destroyBitcoindV19ChainApi(
-      bitcoindV19ChainHandler: BitcoindBlockFilterRpcChainHandler)(implicit
-      system: ActorSystem,
-      chainAppConfig: ChainAppConfig): Future[Unit] = {
-    val b = BitcoindBaseVersionChainHandlerViaRpc(
-      bitcoindV19ChainHandler.bitcoindRpc,
-      bitcoindV19ChainHandler.chainHandler)
-    destroyBitcoindChainApiViaRpc(b)
   }
 
   /** Destroys the chain api, but leaves the bitcoind instance running

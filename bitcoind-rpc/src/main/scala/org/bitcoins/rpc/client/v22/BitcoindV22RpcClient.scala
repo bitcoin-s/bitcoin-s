@@ -7,7 +7,6 @@ import org.bitcoins.rpc.client.common.{
   DescriptorRpc,
   PsbtRpc
 }
-import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -22,14 +21,12 @@ class BitcoindV22RpcClient(override val instance: BitcoindInstance)(implicit
     extends BitcoindV21RpcClient(instance)
     with DescriptorRpc
     with PsbtRpc
-    with V19BlockFilterRpc
     with V20MultisigRpc
     with TestMempoolAcceptRpc
     with V22AssortedRpc {
 
   override lazy val version: Future[BitcoindVersion] = {
     Future.successful(BitcoindVersion.V22)
-
   }
 
 }

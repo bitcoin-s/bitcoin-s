@@ -8,7 +8,7 @@ import org.bitcoins.core.api.chain.db.{
 }
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
@@ -460,13 +460,13 @@ case class GetTxOutSetInfoResult(
     total_amount: Bitcoins)
     extends BlockchainResult
 
-case class GetBlockFilterResult(
-    filter: GolombFilter,
-    header: DoubleSha256DigestBE)
+case class GetBlockFilterResult(filter: GolombFilter, header: FilterHeader)
     extends BlockchainResult {
 
-  def filterDb(height: Int): CompactFilterDb = {
-    CompactFilterDbHelper.fromGolombFilter(filter, header, height)
+  def filterDb(
+      height: Int,
+      blockHashBE: DoubleSha256DigestBE): CompactFilterDb = {
+    CompactFilterDbHelper.fromGolombFilter(filter, blockHashBE, height)
   }
 }
 

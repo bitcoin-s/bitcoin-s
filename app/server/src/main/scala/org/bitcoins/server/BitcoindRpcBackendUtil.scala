@@ -22,8 +22,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BlockchainRpc}
 import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.rpc.util.BitcoindStreamUtil
 import org.bitcoins.wallet.Wallet
@@ -173,7 +172,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         hasFilters <- hasFiltersF
       } yield {
         if (hasFilters) {
-          filterSyncSink(bitcoind.asInstanceOf[V19BlockFilterRpc], wallet)
+          filterSyncSink(bitcoind, wallet)
         } else {
           Flow[DoubleSha256DigestBE]
             .batch(100, hash => Vector(hash))(_ :+ _)
@@ -296,11 +295,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
   }
 
   private def filterSyncSink(
-      bitcoindRpcClient: V19BlockFilterRpc,
-      wallet: NeutrinoHDWalletApi)(implicit system: ActorSystem): Sink[
+      bitcoindRpcClient: BlockchainRpc,
+      wallet: NeutrinoHDWalletApi)(implicit ec: ExecutionContext): Sink[
     DoubleSha256DigestBE,
     Future[NeutrinoHDWalletApi]] = {
-    import system.dispatcher
 
     val numParallelism = FutureUtil.getParallelism
     val sink: Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]] =
