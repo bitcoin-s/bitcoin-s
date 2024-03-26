@@ -41,10 +41,4 @@ object FilterHeader {
     new FilterHeader(filterHash.flip, prevHeaderHash.flip)
   }
 
-  def fromHex(hex: String): FilterHeader = {
-    require(hex.length == 64)
-    val prevHash = DoubleSha256Digest.fromHex(hex.take(32))
-    val filterHash = DoubleSha256Digest.fromHex(hex.slice(32, 64))
-    FilterHeader(prevHash, filterHash)
-  }
 }

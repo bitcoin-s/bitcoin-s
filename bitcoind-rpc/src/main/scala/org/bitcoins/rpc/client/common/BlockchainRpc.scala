@@ -4,20 +4,17 @@ import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi}
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
+import org.bitcoins.core.api.chain.db.{
+  CompactFilterDb,
+  CompactFilterHeaderDb,
+  CompactFilterHeaderDbHelper
+}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindVersion._
-import play.api.libs.json.{
-  JsBoolean,
-  JsNumber,
-  JsString,
-  JsSuccess,
-  Json,
-  Reads
-}
+import play.api.libs.json.{JsBoolean, JsNumber, JsString, Json, Reads}
 
 import scala.concurrent.Future
 
@@ -274,15 +271,13 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     bitcoindCall[Unit](command = "syncwithvalidationinterfacequeue", List.empty)
   }
 
-  implicit private val filterHeaderReads: Reads[FilterHeader] = { str =>
-    JsSuccess(FilterHeader.fromHex(str.asInstanceOf[JsString].value))
-  }
-
   /** This is needed because we need the block hash to create a GolombFilter.
     * We use an intermediary data type to hold our data so we can add the block hash
     * we were given after the RPC call
     */
-  private case class TempBlockFilterResult(filter: String, header: FilterHeader)
+  private case class TempBlockFilterResult(
+      filter: String,
+      header: DoubleSha256DigestBE)
 
   implicit
   private val tempBlockFilterResultReads: Reads[TempBlockFilterResult] =
@@ -338,15 +333,35 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
     Option[CompactFilterHeaderDb]] = {
     for {
-      blockHeader <- getBlockHeader(blockHash)
-      filterOpt <- getFilter(blockHash)
+      blockHeaderOpt <- getHeader(blockHash)
+      (filterOpt, prevFilterOpt) <- blockHeaderOpt match {
+        case Some(blockHeader) =>
+          val fOptF = getFilter(blockHeader.hashBE)
+          val prevOptF = getFilter(blockHeader.previousBlockHashBE)
+          fOptF.flatMap(f => prevOptF.map(p => (f, p)))
+        case None => Future.successful((None, None))
+      }
     } yield {
-      filterOpt.map { filter =>
-        CompactFilterHeaderDb(hashBE = null,
-                              filterHashBE = filter.hashBE,
-                              previousFilterHeaderBE = null,
-                              blockHashBE = filter.blockHashBE,
-                              height = blockHeader.height)
+      (filterOpt, prevFilterOpt) match {
+        case (Some(filter), Some(prevFilter)) =>
+          val fh = FilterHeader(filter.hashBE, prevFilter.hashBE)
+          val c = CompactFilterHeaderDbHelper.fromFilterHeader(
+            filterHeader = fh,
+            blockHash = blockHash,
+            height = filter.height)
+          Some(c)
+        case (Some(filter), None) =>
+          //must be genesis filter
+          val fh = FilterHeader(filter.hashBE, DoubleSha256DigestBE.empty)
+          val c = CompactFilterHeaderDbHelper.fromFilterHeader(
+            filterHeader = fh,
+            blockHash = blockHash,
+            height = filter.height)
+          Some(c)
+        case (None, Some(_)) =>
+          //could find previous filter, but couldn't find compact filter?
+          None
+        case (None, None) => None
       }
     }
   }

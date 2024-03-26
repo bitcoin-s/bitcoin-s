@@ -22,15 +22,12 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
     val initFilterCountF = chainHandler.getFilterCount()
     val initFilterHeaderCountF = chainHandler.getFilterHeaderCount()
 
-    val bitcoindFilterCountF = bitcoind.getFilterCount()
-
     val initAssertionsF = for {
       initFilterCount <- initFilterCountF
       initFilterHeaderCount <- initFilterHeaderCountF
-      bitcoindFilterCount <- bitcoindFilterCountF
     } yield {
-      assert(initFilterCount == bitcoindFilterCount)
-      assert(initFilterHeaderCount == bitcoindFilterCount)
+      assert(initFilterCount == 0)
+      assert(initFilterHeaderCount == 0)
     }
 
     val generated1BlockF = for {
