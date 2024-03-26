@@ -8,7 +8,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
@@ -31,24 +30,6 @@ trait WalletRpc { self: Client =>
     bitcoindCall[Unit]("backupwallet",
                        List(JsString(destination)),
                        uriExtensionOpt = walletNameOpt.map(walletExtension))
-  }
-
-  def dumpPrivKey(
-      address: BitcoinAddress,
-      walletNameOpt: Option[String] = None): Future[ECPrivateKeyBytes] = {
-    bitcoindCall[String]("dumpprivkey",
-                         List(JsString(address.value)),
-                         uriExtensionOpt = walletNameOpt.map(walletExtension))
-      .map(ECPrivateKeyUtil.fromWIFToPrivateKey)
-  }
-
-  def dumpWallet(
-      filePath: String,
-      walletNameOpt: Option[String] = None): Future[DumpWalletResult] = {
-    bitcoindCall[DumpWalletResult]("dumpwallet",
-                                   List(JsString(filePath)),
-                                   uriExtensionOpt =
-                                     walletNameOpt.map(walletExtension))
   }
 
   def encryptWallet(
@@ -85,20 +66,6 @@ trait WalletRpc { self: Client =>
   def getUnconfirmedBalance(walletName: String): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getunconfirmedbalance",
                            uriExtensionOpt = Some(walletExtension(walletName)))
-  }
-
-  def importAddress(
-      address: BitcoinAddress,
-      account: String = "",
-      rescan: Boolean = true,
-      p2sh: Boolean = false,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit]("importaddress",
-                       List(JsString(address.value),
-                            JsString(account),
-                            JsBoolean(rescan),
-                            JsBoolean(p2sh)),
-                       uriExtensionOpt = walletNameOpt.map(walletExtension))
   }
 
   private def getNewAddressInternal(
@@ -190,31 +157,6 @@ trait WalletRpc { self: Client =>
                        uriExtensionOpt = walletNameOpt.map(walletExtension))
   }
 
-  def importPubKey(
-      pubKey: ECPublicKey,
-      label: String = "",
-      rescan: Boolean = true,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit](
-      "importpubkey",
-      List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
-  }
-
-  def importPrivKey(
-      key: ECPrivateKeyBytes,
-      account: String = "",
-      rescan: Boolean = true,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit](
-      "importprivkey",
-      List(JsString(ECPrivateKeyUtil.toWIF(key, network)),
-           JsString(account),
-           JsBoolean(rescan)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
-    )
-  }
-
   def importMulti(
       requests: Vector[RpcOpts.ImportMultiRequest],
       rescan: Boolean = true,
@@ -256,14 +198,6 @@ trait WalletRpc { self: Client =>
       txid: DoubleSha256Digest,
       walletNameOpt: Option[String]): Future[Unit] = {
     removePrunedFunds(txid.flip, walletNameOpt)
-  }
-
-  def importWallet(
-      filePath: String,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit]("importwallet",
-                       List(JsString(filePath)),
-                       uriExtensionOpt = walletNameOpt.map(walletExtension))
   }
 
   def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {

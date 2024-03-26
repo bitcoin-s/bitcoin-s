@@ -6,17 +6,10 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
-  P2SHScriptSignature,
   ScriptPubKey,
   ScriptSignature
 }
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -145,15 +138,10 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
     for {
       (client, server) <- clientsF
       address <- client.getNewAddress
-      pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
-      multisig <-
-        client
-          .addMultiSigAddress(1, Vector(Left(pubkey.get)), AddressType.Bech32)
       txid <-
         BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client, server, multisig.address, fundAmt)
+          .fundBlockChainTransaction(client, server, address, fundAmt)
       rawTx <- client.getTransaction(txid)
-
       tx <- client.decodeRawTransaction(rawTx.hex)
       output =
         tx.vout
@@ -164,7 +152,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       rawCreatedTx <- {
         val input =
           TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
-                           P2SHScriptSignature(multisig.redeemScript.hex),
+                           EmptyScriptSignature,
                            UInt32.max - UInt32.one)
         client
           .createRawTransaction(Vector(input),
@@ -177,7 +165,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
             txid = txid,
             vout = output.n,
             scriptPubKey = ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
-            redeemScript = Some(multisig.redeemScript),
+            redeemScript = None,
             amount = Some(fundAmt)
           ))
         BitcoindRpcTestUtil.signRawTransaction(

@@ -2,13 +2,12 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
@@ -21,7 +20,6 @@ import org.bitcoins.testkit.util.PekkoUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
-import java.util.Scanner
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -276,61 +274,6 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to dump a private key" in { nodePair =>
-    val client = nodePair.node2
-    for {
-      address <- client.getNewAddress(Some(walletName))
-      _ <- client.dumpPrivKey(address, Some(walletName))
-    } yield succeed
-  }
-
-  it should "be able to import a private key" in { nodePair =>
-    val client = nodePair.node2
-    val ecPrivateKey = ECPrivateKey.freshPrivateKey
-    val publicKey = ecPrivateKey.publicKey
-    val address = P2PKHAddress(publicKey, networkParam)
-
-    val localInstance = client.getDaemon match {
-      case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitcoind instance in test cases")
-      case local: BitcoindInstanceLocal =>
-        local
-    }
-    for {
-      _ <- client.importPrivKey(ecPrivateKey.toPrivateKeyBytes(),
-                                rescan = false,
-                                walletNameOpt = Some(walletName))
-      key <- client.dumpPrivKey(address, Some(walletName))
-      result <-
-        client
-          .dumpWallet(
-            localInstance.datadir.getAbsolutePath + "/wallet_dump.dat",
-            Some(walletName))
-    } yield {
-      assert(key.toPrivateKey == ecPrivateKey)
-      val reader = new Scanner(result.filename)
-      var found = false
-      while (reader.hasNext) {
-        if (
-          reader.next == ECPrivateKeyUtil.toWIF(
-            ecPrivateKey.toPrivateKeyBytes(),
-            networkParam)
-        ) {
-          found = true
-        }
-      }
-      assert(found)
-    }
-  }
-
-  it should "be able to import a public key" in { nodePair =>
-    val client = nodePair.node2
-    val pubKey = ECPublicKey.freshPublicKey
-    for {
-      _ <- client.importPubKey(pubKey, walletNameOpt = Some(walletName))
-    } yield succeed
-  }
-
   it should "be able to import multiple addresses with importMulti" in {
     nodePair =>
       val client = nodePair.node2
@@ -365,29 +308,6 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
         assert(secondResult(0).success)
         assert(secondResult(1).success)
       }
-  }
-
-  it should "be able to import a wallet" in { nodePair =>
-    val client = nodePair.node2
-    val walletClient = client
-    val localInstance = client.getDaemon match {
-      case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitcoind instance in test cases")
-      case local: BitcoindInstanceLocal =>
-        local
-    }
-    for {
-      address <- client.getNewAddress(Some(walletName))
-      walletFile =
-        localInstance.datadir.getAbsolutePath + "/client_wallet.dat"
-
-      fileResult <-
-        client.dumpWallet(walletFile, walletNameOpt = Some(walletName))
-      _ <- walletClient.walletPassphrase(password, 1000, Some(walletName))
-      _ <- walletClient.importWallet(walletFile, Some(walletName))
-      _ <- walletClient.dumpPrivKey(address, Some(walletName))
-    } yield assert(fileResult.filename.exists)
-
   }
 
   it should "be able to set the tx fee" in { nodePair =>
