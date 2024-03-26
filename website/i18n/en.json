@@ -1177,6 +1177,156 @@
       },
       "version-1.9.4/wallet/version-1.9.4-wallet-sync": {
         "title": "Wallet Sync"
+      },
+      "version-1.9.5/applications/version-1.9.5-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.5/config/version-1.9.5-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.9.5/core/version-1.9.5-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.5/core/version-1.9.5-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.5/core/version-1.9.5-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.5/core/version-1.9.5-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.5/crypto/version-1.9.5-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.5/version-1.9.5-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.5/key-manager/version-1.9.5-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.5/node/version-1.9.5-node": {
+        "title": "Light Client"
+      },
+      "version-1.9.5/oracle/version-1.9.5-oracle-server": {
+        "title": "Oracle Server"
+      },
+      "version-1.9.5/secp256k1/version-1.9.5-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.5/version-1.9.5-ui-setup": {
+        "title": "Installing the DLC Wallet UI"
+      },
+      "version-1.9.5/wallet/version-1.9.5-wallet-sync": {
+        "title": "Wallet Sync"
+      },
+      "version-1.9.6/core/version-1.9.6-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.6/core/version-1.9.6-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.6/core/version-1.9.6-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.6/core/version-1.9.6-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.6/crypto/version-1.9.6-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.6/version-1.9.6-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.6/key-manager/version-1.9.6-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.6/secp256k1/version-1.9.6-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.7/core/version-1.9.7-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.7/core/version-1.9.7-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.7/core/version-1.9.7-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.7/core/version-1.9.7-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.7/crypto/version-1.9.7-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.7/version-1.9.7-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.7/key-manager/version-1.9.7-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.7/secp256k1/version-1.9.7-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.8/applications/version-1.9.8-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.8/chain/version-1.9.8-chain-query-api": {
+        "title": "Chain Query API"
+      },
+      "version-1.9.8/chain/version-1.9.8-filter-sync": {
+        "title": "Syncing Blockfilters"
+      },
+      "version-1.9.8/config/version-1.9.8-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.9.8/core/version-1.9.8-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.8/core/version-1.9.8-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.8/core/version-1.9.8-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.8/core/version-1.9.8-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.8/crypto/version-1.9.8-musig": {
+        "title": "MuSig"
+      },
+      "version-1.9.8/crypto/version-1.9.8-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.8/version-1.9.8-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.8/key-manager/version-1.9.8-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.8/node/version-1.9.8-node-api title: Node API": {
+        "title": "node-api title: Node API"
+      },
+      "version-1.9.8/node/version-1.9.8-node": {
+        "title": "Light Client"
+      },
+      "version-1.9.8/rpc/version-1.9.8-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-1.9.8/rpc/version-1.9.8-lnd-rpc": {
+        "title": "LND"
+      },
+      "version-1.9.8/secp256k1/version-1.9.8-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.8/testkit/version-1.9.8-testkit": {
+        "title": "Testkit"
+      },
+      "version-1.9.8/wallet/version-1.9.8-wallet-callbacks": {
+        "title": "Wallet Callbacks"
+      },
+      "version-1.9.8/wallet/version-1.9.8-wallet": {
+        "title": "Wallet"
       }
     },
     "links": {
