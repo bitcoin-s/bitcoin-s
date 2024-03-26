@@ -9,7 +9,6 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import play.api.libs.json._
 
@@ -20,7 +19,7 @@ import scala.util.Try
   */
 class BitcoindV24RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
-    extends BitcoindV23RpcClient(instance) {
+    extends BitcoindRpcClient(instance) {
 
   override lazy val version: Future[BitcoindVersion] =
     Future.successful(BitcoindVersion.V24)

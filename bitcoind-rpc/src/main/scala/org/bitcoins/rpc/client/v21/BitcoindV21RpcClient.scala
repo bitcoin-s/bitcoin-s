@@ -1,11 +1,6 @@
 package org.bitcoins.rpc.client.v21
 
 import org.apache.pekko.actor.ActorSystem
-import org.bitcoins.commons.jsonmodels.bitcoind._
-import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
@@ -14,7 +9,6 @@ import org.bitcoins.rpc.client.common.{
 }
 import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.config.BitcoindInstance
-import play.api.libs.json._
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -31,39 +25,6 @@ class BitcoindV21RpcClient(override val instance: BitcoindInstance)(implicit
 
   override lazy val version: Future[BitcoindVersion] =
     Future.successful(BitcoindVersion.V21)
-
-  /** $signRawTx
-    *
-    * This RPC call signs the raw transaction with keys found in
-    * the Bitcoin Core wallet.
-    */
-  def signRawTransactionWithWallet(
-      transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter],
-      sigHash: HashType = HashType.sigHashAll
-  ): Future[SignRawTransactionResult] =
-    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
-                                           List(JsString(transaction.hex),
-                                                Json.toJson(utxoDeps),
-                                                Json.toJson(sigHash)))
-
-  /** $signRawTx
-    *
-    * This RPC call signs the raw transaction with keys provided
-    * manually.
-    */
-  def signRawTransactionWithKey(
-      transaction: Transaction,
-      keys: Vector[ECPrivateKey],
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] =
-        Vector.empty,
-      sigHash: HashType = HashType.sigHashAll
-  ): Future[SignRawTransactionResult] =
-    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey",
-                                           List(JsString(transaction.hex),
-                                                Json.toJson(keys),
-                                                Json.toJson(utxoDeps),
-                                                Json.toJson(sigHash)))
 }
 
 object BitcoindV21RpcClient {

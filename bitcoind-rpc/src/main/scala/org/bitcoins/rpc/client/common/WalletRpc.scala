@@ -506,4 +506,37 @@ trait WalletRpc { self: Client =>
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     )
   }
+
+  /** $signRawTx
+    *
+    * This RPC call signs the raw transaction with keys found in
+    * the Bitcoin Core wallet.
+    */
+  def signRawTransactionWithWallet(
+      transaction: Transaction,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter],
+      sigHash: HashType = HashType.sigHashAll
+  ): Future[SignRawTransactionResult] =
+    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
+                                           List(JsString(transaction.hex),
+                                                Json.toJson(utxoDeps),
+                                                Json.toJson(sigHash)))
+
+  /** $signRawTx
+    *
+    * This RPC call signs the raw transaction with keys provided
+    * manually.
+    */
+  def signRawTransactionWithKey(
+      transaction: Transaction,
+      keys: Vector[ECPrivateKey],
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] =
+        Vector.empty,
+      sigHash: HashType = HashType.sigHashAll
+  ): Future[SignRawTransactionResult] =
+    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey",
+                                           List(JsString(transaction.hex),
+                                                Json.toJson(keys),
+                                                Json.toJson(utxoDeps),
+                                                Json.toJson(sigHash)))
 }

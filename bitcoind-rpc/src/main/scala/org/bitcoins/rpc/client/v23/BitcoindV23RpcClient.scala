@@ -2,7 +2,6 @@ package org.bitcoins.rpc.client.v23
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.concurrent.Future
@@ -12,7 +11,7 @@ import scala.util.Try
   */
 class BitcoindV23RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
-    extends BitcoindV22RpcClient(instance) {
+    extends BitcoindRpcClient(instance) {
 
   override lazy val version: Future[BitcoindVersion] =
     Future.successful(BitcoindVersion.V23)
