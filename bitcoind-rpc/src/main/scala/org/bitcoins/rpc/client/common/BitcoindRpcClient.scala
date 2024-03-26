@@ -2,12 +2,8 @@ package org.bitcoins.rpc.client.common
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.api.chain.db.{
-  BlockHeaderDb,
-  CompactFilterDb,
-  CompactFilterHeaderDb
-}
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
+import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.gcs.FilterHeader
@@ -18,7 +14,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
-import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
+import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
@@ -59,7 +55,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with WalletRpc
     with PsbtRpc
     with UtilRpc
-    with V19BlockFilterRpc
+    with V18AssortedRpc
+    with DescriptorRpc
     with V20MultisigRpc
     with V20AssortedRpc {
 
@@ -100,10 +97,6 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     getBlockHeader(blockHash).map(header => Some(header.confirmations))
   }
 
-  /** Gets the number of compact filters in the database */
-  override def getFilterCount(): Future[Int] = Future.failed(
-    new UnsupportedOperationException(s"Not implemented: getFilterCount"))
-
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
     blockStamp match {
@@ -115,10 +108,6 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
         Future.failed(
           new UnsupportedOperationException(s"Not implemented: $blockTime"))
     }
-
-  override def getFiltersBetweenHeights(
-      startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = ???
 
   /** Gets the block height of the closest block to the given time */
   override def epochSecondToBlockHeight(time: Long): Future[Int] = {
@@ -247,41 +236,6 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       checkpoints: Vector[DoubleSha256DigestBE],
       blockHash: DoubleSha256DigestBE): Future[ChainApi] =
     Future.successful(this)
-
-  override def getFilterHeaderCount(): Future[Int] = ???
-
-  override def getFilterHeadersAtHeight(
-      height: Int): Future[Vector[CompactFilterHeaderDb]] =
-    filterHeadersUnsupported
-
-  override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
-    filterHeadersUnsupported
-
-  override def getFilterHeader(
-      blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
-    filterHeadersUnsupported
-
-  override def getBestFilter(): Future[Option[CompactFilterDb]] = ???
-
-  override def getFilter(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = ???
-
-  override def getFiltersAtHeight(
-      height: Int): Future[Vector[CompactFilterDb]] = filterHeadersUnsupported
-
-  protected def filtersUnsupported: Future[Nothing] = {
-    version.map { v =>
-      throw new UnsupportedOperationException(
-        s"Bitcoin Core $v does not support block filters")
-    }
-  }
-
-  protected def filterHeadersUnsupported: Future[Nothing] = {
-    version.map { v =>
-      throw new UnsupportedOperationException(
-        s"Bitcoin Core $v does not support block filters headers through the rpc")
-    }
-  }
 
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
     for {

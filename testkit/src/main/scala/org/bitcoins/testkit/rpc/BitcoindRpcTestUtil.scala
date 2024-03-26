@@ -839,6 +839,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
   ): Future[SignRawTransactionResult] =
     signer match {
+      case v24: BitcoindV24RpcClient =>
+        v24.signRawTransactionWithWallet(transaction, utxoDeps)
       case v23: BitcoindV23RpcClient =>
         v23.signRawTransactionWithWallet(transaction, utxoDeps)
       case v22: BitcoindV22RpcClient =>

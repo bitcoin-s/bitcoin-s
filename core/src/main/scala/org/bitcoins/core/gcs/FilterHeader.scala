@@ -40,4 +40,5 @@ object FilterHeader {
       prevHeaderHash: DoubleSha256DigestBE): FilterHeader = {
     new FilterHeader(filterHash.flip, prevHeaderHash.flip)
   }
+
 }

@@ -465,8 +465,10 @@ case class GetBlockFilterResult(
     header: DoubleSha256DigestBE)
     extends BlockchainResult {
 
-  def filterDb(height: Int): CompactFilterDb = {
-    CompactFilterDbHelper.fromGolombFilter(filter, header, height)
+  def filterDb(
+      height: Int,
+      blockHashBE: DoubleSha256DigestBE): CompactFilterDb = {
+    CompactFilterDbHelper.fromGolombFilter(filter, blockHashBE, height)
   }
 }
 
