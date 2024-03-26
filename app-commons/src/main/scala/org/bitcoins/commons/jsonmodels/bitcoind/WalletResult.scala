@@ -17,7 +17,6 @@ import org.bitcoins.crypto.{
   Sha256Hash160Digest
 }
 
-import java.io.File
 import java.time.ZonedDateTime
 
 sealed abstract class WalletResult
@@ -135,9 +134,6 @@ case class RpcAccount(
     amount: Bitcoins,
     confirmations: Int)
     extends WalletResult
-
-case class DumpWalletResult(filename: File)
-
 case class LoadWalletResult(name: String, warning: String) extends WalletResult
 
 case class RescanBlockChainResult(start_height: Int, stop_height: Int)

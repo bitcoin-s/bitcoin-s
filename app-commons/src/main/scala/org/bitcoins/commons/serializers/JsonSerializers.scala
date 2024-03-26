@@ -397,9 +397,6 @@ object JsonSerializers {
 
   implicit val rpcAccoutReads: Reads[RpcAccount] = Json.reads[RpcAccount]
 
-  implicit val dumpWalletResultReads: Reads[DumpWalletResult] =
-    Json.reads[DumpWalletResult]
-
   implicit val loadWalletResultReads: Reads[LoadWalletResult] =
     Json.reads[LoadWalletResult]
 
