@@ -26,7 +26,7 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV21,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.PekkoUtil
@@ -38,7 +38,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.reflect.io.Directory
 
-class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
+class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
@@ -54,7 +54,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
     val walletClient =
       BitcoindRpcClient.withActorSystem(
-        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.V21)))
+        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest)))
 
     for {
       _ <- startClient(walletClient)

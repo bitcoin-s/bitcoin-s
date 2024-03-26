@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2SHAddress}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -23,18 +23,6 @@ sealed abstract class RpcTransaction extends RawTransactionResult {
   def vout: Vector[RpcTransactionOutput]
   def hex: Option[Transaction]
 }
-
-case class RpcTransactionPreV22(
-    txid: DoubleSha256DigestBE,
-    hash: DoubleSha256DigestBE,
-    version: Int,
-    size: Int,
-    vsize: Int,
-    locktime: UInt32,
-    vin: Vector[TransactionInput],
-    vout: Vector[RpcTransactionOutputPreV22],
-    hex: Option[Transaction])
-    extends RpcTransaction
 
 case class RpcTransactionV22(
     txid: DoubleSha256DigestBE,
@@ -95,14 +83,6 @@ sealed trait DecodeScriptResult extends RawTransactionResult {
   def p2sh: P2SHAddress
 }
 
-case class DecodeScriptResultPreV22(
-    asm: String,
-    typeOfScript: Option[ScriptType],
-    reqSigs: Option[Int],
-    addresses: Option[Vector[P2PKHAddress]],
-    p2sh: P2SHAddress)
-    extends DecodeScriptResult
-
 case class DecodeScriptResultV22(
     asm: String,
     typeOfScript: Option[ScriptType],
@@ -136,23 +116,6 @@ sealed trait GetRawTransactionResult extends RawTransactionResult {
   def time: Option[UInt32]
   def blocktime: Option[UInt32]
 }
-
-case class GetRawTransactionResultPreV22(
-    in_active_blockchain: Option[Boolean],
-    hex: Transaction,
-    txid: DoubleSha256DigestBE,
-    hash: DoubleSha256DigestBE,
-    size: Int,
-    vsize: Int,
-    version: Int,
-    locktime: UInt32,
-    vin: Vector[GetRawTransactionVin],
-    vout: Vector[RpcTransactionOutputPreV22],
-    blockhash: Option[DoubleSha256DigestBE],
-    confirmations: Option[Int],
-    time: Option[UInt32],
-    blocktime: Option[UInt32])
-    extends GetRawTransactionResult
 
 case class GetRawTransactionResultV22(
     in_active_blockchain: Option[Boolean],

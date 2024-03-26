@@ -3,7 +3,6 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AnalyzePsbtResult,
   DecodePsbtResult,
-  DecodePsbtResultPreV22,
   DecodePsbtResultV22,
   FinalizePsbtResult
 }
@@ -85,12 +84,8 @@ trait PsbtRpc {
   }
 
   def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] = {
-    self.version.flatMap {
-      case V22 | V23 | V24 | Unknown =>
-        bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
-      case V21 =>
-        bitcoindCall[DecodePsbtResultPreV22]("decodepsbt",
-                                             List(Json.toJson(psbt)))
+    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+      bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
     }
 
   }

@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
@@ -45,40 +44,6 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
-  }
-}
-
-/** Test trait that caches a [[BitcoindV21RpcClient]] that is funded
-  * and available to use with fixtures
-  */
-trait BitcoindFixturesFundedCachedV21
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCached
-    with CachedBitcoindV21 {
-  override type FixtureParam = BitcoindV21RpcClient
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val f: Future[Outcome] = for {
-      bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withV21FundedBitcoindCached(test, bitcoind)
-      fut <- futOutcome.toFuture
-    } yield fut
-    new FutureOutcome(f)
-  }
-
-  def withV21FundedBitcoindCached(
-      test: OneArgAsyncTest,
-      bitcoind: BitcoindV21RpcClient): FutureOutcome = {
-    makeDependentFixture[BitcoindV21RpcClient](
-      () => Future.successful(bitcoind),
-      { case _ =>
-        Future.unit // don't want to destroy anything since it is cached
-      })(test)
-  }
-
-  override def afterAll(): Unit = {
-    super[CachedBitcoindV21].afterAll()
-    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
 
@@ -219,19 +184,6 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
         Future.unit
       }
     )(test)
-  }
-}
-
-trait BitcoindFixturesCachedPairV21
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair[BitcoindV21RpcClient] {
-  override type FixtureParam = NodePair[BitcoindV21RpcClient]
-
-  override val version: BitcoindVersion = BitcoindVersion.V21
-
-  override def afterAll(): Unit = {
-    super[BitcoindFixturesCachedPair].afterAll()
-    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
 

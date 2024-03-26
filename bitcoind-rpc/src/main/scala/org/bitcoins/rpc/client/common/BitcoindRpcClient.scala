@@ -16,7 +16,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
@@ -318,7 +317,6 @@ object BitcoindRpcClient {
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
       case BitcoindVersion.V23 => BitcoindV23RpcClient.withActorSystem(instance)
       case BitcoindVersion.V24 => BitcoindV24RpcClient.withActorSystem(instance)
@@ -347,13 +345,9 @@ object BitcoindVersion
   val newest: BitcoindVersion = V24
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V21, V22, V23, V24)
+    Vector(V22, V23, V24)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V21 extends BitcoindVersion {
-    override def toString: String = "v0.21"
-  }
 
   case object V22 extends BitcoindVersion {
     override def toString: String = "v22"
@@ -385,7 +379,6 @@ object BitcoindVersion
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     //need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "21" => V21
       case "22" => V22
       case "23" => V23
       case "24" => V24

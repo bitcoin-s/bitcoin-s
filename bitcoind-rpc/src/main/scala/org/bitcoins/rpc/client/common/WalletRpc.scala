@@ -169,10 +169,6 @@ trait WalletRpc { self: Client =>
         bitcoindCall[GetWalletInfoResultPostV22](
           "getwalletinfo",
           uriExtensionOpt = walletName.map(walletExtension))
-      case BitcoindVersion.V21 =>
-        bitcoindCall[GetWalletInfoResultPreV22](
-          "getwalletinfo",
-          uriExtensionOpt = walletName.map(walletExtension))
     }
   }
 
@@ -404,7 +400,7 @@ trait WalletRpc { self: Client =>
                JsBoolean(avoidReuse),
                JsBoolean(descriptors))
         )
-      case V21 | Unknown =>
+      case Unknown =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(JsString(walletName),
@@ -424,7 +420,7 @@ trait WalletRpc { self: Client =>
           "getaddressinfo",
           List(JsString(address.value)),
           uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V24 | V23 | V22 | V21 | Unknown =>
+      case V24 | V23 | V22 | Unknown =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),

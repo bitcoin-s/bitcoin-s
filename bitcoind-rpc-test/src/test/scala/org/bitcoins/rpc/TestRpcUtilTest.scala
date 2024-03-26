@@ -1,10 +1,10 @@
 package org.bitcoins.rpc
 
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV21,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.FileUtil
@@ -13,7 +13,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 import java.io.File
 import scala.concurrent.Future
 
-class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
+class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
@@ -28,7 +28,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
   behavior of "BitcoindRpcUtil"
 
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
-    _: NodePair[BitcoindV21RpcClient] =>
+    _: NodePair[BitcoindRpcClient] =>
       val instance =
         BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
       val dir = instance.datadir
@@ -41,7 +41,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
   }
 
   it should "be able to generate and sync blocks" in {
-    nodes: NodePair[BitcoindV21RpcClient] =>
+    nodes: NodePair[BitcoindRpcClient] =>
       val NodePair(first, second) = nodes
       for {
         address <- second.getNewAddress
@@ -57,7 +57,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
   }
 
   it should "ble able to generate blocks with multiple clients and sync inbetween" in {
-    nodes: NodePair[BitcoindV21RpcClient] =>
+    nodes: NodePair[BitcoindRpcClient] =>
       val blocksToGenerate = 10
       val NodePair(first, second) = nodes
       val allClients = nodes.toVector
@@ -76,7 +76,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
   }
 
   it should "be able to find outputs of previous transactions" in {
-    nodes: NodePair[BitcoindV21RpcClient] =>
+    nodes: NodePair[BitcoindRpcClient] =>
       val NodePair(first, second) = nodes
       for {
         address <- second.getNewAddress

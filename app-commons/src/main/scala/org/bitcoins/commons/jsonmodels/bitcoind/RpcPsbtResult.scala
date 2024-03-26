@@ -30,14 +30,6 @@ sealed abstract class DecodePsbtResult extends RpcPsbtResult {
   def fee: Option[Bitcoins]
 }
 
-final case class DecodePsbtResultPreV22(
-    tx: RpcTransactionPreV22,
-    unknown: Map[String, String],
-    inputs: Vector[RpcPsbtInputPreV22],
-    outputs: Vector[RpcPsbtOutput],
-    fee: Option[Bitcoins])
-    extends DecodePsbtResult
-
 final case class DecodePsbtResultV22(
     tx: RpcTransactionV22,
     unknown: Map[String, String],
@@ -61,21 +53,6 @@ sealed abstract class RpcPsbtInput extends RpcPsbtResult {
   ] // todo(torkelrogstad) needs example of what this looks like
   def unknown: Option[Map[String, String]] // The unknown global fields
 }
-
-final case class RpcPsbtInputPreV22(
-    nonWitnessUtxo: Option[RpcTransactionPreV22],
-    witnessUtxo: Option[PsbtWitnessUtxoInput],
-    partialSignatures: Option[Map[ECPublicKey, ECDigitalSignature]],
-    sighash: Option[HashType],
-    redeemScript: Option[RpcPsbtScript],
-    witnessScript: Option[RpcPsbtScript],
-    bip32Derivs: Option[Vector[PsbtBIP32Deriv]],
-    finalScriptSig: Option[RpcPsbtScript],
-    finalScriptwitness: Option[
-      Vector[String]
-    ], // todo(torkelrogstad) needs example of what this looks like
-    unknown: Option[Map[String, String]] // The unknown global fields
-) extends RpcPsbtInput
 
 final case class RpcPsbtInputV22(
     nonWitnessUtxo: Option[RpcTransactionV22],

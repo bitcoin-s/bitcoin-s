@@ -13,7 +13,7 @@ import scala.concurrent.Future
 class MultisigRpcTest extends BitcoindRpcTest {
 
   val instance: BitcoindInstanceLocal =
-    BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.V21))
+    BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
 
   lazy val clientF: Future[BitcoindRpcClient] =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt = Some(instance),

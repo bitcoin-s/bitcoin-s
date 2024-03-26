@@ -1,9 +1,6 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  DecodeScriptResultPreV22,
-  DecodeScriptResultV22
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.{DecodeScriptResultV22}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
@@ -35,17 +32,12 @@ class UtilRpcTest extends BitcoindRpcTest {
     val pubKey2 = ecPrivKey2.publicKey
     for {
       (client, _) <- clientsF
-      address <- client.getNewAddress(addressType = AddressType.Legacy)
       multisig <-
         client
           .createMultiSig(2, Vector(pubKey1, pubKey2), AddressType.Legacy)
       decoded <- client.decodeScript(multisig.redeemScript)
     } yield {
       decoded match {
-        case decodedPreV22: DecodeScriptResultPreV22 =>
-          assert(decodedPreV22.reqSigs.exists(_ == 2))
-          assert(decoded.typeOfScript.exists(_ == ScriptType.MULTISIG))
-          assert(decodedPreV22.addresses.get.exists(_ == address))
         case decodedV22: DecodeScriptResultV22 =>
           assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
       }
