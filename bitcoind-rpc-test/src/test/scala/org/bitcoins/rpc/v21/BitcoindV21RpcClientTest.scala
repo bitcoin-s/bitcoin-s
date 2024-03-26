@@ -10,36 +10,27 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
-import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV21
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient}
+import org.bitcoins.testkit.rpc.{BitcoindFixturesFundedCachedNewest}
 
 import java.io.File
 import java.nio.file.Files
 import scala.concurrent.Future
 
-class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
+class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedNewest {
 
   behavior of "BitcoindV21RpcClient"
 
-  it should "be able to start a V21 bitcoind instance" in {
-    client: BitcoindV21RpcClient =>
-      for {
-        v <- client.version
-      } yield assert(v == BitcoindVersion.V21)
+  it should "be able to get network info" in { freshClient: BitcoindRpcClient =>
+    for {
+      info <- freshClient.getNetworkInfo
+    } yield {
+      assert(info.networkactive)
+      assert(info.localrelay)
+    }
   }
 
-  it should "be able to get network info" in {
-    freshClient: BitcoindV21RpcClient =>
-      for {
-        info <- freshClient.getNetworkInfo
-      } yield {
-        assert(info.networkactive)
-        assert(info.localrelay)
-      }
-  }
-
-  it should "get index info" in { client: BitcoindV21RpcClient =>
+  it should "get index info" in { client: BitcoindRpcClient =>
     def indexSynced(client: BitcoindRpcClient): Future[Boolean] = {
       client.getIndexInfo.map { indexes =>
         indexes("txindex").best_block_height == 101 && indexes(
@@ -61,7 +52,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
   }
 
   it should "be able to get the address info for a given address" in {
-    client: BitcoindV21RpcClient =>
+    client: BitcoindRpcClient =>
       for {
         addr <- client.getNewAddress
         info <- client.getAddressInfo(addr)
@@ -69,7 +60,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
   }
 
   it should "get a block filter given a block hash" in {
-    client: BitcoindV21RpcClient =>
+    client: BitcoindRpcClient =>
       for {
         blocks <- client.generate(1)
         blockFilter <- client.getBlockFilter(blocks.head, FilterType.Basic)
@@ -95,7 +86,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
       }
   }
 
-  it should "be able to get the balances" in { client: BitcoindV21RpcClient =>
+  it should "be able to get the balances" in { client: BitcoindRpcClient =>
     for {
       immatureBalance <- client.getBalances
       _ <- client.generate(1)
@@ -108,25 +99,23 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
     }
   }
 
-  it should "be able to get blockchain info" in {
-    client: BitcoindV21RpcClient =>
-      for {
-        info <- client.getBlockChainInfo
-        bestHash <- client.getBestBlockHash()
-      } yield {
-        assert(info.isInstanceOf[GetBlockChainInfoResultPostV19])
-        val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPostV19]
-        assert(preV19Info.chain == RegTest)
-        assert(preV19Info.softforks.size >= 5)
-        assert(
-          preV19Info.softforks.values.exists(
-            _.isInstanceOf[Bip9SoftforkPostV19]))
-        assert(preV19Info.bestblockhash == bestHash)
-      }
+  it should "be able to get blockchain info" in { client: BitcoindRpcClient =>
+    for {
+      info <- client.getBlockChainInfo
+      bestHash <- client.getBestBlockHash()
+    } yield {
+      assert(info.isInstanceOf[GetBlockChainInfoResultPostV19])
+      val preV19Info = info.asInstanceOf[GetBlockChainInfoResultPostV19]
+      assert(preV19Info.chain == RegTest)
+      assert(preV19Info.softforks.size >= 5)
+      assert(
+        preV19Info.softforks.values.exists(_.isInstanceOf[Bip9SoftforkPostV19]))
+      assert(preV19Info.bestblockhash == bestHash)
+    }
   }
 
   it should "be able to set the wallet flag 'avoid_reuse'" in {
-    client: BitcoindV21RpcClient =>
+    client: BitcoindRpcClient =>
       for {
         unspentPre <- client.listUnspent
         result <- client.setWalletFlag(WalletFlag.AvoidReuse, value = true)
@@ -140,7 +129,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
   }
 
   it should "create a wallet with a passphrase" in {
-    client: BitcoindV21RpcClient =>
+    client: BitcoindRpcClient =>
       for {
         _ <- client.createWallet("suredbits", passphrase = "stackingsats")
         wallets <- client.listWallets
@@ -151,7 +140,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
   }
 
   it should "check to see if the utxoUpdate input has been updated" in {
-    client: BitcoindV21RpcClient =>
+    client: BitcoindRpcClient =>
       val descriptor =
         "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
 
@@ -167,7 +156,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
   }
 
   it should "correct create multisig and get its descriptor" in {
-    client: BitcoindV21RpcClient =>
+    client: BitcoindRpcClient =>
       val pubKey1 = ECPublicKey.freshPublicKey
       val pubKey2 = ECPublicKey.freshPublicKey
 
@@ -184,7 +173,7 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
       }
   }
 
-  it should "correctly dump tx out set" in { client: BitcoindV21RpcClient =>
+  it should "correctly dump tx out set" in { client: BitcoindRpcClient =>
     for {
       hash <- client.getBestBlockHash()
       height <- client.getBestHashBlockHeight()
@@ -200,15 +189,14 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
     }
   }
 
-  it should "correct generate to a descriptor" in {
-    client: BitcoindV21RpcClient =>
-      // 2-of-2 multisig descriptor
-      val descriptor =
-        "sh(sortedmulti(2,023f720438186fbdfde0c0a403e770a0f32a2d198623a8a982c47b621f8b307640,03ed261094d609d5e02ba6553c2d91e4fd056006ce2fe64aace72b69cb5be3ab9c))#nj9wx7up"
-      val numBlocks = 10
-      for {
-        hashes <- client.generateToDescriptor(numBlocks, descriptor)
-      } yield assert(hashes.size == numBlocks)
+  it should "correct generate to a descriptor" in { client: BitcoindRpcClient =>
+    // 2-of-2 multisig descriptor
+    val descriptor =
+      "sh(sortedmulti(2,023f720438186fbdfde0c0a403e770a0f32a2d198623a8a982c47b621f8b307640,03ed261094d609d5e02ba6553c2d91e4fd056006ce2fe64aace72b69cb5be3ab9c))#nj9wx7up"
+    val numBlocks = 10
+    for {
+      hashes <- client.generateToDescriptor(numBlocks, descriptor)
+    } yield assert(hashes.size == numBlocks)
   }
 
 }

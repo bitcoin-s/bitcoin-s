@@ -44,7 +44,7 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
   def bitcoindInstance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      bitcoindV: BitcoindVersion = BitcoindVersion.V21)(implicit
+      bitcoindV: BitcoindVersion = BitcoindVersion.newest)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
                                     port = port,

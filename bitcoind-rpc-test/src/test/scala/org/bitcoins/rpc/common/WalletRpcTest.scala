@@ -6,12 +6,11 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   WalletFlag
 }
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -26,19 +25,18 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV21,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.PekkoUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
-import java.util.Scanner
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.reflect.io.Directory
 
-class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
+class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
@@ -54,7 +52,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
     val walletClient =
       BitcoindRpcClient.withActorSystem(
-        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.V21)))
+        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest)))
 
     for {
       _ <- startClient(walletClient)
@@ -72,25 +70,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
   var password = "password"
 
   behavior of "WalletRpc"
-
-  it should "be able to dump the wallet" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val localInstance = client.getDaemon match {
-      case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitcoind instance in test cases")
-      case local: BitcoindInstanceLocal =>
-        local
-    }
-    for {
-      result <- {
-        val datadir = localInstance.datadir.getAbsolutePath
-        client.dumpWallet(datadir + "/test.dat")
-      }
-    } yield {
-      assert(result.filename.exists)
-      assert(result.filename.isFile)
-    }
-  }
 
   it should "be able to list wallets" in { nodePair: FixtureParam =>
     val client = nodePair.node1
@@ -379,31 +358,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
     }
   }
 
-  it should "be able to import an address" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val otherClient = nodePair.node2
-    val address = Bech32Address
-      .fromString("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j")
-
-    for {
-      _ <- otherClient.importAddress(address)
-      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
-                                                            otherClient,
-                                                            address,
-                                                            Bitcoins(1.5))
-      list <- otherClient.listReceivedByAddress(includeWatchOnly = true)
-    } yield {
-      val entry =
-        list
-          .find(_.involvesWatchonly.contains(true))
-          .get
-      assert(entry.address == address)
-      assert(entry.involvesWatchonly.contains(true))
-      assert(entry.amount == Bitcoins(1.5))
-      assert(entry.txids.head == txid)
-    }
-  }
-
   it should "be able to get the balance" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
@@ -414,58 +368,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       assert(balance.toBigDecimal > 0)
       assert(balance.toBigDecimal < newBalance.toBigDecimal)
     }
-  }
-
-  it should "be able to dump a private key" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    for {
-      address <- client.getNewAddress
-      _ <- client.dumpPrivKey(address)
-    } yield succeed
-  }
-
-  it should "be able to import a private key" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val ecPrivateKey = ECPrivateKey.freshPrivateKey
-    val publicKey = ecPrivateKey.publicKey
-    val address = P2PKHAddress(publicKey, networkParam)
-    val localInstance = client.getDaemon match {
-      case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitcoind instance in test cases")
-      case local: BitcoindInstanceLocal =>
-        local
-    }
-    for {
-      _ <- client.importPrivKey(ecPrivateKey.toPrivateKeyBytes(),
-                                rescan = false)
-      key <- client.dumpPrivKey(address)
-      result <-
-        client
-          .dumpWallet(
-            localInstance.datadir.getAbsolutePath + "/wallet_dump.dat")
-    } yield {
-      assert(key.toPrivateKey == ecPrivateKey)
-      val reader = new Scanner(result.filename)
-      var found = false
-      while (reader.hasNext) {
-        if (
-          reader.next == ECPrivateKeyUtil.toWIF(
-            ecPrivateKey.toPrivateKeyBytes(),
-            networkParam)
-        ) {
-          found = true
-        }
-      }
-      assert(found)
-    }
-  }
-
-  it should "be able to import a public key" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val pubKey = ECPublicKey.freshPublicKey
-    for {
-      _ <- client.importPubKey(pubKey)
-    } yield succeed
   }
 
   it should "be able to import multiple addresses with importMulti" in {
@@ -500,28 +402,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
         assert(secondResult(0).success)
         assert(secondResult(1).success)
       }
-  }
-
-  it should "be able to import a wallet" in { nodePair: FixtureParam =>
-    val client = nodePair.node1
-    val localInstance = client.getDaemon match {
-      case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitcoind instance in test cases")
-      case local: BitcoindInstanceLocal =>
-        local
-    }
-    for {
-      walletClient <- walletClientF
-      address <- client.getNewAddress
-      walletFile =
-        localInstance.datadir.getAbsolutePath + "/client_wallet.dat"
-
-      fileResult <- client.dumpWallet(walletFile)
-      _ <- walletClient.walletPassphrase(password, 1000)
-      _ <- walletClient.importWallet(walletFile)
-      _ <- walletClient.dumpPrivKey(address)
-    } yield assert(fileResult.filename.exists)
-
   }
 
   it should "be able to load a wallet" in { nodePair: FixtureParam =>
