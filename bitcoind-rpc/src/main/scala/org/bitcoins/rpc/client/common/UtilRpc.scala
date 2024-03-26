@@ -21,25 +21,21 @@ trait UtilRpc { self: Client =>
   }
 
   def decodeScript(script: ScriptPubKey): Future[DecodeScriptResult] = {
-    self.version.flatMap {
-      case V22 | V23 | V24 | Unknown =>
-        bitcoindCall[DecodeScriptResultV22]("decodescript",
-                                            List(Json.toJson(script)))
-      case V21 =>
-        bitcoindCall[DecodeScriptResultPreV22]("decodescript",
-                                               List(Json.toJson(script)))
+    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+      bitcoindCall[DecodeScriptResultV22]("decodescript",
+                                          List(Json.toJson(script)))
     }
 
   }
 
   def getIndexInfo: Future[Map[String, IndexInfoResult]] = {
-    version.flatMap { case V24 | V23 | V22 | V21 | Unknown =>
+    version.flatMap { case V24 | V23 | V22 | Unknown =>
       bitcoindCall[Map[String, IndexInfoResult]]("getindexinfo")
     }
   }
 
   def getIndexInfo(indexName: String): Future[IndexInfoResult] = {
-    version.flatMap { case V24 | V23 | V22 | V21 | Unknown =>
+    version.flatMap { case V24 | V23 | V22 | Unknown =>
       bitcoindCall[Map[String, IndexInfoResult]](
         "getindexinfo",
         List(JsString(indexName))).map(_.head._2)
