@@ -305,10 +305,14 @@ sealed abstract class Bech32 {
 
   /** Assumes we are given a valid bech32 string */
   def decodeStringToU5s(str: String): Vector[UInt5] = {
+    decodeStringToU5s(str, Bech32.charset)
+  }
+
+  def decodeStringToU5s(str: String, charset: Vector[Char]): Vector[UInt5] = {
     str
       .map(_.toLower)
       .map { char =>
-        val index = Bech32.charset.indexOf(char)
+        val index = charset.indexOf(char)
         require(index >= 0,
                 s"$char (${char.toInt}) is not part of the Bech32 charset!")
         UInt5(index)
