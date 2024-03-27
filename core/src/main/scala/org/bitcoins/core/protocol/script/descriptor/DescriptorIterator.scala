@@ -31,4 +31,10 @@ case class DescriptorIterator(descriptor: String) {
     skip(hdPath.toString.length)
     XPubHDPath(extPubKey, hdPath)
   }
+
+  def takeCheckSum(): String = {
+    current
+      .drop(1) //drop #
+      .take(8)
+  }
 }
