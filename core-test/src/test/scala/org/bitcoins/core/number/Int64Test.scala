@@ -1,5 +1,6 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -114,6 +115,15 @@ class Int64Test extends BitcoinSUnitTest {
 
   it must "have the correct number representation for the maximum number that can be stored in a Int64" in {
     Int64.max.toLong must be(9223372036854775807L)
+  }
+
+  it must "^" in {
+    val i64 = Int64(-2631455170825428703L)
+    assert(i64.^(Int64.zero) == i64)
+    forAll(NumberGenerator.int64s) { i64: Int64 =>
+      assert(i64.^(Int64.zero) == i64)
+      assert(i64.^(i64) == Int64.zero)
+    }
   }
 
 }

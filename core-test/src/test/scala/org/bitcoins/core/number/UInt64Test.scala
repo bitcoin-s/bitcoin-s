@@ -1,5 +1,6 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -80,6 +81,13 @@ class UInt64Test extends BitcoinSUnitTest {
   it must "throw an exception if we try to create a BigInt outside the range of UInt64" in {
     intercept[IllegalArgumentException] {
       UInt64(UInt64.max.toBigInt + 1)
+    }
+  }
+
+  it must "^" in {
+    forAll(NumberGenerator.uInt64s) { u64: UInt64 =>
+      assert(u64.^(UInt64.zero) == u64)
+      assert(u64.^(u64) == UInt64.zero)
     }
   }
 }
