@@ -23,13 +23,13 @@ class UInt8Test extends BitcoinSUnitTest {
 
   it must "convert uint8 -> byte -> uint8" in {
     forAll(NumberGenerator.uInt8) { case u8: UInt8 =>
-      UInt8(UInt8.toByte(u8)) == u8
+      assert(UInt8(UInt8.toByte(u8)) == u8)
     }
   }
 
   it must "serialization symmetry" in {
     forAll(NumberGenerator.uInt8) { u8 =>
-      UInt8(u8.hex) == u8
+      assert(UInt8(u8.hex) == u8)
     }
   }
 
@@ -38,11 +38,12 @@ class UInt8Test extends BitcoinSUnitTest {
       case (u8: UInt8, shift: Int) =>
         val r = Try(u8 << shift)
         val expected = (u8.toLong << shift) & 0xffL
-        if (expected <= UInt8.max.toLong) {
+        val result = if (expected <= UInt8.max.toLong) {
           r.get == UInt8(expected.toShort)
         } else {
           r.isFailure
         }
+        assert(result)
     }
   }
 
@@ -52,7 +53,7 @@ class UInt8Test extends BitcoinSUnitTest {
         val r = u8 >> shift
         val expected =
           if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
-        r == expected
+        assert(r == expected)
     }
   }
 
