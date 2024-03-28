@@ -66,18 +66,43 @@ sealed abstract class Number[T <: Number[T]]
   def &(num: T): T = apply(underlying & num.underlying)
   def unary_- : T = apply(-underlying)
 
+  def isSigned: Boolean
+
+  def ^(num: T): T = {
+    val xor = bytes.xor(num.bytes)
+    if (isSigned) {
+      val r = xor.toLong(signed = isSigned)
+      apply(r)
+    } else {
+      val r = BigInt(1, xor.toArray)
+      apply(r)
+    }
+  }
+
+  def xor(num: T): T = {
+    ^(num)
+  }
+
+  def xor(num: Long): T = xor(apply(num))
+
+  def ^(num: Long): T = ^(apply(num))
+
   def truncatedBytes: ByteVector = bytes.dropWhile(_ == 0x00)
 }
 
 /** Represents a signed number in our number system
   * Instances of this are [[Int32]] or [[Int64]]
   */
-sealed abstract class SignedNumber[T <: Number[T]] extends Number[T]
+sealed abstract class SignedNumber[T <: Number[T]] extends Number[T] {
+  final override def isSigned: Boolean = true
+}
 
 /** Represents an unsigned number in our number system
   * Instances of this are [[UInt32]] or [[UInt64]]
   */
-sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
+sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T] {
+  final override def isSigned: Boolean = false
+}
 
 /** This number type is useful for dealing with [[org.bitcoins.core.util.Bech32]]
   * related applications. The native encoding for Bech32 is a 5 bit number which

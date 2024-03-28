@@ -1,7 +1,11 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.scalacheck.Gen
 import scodec.bits.ByteVector
+
+import scala.util.Try
 
 class UInt8Test extends BitcoinSUnitTest {
 
@@ -15,6 +19,48 @@ class UInt8Test extends BitcoinSUnitTest {
     intercept[IllegalArgumentException] {
       UInt8(ByteVector(0.toByte, 0.toByte))
     }
+  }
+
+  it must "convert uint8 -> byte -> uint8" in {
+    forAll(NumberGenerator.uInt8) { case u8: UInt8 =>
+      assert(UInt8(UInt8.toByte(u8)) == u8)
+    }
+  }
+
+  it must "serialization symmetry" in {
+    forAll(NumberGenerator.uInt8) { u8 =>
+      assert(UInt8(u8.hex) == u8)
+    }
+  }
+
+  it must "<<" in {
+    forAll(NumberGenerator.uInt8, Gen.choose(0, 8)) {
+      case (u8: UInt8, shift: Int) =>
+        val r = Try(u8 << shift)
+        val expected = (u8.toLong << shift) & 0xffL
+        val result = if (expected <= UInt8.max.toLong) {
+          r.get == UInt8(expected.toShort)
+        } else {
+          r.isFailure
+        }
+        assert(result)
+    }
+  }
+
+  it must ">>" in {
+    forAll(NumberGenerator.uInt8, Gen.choose(0, 100)) {
+      case (u8: UInt8, shift: Int) =>
+        val r = u8 >> shift
+        val expected =
+          if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
+        assert(r == expected)
+    }
+  }
+
+  it must "do basic xor" in {
+    assert(UInt8.zero.^(UInt8.zero) == UInt8.zero)
+    assert(UInt8.one.^(UInt8.zero) == UInt8.one)
+    assert(UInt8.max.^(UInt8.zero) == UInt8.max)
   }
 
 }

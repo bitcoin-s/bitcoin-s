@@ -1,7 +1,11 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.scalacheck.Gen
 import scodec.bits.ByteVector
+
+import scala.util.Try
 
 /** Created by chris on 6/14/16.
   */
@@ -82,6 +86,144 @@ class UInt32Test extends BitcoinSUnitTest {
   it must "throw an exception if we try to create a BigInt outside the range of UInt32" in {
     intercept[IllegalArgumentException] {
       UInt32(UInt32.max.toBigInt + 1)
+    }
+  }
+
+  it must "serialization symmetry" in {
+    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+      assert(UInt32(uInt32.hex) == uInt32)
+      assert(UInt32(uInt32.hex).hex == uInt32.hex)
+    }
+  }
+
+  it must "additive identity" in {
+    forAll(NumberGenerator.uInt32s) { num: UInt32 =>
+      assert(num + UInt32.zero == num)
+    }
+  }
+
+  it must "Negative numbers in UInt32 throw an exception" in {
+    forAll(NumberGenerator.negativeLongs) { num: Long =>
+      val uint32 = Try(UInt32(num))
+      assert(uint32.isFailure)
+    }
+  }
+
+  it must "add two uint32s and get the mathematical sum of the two numbers" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        val result = num1.toLong + num2.toLong
+        val res =
+          if (result <= UInt32.max.toLong) num1 + num2 == UInt32(result.toLong)
+          else Try(num1 + num2).isFailure
+        assert(res)
+    }
+  }
+
+  it must "subtractive identity" in {
+    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+      assert(uInt32 - UInt32.zero == uInt32)
+    }
+  }
+
+  it must "subtract a uint32 from another uint32 and get the correct result" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        val result = num1.toLong - num2.toLong
+        val res =
+          if (result >= 0) num1 - num2 == UInt32(result)
+          else Try(num1 - num2).isFailure
+        assert(res)
+    }
+  }
+
+  it must "multiplying by zero gives us zero" in {
+    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+      assert(uInt32 * UInt32.zero == UInt32.zero)
+    }
+  }
+
+  it must "multiplicative identity" in {
+    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+      assert(uInt32 * UInt32.one == uInt32)
+    }
+  }
+
+  it must "multiply two UInt32s" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        val bigInt1 = num1.toBigInt
+        val bigInt2 = num2.toBigInt
+        val result = if (bigInt1 * bigInt2 <= UInt32.max.toLong) {
+          num1 * num2 ==
+            UInt32(num1.toLong * num2.toLong)
+        } else Try(num1 * num2).isFailure
+        assert(result)
+    }
+  }
+
+  it must "< & >=" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        val result =
+          if (num1.toLong < num2.toLong) num1 < num2
+          else num1 >= num2
+        assert(result)
+    }
+  }
+
+  it must "<= & >" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        val result =
+          if (num1.toLong <= num2.toLong) num1 <= num2
+          else num1 > num2
+        assert(result)
+    }
+  }
+
+  it must "== & !=" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        val result =
+          if (num1.toLong == num2.toLong) num1 == num2
+          else num1 != num2
+        assert(result)
+    }
+  }
+
+  it must "|" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        assert(UInt32(num1.toLong | num2.toLong) == (num1 | num2))
+    }
+  }
+
+  it must "&" in {
+    forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) {
+      (num1: UInt32, num2: UInt32) =>
+        assert(UInt32(num1.toLong & num2.toLong) == (num1 & num2))
+    }
+  }
+
+  it must "<<" in {
+    forAll(NumberGenerator.uInt32s, Gen.choose(0, 32)) { case (u32, shift) =>
+      val r = Try(u32 << shift)
+      val expected = (u32.toLong << shift) & 0xffffffffL
+      val result = if (r.isSuccess && expected <= UInt32.max.toLong) {
+        r.get == UInt32(expected)
+      } else {
+        r.isFailure
+      }
+      assert(result)
+    }
+  }
+
+  it must ">>" in {
+    forAll(NumberGenerator.uInt32s, Gen.choose(0, 100)) { case (u32, shift) =>
+      val r = u32 >> shift
+      val expected = if (shift >= 64) 0 else u32.toLong >> shift
+      assert(r == UInt32(expected))
     }
   }
 }
