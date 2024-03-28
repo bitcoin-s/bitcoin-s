@@ -64,6 +64,9 @@ object OutputDescriptor extends StringFactory[OutputDescriptor] {
       )
   }
 
+  /** Implements checksum algorithm specified by BIP380 for descriptors
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
+    */
   def createChecksum(string: String): String = {
     require(!string.exists(_ == '#'),
             s"String already contains checksum, got=$string")
@@ -75,8 +78,10 @@ object OutputDescriptor extends StringFactory[OutputDescriptor] {
       val pos = charsetWithIdx
         .find(_._1 == ch)
         .map(_._2)
-        .get
-      c = polyMod(c, pos)
+        .getOrElse {
+          sys.error(s"Invalid character=$ch in descriptor string=$string")
+        }
+      c = polyMod(c, pos & 31)
       cls = cls * 3 + (pos >> 5)
       clsCount += 1
       if (clsCount == 3) {
@@ -91,38 +96,31 @@ object OutputDescriptor extends StringFactory[OutputDescriptor] {
       c = polyMod(c, cls)
     }
 
-    1.until(8).foreach { _ =>
+    0.until(8).foreach { _ =>
       c = polyMod(c, 0)
     }
 
-    //c = c ^ 1 // Prevent appending zeroes from not affecting the checksum.
+    c = c ^ 1 // Prevent appending zeroes from not affecting the checksum.
 
-    val builder = new StringBuilder()
-    1.until(8).foreach { j =>
+    val builder = new StringBuilder(8)
+    0.until(8).foreach { j =>
       //ret[j] = CHECKSUM_CHARSET[(c >> (5 * (7 - j))) & 31]
-      val char = Bech32.charset((c.toInt >> (5 * (7 - j))) & 31)
+      val idx = (c.toLong >> (5 * (7 - j))) & 31
+      val char = Bech32.charset(idx.toInt)
       builder.append(char)
     }
 
     builder.result()
   }
 
-  def polyMod(c: UInt64, idx: Int): UInt64 = {
-    //uint64_t PolyMod(uint64_t c, int val)
-    //{
-    //    uint8_t c0 = c >> 35;
-    //    c = ((c & 0x7ffffffff) << 5) ^ val;
-    //    if (c0 & 1) c ^= 0xf5dee51989;
-    //    if (c0 & 2) c ^= 0xa9fdca3312;
-    //    if (c0 & 4) c ^= 0x1bab10e32d;
-    //    if (c0 & 8) c ^= 0x3706b1677a;
-    //    if (c0 & 16) c ^= 0x644d626ffd;
-    //    return c;
-    //}
-
+  /** Implement polynomial algorithm for descriptors
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/d1e9a02126634f9e2ca0b916b69b173a8646524d/src/script/descriptor.cpp#L90]]
+    */
+  private def polyMod(c: UInt64, idx: Int): UInt64 = {
     var res = c
     val c0: UInt8 = UInt8((c >> 35).toInt)
-    res = (c & UInt64(0x7ffffffffL) << 5) ^ idx
+    res = (c & UInt64(0x7ffffffffL)) << 5 ^ idx
     if ((c0 & UInt8.one) != UInt8.zero) {
       res = res ^ 0xf5dee51989L
     }
