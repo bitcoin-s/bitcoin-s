@@ -83,6 +83,8 @@ sealed abstract class Number[T <: Number[T]]
     ^(num)
   }
 
+  def xor(num: Long): T = xor(apply(num))
+
   def ^(num: Long): T = ^(apply(num))
 
   def truncatedBytes: ByteVector = bytes.dropWhile(_ == 0x00)

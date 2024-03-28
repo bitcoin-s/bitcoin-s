@@ -118,11 +118,9 @@ class Int64Test extends BitcoinSUnitTest {
   }
 
   it must "^" in {
-    val i64 = Int64(-2631455170825428703L)
-    assert(i64.^(Int64.zero) == i64)
     forAll(NumberGenerator.int64s) { i64: Int64 =>
       assert(i64.^(Int64.zero) == i64)
-      assert(i64.^(i64) == Int64.zero)
+      assert(i64.xor(i64) == Int64.zero)
     }
   }
 
