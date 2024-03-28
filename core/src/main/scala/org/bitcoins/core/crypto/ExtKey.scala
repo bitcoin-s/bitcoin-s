@@ -496,6 +496,9 @@ object ExtPublicKey
     extends Factory[ExtPublicKey]
     with StringFactory[ExtPublicKey] {
 
+  /** The length of a base58 encoded xpub */
+  val base58Len: Int = 111
+
   private case class ExtPublicKeyImpl(
       version: ExtKeyPubVersion,
       depth: UInt8,
