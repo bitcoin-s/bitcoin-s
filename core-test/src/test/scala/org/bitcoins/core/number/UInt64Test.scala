@@ -4,6 +4,8 @@ import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Created by chris on 6/15/16.
   */
 class UInt64Test extends BitcoinSUnitTest {
@@ -81,6 +83,123 @@ class UInt64Test extends BitcoinSUnitTest {
   it must "throw an exception if we try to create a BigInt outside the range of UInt64" in {
     intercept[IllegalArgumentException] {
       UInt64(UInt64.max.toBigInt + 1)
+    }
+  }
+
+  it must "Serialization symmetry" in {
+    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+      assert(UInt64(uInt64.hex) == uInt64)
+      assert(UInt64(uInt64.hex).hex == uInt64.hex)
+    }
+  }
+
+  it must "additive identity" in {
+    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+      val result =
+        if (uInt64.toBigInt <= UInt64.max.toBigInt)
+          uInt64 + UInt64.zero == UInt64(uInt64.toBigInt)
+        else uInt64 + UInt64.zero == uInt64
+      assert(result)
+    }
+  }
+
+  it must "add two arbitrary uInt64s" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        val result: BigInt = num1.toBigInt + num2.toBigInt
+        val res =
+          if (result <= UInt64.max.toBigInt) num1 + num2 == UInt64(result)
+          else Try(num1 + num2).isFailure
+        assert(res)
+    }
+  }
+
+  it must "subtractive identity" in {
+    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+      val result =
+        if (uInt64.toBigInt <= UInt64.max.toBigInt)
+          uInt64 - UInt64.zero == UInt64(uInt64.toBigInt)
+        else uInt64 - UInt64.zero == uInt64
+      assert(result)
+    }
+  }
+
+  it must "subtract a uint64 from a uint64" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        val result = num1.toBigInt - num2.toBigInt
+        val res =
+          if (result < 0) Try(num1 - num2).isFailure
+          else num1 - num2 == UInt64(result)
+        assert(res)
+    }
+  }
+
+  it must "multiplying by zero" in {
+    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+      assert(uInt64 * UInt64.zero == UInt64.zero)
+    }
+  }
+
+  it must "multiplicative identity" in {
+    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+      val result =
+        if (uInt64 == UInt64.zero) uInt64 * UInt64.one == UInt64.zero
+        else uInt64 * UInt64.one == uInt64
+      assert(result)
+    }
+  }
+
+  it must "multiply two uInt64s" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        val result = num1.toBigInt * num2.toBigInt
+        val res =
+          if (result <= UInt64.max.toBigInt) num1 * num2 == UInt64(result)
+          else Try(num1 * num2).isFailure
+        assert(res)
+    }
+  }
+
+  it must "< & >= for uInt64s" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        val result =
+          if (num1.toBigInt < num2.toBigInt) num1 < num2
+          else num1 >= num2
+        assert(result)
+    }
+  }
+
+  it must "<= & > with two uInt64s" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        val result =
+          if (num1.toBigInt <= num2.toBigInt) num1 <= num2
+          else num1 > num2
+        assert(result)
+    }
+  }
+  it must "== & != for two UInt64s" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        val result =
+          if (num1.toBigInt == num2.toBigInt) num1 == num2
+          else num1 != num2
+        assert(result)
+    }
+  }
+  it must "|" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        assert(UInt64(num1.toBigInt | num2.toBigInt) == (num1 | num2))
+    }
+  }
+
+  it must "&" in {
+    forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) {
+      (num1: UInt64, num2: UInt64) =>
+        assert(UInt64(num1.toBigInt & num2.toBigInt) == (num1 & num2))
     }
   }
 

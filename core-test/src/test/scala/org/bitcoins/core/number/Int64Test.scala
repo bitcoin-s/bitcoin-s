@@ -4,6 +4,8 @@ import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Created by chris on 6/15/16.
   */
 class Int64Test extends BitcoinSUnitTest {
@@ -121,6 +123,115 @@ class Int64Test extends BitcoinSUnitTest {
     forAll(NumberGenerator.int64s) { i64: Int64 =>
       assert(i64.^(Int64.zero) == i64)
       assert(i64.xor(i64) == Int64.zero)
+    }
+  }
+
+  it must "Symmetrical serialization" in {
+    forAll(NumberGenerator.int64s) { int64: Int64 =>
+      assert(Int64(int64.hex) == int64)
+    }
+  }
+
+  it must "Additive identity" in {
+    forAll(NumberGenerator.int64s) { int64: Int64 =>
+      assert(int64 + Int64.zero == int64)
+    }
+  }
+  it must "Add two arbitrary int64s" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        val result = num1.toBigInt + num2.toBigInt
+        if (result >= Int64.min.toLong && result <= Int64.max.toLong)
+          assert(num1 + num2 == Int64(result))
+        else assert(Try(num1 + num2).isFailure)
+    }
+  }
+
+  it must "Subtractive identity" in {
+    forAll(NumberGenerator.int64s) { int64: Int64 =>
+      assert(int64 - Int64.zero == int64)
+    }
+  }
+
+  it must "Subtract two arbitrary int64s" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        val result = num1.toBigInt - num2.toBigInt
+        if (result >= Int64.min.toLong && result <= Int64.max.toLong)
+          assert(num1 - num2 == Int64(result))
+        else assert(Try(num1 - num2).isFailure)
+    }
+  }
+
+  it must "Multiplying by zero" in {
+    forAll(NumberGenerator.int64s) { int64: Int64 =>
+      assert(int64 * Int64.zero == Int64.zero)
+    }
+  }
+
+  it must "Multiplicative identity" in {
+    forAll(NumberGenerator.int64s) { int64: Int64 =>
+      assert(int64 * Int64.one == int64)
+    }
+  }
+
+  it must "Multiply two arbitrary int64s" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        val result = num1.toBigInt * num2.toBigInt
+        if (result >= Int64.min.toLong && result <= Int64.max.toLong)
+          assert(num1 * num2 == Int64(result))
+        else assert(Try(num1 * num2).isFailure)
+    }
+  }
+
+  it must "<= & >" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        val result =
+          if (num1.toLong <= num2.toLong) num1 <= num2
+          else num1 > num2
+        assert(result)
+    }
+  }
+
+  it must "< & =>" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        val result =
+          if (num1.toLong < num2.toLong) num1 < num2
+          else num1 >= num2
+        assert(result)
+    }
+  }
+
+  it must "== & !=" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        val result =
+          if (num1.toLong == num2.toLong) num1 == num2
+          else num1 != num2
+        assert(result)
+    }
+  }
+
+  it must "|" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        assert(Int64(num1.toLong | num2.toLong) == (num1 | num2))
+    }
+  }
+
+  it must "&" in {
+    forAll(NumberGenerator.int64s, NumberGenerator.int64s) {
+      (num1: Int64, num2: Int64) =>
+        assert(Int64(num1.toLong & num2.toLong) == (num1 & num2))
+    }
+  }
+
+  it must "negation" in {
+    forAll(NumberGenerator.int64s) { int64 =>
+      assert(-int64 == Int64(-int64.toLong))
     }
   }
 
