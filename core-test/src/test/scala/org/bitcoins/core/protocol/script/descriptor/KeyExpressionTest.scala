@@ -7,7 +7,7 @@ class KeyExpressionTest extends BitcoinSUnitTest {
   behavior of "KeyExpression"
 
   it must "serialize and deserialize key origin examples in BIP380" in {
-    val str0 = ""
+    val str0 = "[deadbeef/0h/0h/0h]"
     val keyOrigin = KeyOriginExpression.fromString(str0)
     assert(str0 == keyOrigin.toString)
   }
