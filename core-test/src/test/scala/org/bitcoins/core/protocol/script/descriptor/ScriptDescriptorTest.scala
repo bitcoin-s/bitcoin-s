@@ -13,6 +13,5 @@ class ScriptDescriptorTest extends BitcoinSUnitTest {
     assert(desc.scriptPubKey == RawScriptPubKey.fromAsmHex("deadbeef"))
     assert(desc.checksum.get == "89f8spxm")
     assert(desc.toString == str)
-
   }
 }

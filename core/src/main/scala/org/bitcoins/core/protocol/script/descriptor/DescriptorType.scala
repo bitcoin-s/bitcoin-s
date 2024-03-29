@@ -10,7 +10,7 @@ sealed abstract class ScriptDescriptorType extends DescriptorType {
   def scriptType: ScriptType
 }
 
-object DescriptorType extends StringFactory[ScriptDescriptorType] {
+object DescriptorType extends StringFactory[DescriptorType] {
 
   case object PK extends ScriptDescriptorType {
     override val scriptType = ScriptType.PUBKEY
@@ -57,7 +57,7 @@ object DescriptorType extends StringFactory[ScriptDescriptorType] {
     override val toString: String = s"raw"
   }
 
-  private val all: Vector[ScriptDescriptorType] = Vector(
+  private val all: Vector[DescriptorType] = Vector(
     PK,
     PKH,
     WPKH,
@@ -68,11 +68,11 @@ object DescriptorType extends StringFactory[ScriptDescriptorType] {
     Raw
   )
 
-  override def fromStringOpt(string: String): Option[ScriptDescriptorType] = {
+  override def fromStringOpt(string: String): Option[DescriptorType] = {
     all.find(d => string.startsWith(d.toString))
   }
 
-  override def fromString(string: String): ScriptDescriptorType = {
+  override def fromString(string: String): DescriptorType = {
     fromStringOpt(string) match {
       case Some(d) => d
       case None =>
