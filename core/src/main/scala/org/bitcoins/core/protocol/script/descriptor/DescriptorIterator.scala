@@ -32,9 +32,18 @@ case class DescriptorIterator(descriptor: String) {
     XPubHDPath(extPubKey, hdPath)
   }
 
-  def takeCheckSum(): String = {
-    current
-      .drop(1) //drop #
-      .take(8)
+  def takeChecksum(): Option[String] = {
+    if (current.isEmpty || !(current.take(1) == '#')) {
+      //means we do not have a checksum
+      None
+    } else {
+      Some(current.take(8))
+    }
+  }
+
+  def takUntil(f: Char => Boolean): String = {
+    val result = current.takeWhile(f)
+    skip(result.length)
+    result
   }
 }
