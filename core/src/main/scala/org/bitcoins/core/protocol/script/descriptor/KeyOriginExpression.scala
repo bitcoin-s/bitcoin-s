@@ -18,7 +18,7 @@ object KeyOriginExpression extends StringFactory[KeyOriginExpression] {
     val payload = string.drop(1).dropRight(1)
     val fingerprint = payload.take(8)
     val pathElements = payload.drop(8)
-    val path = HDPath.fromString(pathElements)
+    val path = HDPath.fromString("m" + pathElements)
     KeyOriginExpression(fingerprint, path)
   }
 }
