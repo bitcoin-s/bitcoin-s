@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol.script.descriptor
 
-import org.bitcoins.core.crypto.{ExtKey, ExtPublicKey}
+import org.bitcoins.core.crypto.{ECPrivateKeyUtil, ExtKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
+import org.bitcoins.crypto.{ECKeyBytes, ECPublicKeyBytes}
 
 case class DescriptorIterator(descriptor: String) {
   private var index: Int = 0
@@ -41,9 +42,28 @@ case class DescriptorIterator(descriptor: String) {
     }
   }
 
-  def takUntil(f: Char => Boolean): String = {
-    val result = current.takeWhile(f)
-    skip(result.length)
+  def takeKeyOriginOpt(): Option[KeyOriginExpression] = {
+    val (originStr, _) = current.span(_ == ']')
+    if (originStr.startsWith("[") && originStr.nonEmpty) {
+      val origin = KeyOriginExpression.fromString(originStr)
+      skip(origin.toString.length)
+      Some(origin)
+    } else None
+  }
+
+  def takeECKey(): ECKeyBytes = {
+    val isPrivKey =
+      ECPrivateKeyUtil.privateKeyPrefixes.exists(_ == current.charAt(0))
+    val result: ECKeyBytes = if (isPrivKey) {
+      ECPrivateKeyUtil.fromWIFToPrivateKey(current)
+    } else {
+      ECPublicKeyBytes.fromHex(current)
+    }
+    skip(result.byteSize.toInt)
     result
+  }
+
+  def takeExtKey(): ExtKey = {
+    ???
   }
 }

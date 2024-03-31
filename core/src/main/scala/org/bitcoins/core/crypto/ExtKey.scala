@@ -114,6 +114,8 @@ object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
 
   val masterFingerprint: ByteVector = hex"00000000"
 
+  val prefixes: Vector[String] = Vector("xprv", "xpub")
+
   /** Takes in a base58 string and tries to convert it to an extended key */
   override def fromString(base58: String): ExtKey = {
     fromStringT(base58) match {
