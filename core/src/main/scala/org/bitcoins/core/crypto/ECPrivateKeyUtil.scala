@@ -85,6 +85,10 @@ object ECPrivateKeyUtil {
   /** The Base58 prefixes that represent uncompressed private keys */
   def uncompressedKeyPrefixes = Seq(Some('5'), Some('9'))
 
+  def privateKeyPrefixes: Vector[Char] = {
+    (compressedKeyPrefixes ++ uncompressedKeyPrefixes).flatten.toVector
+  }
+
   /** Returns the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] from a serialized WIF key */
   def parseNetworkFromWIF(wif: String): Try[NetworkParameters] = {
     val decoded = Base58.decodeCheck(wif)
