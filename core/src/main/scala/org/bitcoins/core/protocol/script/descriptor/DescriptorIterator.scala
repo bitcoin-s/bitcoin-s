@@ -2,7 +2,13 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.crypto.{ECPrivateKeyUtil, ExtKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.crypto.{ECKeyBytes, ECPublicKeyBytes}
+import org.bitcoins.core.protocol.script.RawScriptPubKey
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECKeyBytes,
+  ECPublicKeyBytes,
+  Sha256Hash160Digest
+}
 
 case class DescriptorIterator(descriptor: String) {
   private var index: Int = 0
@@ -53,7 +59,7 @@ case class DescriptorIterator(descriptor: String) {
     }
   }
 
-  def takeChecksum(): Option[String] = {
+  def takeChecksumOpt(): Option[String] = {
     if (current.isEmpty || !(current.take(1) == '#')) {
       //means we do not have a checksum
       None
@@ -75,10 +81,11 @@ case class DescriptorIterator(descriptor: String) {
   def takeECKey(): ECKeyBytes = {
     val isPrivKey =
       ECPrivateKeyUtil.privateKeyPrefixes.exists(_ == current.charAt(0))
+    val (keyBytes, _) = current.span(_ != ')')
     val result: ECKeyBytes = if (isPrivKey) {
-      ECPrivateKeyUtil.fromWIFToPrivateKey(current)
+      ECPrivateKeyUtil.fromWIFToPrivateKey(keyBytes)
     } else {
-      ECPublicKeyBytes.fromHex(current)
+      ECPublicKeyBytes.fromHex(keyBytes)
     }
     skip(result.byteSize.toInt)
     result
@@ -89,5 +96,35 @@ case class DescriptorIterator(descriptor: String) {
     val extKey = ExtKey.fromString(str)
     skip(ExtKey.toString(extKey).length)
     extKey
+  }
+
+  def takeKeyExpression(): KeyExpression = {
+    val keyExpression = KeyExpression.fromString(current)
+    skip(keyExpression.toString.length)
+    keyExpression
+  }
+
+  def takeDoubleSha256DigestBE(): DoubleSha256DigestBE = {
+    val hash = DoubleSha256DigestBE.fromHex(current.take(32))
+    skip(hash.byteSize.toInt)
+    hash
+  }
+
+  def takeSha256Hash160(): Sha256Hash160Digest = {
+    val hash = Sha256Hash160Digest.fromHex(current.take(32))
+    skip(hash.byteSize.toInt)
+    hash
+  }
+
+  def takeScriptExpression(): ScriptExpression = {
+    val expression = ScriptExpression.fromString(current)
+    skip(expression.toString.length)
+    expression
+  }
+
+  def takeRawScriptPubKey(): RawScriptPubKey = {
+    val spk = RawScriptPubKey.fromAsmHex(current)
+    skip(spk.byteSize.toInt)
+    spk
   }
 }
