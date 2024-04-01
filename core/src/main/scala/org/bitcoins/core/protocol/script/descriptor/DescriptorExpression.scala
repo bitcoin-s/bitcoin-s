@@ -1,7 +1,13 @@
 package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ECPrivateKeyUtil, ExtKey}
+import org.bitcoins.core.crypto.{
+  ECPrivateKeyUtil,
+  ExtKey,
+  ExtPrivateKey,
+  ExtPublicKey
+}
+import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessSPKV0,
   RawScriptPubKey,
@@ -80,6 +86,44 @@ case class RawPublicKeyExpression(
   }
 }
 
+sealed abstract class ExtKeyExpression extends KeyExpression {
+  def extKey: ExtKey
+
+  def pathOpt: Option[BIP32Path]
+
+  def childrenHardenedOpt: Option[Boolean]
+
+  override def toString(): String = {
+    originOpt.map(_.toString).getOrElse("") +
+      ExtKey.toString(extKey) +
+      pathOpt.map(_.toString.drop(1)).getOrElse("") +
+      childrenHardenedOpt
+        .map {
+          case true  => "/*'"
+          case false => "/*"
+        }
+        .getOrElse("")
+  }
+}
+
+case class XprvKeyExpression(
+    override val extKey: ExtPrivateKey,
+    originOpt: Option[KeyOriginExpression],
+    pathOpt: Option[BIP32Path],
+    childrenHardenedOpt: Option[Boolean])
+    extends ExtKeyExpression {
+  override val key: ECPrivateKey = extKey.key
+}
+
+case class XpubKeyExpression(
+    override val extKey: ExtPublicKey,
+    originOpt: Option[KeyOriginExpression],
+    pathOpt: Option[BIP32Path],
+    childrenHardenedOpt: Option[Boolean])
+    extends ExtKeyExpression {
+  override val key: ECPublicKey = extKey.key
+}
+
 object KeyExpression extends StringFactory[KeyExpression] {
 
   override def fromString(string: String): KeyExpression = {
@@ -87,8 +131,15 @@ object KeyExpression extends StringFactory[KeyExpression] {
     val keyOriginOpt = iter.takeKeyOriginOpt()
     val isExtKey = ExtKey.prefixes.exists(p => iter.current.startsWith(p))
     if (isExtKey) {
-      val _ = iter.takeExtKey()
-      sys.error(s"ExtKeys not supported yet")
+      val extKey = iter.takeExtKey()
+      val pathOpt = iter.takeBIP32PathOpt()
+      val childrenHardenedOpt = iter.takeChildrenHardenedOpt()
+      extKey match {
+        case xprv: ExtPrivateKey =>
+          XprvKeyExpression(xprv, keyOriginOpt, pathOpt, childrenHardenedOpt)
+        case xpub: ExtPublicKey =>
+          XpubKeyExpression(xpub, keyOriginOpt, pathOpt, childrenHardenedOpt)
+      }
     } else {
       val cp =
         iter.current // needed to parse network info in case of WIF private key
@@ -126,10 +177,9 @@ case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
   override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
 }
 
-case class P2WPKHExpression(xPubHDPath: XPubHDPath) extends ScriptExpression {
+case class P2WPKHExpression(xpub: ExtPublicKey, hdPath: BIP32Path)
+    extends ScriptExpression {
   override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
-  val xpub = xPubHDPath.xpub
-  val hdPath = xPubHDPath.bip32Path
 
   override val scriptPubKey: P2WPKHWitnessSPKV0 = {
     val pubKey = xpub.deriveChildPubKey(hdPath).get.key
