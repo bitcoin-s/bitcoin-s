@@ -35,6 +35,16 @@ sealed abstract class PrivateKeyExpression extends KeyExpression {
   override def key: ECPrivateKey
 }
 
+/** A private key descriptor expression
+  * Examples of what this data structure can represent
+  * 5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss
+  * L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1
+  *
+  * Its unclear to me at this point if private keys can have key origin
+  * @param bytes
+  * @param network
+  * @param originOpt
+  */
 case class RawPrivateKeyExpression(
     bytes: ECPrivateKeyBytes,
     network: NetworkParameters,
@@ -52,6 +62,12 @@ sealed abstract class PublicKeyExpression extends KeyExpression {
   override def key: ECPublicKey
 }
 
+/** A key expression that looks like
+  * 0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600
+  * [deadbeef/0h/0h/0h]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600
+  * @param bytes
+  * @param originOpt
+  */
 case class RawPublicKeyExpression(
     bytes: ECPublicKeyBytes,
     originOpt: Option[KeyOriginExpression])
