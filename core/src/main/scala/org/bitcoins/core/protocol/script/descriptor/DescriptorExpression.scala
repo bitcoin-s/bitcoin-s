@@ -9,7 +9,10 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.script.{
+  P2PKHScriptPubKey,
+  P2SHScriptPubKey,
   P2WPKHWitnessSPKV0,
+  P2WSHWitnessSPKV0,
   RawScriptPubKey,
   ScriptPubKey
 }
@@ -112,7 +115,16 @@ case class XprvKeyExpression(
     pathOpt: Option[BIP32Path],
     childrenHardenedOpt: Option[Boolean])
     extends ExtKeyExpression {
-  override val key: ECPrivateKey = extKey.key
+
+  override val key: ECPrivateKey = {
+    pathOpt match {
+      case Some(path) =>
+        extKey
+          .deriveChildPrivKey(path)
+          .key
+      case None => extKey.key
+    }
+  }
 }
 
 case class XpubKeyExpression(
@@ -121,7 +133,17 @@ case class XpubKeyExpression(
     pathOpt: Option[BIP32Path],
     childrenHardenedOpt: Option[Boolean])
     extends ExtKeyExpression {
-  override val key: ECPublicKey = extKey.key
+
+  override val key: ECPublicKey = {
+    pathOpt match {
+      case Some(path) =>
+        extKey
+          .deriveChildPubKey(path)
+          .get
+          .key
+      case None => extKey.key
+    }
+  }
 }
 
 object KeyExpression extends StringFactory[KeyExpression] {
@@ -141,8 +163,8 @@ object KeyExpression extends StringFactory[KeyExpression] {
           XpubKeyExpression(xpub, keyOriginOpt, pathOpt, childrenHardenedOpt)
       }
     } else {
-      val cp =
-        iter.current // needed to parse network info in case of WIF private key
+      // needed to parse network info in case of WIF private key
+      val (cp, _) = iter.current.span(_ != ')')
       val keyBytes = iter.takeECKey()
       keyBytes match {
         case priv: ECPrivateKeyBytes =>
@@ -177,12 +199,65 @@ case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
   override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
 }
 
-case class P2WPKHExpression(xpub: ExtPublicKey, hdPath: BIP32Path)
+case class P2PKHScriptExpression(keyExpression: KeyExpression)
+    extends ScriptExpression {
+  override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
+
+  override val scriptPubKey: P2PKHScriptPubKey = {
+    val pub = keyExpression.key match {
+      case priv: ECPrivateKey => priv.publicKey
+      case pub: ECPublicKey   => pub
+    }
+    P2PKHScriptPubKey(pub)
+  }
+}
+
+case class P2WPKHExpression(keyExpression: KeyExpression)
     extends ScriptExpression {
   override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
 
   override val scriptPubKey: P2WPKHWitnessSPKV0 = {
-    val pubKey = xpub.deriveChildPubKey(hdPath).get.key
+    val pubKey = keyExpression.key match {
+      case priv: ECPrivateKey => priv.publicKey
+      case pub: ECPublicKey   => pub
+    }
     P2WPKHWitnessSPKV0(pubKey)
+  }
+}
+
+case class P2WSHExpression(scriptExpression: ScriptExpression)
+    extends ScriptExpression {
+  override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
+
+  override val scriptPubKey: P2WSHWitnessSPKV0 = {
+    P2WSHWitnessSPKV0(scriptExpression.scriptPubKey)
+  }
+}
+
+case class P2SHExpression(scriptExpression: ScriptExpression)
+    extends ScriptExpression {
+  override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
+
+  override val scriptPubKey: P2SHScriptPubKey = P2SHScriptPubKey(
+    scriptExpression.scriptPubKey)
+}
+
+object ScriptExpression extends StringFactory[ScriptExpression] {
+
+  override def fromString(string: String): ScriptExpression = {
+    val iter = DescriptorIterator(string)
+    val descriptorType = iter.takeDescriptorType()
+    val expression: ScriptExpression = descriptorType match {
+      case DescriptorType.PKH  => P2PKHScriptExpression(iter.takeKeyExpression())
+      case DescriptorType.WPKH => P2WPKHExpression(iter.takeKeyExpression())
+      case DescriptorType.WSH  => P2WSHExpression(iter.takeScriptExpression())
+      case DescriptorType.SH   => P2SHExpression(iter.takeScriptExpression())
+      case DescriptorType.Raw  => RawScriptExpression(iter.takeRawScriptPubKey())
+      case x @ (DescriptorType.TR | DescriptorType.SortedMulti |
+          DescriptorType.Multi | DescriptorType.PK) =>
+        sys.error(
+          s"Descriptor type not supported yet in ScriptExpression.fromString(), got=$x")
+    }
+    expression
   }
 }

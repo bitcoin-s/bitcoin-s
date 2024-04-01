@@ -69,7 +69,8 @@ object DescriptorType extends StringFactory[DescriptorType] {
   )
 
   override def fromStringOpt(string: String): Option[DescriptorType] = {
-    all.find(d => string.startsWith(d.toString))
+    val (dType, _) = string.span(_ != '(')
+    all.find(d => dType == d.toString)
   }
 
   override def fromString(string: String): DescriptorType = {
