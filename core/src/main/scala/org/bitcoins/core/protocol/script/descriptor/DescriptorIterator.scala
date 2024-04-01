@@ -7,6 +7,10 @@ import org.bitcoins.crypto.{ECKeyBytes, ECPublicKeyBytes}
 case class DescriptorIterator(descriptor: String) {
   private var index: Int = 0
 
+  private val hardenedChars: Vector[Char] = {
+    Vector('\'', 'h', 'H')
+  }
+
   def current: String = {
     descriptor.drop(index)
   }
@@ -23,14 +27,30 @@ case class DescriptorIterator(descriptor: String) {
     t
   }
 
-  def takeXPubHDPath(): XPubHDPath = {
-    val xpubStr = current.take(ExtPublicKey.base58Len)
-    val extPubKey = ExtPublicKey.fromString(xpubStr)
-    skip(ExtKey.toString(extPubKey).length)
-    val pathStr = current.takeWhile(_ != ')') //parse hd path until we reach ')'
-    val hdPath = BIP32Path.fromString("m" + pathStr)
-    skip(hdPath.toString.length)
-    XPubHDPath(extPubKey, hdPath)
+  def takeBIP32PathOpt(): Option[BIP32Path] = {
+    if (current.nonEmpty && current.charAt(0) == '/') {
+      val (stripped, _) =
+        current.span(_ != '*') //remove indicator if all children are hardened
+      val hdPath = BIP32Path.fromString("m" + stripped)
+      skip(hdPath.toString.length)
+      Some(hdPath)
+    } else {
+      None
+    }
+  }
+
+  def takeChildrenHardenedOpt(): Option[Boolean] = {
+    if (current.nonEmpty && current.charAt(0) == '*') {
+      skip(1)
+      if (current.nonEmpty && hardenedChars.exists(_ == current.charAt(0))) {
+        skip(1)
+        Some(true)
+      } else {
+        Some(false)
+      }
+    } else {
+      None
+    }
   }
 
   def takeChecksum(): Option[String] = {
@@ -43,9 +63,10 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeKeyOriginOpt(): Option[KeyOriginExpression] = {
-    val (originStr, _) = current.span(_ == ']')
+    val (originStr, _) = current.span(_ != ']')
     if (originStr.startsWith("[") && originStr.nonEmpty) {
-      val origin = KeyOriginExpression.fromString(originStr)
+      val origin = KeyOriginExpression
+        .fromString(originStr + "]") //span drops the last ']', so re-add
       skip(origin.toString.length)
       Some(origin)
     } else None
@@ -64,6 +85,9 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeExtKey(): ExtKey = {
-    ???
+    val str = current.take(ExtPublicKey.base58Len)
+    val extKey = ExtKey.fromString(str)
+    skip(ExtKey.toString(extKey).length)
+    extKey
   }
 }

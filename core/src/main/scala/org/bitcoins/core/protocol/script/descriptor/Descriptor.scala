@@ -107,8 +107,9 @@ object P2WPKHDescriptor
 
   override def parseValidExpression(
       iter: DescriptorIterator): P2WPKHExpression = {
-    val xPubHDPath = iter.takeXPubHDPath()
-    P2WPKHExpression(xPubHDPath)
+    //val xPubHDPath = iter.takeXPubHDPath()
+    //P2WPKHExpression(xPubHDPath)
+    ???
   }
 
   override protected def createDescriptor(
