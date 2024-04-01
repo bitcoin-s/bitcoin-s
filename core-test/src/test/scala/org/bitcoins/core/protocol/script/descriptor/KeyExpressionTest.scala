@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.scalatest.Assertion
 
 class KeyExpressionTest extends BitcoinSUnitTest {
 
@@ -88,5 +89,50 @@ class KeyExpressionTest extends BitcoinSUnitTest {
     assert(KeyExpression.fromString(str7).toString == str7)
     assert(KeyExpression.fromString(str8).toString == str8)
     assert(KeyExpression.fromString(str9).toString == str9)
+  }
+
+  it must "fail invalid key expressions in BIP380" in {
+    val str0 =
+      "[deadbeef/0h/0h/0h/*]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+    val str1 =
+      "[deadbeef/0h/0h/0h/]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+    val str2 =
+      "[deadbef/0h/0h/0h]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+
+    val str3 =
+      "[deadbeeef/0h/0h/0h]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+    val str4 =
+      "[deadbeef/0f/0f/0f]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+    val str5 =
+      "[deadbeef/0H/0H/0H]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+    val str6 =
+      "[deadbeef/-0/-0/-0]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce600"
+    val str7 = "L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1/0"
+    val str8 = "L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1/*"
+    val str9 =
+      "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U/2147483648"
+    val str10 =
+      "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U/1aa"
+    val str11 =
+      "[aaaaaaaa][aaaaaaaa]xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U/2147483647'/0"
+    runFailTest(str0)
+    runFailTest(str1)
+    runFailTest(str2)
+    runFailTest(str3)
+    runFailTest(str4)
+    runFailTest(str5)
+    runFailTest(str6)
+    runFailTest(str7)
+    runFailTest(str8)
+    runFailTest(str9)
+    runFailTest(str10)
+    runFailTest(str11)
+
+  }
+
+  private def runFailTest(str: String): Assertion = {
+    assertThrows[RuntimeException] {
+      KeyExpression.fromString(str)
+    }
   }
 }
