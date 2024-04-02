@@ -8,7 +8,7 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   behavior of "OutputDescriptor"
 
-  it must "parse a p2wpkh descriptors" in {
+  it must "parse valid descriptors in BIP382" in {
     val str0 = "wpkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
     val expected0 = "00149a1c78a507689f6f54b847ad1cef1e614ee23f1e"
     runTest(str0, expected0)
@@ -45,12 +45,51 @@ class DescriptorTest extends BitcoinSUnitTest {
       "0020338e023079b91c58571b20e602d7805fb808c22473cbc391a41b1bd3a192e75b"
     runTest(str6, expected6)
 
+    val str7 =
+      "wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    val expected7 =
+      "0020338e023079b91c58571b20e602d7805fb808c22473cbc391a41b1bd3a192e75b"
+    runTest(str7, expected7)
+
+    val str8 = "wsh(pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
+    val expected8 =
+      "00202e271faa2325c199d25d22e1ead982e45b64eeb4f31e73dbdf41bd4b5fec23fa"
+    runTest(str8, expected8)
+
+    val str9 =
+      "wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    val expected9 =
+      "0020338e023079b91c58571b20e602d7805fb808c22473cbc391a41b1bd3a192e75b"
+    runTest(str9, expected9)
+
+    val str10 = "wsh(pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
+    val expected10 =
+      "00202e271faa2325c199d25d22e1ead982e45b64eeb4f31e73dbdf41bd4b5fec23fa"
+    runTest(str10, expected10)
+
+    val str11 =
+      "wsh(pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    val expected11 =
+      "00202e271faa2325c199d25d22e1ead982e45b64eeb4f31e73dbdf41bd4b5fec23fa"
+    runTest(str11, expected11)
+
+    val str12 =
+      "sh(wsh(pkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)))"
+    val expected12 = "a914b61b92e2ca21bac1e72a3ab859a742982bea960a87"
+    runTest(str12, expected12)
+
+    val str13 =
+      "sh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))"
+    val expected13 = "a914b61b92e2ca21bac1e72a3ab859a742982bea960a87"
+    runTest(str13, expected13)
+
   }
 
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
     val expected = ScriptPubKey.fromAsmHex(expectedSPK)
     assert(desc.scriptPubKey == expected)
+    assert(desc.toString == descriptor)
   }
 
   def runDerivationTest(
