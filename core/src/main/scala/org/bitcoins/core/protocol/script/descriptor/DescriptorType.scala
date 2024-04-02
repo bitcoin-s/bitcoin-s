@@ -65,7 +65,8 @@ object DescriptorType extends StringFactory[DescriptorType] {
     TR,
     Multi,
     SortedMulti,
-    Raw
+    Raw,
+    SH
   )
 
   override def fromStringOpt(string: String): Option[DescriptorType] = {

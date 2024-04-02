@@ -10,6 +10,7 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.script.{
   P2PKHScriptPubKey,
+  P2PKScriptPubKey,
   P2SHScriptPubKey,
   P2WPKHWitnessSPKV0,
   P2WSHWitnessSPKV0,
@@ -188,19 +189,41 @@ sealed abstract class ScriptExpression extends DescriptorExpression {
   def scriptPubKey: ScriptPubKey
 
   def descriptorType: DescriptorType
+}
+
+/** A script expression derived from a key expression */
+sealed trait KeyExpressionScriptExpression { _: ScriptExpression =>
+  def keyExpression: KeyExpression
 
   override def toString: String = {
-    s"${descriptorType.toString}(${scriptPubKey.asmHex})"
+    s"${descriptorType.toString}(${keyExpression.toString})"
+  }
+}
+
+/** A script expression nested inside of another script expression
+  * Example:
+  * sh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))
+  */
+sealed trait NestedScriptExpression { _: ScriptExpression =>
+  def scriptExpression: ScriptExpression
+
+  override def toString: String = {
+    s"${descriptorType.toString}(${scriptExpression.toString})"
   }
 }
 
 case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
     extends ScriptExpression {
   override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
+
+  override def toString: String = {
+    s"${descriptorType.toString}(${scriptPubKey.asmHex})"
+  }
 }
 
 case class P2PKHScriptExpression(keyExpression: KeyExpression)
-    extends ScriptExpression {
+    extends ScriptExpression
+    with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
 
   override val scriptPubKey: P2PKHScriptPubKey = {
@@ -212,8 +235,23 @@ case class P2PKHScriptExpression(keyExpression: KeyExpression)
   }
 }
 
+case class P2PKScriptExpression(keyExpression: KeyExpression)
+    extends ScriptExpression
+    with KeyExpressionScriptExpression {
+  override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
+
+  override val scriptPubKey: P2PKScriptPubKey = {
+    val pub = keyExpression.key match {
+      case priv: ECPrivateKey => priv.publicKey
+      case pub: ECPublicKey   => pub
+    }
+    P2PKScriptPubKey(pub)
+  }
+}
+
 case class P2WPKHExpression(keyExpression: KeyExpression)
-    extends ScriptExpression {
+    extends ScriptExpression
+    with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
 
   override val scriptPubKey: P2WPKHWitnessSPKV0 = {
@@ -226,7 +264,8 @@ case class P2WPKHExpression(keyExpression: KeyExpression)
 }
 
 case class P2WSHExpression(scriptExpression: ScriptExpression)
-    extends ScriptExpression {
+    extends ScriptExpression
+    with NestedScriptExpression {
   override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
 
   override val scriptPubKey: P2WSHWitnessSPKV0 = {
@@ -235,7 +274,8 @@ case class P2WSHExpression(scriptExpression: ScriptExpression)
 }
 
 case class P2SHExpression(scriptExpression: ScriptExpression)
-    extends ScriptExpression {
+    extends ScriptExpression
+    with NestedScriptExpression {
   override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
 
   override val scriptPubKey: P2SHScriptPubKey = P2SHScriptPubKey(
@@ -253,6 +293,7 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
       case DescriptorType.WSH  => P2WSHExpression(iter.takeScriptExpression())
       case DescriptorType.SH   => P2SHExpression(iter.takeScriptExpression())
       case DescriptorType.Raw  => RawScriptExpression(iter.takeRawScriptPubKey())
+      case DescriptorType.PK   => P2PKScriptExpression(iter.takeKeyExpression())
       case x @ (DescriptorType.TR | DescriptorType.SortedMulti |
           DescriptorType.Multi | DescriptorType.PK) =>
         sys.error(

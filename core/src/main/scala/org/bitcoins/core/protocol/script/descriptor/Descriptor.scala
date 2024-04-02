@@ -2,6 +2,8 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.script.{
+  P2PKScriptPubKey,
+  P2SHScriptPubKey,
   P2WPKHWitnessSPKV0,
   P2WSHWitnessSPKV0,
   RawScriptPubKey,
@@ -20,7 +22,11 @@ sealed abstract class Descriptor {
   def checksum: Option[String]
 
   override def toString: String = {
-    s"${expression.toString}#${checksum.getOrElse("")}"
+    val checksumStr = checksum match {
+      case Some(c) => "#" + c
+      case None    => ""
+    }
+    expression.toString + checksumStr
   }
 }
 
@@ -50,6 +56,18 @@ case class P2WSHDescriptor(
     checksum: Option[String])
     extends ScriptDescriptor {
   override val scriptPubKey: P2WSHWitnessSPKV0 = expression.scriptPubKey
+}
+
+case class P2PKDescriptor(
+    expression: P2PKScriptExpression,
+    checksum: Option[String])
+    extends ScriptDescriptor {
+  override val scriptPubKey: P2PKScriptPubKey = expression.scriptPubKey
+}
+
+case class P2SHDescriptor(expression: P2SHExpression, checksum: Option[String])
+    extends ScriptDescriptor {
+  override val scriptPubKey: P2SHScriptPubKey = expression.scriptPubKey
 }
 
 sealed abstract class DescriptorFactory[
@@ -147,6 +165,46 @@ object P2WSHDescriptor
   }
 }
 
+object P2PKDescriptor
+    extends DescriptorFactory[
+      P2PKDescriptor,
+      P2PKScriptExpression,
+      DescriptorType.PK.type] {
+  override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): P2PKScriptExpression = {
+    val keyExpression = iter.takeKeyExpression()
+    P2PKScriptExpression(keyExpression)
+  }
+
+  override protected def createDescriptor(
+      e: P2PKScriptExpression,
+      checksum: Option[String]): P2PKDescriptor = {
+    P2PKDescriptor(e, checksum)
+  }
+}
+
+object P2SHDescriptor
+    extends DescriptorFactory[
+      P2SHDescriptor,
+      P2SHExpression,
+      DescriptorType.SH.type] {
+  override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): P2SHExpression = {
+    val scriptExpression = iter.takeScriptExpression()
+    P2SHExpression(scriptExpression)
+  }
+
+  override protected def createDescriptor(
+      e: P2SHExpression,
+      checksum: Option[String]): P2SHDescriptor = {
+    P2SHDescriptor(e, checksum)
+  }
+}
+
 object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
 
   private val map: Map[
@@ -158,7 +216,9 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
     Map(
       DescriptorType.Raw -> RawDescriptor,
       DescriptorType.WPKH -> P2WPKHDescriptor,
-      DescriptorType.WSH -> P2WSHDescriptor
+      DescriptorType.WSH -> P2WSHDescriptor,
+      DescriptorType.PK -> P2PKDescriptor,
+      DescriptorType.SH -> P2SHDescriptor
     )
   }
 
