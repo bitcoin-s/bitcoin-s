@@ -229,6 +229,10 @@ sealed abstract class ExtPrivateKey
     Try(UInt32(idx)).map(deriveChildPrivKey)
   }
 
+  def deriveChildPrivKey(child: BIP32Node): ExtPrivateKey = {
+    deriveChildPrivKey(child.toUInt32)
+  }
+
   override def publicKey: ECPublicKey = key.publicKey
 
   override def sign(bytes: ByteVector): ECDigitalSignature = {
@@ -472,9 +476,8 @@ sealed abstract class ExtPublicKey extends ExtKey {
 
   final override def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] = {
     if (idx >= ExtKey.hardenedIdx) {
-      Failure(
-        new IllegalArgumentException(
-          "Cannot derive hardened child from extended public key"))
+      Failure(new IllegalArgumentException(
+        s"Cannot derive hardened child from extended public key, got=$idx limit=${ExtKey.hardenedIdx}"))
     } else {
       val data = key.bytes ++ idx.bytes
       val hmac = CryptoUtil.hmac512(chainCode.bytes, data)

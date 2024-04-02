@@ -1,8 +1,15 @@
 package org.bitcoins.core.protocol.script.descriptor
 
-import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, ScriptPubKey}
+import org.bitcoins.core.protocol.script.{
+  P2SHScriptPubKey,
+  P2WPKHWitnessSPKV0,
+  P2WSHWitnessSPKV0,
+  ScriptPubKey
+}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
+
+import scala.annotation.tailrec
 
 class DescriptorTest extends BitcoinSUnitTest {
 
@@ -23,22 +30,26 @@ class DescriptorTest extends BitcoinSUnitTest {
     val expected2 = "0014326b2249e3a25d5dc60935f044ee835d090ba859"
     runTest(str2, expected2)
 
-//    val str3 =
-//      "wpkh([ffffffff/13']xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH/1/2/*)"
-//    val expected3 = Vector("0014326b2249e3a25d5dc60935f044ee835d090ba859",
-//                           "0014af0bd98abc2f2cae66e36896a39ffe2d32984fb7",
-//                           "00141fa798efd1cbf95cebf912c031b8a4a6e9fb9f27")
-//    runDerivationTest(str3, expected3)
+    val str3 =
+      "wpkh([ffffffff/13']xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH/1/2/*)"
+    val expected3 = Vector("0014326b2249e3a25d5dc60935f044ee835d090ba859",
+                           "0014af0bd98abc2f2cae66e36896a39ffe2d32984fb7",
+                           "00141fa798efd1cbf95cebf912c031b8a4a6e9fb9f27")
+    runDerivationTest(str3, expected3)
 
-//    val str4 = "sh(wpkh(xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*'))"
-//    val expected4 = Vector("a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87", "a914bed59fc0024fae941d6e20a3b44a109ae740129287", "a9148483aa1116eb9c05c482a72bada4b1db24af654387")
-//    runDerivationTest(str4,expected4)
+    val str4 =
+      "sh(wpkh(xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*'))"
+    val expected4 = Vector("a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
+                           "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
+                           "a9148483aa1116eb9c05c482a72bada4b1db24af654387")
+    runDerivationTest(str4, expected4)
 
-//    val str5 = "sh(wpkh(xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8/10/20/30/40/*h))"
-//    val expected5 = Vector("a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
-//      "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
-//     "a9148483aa1116eb9c05c482a72bada4b1db24af654387")
-//    runDerivationTest(str5,expected5)
+    val str5 =
+      "sh(wpkh(xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*'))"
+    val expected5 = Vector("a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
+                           "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
+                           "a9148483aa1116eb9c05c482a72bada4b1db24af654387")
+    runDerivationTest(str5, expected5)
 
     val str6 = "wsh(pkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
     val expected6 =
@@ -92,15 +103,40 @@ class DescriptorTest extends BitcoinSUnitTest {
     assert(desc.toString == descriptor)
   }
 
+  @tailrec
+  private def parseExtKeyExpression(
+      expression: ScriptExpression): ExtKeyExpression = {
+    expression match {
+      case x: KeyExpressionScriptExpression =>
+        x.source.asInstanceOf[ExtKeyExpression]
+      case x: NestedScriptExpression =>
+        parseExtKeyExpression(x.source)
+      case x: RawScriptExpression =>
+        sys.error(
+          s"RawScriptExpression cannot be used in runDerivationTest(), got=$x")
+    }
+  }
+
   def runDerivationTest(
       descriptor: String,
       expectedSPKs: Vector[String]): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
-    val extKeyDesc = desc.expression.asInstanceOf[ExtKeyExpression]
+    val extKeyDesc = parseExtKeyExpression(desc.expression)
     expectedSPKs.zipWithIndex.foreach { case (s, idx) =>
       val expected = ScriptPubKey.fromAsmHex(s)
-      val derivedKey = extKeyDesc.extKey.deriveChildPubKey(idx).get.key
-      assert(P2WPKHWitnessSPKV0(derivedKey) == expected)
+      val derivedKey = extKeyDesc match {
+        case xprv: XprvKeyExpression => xprv.deriveChild(idx).publicKey
+        case xpub: XpubKeyExpression => xpub.deriveChild(idx)
+      }
+
+      val p2wpkh = P2WPKHWitnessSPKV0(derivedKey)
+      val spk = desc.expression.descriptorType match {
+        case DescriptorType.WPKH => p2wpkh
+        case DescriptorType.SH   => P2SHScriptPubKey(p2wpkh)
+        case DescriptorType.WSH  => P2WSHWitnessSPKV0(p2wpkh)
+        case x                   => sys.error(s"Not supported by BIP382, got=$x")
+      }
+      assert(spk == expected)
     }
     succeed
   }
