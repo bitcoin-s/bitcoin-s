@@ -83,7 +83,8 @@ case class DescriptorIterator(descriptor: String) {
       ECPrivateKeyUtil.privateKeyPrefixes.exists(_ == current.charAt(0))
     val (keyBytes, _) = current.span(_ != ')')
     val result: ECKeyBytes = if (isPrivKey) {
-      ECPrivateKeyUtil.fromWIFToPrivateKey(keyBytes)
+      val k = ECPrivateKeyUtil.fromWIFToPrivateKey(keyBytes)
+      k
     } else {
       ECPublicKeyBytes.fromHex(keyBytes)
     }

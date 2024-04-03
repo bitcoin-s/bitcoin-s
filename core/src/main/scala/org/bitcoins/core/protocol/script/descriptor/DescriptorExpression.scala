@@ -17,8 +17,12 @@ import org.bitcoins.core.protocol.script.{
   RawScriptPubKey,
   ScriptPubKey
 }
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
+import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.crypto.{
   BaseECKey,
+  CryptoUtil,
+  ECKeyBytes,
   ECPrivateKey,
   ECPrivateKeyBytes,
   ECPublicKey,
@@ -38,11 +42,11 @@ sealed abstract class DescriptorExpression
 sealed abstract class KeyExpression extends DescriptorExpression {
   def originOpt: Option[KeyOriginExpression]
 
-  def key: BaseECKey
+  def key: ECKeyBytes
 }
 
 sealed abstract class PrivateKeyExpression extends KeyExpression {
-  override def key: ECPrivateKey
+  override def key: ECPrivateKeyBytes
 }
 
 /** A private key descriptor expression
@@ -56,20 +60,19 @@ sealed abstract class PrivateKeyExpression extends KeyExpression {
   * @param originOpt
   */
 case class RawPrivateKeyExpression(
-    bytes: ECPrivateKeyBytes,
+    key: ECPrivateKeyBytes,
     network: NetworkParameters,
     originOpt: Option[KeyOriginExpression])
     extends PrivateKeyExpression {
-  override val key: ECPrivateKey = bytes.toPrivateKey
 
   override def toString(): String = {
     originOpt.map(_.toString).getOrElse("") +
-      ECPrivateKeyUtil.toWIF(bytes, network)
+      ECPrivateKeyUtil.toWIF(key, network)
   }
 }
 
 sealed abstract class PublicKeyExpression extends KeyExpression {
-  override def key: ECPublicKey
+  override def key: ECPublicKeyBytes
 }
 
 /** A key expression that looks like
@@ -79,14 +82,13 @@ sealed abstract class PublicKeyExpression extends KeyExpression {
   * @param originOpt
   */
 case class RawPublicKeyExpression(
-    bytes: ECPublicKeyBytes,
+    key: ECPublicKeyBytes,
     originOpt: Option[KeyOriginExpression])
     extends PublicKeyExpression {
-  override val key: ECPublicKey = bytes.toPublicKey
 
   override def toString(): String = {
     originOpt.map(_.toString).getOrElse("") +
-      bytes.hex
+      key.hex
   }
 }
 
@@ -125,13 +127,15 @@ case class XprvKeyExpression(
     childrenHardenedOpt: Option[Boolean])
     extends ExtKeyExpression {
 
-  override val key: ECPrivateKey = {
+  override val key: ECPrivateKeyBytes = {
     pathOpt match {
       case Some(path) =>
         extKey
           .deriveChildPrivKey(path)
           .key
-      case None => extKey.key
+          .toPrivateKeyBytes()
+      case None =>
+        extKey.key.toPrivateKeyBytes()
     }
   }
 
@@ -155,14 +159,15 @@ case class XpubKeyExpression(
     childrenHardenedOpt: Option[Boolean])
     extends ExtKeyExpression {
 
-  override val key: ECPublicKey = {
+  override val key: ECPublicKeyBytes = {
     pathOpt match {
       case Some(path) =>
         extKey
           .deriveChildPubKey(path)
           .get
           .key
-      case None => extKey.key
+          .toPublicKeyBytes()
+      case None => extKey.key.toPublicKeyBytes()
     }
   }
 
@@ -207,13 +212,13 @@ object KeyExpression extends StringFactory[KeyExpression] {
           val networkT = ECPrivateKeyUtil.parseNetworkFromWIF(cp)
           networkT match {
             case Success(network) =>
-              RawPrivateKeyExpression(bytes = priv,
+              RawPrivateKeyExpression(key = priv,
                                       network = network,
                                       originOpt = keyOriginOpt)
             case Failure(err) => throw err
           }
         case pub: ECPublicKeyBytes =>
-          RawPublicKeyExpression(bytes = pub, originOpt = keyOriginOpt)
+          RawPublicKeyExpression(key = pub, originOpt = keyOriginOpt)
       }
     }
 
@@ -268,10 +273,19 @@ case class P2PKHScriptExpression(source: KeyExpression)
 
   override val scriptPubKey: P2PKHScriptPubKey = {
     val pub = source.key match {
-      case priv: ECPrivateKey => priv.publicKey
-      case pub: ECPublicKey   => pub
+      case priv: ECPrivateKeyBytes => priv.publicKeyBytes.toPublicKey
+      case pub: ECPublicKeyBytes   => pub.toPublicKey
     }
-    P2PKHScriptPubKey(pub)
+
+    if (pub.isCompressed) {
+      P2PKHScriptPubKey(pub)
+    } else {
+      //since we seem to always serialize a ECPublicKey as 33 bytes
+      //we need to build the raw script here, come back and look at this...
+      val hash = CryptoUtil.sha256Hash160(pub.decompressedBytes)
+      P2PKHScriptPubKey(hash)
+    }
+
   }
 }
 
@@ -282,10 +296,21 @@ case class P2PKScriptExpression(source: KeyExpression)
 
   override val scriptPubKey: P2PKScriptPubKey = {
     val pub = source.key match {
-      case priv: ECPrivateKey => priv.publicKey
-      case pub: ECPublicKey   => pub
+      case priv: ECPrivateKeyBytes =>
+        priv.publicKeyBytes.toPublicKey
+      case pub: ECPublicKeyBytes => pub.toPublicKey
     }
-    P2PKScriptPubKey(pub)
+    if (pub.isCompressed) {
+      P2PKScriptPubKey(pub)
+    } else {
+      //since we seem to always serialize a ECPublicKey as 33 bytes
+      //we need to build the raw script here, come back and look at this...
+      P2PKScriptPubKey.fromAsm(
+        Vector(BytesToPushOntoStack(65),
+               ScriptConstant(pub.decompressedBytes),
+               OP_CHECKSIG))
+    }
+
   }
 }
 
@@ -296,8 +321,8 @@ case class P2WPKHExpression(source: KeyExpression)
 
   override val scriptPubKey: P2WPKHWitnessSPKV0 = {
     val pubKey = source.key match {
-      case priv: ECPrivateKey => priv.publicKey
-      case pub: ECPublicKey   => pub
+      case priv: ECPrivateKeyBytes => priv.publicKeyBytes.toPublicKey
+      case pub: ECPublicKeyBytes   => pub.toPublicKey
     }
     P2WPKHWitnessSPKV0(pubKey)
   }

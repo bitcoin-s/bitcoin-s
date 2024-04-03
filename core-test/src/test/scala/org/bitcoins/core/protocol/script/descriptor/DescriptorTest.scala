@@ -15,6 +15,110 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   behavior of "OutputDescriptor"
 
+  it must "parse valid descriptors in BIP381" in {
+    val str0 = "pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
+    val expected0 =
+      "2103a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bdac"
+    runTest(str0, expected0)
+
+    val str1 =
+      "pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
+    val expected1 =
+      "2103a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bdac"
+    runTest(str1, expected1)
+
+    val str2 =
+      "pkh([deadbeef/1/2'/3/4']L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
+    val expected2 = "76a9149a1c78a507689f6f54b847ad1cef1e614ee23f1e88ac"
+    runTest(str2, expected2)
+
+    val str3 =
+      "pkh([deadbeef/1/2'/3/4']03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
+    val expected3 = "76a9149a1c78a507689f6f54b847ad1cef1e614ee23f1e88ac"
+    runTest(str3, expected3)
+
+    val str4 =
+      "pk(5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)"
+    val expected4 =
+      "4104a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235ac"
+    runTest(str4, expected4)
+
+    val str5 =
+      "pk(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235)"
+    val expected5 =
+      "4104a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235ac"
+    runTest(str5, expected5)
+
+    val str6 = "pkh(5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)"
+    val expected6 = "76a914b5bd079c4d57cc7fc28ecf8213a6b791625b818388ac"
+    runTest(str6, expected6)
+
+    val str7 =
+      "pkh(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235)"
+    val expected7 = "76a914b5bd079c4d57cc7fc28ecf8213a6b791625b818388ac"
+    runTest(str7, expected7)
+
+    val str8 = "sh(pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
+    val expected8 = "a9141857af51a5e516552b3086430fd8ce55f7c1a52487"
+    runTest(str8, expected8)
+
+    val str9 =
+      "sh(pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    val expected9 = "a9141857af51a5e516552b3086430fd8ce55f7c1a52487"
+    runTest(str9, expected9)
+
+    val str10 = "sh(pkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
+    val expected10 = "a9141a31ad23bf49c247dd531a623c2ef57da3c400c587"
+    runTest(str10, expected10)
+
+    val str11 =
+      "sh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    val expected11 = "a9141a31ad23bf49c247dd531a623c2ef57da3c400c587"
+    runTest(str11, expected11)
+
+    val str12 =
+      "pkh(xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U/2147483647'/0)"
+    val expected12 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
+    runTest(str12, expected12)
+
+    //invalid hardened derivation, needs to be removed from BIP381
+    /*    val str13 =
+      "pkh(xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB/2147483647'/0)"
+    val expected13 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
+    runTest(str13, expected13)*/
+
+    val str13 =
+      "pkh([bd16bee5/2147483647']xpub69H7F5dQzmVd3vPuLKtcXJziMEQByuDidnX3YdwgtNsecY5HRGtAAQC5mXTt4dsv9RzyjgDjAQs9VGVV6ydYCHnprc9vvaA5YtqWyL6hyds/0)"
+    val expected13 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
+    runTest(str13, expected13)
+
+    val str14 =
+      "pk(xprv9uPDJpEQgRQfDcW7BkF7eTya6RPxXeJCqCJGHuCJ4GiRVLzkTXBAJMu2qaMWPrS7AANYqdq6vcBcBUdJCVVFceUvJFjaPdGZ2y9WACViL4L/0)"
+    val expected14 =
+      "210379e45b3cf75f9c5f9befd8e9506fb962f6a9d185ac87001ec44a8d3df8d4a9e3ac"
+    runTest(str14, expected14)
+
+    val str15 =
+      "pk(xpub68NZiKmJWnxxS6aaHmn81bvJeTESw724CRDs6HbuccFQN9Ku14VQrADWgqbhhTHBaohPX4CjNLf9fq9MYo6oDaPPLPxSb7gwQN3ih19Zm4Y/0)"
+    val expected15 =
+      "210379e45b3cf75f9c5f9befd8e9506fb962f6a9d185ac87001ec44a8d3df8d4a9e3ac"
+    runTest(str15, expected15)
+  }
+
+  it must "fail to parse invalid test vectors from BIP381" in {
+    val str0 =
+      "pk(pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str0)
+    val str1 =
+      "pkh(pk(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str1)
+    val str2 =
+      "sh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
+    runFailTest(str2)
+    val str3 =
+      "sh(sh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))"
+    runFailTest(str3)
+  }
   it must "parse valid descriptors in BIP382" in {
     val str0 = "wpkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
     val expected0 = "00149a1c78a507689f6f54b847ad1cef1e614ee23f1e"
