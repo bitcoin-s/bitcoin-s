@@ -96,6 +96,39 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   }
 
+  it must "fail to parse invalid test vectors from BIP382" in {
+    val str0 = "wpkh(5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)"
+    runFailTest(str0)
+    val str1 = "sh(wpkh(5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss))"
+    runFailTest(str1)
+    val str2 =
+      "wpkh(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235)"
+    runFailTest(str2)
+    val str3 =
+      "sh(wpkh(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235))"
+    runFailTest(str3)
+    val str4 = "wsh(pk(5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss))"
+    runFailTest(str4)
+    val str5 =
+      "wsh(pk(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235))"
+    runFailTest(str5)
+    val str6 =
+      "wsh(wpkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str6)
+    val str7 =
+      "wsh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))"
+    runFailTest(str7)
+    val str8 =
+      "sh(wsh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))))"
+    runFailTest(str8)
+    val str9 =
+      "wpkh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))"
+    runFailTest(str9)
+    val str10 =
+      "wsh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
+    runFailTest(str10)
+  }
+
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
     val expected = ScriptPubKey.fromAsmHex(expectedSPK)
@@ -139,5 +172,11 @@ class DescriptorTest extends BitcoinSUnitTest {
       assert(spk == expected)
     }
     succeed
+  }
+
+  private def runFailTest(str: String): Assertion = {
+    assertThrows[RuntimeException] {
+      KeyExpression.fromString(str)
+    }
   }
 }
