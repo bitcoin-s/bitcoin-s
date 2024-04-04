@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
   P2PKHScriptPubKey,
   P2PKScriptPubKey,
   P2SHScriptPubKey,
@@ -41,11 +42,13 @@ sealed abstract class DescriptorExpression
   */
 sealed abstract class KeyExpression extends DescriptorExpression {
   def originOpt: Option[KeyOriginExpression]
+}
 
+sealed abstract class SingleKeyExpression extends KeyExpression {
   def key: ECKeyBytes
 }
 
-sealed abstract class PrivateKeyExpression extends KeyExpression {
+sealed abstract class PrivateKeyExpression extends SingleKeyExpression {
   override def key: ECPrivateKeyBytes
 }
 
@@ -71,7 +74,7 @@ case class RawPrivateKeyExpression(
   }
 }
 
-sealed abstract class PublicKeyExpression extends KeyExpression {
+sealed abstract class PublicKeyExpression extends SingleKeyExpression {
   override def key: ECPublicKeyBytes
 }
 
@@ -98,7 +101,7 @@ case class RawPublicKeyExpression(
   * [deadbeef/0'/1'/2']xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/3/4/5
   * [deadbeef/0'/1'/2']xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/3/4/5/\*
   */
-sealed abstract class ExtKeyExpression extends KeyExpression {
+sealed abstract class ExtKeyExpression extends SingleKeyExpression {
   def extKey: ExtKey
 
   def pathOpt: Option[BIP32Path]
@@ -187,9 +190,23 @@ case class XpubKeyExpression(
   }
 }
 
-object KeyExpression extends StringFactory[KeyExpression] {
+case class MultisigKeyExpression(
+    numSigsRequired: Int,
+    keyExpressions: Vector[SingleKeyExpression])
+    extends KeyExpression {
+  override val originOpt = None
 
-  override def fromString(string: String): KeyExpression = {
+  def pubKeys: Vector[ECPublicKey] = {
+    keyExpressions.map(_.key).map {
+      case priv: ECPrivateKeyBytes => priv.publicKeyBytes.toPublicKey
+      case pub: ECPublicKeyBytes   => pub.toPublicKey
+    }
+  }
+}
+
+object SingleKeyExpression extends StringFactory[SingleKeyExpression] {
+
+  override def fromString(string: String): SingleKeyExpression = {
     val iter = DescriptorIterator(string)
     val keyOriginOpt = iter.takeKeyOriginOpt()
     val isExtKey = ExtKey.prefixes.exists(p => iter.current.startsWith(p))
@@ -221,7 +238,19 @@ object KeyExpression extends StringFactory[KeyExpression] {
           RawPublicKeyExpression(key = pub, originOpt = keyOriginOpt)
       }
     }
+  }
+}
 
+object MultisigKeyExpression extends StringFactory[MultisigKeyExpression] {
+  override def fromString(string: String): MultisigKeyExpression = ???
+}
+
+object KeyExpression extends StringFactory[KeyExpression] {
+
+  override def fromString(string: String): KeyExpression = {
+    MultisigKeyExpression
+      .fromStringOpt(string)
+      .getOrElse(SingleKeyExpression.fromString(string))
   }
 }
 
@@ -266,7 +295,7 @@ case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
   }
 }
 
-case class P2PKHScriptExpression(source: KeyExpression)
+case class P2PKHScriptExpression(source: SingleKeyExpression)
     extends ScriptExpression
     with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
@@ -289,7 +318,7 @@ case class P2PKHScriptExpression(source: KeyExpression)
   }
 }
 
-case class P2PKScriptExpression(source: KeyExpression)
+case class P2PKScriptExpression(source: SingleKeyExpression)
     extends ScriptExpression
     with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
@@ -314,7 +343,7 @@ case class P2PKScriptExpression(source: KeyExpression)
   }
 }
 
-case class P2WPKHExpression(source: KeyExpression)
+case class P2WPKHExpression(source: SingleKeyExpression)
     extends ScriptExpression
     with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
@@ -347,18 +376,33 @@ case class P2SHExpression(source: ScriptExpression)
     source.scriptPubKey)
 }
 
+case class MultisigExpression(source: MultisigKeyExpression)
+    extends ScriptExpression
+    with KeyExpressionScriptExpression {
+  override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
+
+  override val scriptPubKey: MultiSignatureScriptPubKey = {
+    MultiSignatureScriptPubKey(source.numSigsRequired, source.pubKeys)
+  }
+}
+
 object ScriptExpression extends StringFactory[ScriptExpression] {
 
   override def fromString(string: String): ScriptExpression = {
     val iter = DescriptorIterator(string)
     val descriptorType = iter.takeDescriptorType()
     val expression: ScriptExpression = descriptorType match {
-      case DescriptorType.PKH  => P2PKHScriptExpression(iter.takeKeyExpression())
-      case DescriptorType.WPKH => P2WPKHExpression(iter.takeKeyExpression())
-      case DescriptorType.WSH  => P2WSHExpression(iter.takeScriptExpression())
-      case DescriptorType.SH   => P2SHExpression(iter.takeScriptExpression())
-      case DescriptorType.Raw  => RawScriptExpression(iter.takeRawScriptPubKey())
-      case DescriptorType.PK   => P2PKScriptExpression(iter.takeKeyExpression())
+      case DescriptorType.PKH =>
+        P2PKHScriptExpression(iter.takeSingleKeyExpression())
+      case DescriptorType.WPKH =>
+        P2WPKHExpression(iter.takeSingleKeyExpression())
+      case DescriptorType.WSH => P2WSHExpression(iter.takeScriptExpression())
+      case DescriptorType.SH  => P2SHExpression(iter.takeScriptExpression())
+      case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
+      case DescriptorType.PK =>
+        P2PKScriptExpression(iter.takeSingleKeyExpression())
+      case DescriptorType.Multi =>
+        MultisigExpression(iter.takeMultisigKeyExpression())
       case x @ (DescriptorType.TR | DescriptorType.SortedMulti |
           DescriptorType.Multi | DescriptorType.PK) =>
         sys.error(

@@ -2,7 +2,10 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.crypto.{ECPrivateKeyUtil, ExtKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.protocol.script.RawScriptPubKey
+import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
+  RawScriptPubKey
+}
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECKeyBytes,
@@ -105,6 +108,18 @@ case class DescriptorIterator(descriptor: String) {
     keyExpression
   }
 
+  def takeSingleKeyExpression(): SingleKeyExpression = {
+    val singleKeyExpression = SingleKeyExpression.fromString(current)
+    skip(singleKeyExpression.toString.length)
+    singleKeyExpression
+  }
+
+  def takeMultisigKeyExpression(): MultisigKeyExpression = {
+    val multisigKeyExpression = MultisigKeyExpression.fromString(current)
+    skip(multisigKeyExpression.toString.length)
+    multisigKeyExpression
+  }
+
   def takeDoubleSha256DigestBE(): DoubleSha256DigestBE = {
     val hash = DoubleSha256DigestBE.fromHex(current.take(32))
     skip(hash.byteSize.toInt)
@@ -127,5 +142,13 @@ case class DescriptorIterator(descriptor: String) {
     val spk = RawScriptPubKey.fromAsmHex(current)
     skip(spk.byteSize.toInt)
     spk
+  }
+
+  def takeMultisigSPK(): MultiSignatureScriptPubKey = {
+    takeRawScriptPubKey() match {
+      case m: MultiSignatureScriptPubKey => m
+      case x =>
+        sys.error(s"Non multisig SPK found when expected multisigSPK, got=$x")
+    }
   }
 }

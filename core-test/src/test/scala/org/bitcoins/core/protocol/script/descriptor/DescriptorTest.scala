@@ -233,6 +233,14 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str10)
   }
 
+  it must "parse test vectors from BIP383" ignore {
+    val str0 =
+      "multi(1,L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1,5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)"
+    val expected0 =
+      "512103a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd4104a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea23552ae"
+    runTest(str0, expected0)
+  }
+
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
     val expected = ScriptPubKey.fromAsmHex(expectedSPK)
