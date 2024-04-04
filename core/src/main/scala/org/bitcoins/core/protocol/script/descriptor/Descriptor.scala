@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
   P2PKHScriptPubKey,
   P2PKScriptPubKey,
   P2SHScriptPubKey,
@@ -71,6 +72,15 @@ case class P2PKHDescriptor(
     checksum: Option[String])
     extends ScriptDescriptor {
   override val scriptPubKey: P2PKHScriptPubKey = expression.scriptPubKey
+}
+
+case class MultisigDescriptor(
+    expression: MultisigExpression,
+    checksum: Option[String])
+    extends ScriptDescriptor {
+
+  override val scriptPubKey: MultiSignatureScriptPubKey =
+    expression.scriptPubKey
 }
 
 case class P2SHDescriptor(expression: P2SHExpression, checksum: Option[String])
@@ -213,6 +223,26 @@ object P2PKHDescriptor
   }
 }
 
+object MultisigDescriptor
+    extends DescriptorFactory[
+      MultisigDescriptor,
+      MultisigExpression,
+      DescriptorType.Multi.type] {
+  override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): MultisigExpression = {
+    val keyExpression = iter.takeMultisigKeyExpression()
+    MultisigExpression(keyExpression)
+  }
+
+  override protected def createDescriptor(
+      e: MultisigExpression,
+      checksum: Option[String]): MultisigDescriptor = {
+    MultisigDescriptor(e, checksum)
+  }
+}
+
 object P2SHDescriptor
     extends DescriptorFactory[
       P2SHDescriptor,
@@ -247,7 +277,8 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
       DescriptorType.WSH -> P2WSHDescriptor,
       DescriptorType.PK -> P2PKDescriptor,
       DescriptorType.SH -> P2SHDescriptor,
-      DescriptorType.PKH -> P2PKHDescriptor
+      DescriptorType.PKH -> P2PKHDescriptor,
+      DescriptorType.Multi -> MultisigDescriptor
     )
   }
 
