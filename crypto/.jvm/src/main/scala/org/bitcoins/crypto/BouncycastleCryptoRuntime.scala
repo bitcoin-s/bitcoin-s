@@ -146,7 +146,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     Sha256Hash160Digest(hash)
   }
 
-  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     BouncyCastleUtil.computePublicKey(privateKey)
   }
 
@@ -176,7 +176,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
 
-  override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
+  override def publicKey(privateKey: ECPrivateKeyBytes): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
 
   override def tweakMultiply(

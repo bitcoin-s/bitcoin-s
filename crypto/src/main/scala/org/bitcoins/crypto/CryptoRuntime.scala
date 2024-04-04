@@ -18,7 +18,7 @@ trait CryptoRuntime {
     * @param privateKey the private key we want the corresponding public key for
     * @param isCompressed whether the returned public key should be compressed or not
     */
-  def toPublicKey(privateKey: ECPrivateKey): ECPublicKey
+  def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey
 
   def ripeMd160(bytes: ByteVector): RipeMd160Digest
 
@@ -172,7 +172,7 @@ trait CryptoRuntime {
     sha256(schnorrNonceTagBytes ++ bytes)
   }
 
-  def publicKey(privateKey: ECPrivateKey): ECPublicKey
+  def publicKey(privateKey: ECPrivateKeyBytes): ECPublicKey
 
   def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature
 
@@ -264,14 +264,18 @@ trait CryptoRuntime {
   /** Adds a Vector of public keys together, failing only if the total sum is 0x00
     * (the point at infinity), but still succeeding if sub-sums are 0x00.
     */
-  def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
+  def combinePubKeys(
+      pubKeys: Vector[ECPublicKey],
+      isCompressed: Boolean = true): ECPublicKey = {
     val summandPoints = pubKeys.map(_.toPoint)
     val sumPoint = summandPoints.reduce[SecpPoint](add(_, _))
     sumPoint match {
       case SecpPointInfinity =>
         throw new IllegalArgumentException(
           "Sum result was 0x00, an invalid public key.")
-      case p: SecpPointFinite => p.toPublicKey
+      case p: SecpPointFinite =>
+        if (isCompressed) p.toPublicKey.compressed
+        else p.toPublicKey.decompressed
     }
   }
 
@@ -335,8 +339,7 @@ trait CryptoRuntime {
         computedR match {
           case SecpPointInfinity => false
           case point: SecpPointFinite =>
-            !point.y.toBigInteger.testBit(
-              0) && point.toPublicKey.schnorrNonce == rx
+            !point.y.toBigInteger.testBit(0) && point.schnorrNonce == rx
         }
       case Failure(_) => false
     }

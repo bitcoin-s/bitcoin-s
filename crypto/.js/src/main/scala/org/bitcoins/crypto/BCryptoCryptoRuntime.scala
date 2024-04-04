@@ -62,10 +62,11 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     * @param privateKey   the private key we want the corresponding public key for
     * @param isCompressed whether the returned public key should be compressed or not
     */
-  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val pubKeyBuffer =
-      SECP256k1.publicKeyCreate(key = buffer, compressed = false)
+      SECP256k1.publicKeyCreate(key = buffer,
+                                compressed = privateKey.isCompressed)
     val privKeyByteVec = CryptoJsUtil.toByteVector(pubKeyBuffer)
     ECPublicKey.fromBytes(privKeyByteVec)
   }
@@ -168,9 +169,10 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     (key, keyWithSign)
   }
 
-  override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  override def publicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
-    val bufferPubKey = SECP256k1.publicKeyCreate(buffer, compressed = false)
+    val bufferPubKey =
+      SECP256k1.publicKeyCreate(buffer, compressed = privateKey.isCompressed)
     val byteVec = CryptoJsUtil.toByteVector(bufferPubKey)
     ECPublicKey.fromBytes(byteVec)
   }

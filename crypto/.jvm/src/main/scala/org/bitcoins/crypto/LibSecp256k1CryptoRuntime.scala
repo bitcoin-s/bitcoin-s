@@ -49,9 +49,10 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     BouncycastleCryptoRuntime.sha256Hash160(bytes)
   }
 
-  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
+      NativeSecp256k1.computePubkey(privateKey.bytes.toArray,
+                                    privateKey.isCompressed)
     val pubBytes = ByteVector(pubKeyBytes)
     ECPublicKey(pubBytes)
   }
@@ -103,9 +104,10 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     ByteVector(decompressed)
   }
 
-  override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  override def publicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
+      NativeSecp256k1.computePubkey(privateKey.bytes.toArray,
+                                    privateKey.isCompressed)
     val pubBytes = ByteVector(pubKeyBytes)
     ECPublicKey(pubBytes)
   }
@@ -113,10 +115,9 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey = {
-    val mulBytes = NativeSecp256k1.pubKeyTweakMul(
-      publicKey.decompressedBytes.toArray,
-      tweak.bytes.toArray,
-      false)
+    val mulBytes = NativeSecp256k1.pubKeyTweakMul(publicKey.bytes.toArray,
+                                                  tweak.bytes.toArray,
+                                                  true)
     ECPublicKey(ByteVector(mulBytes))
   }
 
@@ -135,14 +136,16 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
     val summands =
       Array(pk1.decompressedBytes.toArray, pk2.decompressedBytes.toArray)
-    val sumKey = NativeSecp256k1.pubKeyCombine(summands, false)
+    val sumKey = NativeSecp256k1.pubKeyCombine(summands, true)
 
     ECPublicKey(ByteVector(sumKey))
   }
 
-  override def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
+  override def combinePubKeys(
+      pubKeys: Vector[ECPublicKey],
+      isCompressed: Boolean = true): ECPublicKey = {
     val summands = pubKeys.map(_.decompressedBytes.toArray).toArray
-    val sumKey = NativeSecp256k1.pubKeyCombine(summands, false)
+    val sumKey = NativeSecp256k1.pubKeyCombine(summands, isCompressed)
 
     ECPublicKey(ByteVector(sumKey))
   }
@@ -153,7 +156,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     val tweaked = NativeSecp256k1.pubKeyTweakAdd(
       pubkey.decompressedBytes.toArray,
       privkey.bytes.toArray,
-      false)
+      true)
     ECPublicKey(ByteVector(tweaked))
   }
 

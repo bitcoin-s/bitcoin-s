@@ -124,8 +124,8 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
   }
 
   it must "correctly compress keys" in {
-    forAll(CryptoGenerators.privateKey) { privKey =>
-      val pubKey = privKey.publicKey
+    forAll(CryptoGenerators.privateKeyBytesUncompressed) { privKeyBytes =>
+      val pubKey = privKeyBytes.publicKeyBytes.toPublicKey
       val pubKeyCompressed = pubKey.compressed
       val pubKeyDecompressed = pubKey.decompressed
 

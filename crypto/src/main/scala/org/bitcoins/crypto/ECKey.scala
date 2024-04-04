@@ -234,7 +234,7 @@ case class ECPrivateKey(bytes: ByteVector)
 
   /** Derives the public for a the private key */
   override def publicKey: ECPublicKey =
-    CryptoUtil.publicKey(this)
+    CryptoUtil.publicKey(toPrivateKeyBytes())
 
   def schnorrPublicKey: SchnorrPublicKey = {
     SchnorrPublicKey(publicKey.bytes)
@@ -301,10 +301,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   * doing computations on public key (points) that may have intermediate 0x00 values, then you
   * should convert using toPoint, do computation, and then convert back toPublicKey in the end.
   */
-case class ECPublicKey(private val _bytes: ByteVector)
-    extends BaseECKey
-    with PublicKey {
-  require(isFullyValid, s"Invalid public key: ${_bytes}: $decompressedBytesT")
+case class ECPublicKey(bytes: ByteVector) extends BaseECKey with PublicKey {
+  require(isFullyValid, s"Invalid public key: ${bytes}: $decompressedBytesT")
 
   /** Converts this public key into the raw underlying point on secp256k1 for computation. */
   def toPoint: SecpPointFinite = SecpPoint.fromPublicKey(this)
@@ -345,13 +343,21 @@ case class ECPublicKey(private val _bytes: ByteVector)
   override def toString: String = "ECPublicKey(" + hex + ")"
 
   /** Returns true only if the underlying wrapped _bytes are compressed */
-  override def isCompressed: Boolean = _bytes.size == 33
+  override def isCompressed: Boolean = bytes.size == 33
 
   /** Returns true only if the underlying wrapped _bytes are decompressed */
-  override def isDecompressed: Boolean = _bytes.size == 65
+  override def isDecompressed: Boolean = bytes.size == 65
 
   override private[crypto] lazy val decompressedBytesT: Try[ByteVector] = {
-    Try(CryptoUtil.decompressed(_bytes))
+    Try(CryptoUtil.decompressed(bytes))
+  }
+
+  private def compressedBytes: ByteVector = {
+    if (isCompressed) {
+      bytes
+    } else {
+      compressed.bytes
+    }
   }
 
   /** Returns this same ECPublicKey wrapping the underlying compressed _bytes.
@@ -359,19 +365,14 @@ case class ECPublicKey(private val _bytes: ByteVector)
     * Same for decompressed.
     */
   override lazy val compressed: this.type = {
-    if (isCompressed || _bytes == ByteVector.fromByte(0x00)) {
+    if (isCompressed || bytes == ByteVector.fromByte(0x00)) {
       this
     } else {
       val key = if (isDecompressed) this else decompressed
-      val (x, y) = key._bytes.tail.splitAt(32)
+      val (x, y) = key.bytes.tail.splitAt(32)
       val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
       fromBytes(x.+:(leadByte))
     }
-  }
-
-  /** Returns the compressed representation of this ECPublicKey */
-  override def bytes: ByteVector = {
-    compressed._bytes
   }
 
   /** Returns the decompressed representation of this ECPublicKey */
@@ -385,14 +386,13 @@ case class ECPublicKey(private val _bytes: ByteVector)
 
   /** Converts this ECPublicKey to raw ECPublicKeyBytes using the specified serialization. */
   def toPublicKeyBytes(isCompressed: Boolean = true): ECPublicKeyBytes = {
-    val bs = if (isCompressed) bytes else decompressedBytes
-
+    val bs = if (isCompressed) compressedBytes else decompressedBytes
     ECPublicKeyBytes(bs)
   }
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case pubKey: ECPublicKey => bytes == pubKey.bytes
+      case pubKey: ECPublicKey => compressedBytes == pubKey.compressedBytes
       case _                   => false
     }
   }
