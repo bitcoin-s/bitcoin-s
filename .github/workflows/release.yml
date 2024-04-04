@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, feature_electron_build, 2024-04-04-setup-java-release]
+    branches: [master, main, feature_electron_build]
     tags: ["*"]
   release:
     types: [ published ]
