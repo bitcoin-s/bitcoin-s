@@ -202,6 +202,10 @@ case class MultisigKeyExpression(
       case pub: ECPublicKeyBytes   => pub.toPublicKey
     }
   }
+
+  override def toString(): String = {
+    s"${numSigsRequired},${keyExpressions.mkString(",")}"
+  }
 }
 
 object SingleKeyExpression extends StringFactory[SingleKeyExpression] {
@@ -242,7 +246,19 @@ object SingleKeyExpression extends StringFactory[SingleKeyExpression] {
 }
 
 object MultisigKeyExpression extends StringFactory[MultisigKeyExpression] {
-  override def fromString(string: String): MultisigKeyExpression = ???
+
+  override def fromString(string: String): MultisigKeyExpression = {
+    val (requiredSigsStr, keyExpressionsStr) = string.span(_ != ',')
+
+    val split = keyExpressionsStr
+      .drop(1) //drop ','
+      .split(',')
+      .toVector
+    println(s"requiredSigs=$requiredSigsStr keyExpressions=$split")
+    val keyExpressions = split.map(SingleKeyExpression.fromString(_))
+    println(s"keyExpressions=$keyExpressions")
+    MultisigKeyExpression(requiredSigsStr.toInt, keyExpressions)
+  }
 }
 
 object KeyExpression extends StringFactory[KeyExpression] {

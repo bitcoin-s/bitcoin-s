@@ -233,7 +233,7 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str10)
   }
 
-  it must "parse test vectors from BIP383" ignore {
+  it must "parse test vectors from BIP383" in {
     val str0 =
       "multi(1,L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1,5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)"
     val expected0 =
