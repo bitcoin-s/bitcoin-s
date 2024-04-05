@@ -19,6 +19,10 @@ sealed abstract class CryptoGenerators {
     }
   }
 
+  def privateKeyBytesUncompressed: Gen[ECPrivateKeyBytes] = {
+    privateKey.map(_.toPrivateKeyBytes(isCompressed = false))
+  }
+
   def fieldElement: Gen[FieldElement] = privateKey.map(_.fieldElement)
 
   def smallFieldElement: Gen[FieldElement] =

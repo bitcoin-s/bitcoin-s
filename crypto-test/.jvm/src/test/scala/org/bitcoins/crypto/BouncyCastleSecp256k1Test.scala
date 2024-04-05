@@ -54,8 +54,9 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
   }
 
   it must "compute public keys the same" in {
-    forAll(CryptoGenerators.privateKey) { privKey =>
-      testCompatibility(_.publicKey(privKey))
+    forAll(CryptoGenerators.privateKey, NumberGenerator.bool) {
+      (privKey, isCompressed) =>
+        testCompatibility(_.publicKey(privKey.toPrivateKeyBytes(isCompressed)))
     }
   }
 

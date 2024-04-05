@@ -31,4 +31,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-compile-cache
       - name: Compile and Check Formatting
-        run: sbt -J-Xmx4g +test:compile scalafmtCheckAll docs/mdoc cryptoTestJVM/test coreTestJVM/test
+        run: sbt -J-Xmx4g +test:compile scalafmtCheckAll cryptoTestJVM/test coreTestJVM/test docs/mdoc

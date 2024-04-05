@@ -20,7 +20,7 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.freshPrivateKey
   }
 
-  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     cryptoRuntime.toPublicKey(privateKey)
   }
 
@@ -89,7 +89,7 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.recoverPublicKey(signature, message)
   }
 
-  override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
+  override def publicKey(privateKey: ECPrivateKeyBytes): ECPublicKey =
     cryptoRuntime.publicKey(privateKey)
 
   override def sign(
@@ -145,8 +145,10 @@ trait CryptoUtil extends CryptoRuntime {
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey =
     cryptoRuntime.add(pk1, pk2)
 
-  override def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey =
-    cryptoRuntime.combinePubKeys(pubKeys)
+  override def combinePubKeys(
+      pubKeys: Vector[ECPublicKey],
+      isCompressed: Boolean = true): ECPublicKey =
+    cryptoRuntime.combinePubKeys(pubKeys, isCompressed)
 
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,

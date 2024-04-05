@@ -57,10 +57,10 @@ object BouncyCastleUtil {
     } else publicKey
   }
 
-  def computePublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+  def computePublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val priv = getBigInteger(privateKey.bytes)
     val point = G.multiply(priv)
-    val pubBytes = ByteVector(point.getEncoded(false))
+    val pubBytes = ByteVector(point.getEncoded(privateKey.isCompressed))
     ECPublicKey(pubBytes)
   }
 

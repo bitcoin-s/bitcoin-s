@@ -42,11 +42,19 @@ case class SecpPointFinite(x: CurveCoordinate, y: CurveCoordinate)
     extends SecpPoint {
 
   override def bytes: ByteVector = {
-    ByteVector(0x04) ++ x.bytes ++ y.bytes
+    val pub = ECPublicKeyBytes(ByteVector(0x04) ++ x.bytes ++ y.bytes)
+    pub.compressed.bytes
   }
 
   def toPublicKey: ECPublicKey = {
     ECPublicKey(bytes)
+  }
+
+  def schnorrNonce: SchnorrNonce = {
+    val pub = toPublicKey
+    require(pub.isCompressed,
+            s"SchnorrNonce can only be created from compressed public keys")
+    pub.schnorrNonce
   }
 }
 
