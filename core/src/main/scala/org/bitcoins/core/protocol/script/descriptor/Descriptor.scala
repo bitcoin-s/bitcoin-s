@@ -35,6 +35,7 @@ sealed abstract class Descriptor {
 sealed abstract class ScriptDescriptor extends Descriptor {
   override def expression: ScriptExpression
 
+  def descriptorType: DescriptorType = expression.descriptorType
   def scriptPubKey: ScriptPubKey
 
 }
@@ -76,6 +77,15 @@ case class P2PKHDescriptor(
 
 case class MultisigDescriptor(
     expression: MultisigExpression,
+    checksum: Option[String])
+    extends ScriptDescriptor {
+
+  override val scriptPubKey: MultiSignatureScriptPubKey =
+    expression.scriptPubKey
+}
+
+case class SortedMultisigDescriptor(
+    expression: SortedMultisigExpression,
     checksum: Option[String])
     extends ScriptDescriptor {
 
@@ -243,6 +253,28 @@ object MultisigDescriptor
   }
 }
 
+object SortedMultisigDescriptor
+    extends DescriptorFactory[
+      SortedMultisigDescriptor,
+      SortedMultisigExpression,
+      DescriptorType.SortedMulti.type] {
+
+  override val descriptorType: DescriptorType.SortedMulti.type =
+    DescriptorType.SortedMulti
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): SortedMultisigExpression = {
+    val expr = iter.takeMultisigKeyExpression()
+    SortedMultisigExpression(expr)
+  }
+
+  override protected def createDescriptor(
+      e: SortedMultisigExpression,
+      checksum: Option[String]): SortedMultisigDescriptor = {
+    SortedMultisigDescriptor(e, checksum)
+  }
+}
+
 object P2SHDescriptor
     extends DescriptorFactory[
       P2SHDescriptor,
@@ -278,7 +310,8 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
       DescriptorType.PK -> P2PKDescriptor,
       DescriptorType.SH -> P2SHDescriptor,
       DescriptorType.PKH -> P2PKHDescriptor,
-      DescriptorType.Multi -> MultisigDescriptor
+      DescriptorType.Multi -> MultisigDescriptor,
+      DescriptorType.SortedMulti -> SortedMultisigDescriptor
     )
   }
 
