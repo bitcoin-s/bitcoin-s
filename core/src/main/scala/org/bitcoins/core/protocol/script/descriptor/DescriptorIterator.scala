@@ -38,8 +38,11 @@ case class DescriptorIterator(descriptor: String) {
 
   def takeBIP32PathOpt(): Option[BIP32Path] = {
     if (current.nonEmpty && current.charAt(0) == '/') {
-      val (stripped, _) =
+      val (stripped, _) = if (current.exists(_ == '*')) {
         current.span(_ != '*') //remove indicator if all children are hardened
+      } else {
+        current.span(_ != ')') //else if no hardened indcator, drop last ')'
+      }
       val hdPath = BIP32Path.fromString("m" + stripped)
       skip(hdPath.toString.length)
       Some(hdPath)

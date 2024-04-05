@@ -126,7 +126,8 @@ case class XprvKeyExpression(
     require(
       childrenHardenedOpt.isDefined,
       s"Cannot derive child keys from descriptor that does not allow children, got=${toString}")
-    val node = BIP32Node(index = idx, hardened = childrenHardenedOpt.get)
+    val node =
+      BIP32Node(index = idx, hardened = childrenHardenedOpt.getOrElse(false))
     val fullPath: BIP32Path = pathOpt match {
       case Some(p) => BIP32Path(p.path.appended(node))
       case None    => BIP32Path(node)
@@ -181,6 +182,10 @@ case class MultisigKeyExpression(
       case priv: ECPrivateKeyBytes => priv.publicKeyBytes.toPublicKey
       case pub: ECPublicKeyBytes   => pub.toPublicKey
     }
+  }
+
+  def sortedPubKeys: Vector[ECPublicKey] = {
+    pubKeys.sortBy(_.hex)
   }
 
   override def toString(): String = {
@@ -252,6 +257,17 @@ sealed abstract class ScriptExpression extends DescriptorExpression {
   def scriptPubKey: ScriptPubKey
 
   def descriptorType: DescriptorType
+}
+
+sealed abstract class MultisigScriptExpression
+    extends ScriptExpression
+    with KeyExpressionScriptExpression {
+  override def scriptPubKey: MultiSignatureScriptPubKey
+
+  override def source: MultisigKeyExpression
+
+  def isSorted: Boolean = descriptorType == DescriptorType.SortedMulti
+
 }
 
 /** The source for where a [[ScriptExpression]] derives its information */
@@ -352,12 +368,24 @@ case class P2SHExpression(source: ScriptExpression)
 }
 
 case class MultisigExpression(source: MultisigKeyExpression)
-    extends ScriptExpression
+    extends MultisigScriptExpression
     with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
 
   override val scriptPubKey: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(source.numSigsRequired, source.pubKeys)
+  }
+}
+
+case class SortedMultisigExpression(source: MultisigKeyExpression)
+    extends MultisigScriptExpression
+    with KeyExpressionScriptExpression {
+
+  override val descriptorType: DescriptorType.SortedMulti.type =
+    DescriptorType.SortedMulti
+
+  override val scriptPubKey: MultiSignatureScriptPubKey = {
+    MultiSignatureScriptPubKey(source.numSigsRequired, source.sortedPubKeys)
   }
 }
 
@@ -378,8 +406,9 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
         P2PKScriptExpression(iter.takeSingleKeyExpression())
       case DescriptorType.Multi =>
         MultisigExpression(iter.takeMultisigKeyExpression())
-      case x @ (DescriptorType.TR | DescriptorType.SortedMulti |
-          DescriptorType.Multi | DescriptorType.PK) =>
+      case DescriptorType.SortedMulti =>
+        SortedMultisigExpression(iter.takeMultisigKeyExpression())
+      case x @ (DescriptorType.TR) =>
         sys.error(
           s"Descriptor type not supported yet in ScriptExpression.fromString(), got=$x")
     }
