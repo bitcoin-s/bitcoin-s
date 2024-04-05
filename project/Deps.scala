@@ -24,7 +24,7 @@ object Deps {
     val zeromq = "0.5.4"
     val scalapb = "0.11.15"
     val akkav = "1.0.1"
-    val playv = "2.10.4" //https://github.com/playframework/play-json/releases
+    val playv = "3.0.2" //https://github.com/playframework/play-json/releases
     val akkaStreamv = "1.0.2"
     val jUnixSocketV = "2.9.0"
     val scodecV = "1.1.38"
@@ -162,7 +162,7 @@ object Deps {
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
 
     val playJson =
-      "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
+      "org.playframework" %% "play-json" % V.playv withSources () withJavadoc ()
 
     val typesafeConfig =
       "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
