@@ -8,28 +8,8 @@ import org.bitcoins.core.crypto.{
   ExtPublicKey
 }
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  RawScriptPubKey,
-  ScriptPubKey
-}
-import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
-import org.bitcoins.core.script.crypto.OP_CHECKSIG
-import org.bitcoins.crypto.{
-  BaseECKey,
-  CryptoUtil,
-  ECKeyBytes,
-  ECPrivateKey,
-  ECPrivateKeyBytes,
-  ECPublicKey,
-  ECPublicKeyBytes,
-  StringFactory
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.crypto._
 
 import scala.util.{Failure, Success}
 
@@ -254,9 +234,7 @@ object MultisigKeyExpression extends StringFactory[MultisigKeyExpression] {
       .drop(1) //drop ','
       .split(',')
       .toVector
-    println(s"requiredSigs=$requiredSigsStr keyExpressions=$split")
     val keyExpressions = split.map(SingleKeyExpression.fromString(_))
-    println(s"keyExpressions=$keyExpressions")
     MultisigKeyExpression(requiredSigsStr.toInt, keyExpressions)
   }
 }
@@ -321,16 +299,7 @@ case class P2PKHScriptExpression(source: SingleKeyExpression)
       case priv: ECPrivateKeyBytes => priv.publicKeyBytes.toPublicKey
       case pub: ECPublicKeyBytes   => pub.toPublicKey
     }
-
-    if (pub.isCompressed) {
-      P2PKHScriptPubKey(pub)
-    } else {
-      //since we seem to always serialize a ECPublicKey as 33 bytes
-      //we need to build the raw script here, come back and look at this...
-      val hash = CryptoUtil.sha256Hash160(pub.decompressedBytes)
-      P2PKHScriptPubKey(hash)
-    }
-
+    P2PKHScriptPubKey(pub)
   }
 }
 
@@ -345,17 +314,7 @@ case class P2PKScriptExpression(source: SingleKeyExpression)
         priv.publicKeyBytes.toPublicKey
       case pub: ECPublicKeyBytes => pub.toPublicKey
     }
-    if (pub.isCompressed) {
-      P2PKScriptPubKey(pub)
-    } else {
-      //since we seem to always serialize a ECPublicKey as 33 bytes
-      //we need to build the raw script here, come back and look at this...
-      P2PKScriptPubKey.fromAsm(
-        Vector(BytesToPushOntoStack(65),
-               ScriptConstant(pub.decompressedBytes),
-               OP_CHECKSIG))
-    }
-
+    P2PKScriptPubKey(pub)
   }
 }
 
