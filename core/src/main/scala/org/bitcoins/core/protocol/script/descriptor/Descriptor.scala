@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.script.{
   ScriptPubKey
 }
 import org.bitcoins.core.util.Bech32
-import org.bitcoins.crypto.StringFactory
+import org.bitcoins.crypto.{StringFactory}
 
 import scala.util.Try
 
@@ -37,7 +37,6 @@ sealed abstract class ScriptDescriptor extends Descriptor {
 
   def descriptorType: DescriptorType = expression.descriptorType
   def scriptPubKey: ScriptPubKey
-
 }
 
 case class RawDescriptor(
@@ -96,6 +95,32 @@ case class SortedMultisigDescriptor(
 case class P2SHDescriptor(expression: P2SHExpression, checksum: Option[String])
     extends ScriptDescriptor {
   override val scriptPubKey: P2SHScriptPubKey = expression.scriptPubKey
+}
+
+sealed abstract class ComboDescriptor extends ScriptDescriptor {
+  override def expression: ComboExpression
+
+  override def scriptPubKey: ScriptPubKey = expression.scriptPubKey
+  def p2pk: P2PKScriptPubKey = P2PKScriptPubKey(expression.source.pubKey)
+  def p2pkh: P2PKHScriptPubKey = P2PKHScriptPubKey(expression.source.pubKey)
+}
+
+case class ComboDescriptorUncompressed(
+    expression: ComboExpression,
+    checksum: Option[String])
+    extends ComboDescriptor
+
+case class ComboDescriptorCompressed(
+    expression: ComboExpression,
+    checksum: Option[String])
+    extends ComboDescriptor {
+  require(
+    expression.source.pubKey.isCompressed,
+    s"ComboDescriptorCompressed must have compressed pubkey, got=$expression")
+
+  val p2wpkh: P2WPKHWitnessSPKV0 =
+    P2WPKHWitnessSPKV0(pubKey = expression.source.pubKey)
+  val p2shp2wpkh: P2SHScriptPubKey = P2SHScriptPubKey(p2wpkh)
 }
 
 sealed abstract class DescriptorFactory[
@@ -295,6 +320,27 @@ object P2SHDescriptor
   }
 }
 
+object ComboDescriptor
+    extends DescriptorFactory[
+      ComboDescriptor,
+      ComboExpression,
+      DescriptorType.Combo.type] {
+  override val descriptorType: DescriptorType.Combo.type = DescriptorType.Combo
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): ComboExpression = {
+    val keyExpr = iter.takeSingleKeyExpression()
+    ComboExpression(keyExpr)
+  }
+
+  override protected def createDescriptor(
+      e: ComboExpression,
+      checksum: Option[String]): ComboDescriptor = {
+    if (e.source.pubKey.isCompressed) ComboDescriptorCompressed(e, checksum)
+    else ComboDescriptorUncompressed(e, checksum)
+  }
+}
+
 object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
 
   private val map: Map[
@@ -311,7 +357,8 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
       DescriptorType.SH -> P2SHDescriptor,
       DescriptorType.PKH -> P2PKHDescriptor,
       DescriptorType.Multi -> MultisigDescriptor,
-      DescriptorType.SortedMulti -> SortedMultisigDescriptor
+      DescriptorType.SortedMulti -> SortedMultisigDescriptor,
+      DescriptorType.Combo -> ComboDescriptor
     )
   }
 

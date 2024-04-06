@@ -57,6 +57,12 @@ object DescriptorType extends StringFactory[DescriptorType] {
     override val toString: String = s"raw"
   }
 
+  case object Combo extends ScriptDescriptorType {
+    //this is wrong, combo doesn't have a specific script type?
+    override val scriptType: ScriptType = ScriptType.PUBKEYHASH
+    override val toString: String = "combo"
+  }
+
   private val all: Vector[DescriptorType] = Vector(
     PK,
     PKH,
@@ -66,7 +72,8 @@ object DescriptorType extends StringFactory[DescriptorType] {
     Multi,
     SortedMulti,
     Raw,
-    SH
+    SH,
+    Combo
   )
 
   override def fromStringOpt(string: String): Option[DescriptorType] = {

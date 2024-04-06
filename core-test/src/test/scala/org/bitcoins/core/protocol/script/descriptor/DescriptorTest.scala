@@ -2,11 +2,14 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
+  P2PKHScriptPubKey,
+  P2PKScriptPubKey,
   P2SHScriptPubKey,
   P2WPKHWitnessSPKV0,
   P2WSHWitnessSPKV0,
   ScriptPubKey
 }
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 
@@ -311,6 +314,66 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str3)
   }
 
+  it must "parse test vectors from BIP384" in {
+    val str0 = "combo(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
+    val expected0 = Vector(
+      "2103a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bdac",
+      "76a9149a1c78a507689f6f54b847ad1cef1e614ee23f1e88ac",
+      "00149a1c78a507689f6f54b847ad1cef1e614ee23f1e",
+      "a91484ab21b1b2fd065d4504ff693d832434b6108d7b87"
+    )
+    runComboTest(str0, expected0)
+
+    val str1 =
+      "combo(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235)"
+    val expected1 = Vector(
+      "4104a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235ac",
+      "76a914b5bd079c4d57cc7fc28ecf8213a6b791625b818388ac"
+    )
+    runComboTest(str1, expected1)
+
+    val str2 =
+      "combo([01234567]xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL)"
+    val expected2 = Vector(
+      "2102d2b36900396c9282fa14628566582f206a5dd0bcc8d5e892611806cafb0301f0ac",
+      "76a91431a507b815593dfc51ffc7245ae7e5aee304246e88ac",
+      "001431a507b815593dfc51ffc7245ae7e5aee304246e",
+      "a9142aafb926eb247cb18240a7f4c07983ad1f37922687"
+    )
+    runComboTest(str2, expected2)
+
+    val str3 =
+      "combo(xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334/*)"
+    val expected3 = Vector(
+      Vector(
+        "2102df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076ac",
+        "76a914f90e3178ca25f2c808dc76624032d352fdbdfaf288ac",
+        "0014f90e3178ca25f2c808dc76624032d352fdbdfaf2",
+        "a91408f3ea8c68d4a7585bf9e8bda226723f70e445f087"
+      ),
+      Vector(
+        "21032869a233c9adff9a994e4966e5b821fd5bac066da6c3112488dc52383b4a98ecac",
+        "76a914a8409d1b6dfb1ed2a3e8aa5e0ef2ff26b15b75b788ac",
+        "0014a8409d1b6dfb1ed2a3e8aa5e0ef2ff26b15b75b7",
+        "a91473e39884cb71ae4e5ac9739e9225026c99763e6687"
+      )
+    )
+
+    runComboDerivationTest(str3, expected3)
+  }
+
+  it must "fail to parse invalid test vectors from BIP384" in {
+    val str0 =
+      "sh(combo(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str0)
+    val str1 =
+      "wsh(combo(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str1)
+    val str2 =
+      "combo(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str2)
+  }
+
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
     val expected = ScriptPubKey.fromAsmHex(expectedSPK)
@@ -411,5 +474,66 @@ class DescriptorTest extends BitcoinSUnitTest {
     assertThrows[RuntimeException] {
       KeyExpression.fromString(str)
     }
+  }
+
+  private def runComboTest(
+      descriptor: String,
+      expectedSPKs: Vector[String]): Assertion = {
+    val desc = ComboDescriptor.fromString(descriptor)
+    expectedSPKs.zipWithIndex.foreach { case (s, idx) =>
+      if (idx == 0) {
+        val expected = P2PKScriptPubKey.fromAsmHex(s)
+        assert(desc.p2pk == expected)
+      } else if (idx == 1) {
+        val expected = P2PKHScriptPubKey.fromAsmHex(s)
+        assert(desc.p2pkh == expected)
+      } else if (idx == 2) {
+        val expected = P2WPKHWitnessSPKV0.fromAsmHex(s)
+        assert(desc.isInstanceOf[ComboDescriptorCompressed])
+        val compressed = desc.asInstanceOf[ComboDescriptorCompressed]
+        assert(compressed.p2wpkh == expected)
+      } else if (idx == 3) {
+        val expected = P2SHScriptPubKey.fromAsmHex(s)
+        assert(desc.isInstanceOf[ComboDescriptorCompressed])
+        val compressed = desc.asInstanceOf[ComboDescriptorCompressed]
+        assert(compressed.p2shp2wpkh == expected)
+      } else {
+        fail(s"Unknown index for desc=$desc")
+      }
+    }
+    succeed
+  }
+
+  private def runComboDerivationTest(
+      descriptor: String,
+      expectedSPKsNested: Vector[Vector[String]]): Assertion = {
+    val desc = ComboDescriptor.fromString(descriptor)
+    expectedSPKsNested.zipWithIndex.foreach { case (expectedSPKs, idx) =>
+      val extKey = desc.expression.source.asInstanceOf[ExtKeyExpression]
+      val pubKey = extKey.deriveChild(idx) match {
+        case priv: ECPrivateKey => priv.publicKey
+        case pub: ECPublicKey   => pub
+      }
+      expectedSPKs.zipWithIndex.foreach { case (s, nestedIdx) =>
+        if (nestedIdx == 0) {
+          val expected = P2PKScriptPubKey.fromAsmHex(s)
+          assert(P2PKScriptPubKey(pubKey) == expected)
+        } else if (nestedIdx == 1) {
+          val expected = P2PKHScriptPubKey.fromAsmHex(s)
+          assert(P2PKHScriptPubKey(pubKey) == expected)
+        } else if (nestedIdx == 2) {
+          val expected = P2WPKHWitnessSPKV0.fromAsmHex(s)
+          assert(desc.isInstanceOf[ComboDescriptorCompressed])
+          assert(P2WPKHWitnessSPKV0(pubKey) == expected)
+        } else if (nestedIdx == 3) {
+          val expected = P2SHScriptPubKey.fromAsmHex(s)
+          assert(desc.isInstanceOf[ComboDescriptorCompressed])
+          assert(P2SHScriptPubKey(P2WPKHWitnessSPKV0(pubKey)) == expected)
+        } else {
+          fail(s"Unknown index for desc=$desc")
+        }
+      }
+    }
+    succeed
   }
 }
