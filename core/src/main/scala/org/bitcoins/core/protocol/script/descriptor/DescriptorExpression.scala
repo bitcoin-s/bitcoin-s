@@ -376,8 +376,16 @@ case class P2SHExpression(source: ScriptExpression)
     with NestedScriptExpression {
   override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
 
-  override val scriptPubKey: P2SHScriptPubKey = P2SHScriptPubKey(
-    source.scriptPubKey)
+  override val scriptPubKey: P2SHScriptPubKey = {
+    source.scriptPubKey match {
+      case m: MultiSignatureScriptPubKey =>
+        require(m.requiredSigs <= 15,
+                s"P2SHExpressions required <= 15 sigs, got=${m.requiredSigs}")
+        P2SHScriptPubKey(m)
+      case _ => P2SHScriptPubKey(source.scriptPubKey)
+    }
+
+  }
 }
 
 case class MultisigExpression(source: MultisigKeyExpression)
@@ -388,6 +396,15 @@ case class MultisigExpression(source: MultisigKeyExpression)
   override val scriptPubKey: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(source.numSigsRequired, source.pubKeys)
   }
+
+  require(
+    scriptPubKey.requiredSigs > 0,
+    s"Must have positive requiredSigs in MultisigScriptExpression, got=${scriptPubKey.requiredSigs}")
+
+  require(
+    scriptPubKey.requiredSigs <= scriptPubKey.maxSigs,
+    s"Required sigs greater than max sigs, got requiredSigs=${scriptPubKey.requiredSigs} maxSigs=${scriptPubKey.maxSigs}"
+  )
 }
 
 case class SortedMultisigExpression(source: MultisigKeyExpression)
@@ -400,6 +417,13 @@ case class SortedMultisigExpression(source: MultisigKeyExpression)
   override val scriptPubKey: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(source.numSigsRequired, source.sortedPubKeys)
   }
+  require(
+    scriptPubKey.requiredSigs > 0,
+    s"Must have positive requiredSigs in MultisigScriptExpression, got=${scriptPubKey.requiredSigs}")
+  require(
+    scriptPubKey.requiredSigs <= scriptPubKey.maxSigs,
+    s"Required sigs greater than max sigs, got requiredSigs=${scriptPubKey.requiredSigs} maxSigs=${scriptPubKey.maxSigs}"
+  )
 }
 
 case class ComboExpression(
