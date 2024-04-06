@@ -378,7 +378,16 @@ case class PSBT(
           OutputPSBTRecord.RedeemScript(redeemScript)
         }
       case p2wsh: P2WSHWitnessSPKV0 =>
-        val scriptHash = P2WSHWitnessSPKV0(redeemScript).scriptHash
+        val scriptHash = {
+          redeemScript match {
+            case raw: RawScriptPubKey => P2WSHWitnessSPKV0(raw).scriptHash
+            case nonraw @ (_: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
+                _: TaprootScriptPubKey | _: UnassignedWitnessScriptPubKey |
+                _: P2WSHWitnessSPKV0) =>
+              throw new IllegalArgumentException(
+                s"Cannot make p2wsh from non raw spk=$nonraw")
+          }
+        }
         if (scriptHash != p2wsh.scriptHash) {
           throw new IllegalArgumentException(
             s"The given script's hash does not match the expected script has, got: $scriptHash, expected ${p2wsh.scriptHash}")
