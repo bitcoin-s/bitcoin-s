@@ -411,8 +411,8 @@ class DescriptorTest extends BitcoinSUnitTest {
       val spk = desc.expression.descriptorType match {
         case DescriptorType.WPKH => p2wpkh
         case DescriptorType.SH   => P2SHScriptPubKey(p2wpkh)
-        case DescriptorType.WSH  => P2WSHWitnessSPKV0(p2wpkh)
-        case x                   => sys.error(s"Not supported by BIP382, got=$x")
+//        case DescriptorType.WSH  => P2WSHWitnessSPKV0(p2wpkh)
+        case x => sys.error(s"Not supported by BIP382, got=$x")
       }
       assert(spk == expected)
       assert(desc.toString == descriptor)

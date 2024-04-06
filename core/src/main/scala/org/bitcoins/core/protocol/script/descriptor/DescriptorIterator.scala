@@ -135,6 +135,15 @@ case class DescriptorIterator(descriptor: String) {
     hash
   }
 
+  def takeRawSPKScriptExpression(): RawSPKScriptExpression = {
+    takeScriptExpression() match {
+      case raw: RawSPKScriptExpression => raw
+      case x =>
+        sys.error(
+          s"Unexpected expression=$x when expecting RawSPKScriptExpression")
+    }
+  }
+
   def takeScriptExpression(): ScriptExpression = {
     val expression = ScriptExpression.fromString(current)
     skip(expression.toString.length)

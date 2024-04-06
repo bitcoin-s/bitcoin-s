@@ -261,12 +261,15 @@ object KeyExpression extends StringFactory[KeyExpression] {
 
 sealed abstract class ScriptExpression extends DescriptorExpression {
   def scriptPubKey: ScriptPubKey
-
   def descriptorType: DescriptorType
 }
 
+sealed abstract class RawSPKScriptExpression extends ScriptExpression {
+  override def scriptPubKey: RawScriptPubKey
+}
+
 sealed abstract class MultisigScriptExpression
-    extends ScriptExpression
+    extends RawSPKScriptExpression
     with KeyExpressionScriptExpression {
   override def scriptPubKey: MultiSignatureScriptPubKey
 
@@ -302,8 +305,12 @@ sealed trait NestedScriptExpression extends ExpressionSource {
   override def source: ScriptExpression
 }
 
+/** Examples:
+  * raw(deadbeef)
+  * raw(a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87)
+  */
 case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
-    extends ScriptExpression {
+    extends RawSPKScriptExpression {
   override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
 
   override def toString: String = {
@@ -312,7 +319,7 @@ case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
 }
 
 case class P2PKHScriptExpression(source: SingleKeyExpression)
-    extends ScriptExpression
+    extends RawSPKScriptExpression
     with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
 
@@ -326,7 +333,7 @@ case class P2PKHScriptExpression(source: SingleKeyExpression)
 }
 
 case class P2PKScriptExpression(source: SingleKeyExpression)
-    extends ScriptExpression
+    extends RawSPKScriptExpression
     with KeyExpressionScriptExpression {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
 
@@ -354,7 +361,7 @@ case class P2WPKHExpression(source: SingleKeyExpression)
   }
 }
 
-case class P2WSHExpression(source: ScriptExpression)
+case class P2WSHExpression(source: RawSPKScriptExpression)
     extends ScriptExpression
     with NestedScriptExpression {
   override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
@@ -430,7 +437,8 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
         P2PKHScriptExpression(iter.takeSingleKeyExpression())
       case DescriptorType.WPKH =>
         P2WPKHExpression(iter.takeSingleKeyExpression())
-      case DescriptorType.WSH => P2WSHExpression(iter.takeScriptExpression())
+      case DescriptorType.WSH =>
+        P2WSHExpression(iter.takeRawSPKScriptExpression())
       case DescriptorType.SH  => P2SHExpression(iter.takeScriptExpression())
       case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
       case DescriptorType.PK =>
