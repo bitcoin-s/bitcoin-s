@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto._
 
 import scala.util.{Failure, Success}
@@ -26,6 +27,11 @@ sealed abstract class KeyExpression extends DescriptorExpression {
 
 sealed abstract class SingleKeyExpression extends KeyExpression {
   def key: ECKeyBytes
+
+  def pubKey: ECPublicKey = key match {
+    case priv: ECPrivateKeyBytes => priv.toPrivateKey.publicKey
+    case pub: ECPublicKeyBytes   => pub.toPublicKey
+  }
 }
 
 sealed abstract class PrivateKeyExpression extends SingleKeyExpression {
@@ -389,6 +395,31 @@ case class SortedMultisigExpression(source: MultisigKeyExpression)
   }
 }
 
+case class ComboExpression(
+    source: SingleKeyExpression,
+    scriptType: ScriptType = ScriptType.PUBKEYHASH)
+    extends ScriptExpression
+    with KeyExpressionScriptExpression {
+  override val descriptorType: DescriptorType = DescriptorType.Combo
+
+  override val scriptPubKey: ScriptPubKey = {
+    scriptType match {
+      case ScriptType.PUBKEY             => P2PKScriptPubKey(source.pubKey)
+      case ScriptType.PUBKEYHASH         => P2PKHScriptPubKey(source.pubKey)
+      case ScriptType.WITNESS_V0_KEYHASH => P2WPKHWitnessSPKV0(source.pubKey)
+      case ScriptType.SCRIPTHASH =>
+        P2SHScriptPubKey(P2WPKHWitnessSPKV0(source.pubKey))
+      case x @ (ScriptType.CLTV | ScriptType.CSV | ScriptType.MULTISIG |
+          ScriptType.MULTISIG_WITH_TIMEOUT | ScriptType.NONSTANDARD |
+          ScriptType.NONSTANDARD_IF_CONDITIONAL | ScriptType.NULLDATA |
+          ScriptType.PUBKEY_WITH_TIMEOUT | ScriptType.WITNESS_V0_SCRIPTHASH |
+          ScriptType.WITNESS_UNKNOWN | ScriptType.WITNESS_COMMITMENT |
+          ScriptType.NOT_IF_CONDITIONAL | ScriptType.WITNESS_V1_TAPROOT) =>
+        sys.error(s"Invalid ScripType for ComboExpression, got=$x")
+    }
+  }
+}
+
 object ScriptExpression extends StringFactory[ScriptExpression] {
 
   override def fromString(string: String): ScriptExpression = {
@@ -408,6 +439,8 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
         MultisigExpression(iter.takeMultisigKeyExpression())
       case DescriptorType.SortedMulti =>
         SortedMultisigExpression(iter.takeMultisigKeyExpression())
+      case DescriptorType.Combo =>
+        ComboExpression(iter.takeSingleKeyExpression())
       case x @ (DescriptorType.TR) =>
         sys.error(
           s"Descriptor type not supported yet in ScriptExpression.fromString(), got=$x")
