@@ -207,7 +207,7 @@ object P2WSHDescriptor
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2WSHExpression = {
-    val scriptExpression = iter.takeScriptExpression()
+    val scriptExpression = iter.takeRawSPKScriptExpression()
     P2WSHExpression(scriptExpression)
   }
 
