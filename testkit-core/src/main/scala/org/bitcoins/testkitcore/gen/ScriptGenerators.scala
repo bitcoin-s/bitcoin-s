@@ -346,7 +346,7 @@ sealed abstract class ScriptGenerators {
 
   /** Generates a random P2WSHWitnessSPKV0 as well as it's corresponding private keys and redeem script */
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey], ScriptPubKey)] =
-    randomNonP2SHScriptPubKey
+    rawScriptPubKey
       .suchThat { case (spk, _) =>
         !redeemScriptTooBig(spk)
       }

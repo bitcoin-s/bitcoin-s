@@ -1410,7 +1410,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
   }
 
-  def apply(spk: ScriptPubKey): P2WSHWitnessSPKV0 = {
+  def apply(spk: RawScriptPubKey): P2WSHWitnessSPKV0 = {
     require(
       BitcoinScriptUtil.isOnlyCompressedPubKey(spk),
       s"Public key must be compressed to be used in a segwit script, see BIP143")
