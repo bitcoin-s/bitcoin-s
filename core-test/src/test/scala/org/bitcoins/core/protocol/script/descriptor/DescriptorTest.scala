@@ -472,7 +472,7 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   private def runFailTest(str: String): Assertion = {
     assertThrows[RuntimeException] {
-      KeyExpression.fromString(str)
+      ScriptDescriptor.fromString(str)
     }
   }
 
