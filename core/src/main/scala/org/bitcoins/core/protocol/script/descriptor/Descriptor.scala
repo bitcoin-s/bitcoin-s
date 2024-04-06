@@ -310,6 +310,9 @@ object P2SHDescriptor
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2SHExpression = {
     val scriptExpression = iter.takeScriptExpression()
+    require(
+      !scriptExpression.isInstanceOf[ComboExpression],
+      s"Cannot have ComboExpression in P2SHDescriptor, got=$scriptExpression")
     P2SHExpression(scriptExpression)
   }
 
