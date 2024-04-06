@@ -1368,6 +1368,9 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
 
   /** Creates a P2WPKH witness script pubkey */
   def apply(pubKey: ECPublicKey): P2WPKHWitnessSPKV0 = {
+    require(
+      pubKey.isCompressed,
+      s"Public key must be compressed to be used in a segwit script, see BIP143")
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
