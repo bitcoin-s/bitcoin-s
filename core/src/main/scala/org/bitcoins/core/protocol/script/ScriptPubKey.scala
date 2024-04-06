@@ -359,6 +359,8 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   }
 
   def apply(scriptPubKey: ScriptPubKey): P2SHScriptPubKey = {
+    require(!scriptPubKey.isInstanceOf[P2SHScriptPubKey],
+            s"Cannot do p2sh(p2sh()), got=$scriptPubKey")
     val hash = CryptoUtil.sha256Hash160(scriptPubKey.asmBytes)
     P2SHScriptPubKey(hash)
   }
