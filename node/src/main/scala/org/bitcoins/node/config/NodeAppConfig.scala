@@ -125,7 +125,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   lazy val maxConnectedPeers: Int = {
     if (config.hasPath("bitcoin-s.node.maxConnectedPeers"))
       config.getInt("bitcoin-s.node.maxConnectedPeers")
-    else 1
+    else 2
   }
 
   lazy val enablePeerDiscovery: Boolean = {
