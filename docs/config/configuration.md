@@ -157,7 +157,7 @@ bitcoin-s {
         enable-peer-discovery = true
         
         # number of persistent peer connections to maintain for node use
-        maxConnectedPeers = 1
+        maxConnectedPeers = 2
         
         # time interval for trying next set of peers in peer discovery
         try-peers-interval = 12 hour
