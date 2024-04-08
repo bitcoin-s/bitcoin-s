@@ -1,14 +1,6 @@
 package org.bitcoins.core.protocol.script.descriptor
 
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  ScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
@@ -374,10 +366,44 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str2)
   }
 
+  it must "parse test vectors from BIP385" in {
+    val str0 = "raw(deadbeef)"
+    val expected0 = "deadbeef"
+    runTest(str0, expected0)
+
+    val str1 =
+      "raw(512103a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd4104a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea23552ae)"
+    val expected1 =
+      "512103a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd4104a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea23552ae"
+    runTest(str1, expected1)
+
+    val str2 = "raw(a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87)"
+    val expected2 = "a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87"
+    runTest(str2, expected2)
+
+    val str3 = "addr(3PUNyaW7M55oKWJ3kDukwk9bsKvryra15j)"
+    val expected3 = "a914eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee87"
+    runTest(str3, expected3)
+  }
+
+  it must "fail to parse invalid test vectors from BIP385" in {
+    val str0 = "raw(asdf)"
+    runFailTest(str0)
+    val str1 = "addr(asdf)"
+    runFailTest(str1)
+    val str2 = "sh(raw(deadbeef))"
+    runFailTest(str2)
+    val str3 = "wsh(raw(deadbeef))"
+    runFailTest(str3)
+    val str4 = "sh(addr(3PUNyaW7M55oKWJ3kDukwk9bsKvryra15j))"
+    runFailTest(str4)
+    val str5 = "wsh(addr(3PUNyaW7M55oKWJ3kDukwk9bsKvryra15j))"
+    runFailTest(str5)
+  }
+
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
-    val expected = ScriptPubKey.fromAsmHex(expectedSPK)
-    assert(desc.scriptPubKey == expected)
+    assert(desc.scriptPubKey.asmHex == expectedSPK)
     assert(desc.toString == descriptor)
   }
 
