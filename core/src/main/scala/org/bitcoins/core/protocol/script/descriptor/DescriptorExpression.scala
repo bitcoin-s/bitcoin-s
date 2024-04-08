@@ -21,10 +21,13 @@ sealed abstract class DescriptorExpression
   * [deadbeef/0h/0h/0h]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce60
   * [deadbeef/0h/1h/2h]xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcE
   */
-sealed abstract class KeyExpression extends DescriptorExpression { _: PubKeyTypeExpression =>
+sealed abstract class KeyExpression extends DescriptorExpression {
+  _: PubKeyTypeExpression =>
   def originOpt: Option[KeyOriginExpression]
 }
-sealed abstract class SingleKeyExpression extends KeyExpression { _: PubKeyTypeExpression =>
+
+sealed abstract class SingleKeyExpression extends KeyExpression {
+  _: PubKeyTypeExpression =>
   def key: ECKeyBytes
 
   def pubKey: ECPublicKey = key match {
@@ -34,17 +37,22 @@ sealed abstract class SingleKeyExpression extends KeyExpression { _: PubKeyTypeE
 }
 
 sealed trait PubKeyTypeExpression
-sealed trait ECPublicKeyExpression extends PubKeyTypeExpression { _: KeyExpression =>
+
+sealed trait ECPublicKeyExpression extends PubKeyTypeExpression {
+  _: KeyExpression =>
   def pubKey: ECPublicKey
 }
 
-sealed trait XOnlyPublicKeyExpression extends PubKeyTypeExpression { _: KeyExpression =>
+sealed trait XOnlyPublicKeyExpression extends PubKeyTypeExpression {
+  _: KeyExpression =>
   def pubKey: XOnlyPubKey
 }
 
-sealed abstract class PrivateKeyExpression extends SingleKeyExpression { _: PubKeyTypeExpression =>
+sealed abstract class PrivateKeyExpression extends SingleKeyExpression {
+  _: PubKeyTypeExpression =>
   override def key: ECPrivateKeyBytes
 }
+
 /** A private key descriptor expression
   * Examples of what this data structure can represent
   * 5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss
@@ -59,7 +67,8 @@ case class RawPrivateKeyExpression(
     key: ECPrivateKeyBytes,
     network: NetworkParameters,
     originOpt: Option[KeyOriginExpression])
-    extends PrivateKeyExpression {
+    extends PrivateKeyExpression
+    with ECPublicKeyExpression {
 
   override def toString(): String = {
     originOpt.map(_.toString).getOrElse("") +
@@ -68,6 +77,7 @@ case class RawPrivateKeyExpression(
 }
 
 sealed abstract class PublicKeyExpression extends SingleKeyExpression {
+  _: PubKeyTypeExpression =>
   override def key: ECPublicKeyBytes
 }
 
@@ -80,7 +90,8 @@ sealed abstract class PublicKeyExpression extends SingleKeyExpression {
 case class RawPublicKeyExpression(
     key: ECPublicKeyBytes,
     originOpt: Option[KeyOriginExpression])
-    extends PublicKeyExpression {
+    extends PublicKeyExpression
+    with ECPublicKeyExpression {
 
   override def toString(): String = {
     originOpt.map(_.toString).getOrElse("") +
@@ -88,8 +99,9 @@ case class RawPublicKeyExpression(
   }
 }
 
-case class XOnlyPublicKeyExpression(xOnlyPubKey: XOnlyPubKey)
-    extends SingleKeyExpression {
+case class InternalPublicKeyExpression(xOnlyPubKey: XOnlyPubKey)
+    extends SingleKeyExpression
+    with XOnlyPublicKeyExpression {
   override val originOpt: Option[KeyOriginExpression] = None
 
   override def key: ECKeyBytes = xOnlyPubKey.publicKey.toPublicKeyBytes()
@@ -107,6 +119,7 @@ case class XOnlyPublicKeyExpression(xOnlyPubKey: XOnlyPubKey)
   * [deadbeef/0'/1'/2']xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/3/4/5/\*
   */
 sealed abstract class ExtKeyExpression extends SingleKeyExpression {
+  _: PubKeyTypeExpression =>
   def extKey: ExtKey
 
   def pathOpt: Option[BIP32Path]
@@ -133,7 +146,8 @@ case class XprvKeyExpression(
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
     childrenHardenedOpt: Option[Boolean])
-    extends ExtKeyExpression {
+    extends ExtKeyExpression
+    with ECPublicKeyExpression {
 
   override val key: ECPrivateKeyBytes = {
     pathOpt match {
@@ -166,7 +180,8 @@ case class XpubKeyExpression(
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
     childrenHardenedOpt: Option[Boolean])
-    extends ExtKeyExpression {
+    extends ExtKeyExpression
+    with ECPublicKeyExpression {
 
   override val key: ECPublicKeyBytes = {
     pathOpt match {
@@ -199,8 +214,11 @@ case class XpubKeyExpression(
 case class MultisigKeyExpression(
     numSigsRequired: Int,
     keyExpressions: Vector[SingleKeyExpression])
-    extends KeyExpression {
+    extends KeyExpression
+    with ECPublicKeyExpression {
   override val originOpt = None
+
+  override def pubKey: ECPublicKey = ???
 
   def pubKeys: Vector[ECPublicKey] = {
     keyExpressions.map(_.key).map {
@@ -251,7 +269,7 @@ object SingleKeyExpression extends StringFactory[SingleKeyExpression] {
       keyOriginOpt.isEmpty && string.takeWhile(_ != ',').length == 64
     ) {
       val xonly = XOnlyPubKey.fromHex(string.take(64))
-      XOnlyPublicKeyExpression(xonly)
+      InternalPublicKeyExpression(xonly)
     } else {
       // needed to parse network info in case of WIF private key
       val (cp, _) = iter.current.span(_ != ')')
@@ -539,7 +557,7 @@ case class KeyPathOnlyTreeExpression(source: SingleKeyExpression)
     with KeyExpressionScriptExpression {
 
   override val xOnlyPubKey: XOnlyPubKey = source match {
-    case x: XOnlyPublicKeyExpression => x.xOnlyPubKey
+    case x: XOnlyPublicKeyExpression => x.pubKey
     case s: SingleKeyExpression      => s.pubKey.toXOnly
   }
 
