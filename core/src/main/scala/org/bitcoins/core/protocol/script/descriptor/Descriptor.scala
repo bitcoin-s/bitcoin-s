@@ -9,10 +9,11 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessSPKV0,
   P2WSHWitnessSPKV0,
   RawScriptPubKey,
-  ScriptPubKey
+  ScriptPubKey,
+  TaprootScriptPubKey
 }
 import org.bitcoins.core.util.Bech32
-import org.bitcoins.crypto.{StringFactory}
+import org.bitcoins.crypto.StringFactory
 
 import scala.util.Try
 
@@ -95,6 +96,13 @@ case class SortedMultisigDescriptor(
 case class P2SHDescriptor(expression: P2SHExpression, checksum: Option[String])
     extends ScriptDescriptor {
   override val scriptPubKey: P2SHScriptPubKey = expression.scriptPubKey
+}
+
+case class TaprootDescriptor(
+    expression: TreeExpression,
+    checksum: Option[String])
+    extends ScriptDescriptor {
+  override val scriptPubKey: TaprootScriptPubKey = expression.scriptPubKey
 }
 
 sealed abstract class ComboDescriptor extends ScriptDescriptor {
@@ -344,6 +352,26 @@ object ComboDescriptor
   }
 }
 
+object TaprootDescriptor
+    extends DescriptorFactory[
+      TaprootDescriptor,
+      TreeExpression,
+      DescriptorType.TR.type] {
+  override val descriptorType: DescriptorType.TR.type = DescriptorType.TR
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): TreeExpression = {
+    val treeExpression = iter.takeTreeExpression()
+    treeExpression
+  }
+
+  override protected def createDescriptor(
+      e: TreeExpression,
+      checksum: Option[String]): TaprootDescriptor = {
+    TaprootDescriptor(e, checksum)
+  }
+}
+
 object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
 
   private val map: Map[
@@ -361,7 +389,8 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
       DescriptorType.PKH -> P2PKHDescriptor,
       DescriptorType.Multi -> MultisigDescriptor,
       DescriptorType.SortedMulti -> SortedMultisigDescriptor,
-      DescriptorType.Combo -> ComboDescriptor
+      DescriptorType.Combo -> ComboDescriptor,
+      DescriptorType.TR -> TaprootDescriptor
     )
   }
 

@@ -1468,6 +1468,21 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     //have to make sure we have a valid xonly pubkey, not just 32 bytes
     XOnlyPubKey.fromBytesT(asm(2).bytes).isSuccess
   }
+
+  /** Computes a [[TaprootScriptPubKey]] from a given internal key with no [[TaprootScriptPath]]
+    * If the spending conditions do not require a script path, the output key should
+    * commit to an unspendable script path instead of having no script path.
+    * This can be achieved by computing the output key point as Q = P + int(hashTapTweak(bytes(P)))G.
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs]]
+    */
+  def fromInternalKey(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
+    val hash = CryptoUtil.tapTweakHash(xOnlyPubKey.bytes)
+    val pubKey = CryptoParams.getG
+      .multiply(FieldElement(hash.bytes))
+      .add(xOnlyPubKey.publicKey)
+      .toXOnly
+    TaprootScriptPubKey(pubKey)
+  }
 }
 
 /** Type to represent all

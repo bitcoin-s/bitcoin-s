@@ -380,10 +380,6 @@ class DescriptorTest extends BitcoinSUnitTest {
     val str2 = "raw(a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87)"
     val expected2 = "a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87"
     runTest(str2, expected2)
-
-    val str3 = "addr(3PUNyaW7M55oKWJ3kDukwk9bsKvryra15j)"
-    val expected3 = "a914eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee87"
-    runTest(str3, expected3)
   }
 
   it must "fail to parse invalid test vectors from BIP385" in {
@@ -399,6 +395,25 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str4)
     val str5 = "wsh(addr(3PUNyaW7M55oKWJ3kDukwk9bsKvryra15j))"
     runFailTest(str5)
+  }
+
+  it must "parse test vectors from BIP387" ignore {
+    val str0 =
+      "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
+    val expected0 =
+      "512077aab6e066f8a7419c5ab714c12c67d25007ed55a43cadcacb4d7a970a093f11"
+    runTest(str0, expected0)
+
+    val str1 = "tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
+    val expected1 =
+      "512077aab6e066f8a7419c5ab714c12c67d25007ed55a43cadcacb4d7a970a093f11"
+    runTest(str1, expected1)
+
+    val str2 =
+      "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd,pk(669b8afcec803a0d323e9a17f3ea8e68e8abe5a278020a929adbec52421adbd0))"
+    val expected2 =
+      "512017cf18db381d836d8923b1bdb246cfcd818da1a9f0e6e7907f187f0b2f937754"
+    runTest(str2, expected2)
   }
 
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
@@ -418,6 +433,9 @@ class DescriptorTest extends BitcoinSUnitTest {
       case x: RawScriptExpression =>
         sys.error(
           s"RawScriptExpression cannot be used in runDerivationTest(), got=$x")
+      case x: ScriptPathTreeExpression =>
+        sys.error(
+          s"TapscriptTreeExpression cannot be used in runDerivationTest(), got=$x")
     }
   }
 

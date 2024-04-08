@@ -63,7 +63,7 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
   }
 
   private def tapTweakHash(bytes: ByteVector): Sha256Digest = {
-    CryptoUtil.taggedSha256(bytes, "TapTweak")
+    CryptoUtil.tapTweakHash(bytes)
   }
 }
 
