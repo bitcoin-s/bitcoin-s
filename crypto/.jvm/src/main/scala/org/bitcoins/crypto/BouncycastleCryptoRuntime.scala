@@ -171,7 +171,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   }
 
   override def verify(
-      publicKey: PublicKey,
+      publicKey: ECPublicKeyApi,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)

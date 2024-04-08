@@ -198,7 +198,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   }
 
   override def verify(
-      publicKey: PublicKey,
+      publicKey: ECPublicKeyApi,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
     val dataBuffer = CryptoJsUtil.toNodeBuffer(data)
@@ -262,7 +262,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     hi | lo
   }
 
-  override def isValidPubKey(pubKey: PublicKey): Boolean = {
+  override def isValidPubKey(pubKey: ECPublicKeyApi): Boolean = {
     val buffer = CryptoJsUtil.toNodeBuffer(pubKey.bytes)
     SECP256k1.publicKeyVerify(buffer)
   }

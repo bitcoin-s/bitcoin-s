@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import scala.util.Try
 
 /** Represents the x-coordinate of an ECPublicKey, with undetermined y-coordinate parity */
-case class XOnlyPubKey(bytes: ByteVector) extends NetworkElement {
+case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
   require(bytes.length == 32,
           s"x-only public keys must be 32 bytes, got $bytes")
   require(Try(publicKey(EvenParity)).isSuccess,

@@ -47,7 +47,7 @@ object ECPrivateKeyBytes extends Factory[ECPrivateKeyBytes] {
 /** Represents any type which wraps public key bytes which can be used for ECDSA verification.
   * Should always be instantiated with class X extends PublicKey[X].
   */
-sealed trait PublicKey extends NetworkElement {
+sealed trait ECPublicKeyApi extends PublicKey {
 
   /** The fromBytes function for the PK type. */
   private[crypto] def fromBytes(bytes: ByteVector): this.type
@@ -111,7 +111,7 @@ sealed trait PublicKey extends NetworkElement {
 /** Wraps raw ECPublicKey bytes without doing any validation or deserialization (may be invalid). */
 case class ECPublicKeyBytes(bytes: ByteVector)
     extends ECKeyBytes
-    with PublicKey {
+    with ECPublicKeyApi {
 
   /** Parse these bytes into the bitcoin-s internal public key type. */
   def toPublicKey: ECPublicKey = ECPublicKey(bytes)
@@ -301,7 +301,9 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   * doing computations on public key (points) that may have intermediate 0x00 values, then you
   * should convert using toPoint, do computation, and then convert back toPublicKey in the end.
   */
-case class ECPublicKey(bytes: ByteVector) extends BaseECKey with PublicKey {
+case class ECPublicKey(bytes: ByteVector)
+    extends BaseECKey
+    with ECPublicKeyApi {
   require(isFullyValid, s"Invalid public key: ${bytes}: $decompressedBytesT")
 
   /** Converts this public key into the raw underlying point on secp256k1 for computation. */
