@@ -21,11 +21,10 @@ sealed abstract class DescriptorExpression
   * [deadbeef/0h/0h/0h]0260b2003c386519fc9eadf2b5cf124dd8eea4c4e68d5e154050a9346ea98ce60
   * [deadbeef/0h/1h/2h]xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcE
   */
-sealed abstract class KeyExpression extends DescriptorExpression {
+sealed abstract class KeyExpression extends DescriptorExpression { _: PubKeyTypeExpression =>
   def originOpt: Option[KeyOriginExpression]
 }
-
-sealed abstract class SingleKeyExpression extends KeyExpression {
+sealed abstract class SingleKeyExpression extends KeyExpression { _: PubKeyTypeExpression =>
   def key: ECKeyBytes
 
   def pubKey: ECPublicKey = key match {
@@ -34,10 +33,18 @@ sealed abstract class SingleKeyExpression extends KeyExpression {
   }
 }
 
-sealed abstract class PrivateKeyExpression extends SingleKeyExpression {
-  override def key: ECPrivateKeyBytes
+sealed trait PubKeyTypeExpression
+sealed trait ECPublicKeyExpression extends PubKeyTypeExpression { _: KeyExpression =>
+  def pubKey: ECPublicKey
 }
 
+sealed trait XOnlyPublicKeyExpression extends PubKeyTypeExpression { _: KeyExpression =>
+  def pubKey: XOnlyPubKey
+}
+
+sealed abstract class PrivateKeyExpression extends SingleKeyExpression { _: PubKeyTypeExpression =>
+  override def key: ECPrivateKeyBytes
+}
 /** A private key descriptor expression
   * Examples of what this data structure can represent
   * 5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss
