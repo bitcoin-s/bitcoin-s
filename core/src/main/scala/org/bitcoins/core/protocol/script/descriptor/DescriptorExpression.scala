@@ -81,6 +81,18 @@ case class RawPublicKeyExpression(
   }
 }
 
+case class XOnlyPublicKeyExpression(xOnlyPubKey: XOnlyPubKey)
+    extends SingleKeyExpression {
+  override val originOpt: Option[KeyOriginExpression] = None
+
+  override def key: ECKeyBytes = xOnlyPubKey.publicKey.toPublicKeyBytes()
+
+  override def toString(): String = {
+    originOpt.map(_.toString).getOrElse("") + xOnlyPubKey.hex
+  }
+
+}
+
 /** Represents key expressions that are BIP32 keys
   * Examples:
   * xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc
@@ -199,6 +211,19 @@ case class MultisigKeyExpression(
   }
 }
 
+/** Example: {
+  *      pk(xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334/0),
+  *     {
+  *       {
+  *         pk(xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL),
+  *         pk(02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076)},pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+  *       }
+  * }
+  * @param scriptExpressions
+  */
+case class TapscriptTreeExpression(leaves: Vector[ScriptExpression])
+    extends DescriptorExpression
+
 object SingleKeyExpression extends StringFactory[SingleKeyExpression] {
 
   override def fromString(string: String): SingleKeyExpression = {
@@ -215,6 +240,11 @@ object SingleKeyExpression extends StringFactory[SingleKeyExpression] {
         case xpub: ExtPublicKey =>
           XpubKeyExpression(xpub, keyOriginOpt, pathOpt, childrenHardenedOpt)
       }
+    } else if (
+      keyOriginOpt.isEmpty && string.takeWhile(_ != ',').length == 64
+    ) {
+      val xonly = XOnlyPubKey.fromHex(string.take(64))
+      XOnlyPublicKeyExpression(xonly)
     } else {
       // needed to parse network info in case of WIF private key
       val (cp, _) = iter.current.span(_ != ')')
@@ -290,6 +320,9 @@ sealed trait ExpressionSource { _: ScriptExpression =>
 
 /** A script expression derived from a key expression
   * Example:
+  * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
+  * tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+  * pkh([bd16bee5/2147483647']xpub69H7F5dQzmVd3vPuLKtcXJziMEQByuDidnX3YdwgtNsecY5HRGtAAQC5mXTt4dsv9RzyjgDjAQs9VGVV6ydYCHnprc9vvaA5YtqWyL6hyds/0)
   */
 sealed trait KeyExpressionScriptExpression extends ExpressionSource {
   _: ScriptExpression =>
@@ -303,6 +336,10 @@ sealed trait KeyExpressionScriptExpression extends ExpressionSource {
 sealed trait NestedScriptExpression extends ExpressionSource {
   _: ScriptExpression =>
   override def source: ScriptExpression
+}
+
+sealed trait TapscriptTree extends ExpressionSource { _: TreeExpression =>
+  override def source: TapscriptTreeExpression
 }
 
 /** Examples:
@@ -479,4 +516,37 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
     }
     expression
   }
+}
+
+/** Tree expression corresponding to BIP386
+  * https://github.com/bitcoin/bips/blob/master/bip-0386.mediawiki
+  */
+sealed abstract class TreeExpression extends ScriptExpression {
+  override def descriptorType: DescriptorType.TR.type = DescriptorType.TR
+  def xOnlyPubKey: XOnlyPubKey
+  override def scriptPubKey: TaprootScriptPubKey
+}
+
+case class KeyPathOnlyTreeExpression(source: SingleKeyExpression)
+    extends TreeExpression
+    with KeyExpressionScriptExpression {
+
+  override val xOnlyPubKey: XOnlyPubKey = source match {
+    case x: XOnlyPublicKeyExpression => x.xOnlyPubKey
+    case s: SingleKeyExpression      => s.pubKey.toXOnly
+  }
+
+  override val scriptPubKey: TaprootScriptPubKey =
+    TaprootScriptPubKey.fromInternalKey(xOnlyPubKey)
+}
+
+case class ScriptPathTreeExpression(
+    keyPath: KeyPathOnlyTreeExpression,
+    source: TapscriptTreeExpression)
+    extends TreeExpression
+    with TapscriptTree {
+
+  override def xOnlyPubKey: XOnlyPubKey = ???
+
+  override def scriptPubKey: TaprootScriptPubKey = ???
 }

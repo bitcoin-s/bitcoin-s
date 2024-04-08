@@ -163,4 +163,40 @@ case class DescriptorIterator(descriptor: String) {
         sys.error(s"Non multisig SPK found when expected multisigSPK, got=$x")
     }
   }
+
+  def takeTreeExpression(): TreeExpression = {
+    val (_, scriptPath) = current.span(_ != ',')
+    val singleKeyExpr = takeSingleKeyExpression()
+    val keypath = KeyPathOnlyTreeExpression(singleKeyExpr)
+    println(s"scriptPath=$scriptPath")
+    if (scriptPath.isEmpty) {
+      keypath
+    } else {
+      val treeExpression = takeTapscriptTreeExpression()
+      ScriptPathTreeExpression(keypath, treeExpression)
+    }
+
+  }
+
+  def takeTapscriptTreeExpression(): TapscriptTreeExpression = {
+    val expression = if (current.charAt(1) == '{' && current.last == '}') {
+      skip(2) //,{
+      val split = current
+        .dropRight(1) //}
+        .split(',')
+      val expressions = split.map(ScriptExpression.fromString).toVector
+      println(s"takeTapscriptTreeExpression().0 $expressions")
+      TapscriptTreeExpression(expressions)
+    } else if (current.charAt(0) == ',') {
+      skip(1) //,
+      println(s"current=$current")
+      val expression = takeScriptExpression()
+      println(s"takeTapscriptTreeExpression().1 $expression")
+      TapscriptTreeExpression(Vector(expression))
+    } else {
+      sys.error(s"Cannot parse TapscriptTreeExpression() from current=$current")
+    }
+    skip(expression.toString.length)
+    expression
+  }
 }
