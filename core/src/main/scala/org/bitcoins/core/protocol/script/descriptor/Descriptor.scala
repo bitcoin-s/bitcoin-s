@@ -195,7 +195,7 @@ object P2WPKHDescriptor
 
   override def parseValidExpression(
       iter: DescriptorIterator): P2WPKHExpression = {
-    val keyExpression = iter.takeSingleKeyExpression()
+    val keyExpression = iter.takeSingleECKeyExpression()
     P2WPKHExpression(keyExpression)
   }
 
@@ -235,7 +235,7 @@ object P2PKDescriptor
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2PKScriptExpression = {
-    val keyExpression = iter.takeSingleKeyExpression()
+    val keyExpression = iter.takeSingleECKeyExpression()
     P2PKScriptExpression(keyExpression)
   }
 
@@ -255,7 +255,7 @@ object P2PKHDescriptor
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2PKHScriptExpression = {
-    val keyExpression = iter.takeSingleKeyExpression()
+    val keyExpression = iter.takeSingleECKeyExpression()
     P2PKHScriptExpression(keyExpression)
   }
 
@@ -340,7 +340,7 @@ object ComboDescriptor
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): ComboExpression = {
-    val keyExpr = iter.takeSingleKeyExpression()
+    val keyExpr = iter.takeSingleECKeyExpression()
     ComboExpression(keyExpr)
   }
 

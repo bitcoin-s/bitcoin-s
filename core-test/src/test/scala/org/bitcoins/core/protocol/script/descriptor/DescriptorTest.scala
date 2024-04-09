@@ -424,10 +424,10 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   @tailrec
   private def parseExtKeyExpression(
-      expression: ScriptExpression): ExtKeyExpression = {
+      expression: ScriptExpression): ExtECPublicKeyExpression = {
     expression match {
-      case x: KeyExpressionScriptExpression =>
-        x.source.asInstanceOf[ExtKeyExpression]
+      case x: KeyExpressionScriptExpression[_] =>
+        x.source.asInstanceOf[ExtECPublicKeyExpression]
       case x: NestedScriptExpression =>
         parseExtKeyExpression(x.source)
       case x: RawScriptExpression =>
@@ -447,8 +447,8 @@ class DescriptorTest extends BitcoinSUnitTest {
     expectedSPKs.zipWithIndex.foreach { case (s, idx) =>
       val expected = ScriptPubKey.fromAsmHex(s)
       val derivedKey = extKeyDesc match {
-        case xprv: XprvKeyExpression => xprv.deriveChild(idx).publicKey
-        case xpub: XpubKeyExpression => xpub.deriveChild(idx)
+        case xprv: XprvECPublicKeyExpression => xprv.deriveChild(idx).publicKey
+        case xpub: XpubECPublicKeyExpression => xpub.deriveChild(idx)
       }
 
       val p2wpkh = P2WPKHWitnessSPKV0(derivedKey)
@@ -475,17 +475,17 @@ class DescriptorTest extends BitcoinSUnitTest {
       case x => sys.error(s"Invalid expression=$x")
     }
     val spk = expression.scriptPubKey
-    val extKeyExprs: Vector[ExtKeyExpression] =
+    val extKeyExprs: Vector[ExtECPublicKeyExpression] =
       expression.source.keyExpressions.collect {
-        case extKey: ExtKeyExpression => extKey
+        case extKey: ExtECPublicKeyExpression => extKey
       }
     expectedSPKs.zipWithIndex.foreach { case (s, idx) =>
       val derivedKeys = extKeyExprs.map {
-        case xprv: XprvKeyExpression =>
+        case xprv: XprvECPublicKeyExpression =>
           if (xprv.childrenHardenedOpt.isDefined)
             xprv.deriveChild(idx).publicKey
           else xprv.key.publicKeyBytes.toPublicKey
-        case xpub: XpubKeyExpression =>
+        case xpub: XpubECPublicKeyExpression =>
           if (xpub.childrenHardenedOpt.isDefined) xpub.deriveChild(idx)
           else xpub.key.toPublicKey
       }
@@ -554,7 +554,7 @@ class DescriptorTest extends BitcoinSUnitTest {
       expectedSPKsNested: Vector[Vector[String]]): Assertion = {
     val desc = ComboDescriptor.fromString(descriptor)
     expectedSPKsNested.zipWithIndex.foreach { case (expectedSPKs, idx) =>
-      val extKey = desc.expression.source.asInstanceOf[ExtKeyExpression]
+      val extKey = desc.expression.source.asInstanceOf[ExtECPublicKeyExpression]
       val pubKey = extKey.deriveChild(idx) match {
         case priv: ECPrivateKey => priv.publicKey
         case pub: ECPublicKey   => pub

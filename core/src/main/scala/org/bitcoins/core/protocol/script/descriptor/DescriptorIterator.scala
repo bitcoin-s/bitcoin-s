@@ -6,12 +6,7 @@ import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   RawScriptPubKey
 }
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  ECKeyBytes,
-  ECPublicKeyBytes,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 
 case class DescriptorIterator(descriptor: String) {
   private var index: Int = 0
@@ -105,16 +100,20 @@ case class DescriptorIterator(descriptor: String) {
     extKey
   }
 
-  def takeKeyExpression(): KeyExpression = {
+  def takeKeyExpression(): KeyExpression[ECPublicKey] = {
     val keyExpression = KeyExpression.fromString(current)
     skip(keyExpression.toString.length)
     keyExpression
   }
 
-  def takeSingleKeyExpression(): SingleKeyExpression = {
-    val singleKeyExpression = SingleKeyExpression.fromString(current)
+  def takeSingleECKeyExpression(): SingleECPublicKeyExpression = {
+    val singleKeyExpression = SingleECPublicKeyExpression.fromString(current)
     skip(singleKeyExpression.toString.length)
     singleKeyExpression
+  }
+
+  def takeSingleXOnlyPubKeyExpression(): SingleXOnlyPubKeyExpression = {
+    ???
   }
 
   def takeMultisigKeyExpression(): MultisigKeyExpression = {
@@ -166,7 +165,7 @@ case class DescriptorIterator(descriptor: String) {
 
   def takeTreeExpression(): TreeExpression = {
     val (_, scriptPath) = current.span(_ != ',')
-    val singleKeyExpr = takeSingleKeyExpression()
+    val singleKeyExpr = takeSingleXOnlyPubKeyExpression()
     val keypath = KeyPathOnlyTreeExpression(singleKeyExpr)
     println(s"scriptPath=$scriptPath")
     if (scriptPath.isEmpty) {
