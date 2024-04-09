@@ -1,19 +1,9 @@
 package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  P2PKHScriptPubKey,
-  P2PKScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WSHWitnessSPKV0,
-  RawScriptPubKey,
-  ScriptPubKey,
-  TaprootScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.Bech32
-import org.bitcoins.crypto.StringFactory
+import org.bitcoins.crypto.{PublicKey, StringFactory}
 
 import scala.util.Try
 
@@ -61,8 +51,8 @@ case class P2WSHDescriptor(
   override val scriptPubKey: P2WSHWitnessSPKV0 = expression.scriptPubKey
 }
 
-case class P2PKDescriptor(
-    expression: P2PKScriptExpression,
+case class P2PKDescriptor[T <: PublicKey](
+    expression: P2PKScriptExpression[T],
     checksum: Option[String])
     extends ScriptDescriptor {
   override val scriptPubKey: P2PKScriptPubKey = expression.scriptPubKey
@@ -228,20 +218,20 @@ object P2WSHDescriptor
 
 object P2PKDescriptor
     extends DescriptorFactory[
-      P2PKDescriptor,
-      P2PKScriptExpression,
+      P2PKDescriptor[PublicKey],
+      P2PKScriptExpression[PublicKey],
       DescriptorType.PK.type] {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator): P2PKScriptExpression = {
-    val keyExpression = iter.takeSingleECKeyExpression()
-    P2PKScriptExpression(keyExpression)
+      iter: DescriptorIterator): P2PKScriptExpression[PublicKey] = {
+    val keyExpression = iter.takeSingleKeyExpression()
+    P2PKScriptExpression[PublicKey](keyExpression)
   }
 
   override protected def createDescriptor(
-      e: P2PKScriptExpression,
-      checksum: Option[String]): P2PKDescriptor = {
+      e: P2PKScriptExpression[PublicKey],
+      checksum: Option[String]): P2PKDescriptor[PublicKey] = {
     P2PKDescriptor(e, checksum)
   }
 }
@@ -317,7 +307,7 @@ object P2SHDescriptor
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2SHExpression = {
-    val scriptExpression = iter.takeScriptExpression()
+    val scriptExpression = iter.takeScriptExpressionECKey()
     require(
       !scriptExpression.isInstanceOf[ComboExpression],
       s"Cannot have ComboExpression in P2SHDescriptor, got=$scriptExpression")

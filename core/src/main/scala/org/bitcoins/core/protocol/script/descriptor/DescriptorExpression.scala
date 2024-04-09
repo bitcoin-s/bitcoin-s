@@ -25,13 +25,16 @@ sealed abstract class KeyExpression[T <: PublicKey]
     extends DescriptorExpression {
   _: PubKeyTypeExpression[T] =>
   def originOpt: Option[KeyOriginExpression]
+}
 
+sealed abstract class SingleKeyExpression[T <: PublicKey]
+    extends KeyExpression[T] { _: PubKeyTypeExpression[T] =>
+  def key: ECKeyBytes
 }
 
 sealed abstract class SingleECPublicKeyExpression
-    extends KeyExpression[ECPublicKey] {
+    extends SingleKeyExpression[ECPublicKey] {
   _: ECPublicKeyExpression =>
-  def key: ECKeyBytes
 
   override def pubKey: ECPublicKey = key match {
     case priv: ECPrivateKeyBytes => priv.publicKeyBytes.toPublicKey
@@ -44,7 +47,7 @@ sealed abstract class SingleECPublicKeyExpression
   * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
   */
 sealed abstract class SingleXOnlyPubKeyExpression
-    extends KeyExpression[XOnlyPubKey] {
+    extends SingleKeyExpression[XOnlyPubKey] {
   _: XOnlyPublicKeyExpression =>
   def key: ECKeyBytes
 
@@ -380,8 +383,10 @@ object SingleXOnlyPubKeyExpression
       case xpub: XpubECPublicKeyExpression => XpubXOnlyPublicKeyExpression(xpub)
       case rawPriv: RawPrivateECPublicKeyExpression =>
         RawPrivateXOnlyPublicKeyExpression(rawPriv)
-      case x =>
-        sys.error(s"SingleXOnlyPubKeyExpression Not supported yet, got=$x")
+      case _: RawPublicECPublicKeyExpression =>
+        //cannot convert correctly, so just re-parse
+        val iter = DescriptorIterator(string)
+        iter.takeInternalPublicKeyExpression()
     }
   }
 }
@@ -490,16 +495,21 @@ case class P2PKHScriptExpression(source: SingleECPublicKeyExpression)
   }
 }
 
-case class P2PKScriptExpression(source: SingleECPublicKeyExpression)
+case class P2PKScriptExpression[T <: PublicKey](source: SingleKeyExpression[T])
     extends RawSPKScriptExpression
-    with KeyExpressionScriptExpression[ECPublicKey] {
+    with KeyExpressionScriptExpression[T] {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
 
   override val scriptPubKey: P2PKScriptPubKey = {
-    val pub = source.key match {
-      case priv: ECPrivateKeyBytes =>
-        priv.publicKeyBytes.toPublicKey
-      case pub: ECPublicKeyBytes => pub.toPublicKey
+    val pub = source match {
+      case ec: SingleECPublicKeyExpression =>
+        ec.key match {
+          case priv: ECPrivateKeyBytes =>
+            priv.publicKeyBytes.toPublicKey
+          case pub: ECPublicKeyBytes => pub.toPublicKey
+        }
+      case x: SingleXOnlyPubKeyExpression =>
+        x.pubKey.publicKey //is this right?
     }
     P2PKScriptPubKey(pub)
   }
@@ -609,7 +619,8 @@ case class ComboExpression(
   }
 }
 
-object ScriptExpression extends StringFactory[ScriptExpression] {
+/** Creates [[ScriptExpression]] from [[ECPublicKey]]'s */
+object ScriptExpressionECKey extends StringFactory[ScriptExpression] {
 
   override def fromString(string: String): ScriptExpression = {
     val iter = DescriptorIterator(string)
@@ -621,7 +632,7 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
         P2WPKHExpression(iter.takeSingleECKeyExpression())
       case DescriptorType.WSH =>
         P2WSHExpression(iter.takeRawSPKScriptExpression())
-      case DescriptorType.SH  => P2SHExpression(iter.takeScriptExpression())
+      case DescriptorType.SH  => P2SHExpression(iter.takeScriptExpressionECKey())
       case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
       case DescriptorType.PK =>
         P2PKScriptExpression(iter.takeSingleECKeyExpression())
@@ -631,9 +642,45 @@ object ScriptExpression extends StringFactory[ScriptExpression] {
         SortedMultisigExpression(iter.takeMultisigKeyExpression())
       case DescriptorType.Combo =>
         ComboExpression(iter.takeSingleECKeyExpression())
-      case x @ (DescriptorType.TR) =>
+      case DescriptorType.TR =>
         sys.error(
-          s"Descriptor type not supported yet in ScriptExpression.fromString(), got=$x")
+          s"Cannot create tapscript expression's with ECPublicKey, got=$string")
+    }
+    expression
+  }
+}
+
+object ScriptExpressionXOnlyKey extends StringFactory[ScriptExpression] {
+
+  override def fromString(string: String): ScriptExpression = {
+    val iter = DescriptorIterator(string)
+    val descriptorType = iter.takeDescriptorType()
+    val expression: ScriptExpression = descriptorType match {
+      case DescriptorType.PKH =>
+        //P2PKHScriptExpression(iter.takeSingleXOnlyPubKeyExpression())
+        ???
+      case DescriptorType.WPKH =>
+        //P2WPKHExpression(iter.takeSingleXOnlyPubKeyExpression())
+        ???
+      case DescriptorType.WSH =>
+        //P2WSHExpression(iter.takeRawSPKScriptExpression())
+        ???
+      case DescriptorType.SH =>
+        //P2SHExpression(iter.takeSingleXOnlyPubKeyExpression())
+        ???
+      case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
+      case DescriptorType.PK =>
+        P2PKScriptExpression(iter.takeSingleXOnlyPubKeyExpression())
+      case DescriptorType.Multi =>
+        MultisigExpression(iter.takeMultisigKeyExpression())
+      case DescriptorType.SortedMulti =>
+        SortedMultisigExpression(iter.takeMultisigKeyExpression())
+      case DescriptorType.Combo =>
+        //ComboExpression(iter.takeSingleXOnlyPubKeyExpression())
+        ???
+      case DescriptorType.TR =>
+        sys.error(
+          s"Cannot create tapscript expression's with ECPublicKey, got=$string")
     }
     expression
   }
@@ -661,5 +708,7 @@ case class ScriptPathTreeExpression(
     extends TreeExpression
     with TapscriptTree {
 
-  override def scriptPubKey: TaprootScriptPubKey = ???
+  override def scriptPubKey: TaprootScriptPubKey = {
+    ???
+  }
 }

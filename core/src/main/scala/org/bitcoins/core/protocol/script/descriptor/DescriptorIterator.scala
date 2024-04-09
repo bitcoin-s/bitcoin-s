@@ -106,6 +106,23 @@ case class DescriptorIterator(descriptor: String) {
     keyExpression
   }
 
+  def takeSingleKeyExpression(): SingleKeyExpression[PublicKey] = {
+    if (current.exists(_ == ',')) {
+      //must be xonly, the
+      takeSingleXOnlyPubKeyExpression()
+        .asInstanceOf[SingleKeyExpression[PublicKey]]
+    } else {
+      val keyStr = current.takeWhile(_ != ')')
+      if (keyStr.length == 64) {
+        takeSingleXOnlyPubKeyExpression()
+          .asInstanceOf[SingleKeyExpression[PublicKey]]
+      } else {
+        takeSingleECKeyExpression()
+          .asInstanceOf[SingleKeyExpression[PublicKey]]
+      }
+    }
+  }
+
   def takeSingleECKeyExpression(): SingleECPublicKeyExpression = {
     val singleKeyExpression = SingleECPublicKeyExpression.fromString(current)
     skip(singleKeyExpression.toString.length)
@@ -113,9 +130,27 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeSingleXOnlyPubKeyExpression(): SingleXOnlyPubKeyExpression = {
-    val single = SingleXOnlyPubKeyExpression.fromString(current)
+    val keyExpr = {
+      if (current.exists(_ == ',')) {
+        //we have a script path
+        current.span(_ != ',')._1
+      } else {
+        //no script path, just internal key
+        current.takeWhile(_ != ')')
+      }
+    }
+    val single = SingleXOnlyPubKeyExpression.fromString(keyExpr)
     skip(single.toString().length)
+    skip(1) // ','
     single
+  }
+
+  def takeInternalPublicKeyExpression(): InternalPublicKeyExpression = {
+    val key = current.take(64)
+    val xonly = XOnlyPubKey.fromHex(key)
+    val i = InternalPublicKeyExpression(xonly)
+    skip(i.toString().length)
+    i
   }
 
   def takeMultisigKeyExpression(): MultisigKeyExpression = {
@@ -137,7 +172,7 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeRawSPKScriptExpression(): RawSPKScriptExpression = {
-    takeScriptExpression() match {
+    takeScriptExpressionECKey() match {
       case raw: RawSPKScriptExpression => raw
       case x =>
         sys.error(
@@ -145,9 +180,15 @@ case class DescriptorIterator(descriptor: String) {
     }
   }
 
-  def takeScriptExpression(): ScriptExpression = {
-    val expression = ScriptExpression.fromString(current)
+  def takeScriptExpressionECKey(): ScriptExpression = {
+    val expression = ScriptExpressionECKey.fromString(current)
     skip(expression.toString.length)
+    expression
+  }
+
+  def takeScriptExpressionXOnlyKey(): ScriptExpression = {
+    val expression = ScriptExpressionXOnlyKey.fromString(current)
+    skip(expression.toString().length)
     expression
   }
 
@@ -169,7 +210,6 @@ case class DescriptorIterator(descriptor: String) {
     val (_, scriptPath) = current.span(_ != ',')
     val singleKeyExpr = takeSingleXOnlyPubKeyExpression()
     val keypath = KeyPathOnlyTreeExpression(singleKeyExpr)
-    println(s"scriptPath=$scriptPath")
     if (scriptPath.isEmpty) {
       keypath
     } else {
@@ -185,17 +225,13 @@ case class DescriptorIterator(descriptor: String) {
       val split = current
         .dropRight(1) //}
         .split(',')
-      val expressions = split.map(ScriptExpression.fromString).toVector
+      val expressions = split.map(ScriptExpressionXOnlyKey.fromString).toVector
       println(s"takeTapscriptTreeExpression().0 $expressions")
       TapscriptTreeExpression(expressions)
-    } else if (current.charAt(0) == ',') {
-      skip(1) //,
-      println(s"current=$current")
-      val expression = takeScriptExpression()
+    } else {
+      val expression = takeScriptExpressionXOnlyKey()
       println(s"takeTapscriptTreeExpression().1 $expression")
       TapscriptTreeExpression(Vector(expression))
-    } else {
-      sys.error(s"Cannot parse TapscriptTreeExpression() from current=$current")
     }
     skip(expression.toString.length)
     expression
