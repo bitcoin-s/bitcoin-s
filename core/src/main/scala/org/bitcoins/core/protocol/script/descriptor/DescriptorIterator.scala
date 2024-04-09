@@ -113,7 +113,9 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeSingleXOnlyPubKeyExpression(): SingleXOnlyPubKeyExpression = {
-    ???
+    val single = SingleXOnlyPubKeyExpression.fromString(current)
+    skip(single.toString().length)
+    single
   }
 
   def takeMultisigKeyExpression(): MultisigKeyExpression = {

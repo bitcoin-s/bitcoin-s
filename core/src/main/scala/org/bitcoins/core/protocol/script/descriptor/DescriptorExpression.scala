@@ -39,11 +39,19 @@ sealed abstract class SingleECPublicKeyExpression
   }
 }
 
+/** Represents an expression that corresponds to a single [[XOnlyPubKey]]
+  * Example:
+  * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
+  */
 sealed abstract class SingleXOnlyPubKeyExpression
     extends KeyExpression[XOnlyPubKey] {
   _: XOnlyPublicKeyExpression =>
   def key: ECKeyBytes
-  override def pubKey: XOnlyPubKey
+
+  override def pubKey: XOnlyPubKey = key match {
+    case priv: ECPrivateKeyBytes => priv.toPrivateKey.toXOnly
+    case pub: ECPublicKeyBytes   => pub.toPublicKey.toXOnly
+  }
 }
 
 /** A trait that allows us to parameterize by [[PublicKey]] type.
@@ -65,6 +73,12 @@ sealed trait XOnlyPublicKeyExpression
 sealed abstract class PrivateECPublicKeyExpression
     extends SingleECPublicKeyExpression {
   _: ECPublicKeyExpression =>
+  override def key: ECPrivateKeyBytes
+}
+
+sealed abstract class PrivateXOnlyPublicKeyExpression
+    extends SingleXOnlyPubKeyExpression {
+  _: XOnlyPublicKeyExpression =>
   override def key: ECPrivateKeyBytes
 }
 
@@ -91,6 +105,15 @@ case class RawPrivateECPublicKeyExpression(
   }
 }
 
+case class RawPrivateXOnlyPublicKeyExpression(
+    raw: RawPrivateECPublicKeyExpression)
+    extends PrivateXOnlyPublicKeyExpression
+    with XOnlyPublicKeyExpression {
+  override val originOpt: Option[KeyOriginExpression] = raw.originOpt
+  override val key: ECPrivateKeyBytes = raw.key
+  override def toString(): String = raw.toString()
+}
+
 sealed abstract class PublicECPublicKeyExpression
     extends SingleECPublicKeyExpression {
   _: ECPublicKeyExpression =>
@@ -115,7 +138,7 @@ case class RawPublicECPublicKeyExpression(
   }
 }
 
-case class InternalPublicKeyExpression(pubKey: XOnlyPubKey)
+case class InternalPublicKeyExpression(override val pubKey: XOnlyPubKey)
     extends SingleXOnlyPubKeyExpression
     with XOnlyPublicKeyExpression {
   override val originOpt: Option[KeyOriginExpression] = None
@@ -158,6 +181,30 @@ sealed abstract class ExtECPublicKeyExpression
   }
 }
 
+sealed abstract class ExtXOnlyPublicKeyExpression
+    extends SingleXOnlyPubKeyExpression { _: XOnlyPublicKeyExpression =>
+
+  /** Since implementations are so similar, just piggy back off of the ExtECPublicKeyExpression
+    * implementation rather than duplicating everything
+    */
+  protected def ecPublicKeyExpression: ExtECPublicKeyExpression
+
+  def extKey: ExtKey = ecPublicKeyExpression.extKey
+
+  def pathOpt: Option[BIP32Path] = ecPublicKeyExpression.pathOpt
+
+  def childrenHardenedOpt: Option[Boolean] =
+    ecPublicKeyExpression.childrenHardenedOpt
+
+  def deriveChild(idx: Int): BaseECKey = ecPublicKeyExpression.deriveChild(idx)
+
+  override def key: ECKeyBytes = ecPublicKeyExpression.key
+
+  override def toString(): String = {
+    ecPublicKeyExpression.toString()
+  }
+}
+
 case class XprvECPublicKeyExpression(
     override val extKey: ExtPrivateKey,
     originOpt: Option[KeyOriginExpression],
@@ -190,6 +237,13 @@ case class XprvECPublicKeyExpression(
     }
     extKey.deriveChildPrivKey(fullPath).key
   }
+}
+
+case class XprvXOnlyPublicKeyExpression(
+    ecPublicKeyExpression: ExtECPublicKeyExpression)
+    extends ExtXOnlyPublicKeyExpression
+    with XOnlyPublicKeyExpression {
+  override val originOpt: Option[KeyOriginExpression] = None
 }
 
 case class XpubECPublicKeyExpression(
@@ -226,6 +280,13 @@ case class XpubECPublicKeyExpression(
       .map(_.key)
       .get // should be safe if we had the hardened indicator?
   }
+}
+
+case class XpubXOnlyPublicKeyExpression(
+    ecPublicKeyExpression: ExtECPublicKeyExpression)
+    extends ExtXOnlyPublicKeyExpression
+    with XOnlyPublicKeyExpression {
+  override val originOpt: Option[KeyOriginExpression] = None
 }
 
 case class MultisigKeyExpression(
@@ -313,9 +374,15 @@ object SingleECPublicKeyExpression
 object SingleXOnlyPubKeyExpression
     extends StringFactory[SingleXOnlyPubKeyExpression] {
 
-  override def fromString(string: String): InternalPublicKeyExpression = {
-    val xonly = XOnlyPubKey.fromHex(string.take(64))
-    InternalPublicKeyExpression(xonly)
+  override def fromString(string: String): SingleXOnlyPubKeyExpression = {
+    SingleECPublicKeyExpression.fromString(string) match {
+      case xprv: XprvECPublicKeyExpression => XprvXOnlyPublicKeyExpression(xprv)
+      case xpub: XpubECPublicKeyExpression => XpubXOnlyPublicKeyExpression(xpub)
+      case rawPriv: RawPrivateECPublicKeyExpression =>
+        RawPrivateXOnlyPublicKeyExpression(rawPriv)
+      case x =>
+        sys.error(s"SingleXOnlyPubKeyExpression Not supported yet, got=$x")
+    }
   }
 }
 

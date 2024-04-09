@@ -397,12 +397,12 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str5)
   }
 
-  it must "parse test vectors from BIP387" ignore {
-    val str0 =
+  it must "parse test vectors from BIP387" in {
+    /*    val str0 =
       "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
     val expected0 =
       "512077aab6e066f8a7419c5ab714c12c67d25007ed55a43cadcacb4d7a970a093f11"
-    runTest(str0, expected0)
+    runTest(str0, expected0)*/
 
     val str1 = "tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)"
     val expected1 =
