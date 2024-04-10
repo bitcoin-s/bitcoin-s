@@ -42,6 +42,14 @@ trait CryptoRuntime {
     sha256(tagBytes ++ bytes)
   }
 
+  def tapTweakHash(bytes: ByteVector): Sha256Digest = {
+    CryptoUtil.taggedSha256(bytes, "TapTweak")
+  }
+
+  def tapBranchHash(bytes: ByteVector): Sha256Digest = {
+    CryptoUtil.taggedSha256(bytes, "TapBranch")
+  }
+
   /** Performs sha256(sha256(bytes)). */
   def doubleSHA256(bytes: ByteVector): DoubleSha256Digest = {
     val hash: ByteVector = sha256(sha256(bytes).bytes).bytes

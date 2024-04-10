@@ -6,7 +6,7 @@ import java.math.BigInteger
 import scala.util.Try
 
 /** Represents the raw bytes which are meant to represent an ECKey without deserializing. */
-sealed trait ECKeyBytes extends NetworkElement
+sealed abstract class ECKeyBytes extends NetworkElement
 
 /** Represents a serialization sensitive ECPrivateKey (such as is used in WIF). */
 case class ECPrivateKeyBytes(bytes: ByteVector, isCompressed: Boolean = true)
