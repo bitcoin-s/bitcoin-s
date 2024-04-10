@@ -6,7 +6,6 @@ import java.io.{FileOutputStream, IOException}
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 import java.util.zip.{ZipEntry, ZipOutputStream}
-import scala.reflect.io.Directory
 import scala.util.matching.Regex
 
 object FileUtil extends BitcoinSLogger {
@@ -102,16 +101,14 @@ object FileUtil extends BitcoinSLogger {
         override def visitFile(
             file: Path,
             attrs: BasicFileAttributes): FileVisitResult = {
-          val directory = new Directory(file.toFile)
-          directory.deleteRecursively()
+          Files.delete(file)
           FileVisitResult.CONTINUE
         }
 
         override def postVisitDirectory(
             dir: Path,
             exc: IOException): FileVisitResult = {
-          val directory = new Directory(dir.toFile)
-          directory.deleteRecursively()
+          Files.delete(dir)
           FileVisitResult.CONTINUE
         }
       }
