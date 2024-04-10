@@ -557,7 +557,7 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
   }
 
   private def hashTapBranch(bytes: ByteVector): Sha256Digest = {
-    CryptoUtil.taggedSha256(bytes, "TapBranch")
+    CryptoUtil.tapBranchHash(bytes)
   }
 }
 

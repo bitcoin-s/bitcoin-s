@@ -1483,6 +1483,29 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
       .toXOnly
     TaprootScriptPubKey(pubKey)
   }
+
+  def computeMerkleRoot(controlBlock: ControlBlock): Sha256Digest = {
+    computeMerkleRootHelper(controlBlock.hashes)
+  }
+
+  @tailrec
+  private def computeMerkleRootHelper(
+      hashes: Vector[Sha256Digest]): Sha256Digest = {
+    require(hashes.length > 0,
+            s"Cannot computeMerkleRoot() with 0 hashes=$hashes")
+    if (hashes.length > 1) {
+      val result: Vector[Sha256Digest] = hashes
+        .grouped(2)
+        .map { grouped =>
+          //need to recurse?
+          CryptoUtil.tapBranchHash(grouped(0).bytes ++ grouped(1).bytes)
+        }
+        .toVector
+      computeMerkleRootHelper(result)
+    } else {
+      hashes.head
+    }
+  }
 }
 
 /** Type to represent all

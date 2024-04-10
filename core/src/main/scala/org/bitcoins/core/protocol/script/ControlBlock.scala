@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.crypto.{Factory, NetworkElement, XOnlyPubKey}
+import org.bitcoins.crypto.{Factory, NetworkElement, Sha256Digest, XOnlyPubKey}
 import scodec.bits.ByteVector
 
 /** Control block as defined by BIP341
@@ -24,6 +24,11 @@ sealed abstract class ControlBlock extends NetworkElement {
 
   val isTapLeafMask: Boolean = {
     (bytes.head & TaprootScriptPath.TAPROOT_LEAF_MASK).toByte == TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT
+  }
+
+  /** Leaf or branch hashes embedded in the control block */
+  def hashes: Vector[Sha256Digest] = {
+    bytes.drop(33).grouped(32).map(Sha256Digest.fromBytes).toVector
   }
 }
 

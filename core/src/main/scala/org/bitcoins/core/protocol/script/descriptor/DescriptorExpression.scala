@@ -11,6 +11,7 @@ import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success}
 
@@ -328,7 +329,18 @@ case class MultisigKeyExpression(
   * @param scriptExpressions
   */
 case class TapscriptTreeExpression(leaves: Vector[ScriptExpression])
-    extends DescriptorExpression
+    extends DescriptorExpression {
+
+  def controlBlock(internalKey: XOnlyPubKey): ControlBlock = {
+    val leafHashes = leaves.map { l =>
+      TaprootScriptPath
+        .computeTapleafHash(TapscriptControlBlock.leafVersion, l.scriptPubKey)
+        .bytes
+    }
+    val leafBytes = ByteVector.concat(leafHashes)
+    ControlBlock(internalKey.bytes ++ leafBytes)
+  }
+}
 
 object SingleECPublicKeyExpression
     extends StringFactory[SingleECPublicKeyExpression] {
@@ -709,6 +721,8 @@ case class ScriptPathTreeExpression(
     with TapscriptTree {
 
   override def scriptPubKey: TaprootScriptPubKey = {
+    val controlBlock = source.controlBlock(keyPath.source.pubKey)
+    val merkleRoot = TaprootScriptPubKey.computeMerkleRoot(controlBlock)
     ???
   }
 }
