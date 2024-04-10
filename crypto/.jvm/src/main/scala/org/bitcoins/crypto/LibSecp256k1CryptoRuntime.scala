@@ -80,7 +80,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     NativeSecp256k1.secKeyVerify(privateKeyBytes.toArray)
 
   override def verify(
-      publicKey: PublicKey,
+      publicKey: ECPublicKeyApi,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
     val result =

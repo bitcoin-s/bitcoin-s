@@ -133,7 +133,7 @@ object BouncyCastleUtil {
 
   def verifyDigitalSignature(
       data: ByteVector,
-      publicKey: PublicKey,
+      publicKey: ECPublicKeyApi,
       signature: ECDigitalSignature): Boolean = {
     val resultTry = Try {
       val publicKeyParams =

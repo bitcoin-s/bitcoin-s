@@ -184,7 +184,7 @@ trait CryptoRuntime {
   def secKeyVerify(privateKeybytes: ByteVector): Boolean
 
   def verify(
-      publicKey: PublicKey,
+      publicKey: ECPublicKeyApi,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean
 
@@ -198,13 +198,13 @@ trait CryptoRuntime {
     }
   }
 
-  def decompressed[PK <: PublicKey](
+  def decompressed[PK <: ECPublicKeyApi](
       pubKeyBytes: ByteVector,
       fromBytes: ByteVector => PK): PK = {
     fromBytes(decompressed(pubKeyBytes))
   }
 
-  def decompressed[PK <: PublicKey](publicKey: PK): publicKey.type = {
+  def decompressed[PK <: ECPublicKeyApi](publicKey: PK): publicKey.type = {
     if (publicKey.isDecompressed) publicKey
     else decompressed(publicKey.bytes, publicKey.fromBytes(_))
   }
@@ -281,7 +281,7 @@ trait CryptoRuntime {
 
   def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
 
-  def isValidPubKey(pubKey: PublicKey): Boolean = {
+  def isValidPubKey(pubKey: ECPublicKeyApi): Boolean = {
     pubKey.decompressedBytesT.isSuccess &&
     pubKey.decompressedBytesT.get != ByteVector(0x00)
   }

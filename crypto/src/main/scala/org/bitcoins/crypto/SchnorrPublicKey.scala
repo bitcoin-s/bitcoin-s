@@ -5,7 +5,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.Try
 
-case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
+case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
   require(bytes.length == 32,
           s"Schnorr public keys must be 32 bytes, got $bytes")
   require(Try(publicKey).isSuccess,
