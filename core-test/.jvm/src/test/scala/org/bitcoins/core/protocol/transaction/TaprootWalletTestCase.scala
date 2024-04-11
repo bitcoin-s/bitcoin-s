@@ -19,7 +19,7 @@ case class Given(internalPubkey: XOnlyPubKey, scriptTrees: Vector[ScriptTree]) {
     TaprootScriptPath.computeTapleafHash(s.leaf)
   }
 
-  val merkleRootOpt: Option[Sha256Digest] = {
+  def merkleRootOpt: Option[Sha256Digest] = {
     if (scriptTrees.isEmpty) None
     else {
       val c =
@@ -92,7 +92,7 @@ object TaprootWalletTestCase {
       val givenObj = `given`.obj
       val id = givenObj.obj("id").num.toInt
       val script = ScriptPubKey.fromAsmHex(givenObj("script").str)
-      val leafVersion = givenObj("leafVersion").num.toByte
+      val leafVersion = givenObj("leafVersion").num.toInt
       val leaf = TapLeaf(leafVersion, script)
       Vector(ScriptTree(id, leaf))
     } else {

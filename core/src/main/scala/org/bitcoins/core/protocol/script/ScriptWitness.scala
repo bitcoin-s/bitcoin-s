@@ -503,7 +503,7 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
     */
   def computeTapleafHash(leaf: TapLeaf): Sha256Digest = {
     val bytes =
-      ByteVector.fromByte(leaf.leafVersion) ++ leaf.spk.bytes
+      ByteVector.fromInt(i = leaf.leafVersion, size = 1) ++ leaf.spk.bytes
     CryptoUtil.tapLeafHash(bytes)
   }
 
@@ -544,7 +544,12 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
         val result = hashes.grouped(2).map { x =>
           if (x.size == 1) x.head
           else {
-            CryptoUtil.tapBranchHash(x(0).bytes ++ x(1).bytes)
+            val sorted = if (x(0).bytes.compare(x(1).bytes) <= 0) {
+              x(0).bytes ++ x(1).bytes
+            } else {
+              x(1).bytes ++ x(0).bytes
+            }
+            CryptoUtil.tapBranchHash(sorted)
           }
         }
         loop(result.toVector)
