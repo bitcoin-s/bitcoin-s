@@ -1,13 +1,33 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.Bech32mAddress
-import org.bitcoins.core.protocol.script.{ScriptPubKey, TaprootScriptPubKey}
+import org.bitcoins.core.protocol.script.{
+  ControlBlock,
+  ScriptPubKey,
+  TapLeaf,
+  TaprootScriptPath,
+  TaprootScriptPubKey
+}
 import org.bitcoins.crypto.{Sha256Digest, XOnlyPubKey}
 import upickle.default._
 
-case class ScriptTree(id: Int, spk: ScriptPubKey, leafVersion: Byte)
+case class ScriptTree(id: Int, leaf: TapLeaf)
 
-case class Given(internalPubkey: XOnlyPubKey, scriptTrees: Vector[ScriptTree])
+case class Given(internalPubkey: XOnlyPubKey, scriptTrees: Vector[ScriptTree]) {
+
+  val leafHashes: Vector[Sha256Digest] = scriptTrees.map { case s: ScriptTree =>
+    TaprootScriptPath.computeTapleafHash(s.leaf)
+  }
+
+  val merkleRootOpt: Option[Sha256Digest] = {
+    if (scriptTrees.isEmpty) None
+    else {
+      val c =
+        TaprootScriptPath.computeFullTreeMerkleRoot(scriptTrees.map(_.leaf))
+      Some(c)
+    }
+  }
+}
 
 case class Intermediary(
     leafHashes: Option[Vector[Sha256Digest]],
@@ -17,7 +37,8 @@ case class Intermediary(
 
 case class Expected(
     scriptPubKey: TaprootScriptPubKey,
-    bip350Address: Bech32mAddress)
+    bip350Address: Bech32mAddress,
+    scriptPathControlBlocks: Vector[ControlBlock])
 
 case class TaprootWalletTestCase(
     `given`: Given,
@@ -46,7 +67,17 @@ object TaprootWalletTestCase {
           TaprootScriptPubKey.fromAsmHex(expectedObj("scriptPubKey").str)
         val bip350Address =
           Bech32mAddress.fromString(expectedObj("bip350Address").str)
-        val expected = Expected(spk, bip350Address)
+        val controlBlocks = {
+          if (expectedObj.keys.exists(_ == "scriptPathControlBlocks")) {
+            expectedObj("scriptPathControlBlocks").arr.map { value =>
+              ControlBlock.fromHex(value.str)
+            }
+          } else {
+            Vector.empty
+          }
+
+        }
+        val expected = Expected(spk, bip350Address, controlBlocks.toVector)
 
         TaprootWalletTestCase(`given`, intermediary, expected)
 
@@ -62,7 +93,8 @@ object TaprootWalletTestCase {
       val id = givenObj.obj("id").num.toInt
       val script = ScriptPubKey.fromAsmHex(givenObj("script").str)
       val leafVersion = givenObj("leafVersion").num.toByte
-      Vector(ScriptTree(id, script, leafVersion))
+      val leaf = TapLeaf(leafVersion, script)
+      Vector(ScriptTree(id, leaf))
     } else {
       `given`.arr.map(parseScriptTree).flatten.toVector
     }

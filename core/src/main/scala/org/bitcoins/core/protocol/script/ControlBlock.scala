@@ -70,7 +70,7 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
     if (bytes.isEmpty) {
       false
     } else {
-      knownLeafVersions.contains(bytes.head) &&
+      /*knownLeafVersions.contains(bytes.head) &&*/
       ControlBlock.isValid(bytes) &&
       XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
     }
@@ -83,6 +83,13 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
 
   override def fromBytes(bytes: ByteVector): TapscriptControlBlock = {
     new TapscriptControlBlock(bytes)
+  }
+
+  def apply(
+      internalKey: XOnlyPubKey,
+      leafHashes: Vector[TapLeaf]): ControlBlock = {
+    val bytes = internalKey.bytes ++ ByteVector.concat(leafHashes.map(_.bytes))
+    ControlBlock(bytes)
   }
 }
 

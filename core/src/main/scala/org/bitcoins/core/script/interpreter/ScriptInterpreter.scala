@@ -653,9 +653,8 @@ sealed abstract class ScriptInterpreter {
             val controlBlock = taprootScriptPath.controlBlock
             val script = taprootScriptPath.script
             //execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
-            val tapLeafHash = TaprootScriptPath.computeTapleafHash(
-              controlBlock.leafVersion,
-              script)
+            val leaf = TapLeaf(controlBlock.leafVersion, script)
+            val tapLeafHash = TaprootScriptPath.computeTapleafHash(leaf)
             val isValidTaprootCommitment =
               TaprootScriptPath.verifyTaprootCommitment(
                 controlBlock = controlBlock,

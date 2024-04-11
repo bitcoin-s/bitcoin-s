@@ -10,6 +10,8 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
+import scala.annotation.tailrec
+
 /** Created by chris on 11/10/16.
   * The witness used to evaluate a [[RawScriptPubKey]] inside of Bitcoin
   * [[https://github.com/bitcoin/bitcoin/blob/57b34599b2deb179ff1bd97ffeab91ec9f904d85/src/script/script.h#L648-L660]]
@@ -499,10 +501,10 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
     * @see https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1828
     * @return
     */
-  def computeTapleafHash(leafVersion: Byte, spk: ScriptPubKey): Sha256Digest = {
+  def computeTapleafHash(leaf: TapLeaf): Sha256Digest = {
     val bytes =
-      ByteVector.fromByte(leafVersion) ++ spk.bytes
-    CryptoUtil.taggedSha256(bytes, "TapLeaf")
+      ByteVector.fromByte(leaf.leafVersion) ++ leaf.spk.bytes
+    CryptoUtil.tapLeafHash(bytes)
   }
 
   /** Computes the merkle root of a tapscript tree
@@ -531,6 +533,24 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
       i += 1
     }
     k
+  }
+
+  def computeFullTreeMerkleRoot(leafs: Vector[TapLeaf]): Sha256Digest = {
+    require(leafs.nonEmpty, s"Cannot computeFullMerkleRoot() is no leafs")
+    @tailrec
+    def loop(hashes: Vector[Sha256Digest]): Sha256Digest = {
+      if (hashes.size == 1) hashes.head
+      else {
+        val result = hashes.grouped(2).map { x =>
+          if (x.size == 1) x.head
+          else {
+            CryptoUtil.tapBranchHash(x(0).bytes ++ x(1).bytes)
+          }
+        }
+        loop(result.toVector)
+      }
+    }
+    loop(leafs.map(_.sha256))
   }
 
   /** Checks the witness stack has an annex in it */
