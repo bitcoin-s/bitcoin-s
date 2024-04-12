@@ -36,8 +36,7 @@ case class Intermediary(
 
 case class Expected(
     scriptPubKey: TaprootScriptPubKey,
-    bip350Address: Bech32mAddress,
-    scriptPathControlBlocks: Vector[ControlBlock])
+    bip350Address: Bech32mAddress)
 
 case class TaprootWalletTestCase(
     `given`: Given,
@@ -66,17 +65,7 @@ object TaprootWalletTestCase {
           TaprootScriptPubKey.fromAsmHex(expectedObj("scriptPubKey").str)
         val bip350Address =
           Bech32mAddress.fromString(expectedObj("bip350Address").str)
-        val controlBlocks = {
-          if (expectedObj.keys.exists(_ == "scriptPathControlBlocks")) {
-            expectedObj("scriptPathControlBlocks").arr.map { value =>
-              ControlBlock.fromHex(value.str)
-            }
-          } else {
-            Vector.empty
-          }
-
-        }
-        val expected = Expected(spk, bip350Address, controlBlocks.toVector)
+        val expected = Expected(spk, bip350Address)
 
         TaprootWalletTestCase(`given`, intermediary, expected)
 

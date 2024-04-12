@@ -70,7 +70,7 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
     if (bytes.isEmpty) {
       false
     } else {
-      /*knownLeafVersions.contains(bytes.head) &&*/
+      knownLeafVersions.contains(bytes.head) &&
       ControlBlock.isValid(bytes) &&
       XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
     }
