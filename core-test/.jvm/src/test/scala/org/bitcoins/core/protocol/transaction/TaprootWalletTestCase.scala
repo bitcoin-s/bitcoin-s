@@ -4,28 +4,27 @@ import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.script.{
   ControlBlock,
   ScriptPubKey,
+  TapBranch,
   TapLeaf,
   TaprootScriptPath,
-  TaprootScriptPubKey
+  TaprootScriptPubKey,
+  TapscriptTree
 }
 import org.bitcoins.crypto.{Sha256Digest, XOnlyPubKey}
 import upickle.default._
 
-case class ScriptTree(id: Int, leaf: TapLeaf)
+case class Given(internalPubkey: XOnlyPubKey, treeOpt: Option[TapscriptTree]) {
 
-case class Given(internalPubkey: XOnlyPubKey, scriptTrees: Vector[ScriptTree]) {
-
-  val leafHashes: Vector[Sha256Digest] = scriptTrees.map { case s: ScriptTree =>
-    TaprootScriptPath.computeTapleafHash(s.leaf)
+  val leafHashes: Vector[Sha256Digest] = {
+    treeOpt match {
+      case None => Vector.empty
+      case Some(t) =>
+        t.leafs.map(_.sha256)
+    }
   }
 
   def merkleRootOpt: Option[Sha256Digest] = {
-    if (scriptTrees.isEmpty) None
-    else {
-      val c =
-        TaprootScriptPath.computeFullTreeMerkleRoot(scriptTrees.map(_.leaf))
-      Some(c)
-    }
+    treeOpt.map(s => TaprootScriptPath.computeFullTreeMerkleRoot(s))
   }
 }
 
@@ -86,17 +85,22 @@ object TaprootWalletTestCase {
     }
   }
 
-  private def parseScriptTree(`given`: ujson.Value): Vector[ScriptTree] = {
-    if (`given`.isNull) Vector.empty
+  private def parseScriptTree(`given`: ujson.Value): Option[TapscriptTree] = {
+    if (`given`.isNull) None
     else if (`given`.objOpt.isDefined) {
       val givenObj = `given`.obj
-      val id = givenObj.obj("id").num.toInt
       val script = ScriptPubKey.fromAsmHex(givenObj("script").str)
       val leafVersion = givenObj("leafVersion").num.toInt
       val leaf = TapLeaf(leafVersion, script)
-      Vector(ScriptTree(id, leaf))
+      Some(leaf)
     } else {
-      `given`.arr.map(parseScriptTree).flatten.toVector
+      val arr = `given`.arr
+      require(arr.length == 2,
+              s"tapscript is a binary tre, not ${arr.length} tree")
+      val result: Vector[Option[TapscriptTree]] =
+        arr.map(parseScriptTree).toVector
+      val branch = TapBranch(result(0).get, result(1).get)
+      Some(branch)
     }
   }
 

@@ -27,10 +27,10 @@ class TaprootWalletTestVectors extends BitcoinSUnitTest {
     tests.foreach { test =>
       val `given` = test.`given`
       val intermediary = test.intermediary
-      if (`given`.scriptTrees.isEmpty) {
+      if (`given`.treeOpt.isEmpty) {
         checkOutput(test)
       } else {
-        val leafHashes = `given`.scriptTrees.map(_.leaf.sha256)
+        val leafHashes = `given`.leafHashes
         assert(leafHashes == intermediary.leafHashes.get)
         assert(`given`.merkleRootOpt == intermediary.merkleRootOpt,
                s"test=${test.expected.bip350Address}")
