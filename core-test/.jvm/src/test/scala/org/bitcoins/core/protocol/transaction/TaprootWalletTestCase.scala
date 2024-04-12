@@ -1,15 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.Bech32mAddress
-import org.bitcoins.core.protocol.script.{
-  ControlBlock,
-  ScriptPubKey,
-  TapBranch,
-  TapLeaf,
-  TaprootScriptPath,
-  TaprootScriptPubKey,
-  TapscriptTree
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.crypto.{Sha256Digest, XOnlyPubKey}
 import upickle.default._
 
