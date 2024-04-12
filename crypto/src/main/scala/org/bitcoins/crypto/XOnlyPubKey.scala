@@ -62,8 +62,21 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
     }
   }
 
+  /** @see https://github.com/bitcoin/bitcoin/blob/bdb33ec51986570ea17406c83bad2c955ae23186/src/pubkey.cpp#L249
+    * @param merkleRootOpt if the merkle root is empty we have no scripts.
+    * @return
+    */
+  def createTapTweak(
+      merkleRootOpt: Option[Sha256Digest]): (KeyParity, XOnlyPubKey) = {
+    val taggedHash = computeTapTweakHash(merkleRootOpt)
+    val result = CryptoParams.getG
+      .multiply(FieldElement(taggedHash.bytes))
+      .add(this.publicKey)
+    (result.parity, result.toXOnly)
+  }
+
   private def tapTweakHash(bytes: ByteVector): Sha256Digest = {
-    CryptoUtil.taggedSha256(bytes, "TapTweak")
+    CryptoUtil.tapTweakHash(bytes)
   }
 }
 

@@ -3,6 +3,7 @@ package org.bitcoins.core.script
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
+  TapLeaf,
   TaprootKeyPath,
   TaprootScriptPath,
   TaprootUnknownPath,
@@ -84,9 +85,8 @@ sealed trait ScriptProgram {
   /** Calculates the leaf hash if we have a tapscript, else returns None if we don't have a tapscript */
   def tapLeafHashOpt: Option[Sha256Digest] = {
     getTapscriptOpt.map { sp =>
-      val hash = TaprootScriptPath.computeTapleafHash(
-        TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT,
-        sp.script)
+      val leaf = TapLeaf(TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT, sp.script)
+      val hash = TaprootScriptPath.computeTapleafHash(leaf)
       hash
     }
   }

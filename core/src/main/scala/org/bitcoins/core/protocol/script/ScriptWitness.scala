@@ -499,10 +499,10 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
     * @see https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1828
     * @return
     */
-  def computeTapleafHash(leafVersion: Byte, spk: ScriptPubKey): Sha256Digest = {
+  def computeTapleafHash(leaf: TapLeaf): Sha256Digest = {
     val bytes =
-      ByteVector.fromByte(leafVersion) ++ spk.bytes
-    CryptoUtil.taggedSha256(bytes, "TapLeaf")
+      ByteVector.fromInt(i = leaf.leafVersion, size = 1) ++ leaf.spk.bytes
+    CryptoUtil.tapLeafHash(bytes)
   }
 
   /** Computes the merkle root of a tapscript tree
@@ -531,6 +531,22 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
       i += 1
     }
     k
+  }
+
+  def computeFullTreeMerkleRoot(tree: TapscriptTree): Sha256Digest = {
+    tree match {
+      case branch: TapBranch =>
+        val left = computeFullTreeMerkleRoot(branch.tree1)
+        val right = computeFullTreeMerkleRoot(branch.tree2)
+        val sorted = if (left.bytes.compare(right.bytes) <= 0) {
+          left.bytes ++ right.bytes
+        } else {
+          right.bytes ++ left.bytes
+        }
+        CryptoUtil.tapBranchHash(sorted)
+      case l: TapLeaf => l.sha256
+    }
+
   }
 
   /** Checks the witness stack has an annex in it */
