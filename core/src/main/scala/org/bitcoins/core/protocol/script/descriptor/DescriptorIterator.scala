@@ -226,11 +226,9 @@ case class DescriptorIterator(descriptor: String) {
         .dropRight(1) //}
         .split(',')
       val expressions = split.map(ScriptExpressionXOnlyKey.fromString).toVector
-      println(s"takeTapscriptTreeExpression().0 $expressions")
       TapscriptTreeExpression(expressions)
     } else {
       val expression = takeScriptExpressionXOnlyKey()
-      println(s"takeTapscriptTreeExpression().1 $expression")
       TapscriptTreeExpression(Vector(expression))
     }
     skip(expression.toString.length)

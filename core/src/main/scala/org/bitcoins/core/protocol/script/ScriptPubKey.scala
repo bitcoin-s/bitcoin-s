@@ -413,7 +413,10 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
     override val scriptType: ScriptType = ScriptType.PUBKEY
   }
 
-  def apply(pubKey: ECPublicKey): P2PKScriptPubKey = {
+  def apply(pubKey: PublicKey): P2PKScriptPubKey = {
+    //comeback and review the type on this constructor,
+    //depending on the output type, the key type isn't safe
+    //i.e xonly can't be used pre-taproot and vice versa
     val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
     val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
     P2PKScriptPubKey(asm)
@@ -1457,6 +1460,14 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
 
   def fromPubKey(schnorrPublicKey: SchnorrPublicKey): TaprootScriptPubKey = {
     fromPubKey(schnorrPublicKey.toXOnly)
+  }
+
+  def fromInternalKeyTapscriptTree(
+      internal: XOnlyPubKey,
+      tree: TapscriptTree): (KeyParity, TaprootScriptPubKey) = {
+    val merkleRoot = TaprootScriptPath.computeFullTreeMerkleRoot(tree)
+    val (parity, tweak) = internal.createTapTweak(Some(merkleRoot))
+    (parity, fromPubKey(tweak))
   }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {

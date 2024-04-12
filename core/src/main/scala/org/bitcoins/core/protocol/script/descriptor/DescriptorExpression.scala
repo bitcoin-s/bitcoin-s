@@ -11,7 +11,6 @@ import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto._
-import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success}
 
@@ -331,14 +330,20 @@ case class MultisigKeyExpression(
 case class TapscriptTreeExpression(leaves: Vector[ScriptExpression])
     extends DescriptorExpression {
 
-  def controlBlock(internalKey: XOnlyPubKey): ControlBlock = {
-    val leafHashes = leaves.map { l =>
-      TaprootScriptPath
-        .computeTapleafHash(TapscriptControlBlock.leafVersion, l.scriptPubKey)
-        .bytes
+  def tapscriptTree: TapscriptTree = {
+    val tapLeafs = leaves.map(l => TapLeaf(0xc0, l.scriptPubKey))
+
+    val t = TapscriptTree.buildTapscriptTree(tapLeafs)
+    t
+  }
+
+  override def toString(): String = {
+    if (leaves.isEmpty) ""
+    else if (leaves.size == 1) {
+      leaves.head.toString
+    } else {
+      s"{${leaves.mkString(",}{")}}"
     }
-    val leafBytes = ByteVector.concat(leafHashes)
-    ControlBlock(internalKey.bytes ++ leafBytes)
   }
 }
 
@@ -476,7 +481,8 @@ sealed trait NestedScriptExpression extends ExpressionSource {
   override def source: ScriptExpression
 }
 
-sealed trait TapscriptTree extends ExpressionSource { _: TreeExpression =>
+sealed trait TapscriptTreeExpressionSource extends ExpressionSource {
+  _: TreeExpression =>
   override def source: TapscriptTreeExpression
 }
 
@@ -521,7 +527,7 @@ case class P2PKScriptExpression[T <: PublicKey](source: SingleKeyExpression[T])
           case pub: ECPublicKeyBytes => pub.toPublicKey
         }
       case x: SingleXOnlyPubKeyExpression =>
-        x.pubKey.publicKey //is this right?
+        x.pubKey
     }
     P2PKScriptPubKey(pub)
   }
@@ -718,11 +724,16 @@ case class ScriptPathTreeExpression(
     keyPath: KeyPathOnlyTreeExpression,
     source: TapscriptTreeExpression)
     extends TreeExpression
-    with TapscriptTree {
+    with TapscriptTreeExpressionSource {
 
   override def scriptPubKey: TaprootScriptPubKey = {
-    val controlBlock = source.controlBlock(keyPath.source.pubKey)
-    val merkleRoot = TaprootScriptPubKey.computeMerkleRoot(controlBlock)
-    ???
+    val tree = source.tapscriptTree
+    val (_, spk) = TaprootScriptPubKey
+      .fromInternalKeyTapscriptTree(keyPath.source.pubKey, tree)
+    spk
+  }
+
+  override def toString(): String = {
+    s"${descriptorType.toString}(${keyPath.source.pubKey.hex},${source.toString()})"
   }
 }

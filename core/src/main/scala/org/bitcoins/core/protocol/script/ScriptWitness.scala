@@ -544,7 +544,8 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
           right.bytes ++ left.bytes
         }
         CryptoUtil.tapBranchHash(sorted)
-      case l: TapLeaf => l.sha256
+      case l: TapLeaf =>
+        l.sha256
     }
 
   }
