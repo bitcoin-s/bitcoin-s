@@ -190,7 +190,7 @@ sealed abstract class ExtXOnlyPublicKeyExpression
   /** Since implementations are so similar, just piggy back off of the ExtECPublicKeyExpression
     * implementation rather than duplicating everything
     */
-  protected def ecPublicKeyExpression: ExtECPublicKeyExpression
+  def ecPublicKeyExpression: ExtECPublicKeyExpression
 
   def extKey: ExtKey = ecPublicKeyExpression.extKey
 

@@ -463,14 +463,28 @@ class DescriptorTest extends BitcoinSUnitTest {
       expression: ScriptExpression): ExtECPublicKeyExpression = {
     expression match {
       case x: KeyExpressionScriptExpression[_] =>
-        x.source.asInstanceOf[ExtECPublicKeyExpression]
+        x.source match {
+          case ecPublic: ExtECPublicKeyExpression => ecPublic
+          case xonly: ExtXOnlyPublicKeyExpression =>
+            xonly.ecPublicKeyExpression
+          case invalid @ (_: RawPrivateECPublicKeyExpression |
+              _: RawPublicECPublicKeyExpression |
+              _: RawPrivateXOnlyPublicKeyExpression |
+              _: RawPrivateXOnlyPublicKeyExpression |
+              _: InternalPublicKeyExpression | _: MultisigKeyExpression) =>
+            sys.error(s"Cannot have single key in parseExtKey, got=$invalid")
+        }
       case x: NestedScriptExpression =>
         parseExtKeyExpression(x.source)
       case x: RawScriptExpression =>
         sys.error(
           s"RawScriptExpression cannot be used in runDerivationTest(), got=$x")
       case x: ScriptPathTreeExpression =>
-        x.source.leafs.head.source.asInstanceOf[ExtECPublicKeyExpression]
+        x.source.leafs.head.source
+          .asInstanceOf[P2PKScriptExpression[_]]
+          .source
+          .asInstanceOf[ExtXOnlyPublicKeyExpression]
+          .ecPublicKeyExpression
     }
   }
 
@@ -491,7 +505,18 @@ class DescriptorTest extends BitcoinSUnitTest {
       val spk = desc.expression.descriptorType match {
         case DescriptorType.WPKH => p2wpkh
         case DescriptorType.SH   => P2SHScriptPubKey(p2wpkh)
-//        case DescriptorType.WSH  => P2WSHWitnessSPKV0(p2wpkh)
+        case DescriptorType.TR =>
+          val scriptPathTreeExpr =
+            desc.expression.asInstanceOf[ScriptPathTreeExpression]
+          val internalExtKey = parseExtKeyExpression(scriptPathTreeExpr.keyPath)
+          val internal = internalExtKey.deriveChild(idx) match {
+            case priv: ECPrivateKey => priv.toXOnly
+            case pub: ECPublicKey   => pub.toXOnly
+          }
+          val tree = TapLeaf(0xc0, P2PKScriptPubKey(derivedKey.toXOnly))
+          val (_, spk) =
+            TaprootScriptPubKey.fromInternalKeyTapscriptTree(internal, tree)
+          spk
         case x => sys.error(s"Not supported by BIP382, got=$x")
       }
       assert(spk == expected)
