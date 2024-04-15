@@ -397,7 +397,7 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str5)
   }
 
-  it must "parse test vectors from BIP387" in {
+  it must "parse test vectors from BIP386" in {
     val str0 =
       "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)"
     val expected0 =
@@ -420,6 +420,27 @@ class DescriptorTest extends BitcoinSUnitTest {
     val expected3 =
       "512071fff39599a7b78bc02623cbe814efebf1a404f5d8ad34ea80f213bd8943f574"
     runTest(str3, expected3)
+  }
+
+  it must "fail to parse invalid test vectors from BIP386" in {
+    val str0 = "tr(5kyzdueo39z3fprtux2qbbwgnnp5ztd7yyr2sc1j299sbcnwjss)"
+    runFailTest(str0)
+
+    val str1 =
+      "tr(04a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd5b8dec5235a0fa8722476c7709c02559e3aa73aa03918ba2d492eea75abea235)"
+    runFailTest(str1)
+
+    val str2 =
+      "wsh(tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str2)
+
+    val str3 =
+      "sh(tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd))"
+    runFailTest(str3)
+
+    val str4 =
+      "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd, pkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
+    runFailTest(str4)
   }
 
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
@@ -522,8 +543,7 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   private def runFailTest(str: String): Assertion = {
     assertThrows[RuntimeException] {
-      val result = ScriptDescriptor.fromString(str)
-      result
+      ScriptDescriptor.fromString(str)
     }
   }
 

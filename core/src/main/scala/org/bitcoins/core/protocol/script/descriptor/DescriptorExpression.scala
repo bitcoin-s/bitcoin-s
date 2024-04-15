@@ -691,18 +691,6 @@ object ScriptExpressionXOnlyKey extends StringFactory[ScriptExpression] {
     val iter = DescriptorIterator(string)
     val descriptorType = iter.takeDescriptorType()
     val expression: ScriptExpression = descriptorType match {
-      case DescriptorType.PKH =>
-        //P2PKHScriptExpression(iter.takeSingleXOnlyPubKeyExpression())
-        ???
-      case DescriptorType.WPKH =>
-        //P2WPKHExpression(iter.takeSingleXOnlyPubKeyExpression())
-        ???
-      case DescriptorType.WSH =>
-        //P2WSHExpression(iter.takeRawSPKScriptExpression())
-        ???
-      case DescriptorType.SH =>
-        //P2SHExpression(iter.takeSingleXOnlyPubKeyExpression())
-        ???
       case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
       case DescriptorType.PK =>
         P2PKScriptExpression(iter.takeSingleXOnlyPubKeyExpression())
@@ -710,12 +698,10 @@ object ScriptExpressionXOnlyKey extends StringFactory[ScriptExpression] {
         MultisigExpression(iter.takeMultisigKeyExpression())
       case DescriptorType.SortedMulti =>
         SortedMultisigExpression(iter.takeMultisigKeyExpression())
-      case DescriptorType.Combo =>
-        //ComboExpression(iter.takeSingleXOnlyPubKeyExpression())
-        ???
-      case DescriptorType.TR =>
+      case x @ (DescriptorType.Combo | DescriptorType.TR | DescriptorType.SH |
+          DescriptorType.WSH | DescriptorType.WPKH | DescriptorType.PKH) =>
         sys.error(
-          s"Cannot create tapscript expression's with ECPublicKey, got=$string")
+          s"Cannot create tapscript descriptor for descriptorType=$x, got=$string")
     }
     expression
   }

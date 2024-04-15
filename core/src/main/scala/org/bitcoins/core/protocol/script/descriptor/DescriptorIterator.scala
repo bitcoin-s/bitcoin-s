@@ -142,6 +142,10 @@ case class DescriptorIterator(descriptor: String) {
 
     val single = SingleXOnlyPubKeyExpression.fromString(keyExpr)
     skip(single.toString().length)
+    if (current.nonEmpty) {
+      require(current.head == ',' || current.head == ')',
+              s"Key was not 32 bytes, got=$descriptor current=$current")
+    }
     skip(1) // ','
     single
   }
