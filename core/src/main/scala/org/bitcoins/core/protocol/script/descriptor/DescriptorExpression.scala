@@ -383,7 +383,8 @@ case class TapscriptLeafExpression(source: RawSPKScriptExpression)
 
   private def scriptPubKey: ScriptPubKey = source.scriptPubKey
 
-  override def tree: TapLeaf = TapLeaf(0xc0, scriptPubKey)
+  override def tree: TapLeaf =
+    TapLeaf(TapLeaf.leafVersion, scriptPubKey)
 }
 
 object SingleECPublicKeyExpression

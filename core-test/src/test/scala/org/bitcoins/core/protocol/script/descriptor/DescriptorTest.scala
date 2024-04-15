@@ -514,7 +514,8 @@ class DescriptorTest extends BitcoinSUnitTest {
             case priv: ECPrivateKey => priv.toXOnly
             case pub: ECPublicKey   => pub.toXOnly
           }
-          val tree = TapLeaf(0xc0, P2PKScriptPubKey(derivedKey.toXOnly))
+          val tree =
+            TapLeaf(TapLeaf.leafVersion, P2PKScriptPubKey(derivedKey.toXOnly))
           val (_, spk) =
             TaprootScriptPubKey.fromInternalKeyTapscriptTree(internal, tree)
           spk
