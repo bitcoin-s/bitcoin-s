@@ -414,12 +414,18 @@ class DescriptorTest extends BitcoinSUnitTest {
     val expected2 =
       "512017cf18db381d836d8923b1bdb246cfcd818da1a9f0e6e7907f187f0b2f937754"
     runTest(str2, expected2)
+
+    val str3 =
+      "tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd,{pk(xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334/0),{{pk(xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL),pk(df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076)},pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)}})"
+    val expected3 =
+      "512071fff39599a7b78bc02623cbe814efebf1a404f5d8ad34ea80f213bd8943f574"
+    runTest(str3, expected3)
   }
 
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
-    assert(desc.scriptPubKey.asmHex == expectedSPK)
     assert(desc.toString == descriptor)
+    assert(desc.scriptPubKey.asmHex == expectedSPK)
   }
 
   @tailrec

@@ -243,7 +243,7 @@ case class XprvECPublicKeyExpression(
 }
 
 case class XprvXOnlyPublicKeyExpression(
-    ecPublicKeyExpression: ExtECPublicKeyExpression)
+    ecPublicKeyExpression: XprvECPublicKeyExpression)
     extends ExtXOnlyPublicKeyExpression
     with XOnlyPublicKeyExpression {
   override val originOpt: Option[KeyOriginExpression] = None
@@ -327,24 +327,41 @@ case class MultisigKeyExpression(
   * }
   * @param scriptExpressions
   */
-case class TapscriptTreeExpression(leaves: Vector[ScriptExpression])
-    extends DescriptorExpression {
+sealed abstract class TapscriptTreeExpression extends DescriptorExpression {
+  def leafs: Vector[TapscriptLeafExpression]
 
-  def tapscriptTree: TapscriptTree = {
-    val tapLeafs = leaves.map(l => TapLeaf(0xc0, l.scriptPubKey))
+  def tree: TapscriptTree
+}
 
-    val t = TapscriptTree.buildTapscriptTree(tapLeafs)
-    t
+case class TapscriptBranchExpression(
+    left: TapscriptTreeExpression,
+    right: TapscriptTreeExpression)
+    extends TapscriptTreeExpression {
+
+  def leafs: Vector[TapscriptLeafExpression] = {
+    left.leafs ++ right.leafs
   }
+
+  override def tree: TapBranch = TapBranch(left.tree, right.tree)
 
   override def toString(): String = {
-    if (leaves.isEmpty) ""
-    else if (leaves.size == 1) {
-      leaves.head.toString
-    } else {
-      s"{${leaves.mkString(",}{")}}"
-    }
+    s"{${left.toString},${right.toString}}"
   }
+}
+
+//need to change this to ExpressionSource so we retain information
+//about the type of key passed to us in the case of being given WIF vs xprv
+case class TapscriptLeafExpression(source: RawSPKScriptExpression)
+    extends TapscriptTreeExpression {
+  override def leafs: Vector[TapscriptLeafExpression] = Vector(this)
+
+  override def toString: String = {
+    s"${source.toString}"
+  }
+
+  private def scriptPubKey: ScriptPubKey = source.scriptPubKey
+
+  override def tree: TapLeaf = TapLeaf(0xc0, scriptPubKey)
 }
 
 object SingleECPublicKeyExpression
@@ -727,7 +744,7 @@ case class ScriptPathTreeExpression(
     with TapscriptTreeExpressionSource {
 
   override def scriptPubKey: TaprootScriptPubKey = {
-    val tree = source.tapscriptTree
+    val tree = source.tree
     val (_, spk) = TaprootScriptPubKey
       .fromInternalKeyTapscriptTree(keyPath.source.pubKey, tree)
     spk

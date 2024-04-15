@@ -23,6 +23,10 @@ case class TapBranch(tree1: TapscriptTree, tree2: TapscriptTree)
   override def leafs: Vector[TapLeaf] = {
     tree1.leafs ++ tree2.leafs
   }
+
+  override def toString(): String = {
+    s"{${tree1.toString},${tree2.toString}}"
+  }
 }
 
 case class TapLeaf(leafVersion: Int, spk: ScriptPubKey) extends TapscriptTree {
@@ -31,6 +35,10 @@ case class TapLeaf(leafVersion: Int, spk: ScriptPubKey) extends TapscriptTree {
     ByteVector.fromInt(leafVersion, 1) ++ spk.bytes
   val sha256: Sha256Digest = CryptoUtil.tapLeafHash(bytes)
   override val leafs: Vector[TapLeaf] = Vector(this)
+
+  override def toString(): String = {
+    s"${spk.toString}"
+  }
 }
 
 object TapscriptTree {

@@ -139,6 +139,7 @@ case class DescriptorIterator(descriptor: String) {
         current.takeWhile(_ != ')')
       }
     }
+
     val single = SingleXOnlyPubKeyExpression.fromString(keyExpr)
     skip(single.toString().length)
     skip(1) // ','
@@ -186,10 +187,15 @@ case class DescriptorIterator(descriptor: String) {
     expression
   }
 
-  def takeScriptExpressionXOnlyKey(): ScriptExpression = {
+  def takeRawScriptExpressionXOnlyKey(): RawSPKScriptExpression = {
     val expression = ScriptExpressionXOnlyKey.fromString(current)
     skip(expression.toString().length)
-    expression
+    expression match {
+      case raw: RawSPKScriptExpression => raw
+      case x =>
+        sys.error(
+          s"Unexpected expression=$x when expecting RawSPKScriptExpression")
+    }
   }
 
   def takeRawScriptPubKey(): RawScriptPubKey = {
@@ -220,18 +226,19 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeTapscriptTreeExpression(): TapscriptTreeExpression = {
-    val expression = if (current.charAt(1) == '{' && current.last == '}') {
-      skip(2) //,{
-      val split = current
-        .dropRight(1) //}
-        .split(',')
-      val expressions = split.map(ScriptExpressionXOnlyKey.fromString).toVector
-      TapscriptTreeExpression(expressions)
+    val expression = if (current.charAt(0) == '{' && current.last == '}') {
+      skip(1) //{
+      val tree1 = takeTapscriptTreeExpression()
+      skip(1) //,
+      val tree2 = takeTapscriptTreeExpression()
+      val branch =
+        TapscriptBranchExpression(tree1, tree2)
+      skip(1) //}
+      branch
     } else {
-      val expression = takeScriptExpressionXOnlyKey()
-      TapscriptTreeExpression(Vector(expression))
+      val expression = takeRawScriptExpressionXOnlyKey()
+      TapscriptLeafExpression(expression)
     }
-    skip(expression.toString.length)
     expression
   }
 }
