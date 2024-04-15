@@ -420,6 +420,15 @@ class DescriptorTest extends BitcoinSUnitTest {
     val expected3 =
       "512071fff39599a7b78bc02623cbe814efebf1a404f5d8ad34ea80f213bd8943f574"
     runTest(str3, expected3)
+
+    val str4 =
+      "tr(xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/0/*,pk(xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/1/*))"
+    val expectedSPKs4 = Vector(
+      "512078bc707124daa551b65af74de2ec128b7525e10f374dc67b64e00ce0ab8b3e12",
+      "512001f0a02a17808c20134b78faab80ef93ffba82261ccef0a2314f5d62b6438f11",
+      "512021024954fcec88237a9386fce80ef2ced5f1e91b422b26c59ccfc174c8d1ad25"
+    )
+    runDerivationTest(str4, expectedSPKs4)
   }
 
   it must "fail to parse invalid test vectors from BIP386" in {
@@ -461,8 +470,7 @@ class DescriptorTest extends BitcoinSUnitTest {
         sys.error(
           s"RawScriptExpression cannot be used in runDerivationTest(), got=$x")
       case x: ScriptPathTreeExpression =>
-        sys.error(
-          s"TapscriptTreeExpression cannot be used in runDerivationTest(), got=$x")
+        x.source.leafs.head.source.asInstanceOf[ExtECPublicKeyExpression]
     }
   }
 
@@ -470,6 +478,7 @@ class DescriptorTest extends BitcoinSUnitTest {
       descriptor: String,
       expectedSPKs: Vector[String]): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
+    assert(desc.toString == descriptor)
     val extKeyDesc = parseExtKeyExpression(desc.expression)
     expectedSPKs.zipWithIndex.foreach { case (s, idx) =>
       val expected = ScriptPubKey.fromAsmHex(s)
@@ -486,7 +495,7 @@ class DescriptorTest extends BitcoinSUnitTest {
         case x => sys.error(s"Not supported by BIP382, got=$x")
       }
       assert(spk == expected)
-      assert(desc.toString == descriptor)
+
     }
     succeed
   }

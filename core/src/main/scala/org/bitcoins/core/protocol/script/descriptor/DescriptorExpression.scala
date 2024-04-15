@@ -737,6 +737,6 @@ case class ScriptPathTreeExpression(
   }
 
   override def toString(): String = {
-    s"${descriptorType.toString}(${keyPath.source.pubKey.hex},${source.toString()})"
+    s"${descriptorType.toString}(${keyPath.source.toString},${source.toString()})"
   }
 }
