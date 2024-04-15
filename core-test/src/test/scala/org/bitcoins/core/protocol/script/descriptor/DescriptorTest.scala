@@ -471,7 +471,8 @@ class DescriptorTest extends BitcoinSUnitTest {
               _: RawPublicECPublicKeyExpression |
               _: RawPrivateXOnlyPublicKeyExpression |
               _: RawPrivateXOnlyPublicKeyExpression |
-              _: InternalPublicKeyExpression | _: MultisigKeyExpression) =>
+              _: RawPublicXOnlyPublicKeyExpression |
+              _: MultisigKeyExpression) =>
             sys.error(s"Cannot have single key in parseExtKey, got=$invalid")
         }
       case x: NestedScriptExpression =>

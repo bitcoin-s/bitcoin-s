@@ -150,10 +150,10 @@ case class DescriptorIterator(descriptor: String) {
     single
   }
 
-  def takeInternalPublicKeyExpression(): InternalPublicKeyExpression = {
+  def takeInternalPublicKeyExpression(): RawPublicXOnlyPublicKeyExpression = {
     val key = current.take(64)
     val xonly = XOnlyPubKey.fromHex(key)
-    val i = InternalPublicKeyExpression(xonly)
+    val i = RawPublicXOnlyPublicKeyExpression(xonly)
     skip(i.toString().length)
     i
   }

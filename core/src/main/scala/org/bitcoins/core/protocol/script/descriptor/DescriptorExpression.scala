@@ -141,7 +141,7 @@ case class RawPublicECPublicKeyExpression(
   }
 }
 
-case class InternalPublicKeyExpression(override val pubKey: XOnlyPubKey)
+case class RawPublicXOnlyPublicKeyExpression(override val pubKey: XOnlyPubKey)
     extends SingleXOnlyPubKeyExpression
     with XOnlyPublicKeyExpression {
   override val originOpt: Option[KeyOriginExpression] = None
