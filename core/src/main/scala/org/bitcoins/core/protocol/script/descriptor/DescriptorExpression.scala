@@ -141,17 +141,17 @@ case class RawPublicECPublicKeyExpression(
   }
 }
 
-case class RawPublicXOnlyPublicKeyExpression(override val pubKey: XOnlyPubKey)
+case class RawPublicXOnlyPublicKeyExpression(
+    originOpt: Option[KeyOriginExpression],
+    override val pubKey: XOnlyPubKey)
     extends SingleXOnlyPubKeyExpression
     with XOnlyPublicKeyExpression {
-  override val originOpt: Option[KeyOriginExpression] = None
 
   override def key: ECKeyBytes = pubKey.publicKey.toPublicKeyBytes()
 
   override def toString(): String = {
     originOpt.map(_.toString).getOrElse("") + pubKey.hex
   }
-
 }
 
 /** Represents key expressions that are BIP32 keys
@@ -246,7 +246,9 @@ case class XprvXOnlyPublicKeyExpression(
     ecPublicKeyExpression: XprvECPublicKeyExpression)
     extends ExtXOnlyPublicKeyExpression
     with XOnlyPublicKeyExpression {
-  override val originOpt: Option[KeyOriginExpression] = None
+
+  override val originOpt: Option[KeyOriginExpression] =
+    ecPublicKeyExpression.originOpt
 }
 
 case class XpubECPublicKeyExpression(
@@ -289,7 +291,9 @@ case class XpubXOnlyPublicKeyExpression(
     ecPublicKeyExpression: ExtECPublicKeyExpression)
     extends ExtXOnlyPublicKeyExpression
     with XOnlyPublicKeyExpression {
-  override val originOpt: Option[KeyOriginExpression] = None
+
+  override val originOpt: Option[KeyOriginExpression] =
+    ecPublicKeyExpression.originOpt
 }
 
 case class MultisigKeyExpression(
