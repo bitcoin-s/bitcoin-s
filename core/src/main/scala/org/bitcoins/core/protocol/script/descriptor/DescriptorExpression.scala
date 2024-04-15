@@ -108,6 +108,10 @@ case class RawPrivateECPublicKeyExpression(
   }
 }
 
+/** A private key expression that produces an [[XOnlyPubKey]]
+  * Example: tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+  * @param raw
+  */
 case class RawPrivateXOnlyPublicKeyExpression(
     raw: RawPrivateECPublicKeyExpression)
     extends PrivateXOnlyPublicKeyExpression
@@ -141,6 +145,10 @@ case class RawPublicECPublicKeyExpression(
   }
 }
 
+/** A single [[XOnlyPubKey]] in a descriptor
+  * Example:
+  * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
+  */
 case class RawPublicXOnlyPublicKeyExpression(
     originOpt: Option[KeyOriginExpression],
     override val pubKey: XOnlyPubKey)
@@ -208,6 +216,7 @@ sealed abstract class ExtXOnlyPublicKeyExpression
   }
 }
 
+/** Produces [[ECPublicKey]] from [[ExtPrivateKey]] */
 case class XprvECPublicKeyExpression(
     override val extKey: ExtPrivateKey,
     originOpt: Option[KeyOriginExpression],
@@ -251,6 +260,12 @@ case class XprvXOnlyPublicKeyExpression(
     ecPublicKeyExpression.originOpt
 }
 
+/** Produces [[ECPublicKey]] from [[ExtPublicKey]]
+  * @param extKey
+  * @param originOpt
+  * @param pathOpt
+  * @param childrenHardenedOpt
+  */
 case class XpubECPublicKeyExpression(
     override val extKey: ExtPublicKey,
     originOpt: Option[KeyOriginExpression],
@@ -287,6 +302,9 @@ case class XpubECPublicKeyExpression(
   }
 }
 
+/** Produces [[XOnlyPubKey]] from [[ExtPublicKey]]
+  * @param ecPublicKeyExpression
+  */
 case class XpubXOnlyPublicKeyExpression(
     ecPublicKeyExpression: ExtECPublicKeyExpression)
     extends ExtXOnlyPublicKeyExpression
@@ -337,6 +355,7 @@ sealed abstract class TapscriptTreeExpression extends DescriptorExpression {
   def tree: TapscriptTree
 }
 
+/** Branches in a [[TapscriptTreeExpression]]. This corresponds to [[TapBranch]] */
 case class TapscriptBranchExpression(
     left: TapscriptTreeExpression,
     right: TapscriptTreeExpression)
@@ -353,6 +372,7 @@ case class TapscriptBranchExpression(
   }
 }
 
+/** A leaf in a [[TapscriptTreeExpression]]. This corresponds to [[TapLeaf]] */
 case class TapscriptLeafExpression(source: RawSPKScriptExpression)
     extends TapscriptTreeExpression {
   override def leafs: Vector[TapscriptLeafExpression] = Vector(this)
@@ -455,6 +475,8 @@ sealed abstract class ScriptExpression extends DescriptorExpression {
   def descriptorType: DescriptorType
 }
 
+/** A descriptor that produces a scriptPubKey of type [[RawScriptPubKey]]
+  */
 sealed abstract class RawSPKScriptExpression extends ScriptExpression {
   override def scriptPubKey: RawScriptPubKey
 }
@@ -593,6 +615,11 @@ case class P2SHExpression(source: ScriptExpression)
   }
 }
 
+/** A multisig expression
+  * Example:
+  * multi(1,L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1,5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)
+  * @param source
+  */
 case class MultisigExpression(source: MultisigKeyExpression)
     extends MultisigScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
@@ -612,6 +639,10 @@ case class MultisigExpression(source: MultisigKeyExpression)
   )
 }
 
+/** Multisig expressions with lexographically sorted public keys
+  * Example:
+  * sortedmulti(2,xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/\*,xpub68NZiKmJWnxxS6aaHmn81bvJeTESw724CRDs6HbuccFQN9Ku14VQrADWgqbhhTHBaohPX4CjNLf9fq9MYo6oDaPPLPxSb7gwQN3ih19Zm4Y/0/0/\*)
+  */
 case class SortedMultisigExpression(source: MultisigKeyExpression)
     extends MultisigScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
@@ -631,6 +662,13 @@ case class SortedMultisigExpression(source: MultisigKeyExpression)
   )
 }
 
+/** An expression that can produce multiple types of scripts
+  * Example:
+  * combo(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+  * combo([01234567]xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL)
+  * @param source
+  * @param scriptType
+  */
 case class ComboExpression(
     source: SingleECPublicKeyExpression,
     scriptType: ScriptType = ScriptType.PUBKEYHASH)
@@ -717,6 +755,11 @@ sealed abstract class TreeExpression extends ScriptExpression {
   override def scriptPubKey: TaprootScriptPubKey
 }
 
+/** A tapscript tree expression with ONLY the keypath.
+  * Example:
+  * tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+  * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
+  */
 case class KeyPathOnlyTreeExpression(source: SingleXOnlyPubKeyExpression)
     extends TreeExpression
     with KeyExpressionScriptExpression[XOnlyPubKey] {
@@ -725,6 +768,9 @@ case class KeyPathOnlyTreeExpression(source: SingleXOnlyPubKeyExpression)
     TaprootScriptPubKey.fromInternalKey(source.pubKey)
 }
 
+/** Tapscript tree with BOTH keypath and script path cases.
+  * Example:  tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd,pk(669b8afcec803a0d323e9a17f3ea8e68e8abe5a278020a929adbec52421adbd0))
+  */
 case class ScriptPathTreeExpression(
     keyPath: KeyPathOnlyTreeExpression,
     source: TapscriptTreeExpression)
