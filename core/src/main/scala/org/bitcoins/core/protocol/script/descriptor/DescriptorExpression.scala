@@ -353,8 +353,6 @@ case class TapscriptBranchExpression(
   }
 }
 
-//need to change this to ExpressionSource so we retain information
-//about the type of key passed to us in the case of being given WIF vs xprv
 case class TapscriptLeafExpression(source: RawSPKScriptExpression)
     extends TapscriptTreeExpression {
   override def leafs: Vector[TapscriptLeafExpression] = Vector(this)
