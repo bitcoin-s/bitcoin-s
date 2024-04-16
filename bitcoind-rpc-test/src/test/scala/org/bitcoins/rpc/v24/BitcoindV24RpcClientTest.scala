@@ -10,6 +10,7 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.{Bech32mAddress, BitcoinAddress}
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
@@ -74,11 +75,13 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
 
   it should "analyze a descriptor" in { client =>
     val descriptor =
-      "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
+      Descriptor.fromString(
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7")
 
     val descriptorF = client.getDescriptorInfo(descriptor)
 
     descriptorF.map { result =>
+      assert(result.descriptor == descriptor)
       assert(result.isrange.==(false))
       assert(result.issolvable.==(true))
       assert(result.hasprivatekeys.==(false))

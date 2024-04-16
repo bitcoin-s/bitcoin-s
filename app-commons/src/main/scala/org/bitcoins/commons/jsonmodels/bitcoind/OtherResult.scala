@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
@@ -197,7 +198,7 @@ final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])
 }
 
 final case class GetDescriptorInfoResult(
-    descriptor: String,
+    descriptor: Descriptor,
     checksum: Option[String],
     isrange: Boolean,
     issolvable: Boolean,

@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.ScriptType
@@ -108,6 +109,13 @@ object JsonWriters {
 
     override def writes(o: WitnessScriptPubKey): JsValue =
       ScriptPubKeyWrites.writes(o)
+  }
+
+  implicit object DescriptorWrites extends Writes[Descriptor] {
+
+    override def writes(d: Descriptor): JsValue = {
+      JsString(d.toString)
+    }
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {

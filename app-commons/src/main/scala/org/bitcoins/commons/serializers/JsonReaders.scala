@@ -21,6 +21,7 @@ import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.routing.{ChannelRoute, NodeRoute, Route}
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
@@ -323,6 +324,14 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[ScriptWitness] =
       SerializerUtil.processJsStringOpt[ScriptWitness](
         ScriptWitness.fromHexOpt)(json)
+  }
+
+  implicit object DescriptorReads extends Reads[Descriptor] {
+
+    override def reads(json: JsValue): JsResult[Descriptor] = {
+      SerializerUtil.processJsStringOpt[Descriptor](Descriptor.fromStringOpt)(
+        json)
+    }
   }
 
   implicit object BlockReads extends Reads[Block] {
