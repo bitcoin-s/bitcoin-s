@@ -71,7 +71,7 @@ object TaprootWalletTestCase {
     else if (`given`.objOpt.isDefined) {
       val givenObj = `given`.obj
       val script = ScriptPubKey.fromAsmHex(givenObj("script").str)
-      val leafVersion = givenObj("leafVersion").num.toInt
+      val leafVersion = givenObj("leafVersion").num.toByte
       val leaf = TapLeaf(leafVersion, script)
       Some(leaf)
     } else {

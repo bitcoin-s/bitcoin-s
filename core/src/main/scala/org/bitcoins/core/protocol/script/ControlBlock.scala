@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.crypto.{Factory, NetworkElement, XOnlyPubKey}
+import org.bitcoins.crypto.{Factory, NetworkElement, Sha256Digest, XOnlyPubKey}
 import scodec.bits.ByteVector
 
 /** Control block as defined by BIP341
@@ -24,6 +24,11 @@ sealed abstract class ControlBlock extends NetworkElement {
 
   val isTapLeafMask: Boolean = {
     (bytes.head & TaprootScriptPath.TAPROOT_LEAF_MASK).toByte == TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT
+  }
+
+  /** Leaf or branch hashes embedded in the control block */
+  def hashes: Vector[Sha256Digest] = {
+    bytes.drop(33).grouped(32).map(Sha256Digest.fromBytes).toVector
   }
 }
 
@@ -55,22 +60,13 @@ object ControlBlock extends Factory[ControlBlock] {
 
 object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
 
-  val leafVersion: Byte = 0xc0.toByte
-
-  /** BIP342 specifies validity rules that apply for leaf version 0xc0,
-    * but future proposals can introduce rules for other leaf versions.
-    *
-    * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
-    */
-  val knownLeafVersions: Vector[Byte] = Vector(leafVersion, 0xc1.toByte)
-
   /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835
     */
   def isValid(bytes: ByteVector): Boolean = {
     if (bytes.isEmpty) {
       false
     } else {
-      knownLeafVersions.contains(bytes.head) &&
+      TapLeaf.knownLeafVersions.contains(bytes.head) &&
       ControlBlock.isValid(bytes) &&
       XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
     }
@@ -78,7 +74,7 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
 
   /** Creates a control block with no scripts, just an internal key */
   def fromXOnlyPubKey(internalKey: XOnlyPubKey): TapscriptControlBlock = {
-    fromBytes(leafVersion +: internalKey.bytes)
+    fromBytes(TapLeaf.leafVersion +: internalKey.bytes)
   }
 
   override def fromBytes(bytes: ByteVector): TapscriptControlBlock = {

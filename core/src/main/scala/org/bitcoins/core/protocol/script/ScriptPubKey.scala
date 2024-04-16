@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.consensus.Consensus
+import org.bitcoins.core.protocol.script.descriptor.DescriptorType
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
@@ -49,7 +50,7 @@ sealed trait P2PKHScriptPubKey extends RawScriptPubKey {
   def pubKeyHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 3).bytes)
 
-  override def toString = s"pkh(${pubKeyHash.hex})"
+  override def toString = s"${DescriptorType.PK.toString}(${pubKeyHash.hex})"
 }
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
@@ -59,7 +60,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
       extends P2PKHScriptPubKey {
     override val scriptType: ScriptType = ScriptType.PUBKEYHASH
 
-    override def toString = s"pkh(${pubKeyHash.hex})"
+    override def toString = s"${DescriptorType.PKH.toString}(${pubKeyHash.hex})"
   }
 
   def apply(pubKey: ECPublicKey): P2PKHScriptPubKey = {
@@ -180,7 +181,8 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     MultiSignatureScriptPubKey.parsePublicKeys(asm)
   }
 
-  override def toString = s"multi($requiredSigs,${publicKeys.mkString(",")})"
+  override def toString =
+    s"${DescriptorType.Multi.toString}($requiredSigs,${publicKeys.mkString(",")})"
 }
 
 object MultiSignatureScriptPubKey
@@ -346,7 +348,7 @@ sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
   def scriptHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 2).bytes)
 
-  override def toString = s"sh(${scriptHash.hex})"
+  override def toString = s"${DescriptorType.SH.toString}(${scriptHash.hex})"
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
@@ -354,8 +356,6 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   private case class P2SHScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2SHScriptPubKey {
     override val scriptType: ScriptType = ScriptType.SCRIPTHASH
-
-    override def toString = s"sh(${scriptHash.hex})"
   }
 
   def apply(scriptPubKey: ScriptPubKey): P2SHScriptPubKey = {
@@ -402,7 +402,7 @@ sealed trait P2PKScriptPubKey extends RawScriptPubKey {
   def publicKey: ECPublicKeyBytes =
     ECPublicKeyBytes(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
 
-  override def toString = s"pk(${publicKey.hex})"
+  override def toString = s"${DescriptorType.PK.toString}(${publicKey.hex})"
 
 }
 
@@ -411,11 +411,12 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
   private case class P2PKScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2PKScriptPubKey {
     override val scriptType: ScriptType = ScriptType.PUBKEY
-
-    override def toString = s"pk(${publicKey.hex})"
   }
 
-  def apply(pubKey: ECPublicKey): P2PKScriptPubKey = {
+  def apply(pubKey: PublicKey): P2PKScriptPubKey = {
+    //comeback and review the type on this constructor,
+    //depending on the output type, the key type isn't safe
+    //i.e xonly can't be used pre-taproot and vice versa
     val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
     val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
     P2PKScriptPubKey(asm)
@@ -1330,7 +1331,7 @@ object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
   */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(2).bytes)
-  override def toString = s"wpkh(${pubKeyHash.hex})"
+  override def toString = s"${DescriptorType.WPKH.toString}(${pubKeyHash.hex})"
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
@@ -1382,7 +1383,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def scriptHash: Sha256Digest = Sha256Digest(asm(2).bytes)
-  override def toString = s"wsh(${scriptHash.hex})"
+  override def toString = s"${DescriptorType.WSH.toString}(${scriptHash.hex})"
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
@@ -1436,7 +1437,7 @@ case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
     XOnlyPubKey.fromBytes(asm(2).bytes)
   }
 
-  override def toString = s"rawtr(${pubKey.hex})"
+  override def toString = s"${DescriptorType.TR.toString}(${pubKey.hex})"
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
@@ -1461,6 +1462,14 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     fromPubKey(schnorrPublicKey.toXOnly)
   }
 
+  def fromInternalKeyTapscriptTree(
+      internal: XOnlyPubKey,
+      tree: TapscriptTree): (KeyParity, TaprootScriptPubKey) = {
+    val merkleRoot = TaprootScriptPath.computeFullTreeMerkleRoot(tree)
+    val (parity, tweak) = internal.createTapTweak(Some(merkleRoot))
+    (parity, fromPubKey(tweak))
+  }
+
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
     asm.length == 3 &&
@@ -1469,6 +1478,44 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     asmBytes.size == 34 &&
     //have to make sure we have a valid xonly pubkey, not just 32 bytes
     XOnlyPubKey.fromBytesT(asm(2).bytes).isSuccess
+  }
+
+  /** Computes a [[TaprootScriptPubKey]] from a given internal key with no [[TaprootScriptPath]]
+    * If the spending conditions do not require a script path, the output key should
+    * commit to an unspendable script path instead of having no script path.
+    * This can be achieved by computing the output key point as Q = P + int(hashTapTweak(bytes(P)))G.
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs]]
+    */
+  def fromInternalKey(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
+    val hash = CryptoUtil.tapTweakHash(xOnlyPubKey.bytes)
+    val pubKey = CryptoParams.getG
+      .multiply(FieldElement(hash.bytes))
+      .add(xOnlyPubKey.publicKey)
+      .toXOnly
+    TaprootScriptPubKey(pubKey)
+  }
+
+  def computeMerkleRoot(controlBlock: ControlBlock): Sha256Digest = {
+    computeMerkleRootHelper(controlBlock.hashes)
+  }
+
+  @tailrec
+  private def computeMerkleRootHelper(
+      hashes: Vector[Sha256Digest]): Sha256Digest = {
+    require(hashes.length > 0,
+            s"Cannot computeMerkleRoot() with 0 hashes=$hashes")
+    if (hashes.length > 1) {
+      val result: Vector[Sha256Digest] = hashes
+        .grouped(2)
+        .map { grouped =>
+          //need to recurse?
+          CryptoUtil.tapBranchHash(grouped(0).bytes ++ grouped(1).bytes)
+        }
+        .toVector
+      computeMerkleRootHelper(result)
+    } else {
+      hashes.head
+    }
   }
 }
 

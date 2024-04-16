@@ -544,7 +544,8 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
           right.bytes ++ left.bytes
         }
         CryptoUtil.tapBranchHash(sorted)
-      case l: TapLeaf => l.sha256
+      case l: TapLeaf =>
+        l.sha256
     }
 
   }
@@ -557,7 +558,7 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
   }
 
   private def hashTapBranch(bytes: ByteVector): Sha256Digest = {
-    CryptoUtil.taggedSha256(bytes, "TapBranch")
+    CryptoUtil.tapBranchHash(bytes)
   }
 }
 

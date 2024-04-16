@@ -13,7 +13,7 @@ sealed abstract class ScriptType {
 
   override def toString: String =
     this match {
-      case NONSTANDARD                => "nonstandard"
+      case NONSTANDARD                => "raw"
       case PUBKEY                     => "pubkey"
       case PUBKEYHASH                 => "pubkeyhash"
       case SCRIPTHASH                 => "scripthash"

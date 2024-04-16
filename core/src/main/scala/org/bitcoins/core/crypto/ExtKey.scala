@@ -114,6 +114,8 @@ object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
 
   val masterFingerprint: ByteVector = hex"00000000"
 
+  val prefixes: Vector[String] = Vector("xprv", "xpub")
+
   /** Takes in a base58 string and tries to convert it to an extended key */
   override def fromString(base58: String): ExtKey = {
     fromStringT(base58) match {
@@ -225,6 +227,10 @@ sealed abstract class ExtPrivateKey
 
   def deriveChildPrivKey(idx: Long): Try[ExtPrivateKey] = {
     Try(UInt32(idx)).map(deriveChildPrivKey)
+  }
+
+  def deriveChildPrivKey(child: BIP32Node): ExtPrivateKey = {
+    deriveChildPrivKey(child.toUInt32)
   }
 
   override def publicKey: ECPublicKey = key.publicKey
@@ -470,9 +476,8 @@ sealed abstract class ExtPublicKey extends ExtKey {
 
   final override def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] = {
     if (idx >= ExtKey.hardenedIdx) {
-      Failure(
-        new IllegalArgumentException(
-          "Cannot derive hardened child from extended public key"))
+      Failure(new IllegalArgumentException(
+        s"Cannot derive hardened child from extended public key, got=$idx limit=${ExtKey.hardenedIdx}"))
     } else {
       val data = key.bytes ++ idx.bytes
       val hmac = CryptoUtil.hmac512(chainCode.bytes, data)
@@ -495,6 +500,9 @@ sealed abstract class ExtPublicKey extends ExtKey {
 object ExtPublicKey
     extends Factory[ExtPublicKey]
     with StringFactory[ExtPublicKey] {
+
+  /** The length of a base58 encoded xpub */
+  val base58Len: Int = 111
 
   private case class ExtPublicKeyImpl(
       version: ExtKeyPubVersion,
