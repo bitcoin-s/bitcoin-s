@@ -1,11 +1,11 @@
 package org.bitcoins.rpc.v23
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AddressInfoResultPostV18,
   AddressInfoResultPostV21,
   AddressInfoResultPreV18
 }
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
@@ -89,6 +89,19 @@ class BitcoindV23RpcClientTest extends BitcoindFixturesFundedCachedV23 {
       assert(result.isrange.==(false))
       assert(result.issolvable.==(true))
       assert(result.hasprivatekeys.==(false))
+    }
+  }
+
+  it should "derive addresses from a descriptor" in { client =>
+    val str =
+      "wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)#cjjspncu"
+    val descriptor = Descriptor.fromString(str)
+    val addressesF =
+      client.deriveAddresses(descriptor, Some(Vector(0, 2))).map(_.addresses)
+    val expected =
+      Vector.empty //Vector("", "", "").map(BitcoinAddress.fromString)
+    addressesF.map { addresses =>
+      assert(addresses == expected)
     }
   }
 

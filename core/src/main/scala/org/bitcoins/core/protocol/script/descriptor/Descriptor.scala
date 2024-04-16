@@ -141,11 +141,10 @@ sealed abstract class DescriptorFactory[
       //now check for a valid checksum
       val checksumOpt =
         if (checksum.nonEmpty) Some(checksum.tail) else None //drop '#'
-      val isValidChecksum = Descriptor.isValidChecksum(
-        descriptor = createDescriptor(expression, None),
-        checksumOpt = checksumOpt)
+      val desc = createDescriptor(expression, checksumOpt)
+      val isValidChecksum = Descriptor.isValidChecksum(desc, checksumOpt)
       if (isValidChecksum) {
-        createDescriptor(expression, checksumOpt)
+        desc
       } else {
         sys.error(s"Invalid descriptor checksum given for string=$string")
       }
