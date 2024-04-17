@@ -7,7 +7,7 @@ import org.bitcoins.core.crypto.{
   ExtPrivateKey,
   ExtPublicKey
 }
-import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
+import org.bitcoins.core.hd.{BIP32Node, BIP32Path, HardenedType}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto._
@@ -175,20 +175,25 @@ sealed abstract class ExtECPublicKeyExpression
 
   def pathOpt: Option[BIP32Path]
 
-  def childrenHardenedOpt: Option[Boolean]
+  /** Outer Option represents if we use this key or derive children
+    * Inner option represents whether child keys are hardened or not
+    * if they are hardedned, return the specifi [[HardenedType]]
+    */
+  def childrenHardenedOpt: Option[Option[HardenedType]]
 
   def deriveChild(idx: Int): BaseECKey
 
   override def toString(): String = {
+    val hardenedStr: String = childrenHardenedOpt match {
+      case Some(Some(h)) => s"/*${h.toString}"
+      case Some(None)    => "/*"
+      case None          => ""
+    }
     originOpt.map(_.toString).getOrElse("") +
       ExtKey.toString(extKey) +
       pathOpt.map(_.toString.drop(1)).getOrElse("") +
-      childrenHardenedOpt
-        .map {
-          case true  => "/*'"
-          case false => "/*"
-        }
-        .getOrElse("")
+      hardenedStr
+
   }
 }
 
@@ -204,7 +209,7 @@ sealed abstract class ExtXOnlyPublicKeyExpression
 
   def pathOpt: Option[BIP32Path] = ecPublicKeyExpression.pathOpt
 
-  def childrenHardenedOpt: Option[Boolean] =
+  def childrenHardenedOpt: Option[Option[HardenedType]] =
     ecPublicKeyExpression.childrenHardenedOpt
 
   def deriveChild(idx: Int): BaseECKey = ecPublicKeyExpression.deriveChild(idx)
@@ -221,7 +226,7 @@ case class XprvECPublicKeyExpression(
     override val extKey: ExtPrivateKey,
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
-    childrenHardenedOpt: Option[Boolean])
+    childrenHardenedOpt: Option[Option[HardenedType]])
     extends ExtECPublicKeyExpression
     with ECPublicKeyExpression {
 
@@ -242,7 +247,7 @@ case class XprvECPublicKeyExpression(
       childrenHardenedOpt.isDefined,
       s"Cannot derive child keys from descriptor that does not allow children, got=${toString}")
     val node =
-      BIP32Node(index = idx, hardened = childrenHardenedOpt.getOrElse(false))
+      BIP32Node(index = idx, hardenedOpt = childrenHardenedOpt.get)
     val fullPath: BIP32Path = pathOpt match {
       case Some(p) => BIP32Path(p.path.appended(node))
       case None    => BIP32Path(node)
@@ -270,7 +275,7 @@ case class XpubECPublicKeyExpression(
     override val extKey: ExtPublicKey,
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
-    childrenHardenedOpt: Option[Boolean])
+    childrenHardenedOpt: Option[Option[HardenedType]])
     extends ExtECPublicKeyExpression
     with ECPublicKeyExpression {
 
@@ -290,7 +295,7 @@ case class XpubECPublicKeyExpression(
     require(
       childrenHardenedOpt.isDefined,
       s"Cannot derive child keys from descriptor that does not allow children, got=${toString}")
-    val node = BIP32Node(index = idx, hardened = childrenHardenedOpt.get)
+    val node = BIP32Node(index = idx, hardenedOpt = childrenHardenedOpt.get)
     val fullPath: BIP32Path = pathOpt match {
       case Some(p) => BIP32Path(p.path.appended(node))
       case None    => BIP32Path(node)

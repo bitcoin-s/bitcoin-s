@@ -37,9 +37,9 @@ object GetAddresses extends App {
     accountIndex <- 0 until 3
   } yield {
     val accountPath = BIP32Path(
-      BIP32Node(constant.constant, hardened = true),
-      BIP32Node(coin.toInt, hardened = true),
-      BIP32Node(accountIndex, hardened = true)
+      BIP32Node(constant.constant, HardenedType.defaultOpt),
+      BIP32Node(coin.toInt, HardenedType.defaultOpt),
+      BIP32Node(accountIndex, HardenedType.defaultOpt)
     )
 
     val pathType =
@@ -68,11 +68,11 @@ object GetAddresses extends App {
       addressIndex <- 0 until 3
     } yield {
       val path = BIP32Path(
-        BIP32Node(constant.constant, hardened = true),
-        BIP32Node(coin.toInt, hardened = true),
-        BIP32Node(accountIndex, hardened = true),
-        BIP32Node(chainType.index, hardened = false),
-        BIP32Node(addressIndex, hardened = false)
+        BIP32Node(constant.constant, HardenedType.defaultOpt),
+        BIP32Node(coin.toInt, HardenedType.defaultOpt),
+        BIP32Node(accountIndex, HardenedType.defaultOpt),
+        BIP32Node(chainType.index, HardenedType.defaultOpt),
+        BIP32Node(addressIndex, None)
       )
 
       val addressCmd = s"trezorctl get-address -n $path -t $trezorPathType"

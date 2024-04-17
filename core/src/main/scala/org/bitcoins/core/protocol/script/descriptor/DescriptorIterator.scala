@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.crypto.{ECPrivateKeyUtil, ExtKey, ExtPublicKey}
-import org.bitcoins.core.hd.BIP32Path
+import org.bitcoins.core.hd.{BIP32Path, HardenedType}
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   RawScriptPubKey
@@ -10,10 +10,6 @@ import org.bitcoins.crypto._
 
 case class DescriptorIterator(descriptor: String) {
   private var index: Int = 0
-
-  private val hardenedChars: Vector[Char] = {
-    Vector('\'', 'h', 'H')
-  }
 
   def current: String = {
     descriptor.drop(index)
@@ -46,15 +42,20 @@ case class DescriptorIterator(descriptor: String) {
     }
   }
 
-  def takeChildrenHardenedOpt(): Option[Boolean] = {
+  def takeChildrenHardenedOpt(): Option[Option[HardenedType]] = {
     if (current.nonEmpty && current.charAt(0) == '*') {
       skip(1)
-      if (current.nonEmpty && hardenedChars.exists(_ == current.charAt(0))) {
+      val hardenedOpt = HardenedType.fromStringOpt(current.take(1))
+//      if (current.nonEmpty && hardenedChars.exists(_ == current.charAt(0))) {
+//        skip(1)
+//        Some(true)
+//      } else {
+//        Some(false)
+//      }
+      if (hardenedOpt.isDefined) {
         skip(1)
-        Some(true)
-      } else {
-        Some(false)
       }
+      Some(hardenedOpt)
     } else {
       None
     }

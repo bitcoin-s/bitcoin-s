@@ -16,7 +16,7 @@ case class HDAccount(
   require(index >= 0, s"Account index ($index) must be positive!")
 
   override val path: Vector[BIP32Node] = {
-    coin.path :+ BIP32Node(index, hardened = true)
+    coin.path :+ BIP32Node(index, hardenedOpt = HardenedType.defaultOpt)
   }
 
   def purpose: HDPurpose = coin.purpose

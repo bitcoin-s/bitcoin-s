@@ -13,8 +13,8 @@ class KeyExpressionTest extends BitcoinSUnitTest {
     val str2 = "[deadbeef/0'/0h/0']"
     val keyOrigin = KeyOriginExpression.fromString(str0)
     assert(str0 == keyOrigin.toString)
-    assert(keyOrigin == KeyOriginExpression.fromString(str1))
-    keyOrigin == KeyOriginExpression.fromString(str2)
+    assert(KeyOriginExpression.fromString(str1).toString == str1)
+    assert(KeyOriginExpression.fromString(str2).toString == str2)
   }
 
   it must "parse valid private key expressions from BIP380" in {

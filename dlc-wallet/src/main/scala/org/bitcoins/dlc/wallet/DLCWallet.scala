@@ -749,8 +749,8 @@ abstract class DLCWallet
       account: AccountDb,
       keyIndex: Int): AdaptorSign = {
     val bip32Path = BIP32Path(
-      account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
-                                       BIP32Node(keyIndex, hardened = false)))
+      account.hdAccount.path ++ Vector(BIP32Node(0, hardenedOpt = None),
+                                       BIP32Node(keyIndex, hardenedOpt = None)))
     val privKeyPath = HDPath.fromString(bip32Path.toString)
     keyManager.toSign(privKeyPath)
   }
