@@ -8,7 +8,7 @@ sealed abstract class HDAddress extends BIP32Path {
   require(index >= 0, s"Address index ($index) must be positive!")
 
   override val path: Vector[BIP32Node] = {
-    chain.path :+ BIP32Node(index, hardened = false)
+    chain.path :+ BIP32Node(index, hardenedOpt = None)
   }
 
   def purpose: HDPurpose

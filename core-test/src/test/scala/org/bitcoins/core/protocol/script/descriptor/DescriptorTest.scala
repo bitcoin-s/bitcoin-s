@@ -452,6 +452,14 @@ class DescriptorTest extends BitcoinSUnitTest {
     runFailTest(str4)
   }
 
+  it must "have fidelity with the type of hardened derivation used as input" in {
+    //note using h instead of ' for hardened derivation path
+    val str =
+      "wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)"
+    val desc = Descriptor.fromString(str)
+    assert(desc.toString == str)
+  }
+
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
     assert(desc.toString == descriptor)

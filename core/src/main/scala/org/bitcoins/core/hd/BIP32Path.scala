@@ -80,13 +80,14 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
     }
   }
 
-  override def toString: String =
+  override def toString: String = {
     path
-      .map { case BIP32Node(index, hardened) =>
-        val isHardened = if (hardened) "'" else ""
+      .map { case BIP32Node(index, hardenedOpt) =>
+        val isHardened = hardenedOpt.map(_.toString).getOrElse("")
         index.toString + isHardened
       }
       .fold("m")((accum, curr) => accum + "/" + curr)
+  }
 
   def bytes: ByteVector = path.foldLeft(ByteVector.empty)(_ ++ _.toUInt32.bytes)
 
@@ -139,13 +140,13 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
               """The first element in a BIP32 path string must be "m"""")
 
       val path = rest.map { str =>
-        val (index: String, hardened: Boolean) =
-          if (str.endsWith("'") || str.endsWith("h")) {
-            (str.dropRight(1), true)
-          } else {
-            (str, false)
+        val (index: String, hardenedOpt: Option[HardenedType]) = {
+          HardenedType.fromStringOpt(str.last.toString) match {
+            case Some(h) => (str.dropRight(1), Some(h))
+            case None    => (str, None)
           }
-        BIP32Node(index.toInt, hardened)
+        }
+        BIP32Node(index.toInt, hardenedOpt)
       }
 
       BIP32PathImpl(path)
@@ -173,7 +174,7 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
         if (littleEndian) UInt32.fromBytesLE(part) else UInt32.fromBytes(part)
       val hardened = uInt32 >= ExtKey.hardenedIdx
       val index = if (hardened) uInt32 - ExtKey.hardenedIdx else uInt32
-      BIP32Node(index.toInt, hardened)
+      BIP32Node(index.toInt, if (hardened) Some(HardenedType.default) else None)
     }
 
     BIP32Path(path)
@@ -187,13 +188,43 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
 
 }
 
-case class BIP32Node(index: Int, hardened: Boolean) {
+case class BIP32Node(index: Int, hardenedOpt: Option[HardenedType]) {
   require(index >= 0, s"BIP32 node index must be positive! Got $index")
+
+  def hardened: Boolean = hardenedOpt.isDefined
 
   /** Converts this node to a BIP32 notation
     * unsigned 32 bit integer
     */
   def toUInt32: UInt32 =
-    if (hardened) ExtKey.hardenedIdx + UInt32(index.toLong)
+    if (hardenedOpt.isDefined) ExtKey.hardenedIdx + UInt32(index.toLong)
     else UInt32(index)
+}
+
+sealed abstract class HardenedType
+
+object HardenedType extends StringFactory[HardenedType] {
+
+  case object Tick extends HardenedType {
+
+    override def toString: String = {
+      "'"
+    }
+  }
+
+  case object h extends HardenedType {
+    override def toString(): String = "h"
+  }
+
+  val all: Set[HardenedType] = Set(Tick, h)
+
+  override def fromString(string: String): HardenedType = {
+    all
+      .find(_.toString == string)
+      .getOrElse(sys.error(s"Cannot find HardenedType for string=$string"))
+  }
+
+  val default: HardenedType = Tick
+
+  val defaultOpt: Option[HardenedType] = Some(default)
 }

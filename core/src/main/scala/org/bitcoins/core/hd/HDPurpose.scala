@@ -18,7 +18,7 @@ package org.bitcoins.core.hd
 case class HDPurpose(constant: Int) extends BIP32Path {
 
   override val path: Vector[BIP32Node] = Vector(
-    BIP32Node(constant, hardened = true))
+    BIP32Node(constant, HardenedType.defaultOpt))
 }
 
 object HDPurposes {

@@ -51,7 +51,7 @@ val extPrivKey = ExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
 
 extPrivKey.sign(DoubleSha256Digest.empty.bytes)
 
-val path = BIP32Path(Vector(BIP32Node(0,false)))
+val path = BIP32Path(Vector(BIP32Node(0,HardenedType.defaultOpt)))
 
 extPrivKey.sign(DoubleSha256Digest.empty.bytes,path)
 ```

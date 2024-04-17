@@ -572,8 +572,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
           val bip32Path = BIP32Path(
             dlcDb.account.path ++ Vector(
-              BIP32Node(dlcDb.changeIndex.index, hardened = false),
-              BIP32Node(dlcDb.keyIndex, hardened = false)))
+              BIP32Node(dlcDb.changeIndex.index, hardenedOpt = None),
+              BIP32Node(dlcDb.keyIndex, hardenedOpt = None)))
 
           val privKeyPath = HDPath.fromString(bip32Path.toString)
           val fundingPrivKey = keyManager.toSign(privKeyPath)

@@ -7,32 +7,43 @@ class DescriptorChecksumTest extends BitcoinSUnitTest {
 
   behavior of "DescriptorChecksumTest"
 
-  val expression =
-    RawScriptExpression(NonStandardScriptPubKey.fromAsmHex("deadbeef"))
+  val descriptor =
+    RawDescriptor(
+      RawScriptExpression(NonStandardScriptPubKey.fromAsmHex("deadbeef")),
+      None)
   it must "calculate correct checksums from BIP380 examples" in {
     val str0 = "raw(deadbeef)#89f8spxm"
     val split0 = str0.split("#")
     val (payload, checksum) = (split0(0), split0(1))
     assert(Descriptor.createChecksum(payload) == checksum)
 
-    assert(Descriptor.isValidChecksum(expression, Some(checksum)))
+    assert(Descriptor.isValidChecksum(descriptor, Some(checksum)))
 
     //expression with nochecksum should be valid
-    assert(Descriptor.isValidChecksum(expression, None))
+    assert(Descriptor.isValidChecksum(descriptor, None))
+
+//    val descriptor1 =
+//      Descriptor.fromString(
+//        "wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)")
+//    val checksum1 = "cjjspncu"
+//    assert(Descriptor.createChecksum(descriptor1) == checksum1)
+//    assert(Descriptor.isValidChecksum(descriptor1, Some(checksum1)))
   }
 
   it must "fail when a bad checksum is given" in {
     //Missing checksum
-    assert(!Descriptor.isValidChecksum(expression, Some("#")))
+    assert(!Descriptor.isValidChecksum(descriptor, Some("#")))
     //Too long checksum (9 chars)
-    assert(!Descriptor.isValidChecksum(expression, Some("89f8spxmx")))
+    assert(!Descriptor.isValidChecksum(descriptor, Some("89f8spxmx")))
     //Too short checksum (7 chars)
-    assert(!Descriptor.isValidChecksum(expression, Some("89f8spx")))
+    assert(!Descriptor.isValidChecksum(descriptor, Some("89f8spx")))
     //Error in payload
     val bad =
-      RawScriptExpression(NonStandardScriptPubKey.fromAsmHex("deedbeef"))
+      RawDescriptor(
+        RawScriptExpression(NonStandardScriptPubKey.fromAsmHex("deedbeef")),
+        None)
     assert(!Descriptor.isValidChecksum(bad, Some("89f8spxm")))
     //Error in checksum
-    assert(!Descriptor.isValidChecksum(expression, Some("#9f8spxm")))
+    assert(!Descriptor.isValidChecksum(descriptor, Some("#9f8spxm")))
   }
 }

@@ -8,6 +8,8 @@ import scala.util.Try
   */
 object HDGenerators {
 
+  def hardenedType: Gen[HardenedType] = Gen.oneOf(HardenedType.all)
+
   /** Generates a BIP 32 path segment
     */
   def bip32Child: Gen[BIP32Node] = Gen.oneOf(softBip32Child, hardBip32Child)
@@ -17,14 +19,15 @@ object HDGenerators {
   def softBip32Child: Gen[BIP32Node] =
     for {
       index <- NumberGenerator.positiveInts
-    } yield BIP32Node(index, hardened = false)
+    } yield BIP32Node(index, hardenedOpt = None)
 
   /** Generates a hardened BIP 32 path segment
     */
   def hardBip32Child: Gen[BIP32Node] =
     for {
       soft <- softBip32Child
-    } yield soft.copy(hardened = true)
+      hardened <- hardenedType
+    } yield soft.copy(hardenedOpt = Some(hardened))
 
   /** Generates a BIP32 path
     */

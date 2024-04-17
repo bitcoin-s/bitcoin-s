@@ -129,7 +129,7 @@ class HDPathTest extends BitcoinSUnitTest {
     forAll(HDGenerators.hdPathWithConstructor) { case (hd, hdApply) =>
       val nonHardenedCoinChildren = hd.path.zipWithIndex.map {
         case (child, index) =>
-          if (index == LegacyHDPath.COIN_INDEX) child.copy(hardened = false)
+          if (index == LegacyHDPath.COIN_INDEX) child.copy(hardenedOpt = None)
           else child
       }
 
@@ -144,7 +144,7 @@ class HDPathTest extends BitcoinSUnitTest {
       val nonHardenedAccountChildren = hd.path.zipWithIndex.map {
         case (child, index) =>
           if (index == LegacyHDPath.ACCOUNT_INDEX)
-            child.copy(hardened = false)
+            child.copy(hardenedOpt = None)
           else child
       }
       val badAccountAttempt = hdApply(nonHardenedAccountChildren)
@@ -157,7 +157,8 @@ class HDPathTest extends BitcoinSUnitTest {
 
       val hardenedChainChildren = hd.path.zipWithIndex.map {
         case (child, index) =>
-          if (index == LegacyHDPath.CHAIN_INDEX) child.copy(hardened = true)
+          if (index == LegacyHDPath.CHAIN_INDEX)
+            child.copy(hardenedOpt = HardenedType.defaultOpt)
           else child
       }
       val badChainAttempt =
@@ -171,7 +172,8 @@ class HDPathTest extends BitcoinSUnitTest {
 
       val hardenedAddressChildren = hd.path.zipWithIndex.map {
         case (child, index) =>
-          if (index == LegacyHDPath.ADDRESS_INDEX) child.copy(hardened = true)
+          if (index == LegacyHDPath.ADDRESS_INDEX)
+            child.copy(hardenedOpt = HardenedType.defaultOpt)
           else child
       }
       val badAddrAttempt =

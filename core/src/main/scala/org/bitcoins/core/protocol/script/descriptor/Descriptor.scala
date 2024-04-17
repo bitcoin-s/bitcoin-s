@@ -141,7 +141,9 @@ sealed abstract class DescriptorFactory[
       //now check for a valid checksum
       val checksumOpt =
         if (checksum.nonEmpty) Some(checksum.tail) else None //drop '#'
-      val isValidChecksum = Descriptor.isValidChecksum(expression, checksumOpt)
+      val isValidChecksum = Descriptor.isValidChecksum(
+        descriptor = createDescriptor(expression, None),
+        checksumOpt = checksumOpt)
       if (isValidChecksum) {
         createDescriptor(expression, checksumOpt)
       } else {
@@ -468,13 +470,17 @@ object Descriptor extends StringFactory[Descriptor] {
     builder.result()
   }
 
+  def createChecksum(descriptor: Descriptor): String = {
+    createChecksum(descriptor.toString)
+  }
+
   def isValidChecksum(
-      expression: DescriptorExpression,
+      descriptor: Descriptor,
       checksumOpt: Option[String]): Boolean = {
     checksumOpt match {
       case None => true //trivially true if we have no checksum
       case Some(checksum) =>
-        val t = Try(createChecksum(expression.toString))
+        val t = Try(createChecksum(descriptor.toString))
         if (t.isFailure) false
         else t.get == checksum
     }
