@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.ScriptType
@@ -468,11 +469,11 @@ object AddressInfoResultPostV21 {
 
 case class ListDescriptorsResult(
     wallet_name: String,
-    descriptors: Vector[descriptorsResult]
+    descriptors: Vector[DescriptorsResult]
 ) extends WalletResult
 
-case class descriptorsResult(
-    desc: String,
+case class DescriptorsResult(
+    desc: Descriptor,
     timestamp: ZonedDateTime,
     active: Boolean,
     internal: Option[Boolean],

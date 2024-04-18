@@ -142,8 +142,8 @@ sealed abstract class DescriptorFactory[
       val checksumOpt =
         if (checksum.nonEmpty) Some(checksum.tail) else None //drop '#'
       val isValidChecksum = Descriptor.isValidChecksum(
-        descriptor = createDescriptor(expression, None),
-        checksumOpt = checksumOpt)
+        createDescriptor(expression, None),
+        checksumOpt)
       if (isValidChecksum) {
         createDescriptor(expression, checksumOpt)
       } else {

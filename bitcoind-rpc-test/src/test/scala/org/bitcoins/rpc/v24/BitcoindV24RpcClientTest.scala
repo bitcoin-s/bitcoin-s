@@ -10,6 +10,7 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.{Bech32mAddress, BitcoinAddress}
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
@@ -74,11 +75,13 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
 
   it should "analyze a descriptor" in { client =>
     val descriptor =
-      "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
+      Descriptor.fromString(
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7")
 
     val descriptorF = client.getDescriptorInfo(descriptor)
 
     descriptorF.map { result =>
+      assert(result.descriptor == descriptor)
       assert(result.isrange.==(false))
       assert(result.issolvable.==(true))
       assert(result.hasprivatekeys.==(false))
@@ -115,5 +118,40 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       tx <- client.getRawTransaction(txid).map(_.hex)
       spending <- client.getTxSpendingPrevOut(tx.inputs.head.previousOutput)
     } yield assert(spending.spendingtxid.contains(txid))
+  }
+
+  it should "derive addresses from a descriptor" in { client =>
+    val str0 =
+      "wpkh(tprv8ZgxMBicQKsPd7Uf69XL1XwhmjHopUGep8GuEiJDZmbQz6o58LninorQAfcKZWARbtRtfnLcJ5MQ2AtHcQJCCRUcMRvmDUjyEmNUWwx8UbK/1/1/0)#t6wfjs64"
+    val descriptor0 = Descriptor.fromString(str0)
+    assert(descriptor0.toString == str0)
+    val addresses0F =
+      client.deriveAddresses(descriptor0, None).map(_.addresses)
+    val expected0 =
+      Vector("bcrt1qjqmxmkpmxt80xz4y3746zgt0q3u3ferr34acd5").map(
+        BitcoinAddress.fromString)
+    val assert0 = addresses0F.map { addresses =>
+      assert(addresses == expected0)
+    }
+
+    val str1 =
+      "wpkh(tprv8ZgxMBicQKsPd7Uf69XL1XwhmjHopUGep8GuEiJDZmbQz6o58LninorQAfcKZWARbtRtfnLcJ5MQ2AtHcQJCCRUcMRvmDUjyEmNUWwx8UbK/1/1/*)#kft60nuy"
+
+    val descriptor1 = Descriptor.fromString(str1)
+    assert(descriptor1.toString == str1)
+    val addresses1F =
+      client.deriveAddresses(descriptor1, Some(Vector(0, 2))).map(_.addresses)
+    val expected1 =
+      Vector("bcrt1qjqmxmkpmxt80xz4y3746zgt0q3u3ferr34acd5",
+             "bcrt1qhku5rq7jz8ulufe2y6fkcpnlvpsta7rq4442dy",
+             "bcrt1qpgptk2gvshyl0s9lqshsmx932l9ccsv265tvaq")
+        .map(BitcoinAddress.fromString)
+
+    val assert1 = assert0.flatMap(_ =>
+      addresses1F.map { addresses =>
+        assert(addresses == expected1)
+      })
+
+    assert1
   }
 }

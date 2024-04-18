@@ -521,8 +521,8 @@ object JsonSerializers {
       )
     }
 
-  implicit val descriptorsResultReads: Reads[descriptorsResult] =
-    Json.reads[descriptorsResult]
+  implicit val descriptorsResultReads: Reads[DescriptorsResult] =
+    Json.reads[DescriptorsResult]
 
   implicit val listDescriptorsReads: Reads[ListDescriptorsResult] =
     Json.reads[ListDescriptorsResult]
@@ -686,9 +686,6 @@ object JsonSerializers {
 
   implicit val listWalletsDirResultReads: Reads[ListWalletDirResult] =
     Json.reads[ListWalletDirResult]
-
-  implicit val deriveAddressesResultReads: Reads[DeriveAddressesResult] =
-    Json.reads[DeriveAddressesResult]
 
   implicit val submitHeaderResultReads: Reads[SubmitHeaderResult] =
     Json.reads[SubmitHeaderResult]
@@ -914,5 +911,23 @@ object JsonSerializers {
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)
+
+  implicit object DeriveAddressResults extends Reads[DeriveAddressesResult] {
+
+    override def reads(json: JsValue): JsResult[DeriveAddressesResult] = {
+      json match {
+        case str: JsString =>
+          bitcoinAddressReads
+            .reads(str)
+            .map(addr => DeriveAddressesResult(Vector(addr)))
+        case arr: JsArray =>
+          val addresses: Vector[BitcoinAddress] =
+            arr.as[Vector[BitcoinAddress]]
+          JsSuccess(DeriveAddressesResult(addresses))
+        case x =>
+          JsError(s"Invalid response for deriveaddresses rpc, got=$x")
+      }
+    }
+  }
 
 }

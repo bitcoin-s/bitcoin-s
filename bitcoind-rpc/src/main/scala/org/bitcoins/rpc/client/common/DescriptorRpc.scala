@@ -5,7 +5,9 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetDescriptorInfoResult
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
-import play.api.libs.json.{JsString, Json}
+import org.bitcoins.commons.serializers.JsonWriters.DescriptorWrites
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 
@@ -17,16 +19,19 @@ trait DescriptorRpc {
   self: Client =>
 
   def deriveAddresses(
-      descriptor: String,
+      descriptor: Descriptor,
       range: Option[Vector[Double]]): Future[DeriveAddressesResult] = {
     val params =
-      if (range.isDefined) List(JsString(descriptor), Json.toJson(range))
-      else List(JsString(descriptor))
+      if (range.isDefined)
+        List(DescriptorWrites.writes(descriptor), Json.toJson(range))
+      else List(DescriptorWrites.writes(descriptor))
     bitcoindCall[DeriveAddressesResult]("deriveaddresses", params)
   }
 
-  def getDescriptorInfo(descriptor: String): Future[GetDescriptorInfoResult] = {
-    bitcoindCall[GetDescriptorInfoResult]("getdescriptorinfo",
-                                          List(JsString(descriptor)))
+  def getDescriptorInfo(
+      descriptor: Descriptor): Future[GetDescriptorInfoResult] = {
+    bitcoindCall[GetDescriptorInfoResult](
+      "getdescriptorinfo",
+      List(DescriptorWrites.writes(descriptor)))
   }
 }
