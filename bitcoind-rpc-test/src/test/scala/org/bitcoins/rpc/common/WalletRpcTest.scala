@@ -1,33 +1,23 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
-  AddressType,
-  WalletFlag
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{AddressType, WalletFlag}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  ECPublicKey,
-  HashType
-}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPrivateKeyBytes, ECPublicKey, HashType}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairNewest,
-  BitcoindRpcTestUtil
-}
+import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairNewest, BitcoindRpcTestUtil}
 import org.bitcoins.testkit.util.PekkoUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
@@ -498,8 +488,10 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
+      val privKey = ECPrivateKey.freshPrivateKey
+      val descriptor = P2WPKHDescriptor(privKey, RegTest)
       for {
-        address <- otherClient.getNewAddress
+        address <- otherClient.importDescriptor(descriptor)
         transactionWithoutFunds <-
           client
             .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
@@ -511,33 +503,36 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         outPoint = transaction.inputs.head.previousOutput
         prevTx <- client.getRawTransactionRaw(outPoint.txIdBE)
         output = prevTx.outputs(outPoint.vout.toInt)
-        privKey <- client.dumpPrivKey(
-          BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest))
+        _ = BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest)
+        descriptors <- client.listDescriptors(priv = Some(true))
+        _ = println(s"descriptors=$descriptors")
+        privKey = ??? // descriptors.descriptors.map(_.)
       } yield {
-        val partialSig = BitcoinSigner.signSingle(
-          ECSignatureParams(P2WPKHV0InputInfo(outPoint,
-                                              output.value,
-                                              privKey.toPrivateKey.publicKey),
-                            prevTx,
-                            privKey.toPrivateKey,
-                            HashType.sigHashAll),
-          transaction,
-          isDummySignature = false
-        )
-
-        signedTx match {
-          case btx: NonWitnessTransaction =>
-            assert(
-              btx.inputs.head.scriptSignature.signatures.head == partialSig.signature)
-          case wtx: WitnessTransaction =>
-            wtx.witness.head match {
-              case p2wpkh: P2WPKHWitnessV0 =>
-                assert(p2wpkh.pubKey == partialSig.pubKey)
-                assert(p2wpkh.signature == partialSig.signature)
-              case _: P2WSHWitnessV0 | EmptyScriptWitness | _: TaprootWitness =>
-                fail("Expected P2WPKH")
-            }
-        }
+//        val partialSig = BitcoinSigner.signSingle(
+//          ECSignatureParams(P2WPKHV0InputInfo(outPoint,
+//                                              output.value,
+//                                              privKey.toPrivateKey.publicKey),
+//                            prevTx,
+//                            privKey.toPrivateKey,
+//                            HashType.sigHashAll),
+//          transaction,
+//          isDummySignature = false
+//        )
+//
+//        signedTx match {
+//          case btx: NonWitnessTransaction =>
+//            assert(
+//              btx.inputs.head.scriptSignature.signatures.head == partialSig.signature)
+//          case wtx: WitnessTransaction =>
+//            wtx.witness.head match {
+//              case p2wpkh: P2WPKHWitnessV0 =>
+//                assert(p2wpkh.pubKey == partialSig.pubKey)
+//                assert(p2wpkh.signature == partialSig.signature)
+//              case _: P2WSHWitnessV0 | EmptyScriptWitness | _: TaprootWitness =>
+//                fail("Expected P2WPKH")
+//            }
+//        }
+        fail()
       }
   }
 

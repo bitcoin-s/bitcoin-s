@@ -460,7 +460,12 @@ case class DescriptorsResult(
     internal: Option[Boolean],
     range: Option[Vector[Int]],
     next: Option[Int]
-) extends WalletResult
+) extends WalletResult {
+
+  override def toString(): String = {
+    s"${getClass.getSimpleName}(desc=$desc,timestamp=$timestamp,active=$active,internal=$internal,range=$range,next=$next)"
+  }
+}
 
 case class EmbeddedResult(
     isscript: Boolean,
