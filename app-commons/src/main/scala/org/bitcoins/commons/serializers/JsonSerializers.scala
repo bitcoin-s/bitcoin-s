@@ -521,8 +521,8 @@ object JsonSerializers {
       )
     }
 
-  implicit val descriptorsResultReads: Reads[descriptorsResult] =
-    Json.reads[descriptorsResult]
+  implicit val descriptorsResultReads: Reads[DescriptorsResult] =
+    Json.reads[DescriptorsResult]
 
   implicit val listDescriptorsReads: Reads[ListDescriptorsResult] =
     Json.reads[ListDescriptorsResult]

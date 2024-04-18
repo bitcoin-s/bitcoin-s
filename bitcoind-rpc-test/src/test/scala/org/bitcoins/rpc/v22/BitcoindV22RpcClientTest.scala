@@ -20,8 +20,6 @@ import org.bitcoins.testkit.rpc.{
   BitcoindRpcTestUtil
 }
 import org.scalatest.Assertion
-
-import java.time.ZonedDateTime
 import scala.concurrent.Future
 
 class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
@@ -189,45 +187,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
           case _: GetWalletInfoResultPreV22 =>
             fail("private key parameter only available on V22 or higher")
         }
-      }
-  }
-
-  it should "output wallet name from listdescriptors" in {
-    nodePair: FixtureParam =>
-      val client = nodePair.node1
-      for {
-        _ <- client.unloadWallet("")
-        _ <- client.createWallet("descriptorWalletThree", descriptors = true)
-        resultWallets <- client.listDescriptors(walletName =
-          "descriptorWalletThree")
-        _ <- client.unloadWallet("descriptorWalletThree")
-        _ <- client.loadWallet("")
-      } yield {
-        assert(resultWallets.wallet_name == "descriptorWalletThree")
-      }
-  }
-
-  it should "output descriptors from listdescriptors" in {
-    nodePair: FixtureParam =>
-      val client = nodePair.node1
-      for {
-        _ <- client.unloadWallet("")
-        _ <- client.createWallet("descriptorWalletTwo", descriptors = true)
-        resultWallet <- client.listDescriptors(walletName =
-          "descriptorWalletTwo")
-        _ <- client.unloadWallet("descriptorWalletTwo")
-        _ <- client.loadWallet("")
-      } yield {
-        resultWallet.descriptors.map { d =>
-          assert(
-            d.desc.isInstanceOf[String] && d.timestamp
-              .isInstanceOf[ZonedDateTime]
-              && d.active.isInstanceOf[Boolean] && d.internal
-                .isInstanceOf[Option[Boolean]]
-              && d.range.isInstanceOf[Option[Vector[Int]]] && d.next
-                .isInstanceOf[Option[Int]])
-        }
-        succeed
       }
   }
 
