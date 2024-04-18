@@ -25,7 +25,6 @@ trait DescriptorRpc {
       if (range.isDefined)
         List(DescriptorWrites.writes(descriptor), Json.toJson(range))
       else List(DescriptorWrites.writes(descriptor))
-    println(s"params=$params")
     bitcoindCall[DeriveAddressesResult]("deriveaddresses", params)
   }
 

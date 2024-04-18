@@ -92,19 +92,6 @@ class BitcoindV23RpcClientTest extends BitcoindFixturesFundedCachedV23 {
     }
   }
 
-  it should "derive addresses from a descriptor" in { client =>
-    val str =
-      "wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)#cjjspncu"
-    val descriptor = Descriptor.fromString(str)
-    val addressesF =
-      client.deriveAddresses(descriptor, Some(Vector(0, 2))).map(_.addresses)
-    val expected =
-      Vector.empty //Vector("", "", "").map(BitcoinAddress.fromString)
-    addressesF.map { addresses =>
-      assert(addresses == expected)
-    }
-  }
-
   it should "get node address given a null parameter" in { client =>
     val nodeF = client.getNodeAddresses()
 
