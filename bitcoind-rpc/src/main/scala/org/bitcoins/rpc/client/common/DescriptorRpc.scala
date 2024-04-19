@@ -2,7 +2,9 @@ package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   DeriveAddressesResult,
-  GetDescriptorInfoResult
+  DescriptorsResult,
+  GetDescriptorInfoResult,
+  ImportDescriptorResult
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters.DescriptorWrites
@@ -33,5 +35,15 @@ trait DescriptorRpc {
     bitcoindCall[GetDescriptorInfoResult](
       "getdescriptorinfo",
       List(DescriptorWrites.writes(descriptor)))
+  }
+
+  /** https://bitcoincore.org/en/doc/22.0.0/rpc/wallet/importdescriptors/
+    * @param imports
+    * @return
+    */
+  def importDescriptors(imports: Vector[DescriptorsResult]): Future[
+    Vector[ImportDescriptorResult]] = {
+    bitcoindCall[Vector[ImportDescriptorResult]]("importdescriptors",
+                                                 List(Json.toJson(imports)))
   }
 }

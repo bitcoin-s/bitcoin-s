@@ -4,7 +4,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   AddressInfoResultPostV18,
   AddressInfoResultPostV21,
-  AddressInfoResultPreV18
+  AddressInfoResultPreV18,
+  DescriptorsResult
 }
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.currency._
@@ -15,6 +16,8 @@ import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV24
+
+import java.time.Instant
 
 class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
 
@@ -153,5 +156,32 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       })
 
     assert1
+  }
+
+  it must "importdescriptors" in { client =>
+    val str1 =
+      "wpkh(tprv8ZgxMBicQKsPd7Uf69XL1XwhmjHopUGep8GuEiJDZmbQz6o58LninorQAfcKZWARbtRtfnLcJ5MQ2AtHcQJCCRUcMRvmDUjyEmNUWwx8UbK/1/1/*)#kft60nuy"
+    val descriptor = Descriptor.fromString(str1)
+    val imp = DescriptorsResult(desc = descriptor,
+                                timestamp = Instant.now().getEpochSecond,
+                                active = true,
+                                internal = None,
+                                range = Some(Vector(0, 2)),
+                                next = None)
+
+    val resultF = client.importDescriptors(Vector(imp))
+
+    for {
+      result <- resultF
+      _ = assert(result.forall(_.success))
+      firstAddress <- client.getNewAddress
+      secondAddress <- client.getNewAddress
+      //check it by deriving addresses externally
+      deriveAddresses <- client
+        .deriveAddresses(descriptor, Some(Vector(0, 1)))
+        .map(_.addresses)
+    } yield {
+      assert(Vector(firstAddress, secondAddress) == deriveAddresses)
+    }
   }
 }

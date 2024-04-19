@@ -474,7 +474,7 @@ case class ListDescriptorsResult(
 
 case class DescriptorsResult(
     desc: Descriptor,
-    timestamp: ZonedDateTime,
+    timestamp: Long,
     active: Boolean,
     internal: Option[Boolean],
     range: Option[Vector[Int]],
@@ -505,3 +505,8 @@ final case class CreateWalletResult(
     name: String,
     warning: String
 ) extends WalletResult
+
+case class ImportDescriptorResult(
+    success: Boolean,
+    warnings: Option[Vector[String]])
+    extends WalletResult

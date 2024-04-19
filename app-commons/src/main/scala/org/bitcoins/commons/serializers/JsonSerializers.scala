@@ -524,6 +524,9 @@ object JsonSerializers {
   implicit val descriptorsResultReads: Reads[DescriptorsResult] =
     Json.reads[DescriptorsResult]
 
+  implicit val descriptorResultWrites: Writes[DescriptorsResult] =
+    Json.writes[DescriptorsResult]
+
   implicit val listDescriptorsReads: Reads[ListDescriptorsResult] =
     Json.reads[ListDescriptorsResult]
 
@@ -928,6 +931,10 @@ object JsonSerializers {
           JsError(s"Invalid response for deriveaddresses rpc, got=$x")
       }
     }
+  }
+
+  implicit val importDescriptorResultReads: Reads[ImportDescriptorResult] = {
+    Json.reads[ImportDescriptorResult]
   }
 
 }
