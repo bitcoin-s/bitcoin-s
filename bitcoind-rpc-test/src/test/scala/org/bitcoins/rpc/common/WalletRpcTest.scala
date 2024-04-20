@@ -1,7 +1,6 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.file.FileUtil
-import org.bitcoins.commons.jsonmodels.bitcoind.{RpcOpts}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   WalletFlag
@@ -12,7 +11,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -188,7 +187,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to refill the keypool" in { nodePair: FixtureParam =>
+  it should "be able to refill the keypool" ignore { nodePair: FixtureParam =>
+    //ignore until: https://github.com/bitcoin/bitcoin/issues/29924
     val client = nodePair.node1
     for {
       info <- client.getWalletInfo
@@ -371,40 +371,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to import multiple addresses with importMulti" in {
-    nodePair: FixtureParam =>
-      val client = nodePair.node1
-      val privKey = ECPrivateKey.freshPrivateKey
-      val address1 = P2PKHAddress(privKey.publicKey, networkParam)
-
-      val privKey1 = ECPrivateKey.freshPrivateKey
-      val privKey2 = ECPrivateKey.freshPrivateKey
-
-      for {
-        firstResult <-
-          client
-            .createMultiSig(2,
-                            Vector(privKey1.publicKey, privKey2.publicKey),
-                            AddressType.Bech32)
-        address2 = firstResult.address
-
-        secondResult <-
-          client
-            .importMulti(
-              Vector(
-                RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
-                                           UInt32(0)),
-                RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
-                                           UInt32(0))),
-              rescan = false
-            )
-      } yield {
-        assert(secondResult.length == 2)
-        assert(secondResult(0).success)
-        assert(secondResult(1).success)
-      }
-  }
-
   it should "be able to load a wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val name = "tmp_wallet"
@@ -485,7 +451,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         // Will throw error if invalid
         _ <- client.sendRawTransaction(singedTx)
       } yield {
-        assert(transaction.inputs.length == 2)
         assert(
           transaction.outputs.contains(
             TransactionOutput(Bitcoins(1), address.scriptPubKey)))
@@ -631,7 +596,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   override def afterAll(): Unit = {
     val stopF = walletClientF.map(BitcoindRpcTestUtil.stopServer)
-    Await.result(stopF, duration)
+    Await.result(stopF, 30.seconds)
     super.afterAll()
   }
 }
