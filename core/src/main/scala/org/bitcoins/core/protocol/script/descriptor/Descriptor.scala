@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.{UInt64, UInt8}
+import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto.{ECPrivateKey, PublicKey, StringFactory}
@@ -43,8 +44,11 @@ case class P2WPKHDescriptor(
     checksum: Option[String])
     extends ScriptDescriptor {
   override val scriptPubKey: P2WPKHWitnessSPKV0 = expression.scriptPubKey
-}
 
+  def address(np: NetworkParameters): Bech32Address = {
+    Bech32Address(scriptPubKey, np)
+  }
+}
 
 case class P2WSHDescriptor(
     expression: P2WSHExpression,
@@ -199,14 +203,17 @@ object P2WPKHDescriptor
     P2WPKHDescriptor(e, checksum)
   }
 
-  def apply(privKey: ECPrivateKey, network: NetworkParameters): P2WPKHDescriptor = {
-    val keyExpression = RawPrivateECPublicKeyExpression(key = privKey.toPrivateKeyBytes(),
+  def apply(
+      privKey: ECPrivateKey,
+      network: NetworkParameters): P2WPKHDescriptor = {
+    val keyExpression = RawPrivateECPublicKeyExpression(
+      key = privKey.toPrivateKeyBytes(),
       network = network,
       originOpt = None)
     val p2wpkhExpression = P2WPKHExpression(keyExpression)
     val noChecksum = P2WPKHDescriptor(p2wpkhExpression, None)
     val checksum = Descriptor.createChecksum(noChecksum)
-    P2WPKHDescriptor(p2wpkhExpression,Some(checksum))
+    P2WPKHDescriptor(p2wpkhExpression, Some(checksum))
   }
 }
 

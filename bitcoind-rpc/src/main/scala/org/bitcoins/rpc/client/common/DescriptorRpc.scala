@@ -45,7 +45,12 @@ trait DescriptorRpc {
   def importDescriptors(imports: Vector[DescriptorsResult]): Future[
     Vector[ImportDescriptorResult]] = {
     bitcoindCall[Vector[ImportDescriptorResult]]("importdescriptors",
-      List(Json.toJson(imports)))
+                                                 List(Json.toJson(imports)))
+  }
+
+  def importDescriptor(
+      imp: DescriptorsResult): Future[ImportDescriptorResult] = {
+    importDescriptors(Vector(imp)).map(_.head)
   }
 
   def listDescriptors(): Future[ListDescriptorsResult] = {

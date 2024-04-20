@@ -59,6 +59,10 @@ object TransactionOutPoint
     TransactionOutPoint(txId.flip, vout)
   }
 
+  def apply(txId: DoubleSha256DigestBE, vout: Long): TransactionOutPoint = {
+    TransactionOutPoint(txId, UInt32(vout))
+  }
+
   override def fromString(string: String): TransactionOutPoint = {
     val idx = string.indexOf(":")
     val (txId, vout) = string.splitAt(idx)
