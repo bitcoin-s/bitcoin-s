@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.file.FileUtil
-import org.bitcoins.commons.jsonmodels.bitcoind.{DescriptorsResult, RpcOpts}
+import org.bitcoins.commons.jsonmodels.bitcoind.{RpcOpts}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   WalletFlag
@@ -12,7 +12,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -34,7 +34,6 @@ import org.bitcoins.testkit.util.PekkoUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
-import java.time.Instant
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
@@ -498,18 +497,11 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       val client = nodePair.node1
       val otherClient = nodePair.node2
       val privKey = ECPrivateKey.freshPrivateKey
-      val descriptor = P2WPKHDescriptor(privKey, RegTest)
-      val importedAddress = descriptor.address(RegTest)
-      val imp = DescriptorsResult(desc = descriptor,
-                                  timestamp = Instant.now().getEpochSecond,
-                                  active = false,
-                                  internal = None,
-                                  range = None,
-                                  next = None)
+      val np = RegTest
+      val descriptor = P2WPKHDescriptor(privKey, np)
+      val spk = P2WPKHWitnessSPKV0(privKey.publicKey)
+      val importedAddress = Bech32Address.fromScriptPubKey(spk, np)
       for {
-
-        importResult <- client.importDescriptor(imp)
-        _ = assert(importResult.success)
         fundingTxId <- otherClient.sendToAddress(importedAddress,
                                                  Bitcoins(1.01))
         _ <- otherClient.generate(1)
