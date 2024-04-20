@@ -18,6 +18,8 @@ case class FilterHeader(
     CryptoUtil.doubleSHA256(filterHash.bytes ++ prevHeaderHash.bytes)
   }
 
+  val hashBE: DoubleSha256DigestBE = hash.flip
+
   /** Given the next Block Filter, constructs the next Block Filter Header */
   def nextHeader(nextFilter: GolombFilter): FilterHeader = {
     FilterHeader(filterHash = nextFilter.hash, prevHeaderHash = this.hash)

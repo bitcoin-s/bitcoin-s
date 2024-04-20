@@ -31,6 +31,8 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
       vout.compare(other.vout)
     } else txIdBE.hex.compareTo(other.txIdBE.hex)
   }
+
+  def idx: Int = vout.toInt
 }
 
 /** UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol
