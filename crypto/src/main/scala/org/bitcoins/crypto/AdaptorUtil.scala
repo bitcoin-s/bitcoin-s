@@ -8,18 +8,13 @@ import scodec.bits.ByteVector
   * Note that the naming is not entirely consistent between the specification
   * and this file in hopes of making this code more readable.
   *
-  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * The naming in this file more closely matches the naming in the secp256k1-zkp
+  * implementation:
   * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
   *
-  * Legend:
-  * x <> privKey
-  * X <> pubKey
-  * y <> adaptorSecret
-  * Y <> adaptorPoint/adaptor
-  * messageHash <> dataToSign/data/message
-  * R_a <> untweakedNonce
-  * R <> tweakedNonce
-  * proof <> (e, s)
+  * Legend: x <> privKey X <> pubKey y <> adaptorSecret Y <>
+  * adaptorPoint/adaptor messageHash <> dataToSign/data/message R_a <>
+  * untweakedNonce R <> tweakedNonce proof <> (e, s)
   */
 object AdaptorUtil {
 
@@ -31,7 +26,8 @@ object AdaptorUtil {
       privKey: ECPrivateKey,
       adaptorPoint: ECPublicKey,
       algoName: String,
-      auxRand: ByteVector): FieldElement = {
+      auxRand: ByteVector
+  ): FieldElement = {
     val randHash = CryptoUtil.sha256ECDSAAdaptorAux(auxRand).bytes
     val maskedKey = randHash.xor(privKey.bytes)
 
@@ -45,19 +41,21 @@ object AdaptorUtil {
     FieldElement(nonceHash.bytes)
   }
 
-  /** Computes s_a = inverse(k) * (dataToSign + rx*privateKey)
-    * which is the third from last step in
+  /** Computes s_a = inverse(k) * (dataToSign + rx*privateKey) which is the
+    * third from last step in
     * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing
     */
   private def adaptorSignHelper(
       dataToSign: ByteVector,
       k: FieldElement,
       r: ECPublicKey,
-      privateKey: ECPrivateKey): FieldElement = {
+      privateKey: ECPrivateKey
+  ): FieldElement = {
     CryptoUtil.decodePoint(r) match {
       case SecpPointInfinity =>
         throw new IllegalArgumentException(
-          s"Invalid point, got=$SecpPointInfinity")
+          s"Invalid point, got=$SecpPointInfinity"
+        )
       case point: SecpPointFinite =>
         val rx = FieldElement(point.x.toBigInteger)
         val x = privateKey.fieldElement
@@ -68,17 +66,22 @@ object AdaptorUtil {
     }
   }
 
-  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing */
+  /** Implements
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing
+    */
   def adaptorSign(
       privateKey: ECPrivateKey,
       adaptorPoint: ECPublicKey,
       dataToSign: ByteVector,
-      auxRand: ByteVector): ECAdaptorSignature = {
-    val k = adaptorNonce(dataToSign,
-                         privateKey,
-                         adaptorPoint,
-                         "ECDSAadaptor/non",
-                         auxRand)
+      auxRand: ByteVector
+  ): ECAdaptorSignature = {
+    val k = adaptorNonce(
+      dataToSign,
+      privateKey,
+      adaptorPoint,
+      "ECDSAadaptor/non",
+      auxRand
+    )
 
     if (k.isZero) {
       throw new RuntimeException("Nonce cannot be zero.")
@@ -96,12 +99,15 @@ object AdaptorUtil {
     ECAdaptorSignature(tweakedNonce, untweakedNonce, adaptedSig, proofE, proofS)
   }
 
-  /** Computes R = inverse(s) * (msg*G + rx*pubKey) = inverse(s) * (msg + rx*privKey) * G */
+  /** Computes R = inverse(s) * (msg*G + rx*pubKey) = inverse(s) * (msg +
+    * rx*privKey) * G
+    */
   private def adaptorVerifyHelper(
       rx: FieldElement,
       s: FieldElement,
       pubKey: ECPublicKey,
-      msg: ByteVector): FieldElement = {
+      msg: ByteVector
+  ): FieldElement = {
     val m = FieldElement(msg)
     val untweakedPoint =
       m.getPublicKey.add(pubKey.multiply(rx)).multiply(s.inverse)
@@ -109,12 +115,14 @@ object AdaptorUtil {
     FieldElement(untweakedPoint.bytes.tail)
   }
 
-  /** https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encryption-verification */
+  /** https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encryption-verification
+    */
   def adaptorVerify(
       adaptorSig: ECAdaptorSignature,
       pubKey: ECPublicKey,
       data: ByteVector,
-      adaptor: ECPublicKey): Boolean = {
+      adaptor: ECPublicKey
+  ): Boolean = {
     val validProof = DLEQUtil.dleqVerify(
       adaptorSig.dleqProofS,
       adaptorSig.dleqProofE,
@@ -125,7 +133,8 @@ object AdaptorUtil {
 
     if (validProof) {
       val tweakedNoncex = FieldElement(
-        CurveCoordinate(adaptorSig.tweakedNonce.bytes.tail).toBigInteger)
+        CurveCoordinate(adaptorSig.tweakedNonce.bytes.tail).toBigInteger
+      )
       val untweakedNoncex = FieldElement(adaptorSig.untweakedNonce.bytes.tail)
 
       if (tweakedNoncex.isZero || untweakedNoncex.isZero) {
@@ -142,30 +151,42 @@ object AdaptorUtil {
     }
   }
 
-  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#decryption */
+  /** Implements
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#decryption
+    */
   def adaptorComplete(
       adaptorSecret: ECPrivateKey,
-      adaptorSig: ECAdaptorSignature): ECDigitalSignature = {
+      adaptorSig: ECAdaptorSignature
+  ): ECDigitalSignature = {
     val rx = FieldElement(adaptorSig.tweakedNonce.bytes.tail)
     val correctedS = adaptorSig.adaptedS.multInv(adaptorSecret.fieldElement)
 
-    val sig = ECDigitalSignature.fromRS(BigInt(rx.toBigInteger),
-                                        BigInt(correctedS.toBigInteger))
+    val sig = ECDigitalSignature.fromRS(
+      BigInt(rx.toBigInteger),
+      BigInt(correctedS.toBigInteger)
+    )
     DERSignatureUtil.lowS(sig)
   }
 
-  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#key-recovery */
+  /** Implements
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#key-recovery
+    */
   def extractAdaptorSecret(
       sig: ECDigitalSignature,
       adaptorSig: ECAdaptorSignature,
-      adaptor: ECPublicKey): ECPrivateKey = {
-    require(adaptorSig.tweakedNonce.bytes.tail == sig.rBytes,
-            "Adaptor signature must be related to signature")
+      adaptor: ECPublicKey
+  ): ECPrivateKey = {
+    require(
+      adaptorSig.tweakedNonce.bytes.tail == sig.rBytes,
+      "Adaptor signature must be related to signature"
+    )
 
     val secretOrNeg = adaptorSig.adaptedS.multInv(FieldElement(sig.s))
 
-    require(secretOrNeg.getPublicKey.bytes.tail == adaptor.bytes.tail,
-            s"Invalid inputs: $sig, $adaptorSig, and $adaptor")
+    require(
+      secretOrNeg.getPublicKey.bytes.tail == adaptor.bytes.tail,
+      s"Invalid inputs: $sig, $adaptorSig, and $adaptor"
+    )
 
     if (secretOrNeg.getPublicKey == adaptor) {
       secretOrNeg.toPrivateKey

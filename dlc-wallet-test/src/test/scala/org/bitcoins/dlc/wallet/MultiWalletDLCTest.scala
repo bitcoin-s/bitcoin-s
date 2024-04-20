@@ -41,7 +41,8 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
 
     val walletBF = BitcoinSWalletTest.createDLCWallet2Accounts(
       MockNodeApi,
-      MockChainQueryApi)(configB, system)
+      MockChainQueryApi
+    )(configB, system)
 
     for {
       accountA <- walletA.getDefaultAccount()
@@ -51,14 +52,16 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
 
       _ = assert(accountA.xpub != accountB.xpub)
 
-      _ <- walletA.createDLCOffer(sampleContractInfo,
-                                  half,
-                                  Some(SatoshisPerVirtualByte.one),
-                                  UInt32.zero,
-                                  UInt32.one,
-                                  None,
-                                  None,
-                                  None)
+      _ <- walletA.createDLCOffer(
+        sampleContractInfo,
+        half,
+        Some(SatoshisPerVirtualByte.one),
+        UInt32.zero,
+        UInt32.one,
+        None,
+        None,
+        None
+      )
       dlcsA <- walletA.listDLCs()
       dlcsB <- walletB.listDLCs()
 
@@ -73,7 +76,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
 
   it must "create an offer, out of band unreserve the utxo, and then cancel the offer" in {
     fundedWallet: FundedDLCWallet =>
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/3813#issue-1051117559
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/3813#issue-1051117559
       val wallet = fundedWallet.wallet
       val offerF = wallet.createDLCOffer(
         contractInfo = sampleContractInfo,
@@ -86,14 +89,14 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
         externalChangeAddressOpt = None
       )
 
-      //now unreserve the utxo
+      // now unreserve the utxo
       val reservedUtxoF = for {
         _ <- offerF
         utxos <- wallet.listUtxos(TxoState.Reserved)
         _ <- wallet.unmarkUTXOsAsReserved(utxos)
       } yield ()
 
-      //now cancel the offer
+      // now cancel the offer
       for {
         offer <- offerF
         _ <- reservedUtxoF

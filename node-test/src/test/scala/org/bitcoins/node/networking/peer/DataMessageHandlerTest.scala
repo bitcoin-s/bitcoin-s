@@ -29,8 +29,10 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
-                                                              Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      () => pgUrl(),
+      Vector.empty
+    )
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
@@ -39,7 +41,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
         system,
-        getFreshConfig)
+        getFreshConfig
+      )
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcome)
@@ -55,12 +58,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         peer = node.peerManager.peers.head
         chainApi <- node.chainApiFromDb()
         _ = require(peerManager.getPeerData(peer).isDefined)
-        peerFinder = PeerFinder(peerManagerApi = peerManager,
-                                paramPeers = Vector.empty,
-                                queue = node)(system.dispatcher,
-                                              system,
-                                              node.nodeConfig,
-                                              node.chainConfig)
+        peerFinder = PeerFinder(
+          peerManagerApi = peerManager,
+          paramPeers = Vector.empty,
+          queue = node
+        )(system.dispatcher, system, node.nodeConfig, node.chainConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -80,7 +82,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
 
         // Validate that it causes a failure
         _ <- recoverToSucceededIf[RuntimeException](
-          chainApi.processHeaders(invalidPayload.headers))
+          chainApi.processHeaders(invalidPayload.headers)
+        )
         // Verify we handle the payload correctly
         peerData = peerManager.getPeerData(peer).get
         _ <- dataMessageHandler.handleDataPayload(invalidPayload, peerData)
@@ -193,23 +196,26 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
       val initNode = param.node
       val bitcoind = param.bitcoind
       val queryWaitTime = 5.second
-      val nodeF = getCustomQueryWaitTime(initNode = initNode,
-                                         queryWaitTime = queryWaitTime)
+      val nodeF = getCustomQueryWaitTime(
+        initNode = initNode,
+        queryWaitTime = queryWaitTime
+      )
       for {
         node <- nodeF
         peerManager = node.peerManager
         _ <- bitcoind.generate(1)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         peer = peerManager.peers.head
-        chainApi = ChainHandler.fromDatabase()(executionContext,
-                                               node.chainConfig)
+        chainApi = ChainHandler.fromDatabase()(
+          executionContext,
+          node.chainConfig
+        )
         _ = require(peerManager.getPeerData(peer).isDefined)
-        peerFinder = PeerFinder(peerManagerApi = peerManager,
-                                paramPeers = Vector.empty,
-                                queue = node)(system.dispatcher,
-                                              system,
-                                              node.nodeConfig,
-                                              node.chainConfig)
+        peerFinder = PeerFinder(
+          peerManagerApi = peerManager,
+          paramPeers = Vector.empty,
+          queue = node
+        )(system.dispatcher, system, node.nodeConfig, node.chainConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -223,11 +229,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           )
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
-        //disconnect our node from bitcoind, then
-        //use bitcoind to generate 2 blocks, and then try to send the headers
-        //via directly via our queue. We should still be able to process
-        //the second header even though our NodeState is FilterHeaderSync
-        //this is because the getcfheaders timed out
+        // disconnect our node from bitcoind, then
+        // use bitcoind to generate 2 blocks, and then try to send the headers
+        // via directly via our queue. We should still be able to process
+        // the second header even though our NodeState is FilterHeaderSync
+        // this is because the getcfheaders timed out
         peerData = peerManager.getPeerData(peer).get
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         initBlockCount <- chainApi.getBlockCount()
@@ -240,28 +246,31 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         newDmh0 <- dataMessageHandler.handleDataPayload(payload0, peerData)
         _ = assert(newDmh0.state.isInstanceOf[FilterHeaderSync])
         _ <- AsyncUtil.nonBlockingSleep(queryWaitTime)
-        //now process another header, even though we are in FilterHeaderSync
-        //state, we should process the block header since our query timed out
+        // now process another header, even though we are in FilterHeaderSync
+        // state, we should process the block header since our query timed out
         newDmh1 <- newDmh0.handleDataPayload(payload1, peerData)
         blockCount <- chainApi.getBlockCount()
         _ <- node.stop()
         _ <- node.nodeConfig.stop()
       } yield {
-        //we should have processed both headers
+        // we should have processed both headers
         assert(blockCount == initBlockCount + 2)
-        //should still be FilterHeaderSync state
+        // should still be FilterHeaderSync state
         assert(newDmh1.state.isInstanceOf[FilterHeaderSync])
       }
   }
 
   private def getCustomQueryWaitTime(
       initNode: NeutrinoNode,
-      queryWaitTime: FiniteDuration): Future[NeutrinoNode] = {
+      queryWaitTime: FiniteDuration
+  ): Future[NeutrinoNode] = {
 
-    require(initNode.nodeConfig.queryWaitTime != queryWaitTime,
-            s"maxConnectedPeers must be different")
-    //make a custom config, set the inactivity timeout very low
-    //so we will disconnect our peer organically
+    require(
+      initNode.nodeConfig.queryWaitTime != queryWaitTime,
+      s"maxConnectedPeers must be different"
+    )
+    // make a custom config, set the inactivity timeout very low
+    // so we will disconnect our peer organically
     val str =
       s"""
          |bitcoin-s.node.query-wait-time = $queryWaitTime

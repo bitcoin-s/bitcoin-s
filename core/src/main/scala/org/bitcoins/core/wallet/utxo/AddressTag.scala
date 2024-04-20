@@ -2,8 +2,8 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.crypto.StringFactory
 
-/** A type of address tag, many AddressTags of the same type
-  * should inherit the AddressTagType that they all share
+/** A type of address tag, many AddressTags of the same type should inherit the
+  * AddressTagType that they all share
   */
 trait AddressTagType {
   def typeName: String
@@ -19,8 +19,8 @@ trait AddressTagName {
   def !=(at: AddressTagType): Boolean = !(this == at)
 }
 
-/** An tag for an address. It's name is what it is referred to as
-  * and it's tagType is its parent AddressTagType
+/** An tag for an address. It's name is what it is referred to as and it's
+  * tagType is its parent AddressTagType
   */
 trait AddressTag {
   def tagName: AddressTagName

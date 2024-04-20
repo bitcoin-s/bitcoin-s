@@ -23,8 +23,8 @@ case class KeyManagerAppConfig(
     configOverrides: Vector[Config],
     walletNameOverride: Option[ArgumentSource[String]] = None,
     aesPasswordOverride: Option[ArgumentSource[AesPassword]] = None,
-    bip39PasswordOverride: Option[String] = None)(implicit
-    val ec: ExecutionContext)
+    bip39PasswordOverride: Option[String] = None
+)(implicit val ec: ExecutionContext)
     extends AppConfig {
 
   override type ConfigType = KeyManagerAppConfig
@@ -44,8 +44,10 @@ case class KeyManagerAppConfig(
         case Some(ArgumentSource.RpcArgument(walletName)) => Some(walletName)
         case Some(ArgumentSource.NoArgument) | None       => configWalletName
       }
-    require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
-            s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
+    require(
+      nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
+      s"Invalid wallet name, only alphanumeric with _, got=$nameOpt"
+    )
     nameOpt.getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME)
   }
 
@@ -76,9 +78,9 @@ case class KeyManagerAppConfig(
         throw new RuntimeException(s"$other is not a valid account type!")
     }
 
-  /** Entropy provided by the a user in their bitcoin-s.conf
-    * configuration file. This should be used to seed the keymanager
-    * rather than randomly generating entropy.
+  /** Entropy provided by the a user in their bitcoin-s.conf configuration file.
+    * This should be used to seed the keymanager rather than randomly generating
+    * entropy.
     */
   private lazy val externalEntropy: Option[String] = {
     val opt = config.getStringOrNone("bitcoin-s.keymanager.entropy")
@@ -105,39 +107,46 @@ case class KeyManagerAppConfig(
       Files.createDirectories(newDefaultFile.getParent)
       Files.copy(oldDefaultFile, newDefaultFile)
       logger.info(
-        s"Migrated keymanager seed from=${oldDefaultFile.toAbsolutePath} to=${newDefaultFile.toAbsolutePath}")
+        s"Migrated keymanager seed from=${oldDefaultFile.toAbsolutePath} to=${newDefaultFile.toAbsolutePath}"
+      )
       Future.unit
     } else if (!Files.exists(newDefaultFile)) {
       logger.info(s"No seed file found at=${newDefaultFile.toAbsolutePath}")
       initializeKeyManager()
     } else if (externalEntropy.isDefined && seedExists()) {
-      //means we have a seed saved on disk and external entropy
-      //provided. We should make sure the entropy provided generates
-      //the seed on disk to prevent internal inconsistencies
+      // means we have a seed saved on disk and external entropy
+      // provided. We should make sure the entropy provided generates
+      // the seed on disk to prevent internal inconsistencies
       val bitVec = BitVector.fromValidHex(externalEntropy.get)
-      //make sure external entropy provided to us is consistent
+      // make sure external entropy provided to us is consistent
       if (!CryptoUtil.checkEntropy(bitVec)) {
         sys.error(
-          s"The entropy used by bitcoin-s does not pass basic entropy sanity checks, got=${externalEntropy}")
+          s"The entropy used by bitcoin-s does not pass basic entropy sanity checks, got=${externalEntropy}"
+        )
       }
       val mnemonicEntropy = MnemonicCode.fromEntropy(entropy = bitVec)
       val kmEntropy = BIP39KeyManager
-        .fromMnemonic(mnemonic = mnemonicEntropy,
-                      kmParams = kmParams,
-                      bip39PasswordOpt = bip39PasswordOpt,
-                      creationTime = Instant.now,
-                      imported = false)
+        .fromMnemonic(
+          mnemonic = mnemonicEntropy,
+          kmParams = kmParams,
+          bip39PasswordOpt = bip39PasswordOpt,
+          creationTime = Instant.now,
+          imported = false
+        )
       val kmRootXpub = toBip39KeyManager.getRootXPub
       require(
         kmEntropy.getRootXPub == kmRootXpub,
-        s"Xpubs were different, generated from entropy=${kmEntropy.getRootXPub} keymanager xpub on disk=$kmRootXpub")
+        s"Xpubs were different, generated from entropy=${kmEntropy.getRootXPub} keymanager xpub on disk=$kmRootXpub"
+      )
       logger.info(
-        s"Starting key manager with seedPath=${seedPath.toAbsolutePath}, rootXpub=${kmRootXpub}")
+        s"Starting key manager with seedPath=${seedPath.toAbsolutePath}, rootXpub=${kmRootXpub}"
+      )
       Future.unit
     } else {
       val kmRootXpub = toBip39KeyManager.getRootXPub
       logger.info(
-        s"Starting keymanager with seedPath=${seedPath.toAbsolutePath}, rootXpub=${kmRootXpub}")
+        s"Starting keymanager with seedPath=${seedPath.toAbsolutePath}, rootXpub=${kmRootXpub}"
+      )
       Future.unit
     }
   }
@@ -168,18 +177,21 @@ case class KeyManagerAppConfig(
     WalletStorage.seedExists(seedPath)
   }
 
-  /** Creates a [[BIP39KeyManager]] from the seed referenced by this [[KeyManagerAppConfig]]
-    * with the given wallet purpose
+  /** Creates a [[BIP39KeyManager]] from the seed referenced by this
+    * [[KeyManagerAppConfig]] with the given wallet purpose
     */
   def toBip39KeyManager: BIP39KeyManager = {
     val kmE: Either[ReadMnemonicError, BIP39KeyManager] =
-      BIP39KeyManager.fromParams(kmParams = kmParams,
-                                 passwordOpt = aesPasswordOpt,
-                                 bip39PasswordOpt = bip39PasswordOpt)
+      BIP39KeyManager.fromParams(
+        kmParams = kmParams,
+        passwordOpt = aesPasswordOpt,
+        bip39PasswordOpt = bip39PasswordOpt
+      )
     kmE match {
       case Left(err) =>
         sys.error(
-          s"Could not create a BIP39KeyManager from the KeyManagerAppConfig, err=$err")
+          s"Could not create a BIP39KeyManager from the KeyManagerAppConfig, err=$err"
+        )
       case Right(km) =>
         km
     }
@@ -192,44 +204,52 @@ case class KeyManagerAppConfig(
     val entropy: BitVector = externalEntropy match {
       case Some(entropy) =>
         logger.info(
-          s"Initializing new mnemonic seed at path=${seedPath.toAbsolutePath} with external entropy")
+          s"Initializing new mnemonic seed at path=${seedPath.toAbsolutePath} with external entropy"
+        )
         val hexOpt = BitVector.fromHex(entropy)
         hexOpt match {
           case Some(hex) => hex
           case None =>
             sys.error(
-              s"Entropy provided by bitcoin-s.keymanager.entropy was not valid hex, got=${entropy}")
+              s"Entropy provided by bitcoin-s.keymanager.entropy was not valid hex, got=${entropy}"
+            )
         }
       case None =>
         logger.info(
-          s"Initializing new mnemonic seed at path=${seedPath.toAbsolutePath}")
+          s"Initializing new mnemonic seed at path=${seedPath.toAbsolutePath}"
+        )
         MnemonicCode.getEntropy256Bits
     }
 
     if (!CryptoUtil.checkEntropy(entropy)) {
       sys.error(
-        s"The entropy used by bitcoin-s does not pass basic entropy sanity checks, got=$entropy")
+        s"The entropy used by bitcoin-s does not pass basic entropy sanity checks, got=$entropy"
+      )
     }
 
     val initE = BIP39KeyManager.initializeWithEntropy(
       aesPasswordOpt = aesPasswordOpt,
       entropy = entropy,
       bip39PasswordOpt = bip39PasswordOpt,
-      kmParams = kmParams)
+      kmParams = kmParams
+    )
     initE match {
       case Right(km) =>
         logger.info(
-          s"Successfully initialize seed at path with root xpub=${km.getRootXPub}")
+          s"Successfully initialize seed at path with root xpub=${km.getRootXPub}"
+        )
         Future.unit
       case Left(err) =>
         Future.failed(
           new RuntimeException(
-            s"Failed to initialize mnemonic seed in keymanager with err=$err"))
+            s"Failed to initialize mnemonic seed in keymanager with err=$err"
+          )
+        )
     }
   }
 
-  /** The creation time of the mnemonic seed
-    * If we cannot decrypt the seed because of invalid passwords, we return None
+  /** The creation time of the mnemonic seed If we cannot decrypt the seed
+    * because of invalid passwords, we return None
     */
   def creationTime: Instant = {
     toBip39KeyManager.creationTime
@@ -244,7 +264,8 @@ object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {
   override val moduleName: String = "keymanager"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): KeyManagerAppConfig =
+      ec: ExecutionContext
+  ): KeyManagerAppConfig =
     KeyManagerAppConfig(datadir, confs)
 
   def validateWalletName(walletName: String): Boolean =

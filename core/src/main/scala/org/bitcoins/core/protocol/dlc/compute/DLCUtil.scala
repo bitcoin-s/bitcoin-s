@@ -29,52 +29,66 @@ import scala.util.Try
 
 object DLCUtil {
 
-  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
-    * @param fundingTxId the id of the transaction that contains the DLC funding output
-    * @param outputIdx the index of the output
-    * @param tempContractId the temporary contractId in the offer message
+  /** @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
+    * @param fundingTxId
+    *   the id of the transaction that contains the DLC funding output
+    * @param outputIdx
+    *   the index of the output
+    * @param tempContractId
+    *   the temporary contractId in the offer message
     * @return
     */
   def computeContractId(
       fundingTxId: DoubleSha256DigestBE,
       outputIdx: Int,
-      tempContractId: Sha256Digest): ByteVector = {
+      tempContractId: Sha256Digest
+  ): ByteVector = {
     val u16 = UInt16(outputIdx)
-    //we need to pad the u16 due to how xor works in scodec so we don't lose precision
+    // we need to pad the u16 due to how xor works in scodec so we don't lose precision
     val padded = ByteVector.fill(30)(0.toByte) ++ u16.bytes
     fundingTxId.bytes
       .xor(tempContractId.bytes)
       .xor(padded)
   }
 
-  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
-    * @param fundingTx the transaction that contains the DLC funding output
-    * @param outputIdx the index of the output
-    * @param tempContractId the temporary contractId in the offer message
+  /** @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
+    * @param fundingTx
+    *   the transaction that contains the DLC funding output
+    * @param outputIdx
+    *   the index of the output
+    * @param tempContractId
+    *   the temporary contractId in the offer message
     * @return
     */
   def computeContractId(
       fundingTx: Transaction,
       outputIdx: Int,
-      tempContractId: Sha256Digest): ByteVector = {
+      tempContractId: Sha256Digest
+  ): ByteVector = {
     computeContractId(fundingTx.txIdBE, outputIdx, tempContractId)
   }
 
   /** Extracts an adaptor secret from cetSig assuming it is the completion
-    * adaptorSig (which it may not be) and returns the oracle signature if
-    * and only if adaptorSig does correspond to cetSig.
+    * adaptorSig (which it may not be) and returns the oracle signature if and
+    * only if adaptorSig does correspond to cetSig.
     *
     * This method is used to search through possible cetSigs until the correct
     * one is found by validating the returned signature.
     *
-    * @param adaptorPoint A potential adaptor point that could have been executed for
-    * @param adaptorSig The adaptor signature corresponding to outcome
-    * @param cetSig The actual signature for local's key found on-chain on a CET
+    * @param adaptorPoint
+    *   A potential adaptor point that could have been executed for
+    * @param adaptorSig
+    *   The adaptor signature corresponding to outcome
+    * @param cetSig
+    *   The actual signature for local's key found on-chain on a CET
     */
   private def sigFromOutcomeAndSigs(
       adaptorPoint: ECPublicKey,
       adaptorSig: ECAdaptorSignature,
-      cetSig: ECDigitalSignature): Try[FieldElement] = {
+      cetSig: ECDigitalSignature
+  ): Try[FieldElement] = {
     // This value is either the oracle signature S value or it is
     // useless garbage, but we don't know in this scope, the caller
     // must do further work to check this.
@@ -85,14 +99,14 @@ object DLCUtil {
     }
   }
 
-  /** Given a [[ECDigitalSignature]] we found on the blockchain, and the set
-    * of possible adaptor signatures we have stored locally in our wallet
-    * we reverse engineer the actual outcome our counterparty broadcast
+  /** Given a [[ECDigitalSignature]] we found on the blockchain, and the set of
+    * possible adaptor signatures we have stored locally in our wallet we
+    * reverse engineer the actual outcome our counterparty broadcast
     */
   def computeOutcome(
       completedSig: ECDigitalSignature,
-      possibleAdaptorSigs: Vector[(ECPublicKey, ECAdaptorSignature)]): Option[
-    (FieldElement, ECPublicKey)] = {
+      possibleAdaptorSigs: Vector[(ECPublicKey, ECAdaptorSignature)]
+  ): Option[(FieldElement, ECPublicKey)] = {
     val sigOpt: Option[(ECPublicKey, ECAdaptorSignature)] = {
       possibleAdaptorSigs.find { case (adaptorPoint, adaptorSig) =>
         val possibleOracleSigT =
@@ -103,8 +117,10 @@ object DLCUtil {
     }
 
     sigOpt.map { case (adaptorPoint, adaptorSig) =>
-      (sigFromOutcomeAndSigs(adaptorPoint, adaptorSig, completedSig).get,
-       adaptorPoint)
+      (
+        sigFromOutcomeAndSigs(adaptorPoint, adaptorSig, completedSig).get,
+        adaptorPoint
+      )
     }
   }
 
@@ -114,16 +130,18 @@ object DLCUtil {
       acceptFundingKey: ECPublicKey,
       contractInfo: ContractInfo,
       localAdaptorSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
-      cet: WitnessTransaction): Option[
-    (SchnorrDigitalSignature, OracleOutcome)] = {
+      cet: WitnessTransaction
+  ): Option[(SchnorrDigitalSignature, OracleOutcome)] = {
     val allAdaptorPoints = contractInfo.adaptorPoints
 
     val cetSigs = cet.witness.head
       .asInstanceOf[P2WSHWitnessV0]
       .signatures
 
-    require(cetSigs.size == 2,
-            s"There must be only 2 signatures, got ${cetSigs.size}")
+    require(
+      cetSigs.size == 2,
+      s"There must be only 2 signatures, got ${cetSigs.size}"
+    )
 
     val outcomeValues = cet.outputs.map(_.value).sorted
     val totalCollateral = contractInfo.totalCollateral
@@ -140,7 +158,8 @@ object DLCUtil {
           // Off-by-one is okay because both parties round to the nearest
           // Satoshi for fees and if both round up they could be off-by-one.
           Math.abs(
-            (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
+            (amts.head - outcomeValues.head).satoshis.toLong
+          ) <= 1 && Math
             .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
         }
         .map { case (_, index) => allAdaptorPoints(index) }
@@ -177,7 +196,8 @@ object DLCUtil {
 
   def calcContractId(
       offer: DLCOffer,
-      acceptWithoutSigs: DLCAcceptWithoutSigs): ByteVector = {
+      acceptWithoutSigs: DLCAcceptWithoutSigs
+  ): ByteVector = {
     val fundingKeys =
       Vector(offer.pubKeys.fundingKey, acceptWithoutSigs.pubKeys.fundingKey)
     val fundOutputSerialId = offer.fundOutputSerialId
@@ -216,26 +236,30 @@ object DLCUtil {
       finalizer = fundingTxFinalizer
     )
 
-    computeContractId(fundingTx = fundingTx,
-                      outputIdx = fundingOutputIdx,
-                      tempContractId = offer.tempContractId)
+    computeContractId(
+      fundingTx = fundingTx,
+      outputIdx = fundingOutputIdx,
+      tempContractId = offer.tempContractId
+    )
   }
 
-  /** Checks that the oracles signatures given to us are correct
-    * Things we need to check
-    * 1. We have all the oracle signatures
-    * 2. The oracle signatures are for one of the contracts in the [[ContractInfo]]
-    *  @see https://github.com/bitcoin-s/bitcoin-s/issues/4032
+  /** Checks that the oracles signatures given to us are correct Things we need
+    * to check
+    *   1. We have all the oracle signatures 2. The oracle signatures are for
+    *      one of the contracts in the [[ContractInfo]]
+    * @see
+    *   https://github.com/bitcoin-s/bitcoin-s/issues/4032
     */
   def checkOracleSignaturesAgainstContract(
       contractInfo: ContractInfo,
-      oracleSigs: Vector[OracleSignatures]): Boolean = {
+      oracleSigs: Vector[OracleSignatures]
+  ): Boolean = {
     contractInfo match {
       case single: SingleContractInfo =>
         checkSingleContractInfoOracleSigs(single, oracleSigs)
       case disjoint: DisjointUnionContractInfo =>
-        //at least one disjoint union contract
-        //has to have matching signatures
+        // at least one disjoint union contract
+        // has to have matching signatures
         disjoint.contracts.exists { single: SingleContractInfo =>
           checkSingleContractInfoOracleSigs(single, oracleSigs)
         }
@@ -247,7 +271,8 @@ object DLCUtil {
     */
   private def checkSingleContractInfoOracleSigs(
       contractInfo: SingleContractInfo,
-      oracleSignatures: Vector[OracleSignatures]): Boolean = {
+      oracleSignatures: Vector[OracleSignatures]
+  ): Boolean = {
     require(oracleSignatures.nonEmpty, s"Signatures cannot be empty")
     matchOracleSignatures(contractInfo, oracleSignatures).isDefined
   }
@@ -255,13 +280,15 @@ object DLCUtil {
   /** Matches a [[SingleContractInfo]] to its oracle's signatures */
   def matchOracleSignatures(
       contractInfo: SingleContractInfo,
-      oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+      oracleSignatures: Vector[OracleSignatures]
+  ): Option[OracleSignatures] = {
     matchOracleSignatures(contractInfo.announcements, oracleSignatures)
   }
 
   def matchOracleSignatures(
       announcements: Vector[OracleAnnouncementTLV],
-      oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+      oracleSignatures: Vector[OracleSignatures]
+  ): Option[OracleSignatures] = {
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
       announcements
         .map { ann =>
@@ -280,24 +307,28 @@ object DLCUtil {
     resultOpt
   }
 
-  /** Checks to see if the given oracle signatures and announcement have the same nonces */
+  /** Checks to see if the given oracle signatures and announcement have the
+    * same nonces
+    */
   private def matchOracleSignaturesForAnnouncements(
       announcement: OracleAnnouncementTLV,
-      signature: OracleSignatures): Option[OracleSignatures] = {
+      signature: OracleSignatures
+  ): Option[OracleSignatures] = {
     matchOracleSignatures(
       Vector(announcement),
       Vector(signature)
     )
   }
 
-  /** Builds a set of oracle signatures from given announcements
-    * and attestations. This method discards attestments
-    * that do not have a matching announcement. Those attestments
-    * are not included in the returned set of [[OracleSignatures]]
+  /** Builds a set of oracle signatures from given announcements and
+    * attestations. This method discards attestments that do not have a matching
+    * announcement. Those attestments are not included in the returned set of
+    * [[OracleSignatures]]
     */
   def buildOracleSignatures(
       announcements: OrderedAnnouncements,
-      attestments: Vector[OracleAttestmentTLV]): Vector[OracleSignatures] = {
+      attestments: Vector[OracleAttestmentTLV]
+  ): Vector[OracleSignatures] = {
     val result: Vector[OracleSignatures] = {
       val init = Vector.empty[OracleSignatures]
       attestments
@@ -312,7 +343,7 @@ object DLCUtil {
               case Some(matchedSig) =>
                 acc.:+(matchedSig)
               case None =>
-                //don't add it, skip it
+                // don't add it, skip it
                 acc
             }
           }.toVector
@@ -325,7 +356,8 @@ object DLCUtil {
 
   def buildOracleSignaturesNaive(
       announcements: OrderedAnnouncements,
-      attestments: Vector[OracleAttestmentTLV]): Vector[OracleSignatures] = {
+      attestments: Vector[OracleAttestmentTLV]
+  ): Vector[OracleSignatures] = {
 
     attestments.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
       // Nonces should be unique so searching for the first nonce should be safe
@@ -345,7 +377,8 @@ object DLCUtil {
           acc :+ OracleSignatures(SingleOracleInfo(announcement), sig)
         case None =>
           throw new RuntimeException(
-            s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
+            s"Cannot find announcement for associated public key, ${sig.publicKey.hex}"
+          )
       }
     }
   }
@@ -356,7 +389,8 @@ object DLCUtil {
       chainType: HDChainType,
       keyIndex: Int,
       networkParameters: NetworkParameters,
-      externalPayoutAddressOpt: Option[BitcoinAddress]): DLCPublicKeys = {
+      externalPayoutAddressOpt: Option[BitcoinAddress]
+  ): DLCPublicKeys = {
     val chainIndex = chainType.index
     val fundingKey =
       xpub
@@ -371,7 +405,8 @@ object DLCUtil {
             val payoutKey =
               xpub
                 .deriveChildPubKey(
-                  BIP32Path.fromString(s"m/$chainIndex/${keyIndex + 1}"))
+                  BIP32Path.fromString(s"m/$chainIndex/${keyIndex + 1}")
+                )
                 .get
                 .key
             DLCPublicKeys.fromPubKeys(fundingKey, payoutKey, bitcoinNetwork)

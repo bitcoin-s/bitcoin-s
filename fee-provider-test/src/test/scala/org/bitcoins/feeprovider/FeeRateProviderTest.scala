@@ -89,7 +89,8 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
 
   it must "fail to create a BitcoinerLiveFeeRateProvider with invalid minutes" in {
     assertThrows[IllegalArgumentException](
-      BitcoinerLiveFeeRateProvider(-1, proxyParams))
+      BitcoinerLiveFeeRateProvider(-1, proxyParams)
+    )
   }
 
   it must "get the correct fee rate from a ConstantFeeRateProvider" in {

@@ -26,7 +26,8 @@ object NodeUri extends StringFactory[NodeUri] {
         Success(parse(withPort))
       case None =>
         Failure(
-          new IllegalArgumentException(s"Failed to parse $uri to a NodeUri"))
+          new IllegalArgumentException(s"Failed to parse $uri to a NodeUri")
+        )
     }
     nodeUriT
   }
@@ -45,7 +46,7 @@ object NodeUri extends StringFactory[NodeUri] {
   /** Assumes format is [nodeId]@[host]:[port]
     */
   private def parse(validUri: String): NodeUri = {
-    //key is 33 bytes in size
+    // key is 33 bytes in size
     val (key: String, rest: String) = validUri.splitAt(66)
 
     val (host, port) = rest.splitAt(rest.length - 5)

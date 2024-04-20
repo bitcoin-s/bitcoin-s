@@ -8,8 +8,8 @@ import scala.scalajs.js
 import scala.scalajs.js.JSStringOps._
 import scala.scalajs.js.{JavaScriptException, UnicodeNormalizationForm}
 
-/** This is an implementation of [[CryptoRuntime]] that defaults to
-  * Bcrypto (https://github.com/bcoin-org/bcrypto) when possible.
+/** This is an implementation of [[CryptoRuntime]] that defaults to Bcrypto
+  * (https://github.com/bcoin-org/bcrypto) when possible.
   */
 trait BCryptoCryptoRuntime extends CryptoRuntime {
   override val cryptoContext: CryptoContext = CryptoContext.BCrypto
@@ -59,14 +59,18 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   /** Converts a private key -> public key
     *
-    * @param privateKey   the private key we want the corresponding public key for
-    * @param isCompressed whether the returned public key should be compressed or not
+    * @param privateKey
+    *   the private key we want the corresponding public key for
+    * @param isCompressed
+    *   whether the returned public key should be compressed or not
     */
   override def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val pubKeyBuffer =
-      SECP256k1.publicKeyCreate(key = buffer,
-                                compressed = privateKey.isCompressed)
+      SECP256k1.publicKeyCreate(
+        key = buffer,
+        compressed = privateKey.isCompressed
+      )
     val privKeyByteVec = CryptoJsUtil.toByteVector(pubKeyBuffer)
     ECPublicKey.fromBytes(privKeyByteVec)
   }
@@ -135,17 +139,24 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def normalize(str: String): String =
     str.normalize(UnicodeNormalizationForm.NFC)
 
-  /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
-    * can be verified with both, but only one of them matches that private key that was used to generate the signature.
+  /** Recover public keys from a signature and the message that was signed. This
+    * method will return 2 public keys, and the signature can be verified with
+    * both, but only one of them matches that private key that was used to
+    * generate the signature.
     *
-    * @param signature signature
-    * @param message   message that was signed
-    * @return a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If you have the recovery id  then use
-    *         pub1 if the recovery id is even and pub2 if it is odd
+    * @param signature
+    *   signature
+    * @param message
+    *   message that was signed
+    * @return
+    *   a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If
+    *   you have the recovery id then use pub1 if the recovery id is even and
+    *   pub2 if it is odd
     */
   override def recoverPublicKey(
       signature: ECDigitalSignature,
-      message: ByteVector): (ECPublicKey, ECPublicKey) = {
+      message: ByteVector
+  ): (ECPublicKey, ECPublicKey) = {
     val msgBuffer = CryptoJsUtil.toNodeBuffer(message)
     val sigBuffer = CryptoJsUtil.toNodeBuffer(signature.bytes)
     val keyBytes =
@@ -179,7 +190,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def sign(
       privateKey: ECPrivateKey,
-      dataToSign: ByteVector): ECDigitalSignature = {
+      dataToSign: ByteVector
+  ): ECDigitalSignature = {
     val privBuffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val dataBuffer = CryptoJsUtil.toNodeBuffer(dataToSign)
     val buffer = SECP256k1.signDER(dataBuffer, privBuffer)
@@ -190,7 +202,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def signWithEntropy(
       privateKey: ECPrivateKey,
       bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature = ???
+      entropy: ByteVector
+  ): ECDigitalSignature = ???
 
   override def secKeyVerify(privateKeybytes: ByteVector): Boolean = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKeybytes)
@@ -200,7 +213,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def verify(
       publicKey: ECPublicKeyApi,
       data: ByteVector,
-      signature: ECDigitalSignature): Boolean = {
+      signature: ECDigitalSignature
+  ): Boolean = {
     val dataBuffer = CryptoJsUtil.toNodeBuffer(data)
     val sigBuffer = CryptoJsUtil.toNodeBuffer(signature.bytes)
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.bytes)
@@ -209,7 +223,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
-      tweak: FieldElement): ECPublicKey = {
+      tweak: FieldElement
+  ): ECPublicKey = {
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.decompressedBytes)
     val tweakBuffer = CryptoJsUtil.toNodeBuffer(tweak.bytes)
     val keyBuffer =
@@ -223,8 +238,10 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val pk2Buffer = CryptoJsUtil.toNodeBuffer(pk2.decompressedBytes)
     try {
       val keyBuffer =
-        SECP256k1.publicKeyCombine(js.Array(pk1Buffer, pk2Buffer),
-                                   compress = true)
+        SECP256k1.publicKeyCombine(
+          js.Array(pk1Buffer, pk2Buffer),
+          compress = true
+        )
       val keyBytes = CryptoJsUtil.toByteVector(keyBuffer)
       ECPublicKey.fromBytes(keyBytes)
     } catch {
@@ -235,7 +252,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
         // check for infinity
         if ((k1.head ^ k2.head) == 0x01 && k1.tail == k2.tail) {
           throw new IllegalArgumentException(
-            s"Invalid public key sum, got 0x00 = $pk1 + $pk2")
+            s"Invalid public key sum, got 0x00 = $pk1 + $pk2"
+          )
         } else {
           throw ex
         }
@@ -244,7 +262,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
-      privkey: ECPrivateKey): ECPublicKey = {
+      privkey: ECPrivateKey
+  ): ECPublicKey = {
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(pubkey.decompressedBytes)
     val privKeyBuffer = CryptoJsUtil.toNodeBuffer(privkey.bytes)
     val keyBuffer =
@@ -278,8 +297,10 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       if (decoded.isInfinity())
         SecpPointInfinity
       else
-        SecpPoint(new BigInteger(decoded.getX().toString()),
-                  new BigInteger(decoded.getY().toString()))
+        SecpPoint(
+          new BigInteger(decoded.getX().toString()),
+          new BigInteger(decoded.getY().toString())
+        )
     }
   }
 
@@ -287,17 +308,20 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       pass: ByteVector,
       salt: ByteVector,
       iterationCount: Int,
-      derivedKeyLength: Int): ByteVector = {
+      derivedKeyLength: Int
+  ): ByteVector = {
 
     // bcrypto uses bytes instead of bits for length, so divide by 8
     val keyLengthBytes = derivedKeyLength / 8
 
     val buffer =
-      PBKDF2.derive(sha512,
-                    CryptoJsUtil.toNodeBuffer(pass),
-                    CryptoJsUtil.toNodeBuffer(salt),
-                    iterationCount,
-                    keyLengthBytes)
+      PBKDF2.derive(
+        sha512,
+        CryptoJsUtil.toNodeBuffer(pass),
+        CryptoJsUtil.toNodeBuffer(salt),
+        iterationCount,
+        keyLengthBytes
+      )
     CryptoJsUtil.toByteVector(buffer)
   }
 }

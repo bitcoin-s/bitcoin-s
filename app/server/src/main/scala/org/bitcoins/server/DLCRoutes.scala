@@ -42,10 +42,12 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
         case AcceptDLC(offer, address, payoutAddressOpt, changeAddressOpt) =>
           complete {
             dlcNode
-              .acceptDLCOffer(address,
-                              offer,
-                              payoutAddressOpt,
-                              changeAddressOpt)
+              .acceptDLCOffer(
+                address,
+                offer,
+                payoutAddressOpt,
+                changeAddressOpt
+              )
               .map { accept =>
                 Server.httpSuccess(accept.toMessage.hex)
               }
@@ -63,9 +65,11 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
                 case _: EnumEventDescriptorV0TLV =>
                   EnumSingleOracleInfo(create.announcementTLV)
               }
-            val contractInfo = SingleContractInfo(create.totalCollateral,
-                                                  create.ContractDescriptorTLV,
-                                                  oracleInfo)
+            val contractInfo = SingleContractInfo(
+              create.totalCollateral,
+              create.ContractDescriptorTLV,
+              oracleInfo
+            )
             Server.httpSuccess(contractInfo.hex)
           }
       }
@@ -91,9 +95,11 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
       withValidServerCommand(OfferAdd.fromJsArr(arr)) { register =>
         complete {
           dlcNode.wallet
-            .registerIncomingDLCOffer(register.offerTLV,
-                                      register.peer,
-                                      register.message)
+            .registerIncomingDLCOffer(
+              register.offerTLV,
+              register.peer,
+              register.message
+            )
             .map { hash =>
               Server.httpSuccess(hash.hex)
             }
@@ -133,8 +139,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     case ServerCommand("contacts-list", _) =>
       complete {
         dlcNode.wallet.listDLCContacts().map { contacts =>
-          val json = contacts.map(c =>
-            upickle.default.writeJs(c)(Picklers.contactDbPickler))
+          val json = contacts
+            .map(c => upickle.default.writeJs(c)(Picklers.contactDbPickler))
           Server.httpSuccess(json)
         }
       }
@@ -171,7 +177,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
               val contactId =
                 dlcContactAdd.address.getHostName + ":" + dlcContactAdd.address.getPort
               Server.httpSuccess(
-                ujson.Obj("dlcId" -> dlcId, "contactId" -> contactId))
+                ujson.Obj("dlcId" -> dlcId, "contactId" -> contactId)
+              )
             }
         }
       }

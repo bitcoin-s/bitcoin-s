@@ -23,7 +23,8 @@ abstract class NetworkUtil {
     */
   def parseInetSocketAddress(
       address: String,
-      defaultPort: => Int): InetSocketAddress = {
+      defaultPort: => Int
+  ): InetSocketAddress = {
     val uri = new URI("tcp://" + address)
     val port = if (uri.getPort < 0) defaultPort else uri.getPort
     InetSocketAddress.createUnresolved(uri.getHost, port)
@@ -32,7 +33,8 @@ abstract class NetworkUtil {
   /** Parses IPV4,IPV6 ad TorV3 address bytes to string address */
   def parseInetSocketAddress(
       address: ByteVector,
-      port: Int): InetSocketAddress = {
+      port: Int
+  ): InetSocketAddress = {
     val uri: URI = {
       address.size match {
         case AddrV2Message.IPV4_ADDR_LENGTH =>
@@ -48,7 +50,8 @@ abstract class NetworkUtil {
           new URI("tcp://" + hostAddress)
         case unknownSize =>
           sys.error(
-            s"Attempted to parse InetSocketAddress with unknown size, got=${unknownSize}")
+            s"Attempted to parse InetSocketAddress with unknown size, got=${unknownSize}"
+          )
       }
     }
     InetSocketAddress.createUnresolved(uri.getHost, port)
@@ -66,7 +69,8 @@ abstract class NetworkUtil {
       .bytes
     val address =
       ByteVector(
-        pubkey ++ checksum.take(2).toArray ++ version).toBase32 + ".onion"
+        pubkey ++ checksum.take(2).toArray ++ version
+      ).toBase32 + ".onion"
     address.toLowerCase
   }
 
@@ -87,8 +91,9 @@ abstract class NetworkUtil {
 
   /** Checks if the [[java.net.InetSocketAddress]] is a loopback address.
     *
-    * @return a boolean indicating if the [[java.net.InetSocketAddress]] is
-    *         a loopback address; or false otherwise.
+    * @return
+    *   a boolean indicating if the [[java.net.InetSocketAddress]] is a loopback
+    *   address; or false otherwise.
     */
   def isLoopbackAddress(socketAddress: InetSocketAddress): Boolean = {
     try {
@@ -109,8 +114,9 @@ abstract class NetworkUtil {
 
   /** Checks if the [[java.net.URI]] is pointing to a loopback address.
     *
-    * @return a boolean indicating if the [[java.net.URI]] is
-    *         a loopback address; or false otherwise.
+    * @return
+    *   a boolean indicating if the [[java.net.URI]] is a loopback address; or
+    *   false otherwise.
     */
   def isLoopbackAddress(uri: URI): Boolean = {
     try {
@@ -151,35 +157,45 @@ abstract class NetworkUtil {
     }
   }
 
-  /** Checks if the given block header is stale relative to the given chain parameters
+  /** Checks if the given block header is stale relative to the given chain
+    * parameters
     *
-    * @see [[https://github.com/bitcoin/bitcoin/blob/664500fc71a32d5066db8cb4a19ddc7005a1c9e9/src/net_processing.cpp#L1235]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/664500fc71a32d5066db8cb4a19ddc7005a1c9e9/src/net_processing.cpp#L1235]]
     */
   def isBlockHeaderStale(
       blockHeader: BlockHeader,
-      chainParams: ChainParams): Boolean = {
+      chainParams: ChainParams
+  ): Boolean = {
     val seconds = blockHeader.time.toLong
     val expected: Duration = chainParams.powTargetSpacing * 3
     (Instant.now.getEpochSecond - seconds) > expected.toSeconds
   }
 
-  /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
-    * bitcoin protocol messages. This function parses our byte stream into individual network messages
+  /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship
+    * between byte streams received and bitcoin protocol messages. This function
+    * parses our byte stream into individual network messages
     *
-    * @param bytes the bytes that need to be parsed into individual messages
-    * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
+    * @param bytes
+    *   the bytes that need to be parsed into individual messages
+    * @return
+    *   the parsed [[NetworkMessage]]'s and the unaligned bytes that did not
+    *   parse to a message
     */
   def parseIndividualMessages(
-      bytes: ByteVector): (Vector[NetworkMessage], ByteVector) = {
+      bytes: ByteVector
+  ): (Vector[NetworkMessage], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
-        accum: Vector[NetworkMessage]): (Vector[NetworkMessage], ByteVector) = {
+        accum: Vector[NetworkMessage]
+    ): (Vector[NetworkMessage], ByteVector) = {
       if (remainingBytes.length <= 0) {
         (accum, remainingBytes)
       } else {
         val headerTry = Try(
-          NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize)))
+          NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize))
+        )
         headerTry match {
           case Success(header) =>
             val payloadBytes = remainingBytes
@@ -206,9 +222,9 @@ abstract class NetworkUtil {
               (accum, remainingBytes)
             }
           case Failure(_) =>
-            //this case means that our TCP frame was not aligned with bitcoin protocol
-            //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
-            //http://stackoverflow.com/a/37979529/967713
+            // this case means that our TCP frame was not aligned with bitcoin protocol
+            // return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
+            // http://stackoverflow.com/a/37979529/967713
             (accum, remainingBytes)
         }
       }

@@ -12,8 +12,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object DbTestUtil {
 
-  def createTestDbManagement(testAppConfig: TestAppConfig)(implicit
-      system: ActorSystem): TestDbManagement = {
+  def createTestDbManagement(
+      testAppConfig: TestAppConfig
+  )(implicit system: ActorSystem): TestDbManagement = {
     new TestDbManagement with JdbcProfileComponent[TestAppConfig] {
       override val ec: ExecutionContext = system.dispatcher
 
@@ -42,8 +43,8 @@ trait TestDbManagement extends DbManagement {
 }
 
 case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
-    implicit override val ec: ExecutionContext)
-    extends DbAppConfig
+    implicit override val ec: ExecutionContext
+) extends DbAppConfig
     with TestDbManagement
     with JdbcProfileComponent[TestAppConfig] {
 
@@ -52,7 +53,8 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = TestAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Vector[Config]): TestAppConfig =
+      configs: Vector[Config]
+  ): TestAppConfig =
     TestAppConfig(baseDatadir, configs)
 
   override def appConfig: TestAppConfig = this
@@ -77,8 +79,8 @@ case class TestDb(pk: String, data: ByteVector)
 
 case class TestDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: TestAppConfig)
-    extends CRUD[TestDb, String]
+    override val appConfig: TestAppConfig
+) extends CRUD[TestDb, String]
     with SlickUtil[TestDb, String] {
 
   import profile.api._
@@ -93,7 +95,8 @@ case class TestDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ts: Vector[String]): Query[TestTable, TestDb, Seq] = {
+      ts: Vector[String]
+  ): Query[TestTable, TestDb, Seq] = {
     table.filter(_.pk.inSet(ts))
   }
 

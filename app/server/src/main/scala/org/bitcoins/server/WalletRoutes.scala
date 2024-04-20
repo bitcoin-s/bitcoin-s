@@ -37,8 +37,8 @@ import scala.util.{Failure, Success}
 
 case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     system: ActorSystem,
-    walletConf: WalletAppConfig)
-    extends ServerRoute
+    walletConf: WalletAppConfig
+) extends ServerRoute
     with BitcoinSLogger {
   import system.dispatcher
 
@@ -64,7 +64,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
   private def handleBroadcastable(
       tx: Transaction,
-      noBroadcast: Boolean): Future[NetworkElement] = {
+      noBroadcast: Boolean
+  ): Future[NetworkElement] = {
     if (noBroadcast) {
       Future.successful(tx)
     } else {
@@ -154,11 +155,14 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
               val json = Obj(
                 "confirmed" -> Num(
-                  formatCurrencyUnit(confirmed, isSats).toDouble),
+                  formatCurrencyUnit(confirmed, isSats).toDouble
+                ),
                 "unconfirmed" -> Num(
-                  formatCurrencyUnit(unconfirmed, isSats).toDouble),
+                  formatCurrencyUnit(unconfirmed, isSats).toDouble
+                ),
                 "reserved" -> Num(
-                  formatCurrencyUnit(reserved, isSats).toDouble),
+                  formatCurrencyUnit(reserved, isSats).toDouble
+                ),
                 "total" -> Num(formatCurrencyUnit(total, isSats).toDouble)
               )
               Server.httpSuccess(json)
@@ -212,7 +216,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               filtered =
                 if (outputParams.nonEmpty) {
                   utxos.filter(utxo =>
-                    outputParams.exists(_.outPoint == utxo.outPoint))
+                    outputParams.exists(_.outPoint == utxo.outPoint)
+                  )
                 } else utxos
 
               reserved <- func(filtered)
@@ -226,7 +231,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           complete {
             wallet.tagAddress(address, label).map { tagDb =>
               Server.httpSuccess(
-                s"Added label \'${tagDb.tagName.name}\' to ${tagDb.address.value}")
+                s"Added label \'${tagDb.tagName.name}\' to ${tagDb.address.value}"
+              )
             }
           }
       }
@@ -263,8 +269,10 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           val json: Vector[ujson.Obj] = grouped.map { case (address, labels) =>
             val tagNames: Vector[ujson.Str] =
               labels.map(l => ujson.Str(l.tagName.name))
-            ujson.Obj(("address", address.toString),
-                      ("labels", ujson.Arr.from(tagNames)))
+            ujson.Obj(
+              ("address", address.toString),
+              ("labels", ujson.Arr.from(tagNames))
+            )
           }.toVector
           Server.httpSuccess(ujson.Arr.from(json))
         }
@@ -298,11 +306,15 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               dlcOpt <- wallet.findDLCByTemporaryContractId(tempContractId)
               dlc = dlcOpt.getOrElse(
                 throw new IllegalArgumentException(
-                  s"Cannot find a DLC with temp contact ID $tempContractId"))
+                  s"Cannot find a DLC with temp contact ID $tempContractId"
+                )
+              )
               offerOpt <- wallet.getDLCOffer(dlc.dlcId)
               offer = offerOpt.getOrElse(
                 throw new IllegalArgumentException(
-                  s"Cannot find an offer with for DLC ID ${dlc.dlcId}"))
+                  s"Cannot find an offer with for DLC ID ${dlc.dlcId}"
+                )
+              )
             } yield {
               Server.httpSuccess(offer.toMessage.hex)
             }
@@ -358,14 +370,17 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
         case Success(
-              CreateDLCOffer(contractInfo,
-                             collateral,
-                             feeRateOpt,
-                             locktimeOpt,
-                             refundLT,
-                             payoutAddressOpt,
-                             changeAddressOpt,
-                             peerAddressOpt)) =>
+              CreateDLCOffer(
+                contractInfo,
+                collateral,
+                feeRateOpt,
+                locktimeOpt,
+                refundLT,
+                payoutAddressOpt,
+                changeAddressOpt,
+                peerAddressOpt
+              )
+            ) =>
           complete {
             val announcements = contractInfo.oracleInfo match {
               case OracleInfoV0TLV(announcement)        => Vector(announcement)
@@ -375,29 +390,34 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             if (!announcements.forall(_.validateSignature)) {
               throw new RuntimeException(
                 s"Received Oracle announcement with invalid signature! ${announcements
-                  .map(_.hex)}")
+                    .map(_.hex)}"
+              )
             }
 
             val offerF = locktimeOpt match {
               case Some(locktime) =>
                 wallet
-                  .createDLCOffer(contractInfo,
-                                  collateral,
-                                  feeRateOpt,
-                                  locktime,
-                                  refundLT,
-                                  peerAddressOpt,
-                                  payoutAddressOpt,
-                                  changeAddressOpt)
+                  .createDLCOffer(
+                    contractInfo,
+                    collateral,
+                    feeRateOpt,
+                    locktime,
+                    refundLT,
+                    peerAddressOpt,
+                    payoutAddressOpt,
+                    changeAddressOpt
+                  )
               case None =>
                 wallet
-                  .createDLCOffer(contractInfo,
-                                  collateral,
-                                  feeRateOpt,
-                                  refundLT,
-                                  peerAddressOpt,
-                                  payoutAddressOpt,
-                                  changeAddressOpt)
+                  .createDLCOffer(
+                    contractInfo,
+                    collateral,
+                    feeRateOpt,
+                    refundLT,
+                    peerAddressOpt,
+                    payoutAddressOpt,
+                    changeAddressOpt
+                  )
             }
 
             offerF.map { offer =>
@@ -411,16 +431,21 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
         case Success(
-              AcceptDLCOffer(offer,
-                             payoutAddressOpt,
-                             changeAddressOpt,
-                             peerAddressOpt)) =>
+              AcceptDLCOffer(
+                offer,
+                payoutAddressOpt,
+                changeAddressOpt,
+                peerAddressOpt
+              )
+            ) =>
           complete {
             wallet
-              .acceptDLCOffer(offer.tlv,
-                              peerAddressOpt,
-                              payoutAddressOpt,
-                              changeAddressOpt)
+              .acceptDLCOffer(
+                offer.tlv,
+                peerAddressOpt,
+                payoutAddressOpt,
+                changeAddressOpt
+              )
               .map { accept =>
                 Server.httpSuccess(accept.toMessage.hex)
               }
@@ -432,10 +457,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
         case Success(
-              DLCDataFromFile(path,
-                              destOpt,
-                              payoutAddressOpt,
-                              changeAddressOpt)) =>
+              DLCDataFromFile(path, destOpt, payoutAddressOpt, changeAddressOpt)
+            ) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)
@@ -445,10 +468,12 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               .getOrElse(LnMessage(DLCOfferTLV.fromHex(hex)))
 
             wallet
-              .acceptDLCOffer(offerMessage.tlv,
-                              None,
-                              payoutAddressOpt,
-                              changeAddressOpt)
+              .acceptDLCOffer(
+                offerMessage.tlv,
+                None,
+                payoutAddressOpt,
+                changeAddressOpt
+              )
               .map { accept =>
                 val ret = handleDestinationOpt(accept.toMessage.hex, destOpt)
                 Server.httpSuccess(ret)
@@ -500,7 +525,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           complete {
             wallet.addDLCSigs(sigs.tlv).map { db =>
               Server.httpSuccess(
-                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}")
+                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}"
+              )
             }
           }
       }
@@ -520,7 +546,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
             wallet.addDLCSigs(signMessage.tlv).map { db =>
               Server.httpSuccess(
-                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}")
+                s"Successfully added sigs to DLC ${db.contractIdOpt.get.toHex}"
+              )
             }
           }
       }
@@ -604,7 +631,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
                   Server.httpSuccess(ret)
                 case None =>
                   Server.httpError(
-                    s"Cannot execute DLC with contractId=${contractId.toHex}")
+                    s"Cannot execute DLC with contractId=${contractId.toHex}"
+                  )
               }
             }
           }
@@ -627,15 +655,19 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("sendtoaddress", arr) =>
       withValidServerCommand(SendToAddress.fromJsArr(arr)) {
-        case SendToAddress(address,
-                           bitcoins,
-                           satoshisPerVirtualByteOpt,
-                           noBroadcast) =>
+        case SendToAddress(
+              address,
+              bitcoins,
+              satoshisPerVirtualByteOpt,
+              noBroadcast
+            ) =>
           complete {
             for {
-              tx <- wallet.sendToAddress(address,
-                                         bitcoins,
-                                         satoshisPerVirtualByteOpt)
+              tx <- wallet.sendToAddress(
+                address,
+                bitcoins,
+                satoshisPerVirtualByteOpt
+              )
               retStr <- handleBroadcastable(tx, noBroadcast)
             } yield {
               Server.httpSuccess(retStr.hex)
@@ -644,16 +676,20 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       }
     case ServerCommand("sendfromoutpoints", arr) =>
       withValidServerCommand(SendFromOutPoints.fromJsArr(arr)) {
-        case SendFromOutPoints(outPoints,
-                               address,
-                               bitcoins,
-                               satoshisPerVirtualByteOpt) =>
+        case SendFromOutPoints(
+              outPoints,
+              address,
+              bitcoins,
+              satoshisPerVirtualByteOpt
+            ) =>
           complete {
             for {
-              tx <- wallet.sendFromOutPoints(outPoints,
-                                             address,
-                                             bitcoins,
-                                             satoshisPerVirtualByteOpt)
+              tx <- wallet.sendFromOutPoints(
+                outPoints,
+                address,
+                bitcoins,
+                satoshisPerVirtualByteOpt
+              )
               _ <- wallet.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
@@ -675,10 +711,12 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo) =>
           complete {
             for {
-              tx <- wallet.sendWithAlgo(address,
-                                        bitcoins,
-                                        satoshisPerVirtualByteOpt,
-                                        algo)
+              tx <- wallet.sendWithAlgo(
+                address,
+                bitcoins,
+                satoshisPerVirtualByteOpt,
+                algo
+              )
               _ <- wallet.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
@@ -698,9 +736,11 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt) =>
           complete {
             for {
-              tx <- wallet.makeOpReturnCommitment(message,
-                                                  hashMessage,
-                                                  satoshisPerVirtualByteOpt)
+              tx <- wallet.makeOpReturnCommitment(
+                message,
+                hashMessage,
+                satoshisPerVirtualByteOpt
+              )
               _ <- wallet.broadcastTransaction(tx)
             } yield {
               Server.httpSuccess(tx.txIdBE)
@@ -838,9 +878,11 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case KeyManagerPassphraseChange(oldPassword, newPassword) =>
           complete {
             val path = walletConf.seedPath
-            WalletStorage.changeAesPassword(path,
-                                            Some(oldPassword),
-                                            Some(newPassword))
+            WalletStorage.changeAesPassword(
+              path,
+              Some(oldPassword),
+              Some(newPassword)
+            )
 
             Server.httpSuccess(ujson.Null)
           }
@@ -867,16 +909,20 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedMnemonic(mnemonic,
-                                  creationTime,
-                                  backupTimeOpt = None,
-                                  imported = true)
+                DecryptedMnemonic(
+                  mnemonic,
+                  creationTime,
+                  backupTimeOpt = None,
+                  imported = true
+                )
                   .encrypt(pass)
               case None =>
-                DecryptedMnemonic(mnemonic,
-                                  creationTime,
-                                  backupTimeOpt = None,
-                                  imported = true)
+                DecryptedMnemonic(
+                  mnemonic,
+                  creationTime,
+                  backupTimeOpt = None,
+                  imported = true
+                )
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -894,7 +940,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             Server.httpSuccess(
               WalletStorage
                 .readDecryptedSeedPhraseForBackup(seedPath, passwordOpt)
-                .get)
+                .get
+            )
           }
       }
 
@@ -938,16 +985,20 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedExtPrivKey(xprv,
-                                    creationTime,
-                                    backupTimeOpt = None,
-                                    imported = true)
+                DecryptedExtPrivKey(
+                  xprv,
+                  creationTime,
+                  backupTimeOpt = None,
+                  imported = true
+                )
                   .encrypt(pass)
               case None =>
-                DecryptedExtPrivKey(xprv,
-                                    creationTime,
-                                    backupTimeOpt = None,
-                                    imported = true)
+                DecryptedExtPrivKey(
+                  xprv,
+                  creationTime,
+                  backupTimeOpt = None,
+                  imported = true
+                )
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -973,7 +1024,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
         feeRateF.map { f =>
           logger.info(s"Retrieved fee rate ${f.toSatsPerVByte}, it took ${System
-            .currentTimeMillis() - start}ms")
+              .currentTimeMillis() - start}ms")
           Server.httpSuccess(f.toSatsPerVByte)
         }
       }
@@ -996,7 +1047,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               .headOption
               .flatMap(wn =>
                 if (wn.endsWith("-")) Some(wn.substring(0, wn.length - 1))
-                else None)
+                else None
+              )
           }
         Server.httpSuccess(list)
       }
@@ -1020,7 +1072,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       .map(_ + "-")
       .getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
     kmConf.seedFolder.resolve(
-      walletName + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+      walletName + WalletStorage.ENCRYPTED_SEED_FILE_NAME
+    )
   }
 
   /** Returns information about the state of our wallet */
@@ -1048,7 +1101,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
   private def formatCurrencyUnit(
       currencyUnit: CurrencyUnit,
-      isSats: Boolean): Double = {
+      isSats: Boolean
+  ): Double = {
     if (isSats) {
       currencyUnit.satoshis.toBigDecimal.toDouble
     } else {
@@ -1066,19 +1120,21 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     }
   }
 
-  /** Gets the fee rate for the wallet with a timeout on the request of 1 second */
+  /** Gets the fee rate for the wallet with a timeout on the request of 1 second
+    */
   private def getFeeRate(): Future[FeeUnit] = {
     val resultF = wallet
       .getFeeRate()
       .recover { case scala.util.control.NonFatal(exn) =>
         logger.error(
           s"Failed to fetch fee rate from wallet, returning -1 sats/vbyte",
-          exn)
+          exn
+        )
         SatoshisPerVirtualByte.negativeOne
       }
-    //due to tor variability, we need to make sure we give a prompt response.
-    //timeout the fee rate request after 1 second
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4460#issuecomment-1182325014
+    // due to tor variability, we need to make sure we give a prompt response.
+    // timeout the fee rate request after 1 second
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/4460#issuecomment-1182325014
     try {
       val result = Await.result(resultF, 1.second)
       Future.successful(result)
@@ -1097,15 +1153,15 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               val stateF: Future[RescanState] = rescanState match {
                 case started: RescanState.RescanStarted =>
                   if (started.isStopped) {
-                    //means rescan is done, reset the variable
+                    // means rescan is done, reset the variable
                     rescanStateOpt = Some(RescanDone)
                     Future.successful(RescanDone)
                   } else {
-                    //do nothing, we don't want to reset/stop a rescan that is running
+                    // do nothing, we don't want to reset/stop a rescan that is running
                     Future.successful(started)
                   }
                 case RescanState.RescanDone | RescanState.RescanNotNeeded =>
-                  //if the previous rescan is done, start another rescan
+                  // if the previous rescan is done, start another rescan
                   startRescan(rescan)
                 case RescanState.RescanAlreadyStarted =>
                   Future.successful(RescanState.RescanAlreadyStarted)
@@ -1124,7 +1180,9 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     } else {
       Future.failed(
         new IllegalArgumentException(
-          s"Cannot rescan when a rescan is already ongoing for wallet"))
+          s"Cannot rescan when a rescan is already ongoing for wallet"
+        )
+      )
     }
 
   }
@@ -1149,7 +1207,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         }
       case RescanState.RescanAlreadyStarted | RescanState.RescanDone |
           RescanState.RescanNotNeeded =>
-      //do nothing in these cases, no state needs to be reset
+      // do nothing in these cases, no state needs to be reset
     }
 
     stateF

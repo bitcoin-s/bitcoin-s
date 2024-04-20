@@ -35,8 +35,8 @@ final case class DecodePsbtResultV22(
     unknown: Map[String, String],
     inputs: Vector[RpcPsbtInputV22],
     outputs: Vector[RpcPsbtOutput],
-    fee: Option[Bitcoins])
-    extends DecodePsbtResult
+    fee: Option[Bitcoins]
+) extends DecodePsbtResult
 
 sealed abstract class RpcPsbtInput extends RpcPsbtResult {
   def nonWitnessUtxo: Option[RpcTransaction]

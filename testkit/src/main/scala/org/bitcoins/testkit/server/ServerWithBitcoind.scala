@@ -5,4 +5,5 @@ import org.bitcoins.server.BitcoinSServerMain
 
 case class ServerWithBitcoind(
     bitcoind: BitcoindRpcClient,
-    server: BitcoinSServerMain)
+    server: BitcoinSServerMain
+)

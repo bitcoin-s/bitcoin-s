@@ -38,7 +38,8 @@ class AddressTest extends BitcoinSUnitTest {
 
   it must "serialize a bech32 address correctly" in {
     TestUtil.bech32Address.toString must be(
-      "bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf")
+      "bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf"
+    )
   }
 
   it must "calculate the correct descriptor" in {

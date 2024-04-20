@@ -18,18 +18,20 @@ trait DLCNodeApi extends StartStopAsync[Unit] {
       peerAddress: InetSocketAddress,
       dlcOffer: LnMessage[DLCOfferTLV],
       externalPayoutAddress: Option[BitcoinAddress],
-      externalChangeAddress: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCAccept]
+      externalChangeAddress: Option[BitcoinAddress]
+  ): Future[DLCMessage.DLCAccept]
 
   def sendDLCOffer(
       peerAddress: InetSocketAddress,
       message: String,
-      offerTLV: DLCOfferTLV): Future[Sha256Digest]
+      offerTLV: DLCOfferTLV
+  ): Future[Sha256Digest]
 
   def sendDLCOffer(
       peerAddress: InetSocketAddress,
       message: String,
-      tempContractId: Sha256Digest): Future[Sha256Digest]
+      tempContractId: Sha256Digest
+  ): Future[Sha256Digest]
 
   def checkPeerConnection(peerAddress: InetSocketAddress): Future[Unit]
 

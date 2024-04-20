@@ -10,8 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class CompactFilterHeaderDAO()(implicit
     ec: ExecutionContext,
-    override val appConfig: ChainAppConfig)
-    extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
+    override val appConfig: ChainAppConfig
+) extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
   import profile.api._
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -44,7 +44,8 @@ case class CompactFilterHeaderDAO()(implicit
     override def * = {
       (hash, filterHash, previousFilterHeader, blockHash, height).<>(
         CompactFilterHeaderDb.tupled,
-        CompactFilterHeaderDb.unapply)
+        CompactFilterHeaderDb.unapply
+      )
     }
   }
 
@@ -52,49 +53,51 @@ case class CompactFilterHeaderDAO()(implicit
     TableQuery[CompactFilterHeaderTable]
   }
 
-  private lazy val blockHeaderTable: profile.api.TableQuery[
-    BlockHeaderDAO#BlockHeaderTable] = {
+  private lazy val blockHeaderTable
+      : profile.api.TableQuery[BlockHeaderDAO#BlockHeaderTable] = {
     BlockHeaderDAO().table
   }
 
-  override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
-    Vector[CompactFilterHeaderDb]] = {
+  override def createAll(
+      filterHeaders: Vector[CompactFilterHeaderDb]
+  ): Future[Vector[CompactFilterHeaderDb]] = {
     createAllNoAutoInc(ts = filterHeaders, database = safeDatabase)
   }
 
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
-      ids: Vector[DoubleSha256DigestBE]): Query[
-    Table[CompactFilterHeaderDb],
-    CompactFilterHeaderDb,
-    Seq] =
+      ids: Vector[DoubleSha256DigestBE]
+  ): Query[Table[CompactFilterHeaderDb], CompactFilterHeaderDb, Seq] =
     table.filter(_.hash.inSet(ids))
 
-  override protected def findAll(ts: Vector[CompactFilterHeaderDb]): Query[
-    Table[CompactFilterHeaderDb],
-    CompactFilterHeaderDb,
-    Seq] =
+  override protected def findAll(
+      ts: Vector[CompactFilterHeaderDb]
+  ): Query[Table[CompactFilterHeaderDb], CompactFilterHeaderDb, Seq] =
     findByPrimaryKeys(ts.map(_.hashBE))
 
   def findByHash(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
+      hash: DoubleSha256DigestBE
+  ): Future[Option[CompactFilterHeaderDb]] = {
     read(hash)
   }
 
-  def findByHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
-    Vector[CompactFilterHeaderDb]] = {
+  def findByHashes(
+      hashes: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[CompactFilterHeaderDb]] = {
     val query = findByPrimaryKeys(hashes).result
     safeDatabase.runVec(query)
   }
 
   def findByBlockHash(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
+      hash: DoubleSha256DigestBE
+  ): Future[Option[CompactFilterHeaderDb]] = {
     val query = table.filter(_.blockHash === hash).take(1)
     safeDatabase.runVec(query.result).map(_.headOption)
   }
 
-  def findAllByBlockHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
-    Vector[CompactFilterHeaderDb]] = {
+  def findAllByBlockHashes(
+      hashes: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[CompactFilterHeaderDb]] = {
     val query = table
       .filter(_.blockHash.inSet(hashes))
       .sortBy(_.height)
@@ -107,10 +110,11 @@ case class CompactFilterHeaderDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  private def getAtHeightQuery(height: Int): slick.sql.FixedSqlStreamingAction[
-    Seq[CompactFilterHeaderDb],
-    CompactFilterHeaderDb,
-    Effect.Read] = {
+  private def getAtHeightQuery(
+      height: Int
+  ): slick.sql.FixedSqlStreamingAction[Seq[
+    CompactFilterHeaderDb
+  ], CompactFilterHeaderDb, Effect.Read] = {
     table.filter(_.height === height).result
   }
 
@@ -121,10 +125,8 @@ case class CompactFilterHeaderDAO()(implicit
     result
   }
 
-  private val maxHeightQuery: profile.ProfileAction[
-    Int,
-    NoStream,
-    Effect.Read] = {
+  private val maxHeightQuery
+      : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
@@ -134,8 +136,8 @@ case class CompactFilterHeaderDAO()(implicit
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
       .sortBy(_._1.height.desc)
-      //just take the last 2016 headers, if we have a reorg larger than
-      //this we will not be able to retrieve that header
+      // just take the last 2016 headers, if we have a reorg larger than
+      // this we will not be able to retrieve that header
       .take(appConfig.chain.difficultyChangeInterval)
 
     val maxQuery = join.map(_._2.chainWork).max
@@ -147,10 +149,11 @@ case class CompactFilterHeaderDAO()(implicit
       .result
   }
 
-  /** Fetches the best filter header from the database _without_ context
-    * that it's actually in our best blockchain. For instance, this filter header could be
-    * reorged out for whatever reason.
-    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1919#issuecomment-682041737
+  /** Fetches the best filter header from the database _without_ context that
+    * it's actually in our best blockchain. For instance, this filter header
+    * could be reorged out for whatever reason.
+    * @see
+    *   https://github.com/bitcoin-s/bitcoin-s/issues/1919#issuecomment-682041737
     */
   def getBestFilterHeader: Future[Option[CompactFilterHeaderDb]] = {
     safeDatabase.run(bestFilterHeaderQuery).map(_.headOption)
@@ -167,11 +170,13 @@ case class CompactFilterHeaderDAO()(implicit
     }
   }
 
-  /** This looks for best filter headers whose [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
+  /** This looks for best filter headers whose
+    * [[CompactFilterHeaderDb.blockHashBE]] are associated with the given
     * [[BlockHeaderDb.hashBE]] given as a parameter.
     */
   def getBestFilterHeaderForHeaders(
-      headers: Vector[BlockHeaderDb]): Future[Option[CompactFilterHeaderDb]] = {
+      headers: Vector[BlockHeaderDb]
+  ): Future[Option[CompactFilterHeaderDb]] = {
     val hashes = headers.map(_.hashBE)
     val join = table
       .join(blockHeaderTable)
@@ -197,17 +202,18 @@ case class CompactFilterHeaderDAO()(implicit
 
   def getBetweenHeights(
       from: Int,
-      to: Int): Future[Vector[CompactFilterHeaderDb]] = {
+      to: Int
+  ): Future[Vector[CompactFilterHeaderDb]] = {
     val query = getBetweenHeightsQuery(from, to)
     safeDatabase.runVec(query)
   }
 
   def getBetweenHeightsQuery(
       from: Int,
-      to: Int): profile.StreamingProfileAction[
-    Seq[CompactFilterHeaderDb],
-    CompactFilterHeaderDb,
-    Effect.Read] = {
+      to: Int
+  ): profile.StreamingProfileAction[Seq[
+    CompactFilterHeaderDb
+  ], CompactFilterHeaderDb, Effect.Read] = {
     table.filter(header => header.height >= from && header.height <= to).result
   }
 

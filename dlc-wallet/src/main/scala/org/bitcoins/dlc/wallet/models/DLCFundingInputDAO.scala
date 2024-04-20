@@ -16,8 +16,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCFundingInputDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCFundingInputDb, TransactionOutPoint]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCFundingInputDb, TransactionOutPoint]
     with SlickUtil[DLCFundingInputDb, TransactionOutPoint]
     with DLCIdDaoUtilNoPK[DLCFundingInputDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -32,49 +32,45 @@ case class DLCFundingInputDAO()(implicit
   }
 
   override def createAll(
-      ts: Vector[DLCFundingInputDb]): Future[Vector[DLCFundingInputDb]] =
+      ts: Vector[DLCFundingInputDb]
+  ): Future[Vector[DLCFundingInputDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      outPoints: Vector[TransactionOutPoint]): Query[
-    DLCFundingInputsTable,
-    DLCFundingInputDb,
-    Seq] =
+      outPoints: Vector[TransactionOutPoint]
+  ): Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] =
     table.filter(_.outPoint.inSet(outPoints))
 
-  override def findByPrimaryKey(outPoint: TransactionOutPoint): Query[
-    DLCFundingInputsTable,
-    DLCFundingInputDb,
-    Seq] = {
+  override def findByPrimaryKey(
+      outPoint: TransactionOutPoint
+  ): Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] = {
     table
       .filter(_.outPoint === outPoint)
   }
 
-  override def findAll(dlcs: Vector[DLCFundingInputDb]): Query[
-    DLCFundingInputsTable,
-    DLCFundingInputDb,
-    Seq] =
+  override def findAll(
+      dlcs: Vector[DLCFundingInputDb]
+  ): Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Vector[DLCFundingInputDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[Vector[
+    DLCFundingInputDb
+  ], profile.api.NoStream, profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(
+      dlcId: Sha256Digest
+  ): DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
 
   def findByDLCId(
       dlcId: Sha256Digest,
-      isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] = {
+      isInitiator: Boolean
+  ): Future[Vector[DLCFundingInputDb]] = {
     val q = table
       .filter(_.dlcId === dlcId)
       .filter(_.isInitiator === isInitiator)
@@ -107,20 +103,24 @@ case class DLCFundingInputDAO()(implicit
       column("witness_script_opt")
 
     def * : ProvenShape[DLCFundingInputDb] =
-      (dlcId,
-       isInitiator,
-       index,
-       inputSerialId,
-       outPoint,
-       output,
-       nSequence,
-       maxWitnessLength,
-       redeemScriptOpt,
-       witnessScriptOpt).<>(DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
+      (
+        dlcId,
+        isInitiator,
+        index,
+        inputSerialId,
+        outPoint,
+        output,
+        nSequence,
+        maxWitnessLength,
+        redeemScriptOpt,
+        witnessScriptOpt
+      ).<>(DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_dlc_id",
-                 sourceColumns = dlcId,
-                 targetTableQuery = dlcTable)(_.dlcId)
+      foreignKey(
+        "fk_dlc_id",
+        sourceColumns = dlcId,
+        targetTableQuery = dlcTable
+      )(_.dlcId)
   }
 }

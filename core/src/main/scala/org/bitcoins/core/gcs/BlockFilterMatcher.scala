@@ -24,7 +24,9 @@ case class SimpleFilterMatcher(filter: GolombFilter)
     matchesHash(hash)
   }
 
-  /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a match */
+  /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a
+    * match
+    */
   override def matchesAny(data: Vector[ByteVector]): Boolean = {
     val hashes = data.map(filter.hashToRange)
     matchesAnyHash(hashes)
@@ -46,7 +48,9 @@ case class SimpleFilterMatcher(filter: GolombFilter)
     matches
   }
 
-  /** It implements https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match */
+  /** It implements
+    * https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
+    */
   def matchesAnyHash(hashes: Vector[UInt64]): Boolean = {
     val sortedHashes = hashes.sorted
     var matches = false
@@ -86,7 +90,9 @@ case class BinarySearchFilterMatcher(filter: GolombFilter)
     matchesHash(hash)
   }
 
-  /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a match */
+  /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a
+    * match
+    */
   override def matchesAny(data: Vector[ByteVector]): Boolean = {
     val hashes = data.map(filter.hashToRange)
     matchesAnyHash(hashes)
@@ -98,7 +104,8 @@ case class BinarySearchFilterMatcher(filter: GolombFilter)
         from: Int,
         to: Int,
         hash: UInt64,
-        set: Vector[UInt64]): Boolean = {
+        set: Vector[UInt64]
+    ): Boolean = {
       if (to < from) {
         false
       } else {

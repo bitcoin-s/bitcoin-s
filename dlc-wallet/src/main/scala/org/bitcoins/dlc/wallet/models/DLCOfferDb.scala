@@ -17,7 +17,8 @@ case class DLCOfferDb(
     payoutSerialId: UInt64,
     collateral: CurrencyUnit,
     changeAddress: BitcoinAddress,
-    changeSerialId: UInt64) {
+    changeSerialId: UInt64
+) {
 
   val dlcPubKeys: DLCPublicKeys = DLCPublicKeys(fundingKey, payoutAddress)
 
@@ -25,12 +26,15 @@ case class DLCOfferDb(
       contractInfo: ContractInfo,
       fundingInputs: Vector[DLCFundingInput],
       dlcDb: DLCDb,
-      contractDataDb: DLCContractDataDb): DLCOffer = {
-    toDLCOffer(contractInfo,
-               fundingInputs,
-               dlcDb.fundOutputSerialId,
-               dlcDb.feeRate,
-               contractDataDb.dlcTimeouts)
+      contractDataDb: DLCContractDataDb
+  ): DLCOffer = {
+    toDLCOffer(
+      contractInfo,
+      fundingInputs,
+      dlcDb.fundOutputSerialId,
+      dlcDb.feeRate,
+      contractDataDb.dlcTimeouts
+    )
   }
 
   def toDLCOffer(
@@ -38,7 +42,8 @@ case class DLCOfferDb(
       fundingInputs: Vector[DLCFundingInput],
       fundOutputSerialId: UInt64,
       feeRate: SatoshisPerVirtualByte,
-      dlcTimeouts: DLCTimeouts): DLCOffer = {
+      dlcTimeouts: DLCTimeouts
+  ): DLCOffer = {
     DLCOffer(
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = contractInfo,

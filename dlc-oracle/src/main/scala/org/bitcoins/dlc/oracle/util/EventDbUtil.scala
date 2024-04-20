@@ -8,15 +8,16 @@ import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 
 trait EventDbUtil {
 
-  /** Takes in a [[EventDescriptorTLV]] and nonces and creates [[EventOutcomeDb]] from them
-    * that can be inserted into the database.
+  /** Takes in a [[EventDescriptorTLV]] and nonces and creates
+    * [[EventOutcomeDb]] from them that can be inserted into the database.
     */
   def toEventOutcomeDbs(
       descriptor: EventDescriptorTLV,
       nonces: Vector[
         SchnorrNonce
-      ], //ugh, can we enforce some sort of invariant here? can i make this method private?
-      signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
+      ], // ugh, can we enforce some sort of invariant here? can i make this method private?
+      signingVersion: SigningVersion
+  ): Vector[EventOutcomeDb] = {
     descriptor match {
       case enum: EnumEventDescriptorV0TLV =>
         require(nonces.size == 1, "Enum events should only have one R value")
@@ -32,8 +33,10 @@ trait EventDbUtil {
           case _: SignedDigitDecompositionEventDescriptor =>
             val plusHash = signingVersion.calcOutcomeHash("+")
             val minusHash = signingVersion.calcOutcomeHash("-")
-            Vector(EventOutcomeDb(nonces.head, "+", plusHash),
-                   EventOutcomeDb(nonces.head, "-", minusHash))
+            Vector(
+              EventOutcomeDb(nonces.head, "+", plusHash),
+              EventOutcomeDb(nonces.head, "-", minusHash)
+            )
           case _: UnsignedDigitDecompositionEventDescriptor =>
             Vector.empty
         }
@@ -59,22 +62,23 @@ trait EventDbUtil {
 
   def toEventOutcomeDbs(
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
-      signingVersion: SigningVersion = SigningVersion.latest): Vector[
-    EventOutcomeDb] = {
+      signingVersion: SigningVersion = SigningVersion.latest
+  ): Vector[EventOutcomeDb] = {
     val oracleEventV0 = oracleAnnouncementV0TLV.eventTLV match {
       case v0: OracleEventV0TLV => v0
     }
-    toEventOutcomeDbs(descriptor =
-                        oracleAnnouncementV0TLV.eventTLV.eventDescriptor,
-                      nonces = oracleEventV0.nonces,
-                      signingVersion = signingVersion)
+    toEventOutcomeDbs(
+      descriptor = oracleAnnouncementV0TLV.eventTLV.eventDescriptor,
+      nonces = oracleEventV0.nonces,
+      signingVersion = signingVersion
+    )
   }
 
   def toEventDbs(
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
       eventName: String,
-      signingVersion: SigningVersion = SigningVersion.latest): Vector[
-    EventDb] = {
+      signingVersion: SigningVersion = SigningVersion.latest
+  ): Vector[EventDb] = {
     val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.toVector
     nonces.zipWithIndex.map { case (nonce, index) =>
       EventDb(

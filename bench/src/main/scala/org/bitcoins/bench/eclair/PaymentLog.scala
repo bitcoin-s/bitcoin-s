@@ -22,11 +22,14 @@ object PaymentLog {
       event: Option[WebSocketEvent] = None,
       paymentSentAt: Long,
       paymentIdReceivedAt: Long = 0,
-      eventReceivedAt: Long = 0) {
+      eventReceivedAt: Long = 0
+  ) {
 
     def withPaymentHash(paymentHash: Sha256Digest): PaymentLogEntry =
-      copy(paymentHash = Some(paymentHash),
-           paymentSentAt = System.currentTimeMillis())
+      copy(
+        paymentHash = Some(paymentHash),
+        paymentSentAt = System.currentTimeMillis()
+      )
 
     def withPaymentId(id: PaymentId): PaymentLogEntry =
       copy(id = Some(id), paymentIdReceivedAt = System.currentTimeMillis())
@@ -47,7 +50,8 @@ object PaymentLog {
                   part.timestamp.toEpochMilli
                 case None =>
                   throw new RuntimeException(
-                    s"PaymentReceived but with no parts, got $e")
+                    s"PaymentReceived but with no parts, got $e"
+                  )
               }
             case PaymentFailed(_, _, _, timestamp) => timestamp.toEpochMilli
             case _: WebSocketEvent =>
@@ -57,18 +61,21 @@ object PaymentLog {
 
     def toCSV: String =
       s"""${paymentHash
-        .map(_.hex)
-        .getOrElse("")},${id.map(_.toString).getOrElse("")},${event
-        .map(_.getClass.getName.split('$').last)
-        .getOrElse(
-          "")},$paymentSentAt,$paymentIdReceivedAt,$eventReceivedAt,${paymentIdReceivedAt - paymentSentAt},${eventReceivedAt - paymentIdReceivedAt}"""
+          .map(_.hex)
+          .getOrElse("")},${id.map(_.toString).getOrElse("")},${event
+          .map(_.getClass.getName.split('$').last)
+          .getOrElse(
+            ""
+          )},$paymentSentAt,$paymentIdReceivedAt,$eventReceivedAt,${paymentIdReceivedAt - paymentSentAt},${eventReceivedAt - paymentIdReceivedAt}"""
   }
 
   object PaymentLogEntry {
 
     def apply(paymentHash: Sha256Digest): PaymentLogEntry = {
-      PaymentLogEntry(paymentSentAt = System.currentTimeMillis(),
-                      paymentHash = Some(paymentHash))
+      PaymentLogEntry(
+        paymentSentAt = System.currentTimeMillis(),
+        paymentHash = Some(paymentHash)
+      )
     }
   }
 
@@ -87,13 +94,15 @@ object PaymentLog {
 
   def logPaymentId(
       paymentHash: Sha256Digest,
-      paymentId: PaymentId): PaymentLogEntry = {
+      paymentId: PaymentId
+  ): PaymentLogEntry = {
     paymentLog.compute(
       paymentHash,
       new BiFunction[Sha256Digest, PaymentLogEntry, PaymentLogEntry] {
         override def apply(
             hash: Sha256Digest,
-            old: PaymentLogEntry): PaymentLogEntry = {
+            old: PaymentLogEntry
+        ): PaymentLogEntry = {
           val log = if (old == null) {
             PaymentLogEntry(paymentSentAt = 0, paymentHash = Some(hash))
           } else {
@@ -121,7 +130,8 @@ object PaymentLog {
       new BiFunction[Sha256Digest, PaymentLogEntry, PaymentLogEntry] {
         override def apply(
             hash: Sha256Digest,
-            old: PaymentLogEntry): PaymentLogEntry = {
+            old: PaymentLogEntry
+        ): PaymentLogEntry = {
           val log = if (old == null) {
             PaymentLogEntry(paymentSentAt = 0, paymentHash = Some(hash))
           } else {
@@ -136,7 +146,8 @@ object PaymentLog {
       new BiFunction[Sha256Digest, Promise[Unit], Promise[Unit]] {
         override def apply(
             hash: Sha256Digest,
-            old: Promise[Unit]): Promise[Unit] = {
+            old: Promise[Unit]
+        ): Promise[Unit] = {
           val promise = if (old == null) {
             Promise[Unit]()
           } else {

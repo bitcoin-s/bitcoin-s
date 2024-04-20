@@ -23,13 +23,16 @@ class TxUtilTest extends BitcoinSUnitTest {
     TransactionInput(outPoint, EmptyScriptSignature, UInt32.zero)
   private val output = TransactionOutput(Bitcoins.one, EmptyScriptPubKey)
 
-  private val tx = BaseTransaction(TransactionConstants.validLockVersion,
-                                   Vector(input),
-                                   Vector(output),
-                                   UInt32.zero)
+  private val tx = BaseTransaction(
+    TransactionConstants.validLockVersion,
+    Vector(input),
+    Vector(output),
+    UInt32.zero
+  )
 
   private val inputInfos = Vector(
-    EmptyInputInfo(outPoint, Bitcoins.one + Bitcoins.one))
+    EmptyInputInfo(outPoint, Bitcoins.one + Bitcoins.one)
+  )
   private val feeRate = SatoshisPerVirtualByte(Satoshis.one)
 
   it should "detect a bad fee on the tx" in {
@@ -53,22 +56,28 @@ class TxUtilTest extends BitcoinSUnitTest {
     assert(
       TxUtil
         .sanityAmountChecks(isSigned = true, inputInfos, feeRate, highFeeTx)
-        .isFailure)
+        .isFailure
+    )
   }
 
   it should "detect dust outputs" in {
     val newOutput = TransactionOutput(Satoshis(999), EmptyScriptPubKey)
     val ignoredOutput =
-      TransactionOutput(Bitcoins.one,
-                        NonStandardScriptPubKey(Vector(OP_RETURN)))
-    val dustTx = BaseTransaction(tx.version,
-                                 tx.inputs,
-                                 Vector(ignoredOutput, newOutput),
-                                 tx.lockTime)
+      TransactionOutput(
+        Bitcoins.one,
+        NonStandardScriptPubKey(Vector(OP_RETURN))
+      )
+    val dustTx = BaseTransaction(
+      tx.version,
+      tx.inputs,
+      Vector(ignoredOutput, newOutput),
+      tx.lockTime
+    )
 
     assert(
       TxUtil
         .sanityAmountChecks(isSigned = true, inputInfos, feeRate, dustTx)
-        .isFailure)
+        .isFailure
+    )
   }
 }

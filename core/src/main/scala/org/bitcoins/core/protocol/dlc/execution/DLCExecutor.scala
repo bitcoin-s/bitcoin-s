@@ -22,37 +22,42 @@ case class DLCExecutor(signer: DLCTxSigner) {
     */
   def setupDLCOffer(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature): Try[SetupDLC] = {
+      refundSig: PartialSignature
+  ): Try[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     setupDLC(cetSigs, refundSig, None, None)
   }
 
   /** Constructs the non-initiator's SetupDLC given the initiator's
-    * CETSignatures and FundingSignatures which should arrive in
-    * a DLC sign message
+    * CETSignatures and FundingSignatures which should arrive in a DLC sign
+    * message
     */
   def setupDLCAccept(
       cetSigs: CETSignatures,
       refundSig: PartialSignature,
       fundingSigs: FundingSignatures,
-      cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
+      cetsOpt: Option[Vector[WitnessTransaction]]
+  ): Try[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
     setupDLC(cetSigs, refundSig, Some(fundingSigs), cetsOpt)
   }
 
-  /** Constructs a SetupDLC given the necessary signature information
-    * from the counter-party.
+  /** Constructs a SetupDLC given the necessary signature information from the
+    * counter-party.
     */
   def setupDLC(
       cetSigs: CETSignatures,
       refundSig: PartialSignature,
       fundingSigsOpt: Option[FundingSignatures],
-      cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
+      cetsOpt: Option[Vector[WitnessTransaction]]
+  ): Try[SetupDLC] = {
     if (!isInitiator) {
-      require(fundingSigsOpt.isDefined,
-              "Accepting party must provide remote funding signatures")
+      require(
+        fundingSigsOpt.isDefined,
+        "Accepting party must provide remote funding signatures"
+      )
     }
 
     val CETSignatures(outcomeSigs) = cetSigs
@@ -85,27 +90,31 @@ case class DLCExecutor(signer: DLCTxSigner) {
     signer.getPayout(sigs)
   }
 
-  /** Computes closing transactions from a DLCSetup and a set of OracleSignatures.
-    * The Vector[OracleSignatures] may contain more OracleSignatures than are needed.
+  /** Computes closing transactions from a DLCSetup and a set of
+    * OracleSignatures. The Vector[OracleSignatures] may contain more
+    * OracleSignatures than are needed.
     *
     * TODO: Test over-sharing of OracleSignatures
     */
   def executeDLC(
       dlcSetup: SetupDLC,
-      oracleSigs: Vector[OracleSignatures]): ExecutedDLCOutcome = {
+      oracleSigs: Vector[OracleSignatures]
+  ): ExecutedDLCOutcome = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
       builder.offerFundingKey
     }
 
-    DLCExecutor.executeDLC(dlcSetup.cets,
-                           oracleSigs,
-                           signer.fundingKey,
-                           remoteFundingPubKey,
-                           builder.contractInfo,
-                           dlcSetup.fundingTx,
-                           builder.fundOutputIndex)
+    DLCExecutor.executeDLC(
+      dlcSetup.cets,
+      oracleSigs,
+      signer.fundingKey,
+      remoteFundingPubKey,
+      builder.contractInfo,
+      dlcSetup.fundingTx,
+      builder.fundOutputIndex
+    )
   }
 
   def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
@@ -122,10 +131,12 @@ case class DLCExecutor(signer: DLCTxSigner) {
 
 object DLCExecutor {
 
-  /** Given DLC setup data and oracle signatures, computes the OracleOutcome and a fully signed CET.
+  /** Given DLC setup data and oracle signatures, computes the OracleOutcome and
+    * a fully signed CET.
     *
-    * This function will fail if no threshold-sized subset of the oracle signatures corresponds to
-    * a valid set of expected oracle signatures as per the oracle announcements in the ContractInfo.
+    * This function will fail if no threshold-sized subset of the oracle
+    * signatures corresponds to a valid set of expected oracle signatures as per
+    * the oracle announcements in the ContractInfo.
     */
   def executeDLC(
       remoteCETInfos: Vector[(ECPublicKey, CETInfo)],
@@ -149,7 +160,9 @@ object DLCExecutor {
 
     val oracleInfo = oracleInfoOpt.getOrElse(
       throw new IllegalArgumentException(
-        s"Signatures do not correspond to any possible outcome! $oracleSigs"))
+        s"Signatures do not correspond to any possible outcome! $oracleSigs"
+      )
+    )
 
     val threshold = oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
@@ -170,28 +183,34 @@ object DLCExecutor {
       case Some((msg, CETInfo(ucet, remoteSig))) => (msg, ucet, remoteSig)
       case None =>
         throw new IllegalArgumentException(
-          s"Signature does not correspond to any possible outcome! $oracleSigs")
+          s"Signature does not correspond to any possible outcome! $oracleSigs"
+        )
     }
     val sigsUsed =
       sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
     val (fundingMultiSig, _) = DLCTxBuilder.buildFundingSPKs(
-      Vector(fundingKey.publicKey, remoteFundingPubKey))
+      Vector(fundingKey.publicKey, remoteFundingPubKey)
+    )
 
     val signingInfo =
-      DLCTxSigner.buildCETSigningInfo(fundOutputIndex,
-                                      fundingTx,
-                                      fundingMultiSig,
-                                      fundingKey)
+      DLCTxSigner.buildCETSigningInfo(
+        fundOutputIndex,
+        fundingTx,
+        fundingMultiSig,
+        fundingKey
+      )
 
-    val cet = DLCTxSigner.completeCET(msg,
-                                      signingInfo,
-                                      fundingMultiSig,
-                                      fundingTx,
-                                      ucet,
-                                      remoteAdaptorSig,
-                                      remoteFundingPubKey,
-                                      sigsUsed)
+    val cet = DLCTxSigner.completeCET(
+      msg,
+      signingInfo,
+      fundingMultiSig,
+      fundingTx,
+      ucet,
+      remoteAdaptorSig,
+      remoteFundingPubKey,
+      sigsUsed
+    )
 
     ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
   }

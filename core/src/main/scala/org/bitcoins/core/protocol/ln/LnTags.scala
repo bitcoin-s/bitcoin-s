@@ -52,8 +52,8 @@ sealed trait LnTag {
   }
 }
 
-/** All of the different invoice tags that are currently defined
-  * Refer to BOLT11 for a full list
+/** All of the different invoice tags that are currently defined Refer to BOLT11
+  * for a full list
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
   */
 object LnTag {
@@ -87,7 +87,8 @@ object LnTag {
           P2WPKHWitnessSPKV0.fromHash(hash)
         case _: Long =>
           throw new IllegalArgumentException(
-            s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
+            s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}"
+          )
       }
       Bech32Address(witSPK, np)
     }
@@ -95,7 +96,8 @@ object LnTag {
     def fromU8(
         version: UInt8,
         bytes: ByteVector,
-        np: NetworkParameters): FallbackAddressTag = {
+        np: NetworkParameters
+    ): FallbackAddressTag = {
       val address: Address = version match {
         case P2PKH.u8 =>
           val hash = Sha256Hash160Digest(bytes)
@@ -108,13 +110,15 @@ object LnTag {
           WitnessVersion(uint8.toInt) match {
             case Some(witV) =>
               val asm = witV.version +: BitcoinScriptUtil.calculatePushOp(
-                bytes) :+ ScriptConstant(bytes)
+                bytes
+              ) :+ ScriptConstant(bytes)
 
               val scriptPubKey = WitnessScriptPubKey(asm.toVector)
               Bech32mAddress(scriptPubKey, np)
             case None =>
               throw new IllegalArgumentException(
-                s"Illegal version to create a fallback address from, got $version")
+                s"Illegal version to create a fallback address from, got $version"
+              )
           }
       }
       LnTag.FallbackAddressTag(address)
@@ -190,9 +194,9 @@ object LnTag {
     }
   }
 
-  /** `min_final_ctlv_expiry` is the minimum difference between
-    * HTLC CLTV timeout and the current block height, for the
-    * terminal case (C). This is denominated in blocks.
+  /** `min_final_ctlv_expiry` is the minimum difference between HTLC CLTV
+    * timeout and the current block height, for the terminal case (C). This is
+    * denominated in blocks.
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection]]
     */
   case class MinFinalCltvExpiry(u32: UInt32) extends LnTag {
@@ -255,7 +259,8 @@ object LnTag {
       @tailrec
       def loop(
           remaining: ByteVector,
-          accum: Vector[LnRoute]): Vector[LnRoute] = {
+          accum: Vector[LnRoute]
+      ): Vector[LnRoute] = {
         if (remaining.isEmpty) {
           accum
         } else {

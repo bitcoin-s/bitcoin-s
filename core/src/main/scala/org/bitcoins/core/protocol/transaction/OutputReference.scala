@@ -6,8 +6,8 @@ import scodec.bits.ByteVector
 /** Represents a generic on-chain output */
 case class OutputReference(
     outPoint: TransactionOutPoint,
-    output: TransactionOutput)
-    extends NetworkElement {
+    output: TransactionOutput
+) extends NetworkElement {
 
   override def bytes: ByteVector = {
     outPoint.bytes ++ output.bytes

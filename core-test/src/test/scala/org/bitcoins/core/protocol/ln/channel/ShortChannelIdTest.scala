@@ -7,20 +7,25 @@ class ShortChannelIdTest extends BitcoinSUnitTest {
   it must "convert short channel id to and from human readable form" in {
     // BOLT example
     ShortChannelId.fromHumanReadableString("539268x845x1") must be(
-      ShortChannelId.fromHex("83a8400034d0001"))
+      ShortChannelId.fromHex("83a8400034d0001")
+    )
     ShortChannelId.fromHex("83a8400034d0001").toHumanReadableString must be(
-      "539268x845x1")
+      "539268x845x1"
+    )
 
     // min value
     ShortChannelId.fromHumanReadableString("0x0x0") must be(
-      ShortChannelId.fromHex("0"))
+      ShortChannelId.fromHex("0")
+    )
     ShortChannelId.fromHex("0").toHumanReadableString must be("0x0x0")
 
     // max value
     ShortChannelId.fromHumanReadableString("16777215x16777215x65535") must be(
-      ShortChannelId.fromHex("ffffffffffffffff"))
+      ShortChannelId.fromHex("ffffffffffffffff")
+    )
     ShortChannelId.fromHex("ffffffffffffffff").toHumanReadableString must be(
-      "16777215x16777215x65535")
+      "16777215x16777215x65535"
+    )
   }
 
   it must "validate short channel id components" in {
@@ -39,7 +44,8 @@ class ShortChannelIdTest extends BitcoinSUnitTest {
     an[IllegalArgumentException] must be thrownBy ShortChannelId
       .fromHumanReadableString("1x1x1x1")
     ShortChannelId.fromHumanReadableString("cafebabe") must be(
-      ShortChannelId.fromHex("cafebabe"))
+      ShortChannelId.fromHex("cafebabe")
+    )
   }
 
 }

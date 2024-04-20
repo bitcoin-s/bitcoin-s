@@ -26,9 +26,11 @@ class SipHashTest extends AnyFlatSpec with Matchers {
     "8f12b7c16e2c9fc61a2cd869f95fc65da404216ac4542217d33c5135561d5c17,e4638504c41785fa60eb151bd1d7b386,-2965963461982941101"
   ).tail.map { line =>
     val arr = line.split(",")
-    (ByteVector.fromValidHex(arr(0)),
-     SipHashKey(ByteVector.fromValidHex(arr(1))),
-     arr(2).toLong)
+    (
+      ByteVector.fromValidHex(arr(0)),
+      SipHashKey(ByteVector.fromValidHex(arr(1))),
+      arr(2).toLong
+    )
   }
 
   it must "compute SipHash" in {

@@ -40,7 +40,8 @@ object JsonWriters {
         case _: SIGHASH_SINGLE_ANYONECANPAY => JsString("SINGLE|ANYONECANPAY")
         case _: SIGHASH_ANYONECANPAY =>
           throw new IllegalArgumentException(
-            "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
+            "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface"
+          )
       }
   }
 
@@ -122,17 +123,22 @@ object JsonWriters {
 
     override def writes(o: TransactionInput): JsValue =
       JsObject(
-        Seq(("txid", JsString(o.previousOutput.txIdBE.hex)),
-            ("vout", JsNumber(o.previousOutput.vout.toLong)),
-            ("sequence", JsNumber(o.sequence.toLong))))
+        Seq(
+          ("txid", JsString(o.previousOutput.txIdBE.hex)),
+          ("vout", JsNumber(o.previousOutput.vout.toLong)),
+          ("sequence", JsNumber(o.sequence.toLong))
+        )
+      )
   }
 
   implicit object TransactionOutPointWrites
       extends OWrites[TransactionOutPoint] {
 
     override def writes(o: TransactionOutPoint): JsObject = {
-      Json.obj(PicklerKeys.txIdKey -> o.txIdBE.hex,
-               PicklerKeys.voutKey -> o.vout.toLong)
+      Json.obj(
+        PicklerKeys.txIdKey -> o.txIdBE.hex,
+        PicklerKeys.voutKey -> o.vout.toLong
+      )
     }
   }
 
@@ -152,8 +158,9 @@ object JsonWriters {
     override def writes(o: PSBT): JsValue = JsString(o.base64)
   }
 
-  implicit def mapWrites[K, V](keyString: K => String)(implicit
-      vWrites: Writes[V]): Writes[Map[K, V]] =
+  implicit def mapWrites[K, V](
+      keyString: K => String
+  )(implicit vWrites: Writes[V]): Writes[Map[K, V]] =
     new Writes[Map[K, V]] {
 
       override def writes(o: Map[K, V]): JsValue =
@@ -180,7 +187,8 @@ object JsonWriters {
   implicit object LnInvoiceWrites extends Writes[LnInvoice] {
 
     override def writes(invoice: LnInvoice): JsValue = JsString(
-      invoice.toString)
+      invoice.toString
+    )
   }
 
   implicit object WalletCreateFundedPsbtOptionsWrites
@@ -195,7 +203,8 @@ object JsonWriters {
       )
 
       def addToMapIfDefined[T](key: String, opt: Option[T])(implicit
-          writes: Writes[T]): Unit =
+          writes: Writes[T]
+      ): Unit =
         opt.foreach(o => jsOpts += (key -> Json.toJson(o)))
 
       addToMapIfDefined("changeAddress", opts.changeAddress)
@@ -214,7 +223,8 @@ object JsonWriters {
 
     override def writes(o: GlobalPSBTRecord.Unknown): JsValue =
       JsObject(
-        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex))))
+        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex)))
+      )
   }
 
   implicit object InputPSBTRecordUnknownWrites
@@ -222,7 +232,8 @@ object JsonWriters {
 
     override def writes(o: InputPSBTRecord.Unknown): JsValue =
       JsObject(
-        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex))))
+        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex)))
+      )
   }
 
   implicit object OutputPSBTRecordUnknownWrites
@@ -230,7 +241,8 @@ object JsonWriters {
 
     override def writes(o: OutputPSBTRecord.Unknown): JsValue =
       JsObject(
-        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex))))
+        Seq(("key", JsString(o.key.toHex)), ("value", JsString(o.value.toHex)))
+      )
   }
 
   implicit object PartialSignatureWrites
@@ -238,8 +250,11 @@ object JsonWriters {
 
     override def writes(o: InputPSBTRecord.PartialSignature): JsValue =
       JsObject(
-        Seq(("pubkey", JsString(o.pubKey.hex)),
-            ("signature", JsString(o.signature.hex))))
+        Seq(
+          ("pubkey", JsString(o.pubKey.hex)),
+          ("signature", JsString(o.signature.hex))
+        )
+      )
   }
 
   implicit object InputBIP32PathWrites
@@ -247,9 +262,12 @@ object JsonWriters {
 
     override def writes(o: InputPSBTRecord.BIP32DerivationPath): JsValue =
       JsObject(
-        Seq(("pubkey", JsString(o.pubKey.hex)),
-            ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
-            ("path", JsString(o.path.toString))))
+        Seq(
+          ("pubkey", JsString(o.pubKey.hex)),
+          ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
+          ("path", JsString(o.path.toString))
+        )
+      )
   }
 
   implicit object OutputBIP32PathWrites
@@ -257,8 +275,11 @@ object JsonWriters {
 
     override def writes(o: OutputPSBTRecord.BIP32DerivationPath): JsValue =
       JsObject(
-        Seq(("pubkey", JsString(o.pubKey.hex)),
-            ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
-            ("path", JsString(o.path.toString))))
+        Seq(
+          ("pubkey", JsString(o.pubKey.hex)),
+          ("master_fingerprint", JsString(o.masterFingerprint.toHex)),
+          ("path", JsString(o.path.toString))
+        )
+      )
   }
 }

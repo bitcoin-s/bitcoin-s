@@ -12,15 +12,19 @@ object DLCPublicKeys {
   def fromPrivKeys(
       fundingPrivKey: ECPrivateKey,
       payoutKey: ECPrivateKey,
-      network: BitcoinNetwork): DLCPublicKeys = {
+      network: BitcoinNetwork
+  ): DLCPublicKeys = {
     fromPubKeys(fundingPrivKey.publicKey, payoutKey.publicKey, network)
   }
 
   def fromPubKeys(
       fundingKey: ECPublicKey,
       payoutKey: ECPublicKey,
-      network: BitcoinNetwork): DLCPublicKeys = {
-    DLCPublicKeys(fundingKey,
-                  Bech32Address(P2WPKHWitnessSPKV0(payoutKey), network))
+      network: BitcoinNetwork
+  ): DLCPublicKeys = {
+    DLCPublicKeys(
+      fundingKey,
+      Bech32Address(P2WPKHWitnessSPKV0(payoutKey), network)
+    )
   }
 }

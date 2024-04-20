@@ -19,15 +19,17 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean
+  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     for {
       account <- getDefaultAccount()
-      funded <- fundRawTransaction(destinations = destinations,
-                                   feeRate = feeRate,
-                                   fromAccount = account,
-                                   fromTagOpt = fromTagOpt,
-                                   markAsReserved = markAsReserved)
+      funded <- fundRawTransaction(
+        destinations = destinations,
+        feeRate = feeRate,
+        fromAccount = account,
+        fromTagOpt = fromTagOpt,
+        markAsReserved = markAsReserved
+      )
     } yield funded
   }
 
@@ -36,13 +38,15 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       fromTagOpt: Option[AddressTag] = None,
-      markAsReserved: Boolean = false): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
-    fundRawTransactionInternal(destinations = destinations,
-                               feeRate = feeRate,
-                               fromAccount = fromAccount,
-                               fromTagOpt = fromTagOpt,
-                               markAsReserved = markAsReserved)
+      markAsReserved: Boolean = false
+  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    fundRawTransactionInternal(
+      destinations = destinations,
+      feeRate = feeRate,
+      fromAccount = fromAccount,
+      fromTagOpt = fromTagOpt,
+      markAsReserved = markAsReserved
+    )
   }
 
   /** Funds an unsigned transaction from the specified account */
@@ -50,17 +54,20 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
-    fundRawTransaction(destinations = destinations,
-                       feeRate = feeRate,
-                       fromAccount = fromAccount,
-                       fromTagOpt = None,
-                       markAsReserved = markAsReserved)
+      markAsReserved: Boolean
+  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    fundRawTransaction(
+      destinations = destinations,
+      feeRate = feeRate,
+      fromAccount = fromAccount,
+      fromTagOpt = None,
+      markAsReserved = markAsReserved
+    )
   }
 
-  /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
-    * which can be signed with the returned [[ScriptSignatureParams]].
+  /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned
+    * transaction with [[RawTxBuilder.result()]] which can be signed with the
+    * returned [[ScriptSignatureParams]].
     *
     * Utxos are funded with the given coin selection algorithm
     */
@@ -70,14 +77,16 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
-    val action = fundRawTransactionInternalAction(destinations,
-                                                  feeRate,
-                                                  fromAccount,
-                                                  coinSelectionAlgo,
-                                                  fromTagOpt,
-                                                  markAsReserved)
+      markAsReserved: Boolean
+  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    val action = fundRawTransactionInternalAction(
+      destinations,
+      feeRate,
+      fromAccount,
+      coinSelectionAlgo,
+      fromTagOpt,
+      markAsReserved
+    )
 
     for {
       txHelper <- safeDatabase.run(action)
@@ -91,14 +100,16 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): DBIOAction[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer],
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+      markAsReserved: Boolean
+  ): DBIOAction[FundRawTxHelper[
+    ShufflingNonInteractiveFinalizer
+  ], NoStream, Effect.Read with Effect.Write with Effect.Transactional] = {
     val amts = destinations.map(_.value)
-    //need to allow 0 for OP_RETURN outputs
-    require(amts.forall(_.satoshis.toBigInt >= 0),
-            s"Cannot fund a transaction for a negative amount, got=$amts")
+    // need to allow 0 for OP_RETURN outputs
+    require(
+      amts.forall(_.satoshis.toBigInt >= 0),
+      s"Cannot fund a transaction for a negative amount, got=$amts"
+    )
     val amt = amts.sum
     logger.info(s"Attempting to fund a tx for amt=$amt with feeRate=$feeRate")
     val utxosA =
@@ -106,12 +117,16 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         utxos <- fromTagOpt match {
           case None =>
             spendingInfoDAO.findAllUnspentForAccountAction(
-              fromAccount.hdAccount)
+              fromAccount.hdAccount
+            )
           case Some(tag) =>
             spendingInfoDAO.findAllUnspentForTagAction(tag).map { utxos =>
               utxos.filter(utxo =>
-                HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
-                                        account = fromAccount.hdAccount))
+                HDAccount.isSameAccount(
+                  bip32Path = utxo.privKeyPath,
+                  account = fromAccount.hdAccount
+                )
+              )
             }
         }
         utxoWithTxs <- DBIO.sequence {
@@ -124,9 +139,11 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
         // Need to remove immature coinbase inputs
         immatureCoinbases = utxoWithTxs.filter(
-          _._1.state == TxoState.ImmatureCoinbase)
+          _._1.state == TxoState.ImmatureCoinbase
+        )
       } yield utxoWithTxs.filter(utxo =>
-        !immatureCoinbases.exists(_._1 == utxo._1))
+        !immatureCoinbases.exists(_._1 == utxo._1)
+      )
 
     val selectedUtxosA =
       for {
@@ -146,7 +163,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
         )
         filtered = walletUtxos.filter(utxo =>
-          utxos.exists(_.outPoint == utxo._1.outPoint))
+          utxos.exists(_.outPoint == utxo._1.outPoint)
+        )
         (_, callbackF) <-
           if (markAsReserved) markUTXOsAsReservedAction(filtered.map(_._1))
           else DBIO.successful((Vector.empty, Future.unit))
@@ -171,15 +189,19 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       }
 
       val txBuilder =
-        ShufflingNonInteractiveFinalizer.txBuilderFrom(destinations,
-                                                       utxoSpendingInfos,
-                                                       feeRate,
-                                                       change.scriptPubKey)
+        ShufflingNonInteractiveFinalizer.txBuilderFrom(
+          destinations,
+          utxoSpendingInfos,
+          feeRate,
+          change.scriptPubKey
+        )
 
-      val fundTxHelper = FundRawTxHelper(txBuilderWithFinalizer = txBuilder,
-                                         scriptSigParams = utxoSpendingInfos,
-                                         feeRate = feeRate,
-                                         reservedUTXOsCallbackF = callbackF)
+      val fundTxHelper = FundRawTxHelper(
+        txBuilderWithFinalizer = txBuilder,
+        scriptSigParams = utxoSpendingInfos,
+        feeRate = feeRate,
+        reservedUTXOsCallbackF = callbackF
+      )
 
       fundTxHelper
     }

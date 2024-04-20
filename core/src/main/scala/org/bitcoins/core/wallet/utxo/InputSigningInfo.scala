@@ -10,8 +10,8 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.{HashType, Sign}
 
 /** Stores the information required to generate a signature (ECSignatureParams)
-  * or to generate a script signature (ScriptSignatureParams) for a given satisfaction
-  * condition on a UTXO.
+  * or to generate a script signature (ScriptSignatureParams) for a given
+  * satisfaction condition on a UTXO.
   */
 sealed trait InputSigningInfo[+InputType <: InputInfo] {
   def inputInfo: InputType
@@ -30,12 +30,14 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
       .outputs(outPoint.vout.toInt)
       .value == amount,
     s"prevTransaction output at index ${outPoint.vout.toInt} (${prevTransaction
-      .outputs(outPoint.vout.toInt)}) does match the corresponding value $amount"
+        .outputs(outPoint.vout.toInt)}) does match the corresponding value $amount"
   )
 
   private val keysToSignFor = inputInfo.pubKeys
-  require(signers.map(_.publicKey).forall(keysToSignFor.contains),
-          s"Cannot have signers that do not sign for one of $keysToSignFor")
+  require(
+    signers.map(_.publicKey).forall(keysToSignFor.contains),
+    s"Cannot have signers that do not sign for one of $keysToSignFor"
+  )
 
   def outputReference: OutputReference = inputInfo.outputReference
   def amount: CurrencyUnit = inputInfo.amount
@@ -60,13 +62,14 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,
     prevTransaction: Transaction,
     signers: Vector[Sign],
-    hashType: HashType)
-    extends InputSigningInfo[InputType] {
+    hashType: HashType
+) extends InputSigningInfo[InputType] {
 
   def signer: Sign = {
     require(
       signers.length == 1,
-      "This method is for spending infos with a single signer, if you mean signers.head be explicit")
+      "This method is for spending infos with a single signer, if you mean signers.head be explicit"
+    )
 
     signers.head
   }
@@ -82,7 +85,8 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
   }
 
   def mapInfo[T <: InputInfo](
-      func: InputType => T): ScriptSignatureParams[T] = {
+      func: InputType => T
+  ): ScriptSignatureParams[T] = {
     this.copy(inputInfo = func(this.inputInfo))
   }
 
@@ -97,19 +101,20 @@ object ScriptSignatureParams {
       inputInfo: InputType,
       prevTransaction: Transaction,
       signer: Sign,
-      hashType: HashType): ScriptSignatureParams[InputType] =
+      hashType: HashType
+  ): ScriptSignatureParams[InputType] =
     ScriptSignatureParams(inputInfo, prevTransaction, Vector(signer), hashType)
 }
 
-/** Stores the information needed to generate an ECDigitalSignature for
-  * a use in spending a UTXO.
+/** Stores the information needed to generate an ECDigitalSignature for a use in
+  * spending a UTXO.
   */
 case class ECSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,
     prevTransaction: Transaction,
     signer: Sign,
-    hashType: HashType)
-    extends InputSigningInfo[InputType] {
+    hashType: HashType
+) extends InputSigningInfo[InputType] {
   override def signers: Vector[Sign] = Vector(signer)
 
   def toScriptSignatureParams: ScriptSignatureParams[InputType] = {

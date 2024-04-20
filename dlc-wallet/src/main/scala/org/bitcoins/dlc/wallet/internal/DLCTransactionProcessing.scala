@@ -27,8 +27,8 @@ import org.bitcoins.wallet.internal.TransactionProcessing
 
 import scala.concurrent._
 
-/** Overrides TransactionProcessing from Wallet to add extra logic to
-  * process transactions that could from our own DLC.
+/** Overrides TransactionProcessing from Wallet to add extra logic to process
+  * transactions that could from our own DLC.
   */
 private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
@@ -36,7 +36,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
-    * @return a DLCDb if we can calculate the state, else None if we cannot calculate the state
+    * @return
+    *   a DLCDb if we can calculate the state, else None if we cannot calculate
+    *   the state
     */
   def calculateAndSetState(dlcDb: DLCDb): Future[Option[DLCDb]] = {
     (dlcDb.contractIdOpt, dlcDb.closingTxIdOpt) match {
@@ -51,15 +53,18 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             id,
             transactionDAO,
             scriptSigParams,
-            keyManager)
+            keyManager
+          )
           updatedDlcDb <- executorWithSetupOpt match {
             case Some(exeutorWithSetup) =>
-              calculateAndSetStateWithSetupDLC(exeutorWithSetup.setup,
-                                               dlcDb,
-                                               txId)
+              calculateAndSetStateWithSetupDLC(
+                exeutorWithSetup.setup,
+                dlcDb,
+                txId
+              )
             case None =>
-              //this means we have already deleted the cet sigs
-              //just return the dlcdb given to us
+              // this means we have already deleted the cet sigs
+              // just return the dlcdb given to us
               Future.successful(Some(dlcDb))
           }
         } yield {
@@ -70,13 +75,14 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 
-  /** Calculates the new closing state for a DLC if we still
-    * have adaptor signatures available to us in the database
+  /** Calculates the new closing state for a DLC if we still have adaptor
+    * signatures available to us in the database
     */
   private def calculateAndSetStateWithSetupDLC(
       setup: SetupDLC,
       dlcDb: DLCDb,
-      closingTxId: DoubleSha256DigestBE): Future[Option[DLCDb]] = {
+      closingTxId: DoubleSha256DigestBE
+  ): Future[Option[DLCDb]] = {
     val updatedOptF: Future[Option[DLCDb]] = {
       if (closingTxId == setup.refundTx.txIdBE) {
         val updatedOpt = Some(dlcDb.copy(state = DLCState.Refunded))
@@ -95,8 +101,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             withOutcomeOpt
           }
         } else {
-          //if the state is RemoteClaimed... we don't want to
-          //calculate and set outcome again
+          // if the state is RemoteClaimed... we don't want to
+          // calculate and set outcome again
           Future.successful(Some(dlcDb))
         }
       }
@@ -112,7 +118,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                   DLCState.Refunded =>
                 val contractId = updated.contractIdOpt.get.toHex
                 logger.info(
-                  s"Deleting unneeded DLC signatures for contract $contractId")
+                  s"Deleting unneeded DLC signatures for contract $contractId"
+                )
 
                 dlcSigsDAO
                   .deleteByDLCId(updated.dlcId)
@@ -132,27 +139,30 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     } yield updatedOpt
   }
 
-  /** Calculates the outcome used for execution
-    *  based on the closing transaction. Returns None if we cannot calculate
-    *  the outcome because we have pruned the cet signatures from the database
+  /** Calculates the outcome used for execution based on the closing
+    * transaction. Returns None if we cannot calculate the outcome because we
+    * have pruned the cet signatures from the database
     */
   private def calculateAndSetOutcome(dlcDb: DLCDb): Future[Option[DLCDb]] = {
     if (dlcDb.state == DLCState.RemoteClaimed) {
       logger.info(
         s"Calculating RemotedClaimed outcome for dlcId=${dlcDb.dlcId.hex} closingTx=${dlcDb.closingTxIdOpt
-          .map(_.hex)}")
+            .map(_.hex)}"
+      )
       val dlcId = dlcDb.dlcId
 
       for {
-        setupStateOpt <- dlcDataManagement.getDLCFundingData(dlcId,
-                                                             txDAO =
-                                                               transactionDAO)
+        setupStateOpt <- dlcDataManagement.getDLCFundingData(
+          dlcId,
+          txDAO = transactionDAO
+        )
         completeDbState = {
           setupStateOpt.get match {
             case c: SetupCompleteDLCDbState => c
             case offered: OfferedDbState =>
               sys.error(
-                s"Cannot calculate and set outcome of dlc that is only offered, id=${offered.dlcDb.dlcId.hex}")
+                s"Cannot calculate and set outcome of dlc that is only offered, id=${offered.dlcDb.dlcId.hex}"
+              )
           }
         }
         (sigDbs, refundSigOpt) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
@@ -168,7 +178,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           completeDbState = completeDbState,
           cet = cet,
           sigDbs = sigDbs,
-          refundSigsDbOpt = refundSigOpt)
+          refundSigsDbOpt = refundSigOpt
+        )
         sig = sigAndOutcome._1
         outcome = sigAndOutcome._2
         oracleInfos = getOutcomeDbInfo(outcome)._2
@@ -179,7 +190,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         announcementsWithId = dlcDataManagement.getOracleAnnouncementsWithId(
           announcements,
           announcementData,
-          nonceDbs)
+          nonceDbs
+        )
 
         usedIds = {
           announcementsWithId
@@ -211,11 +223,12 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           }
         }
         updatedDlcDbSig = dlcDb.copy(aggregateSignatureOpt = Some(sig))
-        //updates the aggregateSignatureOpt along with the state to RemoteClaimed
+        // updates the aggregateSignatureOpt along with the state to RemoteClaimed
         updatedDlcDbA = dlcDAO.updateAction(updatedDlcDbSig)
         updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
-          updatedAnnouncements)
+          updatedAnnouncements
+        )
         actions = {
           for {
             updatedDlcDb <- updatedDlcDbA
@@ -226,7 +239,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         updatedDlcDb <- safeDLCDatabase.run(actions)
       } yield {
         logger.info(
-          s"Done calculating RemoteClaimed outcome for dlcId=${dlcId.hex}")
+          s"Done calculating RemoteClaimed outcome for dlcId=${dlcId.hex}"
+        )
         Some(updatedDlcDb)
       }
     } else {
@@ -234,28 +248,33 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 
-  /** Process incoming utxos as normal, and then update the DLC states if applicable */
+  /** Process incoming utxos as normal, and then update the DLC states if
+    * applicable
+    */
   override protected def processReceivedUtxos(
       tx: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
-      relevantReceivedOutputs: Vector[OutputWithIndex]): Future[
-    Vector[SpendingInfoDb]] = {
+      relevantReceivedOutputs: Vector[OutputWithIndex]
+  ): Future[Vector[SpendingInfoDb]] = {
     val dlcDbsF = dlcDAO.findByFundingTxId(tx.txIdBE)
     super
-      .processReceivedUtxos(tx,
-                            blockHashOpt,
-                            spendingInfoDbs,
-                            newTags,
-                            relevantReceivedOutputs)
+      .processReceivedUtxos(
+        tx,
+        blockHashOpt,
+        spendingInfoDbs,
+        newTags,
+        relevantReceivedOutputs
+      )
       .flatMap { res =>
         for {
           dlcDbs <- dlcDbsF
           _ <-
             if (dlcDbs.nonEmpty) {
               logger.info(
-                s"Processing received utxos in tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)")
+                s"Processing received utxos in tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
+              )
               insertTransaction(tx, blockHashOpt)
             } else FutureUtil.unit
 
@@ -270,7 +289,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
               case _: DLCState.AdaptorSigComputationState =>
                 val contractIdOpt = dlcDb.contractIdOpt.map(_.toHex)
                 throw new IllegalStateException(
-                  s"Cannot be settling a DLC when we are computing adaptor sigs! contractId=${contractIdOpt}")
+                  s"Cannot be settling a DLC when we are computing adaptor sigs! contractId=${contractIdOpt}"
+                )
               case DLCState.Confirmed | DLCState.Claimed |
                   DLCState.RemoteClaimed | DLCState.Refunded =>
                 dlcDb
@@ -287,22 +307,28 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       }
   }
 
-  /** Sends out a websocket event for the given dlcIds since their [[DLCState]] changed
-    * @param dlcIds the dlcIds that had their status change
-    * @param isRescanning if the wallet is rescanning or not, we don't want to send out events if the wallet is rescanning
+  /** Sends out a websocket event for the given dlcIds since their [[DLCState]]
+    * changed
+    * @param dlcIds
+    *   the dlcIds that had their status change
+    * @param isRescanning
+    *   if the wallet is rescanning or not, we don't want to send out events if
+    *   the wallet is rescanning
     */
   private def sendWsDLCStateChange(
       dlcIds: Vector[Sha256Digest],
-      isRescanning: Boolean): Future[Unit] = {
+      isRescanning: Boolean
+  ): Future[Unit] = {
     if (isRescanning) {
-      //don't send ws events if we are rescanning the wallet
+      // don't send ws events if we are rescanning the wallet
       Future.unit
     } else {
       val updatedDlcDbsF = Future.sequence(dlcIds.map(findDLC))
       val sendF = updatedDlcDbsF.flatMap { updatedDlcDbs =>
         Future.sequence {
           updatedDlcDbs.map(u =>
-            dlcConfig.walletCallbacks.executeOnDLCStateChange(u.get))
+            dlcConfig.walletCallbacks.executeOnDLCStateChange(u.get)
+          )
         }
       }
       sendF.map(_ => ())
@@ -312,8 +338,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   override protected def processSpentUtxos(
       transaction: Transaction,
       outputsBeingSpent: Vector[SpendingInfoDb],
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[
-    Vector[SpendingInfoDb]] = {
+      blockHashOpt: Option[DoubleSha256DigestBE]
+  ): Future[Vector[SpendingInfoDb]] = {
     val outPoints = transaction.inputs.map(_.previousOutput).toVector
     val dlcDbsF = dlcDAO.findByFundingOutPoints(outPoints)
     super
@@ -324,7 +350,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           _ <-
             if (dlcDbs.nonEmpty) {
               logger.info(
-                s"Processing spent utxos in tx ${transaction.txIdBE.hex} for ${dlcDbs.size} DLC(s)")
+                s"Processing spent utxos in tx ${transaction.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
+              )
               insertTransaction(transaction, blockHashOpt)
             } else FutureUtil.unit
 
@@ -338,9 +365,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       }
   }
 
-  private def getOutcomeDbInfo(oracleOutcome: OracleOutcome): (
-      Vector[DLCOutcomeType],
-      Vector[SingleOracleInfo]) = {
+  private def getOutcomeDbInfo(
+      oracleOutcome: OracleOutcome
+  ): (Vector[DLCOutcomeType], Vector[SingleOracleInfo]) = {
     oracleOutcome match {
       case EnumOracleOutcome(oracles, outcome) =>
         (Vector.fill(oracles.length)(outcome), oracles)
@@ -353,13 +380,15 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       dlcDb: DLCDb,
       sigDbs: Vector[DLCCETSignaturesDb],
       offerRefundSig: PartialSignature,
-      fundingInputDbs: Vector[DLCFundingInputDb]): DLCSign = {
+      fundingInputDbs: Vector[DLCFundingInputDb]
+  ): DLCSign = {
     {
-      //if we don't have an acceptOpt because we don't have CET sigs
-      //how are we getting them here?
+      // if we don't have an acceptOpt because we don't have CET sigs
+      // how are we getting them here?
       val cetSigs: CETSignatures =
         CETSignatures(
-          sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)))
+          sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get))
+        )
 
       val contractId = dlcDb.contractIdOpt.get
       val fundingSigs =
@@ -373,7 +402,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                     throw new RuntimeException("Script witness cannot be empty")
                   case taprootWitness: TaprootWitness =>
                     throw new UnsupportedOperationException(
-                      s"Taproot not supported, got=$taprootWitness")
+                      s"Taproot not supported, got=$taprootWitness"
+                    )
                   case witness: ScriptWitnessV0 =>
                     (input.outPoint, witness)
                 }
@@ -382,24 +412,25 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             }
           }
 
-      DLCSign(cetSigs,
-              offerRefundSig,
-              FundingSignatures(fundingSigs),
-              contractId)
+      DLCSign(
+        cetSigs,
+        offerRefundSig,
+        FundingSignatures(fundingSigs),
+        contractId
+      )
     }
   }
 
-  /** Recovers the aggregate signature and oracle outcome used
-    * to claim the DLC. Remember, this flow is for [[DLCState.RemoteClaimed]]
-    * so we do not necessarily have access to what the [[OracleAttestment]] is
+  /** Recovers the aggregate signature and oracle outcome used to claim the DLC.
+    * Remember, this flow is for [[DLCState.RemoteClaimed]] so we do not
+    * necessarily have access to what the [[OracleAttestment]] is
     */
   private def recoverSigAndOutcomeForRemoteClaimed(
       completeDbState: SetupCompleteDLCDbState,
       cet: WitnessTransaction,
       sigDbs: Vector[DLCCETSignaturesDb],
-      refundSigsDbOpt: Option[DLCRefundSigsDb]): (
-      SchnorrDigitalSignature,
-      OracleOutcome) = {
+      refundSigsDbOpt: Option[DLCRefundSigsDb]
+  ): (SchnorrDigitalSignature, OracleOutcome) = {
     val dlcDb = completeDbState.dlcDb
     val dlcId = dlcDb.dlcId
     val isInit = dlcDb.isInitiator
@@ -409,7 +440,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     val acceptOpt = completeDbState.acceptOpt
     require(
       acceptOpt.isDefined,
-      s"Accept message must still have CET signatures to recover an outcome on chain, dlcId=${dlcId.hex}")
+      s"Accept message must still have CET signatures to recover an outcome on chain, dlcId=${dlcId.hex}"
+    )
     val accept = acceptOpt.get
 
     val fundingInputDbs = completeDbState.allFundingInputs
@@ -426,15 +458,17 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
     require(
       signOpt.isDefined,
-      s"Can only recompute outcome if signMsg is defined, dlcId=${dlcId.hex}")
+      s"Can only recompute outcome if signMsg is defined, dlcId=${dlcId.hex}"
+    )
     val sign = signOpt.get
 
-    val sigsAndOutcomeOpt = DLCStatus.calculateOutcomeAndSig(isInitiator =
-                                                               isInit,
-                                                             offer = offer,
-                                                             accept = accept,
-                                                             sign = sign,
-                                                             cet = cet)
+    val sigsAndOutcomeOpt = DLCStatus.calculateOutcomeAndSig(
+      isInitiator = isInit,
+      offer = offer,
+      accept = accept,
+      sign = sign,
+      cet = cet
+    )
 
     require(
       sigsAndOutcomeOpt.isDefined,

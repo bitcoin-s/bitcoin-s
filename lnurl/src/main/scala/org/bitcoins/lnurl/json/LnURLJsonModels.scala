@@ -34,7 +34,8 @@ object LnURLJsonModels {
       description: Option[String],
       url: Option[URL],
       ciphertext: Option[String],
-      iv: Option[String])
+      iv: Option[String]
+  )
 
   implicit val LnURLSuccessActionReads: Reads[LnURLSuccessAction] =
     Json.reads[LnURLSuccessAction]
@@ -48,8 +49,8 @@ object LnURLJsonModels {
       minSendable: MilliSatoshis,
       private val metadata: String,
       nostrPubkey: Option[SchnorrPublicKey],
-      allowsNostr: Option[Boolean])
-      extends LnURLResponse {
+      allowsNostr: Option[Boolean]
+  ) extends LnURLResponse {
     override val tag: LnURLTag = PayRequest
     lazy val metadataJs: JsValue = Json.parse(metadata)
 
@@ -66,15 +67,16 @@ object LnURLJsonModels {
 
   case class LnURLPayInvoice(
       pr: LnInvoice,
-      successAction: Option[LnURLSuccessAction])
-      extends LnURLJsonModel
+      successAction: Option[LnURLSuccessAction]
+  ) extends LnURLJsonModel
 
   implicit val LnURLPayInvoiceReads: Reads[LnURLPayInvoice] =
     Json.reads[LnURLPayInvoice]
 
   implicit val LnURLPayInvoiceWrites: OWrites[LnURLPayInvoice] = { o =>
     Json.writes[LnURLPayInvoice].writes(o) ++ Json.obj(
-      "routes" -> JsArray.empty)
+      "routes" -> JsArray.empty
+    )
   }
 
   case class LnURLWithdrawResponse(
@@ -93,12 +95,13 @@ object LnURLJsonModels {
   implicit val LnURLWithdrawResponseWrites: OWrites[LnURLWithdrawResponse] = {
     o =>
       Json.writes[LnURLWithdrawResponse].writes(o) ++ Json.obj(
-        "tag" -> "withdrawRequest")
+        "tag" -> "withdrawRequest"
+      )
   }
 
   implicit val LnURLResponseReads: Reads[LnURLResponse] = {
-    case other @ (JsNull | _: JsBoolean | JsNumber(_) | JsString(_) | JsArray(
-          _)) =>
+    case other @ (JsNull | _: JsBoolean | JsNumber(_) | JsString(_) |
+        JsArray(_)) =>
       throw new IllegalArgumentException(s"Expected JsObject, got $other")
     case obj: JsObject =>
       obj.value.get("tag") match {
@@ -108,7 +111,8 @@ object LnURLJsonModels {
           tagJs.validate[LnURLTag] match {
             case JsError(errors) =>
               throw new IllegalArgumentException(
-                s"Invalid json, got $obj, errors ${errors.mkString("\n")}")
+                s"Invalid json, got $obj, errors ${errors.mkString("\n")}"
+              )
             case JsSuccess(tag, _) =>
               tag match {
                 case PayRequest      => obj.validate[LnURLPayResponse]

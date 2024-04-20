@@ -11,8 +11,8 @@ import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 
 import scala.concurrent.ExecutionContext
 
-/** Responsible for creating and destroying database
-  * tables inside of the Chain project.
+/** Responsible for creating and destroying database tables inside of the Chain
+  * project.
   */
 trait ChainDbManagement extends DbManagement {
   _: JdbcProfileComponent[ChainAppConfig] =>

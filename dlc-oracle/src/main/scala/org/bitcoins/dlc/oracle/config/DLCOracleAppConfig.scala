@@ -26,7 +26,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracleAppConfig(
     baseDatadir: Path,
-    configOverrides: Vector[Config])(implicit val ec: ExecutionContext)
+    configOverrides: Vector[Config]
+)(implicit val ec: ExecutionContext)
     extends DbAppConfig
     with DbManagement
     with JdbcProfileComponent[DLCOracleAppConfig]
@@ -41,7 +42,9 @@ case class DLCOracleAppConfig(
   override def newConfigOfType(configs: Vector[Config]): DLCOracleAppConfig =
     DLCOracleAppConfig(baseDatadir, configs)
 
-  /** DLC oracles are not network specific, so just hard code the testnet chain params */
+  /** DLC oracles are not network specific, so just hard code the testnet chain
+    * params
+    */
   final override lazy val chain: BitcoinChainParams = TestNetChainParams
 
   /** DLC oracles are not network specific, so just hard code the network */
@@ -100,7 +103,7 @@ case class DLCOracleAppConfig(
         _ <- migrationWorkAroundF
       } yield {
         if (isHikariLoggingEnabled) {
-          //.get is safe because hikari logging is enabled
+          // .get is safe because hikari logging is enabled
           startHikariLogger(hikariLoggingInterval.get)
           ()
         } else {
@@ -123,9 +126,11 @@ case class DLCOracleAppConfig(
   def rpcPassword: String = config.getString("bitcoin-s.oracle.password")
 
   lazy val kmParams: KeyManagerParams =
-    KeyManagerParams(kmConf.seedPath,
-                     HDPurpose(DLCOracle.R_VALUE_PURPOSE),
-                     network)
+    KeyManagerParams(
+      kmConf.seedPath,
+      HDPurpose(DLCOracle.R_VALUE_PURPOSE),
+      network
+    )
 
   lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
   lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
@@ -142,9 +147,11 @@ case class DLCOracleAppConfig(
   private def initializeKeyManager(): Future[Unit] = {
     val initF = seedExists().flatMap { bool =>
       if (!bool) {
-        BIP39KeyManager.fromParams(kmParams = kmParams,
-                                   passwordOpt = aesPasswordOpt,
-                                   bip39PasswordOpt = bip39PasswordOpt) match {
+        BIP39KeyManager.fromParams(
+          kmParams = kmParams,
+          passwordOpt = aesPasswordOpt,
+          bip39PasswordOpt = bip39PasswordOpt
+        ) match {
           case Left(err) => sys.error(err.toString)
           case Right(km) =>
             logger.info("Successfully generated a seed and key manager")
@@ -219,6 +226,7 @@ object DLCOracleAppConfig extends AppConfigFactory[DLCOracleAppConfig] {
   override val moduleName: String = "oracle"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): DLCOracleAppConfig =
+      ec: ExecutionContext
+  ): DLCOracleAppConfig =
     DLCOracleAppConfig(datadir, confs)
 }

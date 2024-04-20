@@ -5,14 +5,15 @@ import org.bitcoins.commons.config.AppConfig
 
 import java.nio.file.{Path, Paths}
 
-/** Parses the correct datadir given the possible input sources for datadir config
-  * 1. The --datadir command line flag
-  * 2. Inferring the datadir based on the bitcoin network configured
-  * 3. ??? Anything else i'm forgetting ????
+/** Parses the correct datadir given the possible input sources for datadir
+  * config
+  *   1. The --datadir command line flag 2. Inferring the datadir based on the
+  *      bitcoin network configured 3. ??? Anything else i'm forgetting ????
   */
 case class DatadirParser(
     serverArgs: ServerArgParser,
-    customFinalDirOpt: Option[String]) {
+    customFinalDirOpt: Option[String]
+) {
 
   /** Sets the default data dir, overridden by the --datadir option */
   private lazy val datadirPath: Path = serverArgs.datadirOpt match {
@@ -22,7 +23,8 @@ case class DatadirParser(
 
   lazy val datadirConfig: Config =
     ConfigFactory.parseString(
-      s"bitcoin-s.datadir = ${AppConfig.safePathToString(datadirPath)}")
+      s"bitcoin-s.datadir = ${AppConfig.safePathToString(datadirPath)}"
+    )
 
   lazy val networkConfig: Config = serverArgs.networkOpt match {
     case Some(network) =>
@@ -35,9 +37,11 @@ case class DatadirParser(
     serverArgs.configOpt match {
       case None =>
         AppConfig
-          .getBaseConfig(datadirPath,
-                         AppConfig.DEFAULT_BITCOIN_S_CONF_FILE,
-                         Vector(networkConfig))
+          .getBaseConfig(
+            datadirPath,
+            AppConfig.DEFAULT_BITCOIN_S_CONF_FILE,
+            Vector(networkConfig)
+          )
           .withFallback(datadirConfig)
           .resolve()
       case Some(config) =>
@@ -55,11 +59,8 @@ case class DatadirParser(
   lazy val datadir: Path =
     Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
-  /** Directory specific for current network or custom dir
-    * Examples are
-    * HOME/.bitcoin-s/mainnet
-    * HOME/.bitcoin-s/testnet3
-    * HOME/.bitcoin-s/oracle
+  /** Directory specific for current network or custom dir Examples are
+    * HOME/.bitcoin-s/mainnet HOME/.bitcoin-s/testnet3 HOME/.bitcoin-s/oracle
     */
   def networkDir: Path =
     DatadirUtil.getFinalDatadir(datadir, baseConfig, customFinalDirOpt)

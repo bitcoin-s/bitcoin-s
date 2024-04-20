@@ -30,7 +30,8 @@ class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
     assert(withOther.rpcPort == 5555)
 
     val mainnetConf = ConfigFactory.parseString(
-      s"bitcoin-s.bitcoind-rpc.rpcport = ${MainNet.rpcPort}")
+      s"bitcoin-s.bitcoind-rpc.rpcport = ${MainNet.rpcPort}"
+    )
     val mainnet = withOther.withOverrides(mainnetConf)
     assert(mainnet.rpcPort == MainNet.rpcPort)
   }

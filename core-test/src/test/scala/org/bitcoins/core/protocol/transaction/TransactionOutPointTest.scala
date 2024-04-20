@@ -11,7 +11,8 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 class TransactionOutPointTest extends BitcoinSUnitTest {
   "TransactionOutPoint" must "define an empty transaction outpoint" in {
     EmptyTransactionOutPoint.txId.hex must be(
-      "0000000000000000000000000000000000000000000000000000000000000000")
+      "0000000000000000000000000000000000000000000000000000000000000000"
+    )
     EmptyTransactionOutPoint.vout must be(UInt32.max)
   }
 
@@ -23,7 +24,8 @@ class TransactionOutPointTest extends BitcoinSUnitTest {
 
   it must "read a transaction outpoint from string" in {
     val txIdBE = DoubleSha256DigestBE(
-      "1d8a6f050746882216518afac933f5c0139e288fbdc3fea8de627b886b0d68cf")
+      "1d8a6f050746882216518afac933f5c0139e288fbdc3fea8de627b886b0d68cf"
+    )
     val string = s"${txIdBE.hex}:1"
     val expected = TransactionOutPoint(txIdBE, UInt32.one)
 

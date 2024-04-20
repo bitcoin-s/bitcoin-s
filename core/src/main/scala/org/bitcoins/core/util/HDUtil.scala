@@ -9,7 +9,8 @@ object HDUtil {
   /** Gets the xpriv version required for the given HD purpose */
   def getXprivVersion(
       hdPurpose: HDPurpose,
-      network: NetworkParameters): ExtKeyPrivVersion = {
+      network: NetworkParameters
+  ): ExtKeyPrivVersion = {
     import org.bitcoins.core.crypto.ExtKeyVersion._
     import org.bitcoins.core.hd.HDPurposes._
 
@@ -34,7 +35,8 @@ object HDUtil {
   /** Gets the xpub version required for the given HD purpose */
   def getXpubVersion(
       hdPurpose: HDPurpose,
-      network: NetworkParameters): ExtKeyPubVersion = {
+      network: NetworkParameters
+  ): ExtKeyPubVersion = {
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {

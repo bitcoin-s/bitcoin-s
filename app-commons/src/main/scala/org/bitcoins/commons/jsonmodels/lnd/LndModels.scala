@@ -16,8 +16,8 @@ case class AddInvoiceResult(
     rHash: PaymentHashTag,
     invoice: LnInvoice,
     addIndex: UInt64,
-    paymentAddr: ByteVector)
-    extends LndModel
+    paymentAddr: ByteVector
+) extends LndModel
 
 case class UTXOResult(
     address: BitcoinAddress,

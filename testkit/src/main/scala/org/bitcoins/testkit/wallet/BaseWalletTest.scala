@@ -47,13 +47,15 @@ trait BaseWalletTest extends EmbeddedPg {
 object BaseWalletTest {
 
   def getFreshConfig(pgUrl: () => Option[String], config: Vector[Config])(
-      implicit system: ActorSystem): BitcoinSAppConfig = {
+      implicit system: ActorSystem
+  ): BitcoinSAppConfig = {
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config)
   }
 
   def getFreshWalletAppConfig(
       pgUrl: () => Option[String],
-      config: Vector[Config])(implicit system: ActorSystem): WalletAppConfig = {
+      config: Vector[Config]
+  )(implicit system: ActorSystem): WalletAppConfig = {
     getFreshConfig(pgUrl, config).walletConf
   }
 

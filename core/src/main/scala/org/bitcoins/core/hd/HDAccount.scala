@@ -2,8 +2,7 @@ package org.bitcoins.core.hd
 
 /** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account BIP44]],
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
-  * and
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]] and
   * [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
   * account
   *
@@ -39,17 +38,16 @@ object HDAccount {
     }
   }
 
-  /** This method is meant to take in an arbitrary bip32 path and see
-    * if it has the same account as the given account
+  /** This method is meant to take in an arbitrary bip32 path and see if it has
+    * the same account as the given account
     *
-    * This is tricky as an account is defined as
-    * m / purpose' / cointype' / account'
+    * This is tricky as an account is defined as m / purpose' / cointype' /
+    * account'
     *
     * whereas a bip32 path can be arbitrarily deep.
     *
-    * We want to just check the first 4 elements of the path
-    * and see if they are the same, which indicates we are in
-    * the same account
+    * We want to just check the first 4 elements of the path and see if they are
+    * the same, which indicates we are in the same account
     */
   def isSameAccount(path: Vector[BIP32Node], account: HDAccount): Boolean = {
     if (account.path.length > path.length) {

@@ -16,8 +16,8 @@ case class DLCFeeTestVector(
     offerFundingFee: Satoshis,
     offerClosingFee: Satoshis,
     acceptFundingFee: Satoshis,
-    acceptClosingFee: Satoshis)
-    extends TestVector {
+    acceptClosingFee: Satoshis
+) extends TestVector {
 
   override def toJson: JsValue = {
     Json.toJson(this)(DLCFeeTestVector.dlcFeeTestVectorFormat)
@@ -49,7 +49,8 @@ case class DLCFeeTestVectorInput(
     acceptInputs: Vector[FundingFeeInfo],
     acceptPayoutSPKLen: Int,
     acceptChangeSPKLen: Int,
-    feeRate: SatoshisPerVirtualByte) {
+    feeRate: SatoshisPerVirtualByte
+) {
 
   lazy val mockDualFundingTxFinalizer: DualFundingTxFinalizer = {
     def mockSPK(len: Int): ScriptPubKey = {
@@ -107,7 +108,8 @@ object DLCFeeTestVector extends TestVectorParser[DLCFeeTestVector] {
       acceptInputs: Vector[FundingFeeInfo],
       acceptPayoutSPKLen: Int,
       acceptChangeSPKLen: Int,
-      feeRate: SatoshisPerVirtualByte): DLCFeeTestVector = {
+      feeRate: SatoshisPerVirtualByte
+  ): DLCFeeTestVector = {
     DLCFeeTestVector(
       DLCFeeTestVectorInput(
         offerInputs,

@@ -28,7 +28,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         _ <- TestAsyncUtil.awaitConditionF(
           () => wallet.getUnconfirmedBalance().map(_ > Satoshis.zero),
           interval = 1.second,
-          maxTries = 120)
+          maxTries = 120
+        )
       } yield ()
     }
 
@@ -39,7 +40,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         _ <- TestAsyncUtil.awaitConditionF(
           () => wallet.getConfirmedBalance().map(_ > Satoshis.zero),
           interval = 1.second,
-          maxTries = 120)
+          maxTries = 120
+        )
       } yield ()
     }
 
@@ -51,7 +53,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
           bitcoind = bitcoind,
           wallet = tmpWallet,
-          chainCallbacksOpt = None)
+          chainCallbacksOpt = None
+        )
       // Assert wallet is empty
       isEmpty <- wallet.isEmpty()
       _ = assert(isEmpty)
@@ -64,7 +67,8 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       // Setup zmq subscribers
       zmqSubs = BitcoindRpcBackendUtil.startZMQWalletCallbacks(
         wallet,
-        bitcoind.instance.zmqConfig)
+        bitcoind.instance.zmqConfig
+      )
       _ <- AsyncUtil.nonBlockingSleep(5.seconds)
       _ <- attemptZMQTx(addr, wallet)
 

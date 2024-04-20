@@ -69,13 +69,15 @@ object WsPicklers {
   }
 
   private def writeChainNotification(
-      notification: ChainNotification[_]): ujson.Obj = {
+      notification: ChainNotification[_]
+  ): ujson.Obj = {
     val payloadJson: ujson.Value = notification match {
       case BlockProcessedNotification(block) =>
         upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler)
       case CompactFilterHeaderProcessedNotification(filterHeader) =>
         upickle.default.writeJs(filterHeader)(
-          Picklers.compactFilterHeaderPickler)
+          Picklers.compactFilterHeaderPickler
+        )
       case CompactFilterProcessedNotification(filter) =>
         upickle.default.writeJs(filter)(Picklers.compactFilterDbPickler)
       case SyncFlagChangedNotification(syncing) =>
@@ -115,7 +117,8 @@ object WsPicklers {
   }
 
   private def writeWalletNotification(
-      notification: WalletNotification[_]): ujson.Obj = {
+      notification: WalletNotification[_]
+  ): ujson.Obj = {
     val payloadJson: ujson.Value = notification match {
       case TxBroadcastNotification(tx) =>
         upickle.default.writeJs(tx)(Picklers.transactionPickler)
@@ -125,7 +128,8 @@ object WsPicklers {
         upickle.default.writeJs(address)(Picklers.bitcoinAddressPickler)
       case ReservedUtxosNotification(utxos) =>
         val vec = utxos.map(u =>
-          upickle.default.writeJs(u)(Picklers.spendingInfoDbPickler))
+          upickle.default.writeJs(u)(Picklers.spendingInfoDbPickler)
+        )
         ujson.Arr.from(vec)
       case DLCStateChangeNotification(status) =>
         upickle.default.writeJs(status)(Picklers.dlcStatusW)
@@ -184,7 +188,8 @@ object WsPicklers {
   }
 
   private def writeTorNotification(
-      notification: TorNotification[_]): ujson.Obj = {
+      notification: TorNotification[_]
+  ): ujson.Obj = {
     val payloadJson = notification.`type` match {
       case TorWsType.TorStarted =>
         ujson.Null
@@ -206,12 +211,15 @@ object WsPicklers {
   }
 
   private def writeDLCNodeNotification(
-      notification: DLCNodeNotification[_]): ujson.Obj = {
+      notification: DLCNodeNotification[_]
+  ): ujson.Obj = {
     def addr2str(address: InetSocketAddress) =
       address.getHostName + ":" + address.getPort
     def failure2obj(payload: (Sha256Digest, String)): ujson.Obj = {
-      ujson.Obj(PicklerKeys.idKey -> writeJs(payload._1.hex),
-                PicklerKeys.errorKey -> writeJs(payload._2))
+      ujson.Obj(
+        PicklerKeys.idKey -> writeJs(payload._1.hex),
+        PicklerKeys.errorKey -> writeJs(payload._2)
+      )
     }
     val payloadJson: ujson.Value = notification match {
       case DLCNodeConnectionInitiated(address) =>
@@ -238,13 +246,16 @@ object WsPicklers {
   }
 
   private def readDLCNodeNotification(
-      obj: ujson.Obj): DLCNodeNotification[_] = {
+      obj: ujson.Obj
+  ): DLCNodeNotification[_] = {
     val typeObj = read[DLCNodeWsType](obj(PicklerKeys.typeKey))
     val payloadObj = obj(PicklerKeys.payloadKey)
 
     def obj2failure(payload: ujson.Value): (Sha256Digest, String) = {
-      (Sha256Digest.fromHex(payload.obj(PicklerKeys.idKey).str),
-       payload.obj(PicklerKeys.errorKey).str)
+      (
+        Sha256Digest.fromHex(payload.obj(PicklerKeys.idKey).str),
+        payload.obj(PicklerKeys.errorKey).str
+      )
     }
 
     typeObj match {
@@ -278,25 +289,29 @@ object WsPicklers {
   implicit val newAddressPickler: ReadWriter[NewAddressNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[NewAddressNotification])
+      readWalletNotification(_).asInstanceOf[NewAddressNotification]
+    )
   }
 
   implicit val txProcessedPickler: ReadWriter[TxProcessedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[TxProcessedNotification])
+      readWalletNotification(_).asInstanceOf[TxProcessedNotification]
+    )
   }
 
   implicit val txBroadcastPickler: ReadWriter[TxBroadcastNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[TxBroadcastNotification])
+      readWalletNotification(_).asInstanceOf[TxBroadcastNotification]
+    )
   }
 
   implicit val reservedUtxosPickler: ReadWriter[ReservedUtxosNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[ReservedUtxosNotification])
+      readWalletNotification(_).asInstanceOf[ReservedUtxosNotification]
+    )
   }
 
   implicit val rescanPickler: ReadWriter[RescanComplete] = {
@@ -313,8 +328,8 @@ object WsPicklers {
     )
   }
 
-  implicit val dlcNodeNotificationPickler: ReadWriter[
-    DLCNodeNotification[_]] = {
+  implicit val dlcNodeNotificationPickler
+      : ReadWriter[DLCNodeNotification[_]] = {
     readwriter[ujson.Obj]
       .bimap(writeDLCNodeNotification, readDLCNodeNotification)
   }
@@ -334,8 +349,8 @@ object WsPicklers {
     )
   }
 
-  implicit val compactFilterHeaderProcessedPickler: ReadWriter[
-    CompactFilterHeaderProcessedNotification] = {
+  implicit val compactFilterHeaderProcessedPickler
+      : ReadWriter[CompactFilterHeaderProcessedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_)
@@ -343,16 +358,16 @@ object WsPicklers {
     )
   }
 
-  implicit val compactFilterProcessedPickler: ReadWriter[
-    CompactFilterProcessedNotification] = {
+  implicit val compactFilterProcessedPickler
+      : ReadWriter[CompactFilterProcessedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_).asInstanceOf[CompactFilterProcessedNotification]
     )
   }
 
-  implicit val syncFlagChangedPickler: ReadWriter[
-    SyncFlagChangedNotification] = {
+  implicit val syncFlagChangedPickler
+      : ReadWriter[SyncFlagChangedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_).asInstanceOf[SyncFlagChangedNotification]
@@ -362,83 +377,96 @@ object WsPicklers {
   implicit val dlcStateChangePickler: ReadWriter[DLCStateChangeNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[DLCStateChangeNotification])
+      readWalletNotification(_).asInstanceOf[DLCStateChangeNotification]
+    )
   }
 
   implicit val dlcOfferAddPickler: ReadWriter[DLCOfferAddNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[DLCOfferAddNotification])
+      readWalletNotification(_).asInstanceOf[DLCOfferAddNotification]
+    )
   }
 
   implicit val dlcOfferRemovePickler: ReadWriter[DLCOfferRemoveNotification] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[DLCOfferRemoveNotification])
+      readWalletNotification(_).asInstanceOf[DLCOfferRemoveNotification]
+    )
   }
 
-  implicit val torStartedPickler: ReadWriter[
-    TorNotification.TorStartedNotification.type] = {
+  implicit val torStartedPickler
+      : ReadWriter[TorNotification.TorStartedNotification.type] = {
     readwriter[ujson.Obj].bimap(
       writeTorNotification(_),
       readTorNotification(_)
-        .asInstanceOf[TorNotification.TorStartedNotification.type])
+        .asInstanceOf[TorNotification.TorStartedNotification.type]
+    )
   }
 
-  implicit val dlcNodeConnectionInitiatedPickler: ReadWriter[
-    DLCNodeConnectionInitiated] = {
+  implicit val dlcNodeConnectionInitiatedPickler
+      : ReadWriter[DLCNodeConnectionInitiated] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionInitiated])
+      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionInitiated]
+    )
   }
 
-  implicit val dlcNodeConnectionFailedPickler: ReadWriter[
-    DLCNodeConnectionFailed] = {
+  implicit val dlcNodeConnectionFailedPickler
+      : ReadWriter[DLCNodeConnectionFailed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionFailed])
+      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionFailed]
+    )
   }
 
-  implicit val dlcNodeConnectionEstablishedPickler: ReadWriter[
-    DLCNodeConnectionEstablished] = {
+  implicit val dlcNodeConnectionEstablishedPickler
+      : ReadWriter[DLCNodeConnectionEstablished] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionEstablished])
+      readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionEstablished]
+    )
   }
 
   implicit val dlcAcceptSucceedPickler: ReadWriter[DLCAcceptSucceed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCAcceptSucceed])
+      readDLCNodeNotification(_).asInstanceOf[DLCAcceptSucceed]
+    )
   }
 
   implicit val dlcAcceptFailedPickler: ReadWriter[DLCAcceptFailed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCAcceptFailed])
+      readDLCNodeNotification(_).asInstanceOf[DLCAcceptFailed]
+    )
   }
 
   implicit val dlcSignSucceedPickler: ReadWriter[DLCSignSucceed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCSignSucceed])
+      readDLCNodeNotification(_).asInstanceOf[DLCSignSucceed]
+    )
   }
 
   implicit val dlcSignFailedPickler: ReadWriter[DLCSignFailed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCSignFailed])
+      readDLCNodeNotification(_).asInstanceOf[DLCSignFailed]
+    )
   }
 
   implicit val dlcOfferSendSucceedPickler: ReadWriter[DLCOfferSendSucceed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCOfferSendSucceed])
+      readDLCNodeNotification(_).asInstanceOf[DLCOfferSendSucceed]
+    )
   }
 
   implicit val dlcOfferSendFailedPickler: ReadWriter[DLCOfferSendFailed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
-      readDLCNodeNotification(_).asInstanceOf[DLCOfferSendFailed])
+      readDLCNodeNotification(_).asInstanceOf[DLCOfferSendFailed]
+    )
   }
 }

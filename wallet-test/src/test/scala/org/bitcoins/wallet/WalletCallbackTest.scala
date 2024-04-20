@@ -104,7 +104,8 @@ class WalletCallbackTest extends BitcoinSWalletTest {
           |8a5a6bfd87c71d00000000001600145543e613b22f2393e76510cede73952405a5c9b9024730
           |440220348dc443d9a0cc6b5365d7ef8d62e1ca4d890c6f4d817a0fb0f48ff36b97e08702201d
           |77554641889932523e7d103385d99834cb9f29328ce11282ccbe218acf56440121028bb78dbe
-          |0ea469c97061b8dcc870ec25d5abcd938f19ec17e32422f8f318fa251b992000""".stripMargin)
+          |0ea469c97061b8dcc870ec25d5abcd938f19ec17e32422f8f318fa251b992000""".stripMargin
+      )
 
       for {
         txno <- wallet.listTransactions().map(_.size)
@@ -163,7 +164,8 @@ class WalletCallbackTest extends BitcoinSWalletTest {
         result <- resultP.future
       } yield assert(
         // just compare outPoints because states will be changed so they won't be equal
-        result.map(_.outPoint) == Vector(utxos.head).map(_.outPoint))
+        result.map(_.outPoint) == Vector(utxos.head).map(_.outPoint)
+      )
   }
 
   it must "verify OnReservedUtxos callbacks are executed when un-reserving" in {

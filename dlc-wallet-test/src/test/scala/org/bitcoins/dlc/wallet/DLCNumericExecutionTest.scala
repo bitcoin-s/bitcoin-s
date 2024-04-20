@@ -19,9 +19,9 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  def getSigs(contractInfo: ContractInfo): (
-      OracleAttestmentTLV,
-      OracleAttestmentTLV) = {
+  def getSigs(
+      contractInfo: ContractInfo
+  ): (OracleAttestmentTLV, OracleAttestmentTLV) = {
     contractInfo.contractDescriptors.head match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
@@ -45,10 +45,12 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
     val initiatorWinSigs =
       initiatorWinVec.zip(kValues).map { case (num, kValue) =>
         DLCWalletUtil.oraclePrivKey
-          .schnorrSignWithNonce(CryptoUtil
-                                  .sha256DLCAttestation(num.toString)
-                                  .bytes,
-                                kValue)
+          .schnorrSignWithNonce(
+            CryptoUtil
+              .sha256DLCAttestation(num.toString)
+              .bytes,
+            kValue
+          )
       }
 
     val recipientWinVec =
@@ -66,10 +68,12 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
     val recipientWinSigs =
       recipientWinVec.zip(kValues2).map { case (num, kValue) =>
         DLCWalletUtil.oraclePrivKey
-          .schnorrSignWithNonce(CryptoUtil
-                                  .sha256DLCAttestation(num.toString)
-                                  .bytes,
-                                kValue)
+          .schnorrSignWithNonce(
+            CryptoUtil
+              .sha256DLCAttestation(num.toString)
+              .bytes,
+            kValue
+          )
       }
 
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
@@ -77,14 +81,20 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       case v0: OracleEventV0TLV => v0.eventId
     }
 
-    (OracleAttestmentV0TLV(eventId,
-                           publicKey,
-                           OrderedSchnorrSignatures(initiatorWinSigs).toVector,
-                           initiatorWinVec.map(_.toString)),
-     OracleAttestmentV0TLV(eventId,
-                           publicKey,
-                           OrderedSchnorrSignatures(recipientWinSigs).toVector,
-                           recipientWinVec.map(_.toString)))
+    (
+      OracleAttestmentV0TLV(
+        eventId,
+        publicKey,
+        OrderedSchnorrSignatures(initiatorWinSigs).toVector,
+        initiatorWinVec.map(_.toString)
+      ),
+      OracleAttestmentV0TLV(
+        eventId,
+        publicKey,
+        OrderedSchnorrSignatures(recipientWinSigs).toVector,
+        recipientWinVec.map(_.toString)
+      )
+    )
   }
 
   it must "execute as the initiator" in { wallets =>
@@ -95,10 +105,12 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sigs).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -135,10 +147,12 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sigs).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = false,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = false,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -173,25 +187,28 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
         contractId <- getContractId(wallets._1.wallet)
         status <- getDLCStatus(wallets._2.wallet)
         (_, goodAttestment) = getSigs(status.contractInfo)
-        //purposefully drop these
-        //we cannot drop just a sig, or just an outcome because
-        //of invariants in OracleAttestmentV0TLV
+        // purposefully drop these
+        // we cannot drop just a sig, or just an outcome because
+        // of invariants in OracleAttestmentV0TLV
         badSigs = OrderedSchnorrSignatures.fromUnsorted(
-          goodAttestment.sigs.dropRight(1).toVector)
+          goodAttestment.sigs.dropRight(1).toVector
+        )
         badOutcomes = goodAttestment.outcomes.dropRight(1)
-        badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
-                                              publicKey =
-                                                goodAttestment.publicKey,
-                                              unsortedSignatures =
-                                                badSigs.toVector,
-                                              outcomes = badOutcomes)
+        badAttestment = OracleAttestmentV0TLV(
+          eventId = goodAttestment.eventId,
+          publicKey = goodAttestment.publicKey,
+          unsortedSignatures = badSigs.toVector,
+          outcomes = badOutcomes
+        )
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, badAttestment).map(_.get)
 
-        result <- dlcExecutionTest(wallets = wallets,
-                                   asInitiator = false,
-                                   func = func,
-                                   expectedOutputs = 1)
+        result <- dlcExecutionTest(
+          wallets = wallets,
+          asInitiator = false,
+          func = func,
+          expectedOutputs = 1
+        )
       } yield assert(result)
 
       recoverToSucceededIf[IllegalArgumentException](resultF)
@@ -199,7 +216,8 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
 
   private def verifyingMatchingOracleSigs(
       statusA: Claimed,
-      statusB: RemoteClaimed): Boolean = {
+      statusB: RemoteClaimed
+  ): Boolean = {
     val outcome = statusB.oracleOutcome
     outcome match {
       case _: EnumOracleOutcome =>

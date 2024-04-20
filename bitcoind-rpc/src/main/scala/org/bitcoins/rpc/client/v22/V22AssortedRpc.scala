@@ -13,15 +13,18 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
   self: Client =>
 
   private def getNodeAddresses(
-      count: Option[Int]): Future[Vector[GetNodeAddressesResultPostV22]] = {
+      count: Option[Int]
+  ): Future[Vector[GetNodeAddressesResultPostV22]] = {
     bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
       "getnodeaddresses",
-      List(Json.toJson(count)))
+      List(Json.toJson(count))
+    )
   }
 
   def getNodeAddresses(
       network: String,
-      count: Int): Future[Vector[GetNodeAddressesResultPostV22]] = {
+      count: Int
+  ): Future[Vector[GetNodeAddressesResultPostV22]] = {
     bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
       "getnodeaddresses",
       List(Json.toJson(count), Json.toJson(network))
@@ -29,11 +32,12 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
   }
 
   override def getNodeAddresses(
-      count: Int): Future[Vector[GetNodeAddressesResultPostV22]] =
+      count: Int
+  ): Future[Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(Some(count))
 
-  override def getNodeAddresses(): Future[
-    Vector[GetNodeAddressesResultPostV22]] =
+  override def getNodeAddresses()
+      : Future[Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(None)
 
 }

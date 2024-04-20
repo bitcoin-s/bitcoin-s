@@ -30,7 +30,7 @@ trait NativeProcessFactory extends BitcoinSLogger {
   def startBinary(): Future[Unit] = FutureUtil.makeAsync { () =>
     processOpt match {
       case Some(p) =>
-        //don't do anything as it is already started
+        // don't do anything as it is already started
         logger.info(s"Binary was already started! process=$p")
         ()
       case None =>
@@ -46,8 +46,8 @@ trait NativeProcessFactory extends BitcoinSLogger {
 
   /** Stops the binary by destroying the underlying operating system process
     *
-    * If the client is a remote client (not started on the host operating system)
-    * this method is a no-op
+    * If the client is a remote client (not started on the host operating
+    * system) this method is a no-op
     */
   def stopBinary(): Future[Unit] = FutureUtil.makeAsync { () =>
     processOpt match {
@@ -58,7 +58,7 @@ trait NativeProcessFactory extends BitcoinSLogger {
         processOpt = None
       case None =>
         logger.info(s"No process found, binary wasn't started!")
-        //no process running, nothing to do
+        // no process running, nothing to do
         ()
     }
   }

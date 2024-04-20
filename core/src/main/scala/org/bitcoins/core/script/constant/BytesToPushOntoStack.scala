@@ -2,8 +2,8 @@ package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.script.ScriptOperationFactory
 
-/** Created by chris on 1/9/16.
-  * Represents a the amount of bytes that need to be pushed onto the stack
+/** Created by chris on 1/9/16. Represents a the amount of bytes that need to be
+  * pushed onto the stack
   */
 trait BytesToPushOntoStack extends ScriptOperation
 
@@ -30,14 +30,16 @@ object BytesToPushOntoStack
   def fromNumber(num: Long): BytesToPushOntoStack = {
     if (num > 75)
       throw new IllegalArgumentException(
-        "We cannot have a BytesToPushOntoStack for greater than 75 bytes")
+        "We cannot have a BytesToPushOntoStack for greater than 75 bytes"
+      )
     else {
       val bytesToPushOntoStackOpt = operations.find(_.opCode == num)
       bytesToPushOntoStackOpt match {
         case Some(bytesToPushOntoStack) => bytesToPushOntoStack
         case None =>
           throw new IllegalArgumentException(
-            s"We cannot have a BytesToPushOntoStack for greater than 75 bytes, got=$num")
+            s"We cannot have a BytesToPushOntoStack for greater than 75 bytes, got=$num"
+          )
       }
     }
   }

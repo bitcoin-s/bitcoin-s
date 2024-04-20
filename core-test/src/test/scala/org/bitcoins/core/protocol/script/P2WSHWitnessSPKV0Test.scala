@@ -13,9 +13,11 @@ class P2WSHWitnessSPKV0Test extends BitcoinSUnitTest {
   val p2pk = P2PKScriptPubKey(asmP2PK)
 
   val asmMultisig =
-    Seq(OP_1) ++ pushOps ++ Seq(ScriptConstant(uncompressed.bytes),
-                                OP_1,
-                                OP_CHECKMULTISIG)
+    Seq(OP_1) ++ pushOps ++ Seq(
+      ScriptConstant(uncompressed.bytes),
+      OP_1,
+      OP_CHECKMULTISIG
+    )
   val multisig = MultiSignatureScriptPubKey.fromAsm(asmMultisig)
 
   "P2WPKHWitnessSPKV0" must "fail to be created with an uncompressed public key" in {

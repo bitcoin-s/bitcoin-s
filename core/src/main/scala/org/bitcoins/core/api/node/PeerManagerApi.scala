@@ -7,7 +7,9 @@ import scala.concurrent.Future
 
 trait PeerManagerApi {
 
-  /** Peers we are currently connected too and have completed the version/verack handshake with */
+  /** Peers we are currently connected too and have completed the version/verack
+    * handshake with
+    */
   def peers: Set[Peer]
 
   def disconnectPeer(peer: Peer): Future[Unit]
@@ -20,14 +22,20 @@ trait PeerManagerApi {
 
   def isInitialized(peer: Peer): Future[Boolean]
 
-  /** Gossips the given message to all peers except the excluded peer. If None given as excluded peer, gossip message to all peers */
+  /** Gossips the given message to all peers except the excluded peer. If None
+    * given as excluded peer, gossip message to all peers
+    */
   def gossipMessage(
       msg: NetworkPayload,
-      excludedPeerOpt: Option[Peer]): Future[Unit]
+      excludedPeerOpt: Option[Peer]
+  ): Future[Unit]
 
-  /** Gossips the [[org.bitcoins.core.p2p.GetHeadersMessage]] to all of our peers to attempt ot get the best block headers */
+  /** Gossips the [[org.bitcoins.core.p2p.GetHeadersMessage]] to all of our
+    * peers to attempt ot get the best block headers
+    */
   def gossipGetHeadersMessage(
-      hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
+      hashes: Vector[DoubleSha256DigestBE]
+  ): Future[Unit]
 
   def sendToRandomPeer(payload: NetworkPayload): Future[Unit]
 }

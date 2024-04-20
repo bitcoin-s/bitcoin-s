@@ -12,19 +12,24 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
     */
   final case object RandomSelection extends CoinSelectionAlgo
 
-  /** Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
-    * below their fees. Better for high fee environments than accumulateSmallestViable.
+  /** Greedily selects from walletUtxos starting with the largest outputs,
+    * skipping outputs with values below their fees. Better for high fee
+    * environments than accumulateSmallestViable.
     */
   final case object AccumulateLargest extends CoinSelectionAlgo
 
-  /** Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
-    * below their fees. Good for low fee environments to consolidate UTXOs.
+  /** Greedily selects from walletUtxos starting with the smallest outputs,
+    * skipping outputs with values below their fees. Good for low fee
+    * environments to consolidate UTXOs.
     *
-    * Has the potential privacy breach of connecting a ton of UTXOs to one address.
+    * Has the potential privacy breach of connecting a ton of UTXOs to one
+    * address.
     */
   final case object AccumulateSmallestViable extends CoinSelectionAlgo
 
-  /** Greedily selects from walletUtxos in order, skipping outputs with values below their fees */
+  /** Greedily selects from walletUtxos in order, skipping outputs with values
+    * below their fees
+    */
   final case object StandardAccumulate extends CoinSelectionAlgo
 
   /** Tries all coin selection algos and uses the one with the least waste */
@@ -35,10 +40,12 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
 
   /** Coin selection algos that don't call other ones */
   val independentAlgos: Vector[CoinSelectionAlgo] =
-    Vector(RandomSelection,
-           AccumulateLargest,
-           AccumulateSmallestViable,
-           StandardAccumulate)
+    Vector(
+      RandomSelection,
+      AccumulateLargest,
+      AccumulateSmallestViable,
+      StandardAccumulate
+    )
 
   /** Coin selection algos that call upon other ones and choose the best */
   val multiCoinSelectionAlgos: Vector[CoinSelectionAlgo] = Vector(LeastWaste)
@@ -53,6 +60,7 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
   override def fromString(string: String): CoinSelectionAlgo = {
     val algoOpt = fromStringOpt(string)
     algoOpt.getOrElse(
-      sys.error(s"Could not find coin selection algorithm=${string}"))
+      sys.error(s"Could not find coin selection algorithm=${string}")
+    )
   }
 }

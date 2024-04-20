@@ -13,8 +13,8 @@ import scala.concurrent.ExecutionContext
 
 case class DLCRemoteTxDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends TxDAO[TransactionDb] {
+    override val appConfig: DLCAppConfig
+) extends TxDAO[TransactionDb] {
 
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -46,15 +46,17 @@ case class DLCRemoteTxDAO()(implicit
     def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
 
     def * : ProvenShape[TransactionDb] =
-      (txIdBE,
-       transaction,
-       unsignedTxIdBE,
-       unsignedTx,
-       wTxIdBEOpt,
-       totalOutput,
-       numInputs,
-       numOutputs,
-       locktime,
-       blockHash).<>(TransactionDb.tupled, TransactionDb.unapply)
+      (
+        txIdBE,
+        transaction,
+        unsignedTxIdBE,
+        unsignedTx,
+        wTxIdBEOpt,
+        totalOutput,
+        numInputs,
+        numOutputs,
+        locktime,
+        blockHash
+      ).<>(TransactionDb.tupled, TransactionDb.unapply)
   }
 }

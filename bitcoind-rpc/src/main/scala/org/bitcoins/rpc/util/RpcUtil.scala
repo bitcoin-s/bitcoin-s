@@ -14,7 +14,8 @@ abstract class RpcUtil extends AsyncUtil {
   def awaitServerShutdown(
       server: BitcoindRpcClient,
       duration: FiniteDuration = 300.milliseconds,
-      maxTries: Int = 50)(implicit ec: ExecutionContext): Future[Unit] = {
+      maxTries: Int = 50
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     retryUntilSatisfiedF(() => server.isStoppedF, duration, maxTries)
   }
 

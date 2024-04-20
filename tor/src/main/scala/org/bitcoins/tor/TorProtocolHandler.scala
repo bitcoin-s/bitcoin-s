@@ -21,21 +21,28 @@ case class TorException(private val msg: String)
 
 /** Created by rorp
   *
-  * Specification: https://gitweb.torproject.org/torspec.git/tree/control-spec.txt
+  * Specification:
+  * https://gitweb.torproject.org/torspec.git/tree/control-spec.txt
   *
-  * @param authentication      Tor controller auth mechanism (password or safecookie)
-  * @param privateKeyPath      path to a file that contains a Tor private key
-  * @param virtualPort         port for the public hidden service (typically 9735)
-  * @param targets             address of our protected server (format [host:]port), 127.0.0.1:[[virtualPort]] if empty
-  * @param onionAdded          a Promise to track creation of the endpoint
+  * @param authentication
+  *   Tor controller auth mechanism (password or safecookie)
+  * @param privateKeyPath
+  *   path to a file that contains a Tor private key
+  * @param virtualPort
+  *   port for the public hidden service (typically 9735)
+  * @param targets
+  *   address of our protected server (format [host:]port),
+  *   127.0.0.1:[[virtualPort]] if empty
+  * @param onionAdded
+  *   a Promise to track creation of the endpoint
   */
 class TorProtocolHandler(
     authentication: Authentication,
     privateKeyPath: Path,
     virtualPort: Int,
     targets: Seq[String],
-    onionAdded: Option[Promise[InetSocketAddress]])
-    extends Actor
+    onionAdded: Option[Promise[InetSocketAddress]]
+) extends Actor
     with Stash
     with ActorLogging {
 
@@ -56,14 +63,16 @@ class TorProtocolHandler(
     val methods: String =
       res.getOrElse("METHODS", throw TorException("auth methods not found"))
     val torVersion = unquote(
-      res.getOrElse("Tor", throw TorException("version not found")))
+      res.getOrElse("Tor", throw TorException("version not found"))
+    )
     log.info(s"Tor version $torVersion")
     if (!OnionServiceVersion.isCompatible(torVersion)) {
       throw TorException(s"Tor version $torVersion is not supported")
     }
     if (!Authentication.isCompatible(authentication, methods)) {
       throw TorException(
-        s"cannot use authentication '$authentication', supported methods are '$methods'")
+        s"cannot use authentication '$authentication', supported methods are '$methods'"
+      )
     }
     authentication match {
       case Password(password) =>
@@ -72,8 +81,12 @@ class TorProtocolHandler(
       case SafeCookie(nonce) =>
         val cookieFile = Paths.get(
           unquote(
-            res.getOrElse("COOKIEFILE",
-                          throw TorException("cookie file not found"))))
+            res.getOrElse(
+              "COOKIEFILE",
+              throw TorException("cookie file not found")
+            )
+          )
+        )
         sendCommand(s"AUTHCHALLENGE SAFECOOKIE ${nonce.toHex}")
         context.become(cookieChallenge(cookieFile, nonce))
     }
@@ -83,14 +96,22 @@ class TorProtocolHandler(
     case data: ByteString =>
       val res = parseResponse(readResponse(data))
       val clientHash = computeClientHash(
-        ByteVector.fromValidHex(res
-          .getOrElse("SERVERHASH", throw TorException("server hash not found"))
-          .toLowerCase),
         ByteVector.fromValidHex(
           res
-            .getOrElse("SERVERNONCE",
-                       throw TorException("server nonce not found"))
-            .toLowerCase),
+            .getOrElse(
+              "SERVERHASH",
+              throw TorException("server hash not found")
+            )
+            .toLowerCase
+        ),
+        ByteVector.fromValidHex(
+          res
+            .getOrElse(
+              "SERVERNONCE",
+              throw TorException("server nonce not found")
+            )
+            .toLowerCase
+        ),
         clientNonce,
         cookieFile
       )
@@ -109,7 +130,8 @@ class TorProtocolHandler(
     if (ok(res)) {
       val serviceId = processOnionResponse(parseResponse(res))
       address = Some(
-        InetSocketAddress.createUnresolved(s"$serviceId.onion", virtualPort))
+        InetSocketAddress.createUnresolved(s"$serviceId.onion", virtualPort)
+      )
       onionAdded.foreach(_.success(address.get))
       log.debug("Onion address: {}", address.get)
     }
@@ -160,7 +182,8 @@ class TorProtocolHandler(
       serverHash: ByteVector,
       serverNonce: ByteVector,
       clientNonce: ByteVector,
-      cookieFile: Path): ByteVector = {
+      cookieFile: Path
+  ): ByteVector = {
     if (serverHash.length != 32)
       throw TorException("invalid server hash length")
     if (serverNonce.length != 32)
@@ -190,20 +213,26 @@ object TorProtocolHandler {
       privateKeyPath: Path,
       virtualPort: Int,
       targets: Seq[String] = Seq(),
-      onionAdded: Option[Promise[InetSocketAddress]] = None): Props =
+      onionAdded: Option[Promise[InetSocketAddress]] = None
+  ): Props =
     Props(
-      new TorProtocolHandler(authentication,
-                             privateKeyPath,
-                             virtualPort,
-                             targets,
-                             onionAdded))
+      new TorProtocolHandler(
+        authentication,
+        privateKeyPath,
+        virtualPort,
+        targets,
+        onionAdded
+      )
+    )
 
   // those are defined in the spec
   private val ServerKey = ByteVector.view(
-    "Tor safe cookie authentication server-to-controller hash".getBytes())
+    "Tor safe cookie authentication server-to-controller hash".getBytes()
+  )
 
   private val ClientKey = ByteVector.view(
-    "Tor safe cookie authentication controller-to-server hash".getBytes())
+    "Tor safe cookie authentication controller-to-server hash".getBytes()
+  )
 
   object OnionServiceVersion {
 
@@ -262,7 +291,8 @@ object TorProtocolHandler {
     try {
       Files.setPosixFilePermissions(
         path,
-        PosixFilePermissions.fromString(permissionString))
+        PosixFilePermissions.fromString(permissionString)
+      )
       ()
     } catch {
       case _: UnsupportedOperationException => () // we are on windows
@@ -285,12 +315,13 @@ object TorProtocolHandler {
       .map {
         case r1(c, msg) => (c.toInt, msg)
         case r2(c, msg) => (c.toInt, msg)
-        case x @ _      => throw TorException(s"unknown response line format: `$x`")
+        case x @ _ => throw TorException(s"unknown response line format: `$x`")
       }
       .toSeq
     if (!ok(lines)) {
       throw TorException(
-        s"server returned error: ${status(lines)} ${reason(lines)}")
+        s"server returned error: ${status(lines)} ${reason(lines)}"
+      )
     }
     lines
   }

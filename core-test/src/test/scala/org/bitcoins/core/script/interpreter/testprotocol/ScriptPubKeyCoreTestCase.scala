@@ -7,9 +7,8 @@ import org.bitcoins.core.script.constant.ScriptToken
   */
 trait ScriptPubKeyCoreTestCase {
 
-  /** The parsed asm representation for the core test case
-    * this will be different than the asm representation
-    * inside of scriptPubKey
+  /** The parsed asm representation for the core test case this will be
+    * different than the asm representation inside of scriptPubKey
     *
     * @return
     */
@@ -17,9 +16,9 @@ trait ScriptPubKeyCoreTestCase {
 
   /** This is the underlying scriptPubKey that is parsed from the core test case
     * this is needed because there is no ubiquitous formats for scriptPubKeys
-    * inside of script_valid.json. Normal scriptPubKeys have their asm representation
-    * parsed from the underlying hex/byte representation every time which won't work
-    * for core test cases.
+    * inside of script_valid.json. Normal scriptPubKeys have their asm
+    * representation parsed from the underlying hex/byte representation every
+    * time which won't work for core test cases.
     *
     * @return
     */
@@ -28,5 +27,5 @@ trait ScriptPubKeyCoreTestCase {
 
 case class ScriptPubKeyCoreTestCaseImpl(
     asm: Seq[ScriptToken],
-    scriptPubKey: ScriptPubKey)
-    extends ScriptPubKeyCoreTestCase
+    scriptPubKey: ScriptPubKey
+) extends ScriptPubKeyCoreTestCase

@@ -25,12 +25,12 @@ sealed abstract class LnCurrencyUnit
     toPicoBitcoinValue == ln.toPicoBitcoinValue
 
   override def equals(obj: Any): Boolean = {
-    //needed for cases like
-    //1BTC == 100,000,000 satoshis should be true
-    //weirdly enough, this worked in scala version < 2.13.4
-    //but seems to be broken in 2.13.4 :/
-    //try removing this and running code, you should see
-    //failures in the 'lnurl' module
+    // needed for cases like
+    // 1BTC == 100,000,000 satoshis should be true
+    // weirdly enough, this worked in scala version < 2.13.4
+    // but seems to be broken in 2.13.4 :/
+    // try removing this and running code, you should see
+    // failures in the 'lnurl' module
     obj match {
       case ln: LnCurrencyUnit => toPicoBitcoinValue == ln.toPicoBitcoinValue
       case ms: MilliSatoshis  => toMSat == ms
@@ -95,10 +95,9 @@ sealed abstract class LnCurrencyUnit
 
   def toMSat: MilliSatoshis = MilliSatoshis.fromPico(toPicoBitcoins)
 
-  /** This returns the string encoding defined in BOLT11
-    * For instance, 100
-    * [[org.bitcoins.core.protocol.ln.currency.PicoBitcoins PicoBitcoins]]
-    * would appear as "100p"
+  /** This returns the string encoding defined in BOLT11 For instance, 100
+    * [[org.bitcoins.core.protocol.ln.currency.PicoBitcoins PicoBitcoins]] would
+    * appear as "100p"
     */
   def toEncodedString: String = {
     toBigInt.toString + character.toString
@@ -131,10 +130,14 @@ object MilliBitcoins
 
   private case class MilliBitcoinsImpl(underlying: BigInt)
       extends MilliBitcoins {
-    require(underlying >= LnPolicy.minMilliBitcoins,
-            "Number was too small for MilliBitcoins, got: " + underlying)
-    require(underlying <= LnPolicy.maxMilliBitcoins,
-            "Number was too big for MilliBitcoins, got: " + underlying)
+    require(
+      underlying >= LnPolicy.minMilliBitcoins,
+      "Number was too small for MilliBitcoins, got: " + underlying
+    )
+    require(
+      underlying <= LnPolicy.maxMilliBitcoins,
+      "Number was too big for MilliBitcoins, got: " + underlying
+    )
 
   }
 }
@@ -163,10 +166,14 @@ object MicroBitcoins
 
   private case class MicroBitcoinsImpl(underlying: BigInt)
       extends MicroBitcoins {
-    require(underlying >= LnPolicy.minMicroBitcoins,
-            "Number was too small for MicroBitcoins, got: " + underlying)
-    require(underlying <= LnPolicy.maxMicroBitcoins,
-            "Number was too big for MicroBitcoins, got: " + underlying)
+    require(
+      underlying >= LnPolicy.minMicroBitcoins,
+      "Number was too small for MicroBitcoins, got: " + underlying
+    )
+    require(
+      underlying <= LnPolicy.maxMicroBitcoins,
+      "Number was too big for MicroBitcoins, got: " + underlying
+    )
 
   }
 }
@@ -194,10 +201,14 @@ object NanoBitcoins
   def apply(underlying: BigInt): NanoBitcoins = NanoBitcoinsImpl(underlying)
 
   private case class NanoBitcoinsImpl(underlying: BigInt) extends NanoBitcoins {
-    require(underlying >= LnPolicy.minNanoBitcoins,
-            "Number was too small for NanoBitcoins, got: " + underlying)
-    require(underlying <= LnPolicy.maxNanoBitcoins,
-            "Number was too big for NanoBitcoins, got: " + underlying)
+    require(
+      underlying >= LnPolicy.minNanoBitcoins,
+      "Number was too small for NanoBitcoins, got: " + underlying
+    )
+    require(
+      underlying <= LnPolicy.maxNanoBitcoins,
+      "Number was too big for NanoBitcoins, got: " + underlying
+    )
 
   }
 }
@@ -223,10 +234,14 @@ object PicoBitcoins
   def apply(underlying: BigInt): PicoBitcoins = PicoBitcoinsImpl(underlying)
 
   private case class PicoBitcoinsImpl(underlying: BigInt) extends PicoBitcoins {
-    require(underlying >= LnPolicy.minPicoBitcoins,
-            "Number was too small for PicoBitcoins, got: " + underlying)
-    require(underlying <= LnPolicy.maxPicoBitcoins,
-            "Number was too big for PicoBitcoins, got: " + underlying)
+    require(
+      underlying >= LnPolicy.minPicoBitcoins,
+      "Number was too small for PicoBitcoins, got: " + underlying
+    )
+    require(
+      underlying <= LnPolicy.maxPicoBitcoins,
+      "Number was too big for PicoBitcoins, got: " + underlying
+    )
 
   }
 }
@@ -246,8 +261,8 @@ object LnCurrencyUnits {
   }
 
   def fromMSat(msat: MilliSatoshis): PicoBitcoins = {
-    //msat are technically 10^-11
-    //while pico are 10^-12, so we need to convert
+    // msat are technically 10^-11
+    // while pico are 10^-12, so we need to convert
     val underlying = msat.toBigInt * MSAT_TO_PICO
     PicoBitcoins(underlying)
   }
@@ -262,13 +277,18 @@ object LnCurrencyUnits {
         case "n" => Try(NanoBitcoins(amount.get))
         case "p" => Try(PicoBitcoins(amount.get))
         case _: String =>
-          Failure(new IllegalArgumentException(
-            s"LnCurrencyUnit not found. Expected MilliBitcoins (m), MicroBitcoins (u), NanoBitcoins (n), or PicoBitcoins (p), got: $unit"))
+          Failure(
+            new IllegalArgumentException(
+              s"LnCurrencyUnit not found. Expected MilliBitcoins (m), MicroBitcoins (u), NanoBitcoins (n), or PicoBitcoins (p), got: $unit"
+            )
+          )
       }
     } else {
       Failure(
         new IllegalArgumentException(
-          s"Could not convert amount to valid number, got: $amount"))
+          s"Could not convert amount to valid number, got: $amount"
+        )
+      )
     }
   }
 }

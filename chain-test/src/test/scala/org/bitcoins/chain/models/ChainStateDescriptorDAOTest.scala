@@ -26,7 +26,9 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
       read <- dao.read(SyncDescriptor.tpe)
       _ = assert(
         read == Some(
-          ChainStateDescriptorDb(SyncDescriptor.tpe, SyncDescriptor(false))))
+          ChainStateDescriptorDb(SyncDescriptor.tpe, SyncDescriptor(false))
+        )
+      )
       sync <- dao.isSyncing
       _ = assert(!sync)
 
@@ -35,7 +37,9 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
       read <- dao.read(SyncDescriptor.tpe)
       _ = assert(
         read == Some(
-          ChainStateDescriptorDb(SyncDescriptor.tpe, SyncDescriptor(true))))
+          ChainStateDescriptorDb(SyncDescriptor.tpe, SyncDescriptor(true))
+        )
+      )
       sync <- dao.isSyncing
       _ = assert(sync)
     } yield succeed
@@ -53,26 +57,41 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
 
       read1 <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(
-        read1 == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
-                                             IsInitialBlockDownload(true))))
+        read1 == Some(
+          ChainStateDescriptorDb(
+            IsInitialBlockDownload.tpe,
+            IsInitialBlockDownload(true)
+          )
+        )
+      )
       isIBDOpt2 <- dao.getIsIBD()
       _ = assert(isIBDOpt2.isDefined && isIBDOpt2.get.isIBDRunning == true)
 
       _ <- dao.updateIsIbd(false)
       read2 <- dao.read(ChainStateDescriptorType.IsInitialBlockDownload)
       _ = assert(
-        read2 == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
-                                             IsInitialBlockDownload(false))))
+        read2 == Some(
+          ChainStateDescriptorDb(
+            IsInitialBlockDownload.tpe,
+            IsInitialBlockDownload(false)
+          )
+        )
+      )
       isIBDOpt3 <- dao.getIsIBD()
       _ = assert(isIBDOpt3.isDefined && isIBDOpt3.get.isIBDRunning == false)
 
-      //cannot revert IBD
+      // cannot revert IBD
       _ <- dao.updateIsIbd(true)
 
       read3 <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(
-        read3 == Some(ChainStateDescriptorDb(IsInitialBlockDownload.tpe,
-                                             IsInitialBlockDownload(false))))
+        read3 == Some(
+          ChainStateDescriptorDb(
+            IsInitialBlockDownload.tpe,
+            IsInitialBlockDownload(false)
+          )
+        )
+      )
       isIBDOpt4 <- dao.getIsIBD()
       _ = assert(isIBDOpt4.isDefined && isIBDOpt4.get.isIBDRunning == false)
     } yield succeed

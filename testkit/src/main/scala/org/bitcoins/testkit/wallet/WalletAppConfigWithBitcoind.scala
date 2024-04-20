@@ -10,4 +10,5 @@ sealed trait WalletAppConfigWithBitcoind {
 
 case class WalletAppConfigWithBitcoindRpc(
     walletAppConfig: WalletAppConfig,
-    bitcoind: BitcoindRpcClient)
+    bitcoind: BitcoindRpcClient
+)

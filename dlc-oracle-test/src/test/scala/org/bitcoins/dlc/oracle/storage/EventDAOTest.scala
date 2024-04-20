@@ -43,17 +43,19 @@ class EventDAOTest extends DLCOracleDAOFixture {
     val eventDAO = daos.eventDAO
 
     val eventDb =
-      EventDb(nonce,
-              publicKey,
-              0,
-              eventName,
-              0,
-              sigVersion,
-              time,
-              None,
-              None,
-              dummySig,
-              descriptor)
+      EventDb(
+        nonce,
+        publicKey,
+        0,
+        eventName,
+        0,
+        sigVersion,
+        time,
+        None,
+        None,
+        dummySig,
+        descriptor
+      )
 
     for {
       _ <- rValDAO.create(dummyRValDb)
@@ -67,17 +69,19 @@ class EventDAOTest extends DLCOracleDAOFixture {
     val eventDAO = daos.eventDAO
 
     val eventDb =
-      EventDb(nonce,
-              publicKey,
-              0,
-              eventName,
-              0,
-              sigVersion,
-              time,
-              None,
-              None,
-              dummySig,
-              descriptor)
+      EventDb(
+        nonce,
+        publicKey,
+        0,
+        eventName,
+        0,
+        sigVersion,
+        time,
+        None,
+        None,
+        dummySig,
+        descriptor
+      )
 
     for {
       _ <- rValDAO.create(dummyRValDb)

@@ -8,8 +8,8 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
-/** Represents an ordered set of MuSig signers and their tweaks.
-  * This is the data required to (non-interactively) compute the aggPubKey.
+/** Represents an ordered set of MuSig signers and their tweaks. This is the
+  * data required to (non-interactively) compute the aggPubKey.
   */
 trait KeySet {
   def keys: Vector[SchnorrPublicKey]
@@ -46,9 +46,8 @@ trait KeySet {
     }
   }
 
-  private lazy val computeAggPubKeyAndTweakContext: (
-      ECPublicKey,
-      MuSigTweakContext) = {
+  private lazy val computeAggPubKeyAndTweakContext
+      : (ECPublicKey, MuSigTweakContext) = {
     val untweakedAggPubKey = keys
       .map { key =>
         val coef = keyAggCoef(key)
@@ -69,8 +68,8 @@ trait KeySet {
   lazy val tweakContext: MuSigTweakContext =
     computeAggPubKeyAndTweakContext._2
 
-  /** The first key different from the keys.head,
-    * optimized MuSig2 allows this key to have coefficient 1
+  /** The first key different from the keys.head, optimized MuSig2 allows this
+    * key to have coefficient 1
     */
   lazy val secondKeyOpt: Option[SchnorrPublicKey] = {
     keys.find(_ != keys.head)
@@ -90,7 +89,8 @@ object KeySet {
 
   def apply(
       keys: Vector[SchnorrPublicKey],
-      tweaks: Vector[MuSigTweak]): LexicographicKeySet = {
+      tweaks: Vector[MuSigTweak]
+  ): LexicographicKeySet = {
     val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
     LexicographicKeySet(sortedKeys, tweaks)
   }
@@ -99,18 +99,20 @@ object KeySet {
 /** The default way of ordering a KeySet is lexicographically */
 case class LexicographicKeySet(
     override val keys: Vector[SchnorrPublicKey],
-    override val tweaks: Vector[MuSigTweak] = Vector.empty)
-    extends KeySet {
+    override val tweaks: Vector[MuSigTweak] = Vector.empty
+) extends KeySet {
   keys.init.zip(keys.tail).foreach { case (key1, key2) =>
-    require(key1.hex.compareTo(key2.hex) <= 0,
-            "Keys must be sorted lexicographically")
+    require(
+      key1.hex.compareTo(key2.hex) <= 0,
+      "Keys must be sorted lexicographically"
+    )
   }
 }
 
-/** This represents an arbitrary KeySet, for use in tests.
-  * If you have a non-lexicographical order, extend KeySet.
+/** This represents an arbitrary KeySet, for use in tests. If you have a
+  * non-lexicographical order, extend KeySet.
   */
 case class UnsortedKeySet(
     override val keys: Vector[SchnorrPublicKey],
-    override val tweaks: Vector[MuSigTweak] = Vector.empty)
-    extends KeySet
+    override val tweaks: Vector[MuSigTweak] = Vector.empty
+) extends KeySet

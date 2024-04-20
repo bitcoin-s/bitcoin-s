@@ -98,14 +98,20 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
 
       address <- otherClient.getNewAddress
 
-      input0 = TransactionOutPoint(transaction0.txid.flip,
-                                   UInt32(transaction0.blockindex.get))
-      input1 = TransactionOutPoint(transaction1.txid.flip,
-                                   UInt32(transaction1.blockindex.get))
+      input0 = TransactionOutPoint(
+        transaction0.txid.flip,
+        UInt32(transaction0.blockindex.get)
+      )
+      input1 = TransactionOutPoint(
+        transaction1.txid.flip,
+        UInt32(transaction1.blockindex.get)
+      )
       transaction <- {
         val sig: ScriptSignature = ScriptSignature.empty
-        val inputs = Vector(TransactionInput(input0, sig, UInt32(1)),
-                            TransactionInput(input1, sig, UInt32(2)))
+        val inputs = Vector(
+          TransactionInput(input0, sig, UInt32(1)),
+          TransactionInput(input1, sig, UInt32(2))
+        )
         val outputs = Map(address -> Bitcoins(1))
         client.createRawTransaction(inputs, outputs)
       }
@@ -150,12 +156,16 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       newAddress <- client.getNewAddress
       rawCreatedTx <- {
         val input =
-          TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
-                           EmptyScriptSignature,
-                           UInt32.max - UInt32.one)
+          TransactionInput(
+            TransactionOutPoint(txid.flip, UInt32(output.n)),
+            EmptyScriptSignature,
+            UInt32.max - UInt32.one
+          )
         client
-          .createRawTransaction(Vector(input),
-                                Map(newAddress -> Bitcoins(sendAmt.satoshis)))
+          .createRawTransaction(
+            Vector(input),
+            Map(newAddress -> Bitcoins(sendAmt.satoshis))
+          )
       }
 
       result <- {
@@ -166,7 +176,8 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
             scriptPubKey = ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
             redeemScript = None,
             amount = Some(fundAmt)
-          ))
+          )
+        )
         BitcoindRpcTestUtil.signRawTransaction(
           client,
           rawCreatedTx,
@@ -183,7 +194,8 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
           .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
           .flatMap { tx =>
             recoverToSucceededIf[InvalidAddressOrKey](
-              client.abandonTransaction(tx.txId))
+              client.abandonTransaction(tx.txId)
+            )
           }
       }
     }

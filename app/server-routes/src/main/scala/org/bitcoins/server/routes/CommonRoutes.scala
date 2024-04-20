@@ -51,7 +51,9 @@ object ZipDataDir {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"
+          )
+        )
     }
   }
 }

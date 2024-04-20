@@ -10,7 +10,9 @@ trait BitcoinSApp {
 
   def commandLineArgs: Array[String]
 
-  /** Useful for projects like the oracle server to specify a custom directory inside of ~./bitcoin-s */
+  /** Useful for projects like the oracle server to specify a custom directory
+    * inside of ~./bitcoin-s
+    */
   def customFinalDirOpt: Option[String]
 }
 

@@ -209,7 +209,8 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
       assert(
         CurrencyUnits
           .parseString("12345678900")
-          .contains(Satoshis(12345678900L)))
+          .contains(Satoshis(12345678900L))
+      )
     }
   }
 

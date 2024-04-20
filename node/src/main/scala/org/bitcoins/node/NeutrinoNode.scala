@@ -33,12 +33,13 @@ case class NeutrinoNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    paramPeers: Vector[Peer])
-    extends Node
+    paramPeers: Vector[Peer]
+) extends Node
     with SourceQueue[NodeStreamMessage] {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
-    s"We need our Neutrino mode enabled to be able to construct a Neutrino node, got=${nodeConfig.nodeType}!")
+    s"We need our Neutrino mode enabled to be able to construct a Neutrino node, got=${nodeConfig.nodeType}!"
+  )
 
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
   implicit override def system: ActorSystem = actorSystem
@@ -49,22 +50,26 @@ case class NeutrinoNode(
 
   private val dataMessageStreamSource: Source[
     NodeStreamMessage,
-    SourceQueueWithComplete[NodeStreamMessage]] = {
+    SourceQueueWithComplete[NodeStreamMessage]
+  ] = {
     Source
       .queue[NodeStreamMessage](
         100 * nodeAppConfig.maxConnectedPeers,
         overflowStrategy = OverflowStrategy.backpressure,
-        maxConcurrentOffers = Runtime.getRuntime.availableProcessors())
+        maxConcurrentOffers = Runtime.getRuntime.availableProcessors()
+      )
   }
 
   override lazy val peerManager: PeerManager = {
-    PeerManager(paramPeers = paramPeers,
-                walletCreationTimeOpt = walletCreationTimeOpt,
-                queue = this)
+    PeerManager(
+      paramPeers = paramPeers,
+      walletCreationTimeOpt = walletCreationTimeOpt,
+      queue = this
+    )
   }
 
-  private[this] var queueOpt: Option[
-    SourceQueueWithComplete[NodeStreamMessage]] =
+  private[this] var queueOpt
+      : Option[SourceQueueWithComplete[NodeStreamMessage]] =
     None
 
   private[this] var streamDoneFOpt: Option[Future[NodeState]] = None
@@ -76,8 +81,8 @@ case class NeutrinoNode(
 
   private def buildDataMessageStreamGraph(
       initState: NodeState,
-      source: Source[NodeStreamMessage, NotUsed]): RunnableGraph[
-    Future[NodeState]] = {
+      source: Source[NodeStreamMessage, NotUsed]
+  ): RunnableGraph[Future[NodeState]] = {
     val graph = source
       .toMat(peerManager.buildP2PMessageHandlerSink(initState))(Keep.right)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
@@ -95,13 +100,17 @@ case class NeutrinoNode(
 
       queueOpt = Some(queue)
       val peerFinder: PeerFinder =
-        PeerFinder(peerManagerApi = peerManager,
-                   paramPeers = paramPeers,
-                   queue = queue)
+        PeerFinder(
+          peerManagerApi = peerManager,
+          paramPeers = paramPeers,
+          queue = queue
+        )
       val initState =
-        DoneSyncing(peerWithServicesDataMap = Map.empty,
-                    waitingForDisconnection = Set.empty,
-                    peerFinder)
+        DoneSyncing(
+          peerWithServicesDataMap = Map.empty,
+          waitingForDisconnection = Set.empty,
+          peerFinder
+        )
 
       val graph =
         buildDataMessageStreamGraph(initState = initState, source = source)
@@ -145,14 +154,15 @@ case class NeutrinoNode(
           finishedF
         }
         _ = {
-          //reset all variables
+          // reset all variables
           streamDoneFOpt = None
           inactivityCancellableOpt = None
           queueOpt = None
         }
       } yield {
         logger.info(
-          s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
+          s"Node stopped! It took=${System.currentTimeMillis() - start}ms"
+        )
         this
       }
     } else {
@@ -162,17 +172,16 @@ case class NeutrinoNode(
 
   }
 
-  /** Starts to sync our node with our peer
-    * If our local best block hash is the same as our peers
-    * we will not sync, otherwise we will keep syncing
-    * until our best block hashes match up
+  /** Starts to sync our node with our peer If our local best block hash is the
+    * same as our peers we will not sync, otherwise we will keep syncing until
+    * our best block hashes match up
     *
     * @return
     */
   override def sync(): Future[Unit] = {
-    //wait for a peer to be available to sync from...
-    //due to underlying mutability in PeerManager/PeerFinder
-    //we may not have a peer available for selection immediately
+    // wait for a peer to be available to sync from...
+    // due to underlying mutability in PeerManager/PeerFinder
+    // we may not have a peer available for selection immediately
     val peerAvailableF =
       AsyncUtil.retryUntilSatisfiedF(() => getConnectionCount.map(_ > 0))
     for {
@@ -191,7 +200,8 @@ case class NeutrinoNode(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[FilterResponse]] =
+      endHeight: Int
+  ): Future[Vector[FilterResponse]] =
     chainApiFromDb().flatMap(_.getFiltersBetweenHeights(startHeight, endHeight))
 
   private[this] val INACTIVITY_CHECK_TIMEOUT = 60.seconds
@@ -216,7 +226,8 @@ case class NeutrinoNode(
     }
 
     resultF.failed.foreach(err =>
-      logger.error(s"Failed to run inactivity checks for peers=${peers}", err))
+      logger.error(s"Failed to run inactivity checks for peers=${peers}", err)
+    )
 
     Await.result(resultF, INACTIVITY_CHECK_TIMEOUT)
   }
@@ -225,15 +236,19 @@ case class NeutrinoNode(
     val interval = nodeAppConfig.healthCheckInterval
     system.scheduler.scheduleAtFixedRate(
       initialDelay = interval,
-      interval = interval)(healthChecksRunnable())
+      interval = interval
+    )(healthChecksRunnable())
   }
 
   override def offer(elem: NodeStreamMessage): Future[QueueOfferResult] = {
     queueOpt match {
       case Some(queue) => queue.offer(elem)
       case None =>
-        Future.failed(new RuntimeException(
-          s"NeutrinoNode not started, cannot process p2p message until NeutrinoNode.start() is called"))
+        Future.failed(
+          new RuntimeException(
+            s"NeutrinoNode not started, cannot process p2p message until NeutrinoNode.start() is called"
+          )
+        )
     }
   }
 

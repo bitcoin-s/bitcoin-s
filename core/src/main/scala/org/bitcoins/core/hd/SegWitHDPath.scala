@@ -8,7 +8,8 @@ object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
 
   /** The purpose constant from BIP84
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
     */
   override val PURPOSE = 84
 
@@ -18,7 +19,8 @@ object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int): SegWitHDPath = {
+      addressIndex: Int
+  ): SegWitHDPath = {
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)
     SegWitHDPathImpl(address)

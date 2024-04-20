@@ -31,10 +31,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   behavior of "WalletStorage"
 
   val passphrase: Some[AesPassword] = Some(
-    AesPassword.fromNonEmptyString("this_is_secret"))
+    AesPassword.fromNonEmptyString("this_is_secret")
+  )
 
   val badPassphrase: Some[AesPassword] = Some(
-    AesPassword.fromNonEmptyString("this_is_also_secret"))
+    AesPassword.fromNonEmptyString("this_is_also_secret")
+  )
 
   def getAndWriteMnemonic(walletConf: WalletAppConfig): DecryptedMnemonic = {
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
@@ -73,7 +75,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond)
+            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+          )
           assert(writtenMnemonic.backupTimeOpt.isEmpty)
         case Right(xprv: DecryptedExtPrivKey) =>
           fail(s"Parsed unexpected type of seed $xprv")
@@ -98,7 +101,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond)
+            writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond
+          )
         case Right(readMnemonic: DecryptedMnemonic) =>
           fail(s"Parsed unexpected type of seed $readMnemonic")
         case Left(err) => fail(err.toString)
@@ -124,7 +128,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond)
+            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+          )
         case Right(xprv: DecryptedExtPrivKey) =>
           fail(s"Parsed unexpected type of seed $xprv")
         case Left(err) => fail(err.toString)
@@ -149,7 +154,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond)
+            writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond
+          )
         case Right(readMnemonic: DecryptedMnemonic) =>
           fail(s"Parsed unexpected type of seed $readMnemonic")
         case Left(err) => fail(err.toString)
@@ -165,9 +171,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
 
-      WalletStorage.changeAesPassword(seedPath = seedPath,
-                                      oldPasswordOpt = passphrase,
-                                      newPasswordOpt = badPassphrase)
+      WalletStorage.changeAesPassword(
+        seedPath = seedPath,
+        oldPasswordOpt = passphrase,
+        newPasswordOpt = badPassphrase
+      )
 
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, badPassphrase)
@@ -177,7 +185,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond)
+            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+          )
         case Right(xprv: DecryptedExtPrivKey) =>
           fail(s"Parsed unexpected type of seed $xprv")
         case Left(err) => fail(err.toString)
@@ -195,9 +204,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
       assert(walletConf.kmConf.seedExists())
 
-      WalletStorage.changeAesPassword(seedPath = seedPath,
-                                      oldPasswordOpt = None,
-                                      newPasswordOpt = badPassphrase)
+      WalletStorage.changeAesPassword(
+        seedPath = seedPath,
+        oldPasswordOpt = None,
+        newPasswordOpt = badPassphrase
+      )
 
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, badPassphrase)
@@ -207,7 +218,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond)
+            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+          )
         case Right(xprv: DecryptedExtPrivKey) =>
           fail(s"Parsed unexpected type of seed $xprv")
         case Left(err) => fail(err.toString)
@@ -223,9 +235,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
 
-      WalletStorage.changeAesPassword(seedPath = seedPath,
-                                      oldPasswordOpt = passphrase,
-                                      newPasswordOpt = None)
+      WalletStorage.changeAesPassword(
+        seedPath = seedPath,
+        oldPasswordOpt = passphrase,
+        newPasswordOpt = None
+      )
 
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, None)
@@ -235,7 +249,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
           // Need to compare using getEpochSecond because when reading an epoch second
           // it will not include the milliseconds that writtenMnemonic will have
           assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond)
+            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+          )
         case Right(xprv: DecryptedExtPrivKey) =>
           fail(s"Parsed unexpected type of seed $xprv")
         case Left(err) => fail(err.toString)
@@ -252,9 +267,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       val seedPath = getSeedPath(walletConf)
 
       assertThrows[RuntimeException](
-        WalletStorage.changeAesPassword(seedPath = seedPath,
-                                        oldPasswordOpt = badPassphrase,
-                                        newPasswordOpt = badPassphrase))
+        WalletStorage.changeAesPassword(
+          seedPath = seedPath,
+          oldPasswordOpt = badPassphrase,
+          newPasswordOpt = badPassphrase
+        )
+      )
   }
 
   it must "fail to change the aes password when given no password" in {
@@ -267,9 +285,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       val seedPath = getSeedPath(walletConf)
 
       assertThrows[RuntimeException](
-        WalletStorage.changeAesPassword(seedPath = seedPath,
-                                        oldPasswordOpt = None,
-                                        newPasswordOpt = badPassphrase))
+        WalletStorage.changeAesPassword(
+          seedPath = seedPath,
+          oldPasswordOpt = None,
+          newPasswordOpt = badPassphrase
+        )
+      )
   }
 
   it must "fail to set the aes password when given an oldPassword" in {
@@ -284,9 +305,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConf.kmConf.seedExists())
 
       assertThrows[RuntimeException](
-        WalletStorage.changeAesPassword(seedPath = seedPath,
-                                        oldPasswordOpt = passphrase,
-                                        newPasswordOpt = badPassphrase))
+        WalletStorage.changeAesPassword(
+          seedPath = seedPath,
+          oldPasswordOpt = passphrase,
+          newPasswordOpt = badPassphrase
+        )
+      )
   }
 
   it must "read an encrypted mnemonic without a creation time" in {
@@ -304,13 +328,16 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       Files.write(seedPath, badJson.getBytes())
 
       val read =
-        WalletStorage.decryptSeedFromDisk(seedPath,
-                                          Some(BIP39KeyManager.badPassphrase))
+        WalletStorage.decryptSeedFromDisk(
+          seedPath,
+          Some(BIP39KeyManager.badPassphrase)
+        )
 
       read match {
         case Right(readMnemonic) =>
           assert(
-            readMnemonic.creationTime.getEpochSecond == WalletStorage.FIRST_BITCOIN_S_WALLET_TIME)
+            readMnemonic.creationTime.getEpochSecond == WalletStorage.FIRST_BITCOIN_S_WALLET_TIME
+          )
         case Left(err) => fail(err.toString)
       }
   }
@@ -332,7 +359,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       read match {
         case Right(readMnemonic) =>
           assert(
-            readMnemonic.creationTime.getEpochSecond == WalletStorage.FIRST_BITCOIN_S_WALLET_TIME)
+            readMnemonic.creationTime.getEpochSecond == WalletStorage.FIRST_BITCOIN_S_WALLET_TIME
+          )
         case Left(err) => fail(err.toString)
       }
   }
@@ -593,7 +621,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConf.kmConf.seedExists())
 
       assertThrows[RuntimeException] {
-        //attempt to write another mnemonic
+        // attempt to write another mnemonic
         getAndWriteMnemonic(walletConf)
       }
   }
@@ -607,8 +635,10 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
       val writtenMnemonic = getAndWriteMnemonic(walletConf)
       val expected = BIP39Seed
-        .fromMnemonic(mnemonic = writtenMnemonic.mnemonicCode,
-                      password = password)
+        .fromMnemonic(
+          mnemonic = writtenMnemonic.mnemonicCode,
+          password = password
+        )
         .toExtPrivateKey(keyVersion)
         .toHardened
 
@@ -616,10 +646,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val read =
-        WalletStorage.getPrivateKeyFromDisk(seedPath,
-                                            keyVersion,
-                                            passphrase,
-                                            Some(password))
+        WalletStorage.getPrivateKeyFromDisk(
+          seedPath,
+          keyVersion,
+          passphrase,
+          Some(password)
+        )
 
       assert(read == expected)
   }
@@ -637,18 +669,22 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       val keyVersion = SegWitMainNetPriv
 
       val expected = BIP39Seed
-        .fromMnemonic(mnemonic = writtenMnemonic.mnemonicCode,
-                      password = password)
+        .fromMnemonic(
+          mnemonic = writtenMnemonic.mnemonicCode,
+          password = password
+        )
         .toExtPrivateKey(keyVersion)
         .toHardened
 
       // should have been written by now
       assert(walletConf.kmConf.seedExists())
       val read =
-        WalletStorage.getPrivateKeyFromDisk(seedPath,
-                                            keyVersion,
-                                            None,
-                                            Some(password))
+        WalletStorage.getPrivateKeyFromDisk(
+          seedPath,
+          keyVersion,
+          None,
+          Some(password)
+        )
 
       assert(read == expected)
   }
@@ -660,7 +696,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       val keyVersion = SegWitMainNetPriv
 
       assertThrows[RuntimeException](
-        WalletStorage.getPrivateKeyFromDisk(seedPath, keyVersion, None, None))
+        WalletStorage.getPrivateKeyFromDisk(seedPath, keyVersion, None, None)
+      )
 
   }
 
@@ -674,7 +711,9 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
       val walletConfB = walletConfA.withOverrides(
         ConfigFactory.parseString(
-          s"bitcoin-s.wallet.walletName = $otherWalletName"))
+          s"bitcoin-s.wallet.walletName = $otherWalletName"
+        )
+      )
 
       assert(!walletConfB.kmConf.seedExists())
       getAndWriteXprv(walletConfB)
@@ -725,7 +764,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     assertThrows[AlreadyBackedUpException](
       WalletStorage
         .readDecryptedSeedPhraseForBackup(walletConf.seedPath, None)
-        .get)
+        .get
+    )
   }
 
   it must "backup an encrypted seed" in { walletConf: WalletAppConfig =>
@@ -754,7 +794,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     assertThrows[AlreadyBackedUpException](
       WalletStorage
         .readDecryptedSeedPhraseForBackup(walletConf.seedPath, passphrase)
-        .get)
+        .get
+    )
   }
 
   it must "set imported flag for an encrypted seed" in {
@@ -763,10 +804,10 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       val seedPath = getSeedPath(walletConf)
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
 
-      val writtenMnemonic = DecryptedMnemonic(mnemonicCode,
-                                              TimeUtil.now,
-                                              None,
-                                              false).encrypt(passphrase.get)
+      val writtenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false).encrypt(
+          passphrase.get
+        )
 
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
       WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
@@ -778,7 +819,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
       val importedWrittenMnemonic =
         DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true).encrypt(
-          passphrase.get)
+          passphrase.get
+        )
 
       WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
       WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {

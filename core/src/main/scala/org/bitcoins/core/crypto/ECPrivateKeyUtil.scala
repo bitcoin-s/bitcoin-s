@@ -14,7 +14,7 @@ object ECPrivateKeyUtil {
     */
   def toWIF(privKey: ECPrivateKeyBytes, network: NetworkParameters): String = {
     val networkByte = network.privateKey
-    //append 1 byte to the end of the priv key byte representation if we need a compressed pub key
+    // append 1 byte to the end of the priv key byte representation if we need a compressed pub key
     val fullBytes =
       if (privKey.isCompressed) networkByte ++ (privKey.bytes ++ ByteVector(1))
       else networkByte ++ privKey.bytes
@@ -24,11 +24,12 @@ object ECPrivateKeyUtil {
     Base58.encode(encodedPrivKey)
   }
 
-  /** Takes in a base58 string and converts it into a private key.
-    * Private keys starting with 'K', 'L', or 'c' correspond to compressed public keys.
+  /** Takes in a base58 string and converts it into a private key. Private keys
+    * starting with 'K', 'L', or 'c' correspond to compressed public keys.
     * https://en.bitcoin.it/wiki/Wallet_import_format
     *
-    * @param WIF Wallet Import Format. Encoded in Base58
+    * @param WIF
+    *   Wallet Import Format. Encoded in Base58
     * @return
     */
   def fromWIFToPrivateKey(WIF: String): ECPrivateKeyBytes = {
@@ -37,11 +38,13 @@ object ECPrivateKeyUtil {
     ECPrivateKeyBytes(privateKeyBytes, isCompressed)
   }
 
-  /** Takes in WIF private key as a sequence of bytes and determines if it corresponds to a compressed public key.
-    * If the private key corresponds to a compressed public key, the last byte should be 0x01, and
-    * the WIF string will have started with K or L instead of 5 (or c instead of 9 on testnet).
+  /** Takes in WIF private key as a sequence of bytes and determines if it
+    * corresponds to a compressed public key. If the private key corresponds to
+    * a compressed public key, the last byte should be 0x01, and the WIF string
+    * will have started with K or L instead of 5 (or c instead of 9 on testnet).
     *
-    * @param bytes private key in bytes
+    * @param bytes
+    *   private key in bytes
     * @return
     */
   def isCompressed(bytes: ByteVector): Boolean = {
@@ -59,17 +62,19 @@ object ECPrivateKeyUtil {
     isCompressed(bytes)
   }
 
-  /** When decoding a WIF private key, we drop the first byte (network byte), and the last 4 bytes (checksum).
-    * If the private key corresponds to a compressed public key, we drop the last byte again.
+  /** When decoding a WIF private key, we drop the first byte (network byte),
+    * and the last 4 bytes (checksum). If the private key corresponds to a
+    * compressed public key, we drop the last byte again.
     * https://en.bitcoin.it/wiki/Wallet_import_format
-    * @param WIF Wallet Import Format. Encoded in Base58
+    * @param WIF
+    *   Wallet Import Format. Encoded in Base58
     * @return
     */
   private def trimFunction(WIF: String): ByteVector = {
     val bytesChecked = Base58.decodeCheck(WIF)
 
-    //see https://en.bitcoin.it/wiki/List_of_address_prefixes
-    //for where '5' and '9' come from
+    // see https://en.bitcoin.it/wiki/List_of_address_prefixes
+    // for where '5' and '9' come from
     bytesChecked match {
       case Success(bytes) if uncompressedKeyPrefixes.contains(WIF.headOption) =>
         bytes.tail
@@ -89,7 +94,10 @@ object ECPrivateKeyUtil {
     (compressedKeyPrefixes ++ uncompressedKeyPrefixes).flatten.toVector
   }
 
-  /** Returns the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] from a serialized WIF key */
+  /** Returns the
+    * [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] from a
+    * serialized WIF key
+    */
   def parseNetworkFromWIF(wif: String): Try[NetworkParameters] = {
     val decoded = Base58.decodeCheck(wif)
     decoded match {
@@ -102,7 +110,9 @@ object ECPrivateKeyUtil {
           case None =>
             Failure(
               new IllegalArgumentException(
-                "Failed to match network bytes for WIF"))
+                "Failed to match network bytes for WIF"
+              )
+            )
         }
       case Failure(exn) => Failure(exn)
     }

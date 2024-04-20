@@ -14,8 +14,8 @@ object AddressType extends StringFactory[AddressType] {
     override def altName: String = "bech32"
   }
 
-  /** Uses BIP49 address derivation, gives SegWit addresses wrapped
-    * in P2SH addresses (`3...`)
+  /** Uses BIP49 address derivation, gives SegWit addresses wrapped in P2SH
+    * addresses (`3...`)
     */
   final case object NestedSegWit extends AddressType {
     override def altName: String = "p2sh-segwit"

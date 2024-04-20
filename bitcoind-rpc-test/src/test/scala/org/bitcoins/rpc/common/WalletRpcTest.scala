@@ -52,7 +52,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
     val walletClient =
       BitcoindRpcClient.withActorSystem(
-        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest)))
+        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
+      )
 
     for {
       _ <- startClient(walletClient)
@@ -126,10 +127,12 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       for {
         _ <- {
           val addrFuts =
-            List(client.getNewAddress,
-                 client.getNewAddress(AddressType.Bech32),
-                 client.getNewAddress(AddressType.P2SHSegwit),
-                 client.getNewAddress(AddressType.Legacy))
+            List(
+              client.getNewAddress,
+              client.getNewAddress(AddressType.Bech32),
+              client.getNewAddress(AddressType.P2SHSegwit),
+              client.getNewAddress(AddressType.Legacy)
+            )
           Future.sequence(addrFuts)
         }
       } yield succeed
@@ -166,8 +169,10 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       val client = nodePair.node1
       for {
         balance <- client.getUnconfirmedBalance
-        transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
-                                                                   client)
+        transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(
+          client,
+          client
+        )
         newBalance <- client.getUnconfirmedBalance
       } yield {
         assert(balance == Bitcoins(0))
@@ -188,7 +193,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
   }
 
   it should "be able to refill the keypool" ignore { nodePair: FixtureParam =>
-    //ignore until: https://github.com/bitcoin/bitcoin/issues/29924
+    // ignore until: https://github.com/bitcoin/bitcoin/issues/29924
     val client = nodePair.node1
     for {
       info <- client.getWalletInfo
@@ -228,15 +233,19 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     def getChangeAddressAndAmount(
         client: BitcoindRpcClient,
         address: BitcoinAddress,
-        txid: DoubleSha256DigestBE): Future[(BitcoinAddress, CurrencyUnit)] = {
+        txid: DoubleSha256DigestBE
+    ): Future[(BitcoinAddress, CurrencyUnit)] = {
       for {
         rawTx <- client.getRawTransactionRaw(txid)
       } yield {
         val outs = rawTx.outputs.filterNot(_.value == amount)
         val changeAddresses = outs
           .map(out =>
-            (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
-             out.value))
+            (
+              BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
+              out.value
+            )
+          )
         assert(changeAddresses.size == 1)
         assert(changeAddresses.head._1 != address)
         (changeAddresses.head._1, changeAddresses.head._2)
@@ -248,10 +257,12 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
       address <- client.getNewAddress
 
-      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
-                                                            otherClient,
-                                                            address,
-                                                            amount)
+      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(
+        client,
+        otherClient,
+        address,
+        amount
+      )
 
       (changeAddress, changeAmount) <-
         getChangeAddressAndAmount(client, address, txid)
@@ -269,7 +280,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
       // the change address should be added to an exiting address grouping
       assert(
-        !groupingsBefore.exists(vec => vec.exists(_.address == changeAddress)))
+        !groupingsBefore.exists(vec => vec.exists(_.address == changeAddress))
+      )
 
       val changeGroupingOpt =
         groupingsAfter.find(vec => vec.exists(_.address == changeAddress))
@@ -324,10 +336,12 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         address <- otherClient.getNewAddress
         txid <-
           BitcoindRpcTestUtil
-            .fundBlockChainTransaction(client,
-                                       otherClient,
-                                       address,
-                                       Bitcoins(1.5))
+            .fundBlockChainTransaction(
+              client,
+              otherClient,
+              address,
+              Bitcoins(1.5)
+            )
         receivedList <- otherClient.listReceivedByAddress()
       } yield {
         val entryList =
@@ -348,10 +362,12 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       address <- otherClient.getNewAddress
       txid <-
         BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client,
-                                     otherClient,
-                                     address,
-                                     Bitcoins(1.5))
+          .fundBlockChainTransaction(
+            client,
+            otherClient,
+            address,
+            Bitcoins(1.5)
+          )
       txs <- otherClient.listTransactions()
     } yield {
       assert(txs.nonEmpty)
@@ -419,12 +435,15 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
           TransactionInput(
             TransactionOutPoint(output.txid.flip, UInt32(output.vout)),
             ScriptSignature.empty,
-            UInt32.max - UInt32(2))
+            UInt32.max - UInt32(2)
+          )
         val inputs = Vector(input)
 
         val outputs =
-          Map(address -> Bitcoins(0.5),
-              changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55))
+          Map(
+            address -> Bitcoins(0.5),
+            changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55)
+          )
 
         client.createRawTransaction(inputs, outputs)
       }
@@ -453,7 +472,9 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       } yield {
         assert(
           transaction.outputs.contains(
-            TransactionOutput(Bitcoins(1), address.scriptPubKey)))
+            TransactionOutput(Bitcoins(1), address.scriptPubKey)
+          )
+        )
       }
   }
 
@@ -467,23 +488,31 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       val spk = P2WPKHWitnessSPKV0(privKey.publicKey)
       val importedAddress = Bech32Address.fromScriptPubKey(spk, np)
       for {
-        fundingTxId <- otherClient.sendToAddress(importedAddress,
-                                                 Bitcoins(1.01))
+        fundingTxId <- otherClient.sendToAddress(
+          importedAddress,
+          Bitcoins(1.01)
+        )
         _ <- otherClient.generate(1)
         vout <- otherClient
           .getRawTransactionRaw(fundingTxId)
-          .map(_.outputs.zipWithIndex.find(
-            _._1.scriptPubKey == descriptor.scriptPubKey))
+          .map(
+            _.outputs.zipWithIndex
+              .find(_._1.scriptPubKey == descriptor.scriptPubKey)
+          )
           .map(_.get._2)
         fundingPrevOut = TransactionOutPoint(fundingTxId, vout)
-        fundingInput = TransactionInput(fundingPrevOut,
-                                        ScriptSignature.empty,
-                                        TransactionConstants.sequence)
+        fundingInput = TransactionInput(
+          fundingPrevOut,
+          ScriptSignature.empty,
+          TransactionConstants.sequence
+        )
         address <- otherClient.getNewAddress
         transaction <-
           client
-            .createRawTransaction(inputs = Vector(fundingInput),
-                                  outputs = Map(address -> Bitcoins.one))
+            .createRawTransaction(
+              inputs = Vector(fundingInput),
+              outputs = Map(address -> Bitcoins.one)
+            )
         signedTx <- client
           .signRawTransactionWithKey(transaction, Vector(privKey))
           .map(_.hex)
@@ -499,7 +528,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
             P2WPKHV0InputInfo(outPoint, output.value, privKey.publicKey),
             prevTx,
             privKey,
-            HashType.sigHashAll),
+            HashType.sigHashAll
+          ),
           transaction,
           isDummySignature = false
         )
@@ -507,7 +537,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         signedTx match {
           case btx: NonWitnessTransaction =>
             assert(
-              btx.inputs.head.scriptSignature.signatures.head == partialSig.signature)
+              btx.inputs.head.scriptSignature.signatures.head == partialSig.signature
+            )
           case wtx: WitnessTransaction =>
             wtx.witness.head match {
               case p2wpkh: P2WPKHWitnessV0 =>
@@ -552,7 +583,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
       val psbt =
         PSBT.fromBase64(
-          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
+          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA=="
+        )
 
       for {
         result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
@@ -578,15 +610,19 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val pubKey2 = ECPublicKey.freshPublicKey
 
     for {
-      multiSigResult <- client.createMultiSig(2,
-                                              Vector(pubKey1, pubKey2),
-                                              AddressType.Bech32)
+      multiSigResult <- client.createMultiSig(
+        2,
+        Vector(pubKey1, pubKey2),
+        AddressType.Bech32
+      )
     } yield {
       // just validate we are able to receive a sane descriptor
       // no need to check checksum
       assert(
         multiSigResult.descriptor.startsWith(
-          s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
+          s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"
+        )
+      )
     }
   }
 

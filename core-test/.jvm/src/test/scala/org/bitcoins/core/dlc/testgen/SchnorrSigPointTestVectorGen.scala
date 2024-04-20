@@ -10,27 +10,30 @@ import scala.concurrent.Future
 object SchnorrSigPointTestVectorGen
     extends TestVectorGen[
       SchnorrSigPointTestVector,
-      SchnorrSigPointTestVectorInput] {
+      SchnorrSigPointTestVectorInput
+    ] {
 
   override val defaultTestFile: File = new File(
-    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_schnorr_test.json")
+    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_schnorr_test.json"
+  )
 
   override val testVectorParser: SchnorrSigPointTestVector.type =
     SchnorrSigPointTestVector
 
-  override def inputFromJson: JsValue => JsResult[
-    SchnorrSigPointTestVectorInput] =
+  override def inputFromJson
+      : JsValue => JsResult[SchnorrSigPointTestVectorInput] =
     SchnorrSigPointTestVectorInput.fromJson
 
   override val inputStr: String = "inputs"
 
-  override def generateFromInput: SchnorrSigPointTestVectorInput => Future[
-    SchnorrSigPointTestVector] = { inputs =>
-    Future.successful(SchnorrSigPointTestVector(inputs))
+  override def generateFromInput
+      : SchnorrSigPointTestVectorInput => Future[SchnorrSigPointTestVector] = {
+    inputs =>
+      Future.successful(SchnorrSigPointTestVector(inputs))
   }
 
-  override def generateTestVectors(): Future[
-    Vector[SchnorrSigPointTestVector]] = {
+  override def generateTestVectors()
+      : Future[Vector[SchnorrSigPointTestVector]] = {
     def generateTest: SchnorrSigPointTestVector = {
       SchnorrSigPointTestVector(
         ECPrivateKey.freshPrivateKey,

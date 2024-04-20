@@ -10,34 +10,35 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
 import scala.util.{Failure, Random, Success, Try}
 
-/** This trait is responsible for converting RawTxBuilderResults into
-  * finalized (unsigned) transactions. This process usually includes
-  * such things as computation on inputs and outputs to generate
-  * things like change outputs, or to reorder inputs or outputs.
+/** This trait is responsible for converting RawTxBuilderResults into finalized
+  * (unsigned) transactions. This process usually includes such things as
+  * computation on inputs and outputs to generate things like change outputs, or
+  * to reorder inputs or outputs.
   *
-  * Once a transaction is done being finalized, its txid/wtxid should
-  * not change as the RawTxSigner's only responsibility is adding signature
-  * data not included in the txid/wtxid.
+  * Once a transaction is done being finalized, its txid/wtxid should not change
+  * as the RawTxSigner's only responsibility is adding signature data not
+  * included in the txid/wtxid.
   *
-  * RawTxFinalizer may (but is not required to) generate witness data
-  * other than signatures (i.e. public keys for P2WPKH and redeem scripts
-  * for P2WSH). RawTxFinalizer may not otherwise populate any other kind
-  * of script signature or witness data.
+  * RawTxFinalizer may (but is not required to) generate witness data other than
+  * signatures (i.e. public keys for P2WPKH and redeem scripts for P2WSH).
+  * RawTxFinalizer may not otherwise populate any other kind of script signature
+  * or witness data.
   *
-  * RawTxFinalizers are compose-able through the andThen method which will
-  * turn the first RawTxFinalizer's finalized transaction into a RawTxBuilderResult
-  * by taking that transactions inputs (in order), outputs (in order), locktime and
-  * version and this RawTxBuilderResult is then given to the second RawTxFinalizer.
+  * RawTxFinalizers are compose-able through the andThen method which will turn
+  * the first RawTxFinalizer's finalized transaction into a RawTxBuilderResult
+  * by taking that transactions inputs (in order), outputs (in order), locktime
+  * and version and this RawTxBuilderResult is then given to the second
+  * RawTxFinalizer.
   */
 trait RawTxFinalizer {
 
   /** Constructs a finalized (unsigned) transaction */
   def buildTx(txBuilderResult: RawTxBuilderResult): Transaction
 
-  /** The result of buildTx is converted into a RawTxBuilderResult
-    * by taking that transactions inputs (in order), outputs (in order),
-    * locktime and version and this RawTxBuilderResult is then passed to
-    * the other RawTxFinalizer's buildTx
+  /** The result of buildTx is converted into a RawTxBuilderResult by taking
+    * that transactions inputs (in order), outputs (in order), locktime and
+    * version and this RawTxBuilderResult is then passed to the other
+    * RawTxFinalizer's buildTx
     */
   def andThen(other: RawTxFinalizer): RawTxFinalizer = {
     // this.buildTx above gets shadowed below, so this allows us to call it
@@ -61,8 +62,8 @@ abstract class FinalizerFactory[T <: RawTxFinalizer] {
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
-      defaultSequence: UInt32 = Policy.sequence): RawTxBuilderWithFinalizer[
-    T] = {
+      defaultSequence: UInt32 = Policy.sequence
+  ): RawTxBuilderWithFinalizer[T] = {
     val inputs = InputUtil.calcSequenceForInputs(utxos, defaultSequence)
     val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
@@ -75,13 +76,15 @@ abstract class FinalizerFactory[T <: RawTxFinalizer] {
   def txFinalizerFrom(
       inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): T
+      changeSPK: ScriptPubKey
+  ): T
 
   def txFrom(
       outputs: Seq[TransactionOutput],
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): Transaction = {
+      changeSPK: ScriptPubKey
+  ): Transaction = {
     val builder = txBuilderFrom(outputs, utxos, feeRate, changeSPK)
 
     builder.buildTx()
@@ -101,7 +104,8 @@ object RawFinalizerFactory extends FinalizerFactory[RawFinalizer.type] {
   override def txFinalizerFrom(
       inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawFinalizer.type = {
+      changeSPK: ScriptPubKey
+  ): RawFinalizer.type = {
     RawFinalizer
   }
 
@@ -111,8 +115,8 @@ object RawFinalizerFactory extends FinalizerFactory[RawFinalizer.type] {
       lockTime: UInt32,
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
-      defaultSequence: UInt32 = Policy.sequence): RawTxBuilderWithFinalizer[
-    RawFinalizer.type] = {
+      defaultSequence: UInt32 = Policy.sequence
+  ): RawTxBuilderWithFinalizer[RawFinalizer.type] = {
     val inputs = InputUtil.calcSequenceForInputs(utxos, defaultSequence)
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
     val finalizer =
@@ -126,7 +130,8 @@ object RawFinalizerFactory extends FinalizerFactory[RawFinalizer.type] {
       utxos: Seq[InputSigningInfo[InputInfo]],
       lockTime: UInt32,
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): Transaction = {
+      changeSPK: ScriptPubKey
+  ): Transaction = {
     val builder =
       txBuilderWithLockTimeFrom(outputs, utxos, lockTime, feeRate, changeSPK)
 
@@ -134,8 +139,8 @@ object RawFinalizerFactory extends FinalizerFactory[RawFinalizer.type] {
   }
 }
 
-/** A simple finalizer that only removes outputs beneath the dust
-  * threshold and does nothing else
+/** A simple finalizer that only removes outputs beneath the dust threshold and
+  * does nothing else
   */
 case object FilterDustFinalizer extends RawTxFinalizer {
 
@@ -153,8 +158,10 @@ case object BIP69Finalizer extends RawTxFinalizer {
     val sortedInputs = txBuilderResult.inputs.sorted
     val sortedOutputs = txBuilderResult.outputs.sorted
 
-    txBuilderResult.toBaseTransaction.copy(inputs = sortedInputs,
-                                           outputs = sortedOutputs)
+    txBuilderResult.toBaseTransaction.copy(
+      inputs = sortedInputs,
+      outputs = sortedOutputs
+    )
   }
 }
 
@@ -165,17 +172,19 @@ case class SanityCheckFinalizer(
     inputInfos: Vector[InputInfo],
     expectedOutputSPKs: Vector[ScriptPubKey],
     expectedFeeRate: FeeUnit,
-    changeSPKs: Vector[ScriptPubKey] = Vector.empty)
-    extends RawTxFinalizer {
+    changeSPKs: Vector[ScriptPubKey] = Vector.empty
+) extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val tx = txBuilderResult.toBaseTransaction
 
     val passInOutChecksT =
-      SanityCheckFinalizer.sanityDestinationChecks(inputInfos.map(_.outPoint),
-                                                   expectedOutputSPKs,
-                                                   changeSPKs,
-                                                   tx)
+      SanityCheckFinalizer.sanityDestinationChecks(
+        inputInfos.map(_.outPoint),
+        expectedOutputSPKs,
+        changeSPKs,
+        tx
+      )
 
     val passChecksT = passInOutChecksT.flatMap { _ =>
       TxUtil.sanityChecks(isSigned = false, inputInfos, expectedFeeRate, tx)
@@ -190,19 +199,20 @@ case class SanityCheckFinalizer(
 
 object SanityCheckFinalizer {
 
-  /** Checks that a finalized transaction contains the expected
-    * inputs and scriptpubkeys.
+  /** Checks that a finalized transaction contains the expected inputs and
+    * scriptpubkeys.
     *
-    * Note that it is not responsible for checking output values
-    * or that change isn't dropped (as it can be dust). That is
-    * covered by TxUtil.sanityChecks above
+    * Note that it is not responsible for checking output values or that change
+    * isn't dropped (as it can be dust). That is covered by TxUtil.sanityChecks
+    * above
     */
   def sanityDestinationChecks(
       expectedOutPoints: Vector[TransactionOutPoint],
       expectedOutputSPKs: Vector[ScriptPubKey],
       changeSPKs: Vector[ScriptPubKey],
-      finalizedTx: Transaction): Try[Unit] = {
-    //make sure we send coins to the appropriate destinations
+      finalizedTx: Transaction
+  ): Try[Unit] = {
+    // make sure we send coins to the appropriate destinations
     val finalizedSPKs = finalizedTx.outputs.map(_.scriptPubKey)
     val isMissingDestination =
       !expectedOutputSPKs.forall(finalizedSPKs.contains)
@@ -226,14 +236,14 @@ object SanityCheckFinalizer {
   }
 }
 
-/** A finalizer which performs fee estimation and adds a
-  * change output resulting in the expected fee.
+/** A finalizer which performs fee estimation and adds a change output resulting
+  * in the expected fee.
   */
 case class ChangeFinalizer(
     inputInfos: Vector[InputInfo],
     feeRate: FeeUnit,
-    changeSPK: ScriptPubKey)
-    extends RawTxFinalizer {
+    changeSPK: ScriptPubKey
+) extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val outputsWithDummyChange =
@@ -266,13 +276,12 @@ case class ChangeFinalizer(
   }
 }
 
-/** A finalizer which adds only the witness data included in the
-  * wtxid (pubkey in P2WPKH and redeem script in p2sh).
+/** A finalizer which adds only the witness data included in the wtxid (pubkey
+  * in P2WPKH and redeem script in p2sh).
   *
-  * Note that when used in composition with other finalizers,
-  * if AddWitnessDataFinalizer is not last then its effects
-  * will be reversed since witness data is not currently kept
-  * between finalizers during composition.
+  * Note that when used in composition with other finalizers, if
+  * AddWitnessDataFinalizer is not last then its effects will be reversed since
+  * witness data is not currently kept between finalizers during composition.
   */
 case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
     extends RawTxFinalizer {
@@ -299,15 +308,15 @@ case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
   }
 }
 
-/** A finalizer which adds a change output, performs sanity checks,
-  * and adds non-signature witness data. This is the standard
-  * non-interactive finalizer within the Bitcoin-S wallet.
+/** A finalizer which adds a change output, performs sanity checks, and adds
+  * non-signature witness data. This is the standard non-interactive finalizer
+  * within the Bitcoin-S wallet.
   */
 case class StandardNonInteractiveFinalizer(
     inputInfos: Vector[InputInfo],
     feeRate: FeeUnit,
-    changeSPK: ScriptPubKey)
-    extends RawTxFinalizer {
+    changeSPK: ScriptPubKey
+) extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val addChange = ChangeFinalizer(inputInfos, feeRate, changeSPK)
@@ -316,7 +325,8 @@ case class StandardNonInteractiveFinalizer(
       inputInfos = inputInfos,
       expectedOutputSPKs = txBuilderResult.outputs.map(_.scriptPubKey),
       expectedFeeRate = feeRate,
-      changeSPKs = Vector(changeSPK))
+      changeSPKs = Vector(changeSPK)
+    )
 
     val addWitnessData = AddWitnessDataFinalizer(inputInfos)
 
@@ -333,20 +343,21 @@ object StandardNonInteractiveFinalizer
   override def txFinalizerFrom(
       inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): StandardNonInteractiveFinalizer = {
+      changeSPK: ScriptPubKey
+  ): StandardNonInteractiveFinalizer = {
     StandardNonInteractiveFinalizer(inputs, feeRate, changeSPK)
   }
 }
 
-/** A finalizer which adds a change output, performs sanity checks,
-  * shuffles inputs and outputs, and adds non-signature witness data.
-  * This is the standard non-interactive finalizer within the Bitcoin-S wallet.
+/** A finalizer which adds a change output, performs sanity checks, shuffles
+  * inputs and outputs, and adds non-signature witness data. This is the
+  * standard non-interactive finalizer within the Bitcoin-S wallet.
   */
 case class ShufflingNonInteractiveFinalizer(
     inputInfos: Vector[InputInfo],
     feeRate: FeeUnit,
-    changeSPK: ScriptPubKey)
-    extends RawTxFinalizer {
+    changeSPK: ScriptPubKey
+) extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val addChange = ChangeFinalizer(inputInfos, feeRate, changeSPK)
@@ -360,11 +371,12 @@ case class ShufflingNonInteractiveFinalizer(
       .map(input => inputInfos.find(_.outPoint == input.previousOutput).get)
 
     val sanityCheck =
-      SanityCheckFinalizer(inputInfos = shuffledInputInfos,
-                           expectedOutputSPKs =
-                             tempTxBuilderResult.outputs.map(_.scriptPubKey),
-                           expectedFeeRate = feeRate,
-                           changeSPKs = Vector(changeSPK))
+      SanityCheckFinalizer(
+        inputInfos = shuffledInputInfos,
+        expectedOutputSPKs = tempTxBuilderResult.outputs.map(_.scriptPubKey),
+        expectedFeeRate = feeRate,
+        changeSPKs = Vector(changeSPK)
+      )
 
     sanityCheck
       .andThen(AddWitnessDataFinalizer(shuffledInputInfos))
@@ -378,27 +390,28 @@ object ShufflingNonInteractiveFinalizer
   override def txFinalizerFrom(
       inputs: Vector[InputInfo],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): ShufflingNonInteractiveFinalizer = {
+      changeSPK: ScriptPubKey
+  ): ShufflingNonInteractiveFinalizer = {
     ShufflingNonInteractiveFinalizer(inputs, feeRate, changeSPK)
   }
 }
 
-/** Adds a an amount to the output with the given ScriptPubKey
-  * and subtracts that amount in equal proportions from the specified
-  * change ScriptPubKeys.
+/** Adds a an amount to the output with the given ScriptPubKey and subtracts
+  * that amount in equal proportions from the specified change ScriptPubKeys.
   *
-  * This can be useful when you want to account for a future spending
-  * fee in this transaction to get nice output values on the spending tx.
+  * This can be useful when you want to account for a future spending fee in
+  * this transaction to get nice output values on the spending tx.
   */
 case class AddFutureFeeFinalizer(
     spk: ScriptPubKey,
     futureFee: CurrencyUnit,
-    changeSPKs: Vector[ScriptPubKey])
-    extends RawTxFinalizer {
+    changeSPKs: Vector[ScriptPubKey]
+) extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val changeOutputs = txBuilderResult.outputs.filter(output =>
-      changeSPKs.contains(output.scriptPubKey))
+      changeSPKs.contains(output.scriptPubKey)
+    )
 
     val outputT = txBuilderResult.outputs.zipWithIndex
       .find(_._1.scriptPubKey == spk) match {
@@ -406,8 +419,11 @@ case class AddFutureFeeFinalizer(
         val newOutput = output.copy(value = output.value + futureFee)
         Success((newOutput, index))
       case None =>
-        Failure(new RuntimeException(
-          s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}"))
+        Failure(
+          new RuntimeException(
+            s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}"
+          )
+        )
     }
 
     val outputsT = outputT.map { case (newOutput, index) =>
@@ -435,10 +451,10 @@ case class AddFutureFeeFinalizer(
   }
 }
 
-/** Subtracts the given fee from the output with the given ScriptPubKey.
-  * This can be useful if you are constructing a transaction without
-  * considering fees and have some after-the-fact external formula for
-  * computing fees and they need the removed.
+/** Subtracts the given fee from the output with the given ScriptPubKey. This
+  * can be useful if you are constructing a transaction without considering fees
+  * and have some after-the-fact external formula for computing fees and they
+  * need the removed.
   */
 case class SubtractFromOutputFinalizer(spk: ScriptPubKey, subAmt: CurrencyUnit)
     extends RawTxFinalizer {
@@ -452,20 +468,21 @@ case class SubtractFromOutputFinalizer(spk: ScriptPubKey, subAmt: CurrencyUnit)
         txBuilderResult.toBaseTransaction.copy(outputs = newOutputs)
       case None =>
         throw new RuntimeException(
-          s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}")
+          s"Did not find expected SPK $spk in ${txBuilderResult.outputs.map(_.scriptPubKey)}"
+        )
     }
   }
 }
 
-/** Assumes the input transaction has had no fee considerations
-  * and subtracts the estimated fee in equal portions from the
-  * outputs with the specified ScriptPubKeys
+/** Assumes the input transaction has had no fee considerations and subtracts
+  * the estimated fee in equal portions from the outputs with the specified
+  * ScriptPubKeys
   */
 case class SubtractFeeFromOutputsFinalizer(
     inputInfos: Vector[InputInfo],
     feeRate: FeeUnit,
-    spks: Vector[ScriptPubKey])
-    extends RawTxFinalizer {
+    spks: Vector[ScriptPubKey]
+) extends RawTxFinalizer {
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val dummyTx =
@@ -487,7 +504,8 @@ object SubtractFeeFromOutputsFinalizer {
   def subtractFees(
       tx: Transaction,
       feeRate: FeeUnit,
-      spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
+      spks: Vector[ScriptPubKey]
+  ): Vector[TransactionOutput] = {
     val fee = feeRate.calc(tx)
 
     val (outputs, unchangedOutputs) =
@@ -499,12 +517,16 @@ object SubtractFeeFromOutputsFinalizer {
     val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
 
     val newOutputsWithoutRemainder = outputs.map { case (output, index) =>
-      (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
-       index)
+      (
+        TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
+        index
+      )
     }
     val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
-    val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
-                                          lastOutput.scriptPubKey)
+    val newLastOutput = TransactionOutput(
+      lastOutput.value - feeRemainder,
+      lastOutput.scriptPubKey
+    )
     val newOutputs = newOutputsWithoutRemainder
       .dropRight(1)
       .:+((newLastOutput, lastOutputIndex))
@@ -515,15 +537,16 @@ object SubtractFeeFromOutputsFinalizer {
 
 case class DualFundingInput(
     scriptSignature: ScriptSignature,
-    maxWitnessLen: Int)
+    maxWitnessLen: Int
+)
 
-/** Finalizes a dual-funded transaction given the DualFundingInputs
-  * from both parties, their change spks and the funding scriptpubkey
-  * for the dual funded protocol.
+/** Finalizes a dual-funded transaction given the DualFundingInputs from both
+  * parties, their change spks and the funding scriptpubkey for the dual funded
+  * protocol.
   *
-  * This includes adding the future fee of spending transactions
-  * to the funding output as well as subtracting relevant fees
-  * from the change outputs. This finalizer filters dust outputs.
+  * This includes adding the future fee of spending transactions to the funding
+  * output as well as subtracting relevant fees from the change outputs. This
+  * finalizer filters dust outputs.
   */
 case class DualFundingTxFinalizer(
     offerInputs: Vector[DualFundingInput],
@@ -533,14 +556,17 @@ case class DualFundingTxFinalizer(
     acceptPayoutSPK: ScriptPubKey,
     acceptChangeSPK: ScriptPubKey,
     feeRate: SatoshisPerVirtualByte,
-    fundingSPK: ScriptPubKey)
-    extends RawTxFinalizer {
+    fundingSPK: ScriptPubKey
+) extends RawTxFinalizer {
 
-  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#fees */
+  /** @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#fees
+    */
   private def computeFees(
       inputs: Vector[DualFundingInput],
       payoutSPK: ScriptPubKey,
-      changeSPK: ScriptPubKey): (CurrencyUnit, CurrencyUnit) = {
+      changeSPK: ScriptPubKey
+  ): (CurrencyUnit, CurrencyUnit) = {
     // https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#expected-weight-of-the-contract-execution-or-refund-transaction
     val futureFeeWeight = 249 + 4 * payoutSPK.asmBytes.length
     val futureFeeVBytes = Math.ceil(futureFeeWeight / 4.0).toLong
@@ -573,9 +599,11 @@ case class DualFundingTxFinalizer(
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val addOfferFutureFee =
       AddFutureFeeFinalizer(fundingSPK, offerFutureFee, Vector(offerChangeSPK))
-    val addAcceptFutureFee = AddFutureFeeFinalizer(fundingSPK,
-                                                   acceptFutureFee,
-                                                   Vector(acceptChangeSPK))
+    val addAcceptFutureFee = AddFutureFeeFinalizer(
+      fundingSPK,
+      acceptFutureFee,
+      Vector(acceptChangeSPK)
+    )
     val subtractOfferFundingFee =
       SubtractFromOutputFinalizer(offerChangeSPK, offerFundingFee)
     val subtractAcceptFundingFee =

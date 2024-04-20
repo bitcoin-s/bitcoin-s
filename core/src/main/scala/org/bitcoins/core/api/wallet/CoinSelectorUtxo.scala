@@ -8,14 +8,17 @@ case class CoinSelectorUtxo(
     prevOut: TransactionOutput,
     outPoint: TransactionOutPoint,
     redeemScriptOpt: Option[ScriptPubKey],
-    scriptWitnessOpt: Option[ScriptWitness])
+    scriptWitnessOpt: Option[ScriptWitness]
+)
 
 object CoinSelectorUtxo {
 
   def fromSpendingInfoDb(db: SpendingInfoDb): CoinSelectorUtxo = {
-    CoinSelectorUtxo(db.output,
-                     db.outPoint,
-                     db.redeemScriptOpt,
-                     db.scriptWitnessOpt)
+    CoinSelectorUtxo(
+      db.output,
+      db.outPoint,
+      db.redeemScriptOpt,
+      db.scriptWitnessOpt
+    )
   }
 }

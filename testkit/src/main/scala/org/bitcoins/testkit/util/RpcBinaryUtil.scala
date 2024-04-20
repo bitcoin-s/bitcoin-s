@@ -6,8 +6,8 @@ import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file.Path
 
-/** A utility trait for handling binaries like bitcoind/eclair.
-  * All common utility methods should go in this trait
+/** A utility trait for handling binaries like bitcoind/eclair. All common
+  * utility methods should go in this trait
   */
 trait RpcBinaryUtil[T] extends StartStopAsync[T] with BitcoinSLogger {
 

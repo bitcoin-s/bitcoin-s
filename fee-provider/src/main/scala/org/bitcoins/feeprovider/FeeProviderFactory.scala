@@ -17,20 +17,22 @@ import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 trait FeeProviderFactory[T <: FeeRateApi] {
 
   def fromBlockTarget(blocks: Int, proxyParams: Option[Socks5ProxyParams])(
-      implicit system: ActorSystem): T
+      implicit system: ActorSystem
+  ): T
 }
 
 object FeeProviderFactory extends BitcoinSLogger {
 
-  /** Gets a Fee Provider from the given wallet app config
-    * Returns default if there is no config set
+  /** Gets a Fee Provider from the given wallet app config Returns default if
+    * there is no config set
     */
   def getFeeProviderOrElse(
       default: => FeeRateApi,
       feeProviderNameStrOpt: Option[String],
       feeProviderTargetOpt: Option[Int],
       proxyParamsOpt: Option[Socks5ProxyParams],
-      network: BitcoinNetwork)(implicit system: ActorSystem): FeeRateApi = {
+      network: BitcoinNetwork
+  )(implicit system: ActorSystem): FeeRateApi = {
 
     val feeProviderNameOpt =
       feeProviderNameStrOpt.flatMap(FeeProviderName.fromStringOpt)
@@ -53,7 +55,8 @@ object FeeProviderFactory extends BitcoinSLogger {
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
         case (Some(Constant), None) =>
           throw new IllegalArgumentException(
-            "Missing a target for a ConstantFeeRateProvider")
+            "Missing a target for a ConstantFeeRateProvider"
+          )
       }
 
     logger.info(s"Using fee provider: $feeProvider")

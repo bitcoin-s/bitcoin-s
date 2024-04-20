@@ -21,12 +21,14 @@ sealed abstract class BIP39Seed extends NetworkElement with MaskedToString {
   }
 }
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki# BIP32]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki# BIP32]]
   */
 object BIP39Seed extends Factory[BIP39Seed] {
   private case class BIP39SeedImpl(bytes: ByteVector) extends BIP39Seed
 
-  /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+  /** Generates a
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
     * seed from a sequence of bytes. Must be between 16 and 64 bytes.
     */
   override def fromBytes(bytes: ByteVector): BIP39Seed =
@@ -37,31 +39,38 @@ object BIP39Seed extends Factory[BIP39Seed] {
   private val ITERATION_COUNT = 2048
   private val DERIVED_KEY_LENGTH = 512
 
-  /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+  /** Generates a
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
     * seed from a mnemonic code. An optional password can be supplied.
-    * @param password Defaults to the empty string
+    * @param password
+    *   Defaults to the empty string
     */
   def fromMnemonic(
       mnemonic: MnemonicCode,
-      password: String = EMPTY_PASSWORD): BIP39Seed = {
+      password: String = EMPTY_PASSWORD
+  ): BIP39Seed = {
     val salt = s"mnemonic$password"
 
     val words = mnemonic.mkString(" ")
 
-    val encodedBytes = CryptoUtil.pbkdf2WithSha512(words,
-                                                   salt,
-                                                   ITERATION_COUNT,
-                                                   DERIVED_KEY_LENGTH)
+    val encodedBytes = CryptoUtil.pbkdf2WithSha512(
+      words,
+      salt,
+      ITERATION_COUNT,
+      DERIVED_KEY_LENGTH
+    )
 
     BIP39Seed.fromBytes(encodedBytes)
   }
 
-  /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
+  /** Generates a
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
     * seed from a mnemonic code. An optional password can be supplied.
     */
   def fromMnemonic(
       mnemonic: MnemonicCode,
-      passwordOpt: Option[String]): BIP39Seed = {
+      passwordOpt: Option[String]
+  ): BIP39Seed = {
     passwordOpt match {
       case Some(pass) =>
         fromMnemonic(mnemonic, pass)

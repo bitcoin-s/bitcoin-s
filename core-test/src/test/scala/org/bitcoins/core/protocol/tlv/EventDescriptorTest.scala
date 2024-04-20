@@ -20,24 +20,30 @@ class EventDescriptorTest extends BitcoinSUnitTest {
 
   it must "be illegal to have num digits be zero" in {
     intercept[IllegalArgumentException] {
-      UnsignedDigitDecompositionEventDescriptor(base = UInt16(10),
-                                                numDigits = UInt16.zero,
-                                                unit = "BTC/USD",
-                                                precision = Int32.zero)
+      UnsignedDigitDecompositionEventDescriptor(
+        base = UInt16(10),
+        numDigits = UInt16.zero,
+        unit = "BTC/USD",
+        precision = Int32.zero
+      )
     }
     intercept[IllegalArgumentException] {
-      SignedDigitDecompositionEventDescriptor(base = UInt16(10),
-                                              numDigits = UInt16.zero,
-                                              unit = "test_unit",
-                                              precision = Int32.zero)
+      SignedDigitDecompositionEventDescriptor(
+        base = UInt16(10),
+        numDigits = UInt16.zero,
+        unit = "test_unit",
+        precision = Int32.zero
+      )
     }
   }
   it must "create a unsigned digit decomposition event" in {
     val descriptor =
-      UnsignedDigitDecompositionEventDescriptor(base = UInt16(10),
-                                                numDigits = UInt16(1),
-                                                unit = "BTC/USD",
-                                                precision = Int32.zero)
+      UnsignedDigitDecompositionEventDescriptor(
+        base = UInt16(10),
+        numDigits = UInt16(1),
+        unit = "BTC/USD",
+        precision = Int32.zero
+      )
 
     assert(descriptor.maxNum == 9)
     assert(descriptor.minNum == 0)
@@ -62,7 +68,9 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(expectedString2.forall(descriptor2.contains(_)))
     assert(
       Vector(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9).forall(
-        descriptor2.containsPreciseOutcome(_)))
+        descriptor2.containsPreciseOutcome(_)
+      )
+    )
 
     val descriptor3 =
       descriptor.copy(precision = Int32.negOne, numDigits = UInt16(2))
@@ -73,7 +81,8 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(descriptor3.minToPrecision == 0.0)
     val expected3 =
       NumericRange[BigDecimal](start = 0.0, end = 10.0, step = 0.1)(
-        BigDecimalAsIfIntegral).toVector
+        BigDecimalAsIfIntegral
+      ).toVector
     assert(expected3.forall(descriptor3.containsPreciseOutcome(_)))
 
     val expectedOutcomes3: Vector[Int] =
@@ -84,10 +93,12 @@ class EventDescriptorTest extends BitcoinSUnitTest {
 
   it must "create a signed digit decomposition event" in {
     val descriptor =
-      SignedDigitDecompositionEventDescriptor(base = UInt16(10),
-                                              numDigits = UInt16(1),
-                                              unit = "BTC/USD",
-                                              precision = Int32.zero)
+      SignedDigitDecompositionEventDescriptor(
+        base = UInt16(10),
+        numDigits = UInt16(1),
+        unit = "BTC/USD",
+        precision = Int32.zero
+      )
 
     val descriptorOutcomeNums: Vector[Int] = -9.until(10).toVector
 
@@ -98,7 +109,8 @@ class EventDescriptorTest extends BitcoinSUnitTest {
 
     val expected =
       NumericRange[BigDecimal](start = -0.9, end = 1.0, step = 0.1)(
-        BigDecimalAsIfIntegral).toVector
+        BigDecimalAsIfIntegral
+      ).toVector
 
     assert(descriptor1.maxNum == 9)
     assert(descriptor1.maxToPrecision == 0.9)
@@ -113,7 +125,8 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(descriptor2.maxToPrecision == 0.09)
     val expected2 =
       NumericRange[BigDecimal](start = -0.09, end = 0.1, step = 0.01)(
-        BigDecimalAsIfIntegral).toVector
+        BigDecimalAsIfIntegral
+      ).toVector
 
     assert(expected2.forall(descriptor2.containsPreciseOutcome(_)))
     assert(-9.until(10).toVector.forall(descriptor2.contains(_)))
@@ -125,14 +138,16 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(descriptor3.maxToPrecision == 0.99)
     val expected3 =
       NumericRange[BigDecimal](start = -0.99, end = 1, step = 0.01)(
-        BigDecimalAsIfIntegral).toVector
+        BigDecimalAsIfIntegral
+      ).toVector
 
     assert(expected3.forall(descriptor3.containsPreciseOutcome(_)))
     assert(
       -99
         .until(100)
         .toVector
-        .forall(descriptor3.contains(_)))
+        .forall(descriptor3.contains(_))
+    )
 
     val descriptor4 =
       descriptor3.copy(numDigits = UInt16(3), precision = Int32(-1))
@@ -144,14 +159,16 @@ class EventDescriptorTest extends BitcoinSUnitTest {
 
     val expected4 =
       NumericRange[BigDecimal](start = -99.9, end = 100, step = 0.1)(
-        BigDecimalAsIfIntegral).toVector
+        BigDecimalAsIfIntegral
+      ).toVector
 
     assert(expected4.forall(descriptor4.containsPreciseOutcome(_)))
     assert(
       -999
         .until(1000)
         .toVector
-        .forall(descriptor4.contains(_)))
+        .forall(descriptor4.contains(_))
+    )
 
     assert(!descriptor4.containsPreciseOutcome(13.55))
     assert(descriptor4.containsPreciseOutcome(13.5))

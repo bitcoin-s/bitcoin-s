@@ -15,7 +15,8 @@ trait TorCallbacks extends ModuleCallbacks[TorCallbacks] with BitcoinSLogger {
     onTorStarted.execute(
       (),
       (err: Throwable) =>
-        logger.error(s"${onTorStarted.name} Callback failed with", err))
+        logger.error(s"${onTorStarted.name} Callback failed with", err)
+    )
   }
 
   def +(other: TorCallbacks): TorCallbacks

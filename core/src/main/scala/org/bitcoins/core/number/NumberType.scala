@@ -24,14 +24,14 @@ sealed abstract class Number[T <: Number[T]]
   def toLong: Long = toBigInt.bigInteger.longExact
   def toBigInt: BigInt = underlying
 
-  /** This is used to determine the valid amount of bytes in a number
-    * for instance a UInt8 has an andMask of 0xff
-    * a UInt32 has an andMask of 0xffffffff
+  /** This is used to determine the valid amount of bytes in a number for
+    * instance a UInt8 has an andMask of 0xff a UInt32 has an andMask of
+    * 0xffffffff
     */
   def andMask: BigInt
 
-  /** Factory function to create the underlying T, for instance a UInt32.
-    * This method must check if the parameter is in the required range.
+  /** Factory function to create the underlying T, for instance a UInt32. This
+    * method must check if the parameter is in the required range.
     */
   def apply: A => T
 
@@ -53,8 +53,8 @@ sealed abstract class Number[T <: Number[T]]
   }
 
   def >>(num: T): T = {
-    //this check is for weird behavior with the jvm and shift rights
-    //https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
+    // this check is for weird behavior with the jvm and shift rights
+    // https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
     if (num.toLong > 63) apply(0)
     else {
       val toInt = num.toInt
@@ -90,23 +90,24 @@ sealed abstract class Number[T <: Number[T]]
   def truncatedBytes: ByteVector = bytes.dropWhile(_ == 0x00)
 }
 
-/** Represents a signed number in our number system
-  * Instances of this are [[Int32]] or [[Int64]]
+/** Represents a signed number in our number system Instances of this are
+  * [[Int32]] or [[Int64]]
   */
 sealed abstract class SignedNumber[T <: Number[T]] extends Number[T] {
   final override def isSigned: Boolean = true
 }
 
-/** Represents an unsigned number in our number system
-  * Instances of this are [[UInt32]] or [[UInt64]]
+/** Represents an unsigned number in our number system Instances of this are
+  * [[UInt32]] or [[UInt64]]
   */
 sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T] {
   final override def isSigned: Boolean = false
 }
 
-/** This number type is useful for dealing with [[org.bitcoins.core.util.Bech32]]
-  * related applications. The native encoding for Bech32 is a 5 bit number which
-  * is what this abstraction is meant to  be used for
+/** This number type is useful for dealing with
+  * [[org.bitcoins.core.util.Bech32]] related applications. The native encoding
+  * for Bech32 is a 5 bit number which is what this abstraction is meant to be
+  * used for
   */
 sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
   override def apply: A => UInt5 = UInt5(_)
@@ -128,7 +129,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override val andMask = 0xff
 
   def toUInt5: UInt5 = {
-    //this will throw if not in range of a UInt5, come back and look later
+    // this will throw if not in range of a UInt5, come back and look later
     UInt5(toInt)
   }
 }
@@ -156,28 +157,30 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 
   override val bytes: ByteVector = {
     if (underlying.isValidLong) {
-      //optimization, if our number fits into a long
-      //we can get much better performance from ByteVector
+      // optimization, if our number fits into a long
+      // we can get much better performance from ByteVector
       ByteVector.fromLong(underlying.toLong, 8)
     } else {
-      //else just do what we were doing before
+      // else just do what we were doing before
       ByteVector.fromValidHex(encodeHex(bigInt = underlying))
     }
   }
   override def apply: A => UInt64 = UInt64(_)
   override val andMask = 0xffffffffffffffffL
 
-  /** Converts a [[BigInt]] to a 8 byte hex representation.
-    * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
-    * this function pads the hex chars to be 0000000000000001
+  /** Converts a [[BigInt]] to a 8 byte hex representation. [[BigInt]] will only
+    * allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex
+    * representation 01 this function pads the hex chars to be 0000000000000001
     *
-    * @param bigInt The number to encode
-    * @return The hex encoded number
+    * @param bigInt
+    *   The number to encode
+    * @return
+    *   The hex encoded number
     */
   private def encodeHex(bigInt: BigInt): String = {
     val hex = BytesUtil.encodeHex(bigInt)
     if (hex.length == 18) {
-      //means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
+      // means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
       hex.slice(2, hex.length)
     } else {
       val needed = 16 - hex.length
@@ -205,7 +208,8 @@ sealed abstract class Int64 extends SignedNumber[Int64] {
 
 /** Represents number types that are bounded by minimum and maximum values
   *
-  * @tparam T Type of the numbers
+  * @tparam T
+  *   Type of the numbers
   */
 trait Bounded[T] {
   def min: T
@@ -217,8 +221,7 @@ trait BaseNumbers[T] {
   def one: T
 }
 
-/** Should be implemented inside of any companion
-  * object for a number
+/** Should be implemented inside of any companion object for a number
   */
 trait NumberObject[T <: Number[T]] extends BaseNumbers[T] {
   type A = BigInt
@@ -233,8 +236,10 @@ object UInt5
     with NumberCache[UInt5] {
 
   private case class UInt5Impl(underlying: BigInt) extends UInt5 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
 
   lazy val zero = checkCached(0)
@@ -261,7 +266,8 @@ object UInt5
   def apply(bigInt: BigInt): UInt5 = {
     require(
       bigInt.toByteArray.length == 1,
-      s"To create a uint5 from a BigInt it must be less than 32. Got: ${bigInt.toString}")
+      s"To create a uint5 from a BigInt it must be less than 32. Got: ${bigInt.toString}"
+    )
 
     UInt5.fromByte(bigInt.toByteArray.head)
   }
@@ -269,7 +275,8 @@ object UInt5
   override def fromBytes(bytes: ByteVector): UInt5 = {
     require(
       bytes.size == 1,
-      s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}")
+      s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}"
+    )
     UInt5.fromByte(bytes.head)
   }
 
@@ -293,8 +300,10 @@ object UInt8
     with NumberCache[UInt8] {
 
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
   lazy val zero = checkCached(0.toShort)
   lazy val one = checkCached(1.toShort)
@@ -321,7 +330,8 @@ object UInt8
   override def fromBytes(bytes: ByteVector): UInt8 = {
     require(
       bytes.size == 1,
-      "Can only create a uint8 from a byte array of size one, got: " + bytes)
+      "Can only create a uint8 from a byte array of size one, got: " + bytes
+    )
     UInt8(NumberUtil.toUnsignedInt(bytes))
   }
 
@@ -348,8 +358,10 @@ object UInt16
     with NumberCache[UInt16] {
 
   private case class UInt16Impl(underlying: BigInt) extends UInt16 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
 
   lazy val zero = checkCached(0)
@@ -372,7 +384,8 @@ object UInt16
   override def fromBytes(bytes: ByteVector): UInt16 = {
     require(
       bytes.size <= 2,
-      "UInt16 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
+      "UInt16 byte array was too large, got: " + BytesUtil.encodeHex(bytes)
+    )
     UInt16(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
@@ -396,8 +409,10 @@ object UInt32
     with NumberCache[UInt32] {
 
   private case class UInt32Impl(underlying: BigInt) extends UInt32 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
 
   lazy val zero: UInt32 = checkCached(0)
@@ -420,7 +435,8 @@ object UInt32
   override def fromBytes(bytes: ByteVector): UInt32 = {
     require(
       bytes.size <= 4,
-      "UInt32 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
+      "UInt32 byte array was too large, got: " + BytesUtil.encodeHex(bytes)
+    )
     UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
@@ -448,8 +464,10 @@ object UInt64
     with NumberCacheBigInt[UInt64] {
 
   private case class UInt64Impl(underlying: BigInt) extends UInt64 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
 
   lazy val zero = checkCached(0)
@@ -461,11 +479,11 @@ object UInt64
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
-  lazy val twentyThree = UInt64(BigInt(23)) //p2sh compact size uint
-  lazy val twentyFive = UInt64(BigInt(25)) //p2pkh compact size uint
-  lazy val oneHundredFive = UInt64(BigInt(105)) //multisig spk 3 public keys
-  lazy val thirtyFour = UInt64(BigInt(34)) //p2wsh compact size uint
-  lazy val twentyTwo = UInt64(BigInt(22)) //p2pwpkh compact size uint
+  lazy val twentyThree = UInt64(BigInt(23)) // p2sh compact size uint
+  lazy val twentyFive = UInt64(BigInt(25)) // p2pkh compact size uint
+  lazy val oneHundredFive = UInt64(BigInt(105)) // multisig spk 3 public keys
+  lazy val thirtyFour = UInt64(BigInt(34)) // p2wsh compact size uint
+  lazy val twentyTwo = UInt64(BigInt(22)) // p2pwpkh compact size uint
 
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
@@ -501,8 +519,10 @@ object Int32
     with NumberCache[Int32] {
 
   private case class Int32Impl(underlying: BigInt) extends Int32 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
   val negOne = Int32(-1)
 
@@ -542,8 +562,10 @@ object Int64
     with NumberCache[Int64] {
 
   private case class Int64Impl(underlying: BigInt) extends Int64 {
-    require(isInBound(underlying),
-            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
+    require(
+      isInBound(underlying),
+      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
+    )
   }
 
   lazy val zero = checkCached(0)

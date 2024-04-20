@@ -31,17 +31,23 @@ class Socks5ClientTransport(proxyParams: Socks5ProxyParams)
   override def connectTo(
       host: String,
       port: Int,
-      settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[
-    ByteString,
-    ByteString,
-    Future[Http.OutgoingConnection]] = {
+      settings: ClientConnectionSettings
+  )(implicit
+      system: ActorSystem
+  ): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
     Socks5ProxyGraphStage(host, port, proxyParams)
       .joinMat(
-        TCP.connectTo(proxyParams.address.getHostString,
-                      proxyParams.address.getPort,
-                      settings))(Keep.right)
-      .mapMaterializedValue(_.map(_.copy(remoteAddress =
-        InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))
+        TCP.connectTo(
+          proxyParams.address.getHostString,
+          proxyParams.address.getPort,
+          settings
+        )
+      )(Keep.right)
+      .mapMaterializedValue(
+        _.map(
+          _.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port))
+        )(system.dispatcher)
+      )
   }
 }
 
@@ -49,44 +55,50 @@ object Socks5ClientTransport {
 
   /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
     */
-  def createConnectionPoolSettings(proxyParams: Socks5ProxyParams)(implicit
-      system: ActorSystem): ConnectionPoolSettings = {
+  def createConnectionPoolSettings(
+      proxyParams: Socks5ProxyParams
+  )(implicit system: ActorSystem): ConnectionPoolSettings = {
     val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
 
     val clientConnectionSettings =
       ClientConnectionSettings(system).withTransport(socks5ClientTransport)
 
     ConnectionPoolSettings(system).withConnectionSettings(
-      clientConnectionSettings)
+      clientConnectionSettings
+    )
   }
 
   /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
     */
-  def createConnectionPoolSettings(proxyParamsOpt: Option[Socks5ProxyParams])(
-      implicit system: ActorSystem): ConnectionPoolSettings =
+  def createConnectionPoolSettings(
+      proxyParamsOpt: Option[Socks5ProxyParams]
+  )(implicit system: ActorSystem): ConnectionPoolSettings =
     proxyParamsOpt match {
       case Some(proxyParams) =>
         createConnectionPoolSettings(proxyParams)
       case None => ConnectionPoolSettings(system)
     }
 
-  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
-    * If the URI points to the loopback interface returns the default [[ConnectionPoolSettings]] without SOCKS5 proxy
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters. If
+    * the URI points to the loopback interface returns the default
+    * [[ConnectionPoolSettings]] without SOCKS5 proxy
     */
   def createConnectionPoolSettings(uri: URI, proxyParams: Socks5ProxyParams)(
-      implicit system: ActorSystem): ConnectionPoolSettings = {
+      implicit system: ActorSystem
+  ): ConnectionPoolSettings = {
     if (!NetworkUtil.isLocalhost(uri.getHost)) {
       createConnectionPoolSettings(proxyParams)
     } else ConnectionPoolSettings(system)
   }
 
-  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
-    * If the URI points to the loopback interface returns the default [[ConnectionPoolSettings]] without SOCKS5 proxy
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters. If
+    * the URI points to the loopback interface returns the default
+    * [[ConnectionPoolSettings]] without SOCKS5 proxy
     */
   def createConnectionPoolSettings(
       uri: URI,
-      proxyParams: Option[Socks5ProxyParams])(implicit
-      system: ActorSystem): ConnectionPoolSettings = {
+      proxyParams: Option[Socks5ProxyParams]
+  )(implicit system: ActorSystem): ConnectionPoolSettings = {
     if (!NetworkUtil.isLocalhost(uri.getHost)) {
       createConnectionPoolSettings(proxyParams)
     } else ConnectionPoolSettings(system)
@@ -104,23 +116,19 @@ object Socks5ProxyGraphStage {
   def apply(
       targetHostName: String,
       targetPort: Int,
-      proxyParams: Socks5ProxyParams): BidiFlow[
-    ByteString,
-    ByteString,
-    ByteString,
-    ByteString,
-    NotUsed] =
+      proxyParams: Socks5ProxyParams
+  ): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     BidiFlow.fromGraph(
-      new Socks5ProxyGraphStage(targetHostName, targetPort, proxyParams))
+      new Socks5ProxyGraphStage(targetHostName, targetPort, proxyParams)
+    )
 
 }
 
 class Socks5ProxyGraphStage(
     targetHostName: String,
     targetPort: Int,
-    proxyParams: Socks5ProxyParams)
-    extends GraphStage[
-      BidiShape[ByteString, ByteString, ByteString, ByteString]]
+    proxyParams: Socks5ProxyParams
+) extends GraphStage[BidiShape[ByteString, ByteString, ByteString, ByteString]]
     with BitcoinSLogger {
 
   val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")
@@ -132,21 +140,21 @@ class Socks5ProxyGraphStage(
   import Socks5Connection._
   import Socks5ProxyGraphStage._
 
-  override def shape: BidiShape[
-    ByteString,
-    ByteString,
-    ByteString,
-    ByteString] = BidiShape.apply(socks5In, bytesOut, bytesIn, socks5Out)
+  override def shape
+      : BidiShape[ByteString, ByteString, ByteString, ByteString] =
+    BidiShape.apply(socks5In, bytesOut, bytesIn, socks5Out)
 
   private val credentialsOpt = Socks5ProxyParams.proxyCredentials(proxyParams)
 
   private val greetingsMessage = socks5Greeting(credentialsOpt.isDefined)
 
   private val authMessage = credentialsOpt.map(c =>
-    socks5PasswordAuthenticationRequest(c.username, c.password))
+    socks5PasswordAuthenticationRequest(c.username, c.password)
+  )
 
   private val connectMessage = socks5ConnectionRequest(
-    InetSocketAddress.createUnresolved(targetHostName, targetPort))
+    InetSocketAddress.createUnresolved(targetHostName, targetPort)
+  )
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) with StageLogging {
@@ -168,7 +176,9 @@ class Socks5ProxyGraphStage(
           case None =>
             failStage(
               new IllegalStateException(
-                "Cannot send AUTH message: undefined credentials"))
+                "Cannot send AUTH message: undefined credentials"
+              )
+            )
         }
       }
 
@@ -211,7 +221,8 @@ class Socks5ProxyGraphStage(
               case Failure(ex) =>
                 logger.error(
                   s"Failed to connect $targetHostName:$targetPort via tor",
-                  ex)
+                  ex
+                )
                 failStage(ex)
             }
           case _ =>
@@ -224,13 +235,15 @@ class Socks5ProxyGraphStage(
         sendGreeting()
       }
 
-      setHandler(bytesIn,
-                 new InHandler {
+      setHandler(
+        bytesIn,
+        new InHandler {
 
-                   override def onPush(): Unit = {
-                     parseResponse(grab(bytesIn))
-                   }
-                 })
+          override def onPush(): Unit = {
+            parseResponse(grab(bytesIn))
+          }
+        }
+      )
 
       setHandler(socks5In, eagerTerminateInput)
       setHandler(bytesOut, eagerTerminateOutput)

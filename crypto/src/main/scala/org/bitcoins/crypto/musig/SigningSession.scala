@@ -12,14 +12,16 @@ import scodec.bits.ByteVector
 case class SigningSession(
     b: FieldElement,
     aggNonce: ECPublicKey,
-    e: FieldElement)
+    e: FieldElement
+)
 
 object SigningSession {
 
   def computeB(
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
-      message: ByteVector): FieldElement = {
+      message: ByteVector
+  ): FieldElement = {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
 
     val bHash =
@@ -31,10 +33,12 @@ object SigningSession {
   def computeE(
       aggPubKey: SchnorrPublicKey,
       aggNonce: ECPublicKey,
-      message: ByteVector): FieldElement = {
+      message: ByteVector
+  ): FieldElement = {
     val eBytes = CryptoUtil
       .sha256SchnorrChallenge(
-        aggNonce.schnorrNonce.bytes ++ aggPubKey.bytes ++ message)
+        aggNonce.schnorrNonce.bytes ++ aggPubKey.bytes ++ message
+      )
       .bytes
 
     FieldElement(new java.math.BigInteger(1, eBytes.toArray))
@@ -43,7 +47,8 @@ object SigningSession {
   def getSessionValues(
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
-      message: ByteVector): SigningSession = {
+      message: ByteVector
+  ): SigningSession = {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
     val b = computeB(aggNoncePub, keySet, message)
     val aggNonce = aggNoncePub.sumToKey(b)
@@ -55,7 +60,8 @@ object SigningSession {
   def apply(
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
-      message: ByteVector): SigningSession = {
+      message: ByteVector
+  ): SigningSession = {
     getSessionValues(aggNoncePub, keySet, message)
   }
 }

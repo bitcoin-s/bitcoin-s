@@ -2,12 +2,11 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-/** Utility cryptographic functions
-  * This is a proxy for the underlying implementation of [[CryptoRuntime]]
-  * such as [[LibSecp256k1CryptoRuntime]].
+/** Utility cryptographic functions This is a proxy for the underlying
+  * implementation of [[CryptoRuntime]] such as [[LibSecp256k1CryptoRuntime]].
   *
-  * This is necessary so that the core module doesn't need to be refactored
-  * to add support for multiple platforms, it can keep referencing CryptoUtil
+  * This is necessary so that the core module doesn't need to be refactored to
+  * add support for multiple platforms, it can keep referencing CryptoUtil
   */
 trait CryptoUtil extends CryptoRuntime {
 
@@ -85,7 +84,8 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def recoverPublicKey(
       signature: ECDigitalSignature,
-      message: ByteVector): (ECPublicKey, ECPublicKey) = {
+      message: ByteVector
+  ): (ECPublicKey, ECPublicKey) = {
     cryptoRuntime.recoverPublicKey(signature, message)
   }
 
@@ -94,22 +94,26 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def sign(
       privateKey: ECPrivateKey,
-      dataToSign: ByteVector): ECDigitalSignature = {
+      dataToSign: ByteVector
+  ): ECDigitalSignature = {
     val sig = cryptoRuntime.sign(privateKey, dataToSign)
     assert(
       verify(privateKey.publicKey, dataToSign, sig),
-      "Something has gone wrong, a generated signature may have been corrupted")
+      "Something has gone wrong, a generated signature may have been corrupted"
+    )
     sig
   }
 
   override def signWithEntropy(
       privateKey: ECPrivateKey,
       bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature = {
+      entropy: ByteVector
+  ): ECDigitalSignature = {
     val sig = cryptoRuntime.signWithEntropy(privateKey, bytes, entropy)
     assert(
       verify(privateKey.publicKey, bytes, sig),
-      "Something has gone wrong, a generated signature may have been corrupted")
+      "Something has gone wrong, a generated signature may have been corrupted"
+    )
     sig
   }
 
@@ -119,19 +123,22 @@ trait CryptoUtil extends CryptoRuntime {
   override def verify(
       publicKey: ECPublicKeyApi,
       data: ByteVector,
-      signature: ECDigitalSignature): Boolean =
+      signature: ECDigitalSignature
+  ): Boolean =
     cryptoRuntime.verify(publicKey, data, signature)
 
   override def decompressed(pubKeyBytes: ByteVector): ByteVector =
     cryptoRuntime.decompressed(pubKeyBytes)
 
   override def decompressed[PK <: ECPublicKeyApi](
-      publicKey: PK): publicKey.type =
+      publicKey: PK
+  ): publicKey.type =
     cryptoRuntime.decompressed(publicKey)
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
-      tweak: FieldElement): ECPublicKey =
+      tweak: FieldElement
+  ): ECPublicKey =
     cryptoRuntime.tweakMultiply(publicKey, tweak)
 
   override def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey =
@@ -148,12 +155,14 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def combinePubKeys(
       pubKeys: Vector[ECPublicKey],
-      isCompressed: Boolean = true): ECPublicKey =
+      isCompressed: Boolean = true
+  ): ECPublicKey =
     cryptoRuntime.combinePubKeys(pubKeys, isCompressed)
 
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
-      privkey: ECPrivateKey): ECPublicKey =
+      privkey: ECPrivateKey
+  ): ECPublicKey =
     cryptoRuntime.pubKeyTweakAdd(pubkey, privkey)
 
   override def isValidPubKey(pubKey: ECPublicKeyApi): Boolean =
@@ -162,70 +171,82 @@ trait CryptoUtil extends CryptoRuntime {
   override def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
+      auxRand: ByteVector
+  ): SchnorrDigitalSignature = {
     val sig = cryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
     assert(
       schnorrVerify(dataToSign, privateKey.schnorrPublicKey, sig),
-      "Something has gone wrong, a generated signature may have been corrupted")
+      "Something has gone wrong, a generated signature may have been corrupted"
+    )
     sig
   }
 
   override def schnorrSignWithNonce(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
+      nonceKey: ECPrivateKey
+  ): SchnorrDigitalSignature = {
     val sig =
       cryptoRuntime.schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
     assert(
       schnorrVerify(dataToSign, privateKey.schnorrPublicKey, sig),
-      "Something has gone wrong, a generated signature may have been corrupted")
+      "Something has gone wrong, a generated signature may have been corrupted"
+    )
     sig
   }
 
   override def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean =
+      signature: SchnorrDigitalSignature
+  ): Boolean =
     cryptoRuntime.schnorrVerify(data, schnorrPubKey, signature)
 
   override def schnorrComputeSigPoint(
       data: ByteVector,
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
-      compressed: Boolean): ECPublicKey =
+      compressed: Boolean
+  ): ECPublicKey =
     cryptoRuntime.schnorrComputeSigPoint(data, nonce, pubKey, compressed)
 
   override def adaptorSign(
       key: ECPrivateKey,
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector): ECAdaptorSignature =
+      auxRand: ByteVector
+  ): ECAdaptorSignature =
     cryptoRuntime.adaptorSign(key, adaptorPoint, msg, auxRand)
 
   override def adaptorComplete(
       key: ECPrivateKey,
-      adaptorSignature: ECAdaptorSignature): ECDigitalSignature =
+      adaptorSignature: ECAdaptorSignature
+  ): ECDigitalSignature =
     cryptoRuntime.adaptorComplete(key, adaptorSignature)
 
   override def extractAdaptorSecret(
       signature: ECDigitalSignature,
       adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey): ECPrivateKey =
+      key: ECPublicKey
+  ): ECPrivateKey =
     cryptoRuntime.extractAdaptorSecret(signature, adaptorSignature, key)
 
   override def adaptorVerify(
       adaptorSignature: ECAdaptorSignature,
       key: ECPublicKey,
       msg: ByteVector,
-      adaptorPoint: ECPublicKey): Boolean =
+      adaptorPoint: ECPublicKey
+  ): Boolean =
     cryptoRuntime.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
 
   override def decodeSignature(
-      signature: ECDigitalSignature): (BigInt, BigInt) =
+      signature: ECDigitalSignature
+  ): (BigInt, BigInt) =
     cryptoRuntime.decodeSignature(signature)
 
   override def isValidSignatureEncoding(
-      signature: ECDigitalSignature): Boolean =
+      signature: ECDigitalSignature
+  ): Boolean =
     cryptoRuntime.isValidSignatureEncoding(signature)
 
   override def isDEREncoded(signature: ECDigitalSignature): Boolean =
@@ -243,7 +264,8 @@ trait CryptoUtil extends CryptoRuntime {
       pass: ByteVector,
       salt: ByteVector,
       iterationCount: Int,
-      derivedKeyLength: Int): ByteVector =
+      derivedKeyLength: Int
+  ): ByteVector =
     cryptoRuntime.pbkdf2WithSha512(pass, salt, iterationCount, derivedKeyLength)
 }
 

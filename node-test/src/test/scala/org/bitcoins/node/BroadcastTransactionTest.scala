@@ -20,8 +20,10 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
-                                                              Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      () => pgUrl(),
+      Vector.empty
+    )
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
@@ -33,7 +35,8 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
         system,
-        getFreshConfig)
+        getFreshConfig
+      )
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcome)
@@ -80,7 +83,8 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
             false
           case other =>
             logger.error(
-              s"Received unexpected error on getrawtransaction: $other")
+              s"Received unexpected error on getrawtransaction: $other"
+            )
             throw other
         }
     }
@@ -91,10 +95,13 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
         txOpt <- node.txDAO.findByHash(tx.txId)
         _ = assert(
           txOpt.isDefined,
-          "Transaction was not added to BroadcastableTransaction database")
-        _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
-                                           interval = 1.second,
-                                           maxTries = 25)
+          "Transaction was not added to BroadcastableTransaction database"
+        )
+        _ <- TestAsyncUtil.awaitConditionF(
+          () => hasSeenTx(tx),
+          interval = 1.second,
+          maxTries = 25
+        )
       } yield ()
     }
 
@@ -112,6 +119,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
 
     } yield assert(
       // pre-balance - sent amount + 1 block reward maturing +/- fees
-      (bitcoindBalancePreBroadcast - sendAmount + 50.bitcoins).satoshis.toLong === bitcoindBalancePostBroadcast.satoshis.toLong +- 5000)
+      (bitcoindBalancePreBroadcast - sendAmount + 50.bitcoins).satoshis.toLong === bitcoindBalancePostBroadcast.satoshis.toLong +- 5000
+    )
   }
 }

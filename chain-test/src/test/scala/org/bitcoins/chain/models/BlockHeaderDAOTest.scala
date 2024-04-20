@@ -49,7 +49,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
       val createdF = blockHeaderDAO.create(blockHeader)
-      //delete the header in the db
+      // delete the header in the db
       val deletedF = {
         createdF.flatMap { _ =>
           blockHeaderDAO.delete(blockHeader)
@@ -81,7 +81,8 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val headerDbF = createdF.flatMap(_ =>
-        blockHeaderDAO.findClosestToTime(UInt32(TimeUtil.currentEpochSecond)))
+        blockHeaderDAO.findClosestToTime(UInt32(TimeUtil.currentEpochSecond))
+      )
 
       headerDbF.map { headerDb =>
         assert(headerDb == blockHeader)
@@ -94,7 +95,8 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val headerDbF = createdF.flatMap(_ =>
-        blockHeaderDAO.findClosestToTime(blockHeader.time))
+        blockHeaderDAO.findClosestToTime(blockHeader.time)
+      )
 
       headerDbF.map { headerDb =>
         assert(headerDb == blockHeader)
@@ -108,7 +110,9 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
       val headerDbsF = createdF.flatMap(_ =>
         blockHeaderDAO.findClosestBeforeTime(
-          UInt32(TimeUtil.currentEpochSecond)))
+          UInt32(TimeUtil.currentEpochSecond)
+        )
+      )
 
       headerDbsF.map { headerDbOpt =>
         assert(headerDbOpt.isDefined)
@@ -133,7 +137,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
       val blockHeader2 = BlockHeaderHelper.buildNextHeader(blockHeader)
 
-      //insert another header and make sure that is the new last header
+      // insert another header and make sure that is the new last header
       assert1F.flatMap { _ =>
         val created2F = blockHeaderDAO.create(blockHeader2)
         val chainTip2F = created2F.flatMap(_ => blockHeaderDAO.getBestChainTips)
@@ -157,7 +161,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
     blockHeaderDAO: BlockHeaderDAO =>
       val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
 
-      //now we have 2 competing tips, chainTips should return both competing headers
+      // now we have 2 competing tips, chainTips should return both competing headers
       val firstAssertionF = for {
         reorgFixture <- reorgFixtureF
         headerDb1 = reorgFixture.headerDb1
@@ -169,9 +173,9 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         assert(chainTips.contains(headerDb2))
       }
 
-      //ok, now we are going to build a new header off of headerDb1
-      //however, headerDb2 is _still_ a possible chainTip that we can reorg
-      //too. So we should still have both of them returned
+      // ok, now we are going to build a new header off of headerDb1
+      // however, headerDb2 is _still_ a possible chainTip that we can reorg
+      // too. So we should still have both of them returned
       for {
         _ <- firstAssertionF
         reorgFixture <- reorgFixtureF
@@ -189,7 +193,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
     blockHeaderDAO: BlockHeaderDAO =>
       val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
 
-      //now we have 2 competing tips, so we should return 2 chains
+      // now we have 2 competing tips, so we should return 2 chains
       val firstAssertionF = for {
         _ <- reorgFixtureF
         chains <- blockHeaderDAO.getBlockchains()
@@ -217,7 +221,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         assert(headers.head.height == 1)
       }
 
-      //create one at height 2
+      // create one at height 2
       val blockHeader2 = BlockHeaderHelper.buildNextHeader(blockHeader)
 
       val created2F = blockHeaderDAO.create(blockHeader2)
@@ -265,7 +269,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val blockHeader1 = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val created2F = createdF.flatMap(_ => blockHeaderDAO.create(blockHeader1))
 
-      //now make sure they are both at height 1
+      // now make sure they are both at height 1
       val getHeightF = created2F.flatMap(_ => blockHeaderDAO.getAtHeight(1))
 
       getHeightF.map { case headers =>
@@ -296,7 +300,8 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val genesisF = createdF.flatMap(created =>
-        blockHeaderDAO.getAncestorAtHeight(created, 0))
+        blockHeaderDAO.getAncestorAtHeight(created, 0)
+      )
 
       genesisF.map { genesisOpt =>
         assert(genesisOpt.contains(genesisHeaderDb))
@@ -309,14 +314,16 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val noGenesisAncestorsF =
-        blockHeaderDAO.getNAncestors(childHash =
-                                       genesisHeaderDb.blockHeader.hashBE,
-                                     n = 1)
+        blockHeaderDAO.getNAncestors(
+          childHash = genesisHeaderDb.blockHeader.hashBE,
+          n = 1
+        )
 
       val foundGenesisF =
-        blockHeaderDAO.getNAncestors(childHash =
-                                       genesisHeaderDb.blockHeader.hashBE,
-                                     n = 0)
+        blockHeaderDAO.getNAncestors(
+          childHash = genesisHeaderDb.blockHeader.hashBE,
+          n = 0
+        )
       val emptyAssertion = for {
         noGenesisAncestors <- noGenesisAncestorsF
         foundGenesis <- foundGenesisF
@@ -330,9 +337,10 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
       val oneChildF = for {
         created <- createdF
-        children <- blockHeaderDAO.getNAncestors(childHash =
-                                                   created.blockHeader.hashBE,
-                                                 n = 1)
+        children <- blockHeaderDAO.getNAncestors(
+          childHash = created.blockHeader.hashBE,
+          n = 1
+        )
       } yield {
         assert(children.length == 2)
         assert(children == Vector(created, genesisHeaderDb))
@@ -357,13 +365,15 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       BlockHeaderDbHelper.fromBlockHeader(
         1,
         BigInt(1, hex"fffef2bf0566ab".toArray),
-        ChainTestUtil.blockHeader562462)
+        ChainTestUtil.blockHeader562462
+      )
 
     val db2 =
       BlockHeaderDbHelper.fromBlockHeader(
         2,
         BigInt(1, hex"01253721228459eac00c".toArray),
-        ChainTestUtil.blockHeader562463)
+        ChainTestUtil.blockHeader562463
+      )
 
     for {
       _ <- blockerHeaderDAO.createAll(Vector(db1, db2))
@@ -377,9 +387,11 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val chainWork = BigInt(1, bytes.toArray)
 
       val db =
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            chainWork,
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          chainWork,
+          ChainTestUtil.blockHeader562462
+        )
 
       for {
         _ <- blockerHeaderDAO.create(db)
@@ -429,32 +441,35 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       )
 
       val chain1 = Vector(
-        BlockHeaderDbHelper.fromBlockHeader(3,
-                                            BigInt(2),
-                                            ChainTestUtil.blockHeader562464),
-        BlockHeaderDbHelper.fromBlockHeader(2,
-                                            BigInt(1),
-                                            ChainTestUtil.blockHeader562463),
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper
+          .fromBlockHeader(3, BigInt(2), ChainTestUtil.blockHeader562464),
+        BlockHeaderDbHelper
+          .fromBlockHeader(2, BigInt(1), ChainTestUtil.blockHeader562463),
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          BigInt(0),
+          ChainTestUtil.blockHeader562462
+        )
       )
 
       val chain2 = Vector(
         BlockHeaderDbHelper.fromBlockHeader(2, BigInt(1), duplicate2),
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          BigInt(0),
+          ChainTestUtil.blockHeader562462
+        )
       )
 
       val chain3 = Vector(
         BlockHeaderDbHelper.fromBlockHeader(3, BigInt(2), duplicate3),
-        BlockHeaderDbHelper.fromBlockHeader(2,
-                                            BigInt(1),
-                                            ChainTestUtil.blockHeader562463),
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper
+          .fromBlockHeader(2, BigInt(1), ChainTestUtil.blockHeader562463),
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          BigInt(0),
+          ChainTestUtil.blockHeader562462
+        )
       )
 
       val chain4 = Vector(
@@ -462,10 +477,12 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       )
 
       val expectedChains =
-        Vector(Blockchain(chain1),
-               Blockchain(chain2),
-               Blockchain(chain3),
-               Blockchain(chain4))
+        Vector(
+          Blockchain(chain1),
+          Blockchain(chain2),
+          Blockchain(chain3),
+          Blockchain(chain4)
+        )
 
       val headers = expectedChains.flatMap(_.headers).distinct
 

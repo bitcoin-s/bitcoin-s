@@ -75,10 +75,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       assert(fundingTx.outputs.size == 3)
       assert(
         fundingTx.outputs.exists(
-          _.scriptPubKey == offer.changeAddress.scriptPubKey))
+          _.scriptPubKey == offer.changeAddress.scriptPubKey
+        )
+      )
       assert(
         fundingTx.outputs.exists(
-          _.scriptPubKey == accept.changeAddress.scriptPubKey))
+          _.scriptPubKey == accept.changeAddress.scriptPubKey
+        )
+      )
       assert(ScriptInterpreter.checkTransaction(fundingTx))
 
       val fundingTxPrevOutputRefs = inputsA.map(_.toOutputReference) ++ inputsB
@@ -86,7 +90,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       val prevOutputMap =
         PreviousOutputMap(
-          fundingTxPrevOutputRefs.map(ref => ref.outPoint -> ref.output).toMap)
+          fundingTxPrevOutputRefs.map(ref => ref.outPoint -> ref.output).toMap
+        )
 
       val fundingTxVerify = fundingTx.inputs.zipWithIndex.forall {
         case (input, index) =>
@@ -110,16 +115,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
             DLCWalletUtil.getSigs(single)
           case disjoint: DisjointUnionContractInfo =>
             sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+            )
         }
       }
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
@@ -156,16 +164,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
             DLCWalletUtil.getSigs(single)
           case disjoint: DisjointUnionContractInfo =>
             sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+            )
         }
       }
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = false,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = false,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -206,7 +217,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
             DLCWalletUtil.getSigs(single)
           case disjoint: DisjointUnionContractInfo =>
             sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+            )
         }
       }
 
@@ -228,17 +240,20 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
             DLCWalletUtil.getSigs(single)
           case disjoint: DisjointUnionContractInfo =>
             sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+            )
         }
       }
 
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -274,10 +289,12 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       status <- getDLCStatus(wallets._1.wallet)
       func = (wallet: DLCWallet) => wallet.executeDLCRefund(contractId)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 2)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 2
+      )
 
       _ = assert(result)
 
@@ -312,10 +329,12 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       status <- getDLCStatus(wallets._1.wallet)
       func = (wallet: DLCWallet) => wallet.executeDLCRefund(contractId)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = false,
-                                 func = func,
-                                 expectedOutputs = 2)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = false,
+        func = func,
+        expectedOutputs = 2
+      )
 
       _ = assert(result)
 
@@ -357,18 +376,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   }
 
   it must "create 2 offers with the same contract info" in { wallets =>
-    //test for: https://github.com/bitcoin-s/bitcoin-s/issues/3127
+    // test for: https://github.com/bitcoin-s/bitcoin-s/issues/3127
     val walletA = wallets._1.wallet
 
-    //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
+    // https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
     val contractInfo = ContractInfoV0TLV.fromHex(
-      "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
+      "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342"
+    )
     val announcement =
       contractInfo.oracleInfo.asInstanceOf[OracleInfoV0TLV].announcement
     val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
     val totalCollateral = Satoshis(50000)
 
-    //helper method to make an offer
+    // helper method to make an offer
     def makeOffer(): Future[DLCOffer] = {
       walletA.createDLCOffer(
         contractInfoTLV = contractInfo,
@@ -382,19 +402,25 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       )
     }
 
-    //simply try to make 2 offers with the same contract info
-    //if this works, we are good
+    // simply try to make 2 offers with the same contract info
+    // if this works, we are good
     for {
       _ <- makeOffer()
       announcementVec1 <- walletA.announcementDAO.findByAnnouncementSignatures(
-        Vector(announcement.announcementSignature))
-      _ = assert(announcementVec1.length == 1,
-                 s"Got length=${announcementVec1.length}")
+        Vector(announcement.announcementSignature)
+      )
+      _ = assert(
+        announcementVec1.length == 1,
+        s"Got length=${announcementVec1.length}"
+      )
       _ <- makeOffer()
       announcementVec2 <- walletA.announcementDAO.findByAnnouncementSignatures(
-        Vector(announcement.announcementSignature))
-      _ = assert(announcementVec2.length == 1,
-                 s"Got length=${announcementVec2.length}")
+        Vector(announcement.announcementSignature)
+      )
+      _ = assert(
+        announcementVec2.length == 1,
+        s"Got length=${announcementVec2.length}"
+      )
     } yield succeed
   }
 
@@ -412,26 +438,31 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
               DLCWalletUtil.getSigs(single)
             case disjoint: DisjointUnionContractInfo =>
               sys.error(
-                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+              )
           }
         }
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, sig).map(_.get)
 
-        result <- dlcExecutionTest(wallets = wallets,
-                                   asInitiator = true,
-                                   func = func,
-                                   expectedOutputs = 1)
+        result <- dlcExecutionTest(
+          wallets = wallets,
+          asInitiator = true,
+          func = func,
+          expectedOutputs = 1
+        )
         _ = assert(result)
 
-        _ <- walletA.createDLCOffer(status.contractInfo,
-                                    status.localCollateral.satoshis,
-                                    None,
-                                    UInt32.zero,
-                                    UInt32.one,
-                                    None,
-                                    None,
-                                    None)
+        _ <- walletA.createDLCOffer(
+          status.contractInfo,
+          status.localCollateral.satoshis,
+          None,
+          UInt32.zero,
+          UInt32.one,
+          None,
+          None,
+          None
+        )
 
         _ <- walletA.listDLCs()
       } yield succeed
@@ -449,27 +480,30 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
               DLCWalletUtil.getSigs(single)
             case disjoint: DisjointUnionContractInfo =>
               sys.error(
-                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+              )
           }
         }
-        //purposefully drop these
-        //we cannot drop just a sig, or just an outcome because
-        //of invariants in OracleAttestmentV0TLV
+        // purposefully drop these
+        // we cannot drop just a sig, or just an outcome because
+        // of invariants in OracleAttestmentV0TLV
         badSigs = goodAttestment.sigs.dropRight(1)
         badOutcomes = goodAttestment.outcomes.dropRight(1)
-        badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
-                                              publicKey =
-                                                goodAttestment.publicKey,
-                                              unsortedSignatures =
-                                                badSigs.toVector,
-                                              outcomes = badOutcomes)
+        badAttestment = OracleAttestmentV0TLV(
+          eventId = goodAttestment.eventId,
+          publicKey = goodAttestment.publicKey,
+          unsortedSignatures = badSigs.toVector,
+          outcomes = badOutcomes
+        )
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(contractId, badAttestment).map(_.get)
 
-        result <- dlcExecutionTest(wallets = wallets,
-                                   asInitiator = true,
-                                   func = func,
-                                   expectedOutputs = 1)
+        result <- dlcExecutionTest(
+          wallets = wallets,
+          asInitiator = true,
+          func = func,
+          expectedOutputs = 1
+        )
       } yield assert(result)
 
       recoverToSucceededIf[IllegalArgumentException](resultF)

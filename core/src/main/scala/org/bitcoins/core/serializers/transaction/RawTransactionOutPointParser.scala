@@ -9,8 +9,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
-/** Source for serialization
-  * https://bitcoin.org/en/developer-reference#outpoint
+/** Source for serialization https://bitcoin.org/en/developer-reference#outpoint
   */
 sealed abstract class RawTransactionOutPointParser
     extends RawBitcoinSerializer[TransactionOutPoint] {
@@ -23,10 +22,10 @@ sealed abstract class RawTransactionOutPointParser
   }
 
   def write(outPoint: TransactionOutPoint): ByteVector = {
-    //UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol requires the vout to be -1, which is serialized
-    //as "0xFFFFFFFF".
-    //https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h
-    //http://stackoverflow.com/questions/2711522/what-happens-if-i-assign-a-negative-value-to-an-unsigned-variable
+    // UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol requires the vout to be -1, which is serialized
+    // as "0xFFFFFFFF".
+    // https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h
+    // http://stackoverflow.com/questions/2711522/what-happens-if-i-assign-a-negative-value-to-an-unsigned-variable
     val idxBytes = outPoint match {
       case EmptyTransactionOutPoint      => UInt32.max.bytes
       case outPoint: TransactionOutPoint => outPoint.vout.bytes

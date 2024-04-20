@@ -17,12 +17,15 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
 /** Configuration for a BitcoindRpcClient
-  * @param directory The data directory of the Bitcoin-S instance
-  * @param confs Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the Bitcoin-S instance
+  * @param confs
+  *   Optional sequence of configuration overrides
   */
 case class BitcoindRpcAppConfig(
     baseDatadir: Path,
-    configOverrides: Vector[Config])(implicit val system: ActorSystem)
+    configOverrides: Vector[Config]
+)(implicit val system: ActorSystem)
     extends AppConfig {
 
   import system.dispatcher
@@ -33,7 +36,8 @@ case class BitcoindRpcAppConfig(
   override protected[bitcoins] type ConfigType = BitcoindRpcAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Vector[Config]): BitcoindRpcAppConfig =
+      configs: Vector[Config]
+  ): BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(baseDatadir, configs)
 
   override def start(): Future[Unit] = Future.unit
@@ -47,8 +51,11 @@ case class BitcoindRpcAppConfig(
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.binary").map(new File(_))
 
   lazy val bitcoindDataDir = new File(
-    config.getStringOrElse("bitcoin-s.bitcoind-rpc.datadir",
-                           BitcoindConfig.DEFAULT_DATADIR.toString))
+    config.getStringOrElse(
+      "bitcoin-s.bitcoind-rpc.datadir",
+      BitcoindConfig.DEFAULT_DATADIR.toString
+    )
+  )
 
   lazy val host = new URI({
     val baseUrl = {
@@ -157,15 +164,18 @@ case class BitcoindRpcAppConfig(
       )
 
     case None =>
-      BitcoindInstanceRemote(network = network,
-                             uri = uri,
-                             rpcUri = rpcUri,
-                             authCredentials = authCredentials,
-                             zmqConfig = zmqConfig,
-                             proxyParams = socks5ProxyParams)
+      BitcoindInstanceRemote(
+        network = network,
+        uri = uri,
+        rpcUri = rpcUri,
+        authCredentials = authCredentials,
+        zmqConfig = zmqConfig,
+        proxyParams = socks5ProxyParams
+      )
   }
 
-  /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured */
+  /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured
+    */
   lazy val clientF: Future[BitcoindRpcClient] = {
     bitcoindInstance match {
       case local: BitcoindInstanceLocal =>
@@ -173,16 +183,16 @@ case class BitcoindRpcAppConfig(
         val client = BitcoindRpcClient.fromVersion(version, bitcoindInstance)
         Future.successful(client)
       case _: BitcoindInstanceRemote =>
-        //first get a generic rpc client so we can retrieve
-        //the proper version of the remote running bitcoind
+        // first get a generic rpc client so we can retrieve
+        // the proper version of the remote running bitcoind
         val noVersionRpc = new BitcoindRpcClient(bitcoindInstance)
         val versionF = getBitcoindVersion(noVersionRpc)
 
-        //if we don't retrieve the proper version, we can
-        //end up with exceptions on an rpc client that actually supports
-        //specific features that are not supported across all versions of bitcoind
-        //such as blockfilters
-        //see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
+        // if we don't retrieve the proper version, we can
+        // end up with exceptions on an rpc client that actually supports
+        // specific features that are not supported across all versions of bitcoind
+        // such as blockfilters
+        // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
           BitcoindRpcClient.fromVersion(version, instance = bitcoindInstance)
         }
@@ -190,10 +200,11 @@ case class BitcoindRpcAppConfig(
   }
 
   private def getBitcoindVersion(
-      client: BitcoindRpcClient): Future[BitcoindVersion] = {
+      client: BitcoindRpcClient
+  ): Future[BitcoindVersion] = {
     val promise = Promise[BitcoindVersion]()
     val interval = 1.second
-    val maxTries = 300 //5 minutes
+    val maxTries = 300 // 5 minutes
     for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = { () =>
@@ -223,12 +234,13 @@ object BitcoindRpcAppConfig
 
   override val moduleName: String = "bitcoind"
 
-  /** Constructs a node configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a node configuration from the default Bitcoin-S data directory
+    * and given list of configuration overrides.
     */
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      system: ActorSystem): BitcoindRpcAppConfig =
+      system: ActorSystem
+  ): BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(datadir, confs)
 
 }

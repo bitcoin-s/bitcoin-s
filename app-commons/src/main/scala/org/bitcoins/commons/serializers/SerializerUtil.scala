@@ -4,8 +4,9 @@ import play.api.libs.json._
 
 sealed abstract class SerializerUtil {
 
-  def processJsNumberBigInt[T](numFunc: BigInt => T)(
-      json: JsValue): JsResult[T] =
+  def processJsNumberBigInt[T](
+      numFunc: BigInt => T
+  )(json: JsValue): JsResult[T] =
     json match {
       case JsNumber(nDecimal) =>
         val nOpt = nDecimal.toBigIntExact
@@ -54,14 +55,15 @@ sealed abstract class SerializerUtil {
         SerializerUtil.buildJsErrorMsg("jsstring", err)
     }
 
-  def processJsStringOpt[T](f: String => Option[T])(
-      jsValue: JsValue): JsResult[T] = {
+  def processJsStringOpt[T](
+      f: String => Option[T]
+  )(jsValue: JsValue): JsResult[T] = {
     jsValue match {
       case JsString(key) =>
         val tOpt = f(key)
         tOpt match {
           case Some(t) => JsSuccess(t)
-          case None    => SerializerUtil.buildErrorMsg("invalid jsstring", jsValue)
+          case None => SerializerUtil.buildErrorMsg("invalid jsstring", jsValue)
         }
       case err @ (_: JsNumber | _: JsObject | _: JsArray | JsNull |
           _: JsBoolean) =>

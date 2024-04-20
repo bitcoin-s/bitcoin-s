@@ -81,7 +81,8 @@ class BitcoindV23RpcClientTest extends BitcoindFixturesFundedCachedV23 {
   it should "analyze a descriptor" in { client =>
     val descriptor =
       Descriptor.fromString(
-        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7")
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7"
+      )
     val descriptorF = client.getDescriptorInfo(descriptor)
 
     descriptorF.map { result =>

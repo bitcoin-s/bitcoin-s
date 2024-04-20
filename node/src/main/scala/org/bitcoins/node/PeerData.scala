@@ -40,7 +40,9 @@ sealed trait PeerData {
   def serviceIdentifier: ServiceIdentifier = {
     _serviceIdentifier.getOrElse(
       throw new RuntimeException(
-        s"Tried using ServiceIdentifier for uninitialized peer $peer"))
+        s"Tried using ServiceIdentifier for uninitialized peer $peer"
+      )
+    )
   }
 
   def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
@@ -55,8 +57,8 @@ case class PersistentPeerData(
 )(implicit
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,
-    override val chainAppConfig: ChainAppConfig)
-    extends PeerData {
+    override val chainAppConfig: ChainAppConfig
+) extends PeerData {
 
   private var _invalidMessagesCount: Int = 0
 
@@ -72,7 +74,8 @@ case class PersistentPeerData(
     lastTimedOut = System.currentTimeMillis()
   }
 
-  /** returns true if the peer has failed due to any reason within the past 30 minutes
+  /** returns true if the peer has failed due to any reason within the past 30
+    * minutes
     */
   def hasFailedRecently: Boolean = {
     val timePast = System.currentTimeMillis() - lastTimedOut
@@ -84,9 +87,9 @@ case class PersistentPeerData(
   }
 }
 
-/** A peer we are just discovering on the p2p network for future connections
-  * we do not want to be persistently connected to this peer, just see if
-  * we can connect to it and exchange version/verack messages
+/** A peer we are just discovering on the p2p network for future connections we
+  * do not want to be persistently connected to this peer, just see if we can
+  * connect to it and exchange version/verack messages
   */
 case class AttemptToConnectPeerData(
     peer: Peer,
@@ -94,8 +97,8 @@ case class AttemptToConnectPeerData(
 )(implicit
     override val system: ActorSystem,
     override val nodeAppConfig: NodeAppConfig,
-    override val chainAppConfig: ChainAppConfig)
-    extends PeerData {
+    override val chainAppConfig: ChainAppConfig
+) extends PeerData {
 
   def toPersistentPeerData: PersistentPeerData = {
     val p = PersistentPeerData(peer, peerMessageSender)

@@ -23,8 +23,8 @@ case class LndInstanceLocal(
     listenBinding: URI,
     restUri: URI,
     rpcUri: URI,
-    debugLevel: LogLevel)
-    extends LndInstance {
+    debugLevel: LogLevel
+) extends LndInstance {
 
   override val certificateOpt: Option[String] = None
   override val certFileOpt: Option[File] = Some(certFile)
@@ -78,8 +78,9 @@ object LndInstanceLocal
     }
   }
 
-  override def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile)(implicit
-      system: ActorSystem): LndInstanceLocal = {
+  override def fromConfigFile(
+      file: File = DEFAULT_CONF_FILE.toFile
+  )(implicit system: ActorSystem): LndInstanceLocal = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -88,8 +89,9 @@ object LndInstanceLocal
     fromConfig(config)
   }
 
-  override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile)(implicit
-      system: ActorSystem): LndInstanceLocal = {
+  override def fromDataDir(
+      dir: File = DEFAULT_DATADIR.toFile
+  )(implicit system: ActorSystem): LndInstanceLocal = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 
@@ -108,22 +110,24 @@ case class LndInstanceRemote(
     rpcUri: URI,
     macaroon: String,
     certFileOpt: Option[File],
-    certificateOpt: Option[String])
-    extends LndInstance
+    certificateOpt: Option[String]
+) extends LndInstance
 
 object LndInstanceRemote {
 
   def apply(
       rpcUri: URI,
       macaroon: String,
-      certFile: File): LndInstanceRemote = {
+      certFile: File
+  ): LndInstanceRemote = {
     LndInstanceRemote(rpcUri, macaroon, Some(certFile), None)
   }
 
   def apply(
       rpcUri: URI,
       macaroon: String,
-      certificate: String): LndInstanceRemote = {
+      certificate: String
+  ): LndInstanceRemote = {
     LndInstanceRemote(rpcUri, macaroon, None, Some(certificate))
   }
 }

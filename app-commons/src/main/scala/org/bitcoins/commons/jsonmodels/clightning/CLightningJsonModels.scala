@@ -94,8 +94,8 @@ object CLightningJsonModels {
 
   case class ListFundsResult(
       outputs: Vector[Output],
-      channels: Vector[ChannelFunds])
-      extends CLightningJsonModel
+      channels: Vector[ChannelFunds]
+  ) extends CLightningJsonModel
 
   case class Channel(
       source: NodeId,
@@ -159,8 +159,8 @@ object CLightningJsonModels {
       connected: Boolean,
       features: ByteVector,
       netaddr: Vector[String],
-      channels: Vector[CLightningPeerChannel])
-      extends CLightningJsonModel
+      channels: Vector[CLightningPeerChannel]
+  ) extends CLightningJsonModel
 
   case class CLightningPeers(peers: Vector[CLightningPeer])
       extends CLightningJsonModel
@@ -228,8 +228,8 @@ object CLightningJsonModels {
   ) extends CLightningJsonModel
 
   case class CLightningListInvoicesResult(
-      invoices: Vector[CLightningLookupInvoiceResult])
-      extends CLightningJsonModel
+      invoices: Vector[CLightningLookupInvoiceResult]
+  ) extends CLightningJsonModel
 
   case class CLightningPsbtResult(signed_psbt: PSBT) extends CLightningJsonModel
 

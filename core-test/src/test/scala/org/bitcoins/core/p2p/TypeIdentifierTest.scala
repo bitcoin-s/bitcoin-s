@@ -38,7 +38,9 @@ class TypeIdentifierTest extends BitcoinSUnitTest {
     MsgFilteredWitnessBlock.hex must be("03000040")
     assert(
       TypeIdentifier.fromBytes(
-        MsgFilteredWitnessBlock.bytes) == MsgFilteredWitnessBlock)
+        MsgFilteredWitnessBlock.bytes
+      ) == MsgFilteredWitnessBlock
+    )
   }
 
   "MsgCompactBlock" must "serialize to 04000000" in {

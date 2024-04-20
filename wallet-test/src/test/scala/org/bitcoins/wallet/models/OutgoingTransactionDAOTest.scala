@@ -9,14 +9,17 @@ import org.bitcoins.testkit.wallet.WalletTestUtil
 class OutgoingTransactionDAOTest extends WalletDAOFixture {
 
   val txDb: TransactionDb =
-    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction,
-                                        Some(DoubleSha256DigestBE.empty))
+    TransactionDbHelper.fromTransaction(
+      WalletTestUtil.sampleTransaction,
+      Some(DoubleSha256DigestBE.empty)
+    )
 
   val outgoing: OutgoingTransactionDb = OutgoingTransactionDb.fromTransaction(
     WalletTestUtil.sampleTransaction,
     Satoshis(250000000),
     WalletTestUtil.sampleTransaction.outputs.head.value,
-    Satoshis(10000))
+    Satoshis(10000)
+  )
 
   it should "insert and read an transaction into the database" in { daos =>
     val txDAO = daos.transactionDAO

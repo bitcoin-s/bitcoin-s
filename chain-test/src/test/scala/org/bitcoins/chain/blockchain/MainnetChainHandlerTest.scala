@@ -42,28 +42,36 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
     chainHandler: ChainHandlerCached =>
       val blockHeaders =
         headersResult.drop(
-          ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT)
+          ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT
+        )
 
       val firstBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE - 2,
           Pow.getBlockProof(ChainTestUtil.blockHeader562462),
-          ChainTestUtil.blockHeader562462)
+          ChainTestUtil.blockHeader562462
+        )
 
       val secondBlockHeaderDb = {
         val chainWork = firstBlockHeaderDb.chainWork + Pow.getBlockProof(
-          ChainTestUtil.blockHeader562463)
-        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 1,
-                                            chainWork,
-                                            ChainTestUtil.blockHeader562463)
+          ChainTestUtil.blockHeader562463
+        )
+        BlockHeaderDbHelper.fromBlockHeader(
+          ChainUnitTest.FIRST_POW_CHANGE - 1,
+          chainWork,
+          ChainTestUtil.blockHeader562463
+        )
       }
 
       val thirdBlockHeaderDb = {
         val chainWork = secondBlockHeaderDb.chainWork + Pow.getBlockProof(
-          ChainTestUtil.blockHeader562464)
-        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE,
-                                            chainWork,
-                                            ChainTestUtil.blockHeader562464)
+          ChainTestUtil.blockHeader562464
+        )
+        BlockHeaderDbHelper.fromBlockHeader(
+          ChainUnitTest.FIRST_POW_CHANGE,
+          chainWork,
+          ChainTestUtil.blockHeader562464
+        )
       }
 
       /*
@@ -83,7 +91,8 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
           .take(
-            (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1))
+            (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1)
+          )
 
         val processedF = handler.processHeaders(blockHeadersToTest)
 
@@ -97,19 +106,25 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   it must "have getBestBlockHash return the header with the most work, not the highest" in {
     tempHandler: ChainHandlerCached =>
       val dummyHeader =
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          BigInt(0),
+          ChainTestUtil.blockHeader562462
+        )
 
       val highestHeader =
-        BlockHeaderDbHelper.fromBlockHeader(2,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562463)
+        BlockHeaderDbHelper.fromBlockHeader(
+          2,
+          BigInt(0),
+          ChainTestUtil.blockHeader562463
+        )
 
       val headerWithMostWork =
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            BigInt(1000),
-                                            ChainTestUtil.blockHeader562464)
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          BigInt(1000),
+          ChainTestUtil.blockHeader562464
+        )
 
       val tallestBlockchain =
         Blockchain(Vector(highestHeader, dummyHeader, genesis))
@@ -129,22 +144,29 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
     chainHandler: ChainHandlerCached =>
       val blockHeaders =
         headersResult.drop(
-          ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT)
+          ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT
+        )
 
       val firstBlockHeaderDb =
-        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 2,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper.fromBlockHeader(
+          ChainUnitTest.FIRST_POW_CHANGE - 2,
+          BigInt(0),
+          ChainTestUtil.blockHeader562462
+        )
 
       val secondBlockHeaderDb =
-        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 1,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562463)
+        BlockHeaderDbHelper.fromBlockHeader(
+          ChainUnitTest.FIRST_POW_CHANGE - 1,
+          BigInt(0),
+          ChainTestUtil.blockHeader562463
+        )
 
       val thirdBlockHeaderDb =
-        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562464)
+        BlockHeaderDbHelper.fromBlockHeader(
+          ChainUnitTest.FIRST_POW_CHANGE,
+          BigInt(0),
+          ChainTestUtil.blockHeader562464
+        )
 
       /*
        * We need to insert one block before the first POW check because it is used on the next
@@ -158,36 +180,41 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
       createdF.flatMap { _ =>
         val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
-        val handler = ChainHandlerCached(chainHandler.blockHeaderDAO,
-                                         chainHandler.filterHeaderDAO,
-                                         chainHandler.filterDAO,
-                                         chainHandler.stateDAO,
-                                         Vector(blockchain),
-                                         Map.empty)
+        val handler = ChainHandlerCached(
+          chainHandler.blockHeaderDAO,
+          chainHandler.filterHeaderDAO,
+          chainHandler.filterDAO,
+          chainHandler.stateDAO,
+          Vector(blockchain),
+          Map.empty
+        )
         val processorF = Future.successful(handler)
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
           .take(
-            (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1).toInt)
+            (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1).toInt
+          )
 
-        processHeaders(processorF = processorF,
-                       headers = blockHeadersToTest,
-                       height = ChainUnitTest.FIRST_POW_CHANGE + 1)
+        processHeaders(
+          processorF = processorF,
+          headers = blockHeadersToTest,
+          height = ChainUnitTest.FIRST_POW_CHANGE + 1
+        )
       }
   }
 
   it must "properly recalculate chain work" in {
     tempHandler: ChainHandlerCached =>
       val headersWithNoWork = Vector(
-        BlockHeaderDbHelper.fromBlockHeader(3,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562464),
-        BlockHeaderDbHelper.fromBlockHeader(2,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562463),
-        BlockHeaderDbHelper.fromBlockHeader(1,
-                                            BigInt(0),
-                                            ChainTestUtil.blockHeader562462)
+        BlockHeaderDbHelper
+          .fromBlockHeader(3, BigInt(0), ChainTestUtil.blockHeader562464),
+        BlockHeaderDbHelper
+          .fromBlockHeader(2, BigInt(0), ChainTestUtil.blockHeader562463),
+        BlockHeaderDbHelper.fromBlockHeader(
+          1,
+          BigInt(0),
+          ChainTestUtil.blockHeader562462
+        )
       )
 
       val noWorkGenesis = genesis.copy(chainWork = BigInt(0))
@@ -212,7 +239,8 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         val grouped = blockchains.head.groupBy(_.hashBE)
         assert(
           grouped
-            .forall(_._2.size == 1))
+            .forall(_._2.size == 1)
+        )
         assert(headerDb.hashBE == headersWithNoWork.head.hashBE)
         assert(headerDb.chainWork == BigInt(12885098501L))
       }

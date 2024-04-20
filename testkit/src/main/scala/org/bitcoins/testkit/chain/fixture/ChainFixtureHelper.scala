@@ -30,7 +30,8 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
         ChainUnitTest.createChainHandler().map(GenisisChainHandler.apply)
       case ChainFixtureTag.PopulatedChainHandler =>
         createPopulatedChainHandler().map(
-          ChainFixture.PopulatedChainHandler.apply)
+          ChainFixture.PopulatedChainHandler.apply
+        )
       case ChainFixtureTag.GenesisChainHandlerWithFilter =>
         createChainHandlerWithGenesisFilter()
           .map(ChainFixture.GenesisChainHandlerWithGenesisFilters(_))
@@ -39,7 +40,8 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
           .map(ChainFixture.GenesisChainHandlerCachedWithGenesisFilters(_))
       case ChainFixtureTag.BitcoindZmqChainHandlerWithBlock =>
         createBitcoindChainHandlerViaZmq().map(
-          BitcoindZmqChainHandlerWithBlock.apply)
+          BitcoindZmqChainHandlerWithBlock.apply
+        )
     }
   }
 

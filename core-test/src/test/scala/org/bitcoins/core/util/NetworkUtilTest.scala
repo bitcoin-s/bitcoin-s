@@ -18,7 +18,8 @@ class NetworkUtilTest extends BitcoinSUtilTest {
 
   "NetworkUtil" must "convert torV3 pubkey to correct .onion address and vice versa" in {
     val pubkey = ByteVector.fromValidHex(
-      "98908ec971ad17171365865a249c420d04a66f103f973a62d8404ce2f4af1ee2")
+      "98908ec971ad17171365865a249c420d04a66f103f973a62d8404ce2f4af1ee2"
+    )
     val address =
       "tcii5slrvulroe3fqzncjhccbuckm3yqh6ltuywyibgof5fpd3rpycyd.onion"
     val addressFromKey = NetworkUtil.parseUnresolvedInetSocketAddress(pubkey)
@@ -30,8 +31,11 @@ class NetworkUtilTest extends BitcoinSUtilTest {
   it must "determine if a block header is stale" in {
     val staleHeader = ChainTestUtil.genesisHeaderDb
     assert(
-      NetworkUtil.isBlockHeaderStale(staleHeader.blockHeader,
-                                     MainNetChainParams))
+      NetworkUtil.isBlockHeaderStale(
+        staleHeader.blockHeader,
+        MainNetChainParams
+      )
+    )
 
     val nonStale = BlockHeader(
       ChainTestUtil.genesisHeaderDb.version,
@@ -57,7 +61,8 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     }
 
     assert(
-      NetworkUtil.isBlockHeaderStale(barleyStaleHeader, MainNetChainParams))
+      NetworkUtil.isBlockHeaderStale(barleyStaleHeader, MainNetChainParams)
+    )
 
     val barleyNotStaleHeader = {
       val timestamp = Instant.now.minus(29, ChronoUnit.MINUTES).getEpochSecond
@@ -72,7 +77,8 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     }
 
     assert(
-      !NetworkUtil.isBlockHeaderStale(barleyNotStaleHeader, MainNetChainParams))
+      !NetworkUtil.isBlockHeaderStale(barleyNotStaleHeader, MainNetChainParams)
+    )
   }
 
   it must "block header message that is not aligned with a tcp frame" in {
@@ -83,9 +89,11 @@ class NetworkUtilTest extends BitcoinSUtilTest {
         BlockHeader(
           Int32(315017594),
           DoubleSha256Digest(
-            "177e777f078d2deeaa3ad4b82e78a00ad2f4738c5217f7a36d9cf3bd11e41817"),
+            "177e777f078d2deeaa3ad4b82e78a00ad2f4738c5217f7a36d9cf3bd11e41817"
+          ),
           DoubleSha256Digest(
-            "1dcaebebd620823bb344bd18a18276de508910d66b4e3cbb3426a14eced66224"),
+            "1dcaebebd620823bb344bd18a18276de508910d66b4e3cbb3426a14eced66224"
+          ),
           UInt32(2845833462L),
           UInt32(2626024374L),
           UInt32(2637850613L)
@@ -93,9 +101,11 @@ class NetworkUtilTest extends BitcoinSUtilTest {
         BlockHeader(
           Int32(1694049746),
           DoubleSha256Digest(
-            "07b6d61809476830bc7ef862a983a7222997df3f639e0d2aa5902a5a48018430"),
+            "07b6d61809476830bc7ef862a983a7222997df3f639e0d2aa5902a5a48018430"
+          ),
           DoubleSha256Digest(
-            "68c65f803b70b72563e86ac3e8e20ad11fbfa2eac3f9fddf4bc624d03a14f084"),
+            "68c65f803b70b72563e86ac3e8e20ad11fbfa2eac3f9fddf4bc624d03a14f084"
+          ),
           UInt32(202993555),
           UInt32(4046619225L),
           UInt32(1231236881)
@@ -103,7 +113,7 @@ class NetworkUtilTest extends BitcoinSUtilTest {
       )
     )
     val networkMsg = NetworkMessage(np, headersMsg)
-    //split the network msg at a random index to simulate a tcp frame not being aligned
+    // split the network msg at a random index to simulate a tcp frame not being aligned
     val randomIndex = scala.util.Random.nextInt().abs % networkMsg.bytes.size
     val (firstHalf, secondHalf) = networkMsg.bytes.splitAt(randomIndex)
     val (firstHalfParseHeaders, remainingBytes) =
@@ -122,8 +132,9 @@ class NetworkUtilTest extends BitcoinSUtilTest {
 
   it must "return the entire byte array if a message is not aligned to a byte frame" in {
     val networkMsg = NetworkMessage(
-      "fabfb5da76657273696f6e00000000006e000000b12d23e97d1101000000000000000000b487c95f00000000000000000000000000000000000000000000ffffc0f1a38e480c010000000000000000000000000000000000ffff7f000101480c0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000")
-    //remove last byte so the message is not aligned
+      "fabfb5da76657273696f6e00000000006e000000b12d23e97d1101000000000000000000b487c95f00000000000000000000000000000000000000000000ffffc0f1a38e480c010000000000000000000000000000000000ffff7f000101480c0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000"
+    )
+    // remove last byte so the message is not aligned
     val bytes = networkMsg.bytes.slice(0, networkMsg.bytes.size - 1)
     val (_, unAlignedBytes) = NetworkUtil.parseIndividualMessages(bytes)
 
@@ -147,10 +158,12 @@ class NetworkUtilTest extends BitcoinSUtilTest {
 
   it must "parse an unknown command" in {
     val header: NetworkHeader =
-      NetworkHeader(TestNet3,
-                    "madeup",
-                    UInt32.zero,
-                    CryptoUtil.doubleSHA256(ByteVector.empty).bytes.take(4))
+      NetworkHeader(
+        TestNet3,
+        "madeup",
+        UInt32.zero,
+        CryptoUtil.doubleSHA256(ByteVector.empty).bytes.take(4)
+      )
 
     val (messages, leftover) = NetworkUtil.parseIndividualMessages(header.bytes)
     assert(messages.isEmpty)

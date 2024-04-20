@@ -14,8 +14,8 @@ import scodec.bits.ByteVector
 import java.math.BigInteger
 import java.security.{MessageDigest, SecureRandom}
 
-/** This is an implementation of [[CryptoRuntime]] that defaults to Bouncy Castle (https://bouncycastle.org/)
-  * and [[java.security]].
+/** This is an implementation of [[CryptoRuntime]] that defaults to Bouncy
+  * Castle (https://bouncycastle.org/) and [[java.security]].
   */
 trait BouncycastleCryptoRuntime extends CryptoRuntime {
   private[this] lazy val secureRandom = new SecureRandom()
@@ -23,7 +23,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   override val cryptoContext: CryptoContext = CryptoContext.BouncyCastle
 
   /** Cribbed from ECKeyPairGenerator::generateKeyPair
-    * @see https://github.com/bcgit/bc-java/blob/63b18eb973f5731e403f655ee81d6b8456f5b256/core/src/main/java/org/bouncycastle/crypto/generators/ECKeyPairGenerator.java#L39
+    * @see
+    *   https://github.com/bcgit/bc-java/blob/63b18eb973f5731e403f655ee81d6b8456f5b256/core/src/main/java/org/bouncycastle/crypto/generators/ECKeyPairGenerator.java#L39
     */
   override def freshPrivateKey: ECPrivateKey = {
     val n = CryptoParams.getN
@@ -36,9 +37,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       priv = BigIntegers.createRandomBigInteger(bitLength, secureRandom)
 
       if (priv.compareTo(BigInteger.ONE) < 0 || (priv.compareTo(n) >= 0)) {
-        () //do nothing, keep iterating
+        () // do nothing, keep iterating
       } else if (WNafUtil.getNafWeight(priv) < minWeight) {
-        () //do nothing, keep iterating
+        () // do nothing, keep iterating
       } else {
         foundNum = true
       }
@@ -47,9 +48,11 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     ECPrivateKey.fromBytes(bytes.padLeft(33))
   }
 
-  /** @param x x coordinate
-    * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
-    *         p1.y is even, p2.y is odd
+  /** @param x
+    *   x coordinate
+    * @return
+    *   a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x
+    *   \= x p1.y is even, p2.y is odd
     */
   def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
     val bytes = ByteVector(x.toByteArray)
@@ -62,16 +65,20 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       bytes.tail
     } else {
       throw new IllegalArgumentException(
-        s"Field element cannot have more than 32 bytes, got $bytes from $x")
+        s"Field element cannot have more than 32 bytes, got $bytes from $x"
+      )
     }
 
-    (BouncyCastleUtil.decodePoint(ECPublicKey(0x02.toByte +: bytes32)),
-     BouncyCastleUtil.decodePoint(ECPublicKey(0x03.toByte +: bytes32)))
+    (
+      BouncyCastleUtil.decodePoint(ECPublicKey(0x02.toByte +: bytes32)),
+      BouncyCastleUtil.decodePoint(ECPublicKey(0x03.toByte +: bytes32))
+    )
   }
 
   override def recoverPublicKey(
       signature: ECDigitalSignature,
-      message: ByteVector): (ECPublicKey, ECPublicKey) = {
+      message: ByteVector
+  ): (ECPublicKey, ECPublicKey) = {
 
     val curve = BouncyCastleCryptoParams.curve
     val (r, s) = (signature.r.bigInteger, signature.s.bigInteger)
@@ -113,7 +120,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   }
 
   override def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
-    //from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
+    // from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
     val messageDigest = new RIPEMD160Digest
     val raw = bytes.toArray
     messageDigest.update(raw, 0, raw.length)
@@ -152,14 +159,16 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override def sign(
       privateKey: ECPrivateKey,
-      dataToSign: ByteVector): ECDigitalSignature = {
+      dataToSign: ByteVector
+  ): ECDigitalSignature = {
     BouncyCastleUtil.sign(dataToSign, privateKey)
   }
 
   override def signWithEntropy(
       privateKey: ECPrivateKey,
       bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature =
+      entropy: ByteVector
+  ): ECDigitalSignature =
     BouncyCastleUtil.signWithEntropy(bytes, privateKey, entropy)
 
   override def secKeyVerify(privateKeyBytes: ByteVector): Boolean = {
@@ -173,7 +182,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   override def verify(
       publicKey: ECPublicKeyApi,
       data: ByteVector,
-      signature: ECDigitalSignature): Boolean =
+      signature: ECDigitalSignature
+  ): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
 
   override def publicKey(privateKey: ECPrivateKeyBytes): ECPublicKey =
@@ -181,7 +191,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
-      tweak: FieldElement): ECPublicKey =
+      tweak: FieldElement
+  ): ECPublicKey =
     BouncyCastleUtil.pubKeyTweakMul(publicKey, tweak.bytes)
 
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
@@ -193,7 +204,8 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   def pubKeyTweakAdd(
       pubkey: ECPublicKey,
-      privkey: ECPrivateKey): ECPublicKey = {
+      privkey: ECPrivateKey
+  ): ECPublicKey = {
     val tweak = privkey.publicKey
     pubkey.add(tweak)
   }
@@ -221,15 +233,18 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     if (decoded.isInfinity)
       SecpPointInfinity
     else
-      SecpPoint(decoded.getRawXCoord.getEncoded,
-                decoded.getRawYCoord.getEncoded)
+      SecpPoint(
+        decoded.getRawXCoord.getEncoded,
+        decoded.getRawYCoord.getEncoded
+      )
   }
 
   override def pbkdf2WithSha512(
       pass: ByteVector,
       salt: ByteVector,
       iterationCount: Int,
-      derivedKeyLength: Int): ByteVector = {
+      derivedKeyLength: Int
+  ): ByteVector = {
     val bytes =
       PBKDF2.withSha512(pass, salt, iterationCount, derivedKeyLength).getEncoded
     ByteVector(bytes)

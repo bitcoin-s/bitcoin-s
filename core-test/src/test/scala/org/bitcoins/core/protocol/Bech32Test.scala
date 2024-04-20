@@ -41,14 +41,15 @@ class Bech32Test extends BitcoinSUnitTest {
   }
 
   it must "follow the example in BIP173" in {
-    //https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#examples
+    // https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#examples
     val key = ECPublicKey(
-      "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798".toLowerCase)
+      "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798".toLowerCase
+    )
     val p2wpkh = P2WPKHWitnessSPKV0(key)
     val addr = Bech32Address(p2wpkh, TestNet3)
     addr.value must be("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx")
 
-    //decode
+    // decode
     val decoded = Bech32Address.fromStringToWitSPK(addr.value)
     decoded must be(Success(p2wpkh))
 
@@ -62,36 +63,43 @@ class Bech32Test extends BitcoinSUnitTest {
     val p2wsh = P2WSHWitnessSPKV0(p2pk)
     val addr1 = Bech32Address(p2wsh, TestNet3)
     addr1.value must be(
-      "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7")
+      "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"
+    )
 
-    //decode
+    // decode
     val decoded1 = Bech32Address.fromStringToWitSPK(addr1.value)
     decoded1 must be(Success(p2wsh))
 
     val p2wshMain = Bech32Address(p2wsh, MainNet)
     p2wshMain.value must be(
-      "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3")
+      "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"
+    )
     val mp2wshDecoded = Bech32Address.fromStringToWitSPK(p2wshMain.value)
     mp2wshDecoded must be(Success(p2wsh))
   }
 
   it must "expand the human readable part correctly - BTC" in {
     BtcHumanReadablePart.bc.expand must be(
-      Vector(UInt5(3), UInt5(3), UInt5(0), UInt5(2), UInt5(3)))
+      Vector(UInt5(3), UInt5(3), UInt5(0), UInt5(2), UInt5(3))
+    )
 
     BtcHumanReadablePart.tb.expand must be(
-      Vector(UInt5(3), UInt5(3), UInt5(0), UInt5(20), UInt5(2)))
+      Vector(UInt5(3), UInt5(3), UInt5(0), UInt5(20), UInt5(2))
+    )
 
     BtcHumanReadablePart.bcrt.expand must be(
-      Vector(UInt5(3),
-             UInt5(3),
-             UInt5(3),
-             UInt5(3),
-             UInt5(0),
-             UInt5(2),
-             UInt5(3),
-             UInt5(18),
-             UInt5(20)))
+      Vector(
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(0),
+        UInt5(2),
+        UInt5(3),
+        UInt5(18),
+        UInt5(20)
+      )
+    )
 
   }
   it must "expand the human readable part correctly - LN no amount" in {
@@ -106,7 +114,8 @@ class Bech32Test extends BitcoinSUnitTest {
         UInt5(14),
         UInt5(2),
         UInt5(3)
-      ))
+      )
+    )
 
     LnHumanReadablePart.lntb(None).expand must be(
       Vector(
@@ -119,7 +128,8 @@ class Bech32Test extends BitcoinSUnitTest {
         UInt5(14),
         UInt5(20),
         UInt5(2)
-      ))
+      )
+    )
 
     LnHumanReadablePart.lnbcrt(None).expand must be(
       Vector(
@@ -136,7 +146,8 @@ class Bech32Test extends BitcoinSUnitTest {
         UInt5(3),
         UInt5(18),
         UInt5(20)
-      ))
+      )
+    )
   }
 
   it must "expand the human readable part correctly - LN with amount" in {
@@ -161,7 +172,8 @@ class Bech32Test extends BitcoinSUnitTest {
         UInt5(18),
         UInt5(20),
         UInt5(16)
-      ))
+      )
+    )
   }
 
   it must "encode 0 byte correctly" in {
@@ -192,30 +204,35 @@ class Bech32Test extends BitcoinSUnitTest {
 
     val encoded1 = Bech32.from8bitTo5bit(Vector(z, UInt8.one))
     encoded1 must be(Seq(fz, fz, fz, UInt5(16.toByte)))
-    //130.toByte == -126
+    // 130.toByte == -126
     val encoded2 =
       Bech32.from8bitTo5bit(Vector(130).map(i => UInt8(i.toShort)))
     encoded2 must be(Seq(16, 8).map(i => UInt5(i.toByte)))
 
-    //130.toByte == -126
+    // 130.toByte == -126
     val encoded3 =
       Bech32.from8bitTo5bit(Vector(255, 255).map(i => UInt8(i.toShort)))
     encoded3 must be(Seq(31, 31, 31, 16).map(i => UInt5(i.toByte)))
 
     val encoded4 = Bech32.from8bitTo5bit(
-      Vector(255, 255, 255, 255).map(i => UInt8(i.toShort)))
+      Vector(255, 255, 255, 255).map(i => UInt8(i.toShort))
+    )
     encoded4 must be(Seq(31, 31, 31, 31, 31, 31, 24).map(i => UInt5(i.toByte)))
 
     val encoded5 = Bech32.from8bitTo5bit(
-      Vector(255, 255, 255, 255, 255).map(i => UInt8(i.toShort)))
+      Vector(255, 255, 255, 255, 255).map(i => UInt8(i.toShort))
+    )
     encoded5 must be(
-      Seq(31, 31, 31, 31, 31, 31, 31, 31).map(i => UInt5(i.toByte)))
+      Seq(31, 31, 31, 31, 31, 31, 31, 31).map(i => UInt5(i.toByte))
+    )
 
     val encoded6 = Bech32.from8bitTo5bit(
-      Vector(255, 255, 255, 255, 255, 255).map(i => UInt8(i.toByte)))
+      Vector(255, 255, 255, 255, 255, 255).map(i => UInt8(i.toByte))
+    )
 
     encoded6 must be(
-      Seq(31, 31, 31, 31, 31, 31, 31, 31, 31, 28).map(i => UInt5(i.toByte)))
+      Seq(31, 31, 31, 31, 31, 31, 31, 31, 31, 28).map(i => UInt5(i.toByte))
+    )
   }
 
   it must "encode from 8 bit to 5 bit and back" in {
@@ -235,7 +252,8 @@ class Bech32Test extends BitcoinSUnitTest {
   )
   it must "fail to find the bech32 weakness" in {
     val failsAll = invalidBech32.forall(invalid =>
-      Bech32.splitToHrpAndData(invalid, Bech32Encoding.Bech32).isSuccess)
+      Bech32.splitToHrpAndData(invalid, Bech32Encoding.Bech32).isSuccess
+    )
     assert(failsAll)
   }
 
@@ -249,21 +267,26 @@ class Bech32Test extends BitcoinSUnitTest {
     assert(
       Bech32
         .checkDataValidity("bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf")
-        .isFailure)
+        .isFailure
+    )
   }
 
   it must "fail to read a segwitV1 bech32 address" in {
     assert(
       Bech32Address
         .fromStringT(
-          "tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7")
-        .isFailure)
+          "tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"
+        )
+        .isFailure
+    )
 
     assert(
       Bech32Address
         .fromStringT(
-          "bc1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7")
-        .isFailure)
+          "bc1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"
+        )
+        .isFailure
+    )
   }
 
   it must "fail to read a bech32m address" in {
@@ -289,8 +312,10 @@ class Bech32Test extends BitcoinSUnitTest {
   }
 
   it must "serialization symmetry" in {
-    forAll(ScriptGenerators.witnessScriptPubKeyV0,
-           ChainParamsGenerator.networkParams) { case ((witSPK, _), network) =>
+    forAll(
+      ScriptGenerators.witnessScriptPubKeyV0,
+      ChainParamsGenerator.networkParams
+    ) { case ((witSPK, _), network) =>
       val addr = Bech32Address(witSPK, network)
       val spk = Bech32Address.fromStringToWitSPK(addr.value)
       assert(spk == Success(witSPK))
@@ -305,7 +330,7 @@ class Bech32Test extends BitcoinSUnitTest {
       val (f, l) = old.splitAt(idx)
       val replacementChar = pickReplacementChar(l.head)
       val replaced = s"$f$replacementChar${l.tail}"
-      //should fail because we replaced a char in the addr, so checksum invalid
+      // should fail because we replaced a char in the addr, so checksum invalid
       assert(Bech32Address.fromStringT(replaced).isFailure)
     }
   }
@@ -314,7 +339,7 @@ class Bech32Test extends BitcoinSUnitTest {
     forAll(AddressGenerator.bech32Address) { addr: Bech32Address =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
-      //should fail because we we switched the case of a random char
+      // should fail because we we switched the case of a random char
       val actual = Bech32Address.fromStringT(replaced)
       assert(actual.isFailure)
     }
@@ -324,7 +349,7 @@ class Bech32Test extends BitcoinSUnitTest {
   private def pickReplacementChar(oldChar: Char): Char = {
     val rand = Math.abs(Random.nextInt())
     val newChar = Bech32.charset(rand % Bech32.charset.size)
-    //make sure we don't pick the same char we are replacing in the bech32 address
+    // make sure we don't pick the same char we are replacing in the bech32 address
     if (oldChar == newChar) pickReplacementChar(oldChar)
     else newChar
   }

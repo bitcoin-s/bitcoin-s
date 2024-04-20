@@ -12,63 +12,71 @@ trait ChainCallbacks
     extends ModuleCallbacks[ChainCallbacks]
     with BitcoinSLogger {
 
-  def onBlockHeaderConnected: CallbackHandler[
-    Vector[(Int, BlockHeader)],
-    OnBlockHeaderConnected]
+  def onBlockHeaderConnected
+      : CallbackHandler[Vector[(Int, BlockHeader)], OnBlockHeaderConnected]
 
-  def onCompactFilterHeaderConnected: CallbackHandler[
-    Vector[CompactFilterHeaderDb],
-    OnCompactFilterHeaderConnected]
+  def onCompactFilterHeaderConnected: CallbackHandler[Vector[
+    CompactFilterHeaderDb
+  ], OnCompactFilterHeaderConnected]
 
-  def onCompactFilterConnected: CallbackHandler[
-    Vector[CompactFilterDb],
-    OnCompactFilterConnected]
+  def onCompactFilterConnected
+      : CallbackHandler[Vector[CompactFilterDb], OnCompactFilterConnected]
 
   def onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged]
 
   override def +(other: ChainCallbacks): ChainCallbacks
 
   def executeOnBlockHeaderConnectedCallbacks(
-      heightHeaderTuple: Vector[(Int, BlockHeader)])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      heightHeaderTuple: Vector[(Int, BlockHeader)]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
 
     onBlockHeaderConnected.execute(
       heightHeaderTuple,
       (err: Throwable) =>
         logger.error(
           s"${onBlockHeaderConnected.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
   def executeOnCompactFilterHeaderConnectedCallbacks(
-      filterHeaders: Vector[CompactFilterHeaderDb])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      filterHeaders: Vector[CompactFilterHeaderDb]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onCompactFilterHeaderConnected.execute(
       filterHeaders,
       (err: Throwable) =>
         logger.error(
           s"${onCompactFilterHeaderConnected.name} Callback failed with err",
-          err))
+          err
+        )
+    )
   }
 
   def executeOnCompactFilterConnectedCallbacks(
-      filters: Vector[CompactFilterDb])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      filters: Vector[CompactFilterDb]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onCompactFilterConnected.execute(
       filters,
       (err: Throwable) =>
         logger.error(
           s"${onCompactFilterConnected.name} Callback failed with err",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnSyncFlagChanged(syncing: Boolean)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnSyncFlagChanged(
+      syncing: Boolean
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onSyncFlagChanged.execute(
       syncing,
       (err: Throwable) =>
-        logger.error(s"${onSyncFlagChanged.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onSyncFlagChanged.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
 }
@@ -86,17 +94,17 @@ trait OnSyncFlagChanged extends Callback[Boolean]
 object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
 
   private case class ChainCallbacksImpl(
-      onBlockHeaderConnected: CallbackHandler[
-        Vector[(Int, BlockHeader)],
-        OnBlockHeaderConnected],
-      onCompactFilterHeaderConnected: CallbackHandler[
-        Vector[CompactFilterHeaderDb],
-        OnCompactFilterHeaderConnected],
-      onCompactFilterConnected: CallbackHandler[
-        Vector[CompactFilterDb],
-        OnCompactFilterConnected],
-      onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged])
-      extends ChainCallbacks {
+      onBlockHeaderConnected: CallbackHandler[Vector[
+        (Int, BlockHeader)
+      ], OnBlockHeaderConnected],
+      onCompactFilterHeaderConnected: CallbackHandler[Vector[
+        CompactFilterHeaderDb
+      ], OnCompactFilterHeaderConnected],
+      onCompactFilterConnected: CallbackHandler[Vector[
+        CompactFilterDb
+      ], OnCompactFilterConnected],
+      onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged]
+  ) extends ChainCallbacks {
 
     override def +(other: ChainCallbacks): ChainCallbacks =
       copy(
@@ -115,7 +123,8 @@ object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
     ChainCallbacks(onBlockHeaderConnected = Vector(f))
 
   def onCompactFilterHeaderConnected(
-      f: OnCompactFilterHeaderConnected): ChainCallbacks = {
+      f: OnCompactFilterHeaderConnected
+  ): ChainCallbacks = {
     ChainCallbacks(onCompactFilterHeaderConnected = Vector(f))
   }
 
@@ -134,24 +143,28 @@ object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
       onCompactFilterHeaderConnected: Vector[OnCompactFilterHeaderConnected] =
         Vector.empty,
       onCompactFilterConnected: Vector[OnCompactFilterConnected] = Vector.empty,
-      onSyncFlagChanged: Vector[OnSyncFlagChanged] =
-        Vector.empty): ChainCallbacks =
+      onSyncFlagChanged: Vector[OnSyncFlagChanged] = Vector.empty
+  ): ChainCallbacks =
     ChainCallbacksImpl(
       onBlockHeaderConnected =
         CallbackHandler[Vector[(Int, BlockHeader)], OnBlockHeaderConnected](
           "onBlockHeaderConnected",
-          onBlockHeaderConnected),
-      onCompactFilterHeaderConnected =
-        CallbackHandler[Vector[CompactFilterHeaderDb],
-                        OnCompactFilterHeaderConnected](
-          "onCompactFilterHeaderConnected",
-          onCompactFilterHeaderConnected),
+          onBlockHeaderConnected
+        ),
+      onCompactFilterHeaderConnected = CallbackHandler[Vector[
+        CompactFilterHeaderDb
+      ], OnCompactFilterHeaderConnected](
+        "onCompactFilterHeaderConnected",
+        onCompactFilterHeaderConnected
+      ),
       onCompactFilterConnected =
         CallbackHandler[Vector[CompactFilterDb], OnCompactFilterConnected](
           "onCompactFilterConnected",
-          onCompactFilterConnected),
-      onSyncFlagChanged =
-        CallbackHandler[Boolean, OnSyncFlagChanged]("onSyncFlagChanged",
-                                                    onSyncFlagChanged)
+          onCompactFilterConnected
+        ),
+      onSyncFlagChanged = CallbackHandler[Boolean, OnSyncFlagChanged](
+        "onSyncFlagChanged",
+        onSyncFlagChanged
+      )
     )
 }

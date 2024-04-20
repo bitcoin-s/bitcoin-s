@@ -40,7 +40,8 @@ class DLCDataManagementTest extends BitcoinSDualWalletTest {
         contractId = DLCUtil.calcContractId(offer1, accept)
         acceptDbStateOpt <- walletB.dlcDataManagement.getDLCFundingData(
           contractId,
-          walletA.transactionDAO)
+          walletA.transactionDAO
+        )
       } yield {
         assert(acceptDbStateOpt.isDefined)
         assert(acceptDbStateOpt.get.isInstanceOf[AcceptDbState])
@@ -71,7 +72,8 @@ class DLCDataManagementTest extends BitcoinSDualWalletTest {
         sign <- walletA.signDLC(accept)
         signDbStateOpt <- walletA.dlcDataManagement.getDLCFundingData(
           sign.contractId,
-          walletA.transactionDAO)
+          walletA.transactionDAO
+        )
       } yield {
         assert(signDbStateOpt.isDefined)
         assert(signDbStateOpt.get.isInstanceOf[SignDbState])

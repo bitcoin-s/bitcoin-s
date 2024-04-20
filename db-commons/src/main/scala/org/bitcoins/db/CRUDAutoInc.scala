@@ -6,18 +6,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
     ec: ExecutionContext,
-    override val appConfig: DbAppConfig)
-    extends CRUD[T, Long]()(ec, appConfig)
+    override val appConfig: DbAppConfig
+) extends CRUD[T, Long]()(ec, appConfig)
     with TableAutoIncComponent[T] {
   import profile.api._
 
   /** The table inside our database we are inserting into */
   override val table: profile.api.TableQuery[_ <: TableAutoInc[T]]
 
-  override def createAllAction(ts: Vector[T]): profile.api.DBIOAction[
-    Vector[T],
-    profile.api.NoStream,
-    Effect.Write] = {
+  override def createAllAction(
+      ts: Vector[T]
+  ): profile.api.DBIOAction[Vector[T], profile.api.NoStream, Effect.Write] = {
     val idQuery = table.map(_.id)
     val idAutoInc = table.returning(idQuery)
     val query = {
@@ -33,11 +32,13 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
   }
 
   override protected def findByPrimaryKey(
-      id: Long): Query[TableAutoInc[T], T, Seq] =
+      id: Long
+  ): Query[TableAutoInc[T], T, Seq] =
     table.filter(_.id === id)
 
   override def findByPrimaryKeys(
-      ids: Vector[Long]): Query[TableAutoInc[T], T, Seq] = {
+      ids: Vector[Long]
+  ): Query[TableAutoInc[T], T, Seq] = {
     table.filter { t =>
       t.id.inSet(ids)
     }
@@ -49,9 +50,9 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
   }
 }
 
-/** Defines a table that has an auto incremented fields that is named id.
-  * This is useful for things we want to store that don't have an
-  * inherent id such as a hash.
+/** Defines a table that has an auto incremented fields that is named id. This
+  * is useful for things we want to store that don't have an inherent id such as
+  * a hash.
   * @param tag
   * @param tableName
   * @tparam T
@@ -62,8 +63,8 @@ trait TableAutoIncComponent[T <: DbRowAutoInc[T]] { self: CRUDAutoInc[T] =>
   abstract class TableAutoInc[T](
       tag: profile.api.Tag,
       schemaName: Option[String],
-      tableName: String)
-      extends profile.api.Table[T](tag, schemaName, tableName) {
+      tableName: String
+  ) extends profile.api.Table[T](tag, schemaName, tableName) {
     def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
   }
 }

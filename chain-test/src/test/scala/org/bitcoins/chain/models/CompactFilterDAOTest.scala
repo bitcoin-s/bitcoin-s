@@ -83,7 +83,8 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
     val blockHeaderDbHeavyWork = {
       blockHeaderDbLightWork.copy(
         chainWork = blockHeaderDbLightWork.chainWork + 1,
-        hashBE = CryptoGenerators.doubleSha256Digest.sample.get.flip)
+        hashBE = CryptoGenerators.doubleSha256Digest.sample.get.flip
+      )
     }
     val headers = Vector(blockHeaderDbLightWork, blockHeaderDbHeavyWork)
     val blockHeaderDbF = blockHeaderDAO.createAll(headers)

@@ -31,9 +31,11 @@ class Base58Test extends BitcoinSUnitTest {
     Base58.encode("626262") must be("a3gV")
     Base58.encode("636363") must be("aPEr")
     Base58.encode("73696d706c792061206c6f6e6720737472696e67") must be(
-      "2cFupjhnEsSn59qHXstmK2ffpLv2")
+      "2cFupjhnEsSn59qHXstmK2ffpLv2"
+    )
     Base58.encode("00eb15231dfceb60925886b67d065299925915aeb172c06647") must be(
-      "1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L")
+      "1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L"
+    )
     Base58.encode("516b6fcd0f") must be("ABnLTmg")
     Base58.encode("bf4f89001e670274dd") must be("3SEo3LWLoPntC")
     Base58.encode("572e4794") must be("3EFU7m")
@@ -49,9 +51,11 @@ class Base58Test extends BitcoinSUnitTest {
     decodedBase58EncodeToHex("a3gV") must be("626262")
     decodedBase58EncodeToHex("aPEr") must be("636363")
     decodedBase58EncodeToHex("2cFupjhnEsSn59qHXstmK2ffpLv2") must be(
-      "73696d706c792061206c6f6e6720737472696e67")
+      "73696d706c792061206c6f6e6720737472696e67"
+    )
     decodedBase58EncodeToHex("1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L") must be(
-      "00eb15231dfceb60925886b67d065299925915aeb172c06647")
+      "00eb15231dfceb60925886b67d065299925915aeb172c06647"
+    )
     decodedBase58EncodeToHex("ABnLTmg") must be("516b6fcd0f")
     decodedBase58EncodeToHex("3SEo3LWLoPntC") must be("bf4f89001e670274dd")
     decodedBase58EncodeToHex("3EFU7m") must be("572e4794")
@@ -66,14 +70,15 @@ class Base58Test extends BitcoinSUnitTest {
     for {
       testCase <- testCases
     } yield {
-      //if testCase is an Address, it must have a valid base58 representation
+      // if testCase is an Address, it must have a valid base58 representation
       if (testCase.addressOrWIFPrivKey.isLeft) {
         Base58.isValid(
-          testCase.addressOrWIFPrivKey.swap.getOrElse(fail()).toString) must be(
-          true)
+          testCase.addressOrWIFPrivKey.swap.getOrElse(fail()).toString
+        ) must be(true)
       } else {
         Base58.isValid(testCase.addressOrWIFPrivKey.getOrElse(fail())) must be(
-          true)
+          true
+        )
       }
     }
   }
@@ -98,7 +103,8 @@ class Base58Test extends BitcoinSUnitTest {
   }
   it must "decodeCheck a valid string and succeed" in {
     Base58.decodeCheck("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou").isSuccess must be(
-      true)
+      true
+    )
   }
 }
 

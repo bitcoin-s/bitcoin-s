@@ -79,12 +79,12 @@ sealed abstract class CurrencyUnit
   protected def underlying: A
 
   override def equals(obj: Any): Boolean = {
-    //needed for cases like
-    //1BTC == 100,000,000 satoshis should be true
-    //weirdly enough, this worked in scala version < 2.13.4
-    //but seems to be broken in 2.13.4 :/
-    //try removing this and running code, you should see
-    //failures in the 'walletTest' module
+    // needed for cases like
+    // 1BTC == 100,000,000 satoshis should be true
+    // weirdly enough, this worked in scala version < 2.13.4
+    // but seems to be broken in 2.13.4 :/
+    // try removing this and running code, you should see
+    // failures in the 'walletTest' module
     obj match {
       case cu: CurrencyUnit   => cu.satoshis == satoshis
       case ln: LnCurrencyUnit => satoshis == ln.toSatoshis
@@ -218,7 +218,8 @@ object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
 
   def apply(
       underlying: BigDecimal,
-      roundingMode: RoundingMode = RoundingMode.DOWN): Bitcoins = {
+      roundingMode: RoundingMode = RoundingMode.DOWN
+  ): Bitcoins = {
     // Bitcoin can't represent amounts lower than a satoshi
     // so we need to round to the nearest satoshi
     val rounded = underlying.setScale(8, roundingMode)

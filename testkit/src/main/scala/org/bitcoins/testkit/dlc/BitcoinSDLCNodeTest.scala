@@ -16,16 +16,19 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val dlcListenWithSegwitWallet = ConfigFactory
       .parseString(
-        s"""bitcoin-s.dlcnode.listen = "127.0.0.1:${RpcUtil.randomPort}" """)
+        s"""bitcoin-s.dlcnode.listen = "127.0.0.1:${RpcUtil.randomPort}" """
+      )
       .withFallback(BaseWalletTest.segwitWalletConf)
 
-    BaseWalletTest.getFreshConfig(() => pgUrl(),
-                                  Vector(dlcListenWithSegwitWallet))
+    BaseWalletTest.getFreshConfig(
+      () => pgUrl(),
+      Vector(dlcListenWithSegwitWallet)
+    )
   }
 
   /** Creates two DLC nodes with wallets that are funded with some bitcoin,
-    * these wallets are NOT peered with a bitcoind so the funds in
-    * the wallets are not tied to an underlying blockchain.
+    * these wallets are NOT peered with a bitcoind so the funds in the wallets
+    * are not tied to an underlying blockchain.
     */
   def witTwoFundedDLCNodes(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
@@ -40,10 +43,12 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
           walletA <-
             FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)(
               configA,
-              system)
+              system
+            )
           walletB <- FundWalletUtil.createFundedDLCWallet(
             nodeApi,
-            chainQueryApi)(configB, system)
+            chainQueryApi
+          )(configB, system)
 
           nodeA = configA.dlcNodeConf.createDLCNode(walletA.wallet)
           nodeB = configB.dlcNodeConf.createDLCNode(walletB.wallet)

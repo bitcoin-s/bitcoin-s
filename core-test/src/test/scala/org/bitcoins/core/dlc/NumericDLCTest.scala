@@ -34,7 +34,7 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
     val numDigits = if (EnvUtil.isNativeSecp256k1Disabled) {
       12
     } else {
-      //optimization for CI, tests are much slower when secp256k1 isnt used
+      // optimization for CI, tests are much slower when secp256k1 isnt used
       17
     }
     val contractParams =
@@ -48,9 +48,11 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
     val threshold = 3
     val numOracles = 5
     val numDigits = 8
-    val params = OracleParamsV0TLV(maxErrorExp = 4,
-                                   minFailExp = 2,
-                                   maximizeCoverage = false)
+    val params = OracleParamsV0TLV(
+      maxErrorExp = 4,
+      minFailExp = 2,
+      maximizeCoverage = false
+    )
     val contractParams =
       NumericContractParams(numDigits, threshold, numOracles, Some(params))
     val nums = tenRandomNums(numDigits)
@@ -77,11 +79,16 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
       runTestsForParam(Vector((1, 1), (2, 2), (2, 3))) {
         case (threshold, numOracles) =>
           val oracleParamOptsToTest = if (threshold > 1) {
-            Vector(None,
-                   Some(
-                     OracleParamsV0TLV(numDigits - 2,
-                                       numDigits - 4,
-                                       maximizeCoverage = false)))
+            Vector(
+              None,
+              Some(
+                OracleParamsV0TLV(
+                  numDigits - 2,
+                  numDigits - 4,
+                  maximizeCoverage = false
+                )
+              )
+            )
           } else Vector(None)
           runTestsForParam(oracleParamOptsToTest) { oracleParamsOpt =>
             val max = (1L << numDigits) - 1
@@ -90,10 +97,12 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
               .toVector
               .map(num => (max / num.toDouble).toLong)
               .map(num => NumberUtil.decompose(num, 2, numDigits))
-            val contractParams = NumericContractParams(numDigits,
-                                                       threshold,
-                                                       numOracles,
-                                                       oracleParamsOpt)
+            val contractParams = NumericContractParams(
+              numDigits,
+              threshold,
+              numOracles,
+              oracleParamsOpt
+            )
 
             constructAndSetupDLC(contractParams).flatMap {
               case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
@@ -115,19 +124,23 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
                       .sorted
 
                   val oracleOutcome =
-                    genNumericOracleOutcome(chosenOracles,
-                                            dlcOffer.offer.contractInfo,
-                                            outcome.digits,
-                                            oracleParamsOpt)
+                    genNumericOracleOutcome(
+                      chosenOracles,
+                      dlcOffer.offer.contractInfo,
+                      outcome.digits,
+                      oracleParamsOpt
+                    )
 
                   val oracleSigs = genNumericOracleSignatures(oracleOutcome)
 
-                  assertCorrectSigDerivation(offerSetup = offerSetup,
-                                             dlcOffer = dlcOffer,
-                                             acceptSetup = acceptSetup,
-                                             dlcAccept = dlcAccept,
-                                             oracleSigs = oracleSigs,
-                                             outcome = oracleOutcome)
+                  assertCorrectSigDerivation(
+                    offerSetup = offerSetup,
+                    dlcOffer = dlcOffer,
+                    acceptSetup = acceptSetup,
+                    dlcAccept = dlcAccept,
+                    oracleSigs = oracleSigs,
+                    outcome = oracleOutcome
+                  )
                 }
             }
           }

@@ -6,7 +6,8 @@ import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 
-/** Corresponds to a set of SchnorrDigitalSignatures given by a single oracle. */
+/** Corresponds to a set of SchnorrDigitalSignatures given by a single oracle.
+  */
 sealed trait OracleSignatures extends SeqWrapper[SchnorrDigitalSignature] {
 
   /** This oracle's signatures */
@@ -39,11 +40,14 @@ object OracleSignatures {
 
   def apply(
       oracle: SingleOracleInfo,
-      attestment: OracleAttestmentTLV): OracleSignatures = {
+      attestment: OracleAttestmentTLV
+  ): OracleSignatures = {
     oracle match {
       case info: EnumSingleOracleInfo =>
-        require(attestment.sigs.length == 1,
-                s"Expected one signature, got ${attestment.sigs.toVector}")
+        require(
+          attestment.sigs.length == 1,
+          s"Expected one signature, got ${attestment.sigs.toVector}"
+        )
         EnumOracleSignature(info, attestment.sigs.head)
       case info: NumericSingleOracleInfo =>
         attestment match {
@@ -51,7 +55,7 @@ object OracleSignatures {
             val sorted =
               OrderedSchnorrSignatures.fromUnsorted(v0.unsortedSignatures)
             if (v0.unsortedSignatures == sorted) {
-              //means they are sorted
+              // means they are sorted
               NumericOracleSignaturesSorted(info, v0.sigs)
             } else {
               NumericOracleSignaturesUnsorted(info, v0.unsortedSignatures)
@@ -62,7 +66,8 @@ object OracleSignatures {
 
   def apply(
       oracle: SingleOracleInfo,
-      sigs: Vector[SchnorrDigitalSignature]): OracleSignatures = {
+      sigs: Vector[SchnorrDigitalSignature]
+  ): OracleSignatures = {
     oracle match {
       case info: EnumSingleOracleInfo =>
         require(sigs.length == 1, s"Expected one signature, got ${sigs}")
@@ -71,7 +76,7 @@ object OracleSignatures {
         val sorted =
           OrderedSchnorrSignatures.fromUnsorted(sigs)
         if (sigs == sorted) {
-          //means they are sorted
+          // means they are sorted
           NumericOracleSignaturesSorted(info, sorted)
         } else {
           NumericOracleSignaturesUnsorted(info, sigs)
@@ -79,14 +84,15 @@ object OracleSignatures {
     }
   }
 
-  /** Computes the aggregate s value from the given signatures to be used
-    * in the given outcome.
+  /** Computes the aggregate s value from the given signatures to be used in the
+    * given outcome.
     *
     * This is what is used to decrypt a CET adaptor signature.
     */
   def computeAggregateSignature(
       outcome: OracleOutcome,
-      sigs: Vector[OracleSignatures]): ECPrivateKey = {
+      sigs: Vector[OracleSignatures]
+  ): ECPrivateKey = {
     outcome match {
       case EnumOracleOutcome(_, enumOutcome) =>
         sigs.map(_.aggregateSig(enumOutcome)).reduce(_.add(_))
@@ -105,8 +111,8 @@ object OracleSignatures {
 /** Wraps a single oracle signature of an Enum event. */
 case class EnumOracleSignature(
     oracle: EnumSingleOracleInfo,
-    sig: SchnorrDigitalSignature)
-    extends OracleSignatures {
+    sig: SchnorrDigitalSignature
+) extends OracleSignatures {
   override val sigs: Vector[SchnorrDigitalSignature] = Vector(sig)
 
   lazy val getOutcome: EnumOutcome = {
@@ -118,13 +124,18 @@ case class EnumOracleSignature(
     val outcome = potentialOutcomes
       .find { potentialOutcome =>
         oracle.publicKey
-          .verify(CryptoUtil
-                    .sha256DLCAttestation(potentialOutcome.toString)
-                    .bytes,
-                  sig)
+          .verify(
+            CryptoUtil
+              .sha256DLCAttestation(potentialOutcome.toString)
+              .bytes,
+            sig
+          )
       }
-      .getOrElse(throw new IllegalArgumentException(
-        s"Signature $sig does not match any outcome $potentialOutcomes"))
+      .getOrElse(
+        throw new IllegalArgumentException(
+          s"Signature $sig does not match any outcome $potentialOutcomes"
+        )
+      )
 
     EnumOutcome(outcome)
   }
@@ -146,20 +157,26 @@ sealed trait NumericOracleSignatures extends OracleSignatures {
       (0 until base)
         .find { possibleDigit =>
           oracle.publicKey
-            .verify(CryptoUtil
-                      .sha256DLCAttestation(possibleDigit.toString)
-                      .bytes,
-                    sig)
+            .verify(
+              CryptoUtil
+                .sha256DLCAttestation(possibleDigit.toString)
+                .bytes,
+              sig
+            )
         }
-        .getOrElse(throw new IllegalArgumentException(
-          s"Signature $sig does not match any digit 0-${base - 1}"))
+        .getOrElse(
+          throw new IllegalArgumentException(
+            s"Signature $sig does not match any digit 0-${base - 1}"
+          )
+        )
     }
     UnsignedNumericOutcome(digits.toVector)
   }
 
   /** Computes the NumericOutcome to which these signatures correspond. */
-  def computeOutcome(possibleOutcomes: Vector[DLCOutcomeType]): Option[
-    UnsignedNumericOutcome] = {
+  def computeOutcome(
+      possibleOutcomes: Vector[DLCOutcomeType]
+  ): Option[UnsignedNumericOutcome] = {
     val digitsSigned = getOutcome.digits
 
     CETCalculator.searchForNumericOutcome(digitsSigned, possibleOutcomes)
@@ -169,16 +186,19 @@ sealed trait NumericOracleSignatures extends OracleSignatures {
     s"${getClass.getSimpleName}(${oracle.announcement.publicKey}, $sigs)"
 }
 
-/** Wraps a set of oracle signatures of numeric digits that are sorted by nonces */
+/** Wraps a set of oracle signatures of numeric digits that are sorted by nonces
+  */
 case class NumericOracleSignaturesSorted(
     oracle: NumericSingleOracleInfo,
-    sortedSignatures: OrderedSchnorrSignatures)
-    extends NumericOracleSignatures {
+    sortedSignatures: OrderedSchnorrSignatures
+) extends NumericOracleSignatures {
   override val sigs: Vector[SchnorrDigitalSignature] = sortedSignatures.toVector
 }
 
-/** Numeric oracle signatures that are not sorted by their nonce. This is needed for v0 attestations */
+/** Numeric oracle signatures that are not sorted by their nonce. This is needed
+  * for v0 attestations
+  */
 case class NumericOracleSignaturesUnsorted(
     oracle: NumericSingleOracleInfo,
-    sigs: Vector[SchnorrDigitalSignature])
-    extends NumericOracleSignatures
+    sigs: Vector[SchnorrDigitalSignature]
+) extends NumericOracleSignatures

@@ -20,7 +20,8 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
   override protected def getFreshConfig: BitcoinSAppConfig = {
     BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
       () => pgUrl(),
-      Vector.empty)
+      Vector.empty
+    )
   }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
@@ -31,8 +32,10 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withNeutrinoNodeUnstarted(test, bitcoind)(system,
-                                                          getFreshConfig)
+      outcome = withNeutrinoNodeUnstarted(test, bitcoind)(
+        system,
+        getFreshConfig
+      )
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)
@@ -48,13 +51,15 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- node.start()
         peer <- peerF
         peerManager = node.peerManager
-        _ <- NodeTestUtil.awaitConnectionCount(node = node,
-                                               expectedConnectionCount = 1)
+        _ <- NodeTestUtil.awaitConnectionCount(
+          node = node,
+          expectedConnectionCount = 1
+        )
       } yield {
         assert(peerManager.peers.exists(_ == peer))
         assert(
           peerManager.paramPeers.nonEmpty
-        ) //make sure we had a peer passed as a param
+        ) // make sure we had a peer passed as a param
       }
   }
 
@@ -70,7 +75,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         peerManager = node.peerManager
 
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
-        //disconnect
+        // disconnect
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         _ <- node.peerManager.connectPeer(peer)
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)
@@ -89,7 +94,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- node.start()
         peer <- peerF
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
-        //disconnect
+        // disconnect
         timestamp = Instant.now()
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)

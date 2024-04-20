@@ -28,7 +28,8 @@ class ComputeContractIdTest extends BitcoinSWalletTest with EmptyFixture {
       fundTxId: DoubleSha256DigestBE,
       fundOutputIndex: Int,
       temporaryContractId: Sha256Digest,
-      contractId: ByteVector)
+      contractId: ByteVector
+  )
 
   object ContractIdTestVector {
 
@@ -48,7 +49,9 @@ class ComputeContractIdTest extends BitcoinSWalletTest with EmptyFixture {
         DLCUtil.computeContractId(
           testVector.fundTxId,
           testVector.fundOutputIndex,
-          testVector.temporaryContractId) == testVector.contractId)
+          testVector.temporaryContractId
+        ) == testVector.contractId
+      )
     }
 
     succeed

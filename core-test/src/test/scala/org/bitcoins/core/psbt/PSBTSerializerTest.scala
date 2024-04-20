@@ -42,7 +42,8 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
   it must "successfully serialize a PSBT's global data" in {
     val psbt = PSBT.fromBytes(validPsbts(5))
     val tx = Transaction.fromBytes(
-      hex"02000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef13357900000000")
+      hex"02000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef13357900000000"
+    )
 
     assert(psbt.transaction == tx)
     assert(psbt.inputMaps.size == tx.inputs.size && tx.inputs.size == 1)
@@ -50,14 +51,17 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     assert(
       psbt.globalMap.elements.exists(record =>
         PSBTGlobalKeyId
-          .fromByte(record.key.head) == PSBTGlobalKeyId.XPubKeyKeyId))
+          .fromByte(record.key.head) == PSBTGlobalKeyId.XPubKeyKeyId
+      )
+    )
 
     val globalXPubs = psbt.globalMap.extendedPublicKeys
     assert(globalXPubs.size == 2)
 
     val xpub1 = ExtPublicKey
       .fromString(
-        "tpubDBkJeJo2X94Yq3RVz65DoUgyLUkaDrkfyrn2VcgyCRSKCRonvKvCF2FpYDGJWDkdRHBajXJGpc63GnumUt63ySvqCu2XaTRGVTKMYGuFk9H")
+        "tpubDBkJeJo2X94Yq3RVz65DoUgyLUkaDrkfyrn2VcgyCRSKCRonvKvCF2FpYDGJWDkdRHBajXJGpc63GnumUt63ySvqCu2XaTRGVTKMYGuFk9H"
+      )
 
     val finger1 = hex"d90c6a4f"
     val path1 = BIP32Path.fromString("m/174'/0'")
@@ -66,7 +70,8 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
     val xpub2 = ExtPublicKey
       .fromString(
-        "tpubDBkJeJo2X94YsvtBEU1eKoibEWiNv51nW5iHhs6VZp59jsE6nen8KZMFyGHuGbCvqjRqirgeMcfpVBkttpUUT6brm4duzSGoZeTbhqCNUu6")
+        "tpubDBkJeJo2X94YsvtBEU1eKoibEWiNv51nW5iHhs6VZp59jsE6nen8KZMFyGHuGbCvqjRqirgeMcfpVBkttpUUT6brm4duzSGoZeTbhqCNUu6"
+      )
 
     val finger2 = hex"d90c6a4f"
     val path2 = BIP32Path.fromString("m/174'/1'")
@@ -85,9 +90,11 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
       2,
       Vector(
         ECPublicKey(
-          "029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c8871"),
+          "029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c8871"
+        ),
         ECPublicKey(
-          "03372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b")
+          "03372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b"
+        )
       )
     )
 
@@ -99,14 +106,16 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
     assert(bip32paths.exists { path =>
       path.pubKey == ECPublicKey(
-        "029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c8871") &&
+        "029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c8871"
+      ) &&
       path.masterFingerprint == hex"d90c6a4f" &&
       path.path == BIP32Path.fromString("m/174'/0'/0")
     })
 
     assert(bip32paths.exists { path =>
       path.pubKey == ECPublicKey(
-        "03372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b") &&
+        "03372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b"
+      ) &&
       path.masterFingerprint == hex"d90c6a4f" &&
       path.path == BIP32Path.fromString("m/174'/1'/0")
     })
@@ -130,7 +139,9 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
     assert(
       bip32path.pubKey == ECPublicKey(
-        "039eff1f547a1d5f92dfa2ba7af6ac971a4bd03ba4a734b03156a256b8ad3a1ef9"))
+        "039eff1f547a1d5f92dfa2ba7af6ac971a4bd03ba4a734b03156a256b8ad3a1ef9"
+      )
+    )
     assert(bip32path.masterFingerprint == hex"ede45cc5")
     assert(bip32path.path == BIP32Path.fromString("m/0'/0'/1'"))
   }
@@ -138,7 +149,8 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
   it must "successfully serialize a PSBT with unknown types" in {
     val psbtWithUnknowns = PSBT.fromBytes(validPsbts(6))
     val inputKey = PSBTInputKeyId.fromByte(
-      psbtWithUnknowns.inputMaps.head.elements.head.key.head)
+      psbtWithUnknowns.inputMaps.head.elements.head.key.head
+    )
 
     assert(inputKey == PSBTInputKeyId.UnknownKeyId)
   }
@@ -147,19 +159,23 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     val psbt = PSBT(validPsbts.head)
 
     val proofOfReservesCommitment = ProofOfReservesCommitment(
-      hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+      hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+    )
 
     val inputElements =
       psbt.inputMaps.head.elements :+ proofOfReservesCommitment
 
     val psbtWithPoRC =
-      PSBT(psbt.globalMap,
-           psbt.inputMaps.updated(0, InputPSBTMap(inputElements)),
-           psbt.outputMaps)
+      PSBT(
+        psbt.globalMap,
+        psbt.inputMaps.updated(0, InputPSBTMap(inputElements)),
+        psbt.outputMaps
+      )
 
     assert(
       psbtWithPoRC.inputMaps.head.proofOfReservesCommitmentOpt
-        .contains(proofOfReservesCommitment))
+        .contains(proofOfReservesCommitment)
+    )
     assert(psbtWithPoRC == PSBT(psbtWithPoRC.bytes))
   }
 
@@ -171,9 +187,11 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     val outputElements = psbt.outputMaps.head.elements :+ witScript
 
     val psbtWithPoRC =
-      PSBT(psbt.globalMap,
-           psbt.inputMaps,
-           psbt.outputMaps.updated(0, OutputPSBTMap(outputElements)))
+      PSBT(
+        psbt.globalMap,
+        psbt.inputMaps,
+        psbt.outputMaps.updated(0, OutputPSBTMap(outputElements))
+      )
 
     assert(psbtWithPoRC.outputMaps.head.witnessScriptOpt.contains(witScript))
     assert(psbtWithPoRC == PSBT(psbtWithPoRC.bytes))
@@ -236,7 +254,8 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "fail to serialize invalid PSBTs" in {
     invalidPsbts.foreach(invalidPsbt =>
-      assertThrows[RuntimeException](PSBT(invalidPsbt)))
+      assertThrows[RuntimeException](PSBT(invalidPsbt))
+    )
 
     succeed
   }
@@ -255,7 +274,8 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "fail to get a record from a empty ByteVector" in {
     assertThrows[IllegalArgumentException](
-      PSBTRecord.fromBytes(ByteVector.empty))
+      PSBTRecord.fromBytes(ByteVector.empty)
+    )
   }
 
   it must "produce an empty record" in {
@@ -268,6 +288,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "fail to serialize PSBT not in base64 format" in {
     assertThrows[IllegalArgumentException](
-      PSBT.fromBase64("Never gonna give you up, never gonna let you down"))
+      PSBT.fromBase64("Never gonna give you up, never gonna let you down")
+    )
   }
 }

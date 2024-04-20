@@ -11,7 +11,8 @@ object DatadirUtil {
   def zipDatadir(source: Path, target: Path): Try[Path] = Try {
     if (Files.exists(target)) {
       throw new IOException(
-        s"Cannot zip datadir. Target file already exists: $target")
+        s"Cannot zip datadir. Target file already exists: $target"
+      )
     }
     val temp = Files.createTempDirectory(source, "backup")
     try {
@@ -36,10 +37,11 @@ object DatadirUtil {
         )
       )
 
-      SQLiteUtil.backupDirectory(source = source,
-                                 target = temp,
-                                 fileNameFilter =
-                                   Vector(".*chaindb.sqlite$".r, tempRE))
+      SQLiteUtil.backupDirectory(
+        source = source,
+        target = temp,
+        fileNameFilter = Vector(".*chaindb.sqlite$".r, tempRE)
+      )
 
       FileUtil.zipDirectory(
         source = temp,

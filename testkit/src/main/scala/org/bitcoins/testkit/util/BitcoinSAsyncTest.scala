@@ -12,8 +12,8 @@ import org.scalatest.flatspec.{AsyncFlatSpec, FixtureAsyncFlatSpec}
 
 import scala.concurrent.ExecutionContext
 
-/** A bitcoin-s async test trait, that uses akka's actor system
-  * execution context to run the scalatest test suites
+/** A bitcoin-s async test trait, that uses akka's actor system execution
+  * context to run the scalatest test suites
   */
 trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with BitcoinSLogger {
   this: AsyncTestSuite =>
@@ -24,8 +24,8 @@ trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with BitcoinSLogger {
   }
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  /** Needed because the default execution context will become overloaded
-    * if we do not specify a unique execution context for each suite
+  /** Needed because the default execution context will become overloaded if we
+    * do not specify a unique execution context for each suite
     */
   implicit override def executionContext: ExecutionContext =
     system.dispatcher
@@ -35,19 +35,19 @@ trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with BitcoinSLogger {
   }
 }
 
-/** A trait that uses [[AsyncFlatSpec]] to execute tests
-  * This is different than [[BitcoinsBaseAsyncTest]] in the sense that
-  * it extends [[AsyncFlatSpec]]. Some test cases in bitcoin-s we want
-  * to provide fixtures, which means that suite needs to extend [[FixtureAsyncFlatSpec FixtureAsyncFlatSpec]]
-  * to be able to use that fixture
+/** A trait that uses [[AsyncFlatSpec]] to execute tests This is different than
+  * [[BitcoinsBaseAsyncTest]] in the sense that it extends [[AsyncFlatSpec]].
+  * Some test cases in bitcoin-s we want to provide fixtures, which means that
+  * suite needs to extend [[FixtureAsyncFlatSpec FixtureAsyncFlatSpec]] to be
+  * able to use that fixture
   *
   * This test trait should be used for async tests that do NOT use a fixture.
   */
 trait BitcoinSAsyncTest extends AsyncFlatSpec with BitcoinSPekkoAsyncTest
 
 /** A trait that uses [[FixtureAsyncFlatSpec AsyncFlatSpec]] to execute tests
-  * This is different than [[BitcoinSAsyncTest BitcoinSAsyncTest]] as you can use a fixture
-  * with this test suite.
+  * This is different than [[BitcoinSAsyncTest BitcoinSAsyncTest]] as you can
+  * use a fixture with this test suite.
   */
 trait BitcoinSAsyncFixtureTest
     extends FixtureAsyncFlatSpec

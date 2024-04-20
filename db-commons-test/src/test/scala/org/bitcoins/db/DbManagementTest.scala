@@ -23,7 +23,8 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
   }
 
   def createChainDbManagement(
-      chainAppConfig: ChainAppConfig): ChainDbManagement =
+      chainAppConfig: ChainAppConfig
+  ): ChainDbManagement =
     new ChainDbManagement with JdbcProfileComponent[ChainAppConfig] {
       override val ec: ExecutionContext = system.dispatcher
 
@@ -38,7 +39,8 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     }
 
   def createWalletDbManagement(
-      walletAppConfig: WalletAppConfig): WalletDbManagement =
+      walletAppConfig: WalletAppConfig
+  ): WalletDbManagement =
     new WalletDbManagement with JdbcProfileComponent[WalletAppConfig] {
       override val ec: ExecutionContext = system.dispatcher
 
@@ -53,8 +55,10 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     }
 
   it must "run migrations for chain db" in {
-    val chainAppConfig = ChainAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                        Vector(dbConfig(ProjectType.Chain)))
+    val chainAppConfig = ChainAppConfig(
+      BitcoinSTestAppConfig.tmpDir(),
+      Vector(dbConfig(ProjectType.Chain))
+    )
     val chainDbManagement = createChainDbManagement(chainAppConfig)
     val result = chainDbManagement.migrate()
     chainAppConfig.driver match {
@@ -68,7 +72,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         val expected = 6
         assert(result.migrationsExecuted == expected)
         val flywayInfo = chainDbManagement.info()
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -77,8 +81,10 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for dlc db" in {
     val dlcAppConfig =
-      DLCAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                   Vector(dbConfig(ProjectType.DLC)))
+      DLCAppConfig(
+        BitcoinSTestAppConfig.tmpDir(),
+        Vector(dbConfig(ProjectType.DLC))
+      )
     val dlcDbManagement = createDLCDbManagement(dlcAppConfig)
     val result = dlcDbManagement.migrate()
     dlcAppConfig.driver match {
@@ -93,15 +99,17 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = dlcAppConfig.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
   }
 
   it must "run migrations for wallet db" in {
-    val walletAppConfig = WalletAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                          Vector(dbConfig(ProjectType.Wallet)))
+    val walletAppConfig = WalletAppConfig(
+      BitcoinSTestAppConfig.tmpDir(),
+      Vector(dbConfig(ProjectType.Wallet))
+    )
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
     walletAppConfig.driver match {
@@ -116,7 +124,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = walletDbManagement.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -125,8 +133,10 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for node db" in {
     val nodeAppConfig =
-      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                    Vector(dbConfig(ProjectType.Node)))
+      NodeAppConfig(
+        BitcoinSTestAppConfig.tmpDir(),
+        Vector(dbConfig(ProjectType.Node))
+      )
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
     nodeAppConfig.driver match {
@@ -142,7 +152,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = nodeDbManagement.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -150,8 +160,10 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for oracle db" in {
     val oracleAppConfig =
-      DLCOracleAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                         Vector(dbConfig(ProjectType.Oracle)))
+      DLCOracleAppConfig(
+        BitcoinSTestAppConfig.tmpDir(),
+        Vector(dbConfig(ProjectType.Oracle))
+      )
     val result = oracleAppConfig.migrate()
     oracleAppConfig.driver match {
       case SQLite =>
@@ -166,7 +178,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = oracleAppConfig.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }

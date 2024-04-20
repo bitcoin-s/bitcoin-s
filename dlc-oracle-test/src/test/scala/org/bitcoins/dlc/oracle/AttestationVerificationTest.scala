@@ -18,10 +18,12 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
 
   val enumAnnouncement: OracleAnnouncementV0TLV =
     OracleAnnouncementV0TLV(
-      "fdd8249917caf0b7f6cd8be0cd7a98530464329e42219e3b0f0cd75609de1d7342e8eba7ab47f111e1825af3322fd4d97f6d1b5f5063394f9a2dae05c14567a1f10819fa545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a85fdd8223500013168cb6d4c4e52aeb5bb75ce141cd9e1aa40e1d9123134d9aa390cffb338d51e600a1580fdd806060002016101620474657374")
+      "fdd8249917caf0b7f6cd8be0cd7a98530464329e42219e3b0f0cd75609de1d7342e8eba7ab47f111e1825af3322fd4d97f6d1b5f5063394f9a2dae05c14567a1f10819fa545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a85fdd8223500013168cb6d4c4e52aeb5bb75ce141cd9e1aa40e1d9123134d9aa390cffb338d51e600a1580fdd806060002016101620474657374"
+    )
 
   val validEnumAttestation: OracleAttestmentV0TLV = OracleAttestmentV0TLV(
-    "fdd868690474657374545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a8500013168cb6d4c4e52aeb5bb75ce141cd9e1aa40e1d9123134d9aa390cffb338d51e323d991dadb52f32d0541027f973c363c0b746bb40dd1d42686f172d88ddef380161")
+    "fdd868690474657374545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a8500013168cb6d4c4e52aeb5bb75ce141cd9e1aa40e1d9123134d9aa390cffb338d51e323d991dadb52f32d0541027f973c363c0b746bb40dd1d42686f172d88ddef380161"
+  )
 
   val invalidEnumAttestation: OracleAttestmentV0TLV = {
     val unsorted = validEnumAttestation.sigs.map(_.copy(sig = FieldElement.one))
@@ -30,33 +32,40 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
 
   val unsignedDigitDecompAnnouncement: OracleAnnouncementV0TLV =
     OracleAnnouncementV0TLV(
-      "fdd824fd0143e3335c998ff6b188da3ee303b8775f64ca7810685a4051fbf1acd1181f4dbcbc15ac5b418e37d9600229e5c31b97d130ceb9130d163c9592bf0481956dde0d64545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a85fdd822df0006280b657b9c1cd8de3da2619194e2c71831598be3e60d39a242c232f580451c43bd61d1a6c395c99202058ddabf851e1c8220f12bd801bbb90efcf45d4a2d769c57ae1c605b9d36ff8477baa8c216abbfe6c3742236ecfad2415745a7cf7850c646f4835c5b80ca64832a6b9e7526fd575db4913ce0a9686072c5f970f94c3a2e87d4b2e93e52b2283c81185fb8ab14a757ff04b00b821d1aaac0a81e05d15da64ca823f9aa4b18525521073096f73fd583205086c7db2b6ac243901e4f1898bc600b6700fdd80a0f00020005756e6974730000000000060564756d6d79")
+      "fdd824fd0143e3335c998ff6b188da3ee303b8775f64ca7810685a4051fbf1acd1181f4dbcbc15ac5b418e37d9600229e5c31b97d130ceb9130d163c9592bf0481956dde0d64545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a85fdd822df0006280b657b9c1cd8de3da2619194e2c71831598be3e60d39a242c232f580451c43bd61d1a6c395c99202058ddabf851e1c8220f12bd801bbb90efcf45d4a2d769c57ae1c605b9d36ff8477baa8c216abbfe6c3742236ecfad2415745a7cf7850c646f4835c5b80ca64832a6b9e7526fd575db4913ce0a9686072c5f970f94c3a2e87d4b2e93e52b2283c81185fb8ab14a757ff04b00b821d1aaac0a81e05d15da64ca823f9aa4b18525521073096f73fd583205086c7db2b6ac243901e4f1898bc600b6700fdd80a0f00020005756e6974730000000000060564756d6d79"
+    )
 
   val validUnsignedDigitDecompAttestation: OracleAttestmentV0TLV =
     OracleAttestmentV0TLV(
-      "fdd868fd01b40564756d6d79545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a850006280b657b9c1cd8de3da2619194e2c71831598be3e60d39a242c232f580451c43050ce8ac95b549bb5fed9e3800cf3c040207071032a5c458485ad1817373c0b7bd61d1a6c395c99202058ddabf851e1c8220f12bd801bbb90efcf45d4a2d769cdaa4e883da6b59cac21fc8f18dae7893997d5d13ac63f33fdb7643bba4c4fc8d57ae1c605b9d36ff8477baa8c216abbfe6c3742236ecfad2415745a7cf7850c6cb6a147a2e2a8875133147055027ed130dec47c6a9f75983d532a5c5940a763546f4835c5b80ca64832a6b9e7526fd575db4913ce0a9686072c5f970f94c3a2e72d0655c541eac15e9caa5af059c1f3e433507f1782e8775c555f1c402509f0c87d4b2e93e52b2283c81185fb8ab14a757ff04b00b821d1aaac0a81e05d15da68e710b25a91bfdacf179d9da3b90dec98844d8ac1ed534922dfa362b9db86c134ca823f9aa4b18525521073096f73fd583205086c7db2b6ac243901e4f1898bc476a311fbcd5d2fb7a355a9032c67dead084fe66eed00f7e9646e6fa83902bc7013001300130013001300130")
+      "fdd868fd01b40564756d6d79545aa0024da81c3fec63e56e07ee141cbefbd2c6e7d4dede124fe856ea453a850006280b657b9c1cd8de3da2619194e2c71831598be3e60d39a242c232f580451c43050ce8ac95b549bb5fed9e3800cf3c040207071032a5c458485ad1817373c0b7bd61d1a6c395c99202058ddabf851e1c8220f12bd801bbb90efcf45d4a2d769cdaa4e883da6b59cac21fc8f18dae7893997d5d13ac63f33fdb7643bba4c4fc8d57ae1c605b9d36ff8477baa8c216abbfe6c3742236ecfad2415745a7cf7850c6cb6a147a2e2a8875133147055027ed130dec47c6a9f75983d532a5c5940a763546f4835c5b80ca64832a6b9e7526fd575db4913ce0a9686072c5f970f94c3a2e72d0655c541eac15e9caa5af059c1f3e433507f1782e8775c555f1c402509f0c87d4b2e93e52b2283c81185fb8ab14a757ff04b00b821d1aaac0a81e05d15da68e710b25a91bfdacf179d9da3b90dec98844d8ac1ed534922dfa362b9db86c134ca823f9aa4b18525521073096f73fd583205086c7db2b6ac243901e4f1898bc476a311fbcd5d2fb7a355a9032c67dead084fe66eed00f7e9646e6fa83902bc7013001300130013001300130"
+    )
 
   // this one was generated with the same public key
   val invalidUnsignedDigitDecompAttestation: OracleAttestmentV0TLV = {
     val unsorted = validUnsignedDigitDecompAttestation.sigs.map(
-      _.copy(sig = FieldElement.one))
+      _.copy(sig = FieldElement.one)
+    )
     val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
     validUnsignedDigitDecompAttestation.copy(unsortedSignatures =
-      sorted.toVector)
+      sorted.toVector
+    )
   }
 
   // this one was generated with a different public key
   val invalidUnsignedDigitDecompAttestation1: OracleAttestmentV0TLV =
     OracleAttestmentV0TLV(
-      "fdd868fd01b00161d485e5557110ec2a4909438ce55f02d9ec349b33989c6344fbbd19aec4ae56d8000667aabd3d20e82e2975d8629240f77295e8d76985f525450372763db775ea0f9029aa9bfb01cc81a39849e81f6d96057e528dcf4decb40a5a521bed2f580871bea09840a976ae6bb2a4052b955bf4720f8178cabe2cd95e490d4853f5772c40060c3a6ed993e7104ceb951a222cd14d0fac69d26ec00d07c3c7de65be07d10fdf994e8ea291c438d11067b84a859e73d99ee7030a246eaaeb8573ad2d7fc1844b2afca351f6dd0c8171090196dfc8fa9641e0748902bcbad6270b36179252fc31ce5c536d7cb69d509f583aa1bd09aac5e7ebbd65872e2809176f55af9f810514a82a8a51b5306ef586aabe8789d3cc47972124a4da4834a2507d1315b7893d5ecb7fd7d4d4bd27eb7c9ce7ff92080b9959625cb4d2a92ac1a0d487168402dfd23248c8f9bce7963f097e58ca5412db68b2f9f9bca86bfe35d83fcedbafb9edccb363f7788fa111bdd9ba8558e7e1c921f04144e24d03a98a81567301df4e511c4ffbbc691beb13498b6628817915ecfb41e5f1e63317d646920df10f4ae9797c013001300130013001300130")
+      "fdd868fd01b00161d485e5557110ec2a4909438ce55f02d9ec349b33989c6344fbbd19aec4ae56d8000667aabd3d20e82e2975d8629240f77295e8d76985f525450372763db775ea0f9029aa9bfb01cc81a39849e81f6d96057e528dcf4decb40a5a521bed2f580871bea09840a976ae6bb2a4052b955bf4720f8178cabe2cd95e490d4853f5772c40060c3a6ed993e7104ceb951a222cd14d0fac69d26ec00d07c3c7de65be07d10fdf994e8ea291c438d11067b84a859e73d99ee7030a246eaaeb8573ad2d7fc1844b2afca351f6dd0c8171090196dfc8fa9641e0748902bcbad6270b36179252fc31ce5c536d7cb69d509f583aa1bd09aac5e7ebbd65872e2809176f55af9f810514a82a8a51b5306ef586aabe8789d3cc47972124a4da4834a2507d1315b7893d5ecb7fd7d4d4bd27eb7c9ce7ff92080b9959625cb4d2a92ac1a0d487168402dfd23248c8f9bce7963f097e58ca5412db68b2f9f9bca86bfe35d83fcedbafb9edccb363f7788fa111bdd9ba8558e7e1c921f04144e24d03a98a81567301df4e511c4ffbbc691beb13498b6628817915ecfb41e5f1e63317d646920df10f4ae9797c013001300130013001300130"
+    )
 
   val signedDigitDecompAnnouncement: OracleAnnouncementV0TLV =
     OracleAnnouncementV0TLV(
-      "fdd824fd010126487da78218c4fd04d85575595584c54bbec4f2ab3cb64f820bab24c14f9738f4284846c3780985f5c1189decc7680d9c0dbfa5e454b72ac6e292de0df0121ec22db0a9b26f825ccff38cd776103c952c5ede3fc5da3a69770d446011ac126ffdd8229d00049ef0f2b1e7befd3840b4ae6b9f690c6ed42ba9fcddbcde1a7ee91732d63b802ec1e88c69f414e1b47db730ccd4ec1f6e2049e5ce7d569b9dc42263503efb85ed60cbb1d5d42b28d571ef9cb37dba9927a65c819742267862d88acd50a276ad9a624b05aa3829dc181f785f31a0450299a972cc0eb44384529ef30a9a17c0f2aa63328350fdd80a0e00020004746573740000000000040474657374")
+      "fdd824fd010126487da78218c4fd04d85575595584c54bbec4f2ab3cb64f820bab24c14f9738f4284846c3780985f5c1189decc7680d9c0dbfa5e454b72ac6e292de0df0121ec22db0a9b26f825ccff38cd776103c952c5ede3fc5da3a69770d446011ac126ffdd8229d00049ef0f2b1e7befd3840b4ae6b9f690c6ed42ba9fcddbcde1a7ee91732d63b802ec1e88c69f414e1b47db730ccd4ec1f6e2049e5ce7d569b9dc42263503efb85ed60cbb1d5d42b28d571ef9cb37dba9927a65c819742267862d88acd50a276ad9a624b05aa3829dc181f785f31a0450299a972cc0eb44384529ef30a9a17c0f2aa63328350fdd80a0e00020004746573740000000000040474657374"
+    )
 
   val validSignedDigitDecompAttestation: OracleAttestmentV0TLV =
     OracleAttestmentV0TLV(
-      "fdd868fd012f0474657374c22db0a9b26f825ccff38cd776103c952c5ede3fc5da3a69770d446011ac126f00049ef0f2b1e7befd3840b4ae6b9f690c6ed42ba9fcddbcde1a7ee91732d63b802ec8230d8b4f0c926fa79dd4d24dcda5487c6e4957f4b208811baa11fde9849dddc1e88c69f414e1b47db730ccd4ec1f6e2049e5ce7d569b9dc42263503efb85ed08bfb84dab00ad7f1d1c07eb8e1559ba0c700e88f7387e936883fe77b406efb560cbb1d5d42b28d571ef9cb37dba9927a65c819742267862d88acd50a276ad9a1b25f23a7c49150f83f6b241a5b6b0f91951f285853452ae05ea5f7e8f3846a5624b05aa3829dc181f785f31a0450299a972cc0eb44384529ef30a9a17c0f2aa593b017b084ea40c7f364e5235c9a27f659dc2cfa689e0aa80f4a4cacd4d4de10131013101300130")
+      "fdd868fd012f0474657374c22db0a9b26f825ccff38cd776103c952c5ede3fc5da3a69770d446011ac126f00049ef0f2b1e7befd3840b4ae6b9f690c6ed42ba9fcddbcde1a7ee91732d63b802ec8230d8b4f0c926fa79dd4d24dcda5487c6e4957f4b208811baa11fde9849dddc1e88c69f414e1b47db730ccd4ec1f6e2049e5ce7d569b9dc42263503efb85ed08bfb84dab00ad7f1d1c07eb8e1559ba0c700e88f7387e936883fe77b406efb560cbb1d5d42b28d571ef9cb37dba9927a65c819742267862d88acd50a276ad9a1b25f23a7c49150f83f6b241a5b6b0f91951f285853452ae05ea5f7e8f3846a5624b05aa3829dc181f785f31a0450299a972cc0eb44384529ef30a9a17c0f2aa593b017b084ea40c7f364e5235c9a27f659dc2cfa689e0aa80f4a4cacd4d4de10131013101300130"
+    )
 
   val invalidSignedDigitDecompAttestation: OracleAttestmentV0TLV = {
     val unsorted =
@@ -67,70 +76,104 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
 
   val invalidSignedDigitDecompAttestation1: OracleAttestmentV0TLV =
     OracleAttestmentV0TLV(
-      "fdd868fd01f2017ad485e5557110ec2a4909438ce55f02d9ec349b33989c6344fbbd19aec4ae56d800073da5fcd784525041016e96b7021bd626eed2b88fadb36d073613ab16898b34cc70a20df7bb4324db5f1287c3c1b4e3a860d578bc7327b4b1cc7573798cf071b26c8d3611a45d93c511ea6c94b548d736e79bc485d29c84f071d36c8582e9d70d86d46379556b52b280c35821425dbcefd9f68044bd36e795dc4bd875e1e28ec2d24d6de99140c670b47976d6b97f4c524cfdedd64ef95bef83c4eae85adca9a3dec4632b918aba93702a7efa5847ae64dda9dcea35c54cf42c4b8bf5cdbe5e5561eb3b37e209d762a15e2e967cea608005019e217c6b8178517df319ee82f77688fe174f4424a324e6ee4d9444343350de7454e1cb761436e60fa31bc6f0b1f98a5810dcf8f1ac393df004384c25e15834215f87be3d96c2cc2dc3e8b396f0ae24e6979e7242628852b32e94892812ab63c0c9abb2c72195161e42894f80c4d5bcf9e9c2153857dd15c9b338dc168b04e018b6c983ad41365b6e7827eb8aa2f4e89e535045a904ac19ed08c3cd49a08ad3ca98d264846223e52506c447eb12d420475c9f297957e2467eff0873ff97d8aa5fef0b363665ff6979d36d1a04eaac4d3a4f85eac1111ee9e323ae5638b019d15282cd9b18c35aa0a1b7951957ef3f012b013001300130013001300130")
+      "fdd868fd01f2017ad485e5557110ec2a4909438ce55f02d9ec349b33989c6344fbbd19aec4ae56d800073da5fcd784525041016e96b7021bd626eed2b88fadb36d073613ab16898b34cc70a20df7bb4324db5f1287c3c1b4e3a860d578bc7327b4b1cc7573798cf071b26c8d3611a45d93c511ea6c94b548d736e79bc485d29c84f071d36c8582e9d70d86d46379556b52b280c35821425dbcefd9f68044bd36e795dc4bd875e1e28ec2d24d6de99140c670b47976d6b97f4c524cfdedd64ef95bef83c4eae85adca9a3dec4632b918aba93702a7efa5847ae64dda9dcea35c54cf42c4b8bf5cdbe5e5561eb3b37e209d762a15e2e967cea608005019e217c6b8178517df319ee82f77688fe174f4424a324e6ee4d9444343350de7454e1cb761436e60fa31bc6f0b1f98a5810dcf8f1ac393df004384c25e15834215f87be3d96c2cc2dc3e8b396f0ae24e6979e7242628852b32e94892812ab63c0c9abb2c72195161e42894f80c4d5bcf9e9c2153857dd15c9b338dc168b04e018b6c983ad41365b6e7827eb8aa2f4e89e535045a904ac19ed08c3cd49a08ad3ca98d264846223e52506c447eb12d420475c9f297957e2467eff0873ff97d8aa5fef0b363665ff6979d36d1a04eaac4d3a4f85eac1111ee9e323ae5638b019d15282cd9b18c35aa0a1b7951957ef3f012b013001300130013001300130"
+    )
 
   it should "validate valid enum attestations" in {
     assert(
       OracleEvent
-        .verifyAttestations(enumAnnouncement,
-                            validEnumAttestation,
-                            signingVersion))
+        .verifyAttestations(
+          enumAnnouncement,
+          validEnumAttestation,
+          signingVersion
+        )
+    )
   }
 
   it should "not validate invalid enum attestations" in {
     assert(
       !OracleEvent
-        .verifyAttestations(enumAnnouncement,
-                            invalidEnumAttestation,
-                            signingVersion))
+        .verifyAttestations(
+          enumAnnouncement,
+          invalidEnumAttestation,
+          signingVersion
+        )
+    )
     assert(
-      !OracleEvent.verifyAttestations(enumAnnouncement,
-                                      validUnsignedDigitDecompAttestation,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        enumAnnouncement,
+        validUnsignedDigitDecompAttestation,
+        signingVersion
+      )
+    )
   }
 
   it should "validate valid unsigned digit decomp attestations" in {
     assert(
-      OracleEvent.verifyAttestations(unsignedDigitDecompAnnouncement,
-                                     validUnsignedDigitDecompAttestation,
-                                     signingVersion))
+      OracleEvent.verifyAttestations(
+        unsignedDigitDecompAnnouncement,
+        validUnsignedDigitDecompAttestation,
+        signingVersion
+      )
+    )
   }
 
   it should "not validate invalid unsigned digit decomp attestations" in {
     assert(
-      !OracleEvent.verifyAttestations(unsignedDigitDecompAnnouncement,
-                                      validEnumAttestation,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        unsignedDigitDecompAnnouncement,
+        validEnumAttestation,
+        signingVersion
+      )
+    )
     assert(
-      !OracleEvent.verifyAttestations(unsignedDigitDecompAnnouncement,
-                                      invalidUnsignedDigitDecompAttestation,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        unsignedDigitDecompAnnouncement,
+        invalidUnsignedDigitDecompAttestation,
+        signingVersion
+      )
+    )
     assert(
-      !OracleEvent.verifyAttestations(unsignedDigitDecompAnnouncement,
-                                      invalidUnsignedDigitDecompAttestation1,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        unsignedDigitDecompAnnouncement,
+        invalidUnsignedDigitDecompAttestation1,
+        signingVersion
+      )
+    )
   }
 
   it should "validate valid signed digit decomp attestations" in {
     assert(
-      OracleEvent.verifyAttestations(signedDigitDecompAnnouncement,
-                                     validSignedDigitDecompAttestation,
-                                     signingVersion))
+      OracleEvent.verifyAttestations(
+        signedDigitDecompAnnouncement,
+        validSignedDigitDecompAttestation,
+        signingVersion
+      )
+    )
   }
 
   it should "not validate invalid signed digit decomp attestations" in {
     assert(
-      !OracleEvent.verifyAttestations(signedDigitDecompAnnouncement,
-                                      validEnumAttestation,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        signedDigitDecompAnnouncement,
+        validEnumAttestation,
+        signingVersion
+      )
+    )
     assert(
-      !OracleEvent.verifyAttestations(signedDigitDecompAnnouncement,
-                                      invalidSignedDigitDecompAttestation,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        signedDigitDecompAnnouncement,
+        invalidSignedDigitDecompAttestation,
+        signingVersion
+      )
+    )
     assert(
-      !OracleEvent.verifyAttestations(signedDigitDecompAnnouncement,
-                                      invalidSignedDigitDecompAttestation1,
-                                      signingVersion))
+      !OracleEvent.verifyAttestations(
+        signedDigitDecompAnnouncement,
+        invalidSignedDigitDecompAttestation1,
+        signingVersion
+      )
+    )
   }
 
   it must "validate announcement/attesation with out of order nonces" in {
@@ -157,9 +200,11 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
         "3001310130013101300130"
     val attestationV0 = OracleAttestmentV0TLV.fromHex(attestationHex)
 
-    val result = OracleEvent.verifyAttestations(annV0,
-                                                attestationV0,
-                                                SigningVersion.latest)
+    val result = OracleEvent.verifyAttestations(
+      annV0,
+      attestationV0,
+      SigningVersion.latest
+    )
 
     assert(result)
   }

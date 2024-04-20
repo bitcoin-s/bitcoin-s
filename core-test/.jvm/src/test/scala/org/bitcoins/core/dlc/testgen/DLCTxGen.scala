@@ -23,21 +23,26 @@ object DLCTxGen {
       contractDescriptor: EnumContractDescriptor = genContractDescriptor(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
-      feeRate: SatoshisPerVirtualByte =
-        SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
+      feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis(5))
+  ): DLCParams = {
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
     val oracleInfo = EnumSingleOracleInfo(
       OracleAnnouncementV0TLV
-        .dummyForEventsAndKeys(privKey,
-                               kVal.schnorrNonce,
-                               contractDescriptor.keys))
+        .dummyForEventsAndKeys(
+          privKey,
+          kVal.schnorrNonce,
+          contractDescriptor.keys
+        )
+    )
     val realOutcome = contractDescriptor.keys(contractDescriptor.size / 2)
     val sig =
-      privKey.schnorrSignWithNonce(CryptoUtil
-                                     .sha256DLCAttestation(realOutcome.outcome)
-                                     .bytes,
-                                   kVal)
+      privKey.schnorrSignWithNonce(
+        CryptoUtil
+          .sha256DLCAttestation(realOutcome.outcome)
+          .bytes,
+        kVal
+      )
     DLCParams(
       oracleInfo,
       SerializedContractInfoEntry.fromContractDescriptor(contractDescriptor),
@@ -50,10 +55,13 @@ object DLCTxGen {
   }
 
   private val dummyTransactionInput = TransactionInput(
-    TransactionOutPoint(CryptoUtil.doubleSHA256(ByteVector("DLC".getBytes)),
-                        UInt32.zero),
+    TransactionOutPoint(
+      CryptoUtil.doubleSHA256(ByteVector("DLC".getBytes)),
+      UInt32.zero
+    ),
     EmptyScriptSignature,
-    UInt32.zero)
+    UInt32.zero
+  )
 
   def fundingInputTx(
       inputs: Vector[TransactionInput] = Vector(dummyTransactionInput),
@@ -61,10 +69,12 @@ object DLCTxGen {
       privKeys: Vector[ECPrivateKey] = Vector(ECPrivateKey.freshPrivateKey),
       redeemScriptOpt: Option[WitnessScriptPubKeyV0] = None,
       scriptWitness: ScriptWitnessV0 = P2WPKHWitnessV0(
-        ECPublicKey.freshPublicKey),
+        ECPublicKey.freshPublicKey
+      ),
       amt: CurrencyUnit = defaultAmt * 2,
       lockTime: UInt32 = UInt32.zero,
-      serialId: UInt64 = DLCMessage.genSerialId()): FundingInputTx = {
+      serialId: UInt64 = DLCMessage.genSerialId()
+  ): FundingInputTx = {
     val (spk, scriptWit) = redeemScriptOpt match {
       case Some(wspk) => (P2SHScriptPubKey(wspk), scriptWitness)
       case None =>
@@ -85,10 +95,12 @@ object DLCTxGen {
       Vector
         .fill(idx)(TransactionOutput(defaultAmt, EmptyScriptPubKey)) :+
         TransactionOutput(amt, spk)
-    val tx = BaseTransaction(TransactionConstants.validLockVersion,
-                             inputs,
-                             outputs,
-                             lockTime)
+    val tx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      inputs,
+      outputs,
+      lockTime
+    )
 
     FundingInputTx(serialId, tx, idx, privKeys, redeemScriptOpt, scriptWit)
   }
@@ -100,7 +112,8 @@ object DLCTxGen {
       p2shNested: Boolean = false,
       idx: Int = 0,
       amt: CurrencyUnit = defaultAmt * 2,
-      lockTime: UInt32 = UInt32.zero): FundingInputTx = {
+      lockTime: UInt32 = UInt32.zero
+  ): FundingInputTx = {
     val multiSig =
       MultiSignatureScriptPubKey(requiredSigs, privKeys.map(_.publicKey))
 
@@ -110,12 +123,14 @@ object DLCTxGen {
 
     val scriptWitness = P2WSHWitnessV0(multiSig)
 
-    fundingInputTx(idx = idx,
-                   privKeys = privKeys,
-                   redeemScriptOpt = redeemScriptOpt,
-                   scriptWitness = scriptWitness,
-                   amt = amt,
-                   lockTime = lockTime)
+    fundingInputTx(
+      idx = idx,
+      privKeys = privKeys,
+      redeemScriptOpt = redeemScriptOpt,
+      scriptWitness = scriptWitness,
+      amt = amt,
+      lockTime = lockTime
+    )
   }
 
   def dlcPartyParams(
@@ -126,28 +141,33 @@ object DLCTxGen {
       fundingPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
       payoutAddress: BitcoinAddress = address(),
       payoutSerialId: UInt64 = DLCMessage.genSerialId(),
-      fundOutputSerialId: UInt64 = DLCMessage.genSerialId()): DLCPartyParams = {
-    DLCPartyParams(collateral,
-                   fundingInputTxs,
-                   changeAddress,
-                   changeSerialId,
-                   fundingPrivKey,
-                   payoutAddress,
-                   payoutSerialId,
-                   fundOutputSerialId)
+      fundOutputSerialId: UInt64 = DLCMessage.genSerialId()
+  ): DLCPartyParams = {
+    DLCPartyParams(
+      collateral,
+      fundingInputTxs,
+      changeAddress,
+      changeSerialId,
+      fundingPrivKey,
+      payoutAddress,
+      payoutSerialId,
+      fundOutputSerialId
+    )
   }
 
   def validTestInputs(
       params: DLCParams = dlcParams(),
       offerParams: DLCPartyParams = dlcPartyParams(),
-      acceptParams: DLCPartyParams = dlcPartyParams()): ValidTestInputs = {
+      acceptParams: DLCPartyParams = dlcPartyParams()
+  ): ValidTestInputs = {
     ValidTestInputs(params, offerParams, acceptParams)
   }
 
   def validTestInputsForInputs(
       offerInputs: Vector[FundingInputTx],
       acceptInputs: Vector[FundingInputTx],
-      numOutcomes: Int = 3): ValidTestInputs = {
+      numOutcomes: Int = 3
+  ): ValidTestInputs = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractDescriptor = genContractDescriptor(outcomes)
 
@@ -197,16 +217,19 @@ object DLCTxGen {
   }
 
   def dlcTxTestVector(
-      inputs: ValidTestInputs = validTestInputs()): DLCTxTestVector = {
+      inputs: ValidTestInputs = validTestInputs()
+  ): DLCTxTestVector = {
     DLCTxTestVector.fromInputs(inputs)
   }
 
   def dlcTxTestVectorWithTxInputs(
       offerInputs: Vector[FundingInputTx],
       acceptInputs: Vector[FundingInputTx],
-      numOutcomes: Int = 3): DLCTxTestVector = {
+      numOutcomes: Int = 3
+  ): DLCTxTestVector = {
     dlcTxTestVector(
-      validTestInputsForInputs(offerInputs, acceptInputs, numOutcomes))
+      validTestInputsForInputs(offerInputs, acceptInputs, numOutcomes)
+    )
   }
 
   def randomTxTestVector(numOutcomes: Int): DLCTxTestVector = {
@@ -214,11 +237,13 @@ object DLCTxGen {
     val contractDescriptor = genContractDescriptor(outcomes)
 
     dlcTxTestVector(
-      validTestInputs(dlcParams(contractDescriptor = contractDescriptor)))
+      validTestInputs(dlcParams(contractDescriptor = contractDescriptor))
+    )
   }
 
   def successTestVector(
-      inputs: ValidTestInputs = validTestInputs()): Try[SuccessTestVector] = {
+      inputs: ValidTestInputs = validTestInputs()
+  ): Try[SuccessTestVector] = {
     val offer = inputs.offer
     val acceptWithoutSigs = inputs.accept
 
@@ -243,8 +268,10 @@ object DLCTxGen {
       .map(_.preImage)
       .get
     val outcome =
-      EnumOracleOutcome(Vector(inputs.params.oracleInfo),
-                        EnumOutcome(outcomeStr))
+      EnumOracleOutcome(
+        Vector(inputs.params.oracleInfo),
+        EnumOutcome(outcomeStr)
+      )
 
     val acceptCETSigs = acceptSigner.createCETSigs()
     val offerCETSigs = offerSigner.createCETSigs()
@@ -264,15 +291,23 @@ object DLCTxGen {
         outcome,
         acceptCETSigs(outcome.sigPoint),
         Vector(
-          EnumOracleSignature(inputs.params.oracleInfo,
-                              inputs.params.oracleSignature)))
+          EnumOracleSignature(
+            inputs.params.oracleInfo,
+            inputs.params.oracleSignature
+          )
+        )
+      )
 
       val acceptSignedCET = acceptSigner.completeCET(
         outcome,
         offerCETSigs(outcome.sigPoint),
         Vector(
-          EnumOracleSignature(inputs.params.oracleInfo,
-                              inputs.params.oracleSignature)))
+          EnumOracleSignature(
+            inputs.params.oracleInfo,
+            inputs.params.oracleSignature
+          )
+        )
+      )
 
       val accept = acceptWithoutSigs.withSigs(acceptCETSigs, acceptRefundSig)
 
@@ -286,9 +321,11 @@ object DLCTxGen {
         accept.toMessage,
         sign.toMessage,
         DLCTransactions(fundingTx, cets, refundTx),
-        DLCTransactions(signedFundingTx,
-                        Vector(offerSignedCET, acceptSignedCET),
-                        signedRefundTx)
+        DLCTransactions(
+          signedFundingTx,
+          Vector(offerSignedCET, acceptSignedCET),
+          signedRefundTx
+        )
       )
     }
   }
@@ -298,6 +335,7 @@ object DLCTxGen {
     val contractDescriptor = genContractDescriptor(outcomes)
 
     successTestVector(
-      validTestInputs(dlcParams(contractDescriptor = contractDescriptor)))
+      validTestInputs(dlcParams(contractDescriptor = contractDescriptor))
+    )
   }
 }

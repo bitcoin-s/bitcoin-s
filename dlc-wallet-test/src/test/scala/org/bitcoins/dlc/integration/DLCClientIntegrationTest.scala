@@ -50,16 +50,19 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
     for {
       client <- clientF
       addressForMining <- addressForMiningF
-      _ <- BitcoindRpcTestUtil.waitUntilBlock(blockHeight,
-                                              client,
-                                              addressForMining)
+      _ <- BitcoindRpcTestUtil.waitUntilBlock(
+        blockHeight,
+        client,
+        addressForMining
+      )
     } yield ()
   }
 
   behavior of "AdaptorDLCClient"
 
-  def constructDLC(numOutcomes: Int): Future[
-    (TestDLCClient, TestDLCClient, Vector[EnumOutcome])] = {
+  def constructDLC(
+      numOutcomes: Int
+  ): Future[(TestDLCClient, TestDLCClient, Vector[EnumOutcome])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -86,7 +89,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
             output.scriptPubKey match {
               case p2wpkh: P2WPKHWitnessSPKV0 =>
                 p2wpkh.pubKeyHash == P2WPKHWitnessSPKV0(
-                  inputPubKeyOffer).pubKeyHash
+                  inputPubKeyOffer
+                ).pubKeyHash
               case _ => false
             }
           }
@@ -107,7 +111,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
             output.scriptPubKey match {
               case p2wpkh: P2WPKHWitnessSPKV0 =>
                 p2wpkh.pubKeyHash == P2WPKHWitnessSPKV0(
-                  inputPubKeyAccept).pubKeyHash
+                  inputPubKeyAccept
+                ).pubKeyHash
               case _ => false
             }
           }
@@ -118,7 +123,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
             output.scriptPubKey match {
               case p2sh: P2SHScriptPubKey =>
                 p2sh.scriptHash == P2SHScriptPubKey(
-                  P2WSHWitnessSPKV0(acceptNestedSPK)).scriptHash
+                  P2WSHWitnessSPKV0(acceptNestedSPK)
+                ).scriptHash
               case _ => false
             }
           }
@@ -130,12 +136,14 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       assert(remoteOutputIndex.isDefined)
       assert(remoteOutputIndex2.isDefined)
 
-      (tx,
-       localOutputIndex.get,
-       localOutputIndex2.get,
-       remoteOutputIndex.get,
-       remoteOutputIndex2.get,
-       signedTxResult.hex)
+      (
+        tx,
+        localOutputIndex.get,
+        localOutputIndex2.get,
+        remoteOutputIndex.get,
+        remoteOutputIndex2.get,
+        signedTxResult.hex
+      )
     }
 
     val localFundingUtxosF = fundedInputsTxidF.map {
@@ -193,8 +201,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
           SpendingInfoWithSerialId(
             ScriptSignatureParams(
               P2SHNestedSegwitV0InputInfo(
-                outPoint = TransactionOutPoint(prevTx.txIdBE,
-                                               UInt32(remoteOutputIndex2)),
+                outPoint = TransactionOutPoint(
+                  prevTx.txIdBE,
+                  UInt32(remoteOutputIndex2)
+                ),
                 amount = tx.outputs(remoteOutputIndex2).value,
                 scriptWitness = P2WSHWitnessV0(acceptNestedSPK),
                 ConditionalPath.NoCondition
@@ -274,7 +284,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
   def validateOutcome(
       outcome: DLCOutcome,
-      builder: DLCTxBuilder): Future[Assertion] = {
+      builder: DLCTxBuilder
+  ): Future[Assertion] = {
     val fundingTx = outcome.fundingTx
     val closingTx = outcome match {
       case ExecutedDLCOutcome(_, cet, _, _) => cet
@@ -286,10 +297,12 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       regtestFundingTx <- client.getRawTransaction(fundingTx.txIdBE)
       regtestClosingTx <- client.getRawTransaction(closingTx.txIdBE)
     } yield {
-      DLCFeeTestUtil.validateFees(builder,
-                                  fundingTx,
-                                  closingTx,
-                                  fundingTxSigs = 5)
+      DLCFeeTestUtil.validateFees(
+        builder,
+        fundingTx,
+        closingTx,
+        fundingTxSigs = 5
+      )
       assert(noEmptySPKOutputs(fundingTx))
       assert(regtestFundingTx.hex == fundingTx)
       assert(regtestFundingTx.confirmations.isDefined)
@@ -304,7 +317,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
   def setupDLC(
       dlcOffer: TestDLCClient,
-      dlcAccept: TestDLCClient): Future[(SetupDLC, SetupDLC)] = {
+      dlcAccept: TestDLCClient
+  ): Future[(SetupDLC, SetupDLC)] = {
     val fundingTxF = {
       val fundingTxP = Promise[Transaction]()
 
@@ -334,7 +348,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
       val cancelOnFundingFound =
         system.scheduler.scheduleWithFixedDelay(
           initialDelay = 100.milliseconds,
-          delay = 1.second)(runnable = watchForFundingTx)
+          delay = 1.second
+        )(runnable = watchForFundingTx)
 
       fundingTxP.future.foreach(_ => cancelOnFundingFound.cancel())
 
@@ -345,7 +360,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
   }
 
   def constructAndSetupDLC(numOutcomes: Int): Future[
-    (TestDLCClient, SetupDLC, TestDLCClient, SetupDLC, Vector[EnumOutcome])] = {
+    (TestDLCClient, SetupDLC, TestDLCClient, SetupDLC, Vector[EnumOutcome])
+  ] = {
     for {
       (offerDLC, acceptDLC, outcomes) <- constructDLC(numOutcomes)
       (offerSetup, acceptSetup) <- setupDLC(offerDLC, acceptDLC)
@@ -355,14 +371,16 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
   def executeForCase(
       outcomeIndex: Int,
       numOutcomes: Int,
-      local: Boolean): Future[Assertion] = {
+      local: Boolean
+  ): Future[Assertion] = {
     for {
       (offerDLC, offerSetup, acceptDLC, acceptSetup, outcomes) <-
         constructAndSetupDLC(numOutcomes)
 
       oracleSig = genEnumOracleSignature(
         offerDLC.offer.oracleInfos.head.asInstanceOf[EnumSingleOracleInfo],
-        outcomes(outcomeIndex).outcome)
+        outcomes(outcomeIndex).outcome
+      )
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {
         if (local) {
@@ -374,18 +392,23 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
       unilateralOutcome <- unilateralDLC.executeDLC(
         unilateralSetup,
-        Future.successful(Vector(oracleSig)))
+        Future.successful(Vector(oracleSig))
+      )
       otherOutcome <-
         otherDLC.executeDLC(otherSetup, Future.successful(Vector(oracleSig)))
 
       _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(unilateralOutcome.cet))
+        publishTransaction(unilateralOutcome.cet)
+      )
       _ <- waitUntilBlock(
-        unilateralDLC.timeouts.contractMaturity.toUInt32.toInt - 1)
+        unilateralDLC.timeouts.contractMaturity.toUInt32.toInt - 1
+      )
       _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(unilateralOutcome.cet))
+        publishTransaction(unilateralOutcome.cet)
+      )
       _ <- waitUntilBlock(
-        unilateralDLC.timeouts.contractMaturity.toUInt32.toInt)
+        unilateralDLC.timeouts.contractMaturity.toUInt32.toInt
+      )
       _ <- publishTransaction(unilateralOutcome.cet)
       _ <- validateOutcome(unilateralOutcome, offerDLC.dlcTxBuilder)
     } yield {
@@ -397,7 +420,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
   def executeForRefundCase(numOutcomes: Int): Future[Assertion] = {
     for {
       (offerDLC, offerSetup, acceptDLC, acceptSetup, _) <- constructAndSetupDLC(
-        numOutcomes)
+        numOutcomes
+      )
 
       acceptOutcome = acceptDLC.executeRefundDLC(acceptSetup)
       offerOutcome = offerDLC.executeRefundDLC(offerSetup)
@@ -430,7 +454,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
   def runTests(
       exec: (Int, Int, Boolean) => Future[Assertion],
-      local: Boolean): Future[Assertion] = {
+      local: Boolean
+  ): Future[Assertion] = {
     runTestsForParam(numOutcomesToTest) { numOutcomes =>
       runTestsForParam(indicesToTest(numOutcomes)) { outcomeIndex =>
         exec(outcomeIndex, numOutcomes, local)

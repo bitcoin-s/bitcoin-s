@@ -14,22 +14,28 @@ import play.api.libs.json.{JsString, Json}
 import scala.concurrent.Future
 
 /** Assorted Rpc calls for Bitcoin V18
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/network/getnodeaddresses/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/wallet/listwalletdir/]]
-  * @see [[https://github.com/bitcoin/bitcoin/commit/e82f6ad6f270f1f101d8853be32fd11eff4ddfb8]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/mining/submitheader/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/network/getnodeaddresses/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/wallet/listwalletdir/]]
+  * @see
+  *   [[https://github.com/bitcoin/bitcoin/commit/e82f6ad6f270f1f101d8853be32fd11eff4ddfb8]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/mining/submitheader/]]
   */
 trait V18AssortedRpc {
   self: Client =>
 
   private def getNodeAddresses(
-      count: Option[Int]): Future[Vector[GetNodeAddressesResult]] = {
+      count: Option[Int]
+  ): Future[Vector[GetNodeAddressesResult]] = {
     self.version.flatMap {
       case BitcoindVersion.V22 | BitcoindVersion.V23 | BitcoindVersion.V24 |
           BitcoindVersion.Unknown =>
         bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
           "getnodeaddresses",
-          List(Json.toJson(count)))
+          List(Json.toJson(count))
+        )
     }
   }
 

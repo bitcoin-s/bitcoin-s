@@ -6,13 +6,12 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-/** Values transmitted in the network are big-endian.
-  * Created by tom on 6/3/16.
+/** Values transmitted in the network are big-endian. Created by tom on 6/3/16.
   */
 class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {
-  //genesis block
-  //https://en.bitcoin.it/wiki/Genesis_block
-  //https://insight.bitpay.com/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+  // genesis block
+  // https://en.bitcoin.it/wiki/Genesis_block
+  // https://insight.bitpay.com/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
   val version = "01000000"
 
   val prevBlockHash =
@@ -47,9 +46,9 @@ class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "parse different block header with known values from dev reference" in {
-    //from bitcoin developer reference
-    //https://bitcoin.org/en/developer-reference#block-headers
-    //https://insight.bitpay.com/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
+    // from bitcoin developer reference
+    // https://bitcoin.org/en/developer-reference#block-headers
+    // https://insight.bitpay.com/block/000000000000000009a11b3972c8e532fe964de937c9e0096b43814e67af3728
     val version2 = "02000000"
     val prevBlockHash2 =
       "b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c0000000000000000"
@@ -72,13 +71,13 @@ class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "parse/write testnet block header" in {
-    //https://test-insight.bitpay.com/block/00000000009fdf81e6efa251bc1902aedc07dc499cbe17db6e33db61eb64a7c5
+    // https://test-insight.bitpay.com/block/00000000009fdf81e6efa251bc1902aedc07dc499cbe17db6e33db61eb64a7c5
     val version = "00000020"
     val prevBlockHash =
       "06cd0fd35e1a102b93004d738561b56be94da29692d3b1d0c3dcf20000000000"
     val merkleRoot =
       "8dfb7407a20ac5c6bd890e56a37d41ceafae3d13e32ff8a5e63b72bc60214e24"
-    val timeStamp = "0ae75557" //1465247498
+    val timeStamp = "0ae75557" // 1465247498
     val nBits = "FFFF001D".toLowerCase
     val nonce = "43e3fe9e"
     val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce

@@ -10,14 +10,16 @@ class V14__compute_spk_hashes extends BaseJavaMigration {
     val selectStatement = context.getConnection.createStatement()
     try {
       val rows = selectStatement.executeQuery(
-        "SELECT id, script_pub_key FROM pub_key_scripts")
+        "SELECT id, script_pub_key FROM pub_key_scripts"
+      )
       while (rows.next()) {
         val id = rows.getLong(1)
         val hex = rows.getString(2)
         val spk = ScriptPubKey(hex)
         val hash = ScriptPubKeyDb.hash(spk)
         val updateStatement = context.getConnection.prepareStatement(
-          "UPDATE pub_key_scripts SET hash=? WHERE id=?")
+          "UPDATE pub_key_scripts SET hash=? WHERE id=?"
+        )
         updateStatement.setString(1, hash.hex)
         updateStatement.setLong(2, id)
         try {

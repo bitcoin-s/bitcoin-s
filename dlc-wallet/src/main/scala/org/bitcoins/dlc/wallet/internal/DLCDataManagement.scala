@@ -27,14 +27,16 @@ import slick.dbio._
 import scala.concurrent._
 import scala.util.Try
 
-/** Handles fetching and constructing different DLC datastructures from the database */
+/** Handles fetching and constructing different DLC datastructures from the
+  * database
+  */
 case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
-    ec: ExecutionContext)
-    extends BitcoinSLogger {
+    ec: ExecutionContext
+) extends BitcoinSLogger {
   val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
   private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
-  //private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  // private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
   private val contractDataDAO = dlcWalletDAOs.contractDataDAO
   private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
   private val dlcSigsDAO: DLCCETSignaturesDAO = dlcWalletDAOs.dlcSigsDAO
@@ -50,20 +52,23 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def getOffer(
       dlcId: Sha256Digest,
-      txDAO: TransactionDAO): Future[Option[DLCOffer]] = {
+      txDAO: TransactionDAO
+  ): Future[Option[DLCOffer]] = {
     val dataF = getDLCFundingData(dlcId, txDAO)
     dataF.map(data => data.map(_.offer))
   }
 
   private[wallet] def getDLCAnnouncementDbsAction(
-      dlcId: Sha256Digest): DBIOAction[
+      dlcId: Sha256Digest
+  ): DBIOAction[
     (
         Vector[DLCAnnouncementDb],
         Vector[OracleAnnouncementDataDb],
         Vector[OracleNonceDb]
     ),
     NoStream,
-    Effect.Read] = {
+    Effect.Read
+  ] = {
     val announcementsA = dlcAnnouncementDAO
       .findByDLCIdAction(dlcId)
     val announcementIdsA = announcementsA
@@ -72,7 +77,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       announcementIdsA.flatMap(ids => announcementDAO.findByIdsAction(ids))
     val noncesDbA =
       announcementIdsA.flatMap(ids =>
-        oracleNonceDAO.findByAnnouncementIdsAction(ids))
+        oracleNonceDAO.findByAnnouncementIdsAction(ids)
+      )
 
     for {
       announcements <- announcementsA
@@ -83,22 +89,26 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
-  private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[(
-      Vector[DLCAnnouncementDb],
-      Vector[OracleAnnouncementDataDb],
-      Vector[OracleNonceDb])] = {
+  private[wallet] def getDLCAnnouncementDbs(
+      dlcId: Sha256Digest
+  )(implicit ec: ExecutionContext): Future[
+    (
+        Vector[DLCAnnouncementDb],
+        Vector[OracleAnnouncementDataDb],
+        Vector[OracleNonceDb]
+    )
+  ] = {
     safeDatabase.run(getDLCAnnouncementDbsAction(dlcId))
   }
 
-  /** Fetches the oracle announcements of the oracles
-    * that were used for execution in a DLC
+  /** Fetches the oracle announcements of the oracles that were used for
+    * execution in a DLC
     */
   private[wallet] def getUsedOracleAnnouncements(
       dlcAnnouncementDbs: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): Vector[
-    (OracleAnnouncementV0TLV, Long)] = {
+      nonceDbs: Vector[OracleNonceDb]
+  ): Vector[(OracleAnnouncementV0TLV, Long)] = {
     val withIds = nonceDbs
       .groupBy(_.announcementId)
       .toVector
@@ -111,15 +121,22 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             if (used) {
               val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
               val eventTLV =
-                OracleEventV0TLV(nonces,
-                                 data.eventMaturity,
-                                 data.eventDescriptor,
-                                 data.eventId)
+                OracleEventV0TLV(
+                  nonces,
+                  data.eventMaturity,
+                  data.eventDescriptor,
+                  data.eventId
+                )
               Some(
-                (OracleAnnouncementV0TLV(data.announcementSignature,
-                                         data.publicKey,
-                                         eventTLV),
-                 data.id.get))
+                (
+                  OracleAnnouncementV0TLV(
+                    data.announcementSignature,
+                    data.publicKey,
+                    eventTLV
+                  ),
+                  data.id.get
+                )
+              )
             } else None
           case None =>
             throw new RuntimeException(s"Error no data for announcement id $id")
@@ -133,7 +150,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def getOracleAnnouncements(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): OrderedAnnouncements = {
+      nonceDbs: Vector[OracleNonceDb]
+  ): OrderedAnnouncements = {
     val announcements =
       getOracleAnnouncementsWithId(announcementIds, announcementData, nonceDbs)
         .map(_._1)
@@ -143,8 +161,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def getOracleAnnouncementsWithId(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): Vector[
-    (OracleAnnouncementV0TLV, Long)] = {
+      nonceDbs: Vector[OracleNonceDb]
+  ): Vector[(OracleAnnouncementV0TLV, Long)] = {
     val withIds: Vector[(OracleAnnouncementV0TLV, Long)] = {
       val idNonceVec: Vector[(Long, Vector[OracleNonceDb])] =
         nonceDbs.groupBy(_.announcementId).toVector
@@ -152,14 +170,20 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-            val eventTLV = OracleEventV0TLV(nonces,
-                                            data.eventMaturity,
-                                            data.eventDescriptor,
-                                            data.eventId)
-            (OracleAnnouncementV0TLV(data.announcementSignature,
-                                     data.publicKey,
-                                     eventTLV),
-             data.id.get)
+            val eventTLV = OracleEventV0TLV(
+              nonces,
+              data.eventMaturity,
+              data.eventDescriptor,
+              data.eventId
+            )
+            (
+              OracleAnnouncementV0TLV(
+                data.announcementSignature,
+                data.publicKey,
+                eventTLV
+              ),
+              data.id.get
+            )
           case None =>
             throw new RuntimeException(s"Error no data for announcement id $id")
         }
@@ -171,22 +195,27 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   }
 
   private[wallet] def getContractInfo(
-      dlcId: Sha256Digest): Future[ContractInfo] = {
+      dlcId: Sha256Digest
+  ): Future[ContractInfo] = {
     for {
       contractData <- contractDataDAO.read(dlcId).map(_.get)
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-        dlcId)
-    } yield getContractInfo(contractData,
-                            announcements,
-                            announcementData,
-                            nonceDbs)
+        dlcId
+      )
+    } yield getContractInfo(
+      contractData,
+      announcements,
+      announcementData,
+      nonceDbs
+    )
   }
 
   private[wallet] def getContractInfo(
       contractDataDb: DLCContractDataDb,
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): ContractInfo = {
+      nonceDbs: Vector[OracleNonceDb]
+  ): ContractInfo = {
 
     val announcementTLVs =
       getOracleAnnouncements(announcementIds, announcementData, nonceDbs)
@@ -197,12 +226,16 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           if (announcementTLVs.size == 1) {
             EnumSingleOracleInfo(announcementTLVs.head)
           } else {
-            EnumMultiOracleInfo(contractDataDb.oracleThreshold,
-                                announcementTLVs)
+            EnumMultiOracleInfo(
+              contractDataDb.oracleThreshold,
+              announcementTLVs
+            )
           }
-        SingleContractInfo(contractDataDb.totalCollateral.satoshis,
-                           enum,
-                           oracleInfo)
+        SingleContractInfo(
+          contractDataDb.totalCollateral.satoshis,
+          enum,
+          oracleInfo
+        )
       case numeric: NumericContractDescriptor =>
         val oracleInfo =
           if (announcementTLVs.size == 1) {
@@ -210,23 +243,30 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           } else {
             contractDataDb.oracleParamsTLVOpt match {
               case Some(params) =>
-                NumericMultiOracleInfo(contractDataDb.oracleThreshold,
-                                       announcementTLVs,
-                                       params)
+                NumericMultiOracleInfo(
+                  contractDataDb.oracleThreshold,
+                  announcementTLVs,
+                  params
+                )
               case None =>
-                NumericExactMultiOracleInfo(contractDataDb.oracleThreshold,
-                                            announcementTLVs)
+                NumericExactMultiOracleInfo(
+                  contractDataDb.oracleThreshold,
+                  announcementTLVs
+                )
             }
           }
-        SingleContractInfo(contractDataDb.totalCollateral.satoshis,
-                           numeric,
-                           oracleInfo)
+        SingleContractInfo(
+          contractDataDb.totalCollateral.satoshis,
+          numeric,
+          oracleInfo
+        )
     }
   }
 
   private[wallet] def getDLCOfferData(
       dlcId: Sha256Digest,
-      transactionDAO: TransactionDAO): Future[Option[OfferedDbState]] = {
+      transactionDAO: TransactionDAO
+  ): Future[Option[OfferedDbState]] = {
 
     val combined = actionBuilder.getDLCOfferDataAction(dlcId)
     val combinedF = safeDatabase.run(combined)
@@ -236,10 +276,12 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       (announcements, announcementData, nonceDbs) <- announcementDataF
       contractInfoOpt = {
         contractDataDbOpt.map { case contractData =>
-          getContractInfo(contractData,
-                          announcements,
-                          announcementData,
-                          nonceDbs)
+          getContractInfo(
+            contractData,
+            announcements,
+            announcementData,
+            nonceDbs
+          )
         }
       }
 
@@ -254,12 +296,14 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         contractInfo <- contractInfoOpt
       } yield {
         offerPrevTxsF.map { offerPrevTxs =>
-          OfferedDbState(dlcDb = dlcDb,
-                         contractDataDb = contractDataDb,
-                         contractInfo = contractInfo,
-                         offerDb = offerDb,
-                         offerFundingInputsDb = sortedInputs,
-                         offerPrevTxs = offerPrevTxs)
+          OfferedDbState(
+            dlcDb = dlcDb,
+            contractDataDb = contractDataDb,
+            contractInfo = contractInfo,
+            offerDb = offerDb,
+            offerFundingInputsDb = sortedInputs,
+            offerPrevTxs = offerPrevTxs
+          )
         }
       }
     }
@@ -289,12 +333,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       acceptInputs: Vector[DLCFundingInputDb],
       cetSignatures: Vector[DLCCETSignaturesDb],
       refundSigDb: DLCRefundSigsDb,
-      txDAO: TransactionDAO): Future[AcceptDbState] = {
+      txDAO: TransactionDAO
+  ): Future[AcceptDbState] = {
 
     val signaturesOpt = {
       if (cetSignatures.isEmpty) {
-        //means we have pruned signatures from the database
-        //we have to return None
+        // means we have pruned signatures from the database
+        // we have to return None
         None
       } else {
         Some(cetSignatures)
@@ -316,7 +361,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def getDLCFundingData(
       dlcId: Sha256Digest,
-      txDAO: TransactionDAO): Future[Option[DLCSetupDbState]] = {
+      txDAO: TransactionDAO
+  ): Future[Option[DLCSetupDbState]] = {
     val nestedF: Future[Option[Future[DLCSetupDbState]]] = for {
       offerDbStateOpt <- getDLCOfferData(dlcId, txDAO)
       dlcAcceptOpt <- dlcAcceptDAO.findByDLCId(dlcId)
@@ -331,32 +377,36 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           case DLCState.Offered | DLCState.AcceptComputingAdaptorSigs =>
             Future.successful(offerDbState)
           case DLCState.Accepted | DLCState.SignComputingAdaptorSigs =>
-            //if the accept message is defined we must have refund sigs
+            // if the accept message is defined we must have refund sigs
             dlcAcceptOpt.zip(refundSigsOpt).headOption match {
               case Some((dlcAccept, refundSigDb)) =>
                 require(
                   refundSigsOpt.isDefined,
-                  s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
+                  s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}"
+                )
 
-                buildAcceptDbState(offerDbState = offerDbState,
-                                   dlcAccept = dlcAccept,
-                                   acceptInputs = acceptInputs,
-                                   cetSignatures = cetSignatures,
-                                   refundSigDb = refundSigDb,
-                                   txDAO = txDAO)
+                buildAcceptDbState(
+                  offerDbState = offerDbState,
+                  dlcAccept = dlcAccept,
+                  acceptInputs = acceptInputs,
+                  cetSignatures = cetSignatures,
+                  refundSigDb = refundSigDb,
+                  txDAO = txDAO
+                )
               case None =>
-                //just return the offerDbState if we don't have an accept
+                // just return the offerDbState if we don't have an accept
                 Future.successful(offerDbState)
             }
 
           case DLCState.Signed | DLCState.Confirmed | DLCState.Broadcasted |
               _: DLCState.ClosedState =>
-            //if the accept message is defined we must have refund sigs
+            // if the accept message is defined we must have refund sigs
             dlcAcceptOpt.zip(refundSigsOpt).headOption match {
               case Some((dlcAccept, refundSigDb)) =>
                 require(
                   refundSigsOpt.isDefined,
-                  s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
+                  s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}"
+                )
 
                 val acceptDbStateF = buildAcceptDbState(
                   offerDbState = offerDbState,
@@ -364,7 +414,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                   acceptInputs = acceptInputs,
                   cetSignatures = cetSignatures,
                   refundSigDb = refundSigDb,
-                  txDAO = txDAO)
+                  txDAO = txDAO
+                )
                 val signDbF = for {
                   acceptDbState <- acceptDbStateF
                 } yield {
@@ -372,7 +423,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                 }
                 signDbF
               case None =>
-                //just return the offerDbState if we don't have an accept
+                // just return the offerDbState if we don't have an accept
                 Future.successful(offerDbState)
             }
         }
@@ -389,7 +440,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def getAllDLCData(
       contractId: ByteVector,
-      txDAO: TransactionDAO): Future[Option[DLCDbState]] = {
+      txDAO: TransactionDAO
+  ): Future[Option[DLCDbState]] = {
     val resultF = for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       closedDbStateOptNested = dlcDbOpt.map(d => getAllDLCData(d.dlcId, txDAO))
@@ -404,14 +456,15 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def getAllDLCData(
       dlcId: Sha256Digest,
-      txDAO: TransactionDAO): Future[Option[DLCDbState]] = {
+      txDAO: TransactionDAO
+  ): Future[Option[DLCDbState]] = {
     val sigDLCsF = dlcSigsDAO.findByDLCId(dlcId)
 
     for {
       setupStateOpt <- getDLCFundingData(dlcId, txDAO)
       sigs <- sigDLCsF
     } yield {
-      //check if we have pruned signatures
+      // check if we have pruned signatures
       val sigsOpt = if (sigs.isEmpty) None else Some(sigs)
       val closedState = setupStateOpt.flatMap {
         case acceptState: AcceptDbState =>
@@ -441,12 +494,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
-  /** Build a verifier from an accept message.
-    * Returns None if there is no DLC in the database associated with this accept message
+  /** Build a verifier from an accept message. Returns None if there is no DLC
+    * in the database associated with this accept message
     */
   private[wallet] def verifierFromAccept(
       accept: DLCAccept,
-      txDAO: TransactionDAO): Future[Option[DLCSignatureVerifier]] = {
+      txDAO: TransactionDAO
+  ): Future[Option[DLCSignatureVerifier]] = {
     for {
       dlcDbOpt <- dlcDAO.findByTempContractId(accept.tempContractId)
 
@@ -471,7 +525,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def verifierFromDb(
       contractId: ByteVector,
-      transactionDAO: TransactionDAO): Future[Option[DLCSignatureVerifier]] = {
+      transactionDAO: TransactionDAO
+  ): Future[Option[DLCSignatureVerifier]] = {
     dlcDAO.findByContractId(contractId).flatMap { case dlcDbOpt =>
       val optF = dlcDbOpt.map(verifierFromDbData(_, transactionDAO))
       optF match {
@@ -483,7 +538,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   def getOfferAndAcceptWithoutSigs(
       dlcId: Sha256Digest,
-      txDAO: TransactionDAO): Future[Option[SetupCompleteDLCDbState]] = {
+      txDAO: TransactionDAO
+  ): Future[Option[SetupCompleteDLCDbState]] = {
     val dataF: Future[Option[DLCSetupDbState]] = getDLCFundingData(dlcId, txDAO)
     dataF.map {
       case Some(setupDbState) =>
@@ -498,14 +554,17 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def builderFromDbData(
       dlcDb: DLCDb,
-      transactionDAO: TransactionDAO): Future[Option[DLCTxBuilder]] = {
+      transactionDAO: TransactionDAO
+  ): Future[Option[DLCTxBuilder]] = {
     for {
       setupStateOpt <- getOfferAndAcceptWithoutSigs(dlcDb.dlcId, transactionDAO)
     } yield {
       setupStateOpt.map { completeSetupDLCDbState =>
         val txBuilder =
-          DLCTxBuilder(offer = completeSetupDLCDbState.offer,
-                       accept = completeSetupDLCDbState.acceptWithoutSigs)
+          DLCTxBuilder(
+            offer = completeSetupDLCDbState.offer,
+            accept = completeSetupDLCDbState.acceptWithoutSigs
+          )
         txBuilder
       }
     }
@@ -513,7 +572,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def verifierFromDbData(
       dlcDb: DLCDb,
-      transactionDAO: TransactionDAO): Future[Option[DLCSignatureVerifier]] = {
+      transactionDAO: TransactionDAO
+  ): Future[Option[DLCSignatureVerifier]] = {
     val builderOptF =
       builderFromDbData(dlcDb = dlcDb, transactionDAO = transactionDAO)
 
@@ -529,7 +589,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[Option[DLCTxSigner]] = {
+      keyManager: BIP39KeyManager
+  ): Future[Option[DLCTxSigner]] = {
     for {
       dlcDbOpt <- dlcDAO.findByDLCId(dlcId)
       signerOpt <- {
@@ -553,7 +614,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       dlcDb: DLCDb,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       transactionDAO: TransactionDAO,
-      keyManager: BIP39KeyManager): Future[Option[DLCTxSigner]] = {
+      keyManager: BIP39KeyManager
+  ): Future[Option[DLCTxSigner]] = {
     for {
       builderOpt <- builderFromDbData(
         dlcDb = dlcDb,
@@ -573,18 +635,22 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           val bip32Path = BIP32Path(
             dlcDb.account.path ++ Vector(
               BIP32Node(dlcDb.changeIndex.index, hardenedOpt = None),
-              BIP32Node(dlcDb.keyIndex, hardenedOpt = None)))
+              BIP32Node(dlcDb.keyIndex, hardenedOpt = None)
+            )
+          )
 
           val privKeyPath = HDPath.fromString(bip32Path.toString)
           val fundingPrivKey = keyManager.toSign(privKeyPath)
 
           require(fundingKey == fundingPrivKey.publicKey)
 
-          val signer = DLCTxSigner(builder = builder,
-                                   isInitiator = dlcDb.isInitiator,
-                                   fundingKey = fundingPrivKey,
-                                   finalAddress = payoutAddress,
-                                   fundingUtxos = fundingUtxoScriptSigParams)
+          val signer = DLCTxSigner(
+            builder = builder,
+            isInitiator = dlcDb.isInitiator,
+            fundingKey = fundingPrivKey,
+            finalAddress = payoutAddress,
+            fundingUtxos = fundingUtxoScriptSigParams
+          )
           Some(signer)
         case None => None
       }
@@ -595,7 +661,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       dlcDb: DLCDb,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       transactionDAO: TransactionDAO,
-      keyManager: BIP39KeyManager): Future[Option[DLCExecutor]] = {
+      keyManager: BIP39KeyManager
+  ): Future[Option[DLCExecutor]] = {
     val signerOptF = signerFromDb(
       dlcDb = dlcDb,
       fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
@@ -614,12 +681,14 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[Option[DLCExecutor]] = {
-    val signerOptF = signerFromDb(dlcId = dlcId,
-                                  transactionDAO = transactionDAO,
-                                  fundingUtxoScriptSigParams =
-                                    fundingUtxoScriptSigParams,
-                                  keyManager = keyManager)
+      keyManager: BIP39KeyManager
+  ): Future[Option[DLCExecutor]] = {
+    val signerOptF = signerFromDb(
+      dlcId = dlcId,
+      transactionDAO = transactionDAO,
+      fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+      keyManager = keyManager
+    )
     signerOptF.map {
       case Some(dlcTxSigner) =>
         val e = DLCExecutor(dlcTxSigner)
@@ -629,13 +698,15 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   }
 
   /** Builds an [[DLCExecutor]] and [[SetupDLC]] for a given contract id
-    * @return the executor and setup if we still have CET signatures else return None
+    * @return
+    *   the executor and setup if we still have CET signatures else return None
     */
   private[wallet] def executorAndSetupFromDb(
       contractId: ByteVector,
       txDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[Option[DLCExecutorWithSetup]] = {
+      keyManager: BIP39KeyManager
+  ): Future[Option[DLCExecutorWithSetup]] = {
     getAllDLCData(contractId, txDAO).flatMap {
       case Some(closedDbState) =>
         closedDbState match {
@@ -662,18 +733,18 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                   keyManager = keyManager
                 )
               case None =>
-                //we don't have cet signatures for the
-                //sign message any more
+                // we don't have cet signatures for the
+                // sign message any more
                 Future.successful(None)
             }
 
           case _: ClosedDbStateNoCETSigs =>
-            //means we cannot re-create messages because
-            //we don't have the cets in the database anymore
+            // means we cannot re-create messages because
+            // we don't have the cets in the database anymore
             Future.successful(None)
           case _: OfferedDbState =>
-            //means we cannot recreate messages because
-            //we don't have an accept or sign message in the database
+            // means we cannot recreate messages because
+            // we don't have an accept or sign message in the database
             Future.successful(None)
         }
       case None => Future.successful(None)
@@ -687,7 +758,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       outcomeSigsDbs: Vector[DLCCETSignaturesDb],
       transactionDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[Option[DLCExecutorWithSetup]] = {
+      keyManager: BIP39KeyManager
+  ): Future[Option[DLCExecutorWithSetup]] = {
 
     val dlcExecutorOptF = executorFromDb(
       dlcDb = dlcDb,
@@ -714,9 +786,9 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           refundSigsDb.accepterSig
         } else refundSigsDb.initiatorSig.get
 
-        //sometimes we do not have cet signatures, for instance
-        //if we have settled a DLC, we prune the cet signatures
-        //from the database
+        // sometimes we do not have cet signatures, for instance
+        // if we have settled a DLC, we prune the cet signatures
+        // from the database
         val cetSigs = CETSignatures(outcomeSigs)
 
         val setupF: Try[SetupDLC] = if (dlcDb.isInitiator) {
@@ -732,19 +804,23 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                     witnessScript match {
                       case EmptyScriptWitness =>
                         throw new RuntimeException(
-                          "Script witness cannot be empty")
+                          "Script witness cannot be empty"
+                        )
                       case taprootWitness: TaprootWitness =>
                         throw new UnsupportedOperationException(
-                          s"Taproot not supported, got=$taprootWitness")
+                          s"Taproot not supported, got=$taprootWitness"
+                        )
                       case witness: ScriptWitnessV0 => (input.outPoint, witness)
                     }
                   case None => throw new RuntimeException("")
                 }
               }
-          executor.setupDLCAccept(cetSigs,
-                                  refundSig,
-                                  FundingSignatures(fundingSigs),
-                                  None)
+          executor.setupDLCAccept(
+            cetSigs,
+            refundSig,
+            FundingSignatures(fundingSigs),
+            None
+          )
         }
 
         val x: Try[DLCExecutorWithSetup] =
@@ -760,7 +836,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   def getCetAndRefundSigsAction(dlcId: Sha256Digest): DBIOAction[
     (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb]),
     NoStream,
-    Effect.Read] = {
+    Effect.Read
+  ] = {
     val cetSigsAction = dlcSigsDAO.findByDLCIdAction(dlcId)
     val refundSigsAction = dlcRefundSigDAO.findByDLCIdAction(dlcId)
     for {
@@ -769,8 +846,9 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     } yield (cetSigs, refundSigs)
   }
 
-  def getCetAndRefundSigs(dlcId: Sha256Digest): Future[
-    (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb])] = {
+  def getCetAndRefundSigs(
+      dlcId: Sha256Digest
+  ): Future[(Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb])] = {
     val action = getCetAndRefundSigsAction(dlcId)
     safeDatabase.run(action)
   }
@@ -784,13 +862,14 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private def getOfferPrevTxs(
       dlcDb: DLCDb,
       fundingInputs: Vector[DLCFundingInputDb],
-      txDAO: TransactionDAO): Future[Vector[TransactionDb]] = {
+      txDAO: TransactionDAO
+  ): Future[Vector[TransactionDb]] = {
     val txIds = fundingInputs.map(_.outPoint.txIdBE)
     if (dlcDb.isInitiator) {
-      //query txDAO as we created the offer
+      // query txDAO as we created the offer
       txDAO.findByTxIdBEs(txIds)
     } else {
-      //query remote tx dao as we didn't create the offers
+      // query remote tx dao as we didn't create the offers
       remoteTxDAO.findByTxIdBEs(txIds)
     }
   }
@@ -799,13 +878,14 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private def getAcceptPrevTxs(
       dlcDb: DLCDb,
       fundingInputs: Vector[DLCFundingInputDb],
-      txDAO: TransactionDAO): Future[Vector[TransactionDb]] = {
+      txDAO: TransactionDAO
+  ): Future[Vector[TransactionDb]] = {
     val txIds = fundingInputs.map(_.outPoint.txIdBE)
     if (dlcDb.isInitiator) {
-      //if we are the initiator we need to query the remote tx dao
+      // if we are the initiator we need to query the remote tx dao
       remoteTxDAO.findByTxIdBEs(txIds)
     } else {
-      //else they are in our local tx dao
+      // else they are in our local tx dao
       txDAO.findByTxIdBEs(txIds)
     }
   }
@@ -815,7 +895,8 @@ object DLCDataManagement {
 
   def fromDbAppConfig()(implicit
       dbAppConfig: DLCAppConfig,
-      ec: ExecutionContext): DLCDataManagement = {
+      ec: ExecutionContext
+  ): DLCDataManagement = {
     val announcementDAO: OracleAnnouncementDataDAO =
       OracleAnnouncementDataDAO()
     val oracleNonceDAO: OracleNonceDAO = OracleNonceDAO()

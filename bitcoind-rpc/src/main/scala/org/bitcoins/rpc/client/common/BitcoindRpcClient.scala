@@ -25,19 +25,18 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
 
-/** This class is not guaranteed to be compatible with any particular
-  * version of Bitcoin Core. It implements RPC calls that are similar
-  * across different versions. If you need RPC calls specific to a
-  * version, check out
+/** This class is not guaranteed to be compatible with any particular version of
+  * Bitcoin Core. It implements RPC calls that are similar across different
+  * versions. If you need RPC calls specific to a version, check out
   *
   * If a RPC call fails for any reason, a
-  * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown.
-  * This is a sealed abstract class, so you can pattern match easily
-  * on the errors, and handle them as you see fit.
+  * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown. This is
+  * a sealed abstract class, so you can pattern match easily on the errors, and
+  * handle them as you see fit.
   */
 class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
-    override val system: ActorSystem)
-    extends Client
+    override val system: ActorSystem
+) extends Client
     with FeeRateApi
     with NodeApi
     with ChainApi
@@ -65,7 +64,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     instance match {
       case _: BitcoindInstanceRemote =>
         getNetworkInfo.map(info =>
-          BitcoindVersion.fromNetworkVersion(info.version))
+          BitcoindVersion.fromNetworkVersion(info.version)
+        )
       case local: BitcoindInstanceLocal =>
         Future.successful(local.getVersion)
     }
@@ -78,21 +78,26 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       result.feerate match {
         case Some(feeRate) => Future.successful(feeRate)
         case None =>
-          Future.failed(new RuntimeException(
-            s"Unexpected error when getting fee rate, errors=${result.errors}"))
+          Future.failed(
+            new RuntimeException(
+              s"Unexpected error when getting fee rate, errors=${result.errors}"
+            )
+          )
       }
     }
   // Chain Api
 
   /** Gets the height of the given block */
   override def getBlockHeight(
-      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[Int]] = {
     getBlockHeader(blockHash).map(header => Some(header.height))
   }
 
   /** Gets number of confirmations for the given block hash */
   override def getNumberOfConfirmations(
-      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[Int]] = {
     getBlockHeader(blockHash).map(header => Some(header.confirmations))
   }
 
@@ -105,13 +110,16 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
         getBlockHeader(blockHash.hash).map(_.height)
       case blockTime: BlockStamp.BlockTime =>
         Future.failed(
-          new UnsupportedOperationException(s"Not implemented: $blockTime"))
+          new UnsupportedOperationException(s"Not implemented: $blockTime")
+        )
     }
 
   /** Gets the block height of the closest block to the given time */
   override def epochSecondToBlockHeight(time: Long): Future[Int] = {
-    require(time >= 1231006505L,
-            s"Time must be after the genesis block (1231006505), got $time")
+    require(
+      time >= 1231006505L,
+      s"Time must be after the genesis block (1231006505), got $time"
+    )
 
     // the longest difference between successive blocks ever recorded + 10 minutes
     val MaxDiff = 463160L + 600L
@@ -154,27 +162,32 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   // Node Api
 
   override def broadcastTransactions(
-      transactions: Vector[Transaction]): Future[Unit] =
+      transactions: Vector[Transaction]
+  ): Future[Unit] =
     FutureUtil.sequentially(transactions)(sendRawTransaction(_)).map(_ => ())
 
   override def downloadBlocks(
-      blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = Future.unit
+      blockHashes: Vector[DoubleSha256DigestBE]
+  ): Future[Unit] = Future.unit
 
   override def processHeaders(headers: Vector[BlockHeader]): Future[ChainApi] =
     Future.successful(this)
 
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
-      stopHash: DoubleSha256DigestBE): Future[ChainApi] =
+      stopHash: DoubleSha256DigestBE
+  ): Future[ChainApi] =
     Future.successful(this)
 
   override def getHeader(
-      hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
+      hash: DoubleSha256DigestBE
+  ): Future[Option[BlockHeaderDb]] =
     getBlockHeader(hash).map(header => Some(header.blockHeaderDb))
 
-  override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
-    Vector[Option[BlockHeaderDb]]] = {
-    //sends a request for every header, i'm not aware of a way to batch these
+  override def getHeaders(
+      hashes: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[Option[BlockHeaderDb]]] = {
+    // sends a request for every header, i'm not aware of a way to batch these
     val resultsNested: Vector[Future[Option[BlockHeaderDb]]] =
       hashes.map(getHeader)
     Future
@@ -183,7 +196,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def getHeadersBetween(
       from: BlockHeaderDb,
-      to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] = {
+      to: BlockHeaderDb
+  ): Future[Vector[BlockHeaderDb]] = {
     val headerFs =
       from.height.to(to.height).map(height => getHeaderAtHeight(height))
     Future.sequence(headerFs).map(_.toVector)
@@ -202,7 +216,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     getChainTips.flatMap(tips =>
       Future.traverse(tips) { tip =>
         getBlockHeader(tip.hash).map(_.blockHeaderDb)
-      })
+      }
+    )
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] =
@@ -214,26 +229,34 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       stopHash: DoubleSha256DigestBE,
-      batchSize: Int): Future[Option[FilterSyncMarker]] =
+      batchSize: Int
+  ): Future[Option[FilterSyncMarker]] =
     Future.failed(
       new UnsupportedOperationException(
-        s"Bitcoind chainApi doesn't allow you fetch block header batch range"))
+        s"Bitcoind chainApi doesn't allow you fetch block header batch range"
+      )
+    )
 
   override def nextFilterHeaderBatchRange(
       stopBlockHash: DoubleSha256DigestBE,
       batchSize: Int,
-      startHeightOpt: Option[Int]): Future[Option[FilterSyncMarker]] =
+      startHeightOpt: Option[Int]
+  ): Future[Option[FilterSyncMarker]] =
     Future.failed(
       new UnsupportedOperationException(
-        s"Bitcoind chainApi doesn't allow you fetch filter header batch range"))
+        s"Bitcoind chainApi doesn't allow you fetch filter header batch range"
+      )
+    )
 
   override def processFilters(
-      message: Vector[CompactFilterMessage]): Future[ChainApi] =
+      message: Vector[CompactFilterMessage]
+  ): Future[ChainApi] =
     Future.successful(this)
 
   override def processCheckpoints(
       checkpoints: Vector[DoubleSha256DigestBE],
-      blockHash: DoubleSha256DigestBE): Future[ChainApi] =
+      blockHash: DoubleSha256DigestBE
+  ): Future[ChainApi] =
     Future.successful(this)
 
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
@@ -251,8 +274,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def isTipStale(): Future[Boolean] = {
     getBestBlockHeader().map { blockHeaderDb =>
-      NetworkUtil.isBlockHeaderStale(blockHeaderDb.blockHeader,
-                                     network.chainParams)
+      NetworkUtil.isBlockHeaderStale(
+        blockHeaderDb.blockHeader,
+        network.chainParams
+      )
     }
   }
 
@@ -273,8 +298,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
 object BitcoindRpcClient {
 
-  /** The name we give to actor systems we create. We use this
-    * information to know which actor systems to shut down
+  /** The name we give to actor systems we create. We use this information to
+    * know which actor systems to shut down
     */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
@@ -283,46 +308,50 @@ object BitcoindRpcClient {
 
   /** Creates an RPC client from the given instance.
     *
-    * Behind the scenes, we create an actor system for
-    * you. You can use `withActorSystem` if you want to
-    * manually specify an actor system for the RPC client.
+    * Behind the scenes, we create an actor system for you. You can use
+    * `withActorSystem` if you want to manually specify an actor system for the
+    * RPC client.
     */
   def apply(instance: BitcoindInstance): BitcoindRpcClient = {
     withActorSystem(instance)(system)
   }
 
-  /** Creates an RPC client from the given instance,
-    * together with the given actor system. This is for
-    * advanced users, where you need fine grained control
-    * over the RPC client.
+  /** Creates an RPC client from the given instance, together with the given
+    * actor system. This is for advanced users, where you need fine grained
+    * control over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(implicit
-      system: ActorSystem): BitcoindRpcClient =
+      system: ActorSystem
+  ): BitcoindRpcClient =
     new BitcoindRpcClient(instance)
 
-  /** Constructs a RPC client from the given datadir, or
-    * the default datadir if no directory is provided.
-    * This is always a [[BitcoindInstanceLocal]] since a binary
-    * is passed into this method
+  /** Constructs a RPC client from the given datadir, or the default datadir if
+    * no directory is provided. This is always a [[BitcoindInstanceLocal]] since
+    * a binary is passed into this method
     */
   def fromDatadir(
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
-      binary: File): BitcoindRpcClient = {
+      binary: File
+  ): BitcoindRpcClient = {
     val instance = BitcoindInstanceLocal.fromDatadir(datadir, binary)
     val cli = BitcoindRpcClient(instance)
     cli
   }
 
-  /** Returns a bitcoind with the appropriated version you passed in, the bitcoind is NOT started. */
+  /** Returns a bitcoind with the appropriated version you passed in, the
+    * bitcoind is NOT started.
+    */
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
-      system: ActorSystem): BitcoindRpcClient = {
+      system: ActorSystem
+  ): BitcoindRpcClient = {
     val bitcoind = version match {
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
       case BitcoindVersion.V23 => BitcoindV23RpcClient.withActorSystem(instance)
       case BitcoindVersion.V24 => BitcoindV24RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
-          s"Cannot create a Bitcoin Core RPC client: unsupported version")
+          s"Cannot create a Bitcoin Core RPC client: unsupported version"
+        )
     }
 
     bitcoind
@@ -330,7 +359,8 @@ object BitcoindRpcClient {
 
   def fromVersionNoSystem(
       version: BitcoindVersion,
-      instance: BitcoindInstance): BitcoindRpcClient = {
+      instance: BitcoindInstance
+  ): BitcoindRpcClient = {
     fromVersion(version, instance)(system)
   }
 }
@@ -373,18 +403,19 @@ object BitcoindVersion
     fromStringOpt(string).get
   }
 
-  /** Gets the bitcoind version from the 'getnetworkresult' bitcoind rpc
-    * An example for 210100 for the 21.1.0 release of bitcoin core
+  /** Gets the bitcoind version from the 'getnetworkresult' bitcoind rpc An
+    * example for 210100 for the 21.1.0 release of bitcoin core
     */
   def fromNetworkVersion(int: Int): BitcoindVersion = {
-    //need to translate the int 210100 (as an example) to a BitcoindVersion
+    // need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
       case "22" => V22
       case "23" => V23
       case "24" => V24
       case _ =>
         logger.warn(
-          s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}")
+          s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}"
+        )
         newest
     }
   }

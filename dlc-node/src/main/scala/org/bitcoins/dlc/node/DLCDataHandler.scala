@@ -30,7 +30,8 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
       log.info(s"Received LnMessage ${lnMessage.typeName}")
       val f: Future[Unit] = handleTLVMessage(lnMessage)
       f.failed.foreach(err =>
-        log.error(err, s"Failed to process lnMessage=${lnMessage} "))
+        log.error(err, s"Failed to process lnMessage=${lnMessage} ")
+      )
     case DLCConnectionHandler.WriteFailed(_) =>
       log.error("Write failed")
     case Terminated(actor) if actor == connectionHandler =>
@@ -48,7 +49,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         Future.unit // todo init logic
       case error: ErrorTLV =>
         log.error(error.toString)
-        Future.unit //is this right?
+        Future.unit // is this right?
       case ping: PingTLV =>
         val pong = PongTLV.forIgnored(ping.ignored)
         send(LnMessage(pong))
@@ -65,7 +66,8 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
           _ <- dlcWalletApi.registerIncomingDLCOffer(
             offerTLV = dlcOfferMessage.offer,
             peer = Some(dlcOfferMessage.peer),
-            message = Some(dlcOfferMessage.message))
+            message = Some(dlcOfferMessage.message)
+          )
         } yield ()
       case dlcAccept: DLCAcceptTLV =>
         val f = for {
@@ -99,7 +101,8 @@ object DLCDataHandler {
   def defaultFactory(
       dlcWalletApi: DLCWalletApi,
       context: ActorContext,
-      connectionHandler: ActorRef): ActorRef = {
+      connectionHandler: ActorRef
+  ): ActorRef = {
     context.actorOf(props(dlcWalletApi, connectionHandler))
   }
 

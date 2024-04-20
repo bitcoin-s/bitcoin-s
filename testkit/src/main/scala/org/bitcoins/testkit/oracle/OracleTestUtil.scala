@@ -7,8 +7,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object OracleTestUtil {
 
-  def destroyDLCOracleAppConfig(config: DLCOracleAppConfig)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def destroyDLCOracleAppConfig(
+      config: DLCOracleAppConfig
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     val _ = config.clean()
     for {
       _ <- config.stop()

@@ -35,7 +35,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   def testNegotiate(
       fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet),
-      offerData: DLCOffer): Future[Assertion] = {
+      offerData: DLCOffer
+  ): Future[Assertion] = {
     val walletA = fundedDLCWallets._1.wallet
     val walletB = fundedDLCWallets._2.wallet
     val walletADLCManagement = DLCDataManagement(walletA.dlcWalletDAOs)
@@ -75,9 +76,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(
           accept.fundingInputs
             .map(_.output.value)
-            .sum >= accept.collateral)
+            .sum >= accept.collateral
+        )
         assert(
-          accept.collateral == offer.contractInfo.totalCollateral - offer.collateral)
+          accept.collateral == offer.contractInfo.totalCollateral - offer.collateral
+        )
         assert(accept.changeAddress.value.nonEmpty)
       }
 
@@ -107,14 +110,16 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       announcementTLVsA = walletADLCManagement.getOracleAnnouncements(
         announcementsA,
         announcementDataA,
-        nonceDbsA)
+        nonceDbsA
+      )
 
       (announcementsB, announcementDataB, nonceDbsB) <- walletBDLCManagement
         .getDLCAnnouncementDbs(dlcDb.dlcId)
       announcementTLVsB = walletBDLCManagement.getOracleAnnouncements(
         announcementsB,
         announcementDataB,
-        nonceDbsB)
+        nonceDbsB
+      )
     } yield {
       assert(dlcDb.contractIdOpt.get == sign.contractId)
 
@@ -146,8 +151,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   it must "correctly negotiate a non winner take all dlc" in {
     fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
-      testNegotiate(fundedDLCWallets,
-                    DLCWalletUtil.sampleDLCOfferNonWinnerTakeAll)
+      testNegotiate(
+        fundedDLCWallets,
+        DLCWalletUtil.sampleDLCOfferNonWinnerTakeAll
+      )
   }
 
   it must "correctly negotiate a dlc with a multi-nonce oracle info" in {
@@ -164,25 +171,32 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val col = totalCol / Satoshis.two
 
       val outcomes: Vector[(EnumOutcome, Satoshis)] =
-        Vector(EnumOutcome(winStr) -> totalCol,
-               EnumOutcome(loseStr) -> Satoshis.zero)
+        Vector(
+          EnumOutcome(winStr) -> totalCol,
+          EnumOutcome(loseStr) -> Satoshis.zero
+        )
 
       val oraclePair: ContractOraclePair.EnumPair =
-        ContractOraclePair.EnumPair(EnumContractDescriptor(outcomes),
-                                    sampleOracleInfo)
+        ContractOraclePair.EnumPair(
+          EnumContractDescriptor(outcomes),
+          sampleOracleInfo
+        )
 
       val contractInfo: ContractInfo = SingleContractInfo(totalCol, oraclePair)
 
       val offerData =
-        sampleDLCOffer.copy(contractInfo = contractInfo,
-                            collateral = col.satoshis)
+        sampleDLCOffer.copy(
+          contractInfo = contractInfo,
+          collateral = col.satoshis
+        )
 
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
 
       def reorderInputDbs(
           wallet: DLCWallet,
-          dlcId: Sha256Digest): Future[Unit] = {
+          dlcId: Sha256Digest
+      ): Future[Unit] = {
         for {
           inputDbs <- wallet.dlcInputsDAO.findByDLCId(dlcId)
           _ <- wallet.dlcInputsDAO.deleteByDLCId(dlcId)
@@ -224,25 +238,32 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val col = totalCol / Satoshis(2)
 
       val outcomes: Vector[(EnumOutcome, Satoshis)] =
-        Vector(EnumOutcome(winStr) -> totalCol,
-               EnumOutcome(loseStr) -> Satoshis.zero)
+        Vector(
+          EnumOutcome(winStr) -> totalCol,
+          EnumOutcome(loseStr) -> Satoshis.zero
+        )
 
       val oraclePair: ContractOraclePair.EnumPair =
-        ContractOraclePair.EnumPair(EnumContractDescriptor(outcomes),
-                                    sampleOracleInfo)
+        ContractOraclePair.EnumPair(
+          EnumContractDescriptor(outcomes),
+          sampleOracleInfo
+        )
 
       val contractInfo: ContractInfo = SingleContractInfo(totalCol, oraclePair)
 
       val offerData =
-        sampleDLCOffer.copy(contractInfo = contractInfo,
-                            collateral = col.satoshis)
+        sampleDLCOffer.copy(
+          contractInfo = contractInfo,
+          collateral = col.satoshis
+        )
 
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
 
       def reorderInputDbs(
           wallet: DLCWallet,
-          dlcId: Sha256Digest): Future[Unit] = {
+          dlcId: Sha256Digest
+      ): Future[Unit] = {
         for {
           inputDbs <- wallet.dlcInputsDAO.findByDLCId(dlcId)
           _ <- wallet.dlcInputsDAO.deleteByDLCId(dlcId)
@@ -316,9 +337,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(
             accept.fundingInputs
               .map(_.output.value)
-              .sum >= accept.collateral)
+              .sum >= accept.collateral
+          )
           assert(
-            accept.collateral == offer.contractInfo.totalCollateral - offer.collateral)
+            accept.collateral == offer.contractInfo.totalCollateral - offer.collateral
+          )
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -354,7 +377,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
           outcomeSigs.exists(dbSig =>
-            (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig)))
+            (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig))
+          )
         })
 
         // Test that the Addresses are in the wallet's database
@@ -368,7 +392,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   def getDLCReadyToAddSigs(
       walletA: DLCWallet,
       walletB: DLCWallet,
-      offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCSign] = {
+      offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+  ): Future[DLCSign] = {
     for {
       accept <- getDLCReadyToSign(walletA, walletB, offerData)
       sign <- walletA.signDLC(accept)
@@ -378,7 +403,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   def getDLCReadyToSign(
       walletA: DLCWallet,
       walletB: DLCWallet,
-      offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCAccept] = {
+      offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+  ): Future[DLCAccept] = {
     for {
       offer <- walletA.createDLCOffer(
         offerData.contractInfo,
@@ -398,8 +424,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   def testDLCSignVerification[E <: Exception](
       walletA: DLCWallet,
       walletB: DLCWallet,
-      makeDLCSignInvalid: DLCSign => DLCSign)(implicit
-      classTag: ClassTag[E]): Future[Assertion] = {
+      makeDLCSignInvalid: DLCSign => DLCSign
+  )(implicit classTag: ClassTag[E]): Future[Assertion] = {
     val failedAddSigsF = for {
       sign <- getDLCReadyToAddSigs(walletA, walletB)
       invalidSign = makeDLCSignInvalid(sign)
@@ -412,7 +438,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   def testDLCAcceptVerification(
       walletA: DLCWallet,
       walletB: DLCWallet,
-      makeDLCAcceptInvalid: DLCAccept => DLCAccept): Future[Assertion] = {
+      makeDLCAcceptInvalid: DLCAccept => DLCAccept
+  ): Future[Assertion] = {
     val failedAddSigsF = for {
       accept <- getDLCReadyToSign(walletA, walletB)
       invalidSign = makeDLCAcceptInvalid(accept)
@@ -430,7 +457,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       for {
         sign <- getDLCReadyToAddSigs(walletA, walletB)
         _ <- recoverToSucceededIf[IllegalArgumentException](
-          walletA.addDLCSigs(sign))
+          walletA.addDLCSigs(sign)
+        )
       } yield succeed
   }
 
@@ -456,10 +484,13 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (sign: DLCSign) =>
-          sign.copy(fundingSigs = FundingSignatures(
-            sign.fundingSigs
-              .map(_.copy(_2 = P2WPKHWitnessV0(ECPublicKey.freshPublicKey)))
-              .toVector))
+          sign.copy(fundingSigs =
+            FundingSignatures(
+              sign.fundingSigs
+                .map(_.copy(_2 = P2WPKHWitnessV0(ECPublicKey.freshPublicKey)))
+                .toVector
+            )
+          )
       )
   }
 
@@ -472,7 +503,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (sign: DLCSign) =>
-          sign.copy(cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs)))
+          sign.copy(cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs))
+      )
   }
 
   it must "fail to add an invalid dlc refund sig" in {
@@ -483,7 +515,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
-        (sign: DLCSign) => sign.copy(refundSig = DLCWalletUtil.dummyPartialSig))
+        (sign: DLCSign) => sign.copy(refundSig = DLCWalletUtil.dummyPartialSig)
+      )
   }
 
   it must "fail to sign dlc with cet sigs that are invalid" in {
@@ -495,7 +528,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (accept: DLCAccept) =>
-          accept.copy(cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs)))
+          accept.copy(cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs))
+      )
   }
 
   it must "fail to sign dlc with an invalid refund sig" in {
@@ -507,7 +541,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (accept: DLCAccept) =>
-          accept.copy(refundSig = DLCWalletUtil.dummyPartialSig))
+          accept.copy(refundSig = DLCWalletUtil.dummyPartialSig)
+      )
   }
 
   it must "cancel an offered DLC" in {
@@ -543,9 +578,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- walletA.cancelDLC(dlcId)
 
         announcementData <- walletA.announcementDAO.findByPublicKey(
-          announcementTLV.publicKey)
+          announcementTLV.publicKey
+        )
         nonceDbs <- walletA.oracleNonceDAO.findByAnnouncementIds(
-          announcementData.map(_.id.get))
+          announcementData.map(_.id.get)
+        )
 
         balance <- walletA.getBalance()
         reserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
@@ -609,12 +646,14 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       for {
         oldBalanceA <- walletA.getBalance()
         oldReservedA <- walletA.spendingInfoDAO.findByTxoState(
-          TxoState.Reserved)
+          TxoState.Reserved
+        )
         _ = assert(oldReservedA.isEmpty)
 
         oldBalanceB <- walletB.getBalance()
         oldReservedB <- walletB.spendingInfoDAO.findByTxoState(
-          TxoState.Reserved)
+          TxoState.Reserved
+        )
         _ = assert(oldReservedB.isEmpty)
 
         offer <- walletA.createDLCOffer(
@@ -683,10 +722,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
         _ <- recoverToSucceededIf[IllegalArgumentException](
-          walletA.cancelDLC(dlcId))
+          walletA.cancelDLC(dlcId)
+        )
 
         _ <- recoverToSucceededIf[IllegalArgumentException](
-          walletB.cancelDLC(dlcId))
+          walletB.cancelDLC(dlcId)
+        )
       } yield succeed
   }
 
@@ -719,10 +760,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
         _ <- recoverToSucceededIf[IllegalArgumentException](
-          walletA.executeDLCRefund(sign.contractId))
+          walletA.executeDLCRefund(sign.contractId)
+        )
 
         _ <- recoverToSucceededIf[IllegalArgumentException](
-          walletB.executeDLCRefund(sign.contractId))
+          walletB.executeDLCRefund(sign.contractId)
+        )
       } yield succeed
   }
 
@@ -739,12 +782,18 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val contractDescriptor: EnumContractDescriptor =
         EnumContractDescriptor.fromStringVec(
-          Vector(winStr -> Satoshis(betSize),
-                 loseStr -> Satoshis.zero,
-                 drawStr -> Satoshis(betSize / 2)))
+          Vector(
+            winStr -> Satoshis(betSize),
+            loseStr -> Satoshis.zero,
+            drawStr -> Satoshis(betSize / 2)
+          )
+        )
 
-      val oracleInfo = EnumSingleOracleInfo(OracleAnnouncementTLV(
-        "fdd824b4caaec7479cc9d37003f5add6504d035054ffeac8637a990305a45cfecc1062044c3f68b45318f57e41c4544a4a950c0744e2a80854349a3426b00ad86da5090b9e942dc6df2ae87f007b45b0ccd63e6c354d92c4545fc099ea3e137e54492d1efdd822500001a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce65ffe3800fdd8062400030c44656d6f637261745f77696e0e52657075626c6963616e5f77696e056f746865720161"))
+      val oracleInfo = EnumSingleOracleInfo(
+        OracleAnnouncementTLV(
+          "fdd824b4caaec7479cc9d37003f5add6504d035054ffeac8637a990305a45cfecc1062044c3f68b45318f57e41c4544a4a950c0744e2a80854349a3426b00ad86da5090b9e942dc6df2ae87f007b45b0ccd63e6c354d92c4545fc099ea3e137e54492d1efdd822500001a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce65ffe3800fdd8062400030c44656d6f637261745f77696e0e52657075626c6963616e5f77696e056f746865720161"
+        )
+      )
 
       val offerData = DLCOffer(
         DLCOfferTLV.currentVersionOpt,
@@ -761,7 +810,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       )
 
       val oracleSig = SchnorrDigitalSignature(
-        "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287")
+        "a6a09c7c83c50b34f9db560a2e14fef2eab5224c15b18c7114331756364bfce6c59736cdcfe1e0a89064f846d5dbde0902f82688dde34dc1833965a60240f287"
+      )
 
       val sig =
         OracleSignatures(oracleInfo, Vector(oracleSig))
@@ -793,7 +843,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ = {
           assert(accept.fundingInputs.nonEmpty)
           assert(
-            accept.collateral == offer.contractInfo.maxOffererPayout - offer.collateral)
+            accept.collateral == offer.contractInfo.maxOffererPayout - offer.collateral
+          )
           assert(accept.changeAddress.value.nonEmpty)
         }
 
@@ -825,7 +876,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
           assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
             outcomeSigs.exists(dbSig =>
-              (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig)))
+              (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig))
+            )
           })
 
           // Test that the Addresses are in the wallet's database
@@ -840,11 +892,13 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(sign.contractId, sig).map(_.get)
-        result <- dlcExecutionTest(dlcA = walletA,
-                                   dlcB = walletB,
-                                   asInitiator = true,
-                                   func = func,
-                                   expectedOutputs = 1)
+        result <- dlcExecutionTest(
+          dlcA = walletA,
+          dlcB = walletB,
+          asInitiator = true,
+          func = func,
+          expectedOutputs = 1
+        )
       } yield {
         assert(result)
       }
@@ -854,12 +908,14 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     val walletA = wallets._1.wallet
     val walletB = wallets._2.wallet
 
-    //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
+    // https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
     val contractInfoA = ContractInfoV0TLV.fromHex(
-      "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
-    //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/e5fb1dd68e51f5d735a0dd83ff88795bd7c959003a01e16c1ad08df3758de057
+      "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342"
+    )
+    // https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/e5fb1dd68e51f5d735a0dd83ff88795bd7c959003a01e16c1ad08df3758de057
     val contractInfoB = ContractInfoV0TLV.fromHex(
-      "fdd82eeb0000000000002710fda7102603035945530000000000000000024e4f0000000000002710056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
+      "fdd82eeb0000000000002710fda7102603035945530000000000000000024e4f0000000000002710056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342"
+    )
 
     assert(contractInfoA.oracleInfo == contractInfoB.oracleInfo)
 
@@ -917,7 +973,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       accept1F = walletB.acceptDLCOffer(offer, None, None, None)
       accept2F = walletB.acceptDLCOffer(offer, None, None, None)
       _ <- recoverToSucceededIf[DuplicateOfferException](
-        Future.sequence(Seq(accept1F, accept2F)))
+        Future.sequence(Seq(accept1F, accept2F))
+      )
     } yield {
       succeed
     }
@@ -972,7 +1029,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       )
       accept <- walletB.acceptDLCOffer(offer, None, None, None)
       res <- recoverToSucceededIf[IllegalArgumentException](
-        walletB.signDLC(accept))
+        walletB.signDLC(accept)
+      )
     } yield res
   }
 
@@ -996,7 +1054,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           externalChangeAddressOpt = None
         )
         _ <- recoverToSucceededIf[RuntimeException](
-          walletB.acceptDLCOffer(offer, None, None, None))
+          walletB.acceptDLCOffer(offer, None, None, None)
+        )
       } yield succeed
   }
 
@@ -1017,7 +1076,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
             None,
             None,
             None
-          ))
+          )
+        )
       } yield {
         res
       }
@@ -1028,9 +1088,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = wallets._1.wallet
       val walletB = wallets._2.wallet
 
-      //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
+      // https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
       val contractInfo = ContractInfoV0TLV.fromHex(
-        "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
+        "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342"
+      )
       val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
       val totalCollateral = Satoshis(5000)
 
@@ -1047,7 +1108,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         )
         invalidOffer = offer.copy(contractInfo = invalidContractInfo)
         res <- recoverToSucceededIf[InvalidAnnouncementSignature](
-          walletB.acceptDLCOffer(invalidOffer, None, None, None))
+          walletB.acceptDLCOffer(invalidOffer, None, None, None)
+        )
       } yield {
         res
       }
@@ -1059,9 +1121,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = wallets._1.wallet
       val walletB = wallets._2.wallet
 
-      //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
+      // https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
       val contractInfo = ContractInfoV0TLV.fromHex(
-        "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
+        "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342"
+      )
       val contractInfo1 = DLCWalletUtil.sampleDLCOffer.contractInfo.toTLV
 
       val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
@@ -1071,9 +1134,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       // random testnet addresses
       val payoutAddressAOpt = Some(
-        BitcoinAddress.fromString("tb1qw98mrsxpqtz25xe332khnvlapvl09ejnzk7c3f"))
+        BitcoinAddress.fromString("tb1qw98mrsxpqtz25xe332khnvlapvl09ejnzk7c3f")
+      )
       val changeAddressAOpt = Some(
-        BitcoinAddress.fromString("tb1qkfaglsvpcwe5pm9ktqs80u9d9jd0qzgqjqd240"))
+        BitcoinAddress.fromString("tb1qkfaglsvpcwe5pm9ktqs80u9d9jd0qzgqjqd240")
+      )
       val payoutAddressBOpt =
         Some(BitcoinAddress.fromString("2MsM67NLa71fHvTUBqNENW15P68nHB2vVXb"))
       val changeAddressBOpt =
@@ -1096,10 +1161,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           externalPayoutAddressOpt = payoutAddressAOpt,
           externalChangeAddressOpt = changeAddressAOpt
         )
-        accept <- walletB.acceptDLCOffer(offer,
-                                         peerAddressOpt2,
-                                         payoutAddressBOpt,
-                                         changeAddressBOpt)
+        accept <- walletB.acceptDLCOffer(
+          offer,
+          peerAddressOpt2,
+          payoutAddressBOpt,
+          changeAddressBOpt
+        )
         offer1 <- walletA.createDLCOffer(
           contractInfoTLV = contractInfo1,
           collateral = totalCollateral1,
@@ -1128,9 +1195,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
       val offerData: DLCOffer =
-        DLCWalletUtil.sampleDLCOffer.copy(contractInfo =
-                                            DLCWalletUtil.sampleContractInfo2,
-                                          collateral = DLCWalletUtil.amt2)
+        DLCWalletUtil.sampleDLCOffer.copy(
+          contractInfo = DLCWalletUtil.sampleContractInfo2,
+          collateral = DLCWalletUtil.amt2
+        )
       val amt2: Satoshis = Bitcoins(3).satoshis
       val offerCollateral2 = amt2
       lazy val sampleContractInfo2: ContractInfo =
@@ -1149,9 +1217,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           None,
           None
         )
-        //accept it for the first time using the inputs
+        // accept it for the first time using the inputs
         _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None, None)
-        //cancel the offer
+        // cancel the offer
         _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
 
         offer2 <- walletA.createDLCOffer(

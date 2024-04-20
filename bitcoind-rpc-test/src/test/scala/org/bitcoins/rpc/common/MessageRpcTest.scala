@@ -37,8 +37,10 @@ class MessageRpcTest extends BitcoindRpcTest {
 
     for {
       client <- clientF
-      signature <- client.signMessageWithPrivKey(privKey.toPrivateKeyBytes(),
-                                                 message)
+      signature <- client.signMessageWithPrivKey(
+        privKey.toPrivateKeyBytes(),
+        message
+      )
       validity <- client.verifyMessage(address, signature, message)
     } yield assert(validity)
   }

@@ -11,12 +11,16 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 
 import scala.util.{Failure, Success, Try}
 
-/** This trait represents a point on blockchain, and is used to specify block ranges */
+/** This trait represents a point on blockchain, and is used to specify block
+  * ranges
+  */
 sealed trait BlockStamp {
   def mkString: String
 }
 
-/** This trait represents a point in time on the blockchain, including future times */
+/** This trait represents a point in time on the blockchain, including future
+  * times
+  */
 sealed trait BlockTimeStamp extends BlockStamp {
   def toUInt32: UInt32
   def toScriptNumber: ScriptNumber
@@ -78,7 +82,9 @@ object BlockStamp extends StringFactory[BlockStamp] {
   def apply(timeLockNumber: Int): BlockTimeStamp =
     fromUInt32(UInt32(timeLockNumber))
 
-  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]] */
+  /** @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]]
+    */
   def fromUInt32(uInt32: UInt32): BlockTimeStamp = {
     if (uInt32 < TransactionConstants.locktimeThreshold) {
       BlockHeight(uInt32.toInt)
@@ -121,7 +127,9 @@ object BlockTimeStamp extends StringFactory[BlockTimeStamp] {
   def apply(timeLockNumber: Int): BlockTimeStamp =
     fromUInt32(UInt32(timeLockNumber))
 
-  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]] */
+  /** @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]]
+    */
   def fromUInt32(uInt32: UInt32): BlockTimeStamp = {
     if (uInt32 < TransactionConstants.locktimeThreshold) {
       BlockStamp.BlockHeight(uInt32.toInt)

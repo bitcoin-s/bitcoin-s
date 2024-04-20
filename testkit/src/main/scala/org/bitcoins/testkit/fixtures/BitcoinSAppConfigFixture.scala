@@ -16,8 +16,8 @@ sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
   }
 }
 
-/** Makes a bitcoin-s app config with proper bitcoind credentials
-  * and bitcoin-s.node.mode=bitcoind to use bitcoin as the backend
+/** Makes a bitcoin-s app config with proper bitcoind credentials and
+  * bitcoin-s.node.mode=bitcoind to use bitcoin as the backend
   *
   * The [[BitcoinSAppConfig]] is not started
   */
@@ -54,18 +54,23 @@ trait BitcoinSAppConfigBitcoinFixtureStarted
     with CachedBitcoindNewest {
 
   def withTwoBitcoinSAppConfigNotStarted(
-      test: OneArgAsyncTest): FutureOutcome = {
+      test: OneArgAsyncTest
+  ): FutureOutcome = {
     val builder: () => Future[(BitcoinSAppConfig, BitcoinSAppConfig)] = () => {
       for {
         _ <- cachedBitcoindWithFundsF
         bitcoinSAppConfig1 = BitcoinSTestAppConfig
-          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl = () => pgUrl(),
-                                               config = Vector.empty,
-                                               forceNamedWallet = true)
+          .getNeutrinoWithEmbeddedDbTestConfig(
+            pgUrl = () => pgUrl(),
+            config = Vector.empty,
+            forceNamedWallet = true
+          )
         bitcoinSAppConfig2 = BitcoinSTestAppConfig
-          .getNeutrinoWithEmbeddedDbTestConfig(pgUrl = () => pgUrl(),
-                                               config = Vector.empty,
-                                               forceNamedWallet = true)
+          .getNeutrinoWithEmbeddedDbTestConfig(
+            pgUrl = () => pgUrl(),
+            config = Vector.empty,
+            forceNamedWallet = true
+          )
         _ <- bitcoinSAppConfig1.start()
         _ <- bitcoinSAppConfig2.start()
       } yield (bitcoinSAppConfig1, bitcoinSAppConfig2)
@@ -83,8 +88,10 @@ trait BitcoinSAppConfigBitcoinFixtureStarted
         } yield ()
     }
 
-    makeDependentFixture[(BitcoinSAppConfig, BitcoinSAppConfig)](builder,
-                                                                 destroyF)(test)
+    makeDependentFixture[(BitcoinSAppConfig, BitcoinSAppConfig)](
+      builder,
+      destroyF
+    )(test)
   }
 
   override def afterAll(): Unit = {

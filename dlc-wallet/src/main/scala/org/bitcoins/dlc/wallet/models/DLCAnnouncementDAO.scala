@@ -12,8 +12,8 @@ case class DLCAnnouncementPrimaryKey(dlcId: Sha256Digest, announcementId: Long)
 
 case class DLCAnnouncementDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
     with SlickUtil[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
     with DLCIdDaoUtilNoPK[DLCAnnouncementDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -24,7 +24,8 @@ case class DLCAnnouncementDAO()(implicit
     TableQuery[DLCAnnouncementTable]
 
   private lazy val announcementDataTable: slick.lifted.TableQuery[
-    OracleAnnouncementDataDAO#OracleAnnouncementsTable] = {
+    OracleAnnouncementDataDAO#OracleAnnouncementsTable
+  ] = {
     OracleAnnouncementDataDAO().table
   }
 
@@ -33,14 +34,13 @@ case class DLCAnnouncementDAO()(implicit
   }
 
   override def createAll(
-      ts: Vector[DLCAnnouncementDb]): Future[Vector[DLCAnnouncementDb]] =
+      ts: Vector[DLCAnnouncementDb]
+  ): Future[Vector[DLCAnnouncementDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[DLCAnnouncementPrimaryKey]): profile.api.Query[
-    DLCAnnouncementTable,
-    DLCAnnouncementDb,
-    Seq] = {
+      ids: Vector[DLCAnnouncementPrimaryKey]
+  ): profile.api.Query[DLCAnnouncementTable, DLCAnnouncementDb, Seq] = {
 
     // is there a better way to do this?
     val starting = table.filterNot(_.dlcId === Sha256Digest.empty)
@@ -50,57 +50,56 @@ case class DLCAnnouncementDAO()(implicit
         accum.flatMap(_ =>
           table.filter(t =>
             t.dlcId === dlcId &&
-              t.announcementId === announcementId))
+              t.announcementId === announcementId
+          )
+        )
     }
   }
 
-  override def findByPrimaryKey(id: DLCAnnouncementPrimaryKey): Query[
-    DLCAnnouncementTable,
-    DLCAnnouncementDb,
-    Seq] = {
+  override def findByPrimaryKey(
+      id: DLCAnnouncementPrimaryKey
+  ): Query[DLCAnnouncementTable, DLCAnnouncementDb, Seq] = {
     table.filter(t =>
-      t.dlcId === id.dlcId && t.announcementId === id.announcementId)
+      t.dlcId === id.dlcId && t.announcementId === id.announcementId
+    )
   }
 
-  override def find(t: DLCAnnouncementDb): profile.api.Query[
-    Table[DLCAnnouncementDb],
-    DLCAnnouncementDb,
-    Seq] = {
+  override def find(
+      t: DLCAnnouncementDb
+  ): profile.api.Query[Table[DLCAnnouncementDb], DLCAnnouncementDb, Seq] = {
     findByPrimaryKey(DLCAnnouncementPrimaryKey(t.dlcId, t.announcementId))
   }
 
-  override protected def findAll(ts: Vector[DLCAnnouncementDb]): Query[
-    DLCAnnouncementTable,
-    DLCAnnouncementDb,
-    Seq] = findByPrimaryKeys(
-    ts.map(t => DLCAnnouncementPrimaryKey(t.dlcId, t.announcementId)))
+  override protected def findAll(
+      ts: Vector[DLCAnnouncementDb]
+  ): Query[DLCAnnouncementTable, DLCAnnouncementDb, Seq] = findByPrimaryKeys(
+    ts.map(t => DLCAnnouncementPrimaryKey(t.dlcId, t.announcementId))
+  )
 
   def findByAnnouncementIds(
-      ids: Vector[Long]): Future[Vector[DLCAnnouncementDb]] = {
+      ids: Vector[Long]
+  ): Future[Vector[DLCAnnouncementDb]] = {
     val action = findByAnnouncementIdsAction(ids)
     safeDatabase.runVec(action)
   }
 
-  def findByAnnouncementIdsAction(ids: Vector[Long]): DBIOAction[
-    Vector[DLCAnnouncementDb],
-    NoStream,
-    Effect.Read] = {
+  def findByAnnouncementIdsAction(
+      ids: Vector[Long]
+  ): DBIOAction[Vector[DLCAnnouncementDb], NoStream, Effect.Read] = {
     val query = table.filter(_.announcementId.inSet(ids))
     query.result.map(_.toVector)
   }
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Vector[DLCAnnouncementDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[Vector[
+    DLCAnnouncementDb
+  ], profile.api.NoStream, profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(
+      dlcId: Sha256Digest
+  ): DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
@@ -121,17 +120,23 @@ case class DLCAnnouncementDAO()(implicit
         .<>(DLCAnnouncementDb.tupled, DLCAnnouncementDb.unapply)
 
     def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_announcement_id_index",
-                 sourceColumns = (dlcId, announcementId))
+      primaryKey(
+        name = "pk_announcement_id_index",
+        sourceColumns = (dlcId, announcementId)
+      )
 
     def fkAnnouncementId: ForeignKeyQuery[_, OracleAnnouncementDataDb] =
-      foreignKey("fk_announcement_id",
-                 sourceColumns = announcementId,
-                 targetTableQuery = announcementDataTable)(_.id)
+      foreignKey(
+        "fk_announcement_id",
+        sourceColumns = announcementId,
+        targetTableQuery = announcementDataTable
+      )(_.id)
 
     def fkDLCId: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_dlc_id",
-                 sourceColumns = dlcId,
-                 targetTableQuery = dlcTable)(_.dlcId)
+      foreignKey(
+        "fk_dlc_id",
+        sourceColumns = dlcId,
+        targetTableQuery = dlcTable
+      )(_.dlcId)
   }
 }

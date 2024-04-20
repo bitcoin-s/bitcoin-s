@@ -14,7 +14,8 @@ import scodec.bits.ByteVector
 case class SerializedPSBT(
     global: SerializedPSBTGlobalMap,
     inputs: Vector[SerializedPSBTInputMap],
-    outputs: Vector[SerializedPSBTOutputMap]) {
+    outputs: Vector[SerializedPSBTOutputMap]
+) {
   val toJson: JsValue = Json.toJson(this)
 }
 
@@ -22,7 +23,8 @@ case class SerializedPSBTGlobalMap(
     tx: SerializedTransaction,
     version: UInt32,
     xpubs: Option[Vector[ExtPublicKey]],
-    unknowns: Vector[GlobalPSBTRecord.Unknown])
+    unknowns: Vector[GlobalPSBTRecord.Unknown]
+)
 
 case class SerializedPSBTInputMap(
     nonWitnessUtxo: Option[SerializedTransaction],
@@ -35,13 +37,15 @@ case class SerializedPSBTInputMap(
     finalizedScriptSig: Option[Vector[ScriptToken]],
     finalizedScriptWitness: Option[SerializedTransactionWitness],
     proofOfReservesCommitment: Option[ByteVector],
-    unknowns: Vector[InputPSBTRecord.Unknown])
+    unknowns: Vector[InputPSBTRecord.Unknown]
+)
 
 case class SerializedPSBTOutputMap(
     redeemScript: Option[Vector[ScriptToken]],
     witScript: Option[Vector[ScriptToken]],
     bip32Paths: Option[Vector[OutputPSBTRecord.BIP32DerivationPath]],
-    unknowns: Vector[OutputPSBTRecord.Unknown])
+    unknowns: Vector[OutputPSBTRecord.Unknown]
+)
 
 object SerializedPSBT {
 
@@ -57,11 +61,13 @@ object SerializedPSBT {
 
   def decodeInputMap(
       input: InputPSBTMap,
-      index: Int): SerializedPSBTInputMap = {
+      index: Int
+  ): SerializedPSBTInputMap = {
     val prevTxOpt = input.nonWitnessOrUnknownUTXOOpt.map(_.transactionSpent)
     val nonWitnessUtxo = prevTxOpt.map(decodeRawTransaction)
     val witnessUtxo = input.witnessUTXOOpt.map(rec =>
-      decodeTransactionOutput(rec.witnessUTXO, index))
+      decodeTransactionOutput(rec.witnessUTXO, index)
+    )
 
     val sigs = input.partialSignatures
     val sigsOpt = if (sigs.nonEmpty) Some(sigs) else None
@@ -74,23 +80,26 @@ object SerializedPSBT {
     val finalizedScriptSig =
       input.finalizedScriptSigOpt.map(_.scriptSig.asm.toVector)
     val finalizedWitScript = input.finalizedScriptWitnessOpt.flatMap(rec =>
-      decodeRawTransactionWitness(rec.scriptWitness))
+      decodeRawTransactionWitness(rec.scriptWitness)
+    )
 
     val porCommit = input.proofOfReservesCommitmentOpt.map(_.porCommitment)
 
     val unknowns = input.getRecords(PSBTInputKeyId.UnknownKeyId)
 
-    SerializedPSBTInputMap(nonWitnessUtxo,
-                           witnessUtxo,
-                           sigsOpt,
-                           hashType,
-                           redeemScript,
-                           witScript,
-                           bip32PathsOpt,
-                           finalizedScriptSig,
-                           finalizedWitScript,
-                           porCommit,
-                           unknowns)
+    SerializedPSBTInputMap(
+      nonWitnessUtxo,
+      witnessUtxo,
+      sigsOpt,
+      hashType,
+      redeemScript,
+      witScript,
+      bip32PathsOpt,
+      finalizedScriptSig,
+      finalizedWitScript,
+      porCommit,
+      unknowns
+    )
   }
 
   def decodeOutputMap(output: OutputPSBTMap): SerializedPSBTOutputMap = {

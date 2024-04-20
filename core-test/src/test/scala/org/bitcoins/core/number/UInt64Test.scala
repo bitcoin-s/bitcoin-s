@@ -23,7 +23,7 @@ class UInt64Test extends BitcoinSUnitTest {
   }
 
   it must "hold the max for a uint32_t" in {
-    //this is UInt32_t's max value
+    // this is UInt32_t's max value
     val uInt64 =
       UInt64(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt64.toBigInt must be(4294967295L)
@@ -37,14 +37,17 @@ class UInt64Test extends BitcoinSUnitTest {
 
   it must "hold the max number for uint64_t" in {
     val uInt64 = UInt64(
-      ByteVector(0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte))
+      ByteVector(
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte
+      )
+    )
     uInt64.toBigInt must be(BigInt("18446744073709551615"))
     uInt64.hex must be("ffffffffffffffff")
   }
@@ -52,15 +55,18 @@ class UInt64Test extends BitcoinSUnitTest {
   it must "throw an exception if we try and create a number larger than 8 bytes" in {
     intercept[IllegalArgumentException] {
       UInt64(
-        ByteVector(1.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte))
+        ByteVector(
+          1.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte
+        )
+      )
     }
   }
 

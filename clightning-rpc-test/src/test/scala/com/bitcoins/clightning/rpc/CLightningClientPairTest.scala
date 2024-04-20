@@ -65,15 +65,19 @@ class CLightningClientPairTest extends DualCLightningFixture {
       utxo <- clightning.listFunds.map(_.outputs.head)
       prevOut = TransactionOutput(utxo.value, utxo.scriptpubkey)
 
-      input = TransactionInput(utxo.outPoint,
-                               EmptyScriptSignature,
-                               TransactionConstants.sequence)
+      input = TransactionInput(
+        utxo.outPoint,
+        EmptyScriptSignature,
+        TransactionConstants.sequence
+      )
       output = TransactionOutput(Bitcoins(0.5), bitcoindAddr.scriptPubKey)
 
-      tx = BaseTransaction(Int32.two,
-                           Vector(input),
-                           Vector(output),
-                           UInt32.zero)
+      tx = BaseTransaction(
+        Int32.two,
+        Vector(input),
+        Vector(output),
+        UInt32.zero
+      )
 
       unsigned = PSBT
         .fromUnsignedTx(tx)
@@ -98,10 +102,12 @@ class CLightningClientPairTest extends DualCLightningFixture {
     val amount = Satoshis(100)
 
     for {
-      invoiceResult <- clightningA.createInvoice(amount = amount,
-                                                 label = "label",
-                                                 description = "description",
-                                                 expirySeconds = 500)
+      invoiceResult <- clightningA.createInvoice(
+        amount = amount,
+        label = "label",
+        description = "description",
+        expirySeconds = 500
+      )
       payment <- clightningB.payInvoice(invoiceResult.bolt11)
       _ = assert(payment.payment_hash == invoiceResult.payment_hash)
       _ = assert(payment.msatoshi.toSatoshis == amount)
@@ -109,7 +115,8 @@ class CLightningClientPairTest extends DualCLightningFixture {
       _ <- TestAsyncUtil.awaitConditionF(() =>
         clightningA
           .lookupInvoice(invoiceResult.payment_hash)
-          .map(_.exists(_.status.paid)))
+          .map(_.exists(_.status.paid))
+      )
     } yield succeed
   }
 
@@ -120,10 +127,12 @@ class CLightningClientPairTest extends DualCLightningFixture {
     val label = "testLabel"
 
     for {
-      invoiceResult <- clightningA.createInvoice(amount = amount,
-                                                 label = label,
-                                                 description = "description",
-                                                 expirySeconds = 500)
+      invoiceResult <- clightningA.createInvoice(
+        amount = amount,
+        label = label,
+        description = "description",
+        expirySeconds = 500
+      )
 
       _ = system.scheduler.scheduleOnce(3.seconds) {
         clightningB.payInvoice(invoiceResult.bolt11)
@@ -171,7 +180,8 @@ class CLightningClientPairTest extends DualCLightningFixture {
       result <- clightningA.sendCustomMessage(
         nodeId,
         BigSizeUInt(48001),
-        hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+        hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+      )
     } yield {
       assert(result.status.nonEmpty)
     }

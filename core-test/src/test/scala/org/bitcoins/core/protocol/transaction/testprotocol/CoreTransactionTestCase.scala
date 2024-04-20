@@ -12,36 +12,36 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import ujson._
 import upickle.default._
 
-/** Created by chris on 5/4/16.
-  * Used to represent the test cases found inside of tx_valid.json & tx_invalid.json
-  * from bitcoin core
+/** Created by chris on 5/4/16. Used to represent the test cases found inside of
+  * tx_valid.json & tx_invalid.json from bitcoin core
   */
 case class CoreTransactionTestCase(
     creditingTxsInfo: Seq[
-      (TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])],
+      (TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])
+    ],
     spendingTx: Transaction,
     flags: Seq[ScriptFlag],
-    raw: String)
+    raw: String
+)
 
 object CoreTransactionTestCase {
 
-  implicit val coreTransactionTestCaseR: Reader[
-    Option[CoreTransactionTestCase]] =
+  implicit val coreTransactionTestCaseR
+      : Reader[Option[CoreTransactionTestCase]] =
     reader[Value].map { value =>
       val arr: Arr = value match {
         case array: Arr => array
         case _: Value =>
           throw new RuntimeException(
-            "Core test case must be in the format of js array")
+            "Core test case must be in the format of js array"
+          )
       }
       val elements: Vector[Value] = arr.value.toVector
 
       if (elements.size < 3) None
       else {
-        val creditingTxsInfo: Seq[(
-            TransactionOutPoint,
-            ScriptPubKey,
-            Option[CurrencyUnit])] =
+        val creditingTxsInfo
+            : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] =
           elements.head match {
             case array: Arr => parseOutPointsScriptPubKeysAmount(array)
             case _: Value =>
@@ -52,15 +52,19 @@ object CoreTransactionTestCase {
           ScriptFlagFactory.fromList(elements(2).str)
 
         Some(
-          CoreTransactionTestCase(creditingTxsInfo.reverse,
-                                  spendingTx,
-                                  flags,
-                                  elements.toString))
+          CoreTransactionTestCase(
+            creditingTxsInfo.reverse,
+            spendingTx,
+            flags,
+            elements.toString
+          )
+        )
       }
     }
 
-  private def parseOutPointsScriptPubKeysAmount(array: Arr): Seq[
-    (TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] = {
+  private def parseOutPointsScriptPubKeysAmount(
+      array: Arr
+  ): Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] = {
     val result = array.value.map {
       case array: Arr =>
         val prevoutHashHex =
@@ -86,7 +90,8 @@ object CoreTransactionTestCase {
         (outPoint, scriptPubKey, amount)
       case _: Value =>
         throw new RuntimeException(
-          "All tx outpoint/scriptpubkey info must be array elements")
+          "All tx outpoint/scriptpubkey info must be array elements"
+        )
     }
     result.toVector
   }

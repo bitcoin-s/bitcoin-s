@@ -29,8 +29,9 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   behavior of "Wallet.processTransaction"
 
   /** Verifies that executing the given action doesn't change wallet state */
-  private def checkUtxosAndBalance(wallet: WalletApi)(
-      action: => Future[_]): Future[Assertion] =
+  private def checkUtxosAndBalance(
+      wallet: WalletApi
+  )(action: => Future[_]): Future[Assertion] =
     for {
       oldTransactions <- wallet.listTransactions()
       oldUtxos <- wallet.listUtxos()
@@ -72,8 +73,10 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           wallet.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(tx,
-                                       Some(MockChainQueryApi.testBlockHash))
+        _ <- wallet.processTransaction(
+          tx,
+          Some(MockChainQueryApi.testBlockHash)
+        )
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
@@ -152,21 +155,22 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       val receivingAddressF = wallet.getNewAddress()
       val amount = Bitcoins.one
 
-      val amtWithFee = amount + Satoshis(175) //for fee
+      val amtWithFee = amount + Satoshis(175) // for fee
 
-      //build funding tx
+      // build funding tx
       val fundingTxF: Future[(Transaction, UInt32)] = for {
         fundingAddr <- fundingAddressF
         output = TransactionOutput(amtWithFee, fundingAddr.scriptPubKey)
         fundingTx = TransactionGenerators.buildCreditingTransaction(
           TransactionConstants.version,
           output,
-          TransactionGenerators.outPoint.sampleSome)
+          TransactionGenerators.outPoint.sampleSome
+        )
       } yield fundingTx
 
       val processedFundingTxF: Future[WalletApi] = for {
         (fundingTx, _) <- fundingTxF
-        //make sure wallet is empty
+        // make sure wallet is empty
         balance <- wallet.getBalance()
         _ = assert(balance == Bitcoins.zero)
         processed <- wallet.processTransaction(fundingTx, None)
@@ -174,21 +178,23 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         _ = assert(balance == amtWithFee)
       } yield processed
 
-      //build spending tx
+      // build spending tx
       val spendingTxF = for {
         receivingAddress <- receivingAddressF
         wallet <- processedFundingTxF
         destinations = Vector(
-          TransactionOutput(amount, receivingAddress.scriptPubKey))
+          TransactionOutput(amount, receivingAddress.scriptPubKey)
+        )
         rawTxHelper <- wallet.fundRawTransaction(
           destinations = destinations,
           feeRate = SatoshisPerByte.one,
           fromTagOpt = None,
           markAsReserved = true
         )
-        processedSpendingTx <- wallet.processTransaction(transaction =
-                                                           rawTxHelper.signedTx,
-                                                         blockHashOpt = None)
+        processedSpendingTx <- wallet.processTransaction(
+          transaction = rawTxHelper.signedTx,
+          blockHashOpt = None
+        )
         balance <- processedSpendingTx.getBalance()
       } yield assert(balance == amount)
 

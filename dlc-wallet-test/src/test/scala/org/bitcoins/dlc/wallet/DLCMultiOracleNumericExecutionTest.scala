@@ -59,9 +59,11 @@ class DLCMultiOracleNumericExecutionTest
     OracleParamsV0TLV(maxErrorExp = 4, minFailExp = 2, maximizeCoverage = false)
 
   val oracleInfo: NumericMultiOracleInfo =
-    NumericMultiOracleInfo(threshold = threshold,
-                           announcements = OrderedAnnouncements(announcements),
-                           params = params)
+    NumericMultiOracleInfo(
+      threshold = threshold,
+      announcements = OrderedAnnouncements(announcements),
+      params = params
+    )
 
   val contractOraclePair: ContractOraclePair.NumericPair =
     ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)
@@ -70,9 +72,9 @@ class DLCMultiOracleNumericExecutionTest
     withDualDLCWallets(test, contractOraclePair)
   }
 
-  def getSigs(contractInfo: ContractInfo): (
-      Vector[OracleAttestmentTLV],
-      Vector[OracleAttestmentTLV]) = {
+  def getSigs(
+      contractInfo: ContractInfo
+  ): (Vector[OracleAttestmentTLV], Vector[OracleAttestmentTLV]) = {
     contractInfo.contractDescriptors.head match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
@@ -97,7 +99,8 @@ class DLCMultiOracleNumericExecutionTest
       initChosenOracles,
       contractInfo,
       initiatorWinVec,
-      Some(params))
+      Some(params)
+    )
 
     val initiatorWinSigs = buildAttestments(initWinOutcomes)
 
@@ -118,10 +121,12 @@ class DLCMultiOracleNumericExecutionTest
       recipientChosenOracles,
       contractInfo,
       recipientWinVec,
-      Some(params))
+      Some(params)
+    )
 
     val recipientWinSigs: Vector[OracleAttestmentTLV] = buildAttestments(
-      recipientWinOutcomes)
+      recipientWinOutcomes
+    )
 
     // Shuffle to make sure ordering doesn't matter
     (Random.shuffle(initiatorWinSigs), Random.shuffle(recipientWinSigs))
@@ -135,10 +140,12 @@ class DLCMultiOracleNumericExecutionTest
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sigs).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -175,10 +182,12 @@ class DLCMultiOracleNumericExecutionTest
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sigs).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = false,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = false,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -209,7 +218,8 @@ class DLCMultiOracleNumericExecutionTest
 
   private def verifyingMatchingOracleSigs(
       statusA: Claimed,
-      statusB: RemoteClaimed): Boolean = {
+      statusB: RemoteClaimed
+  ): Boolean = {
     val outcome = statusB.oracleOutcome
     outcome match {
       case _: EnumOracleOutcome =>
@@ -235,7 +245,8 @@ class DLCMultiOracleNumericExecutionTest
 
   /** Builds an attestment for the given numeric oracle outcome */
   private def buildAttestments(
-      outcome: NumericOracleOutcome): Vector[OracleAttestmentTLV] = {
+      outcome: NumericOracleOutcome
+  ): Vector[OracleAttestmentTLV] = {
     privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
       val outcomeOpt =
         outcome.oraclesAndOutcomes.find(_._1.publicKey == priv.schnorrPublicKey)
@@ -251,13 +262,16 @@ class DLCMultiOracleNumericExecutionTest
           case v0: OracleEventV0TLV => v0.eventId
         }
 
-        require(kValues.length == sigs.length,
-                s"kValues.length=${kValues.length} sigs.length=${sigs.length}")
+        require(
+          kValues.length == sigs.length,
+          s"kValues.length=${kValues.length} sigs.length=${sigs.length}"
+        )
         OracleAttestmentV0TLV(
           eventId,
           priv.schnorrPublicKey,
           OrderedSchnorrSignatures.fromUnsorted(sigs).toVector,
-          digitsPadded.map(_.toString))
+          digitsPadded.map(_.toString)
+        )
       }
     }
   }

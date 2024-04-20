@@ -23,16 +23,16 @@ case class DescriptorIterator(descriptor: String) {
   def takeDescriptorType(): DescriptorType = {
     val t = DescriptorType.fromString(current)
     skip(t.toString.length)
-    skip(1) //skip the '(' in 'wpkh('
+    skip(1) // skip the '(' in 'wpkh('
     t
   }
 
   def takeBIP32PathOpt(): Option[BIP32Path] = {
     if (current.nonEmpty && current.charAt(0) == '/') {
       val (stripped, _) = if (current.exists(_ == '*')) {
-        current.span(_ != '*') //remove indicator if all children are hardened
+        current.span(_ != '*') // remove indicator if all children are hardened
       } else {
-        current.span(_ != ')') //else if no hardened indcator, drop last ')'
+        current.span(_ != ')') // else if no hardened indcator, drop last ')'
       }
       val hdPath = BIP32Path.fromString("m" + stripped)
       skip(hdPath.toString.length)
@@ -63,7 +63,7 @@ case class DescriptorIterator(descriptor: String) {
 
   def takeChecksumOpt(): Option[String] = {
     if (current.isEmpty || !(current.take(1) == '#')) {
-      //means we do not have a checksum
+      // means we do not have a checksum
       None
     } else {
       Some(current.take(8))
@@ -74,7 +74,7 @@ case class DescriptorIterator(descriptor: String) {
     val (originStr, _) = current.span(_ != ']')
     if (originStr.startsWith("[") && originStr.nonEmpty) {
       val origin = KeyOriginExpression
-        .fromString(originStr + "]") //span drops the last ']', so re-add
+        .fromString(originStr + "]") // span drops the last ']', so re-add
       skip(origin.toString.length)
       Some(origin)
     } else None
@@ -109,7 +109,7 @@ case class DescriptorIterator(descriptor: String) {
 
   def takeSingleKeyExpression(): SingleKeyExpression[PublicKey] = {
     if (current.exists(_ == ',')) {
-      //must be xonly, the
+      // must be xonly, the
       takeSingleXOnlyPubKeyExpression()
         .asInstanceOf[SingleKeyExpression[PublicKey]]
     } else {
@@ -133,10 +133,10 @@ case class DescriptorIterator(descriptor: String) {
   def takeSingleXOnlyPubKeyExpression(): SingleXOnlyPubKeyExpression = {
     val keyExpr = {
       if (current.exists(_ == ',')) {
-        //we have a script path
+        // we have a script path
         current.span(_ != ',')._1
       } else {
-        //no script path, just internal key
+        // no script path, just internal key
         current.takeWhile(_ != ')')
       }
     }
@@ -144,8 +144,10 @@ case class DescriptorIterator(descriptor: String) {
     val single = SingleXOnlyPubKeyExpression.fromString(keyExpr)
     skip(single.toString().length)
     if (current.nonEmpty) {
-      require(current.head == ',' || current.head == ')',
-              s"Key was not 32 bytes, got=$descriptor current=$current")
+      require(
+        current.head == ',' || current.head == ')',
+        s"Key was not 32 bytes, got=$descriptor current=$current"
+      )
     }
     skip(1) // ','
     single
@@ -183,7 +185,8 @@ case class DescriptorIterator(descriptor: String) {
       case raw: RawSPKScriptExpression => raw
       case x =>
         sys.error(
-          s"Unexpected expression=$x when expecting RawSPKScriptExpression")
+          s"Unexpected expression=$x when expecting RawSPKScriptExpression"
+        )
     }
   }
 
@@ -200,7 +203,8 @@ case class DescriptorIterator(descriptor: String) {
       case raw: RawSPKScriptExpression => raw
       case x =>
         sys.error(
-          s"Unexpected expression=$x when expecting RawSPKScriptExpression")
+          s"Unexpected expression=$x when expecting RawSPKScriptExpression"
+        )
     }
   }
 
@@ -233,13 +237,13 @@ case class DescriptorIterator(descriptor: String) {
 
   def takeTapscriptTreeExpression(): TapscriptTreeExpression = {
     val expression = if (current.charAt(0) == '{' && current.last == '}') {
-      skip(1) //{
+      skip(1) // {
       val tree1 = takeTapscriptTreeExpression()
-      skip(1) //,
+      skip(1) // ,
       val tree2 = takeTapscriptTreeExpression()
       val branch =
         TapscriptBranchExpression(tree1, tree2)
-      skip(1) //}
+      skip(1) // }
       branch
     } else {
       val expression = takeRawScriptExpressionXOnlyKey()

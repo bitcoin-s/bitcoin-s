@@ -29,9 +29,11 @@ class BitcoindBlockPollingTest
         tmpWallet <-
           BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind)
         wallet =
-          BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
-                                                                   tmpWallet,
-                                                                   None)
+          BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+            bitcoind,
+            tmpWallet,
+            None
+          )
         // Assert wallet is empty
         isEmpty <- wallet.isEmpty()
         _ = assert(isEmpty)
@@ -45,16 +47,19 @@ class BitcoindBlockPollingTest
         _ = assert(firstBalance == Satoshis.zero)
 
         // Setup block polling
-        cancellable = BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
-                                                                       bitcoind,
-                                                                       None,
-                                                                       1.second)
+        cancellable = BitcoindRpcBackendUtil.startBitcoindBlockPolling(
+          wallet,
+          bitcoind,
+          None,
+          1.second
+        )
         _ <- bitcoind.generateToAddress(6, bech32Address)
 
         // Wait for it to process
         _ <- AsyncUtil.awaitConditionF(
           () => wallet.getBalance().map(_ > Satoshis.zero),
-          1.second)
+          1.second
+        )
 
         balance <- wallet.getConfirmedBalance()
         _ = cancellable.cancel()
@@ -75,9 +80,11 @@ class BitcoindBlockPollingTest
         tmpWallet <-
           BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind)
         wallet =
-          BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
-                                                                   tmpWallet,
-                                                                   None)
+          BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+            bitcoind,
+            tmpWallet,
+            None
+          )
 
         // populate initial mempool
         addr <- wallet.getNewAddress()
@@ -87,7 +94,8 @@ class BitcoindBlockPollingTest
         cancellable = BitcoindRpcBackendUtil.startBitcoindMempoolPolling(
           wallet,
           bitcoind,
-          1.second) { tx =>
+          1.second
+        ) { tx =>
           mempoolTxs += tx
           FutureUtil.unit
         }
@@ -100,9 +108,11 @@ class BitcoindBlockPollingTest
         _ <- AsyncUtil.awaitCondition(
           () => {
             mempoolTxs.exists(_.txIdBE == txid1) && mempoolTxs.exists(
-              _.txIdBE == txid2)
+              _.txIdBE == txid2
+            )
           },
-          1.second)
+          1.second
+        )
         _ = cancellable.cancel()
       } yield succeed
   }

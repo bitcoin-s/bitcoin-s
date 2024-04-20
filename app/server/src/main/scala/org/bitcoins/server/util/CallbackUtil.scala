@@ -18,8 +18,8 @@ import scala.concurrent.Future
 object CallbackUtil extends BitcoinSLogger {
 
   def createNeutrinoNodeCallbacksForWallet(
-      wallet: WalletApi with NeutrinoWalletApi)(implicit
-      system: ActorSystem): Future[NodeCallbackStreamManager] = {
+      wallet: WalletApi with NeutrinoWalletApi
+  )(implicit system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
@@ -32,7 +32,8 @@ object CallbackUtil extends BitcoinSLogger {
       Sink.foreachAsync[Vector[(DoubleSha256DigestBE, GolombFilter)]](1) {
         case blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)] =>
           logger.debug(
-            s"Executing onCompactFilters callback with filter count=${blockFilters.length}")
+            s"Executing onCompactFilters callback with filter count=${blockFilters.length}"
+          )
           wallet
             .processCompactFilters(blockFilters = blockFilters)
             .map(_ => ())
@@ -42,7 +43,8 @@ object CallbackUtil extends BitcoinSLogger {
     val blockSink = {
       Sink.foreachAsync[Block](1) { case block: Block =>
         logger.debug(
-          s"Executing onBlock callback=${block.blockHeader.hashBE.hex}")
+          s"Executing onBlock callback=${block.blockHeader.hashBE.hex}"
+        )
         wallet.processBlock(block).map(_ => ())
       }
     }
@@ -50,7 +52,8 @@ object CallbackUtil extends BitcoinSLogger {
     val onHeaderSink = {
       Sink.foreachAsync(1) { headers: Vector[BlockHeader] =>
         logger.debug(
-          s"Executing block header with header count=${headers.length}")
+          s"Executing block header with header count=${headers.length}"
+        )
         if (headers.isEmpty) {
           Future.unit
         } else {
@@ -85,18 +88,20 @@ object CallbackUtil extends BitcoinSLogger {
         .map(_ => ())
     }
 
-    val callbacks = NodeCallbacks(onTxReceived = Vector(onTx),
-                                  onBlockReceived = Vector(onBlock),
-                                  onCompactFiltersReceived =
-                                    Vector(onCompactFilters),
-                                  onBlockHeadersReceived = Vector(onHeaders))
+    val callbacks = NodeCallbacks(
+      onTxReceived = Vector(onTx),
+      onBlockReceived = Vector(onBlock),
+      onCompactFiltersReceived = Vector(onCompactFilters),
+      onBlockHeadersReceived = Vector(onHeaders)
+    )
 
     val streamManager = NodeCallbackStreamManager(callbacks)
     Future.successful(streamManager)
   }
 
-  def createBitcoindNodeCallbacksForWallet(wallet: DLCNeutrinoHDWalletApi)(
-      implicit system: ActorSystem): Future[NodeCallbackStreamManager] = {
+  def createBitcoindNodeCallbacksForWallet(
+      wallet: DLCNeutrinoHDWalletApi
+  )(implicit system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")

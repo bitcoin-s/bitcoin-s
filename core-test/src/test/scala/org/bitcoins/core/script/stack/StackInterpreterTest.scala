@@ -18,8 +18,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
 
     val script = List(OP_DUP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opDup(program)
 
     newProgram.stack.head must be(element1)
@@ -31,8 +33,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     intercept[IllegalArgumentException] {
       val script = List()
       val program =
-        TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                     script)
+        TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+          stack,
+          script
+        )
       SI.opDup(program)
     }
   }
@@ -41,8 +45,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List()
     val script = List(OP_DUP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     ScriptProgramTestUtil
       .toExecutedScriptProgram(SI.opDup(program))
       .error must be(Some(ScriptErrorInvalidStackOperation))
@@ -52,8 +58,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
   it must "evaluate the OP_DEPTH operator correctly" in {
     val script = List(OP_DEPTH)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opDepth(program)
 
     newProgram.stack.head.hex must be(BytesUtil.encodeHex(stack.size.toByte))
@@ -63,8 +71,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List()
     val script = List(OP_DEPTH)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opDepth(program)
     newProgram.stack.head must be(ScriptNumber.zero)
   }
@@ -73,8 +83,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(OP_0)
     val script = List(OP_TOALTSTACK)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opToAltStack(program)
 
     newProgram.stack.isEmpty must be(true)
@@ -87,8 +99,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(OP_0)
     val script = List(OP_DROP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opDrop(program)
 
     newProgram.stack.isEmpty must be(true)
@@ -99,20 +113,25 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List()
     val script = List(OP_DROP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opDrop(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 
   it must "evaluate an OP_IFDUP correctly" in {
     val stack = List(ScriptNumber.zero)
     val script = List(OP_IFDUP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opIfDup(program)
 
     newProgram.stack must be(stack)
@@ -120,8 +139,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
 
     val stack1 = List(OP_1)
     val program1 =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack1,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack1,
+        script
+      )
     val newProgram1 = SI.opIfDup(program1)
     newProgram1.stack must be(List(OP_1, OP_1))
     newProgram1.script.isEmpty must be(true)
@@ -133,8 +154,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_NIP)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
 
     val newProgram = SI.opNip(program)
 
@@ -147,8 +170,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_NIP)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.opNip(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -160,8 +185,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_NIP)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.opNip(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -171,8 +198,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(OP_0, OP_1)
     val script = List(OP_OVER)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opOver(program)
     newProgram.stack must be(List(OP_1, OP_0, OP_1))
     newProgram.script.isEmpty must be(true)
@@ -183,8 +212,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_OVER)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.opOver(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -196,8 +227,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_OVER)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.opOver(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -205,21 +238,28 @@ class StackInterpreterTest extends BitcoinSUnitTest {
   }
 
   it must "evaluate an OP_PICK correctly" in {
-    val stack = List(ScriptNumber.zero,
-                     ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"))
+    val stack = List(
+      ScriptNumber.zero,
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16")
+    )
     val script = List(OP_PICK)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opPick(program)
 
     newProgram.stack must be(
-      List(ScriptConstant("14"),
-           ScriptConstant("14"),
-           ScriptConstant("15"),
-           ScriptConstant("16")))
+      List(
+        ScriptConstant("14"),
+        ScriptConstant("14"),
+        ScriptConstant("15"),
+        ScriptConstant("16")
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -227,28 +267,36 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptNumber.one)
     val script = List(OP_PICK)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opPick(program)
 
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
 
   }
   it must "evaluate an OP_ROLL correctly" in {
-    val stack = List(ScriptNumber.zero,
-                     ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"))
+    val stack = List(
+      ScriptNumber.zero,
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16")
+    )
     val script = List(OP_ROLL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opRoll(program)
 
     newProgram.stack must be(
-      List(ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16")))
+      List(ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16"))
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -256,26 +304,32 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptNumber.one)
     val script = List(OP_ROLL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opRoll(program)
 
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 
   it must "mark an OP_ROLL as invalid if the script number is not minimall encoded" in {
     val stack = List(ScriptNumber("0100"))
     val script = List(OP_ROLL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opRoll(program)
 
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 
   it must "evaluate an OP_ROT correctly" in {
@@ -283,12 +337,15 @@ class StackInterpreterTest extends BitcoinSUnitTest {
       List(ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16"))
     val script = List(OP_ROT)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opRot(program)
 
     newProgram.stack must be(
-      List(ScriptConstant("16"), ScriptConstant("14"), ScriptConstant("15")))
+      List(ScriptConstant("16"), ScriptConstant("14"), ScriptConstant("15"))
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -297,103 +354,133 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_ROT)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.opRot(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_2ROT correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_2ROT)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op2Rot(program)
 
     newProgram.stack must be(
-      List(ScriptConstant("18"),
-           ScriptConstant("19"),
-           ScriptConstant("14"),
-           ScriptConstant("15"),
-           ScriptConstant("16"),
-           ScriptConstant("17")))
+      List(
+        ScriptConstant("18"),
+        ScriptConstant("19"),
+        ScriptConstant("14"),
+        ScriptConstant("15"),
+        ScriptConstant("16"),
+        ScriptConstant("17")
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
   it must "mark a scirpt as invalid if there is less than 6 elements on the stack for OP_2ROT" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18")
+    )
     val script = List(OP_2ROT)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.op2Rot(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_2DROP correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_2DROP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op2Drop(program)
 
     newProgram.stack must be(
-      List(ScriptConstant("16"),
-           ScriptConstant("17"),
-           ScriptConstant("18"),
-           ScriptConstant("19")))
+      List(
+        ScriptConstant("16"),
+        ScriptConstant("17"),
+        ScriptConstant("18"),
+        ScriptConstant("19")
+      )
+    )
   }
 
   it must "mark a script invalid if an OP_2DROP script does not have two stack items" in {
     val stack = List(ScriptConstant("14"))
     val script = List(OP_2DROP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op2Drop(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 
   it must "evaluate an OP_SWAP correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_SWAP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opSwap(program)
     newProgram.stack must be(
-      List(ScriptConstant("15"),
-           ScriptConstant("14"),
-           ScriptConstant("16"),
-           ScriptConstant("17"),
-           ScriptConstant("18"),
-           ScriptConstant("19")))
+      List(
+        ScriptConstant("15"),
+        ScriptConstant("14"),
+        ScriptConstant("16"),
+        ScriptConstant("17"),
+        ScriptConstant("18"),
+        ScriptConstant("19")
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -401,34 +488,44 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptConstant("14"))
     val script = List(OP_SWAP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opSwap(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 
   it must "evaluate an OP_TUCK correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_TUCK)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.opTuck(program)
     newProgram.stack must be(
-      List(ScriptConstant("14"),
-           ScriptConstant("15"),
-           ScriptConstant("14"),
-           ScriptConstant("16"),
-           ScriptConstant("17"),
-           ScriptConstant("18"),
-           ScriptConstant("19")))
+      List(
+        ScriptConstant("14"),
+        ScriptConstant("15"),
+        ScriptConstant("14"),
+        ScriptConstant("16"),
+        ScriptConstant("17"),
+        ScriptConstant("18"),
+        ScriptConstant("19")
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -437,8 +534,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_TUCK)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.opTuck(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -446,16 +545,20 @@ class StackInterpreterTest extends BitcoinSUnitTest {
   }
 
   it must "evaluate an OP_2DUP correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_2DUP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op2Dup(program)
     newProgram.stack must be(
       List(
@@ -467,7 +570,8 @@ class StackInterpreterTest extends BitcoinSUnitTest {
         ScriptConstant("17"),
         ScriptConstant("18"),
         ScriptConstant("19")
-      ))
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -476,8 +580,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_2DUP)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.op2Dup(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -485,16 +591,20 @@ class StackInterpreterTest extends BitcoinSUnitTest {
   }
 
   it must "evaluate an OP_3DUP correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_3DUP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op3Dup(program)
 
     newProgram.stack must be(
@@ -508,7 +618,8 @@ class StackInterpreterTest extends BitcoinSUnitTest {
         ScriptConstant("17"),
         ScriptConstant("18"),
         ScriptConstant("19")
-      ))
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -516,25 +627,32 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptConstant("14"), ScriptConstant("15"))
     val script = List(OP_3DUP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op3Dup(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 
   it must "evaluate an OP_2OVER correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_2OVER)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op2Over(program)
 
     newProgram.stack must be(
@@ -547,7 +665,8 @@ class StackInterpreterTest extends BitcoinSUnitTest {
         ScriptConstant("17"),
         ScriptConstant("18"),
         ScriptConstant("19")
-      ))
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -557,33 +676,42 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_2OVER)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.op2Over(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_2SWAP correctly" in {
-    val stack = List(ScriptConstant("14"),
-                     ScriptConstant("15"),
-                     ScriptConstant("16"),
-                     ScriptConstant("17"),
-                     ScriptConstant("18"),
-                     ScriptConstant("19"))
+    val stack = List(
+      ScriptConstant("14"),
+      ScriptConstant("15"),
+      ScriptConstant("16"),
+      ScriptConstant("17"),
+      ScriptConstant("18"),
+      ScriptConstant("19")
+    )
     val script = List(OP_2SWAP)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = SI.op2Swap(program)
 
     newProgram.stack must be(
-      List(ScriptConstant("16"),
-           ScriptConstant("17"),
-           ScriptConstant("14"),
-           ScriptConstant("15"),
-           ScriptConstant("18"),
-           ScriptConstant("19")))
+      List(
+        ScriptConstant("16"),
+        ScriptConstant("17"),
+        ScriptConstant("14"),
+        ScriptConstant("15"),
+        ScriptConstant("18"),
+        ScriptConstant("19")
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -593,8 +721,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_2SWAP)
 
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(SI.op2Swap(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -605,8 +735,10 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     val script = List(OP_FROMALTSTACK)
     val altStack = List(OP_0)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programWithAltStack = program.updateAltStack(altStack)
     val executedProgram = SI.opFromAltStack(programWithAltStack)
     executedProgram.stack must be(altStack)

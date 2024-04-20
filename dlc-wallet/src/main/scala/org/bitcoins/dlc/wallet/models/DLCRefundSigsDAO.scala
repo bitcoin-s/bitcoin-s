@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCRefundSigsDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCRefundSigsDb, Sha256Digest]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCRefundSigsDb, Sha256Digest]
     with SlickUtil[DLCRefundSigsDb, Sha256Digest]
     with DLCIdDaoUtil[DLCRefundSigsDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -27,39 +27,39 @@ case class DLCRefundSigsDAO()(implicit
   }
 
   override def createAll(
-      ts: Vector[DLCRefundSigsDb]): Future[Vector[DLCRefundSigsDb]] =
+      ts: Vector[DLCRefundSigsDb]
+  ): Future[Vector[DLCRefundSigsDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
-    DLCRefundSigTable,
-    DLCRefundSigsDb,
-    Seq] =
+  override protected def findByPrimaryKeys(
+      ids: Vector[Sha256Digest]
+  ): Query[DLCRefundSigTable, DLCRefundSigsDb, Seq] =
     table.filter(_.dlcId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256Digest): Query[DLCRefundSigTable, DLCRefundSigsDb, Seq] = {
+      id: Sha256Digest
+  ): Query[DLCRefundSigTable, DLCRefundSigsDb, Seq] = {
     table
       .filter(_.dlcId === id)
   }
 
-  override def findAll(dlcs: Vector[DLCRefundSigsDb]): Query[
-    DLCRefundSigTable,
-    DLCRefundSigsDb,
-    Seq] =
+  override def findAll(
+      dlcs: Vector[DLCRefundSigsDb]
+  ): Query[DLCRefundSigTable, DLCRefundSigsDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
-    Vector[DLCRefundSigsDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdsAction(
+      dlcIds: Vector[Sha256Digest]
+  ): DBIOAction[Vector[
+    DLCRefundSigsDb
+  ], profile.api.NoStream, profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(
+      dlcId: Sha256Digest
+  ): DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
@@ -74,12 +74,16 @@ case class DLCRefundSigsDAO()(implicit
     def initiatorSig: Rep[Option[PartialSignature]] = column("initiator_sig")
 
     def * : ProvenShape[DLCRefundSigsDb] =
-      (dlcId, accepterSig, initiatorSig).<>(DLCRefundSigsDb.tupled,
-                                            DLCRefundSigsDb.unapply)
+      (dlcId, accepterSig, initiatorSig).<>(
+        DLCRefundSigsDb.tupled,
+        DLCRefundSigsDb.unapply
+      )
 
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_dlc_id",
-                 sourceColumns = dlcId,
-                 targetTableQuery = dlcTable)(_.dlcId)
+      foreignKey(
+        "fk_dlc_id",
+        sourceColumns = dlcId,
+        targetTableQuery = dlcTable
+      )(_.dlcId)
   }
 }

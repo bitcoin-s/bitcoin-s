@@ -14,10 +14,10 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** An optimized version of [[ChainHandler]] that avoids database reads
-  * for determining what the best block header is. This should be used
-  * with care as it is possible the cached [[blockchains]] may be out of date!
-  * Unless you know what you are doing, you should probably use [[ChainHandler]]
+/** An optimized version of [[ChainHandler]] that avoids database reads for
+  * determining what the best block header is. This should be used with care as
+  * it is possible the cached [[blockchains]] may be out of date! Unless you
+  * know what you are doing, you should probably use [[ChainHandler]]
   */
 case class ChainHandlerCached(
     override val blockHeaderDAO: BlockHeaderDAO,
@@ -27,14 +27,18 @@ case class ChainHandlerCached(
     blockchains: Vector[Blockchain],
     override val blockFilterCheckpoints: Map[
       DoubleSha256DigestBE,
-      DoubleSha256DigestBE])(implicit
+      DoubleSha256DigestBE
+    ]
+)(implicit
     override val chainConfig: ChainAppConfig,
-    executionContext: ExecutionContext)
-    extends ChainHandler(blockHeaderDAO,
-                         filterHeaderDAO,
-                         filterDAO,
-                         stateDAO,
-                         blockFilterCheckpoints) {
+    executionContext: ExecutionContext
+) extends ChainHandler(
+      blockHeaderDAO,
+      filterHeaderDAO,
+      filterDAO,
+      stateDAO,
+      blockFilterCheckpoints
+    ) {
 
   /** Gets the best block header from the given [[blockchains]] parameter */
   override def getBestBlockHeader(): Future[BlockHeaderDb] = {
@@ -44,7 +48,8 @@ case class ChainHandlerCached(
   }
 
   override def processHeaders(
-      headers: Vector[BlockHeader]): Future[ChainApi] = {
+      headers: Vector[BlockHeader]
+  ): Future[ChainApi] = {
     processHeadersWithChains(headers = headers, blockchains = blockchains)
   }
 
@@ -59,17 +64,22 @@ object ChainHandlerCached {
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
       filterDAO: CompactFilterDAO,
-      stateDAO: ChainStateDescriptorDAO)(implicit
+      stateDAO: ChainStateDescriptorDAO
+  )(implicit
       ec: ExecutionContext,
-      chainConfig: ChainAppConfig): Future[ChainHandlerCached] = {
+      chainConfig: ChainAppConfig
+  ): Future[ChainHandlerCached] = {
     val bestChainsF = blockHeaderDAO.getBlockchains()
 
     bestChainsF.map(chains =>
-      new ChainHandlerCached(blockHeaderDAO = blockHeaderDAO,
-                             filterHeaderDAO = filterHeaderDAO,
-                             filterDAO = filterDAO,
-                             stateDAO = stateDAO,
-                             blockchains = chains,
-                             blockFilterCheckpoints = Map.empty))
+      new ChainHandlerCached(
+        blockHeaderDAO = blockHeaderDAO,
+        filterHeaderDAO = filterHeaderDAO,
+        filterDAO = filterDAO,
+        stateDAO = stateDAO,
+        blockchains = chains,
+        blockFilterCheckpoints = Map.empty
+      )
+    )
   }
 }

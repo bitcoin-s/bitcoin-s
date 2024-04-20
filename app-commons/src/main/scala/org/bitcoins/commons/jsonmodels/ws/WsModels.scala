@@ -14,7 +14,9 @@ import ujson.Value
 
 import java.net.InetSocketAddress
 
-/** The event type being sent over the websocket. An example is [[WalletWsType.NewAddress]] */
+/** The event type being sent over the websocket. An example is
+  * [[WalletWsType.NewAddress]]
+  */
 sealed trait WsType
 
 object WsType extends StringFactory[WsType] {
@@ -46,15 +48,17 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object FeeRateChange extends WalletWsType
 
   private val all =
-    Vector(TxProcessed,
-           TxBroadcast,
-           ReservedUtxos,
-           NewAddress,
-           DLCStateChange,
-           DLCOfferAdd,
-           DLCOfferRemove,
-           RescanComplete,
-           FeeRateChange)
+    Vector(
+      TxProcessed,
+      TxBroadcast,
+      ReservedUtxos,
+      NewAddress,
+      DLCStateChange,
+      DLCOfferAdd,
+      DLCOfferRemove,
+      RescanComplete,
+      FeeRateChange
+    )
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -140,9 +144,9 @@ object DLCNodeWsType extends StringFactory[DLCNodeWsType] {
   }
 }
 
-/** A notification that we send over the websocket.
-  * The type of the notification is indicated by [[WsType]].
-  * An example is [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
+/** A notification that we send over the websocket. The type of the notification
+  * is indicated by [[WsType]]. An example is
+  * [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
   * This sends a notification that the wallet generated a new address
   */
 sealed trait WsNotification[T] {
@@ -263,13 +267,14 @@ object ChainNotification {
   }
 
   case class CompactFilterHeaderProcessedNotification(
-      payload: CompactFilterHeaderDb)
-      extends ChainNotification[CompactFilterHeaderDb] {
+      payload: CompactFilterHeaderDb
+  ) extends ChainNotification[CompactFilterHeaderDb] {
     override val `type`: ChainWsType = ChainWsType.CompactFilterHeaderProcessed
 
     override val json: ujson.Value = {
       upickle.default.writeJs(this)(
-        WsPicklers.compactFilterHeaderProcessedPickler)
+        WsPicklers.compactFilterHeaderProcessedPickler
+      )
     }
   }
 
@@ -311,7 +316,8 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionInitiated
 
     override def json: Value = upickle.default.writeJs(this)(
-      WsPicklers.dlcNodeConnectionInitiatedPickler)
+      WsPicklers.dlcNodeConnectionInitiatedPickler
+    )
   }
 
   case class DLCNodeConnectionEstablished(payload: InetSocketAddress)
@@ -319,7 +325,8 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionEstablished
 
     override def json: Value = upickle.default.writeJs(this)(
-      WsPicklers.dlcNodeConnectionEstablishedPickler)
+      WsPicklers.dlcNodeConnectionEstablishedPickler
+    )
   }
 
   case class DLCNodeConnectionFailed(payload: InetSocketAddress)

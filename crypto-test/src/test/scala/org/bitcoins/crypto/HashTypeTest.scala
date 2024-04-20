@@ -33,7 +33,7 @@ class HashTypeTest extends BitcoinSCryptoTest {
   }
 
   it must "find hashType for number 1190874345" in {
-    //1190874345 & 0x80 = 0x80
+    // 1190874345 & 0x80 = 0x80
     val num = 1190874345
     HashType(num).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
     HashType(ByteVector.fromInt(num))
@@ -67,18 +67,22 @@ class HashTypeTest extends BitcoinSCryptoTest {
   }
 
   it must "find each specific hashType from byte sequence of default value" in {
-    //tests each hashtypes overriding fromBytes function
+    // tests each hashtypes overriding fromBytes function
     HashType(HashType.sigHashAll.num) must be(HashType.sigHashAll)
     HashType(HashType.sigHashNone.num) must be(HashType.sigHashNone)
     HashType(HashType.sigHashSingle.num) must be(HashType.sigHashSingle)
     HashType(HashType.sigHashAnyoneCanPay.num) must be(
-      HashType.sigHashAnyoneCanPay)
+      HashType.sigHashAnyoneCanPay
+    )
     HashType(HashType.sigHashAllAnyoneCanPay.num) must be(
-      HashType.sigHashAllAnyoneCanPay)
+      HashType.sigHashAllAnyoneCanPay
+    )
     HashType(HashType.sigHashNoneAnyoneCanPay.num) must be(
-      HashType.sigHashNoneAnyoneCanPay)
+      HashType.sigHashNoneAnyoneCanPay
+    )
     HashType(HashType.sigHashSingleAnyoneCanPay.num) must be(
-      HashType.sigHashSingleAnyoneCanPay)
+      HashType.sigHashSingleAnyoneCanPay
+    )
   }
 
   it must "find a hashtype with only an integer" in {
@@ -91,11 +95,11 @@ class HashTypeTest extends BitcoinSCryptoTest {
 
       hashType.num == i32.toInt() &&
       i32.last == hashType.byte &&
-      //this check cannot check the other 3 bytes in
-      //hash type as they are discarded from inclusion
-      //on a bitcoin digital signature. Not sure why satoshi
-      //would have just used a uint8_t to represent a hash type
-      //instead of a uint32_t.
+      // this check cannot check the other 3 bytes in
+      // hash type as they are discarded from inclusion
+      // on a bitcoin digital signature. Not sure why satoshi
+      // would have just used a uint8_t to represent a hash type
+      // instead of a uint32_t.
       HashType.fromByte(hashType.byte).byte == hashType.byte
     }
 

@@ -39,15 +39,18 @@ trait NodeFeature extends Feature
 /** Feature that should be advertised in invoices. */
 trait InvoiceFeature extends Feature
 
-/** Feature negotiated when opening a channel that will apply for all of the channel's lifetime.
-  * This doesn't include features that can be safely activated/deactivated without impacting the channel's operation such
-  * as option_dataloss_protect or option_shutdown_anysegwit.
+/** Feature negotiated when opening a channel that will apply for all of the
+  * channel's lifetime. This doesn't include features that can be safely
+  * activated/deactivated without impacting the channel's operation such as
+  * option_dataloss_protect or option_shutdown_anysegwit.
   */
 trait PermanentChannelFeature extends InitFeature // <- not in the spec
 
-/** Permanent channel feature negotiated in the channel type. Those features take precedence over permanent channel
-  * features negotiated in init messages. For example, if the channel type is option_static_remotekey, then even if
-  * the option_anchor_outputs feature is supported by both peers, it won't apply to the channel.
+/** Permanent channel feature negotiated in the channel type. Those features
+  * take precedence over permanent channel features negotiated in init messages.
+  * For example, if the channel type is option_static_remotekey, then even if
+  * the option_anchor_outputs feature is supported by both peers, it won't apply
+  * to the channel.
   */
 
 trait ChannelTypeFeature extends PermanentChannelFeature // @formatter:on
@@ -56,7 +59,8 @@ case class UnknownFeature(bitIndex: Int)
 
 case class Features[T <: Feature](
     activated: Map[T, FeatureSupport],
-    unknown: Set[UnknownFeature] = Set.empty) {
+    unknown: Set[UnknownFeature] = Set.empty
+) {
 
   def isEmpty: Boolean = activated.isEmpty && unknown.isEmpty
 
@@ -69,7 +73,9 @@ case class Features[T <: Feature](
   def hasPluginFeature(feature: UnknownFeature): Boolean =
     unknown.contains(feature)
 
-  /** NB: this method is not reflexive, see [[Features.areCompatible]] if you want symmetric validation. */
+  /** NB: this method is not reflexive, see [[Features.areCompatible]] if you
+    * want symmetric validation.
+    */
   def areSupported(remoteFeatures: Features[T]): Boolean = {
     // we allow unknown odd features (it's ok to be odd)
     val unknownFeaturesOk = remoteFeatures.unknown.forall(_.bitIndex % 2 == 1)
@@ -89,11 +95,13 @@ case class Features[T <: Feature](
 
   def invoiceFeatures(): Features[InvoiceFeature] = Features(
     activated.collect { case (f: InvoiceFeature, s) => (f, s) },
-    unknown)
+    unknown
+  )
 
   def unscoped(): Features[Feature] = Features[Feature](
     activated.collect { case (f, s) => (f: Feature, s) },
-    unknown)
+    unknown
+  )
 
   def toByteVector: ByteVector = {
     val activatedFeatureBytes = toByteVectorFromIndex(activated.map {
@@ -102,7 +110,8 @@ case class Features[T <: Feature](
     val unknownFeatureBytes = toByteVectorFromIndex(unknown.map(_.bitIndex))
     val maxSize = activatedFeatureBytes.size.max(unknownFeatureBytes.size)
     activatedFeatureBytes.padLeft(maxSize) | unknownFeatureBytes.padLeft(
-      maxSize)
+      maxSize
+    )
   }
 
   private def toByteVectorFromIndex(indexes: Set[Int]): ByteVector = {
@@ -381,28 +390,32 @@ object Features {
       extends IllegalArgumentException(message)
 
   def validateFeatureGraph[T <: Feature](
-      features: Features[T]): Option[FeatureException] =
+      features: Features[T]
+  ): Option[FeatureException] =
     featuresDependency.collectFirst {
       case (feature, dependencies)
-          if features.unscoped().hasFeature(feature) && dependencies.exists(d =>
-            !features.unscoped().hasFeature(d)) =>
+          if features.unscoped().hasFeature(feature) && dependencies
+            .exists(d => !features.unscoped().hasFeature(d)) =>
         FeatureException(
           s"$feature is set but is missing a dependency (${dependencies
-            .filter(d => !features.unscoped().hasFeature(d))
-            .mkString(" and ")})")
+              .filter(d => !features.unscoped().hasFeature(d))
+              .mkString(" and ")})"
+        )
     }
 
   /** Returns true if both feature sets are compatible. */
   def areCompatible[T <: Feature](
       ours: Features[T],
-      theirs: Features[T]): Boolean =
+      theirs: Features[T]
+  ): Boolean =
     ours.areSupported(theirs) && theirs.areSupported(ours)
 
   /** returns true if both have at least optional support */
   def canUseFeature[T <: Feature](
       localFeatures: Features[T],
       remoteFeatures: Features[T],
-      feature: T): Boolean = {
+      feature: T
+  ): Boolean = {
     localFeatures.hasFeature(feature) && remoteFeatures.hasFeature(feature)
   }
 

@@ -8,11 +8,12 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** This trait defines functionality related to
-  * UTXOs (unspent transaction outputs).
+/** This trait defines functionality related to UTXOs (unspent transaction
+  * outputs).
   *
-  * @see [[https://bitcoin.org/en/developer-guide#term-utxo Bitcoin.org]]
-  *     developer guide article on UTXOs
+  * @see
+  *   [[https://bitcoin.org/en/developer-guide#term-utxo Bitcoin.org]] developer
+  *   guide article on UTXOs
   */
 trait UTXORpc { self: Client =>
 
@@ -27,38 +28,46 @@ trait UTXORpc { self: Client =>
 
   def listUnspent(
       minConfirmations: Int,
-      maxConfirmations: Int): Future[Vector[UnspentOutput]] =
+      maxConfirmations: Int
+  ): Future[Vector[UnspentOutput]] =
     listUnspent(minConfirmations, maxConfirmations, None)
 
   def listUnspent(
-      addresses: Vector[BitcoinAddress]): Future[Vector[UnspentOutput]] =
+      addresses: Vector[BitcoinAddress]
+  ): Future[Vector[UnspentOutput]] =
     listUnspent(addresses = addresses)
 
   def listUnspent(
       minConfirmations: Int,
       maxConfirmations: Int,
-      addresses: Vector[BitcoinAddress]): Future[Vector[UnspentOutput]] =
+      addresses: Vector[BitcoinAddress]
+  ): Future[Vector[UnspentOutput]] =
     listUnspent(minConfirmations, maxConfirmations, Some(addresses))
 
   private def listUnspent(
       minConfirmations: Int = 1,
       maxConfirmations: Int = 9999999,
       addresses: Option[Vector[BitcoinAddress]],
-      walletNameOpt: Option[String] = None): Future[Vector[UnspentOutput]] = {
+      walletNameOpt: Option[String] = None
+  ): Future[Vector[UnspentOutput]] = {
     val params =
       List(JsNumber(minConfirmations), JsNumber(maxConfirmations)) ++
         addresses.map(Json.toJson(_)).toList
-    bitcoindCall[Vector[UnspentOutput]]("listunspent",
-                                        params,
-                                        uriExtensionOpt =
-                                          walletNameOpt.map(walletExtension))
+    bitcoindCall[Vector[UnspentOutput]](
+      "listunspent",
+      params,
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def lockUnspent(
       unlock: Boolean,
-      outputs: Vector[RpcOpts.LockUnspentOutputParameter]): Future[Boolean] = {
-    bitcoindCall[Boolean]("lockunspent",
-                          List(JsBoolean(unlock), Json.toJson(outputs)))
+      outputs: Vector[RpcOpts.LockUnspentOutputParameter]
+  ): Future[Boolean] = {
+    bitcoindCall[Boolean](
+      "lockunspent",
+      List(JsBoolean(unlock), Json.toJson(outputs))
+    )
   }
 
 }

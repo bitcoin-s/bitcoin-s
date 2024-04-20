@@ -9,7 +9,7 @@ import org.scalatest.Assertion
 class TaprootWalletTestVectors extends BitcoinSUnitTest {
   behavior of "TaprootWalletTestVectors"
 
-  //from: https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json
+  // from: https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json
   lazy val url = getClass.getResource("/wallet-test-vectors.json")
 
   lazy val lines = {
@@ -18,7 +18,8 @@ class TaprootWalletTestVectors extends BitcoinSUnitTest {
 
   lazy val testCase: TaprootWalletTestCases = {
     upickle.default.read[TaprootWalletTestCases](lines)(
-      TaprootWalletTestCase.walletTestVectorReader)
+      TaprootWalletTestCase.walletTestVectorReader
+    )
   }
 
   lazy val tests: Vector[TaprootWalletTestCase] = testCase.tests
@@ -32,8 +33,10 @@ class TaprootWalletTestVectors extends BitcoinSUnitTest {
       } else {
         val leafHashes = `given`.leafHashes
         assert(leafHashes == intermediary.leafHashes.get)
-        assert(`given`.merkleRootOpt == intermediary.merkleRootOpt,
-               s"test=${test.expected.bip350Address}")
+        assert(
+          `given`.merkleRootOpt == intermediary.merkleRootOpt,
+          s"test=${test.expected.bip350Address}"
+        )
         checkOutput(test)
       }
     }

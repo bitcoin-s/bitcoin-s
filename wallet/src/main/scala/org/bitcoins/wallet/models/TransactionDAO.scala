@@ -18,8 +18,8 @@ trait TxCRUDComponent[DbEntryType <: TxDB] {
   abstract class TxTable[DbEntryType <: TxDB](
       tag: profile.api.Tag,
       schemaName: Option[String],
-      tableName: String)
-      extends Table[DbEntryType](tag, schemaName, tableName) {
+      tableName: String
+  ) extends Table[DbEntryType](tag, schemaName, tableName) {
     def txIdBE: Rep[DoubleSha256DigestBE]
   }
 }
@@ -41,39 +41,44 @@ trait TxDAO[DbEntryType <: TxDB]
     createAllNoAutoInc(ts, safeDatabase)
 
   override def findByPrimaryKeys(
-      txIdBEs: Vector[DoubleSha256DigestBE]): Query[DbTable, DbEntryType, Seq] =
+      txIdBEs: Vector[DoubleSha256DigestBE]
+  ): Query[DbTable, DbEntryType, Seq] =
     table.filter(_.txIdBE.inSet(txIdBEs))
 
   override def findByPrimaryKey(
-      txIdBE: DoubleSha256DigestBE): Query[DbTable, DbEntryType, Seq] = {
+      txIdBE: DoubleSha256DigestBE
+  ): Query[DbTable, DbEntryType, Seq] = {
     table.filter(_.txIdBE === txIdBE)
   }
 
   override def findAll(
-      txs: Vector[DbEntryType]): Query[DbTable, DbEntryType, Seq] =
+      txs: Vector[DbEntryType]
+  ): Query[DbTable, DbEntryType, Seq] =
     findByPrimaryKeys(txs.map(_.txIdBE))
 
   def findByOutPoint(
-      outPoint: TransactionOutPoint): Future[Option[DbEntryType]] = {
+      outPoint: TransactionOutPoint
+  ): Future[Option[DbEntryType]] = {
     findByTxId(outPoint.txId)
   }
 
   def findByOutPoints(
-      outPoints: Vector[TransactionOutPoint]): Future[Vector[DbEntryType]] = {
+      outPoints: Vector[TransactionOutPoint]
+  ): Future[Vector[DbEntryType]] = {
     findByTxIds(outPoints.map(_.txIdBE))
   }
 
   def findByTxIds(
-      txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
+      txIdBEs: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[DbEntryType]] = {
     val q = table.filter(_.txIdBE.inSet(txIdBEs))
 
     safeDatabase.runVec(q.result)
   }
 
-  def findByTxIdAction(txIdBE: DoubleSha256DigestBE): DBIOAction[
-    Option[DbEntryType],
-    NoStream,
-    Effect.Read] = {
+  def findByTxIdAction(
+      txIdBE: DoubleSha256DigestBE
+  ): DBIOAction[Option[DbEntryType], NoStream, Effect.Read] = {
     table
       .filter(_.txIdBE === txIdBE)
       .result
@@ -85,7 +90,8 @@ trait TxDAO[DbEntryType <: TxDB]
         case txs: Vector[DbEntryType] =>
           // yikes, we should not have more the one transaction per id
           throw new RuntimeException(
-            s"More than one transaction per id=${txIdBE.hex}, got=$txs")
+            s"More than one transaction per id=${txIdBE.hex}, got=$txs"
+          )
       }
   }
 
@@ -97,15 +103,16 @@ trait TxDAO[DbEntryType <: TxDB]
     findByTxId(txId.flip)
 
   def findByTxIdBEs(
-      txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
+      txIdBEs: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[DbEntryType]] = {
     safeDatabase.run(findByPrimaryKeys(txIdBEs).result).map(_.toVector)
   }
 }
 
 case class TransactionDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
-    extends TxDAO[TransactionDb] {
+    override val appConfig: WalletAppConfig
+) extends TxDAO[TransactionDb] {
 
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -150,16 +157,18 @@ case class TransactionDAO()(implicit
     def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
 
     def * : ProvenShape[TransactionDb] =
-      (txIdBE,
-       transaction,
-       unsignedTxIdBE,
-       unsignedTx,
-       wTxIdBEOpt,
-       totalOutput,
-       numInputs,
-       numOutputs,
-       locktime,
-       blockHash).<>(TransactionDb.tupled, TransactionDb.unapply)
+      (
+        txIdBE,
+        transaction,
+        unsignedTxIdBE,
+        unsignedTx,
+        wTxIdBEOpt,
+        totalOutput,
+        numInputs,
+        numOutputs,
+        locktime,
+        blockHash
+      ).<>(TransactionDb.tupled, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)

@@ -24,10 +24,12 @@ object OracleTestUtil {
   val testAddress: Bech32Address = Bech32Address.fromString(testAddressStr)
 
   val kVal: ECPrivateKey = ECPrivateKey.fromHex(
-    "447d4457dfff21354d56cb1b62b2ab6e5964c5ef93e6d74ae3b30dc83b89b6a5")
+    "447d4457dfff21354d56cb1b62b2ab6e5964c5ef93e6d74ae3b30dc83b89b6a5"
+  )
 
   val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
-    "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
+    "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853"
+  )
 
   val dummyKey: ECPublicKey = dummyPrivKey.publicKey
 
@@ -49,7 +51,8 @@ object OracleTestUtil {
     attestationOpt = Some(sig.sig),
     outcomeOpt = Some(outcome),
     announcementSignature = SchnorrDigitalSignature(
-      "1efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937e"),
+      "1efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937e"
+    ),
     eventDescriptorTLV = EnumEventDescriptorV0TLV.dummy
   )
 

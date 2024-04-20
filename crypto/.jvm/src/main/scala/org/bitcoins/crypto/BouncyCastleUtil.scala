@@ -36,7 +36,8 @@ object BouncyCastleUtil {
 
   private[crypto] def decodePubKey(
       point: ECPoint,
-      isCompressed: Boolean = true): ECPublicKey = {
+      isCompressed: Boolean = true
+  ): ECPublicKey = {
     val bytes = point.getEncoded(isCompressed)
     ECPublicKey.fromBytes(ByteVector(bytes))
   }
@@ -76,77 +77,94 @@ object BouncyCastleUtil {
 
   def sign(
       dataToSign: ByteVector,
-      privateKey: ECPrivateKey): ECDigitalSignature = {
+      privateKey: ECPrivateKey
+  ): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(
-      new HMacDSAKCalculator(new SHA256Digest()))
+      new HMacDSAKCalculator(new SHA256Digest())
+    )
     val privKey: ECPrivateKeyParameters =
-      new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
-                                 BouncyCastleCryptoParams.curve)
+      new ECPrivateKeyParameters(
+        getBigInteger(privateKey.bytes),
+        BouncyCastleCryptoParams.curve
+      )
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)
     val (r, s) = (components(0), components(1))
     val signature = ECDigitalSignature(r, s)
-    //make sure the signature follows BIP62's low-s value
-    //https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
-    //bitcoinj implementation
-    //https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
+    // make sure the signature follows BIP62's low-s value
+    // https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+    // bitcoinj implementation
+    // https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
     val signatureLowS = DERSignatureUtil.lowS(signature)
     require(
       signatureLowS.isDEREncoded,
-      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
+      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS
+    )
     signatureLowS
   }
 
   /** Create an ECDSA signature adding specified entropy.
     *
-    * This can be used to include your own entropy to nonce generation
-    * in addition to the message and private key, while still doing so deterministically.
+    * This can be used to include your own entropy to nonce generation in
+    * addition to the message and private key, while still doing so
+    * deterministically.
     *
     * In particular, this is used when generating low R signatures.
-    * @see [[https://github.com/bitcoin/bitcoin/pull/13666/]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/pull/13666/]]
     */
   def signWithEntropy(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      entropy: ByteVector): ECDigitalSignature = {
+      entropy: ByteVector
+  ): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(
-      new HMacDSAKCalculatorWithEntropy(new SHA256Digest(), entropy))
+      new HMacDSAKCalculatorWithEntropy(new SHA256Digest(), entropy)
+    )
     val privKey: ECPrivateKeyParameters =
-      new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
-                                 BouncyCastleCryptoParams.curve)
+      new ECPrivateKeyParameters(
+        getBigInteger(privateKey.bytes),
+        BouncyCastleCryptoParams.curve
+      )
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)
     val (r, s) = (components(0), components(1))
     val signature = ECDigitalSignature(r, s)
-    //make sure the signature follows BIP62's low-s value
-    //https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
-    //bitcoinj implementation
-    //https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
+    // make sure the signature follows BIP62's low-s value
+    // https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+    // bitcoinj implementation
+    // https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
     val signatureLowS = DERSignatureUtil.lowS(signature)
     require(
       signatureLowS.isDEREncoded,
-      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
+      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS
+    )
     signatureLowS
   }
 
   def verifyDigitalSignature(
       data: ByteVector,
       publicKey: ECPublicKeyApi,
-      signature: ECDigitalSignature): Boolean = {
+      signature: ECDigitalSignature
+  ): Boolean = {
     val resultTry = Try {
       val publicKeyParams =
-        new ECPublicKeyParameters(decodePoint(publicKey.bytes),
-                                  BouncyCastleCryptoParams.curve)
+        new ECPublicKeyParameters(
+          decodePoint(publicKey.bytes),
+          BouncyCastleCryptoParams.curve
+        )
 
       val signer = new ECDSASigner
       signer.init(false, publicKeyParams)
       signature match {
         case EmptyDigitalSignature =>
-          signer.verifySignature(data.toArray,
-                                 java.math.BigInteger.valueOf(0),
-                                 java.math.BigInteger.valueOf(0))
+          signer.verifySignature(
+            data.toArray,
+            java.math.BigInteger.valueOf(0),
+            java.math.BigInteger.valueOf(0)
+          )
         case _: ECDigitalSignature =>
           val (r, s) = signature.decodeSignature
           signer.verifySignature(data.toArray, r.bigInteger, s.bigInteger)

@@ -8,8 +8,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class ServerBindings(
     httpServer: Http.ServerBinding,
-    webSocketServerOpt: Option[Http.ServerBinding])
-    extends BitcoinSLogger {
+    webSocketServerOpt: Option[Http.ServerBinding]
+) extends BitcoinSLogger {
 
   private val terminateTimeout = 5.seconds
 

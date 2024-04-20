@@ -18,13 +18,16 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
     for {
       _ <- CLightningRpcTestUtil.connectLNNodes(clightningA, clightningB)
       nodeId <- clightningB.nodeId
-      fundDetails <- clightningA.initChannelOpen(nodeId = nodeId,
-                                                 amount = amount,
-                                                 privateChannel = false)
+      fundDetails <- clightningA.initChannelOpen(
+        nodeId = nodeId,
+        amount = amount,
+        privateChannel = false
+      )
     } yield {
       assert(
         fundDetails.funding_address.scriptPubKey
-          .isInstanceOf[P2WSHWitnessSPKV0])
+          .isInstanceOf[P2WSHWitnessSPKV0]
+      )
     }
   }
 
@@ -40,14 +43,18 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       _ = assert(preChannelsB.isEmpty)
 
       nodeId <- clightningB.nodeId
-      fundDetails <- clightningA.initChannelOpen(nodeId = nodeId,
-                                                 amount = amount,
-                                                 privateChannel = false)
+      fundDetails <- clightningA.initChannelOpen(
+        nodeId = nodeId,
+        amount = amount,
+        privateChannel = false
+      )
 
       // construct psbt
       psbt <- bitcoind
-        .walletCreateFundedPsbt(Vector.empty,
-                                Map(fundDetails.funding_address -> amount))
+        .walletCreateFundedPsbt(
+          Vector.empty,
+          Map(fundDetails.funding_address -> amount)
+        )
         .map(_.psbt)
       // fund channel with psbt
       _ <- clightningA.completeChannelOpen(nodeId, psbt)
@@ -66,11 +73,13 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningA.listChannels().map(_.nonEmpty),
         interval = 1.second,
-        maxTries = 500)
+        maxTries = 500
+      )
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningB.listChannels().map(_.nonEmpty),
         interval = 1.second,
-        maxTries = 500)
+        maxTries = 500
+      )
     } yield succeed
   }
 
@@ -86,14 +95,18 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       _ = assert(preChannelsB.isEmpty)
 
       nodeId <- clightningB.nodeId
-      fundDetails <- clightningA.initChannelOpen(nodeId = nodeId,
-                                                 amount = amount,
-                                                 privateChannel = false)
+      fundDetails <- clightningA.initChannelOpen(
+        nodeId = nodeId,
+        amount = amount,
+        privateChannel = false
+      )
 
       // construct psbt
       psbt <- bitcoind
-        .walletCreateFundedPsbt(Vector.empty,
-                                Map(fundDetails.funding_address -> amount))
+        .walletCreateFundedPsbt(
+          Vector.empty,
+          Map(fundDetails.funding_address -> amount)
+        )
         .map(_.psbt)
       // fund channel with psbt
       _ <- clightningA.completeChannelOpen(nodeId, psbt)
@@ -115,11 +128,13 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningA.listChannels().map(_.isEmpty),
         interval = 1.second,
-        maxTries = 500)
+        maxTries = 500
+      )
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningB.listChannels().map(_.isEmpty),
         interval = 1.second,
-        maxTries = 500)
+        maxTries = 500
+      )
     } yield succeed
   }
 }

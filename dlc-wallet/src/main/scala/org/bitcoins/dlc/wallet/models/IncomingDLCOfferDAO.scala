@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class IncomingDLCOfferDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[IncomingDLCOfferDb, Sha256Digest]
+    override val appConfig: DLCAppConfig
+) extends CRUD[IncomingDLCOfferDb, Sha256Digest]
     with SlickUtil[IncomingDLCOfferDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
@@ -22,25 +22,22 @@ case class IncomingDLCOfferDAO()(implicit
     TableQuery[IncomingDLCOfferTable]
 
   override def createAll(
-      ts: Vector[IncomingDLCOfferDb]): Future[Vector[IncomingDLCOfferDb]] =
+      ts: Vector[IncomingDLCOfferDb]
+  ): Future[Vector[IncomingDLCOfferDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findAllAction(): DBIOAction[
-    Vector[IncomingDLCOfferDb],
-    NoStream,
-    Effect.Read] =
+  override def findAllAction()
+      : DBIOAction[Vector[IncomingDLCOfferDb], NoStream, Effect.Read] =
     table.sortBy(_.receivedAt.desc).result.map(_.toVector)
 
-  override protected def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
-    Table[IncomingDLCOfferDb],
-    IncomingDLCOfferDb,
-    Seq] =
+  override protected def findByPrimaryKeys(
+      ids: Vector[Sha256Digest]
+  ): Query[Table[IncomingDLCOfferDb], IncomingDLCOfferDb, Seq] =
     table.filter(_.hash.inSet(ids))
 
-  override protected def findAll(ts: Vector[IncomingDLCOfferDb]): Query[
-    Table[IncomingDLCOfferDb],
-    IncomingDLCOfferDb,
-    Seq] =
+  override protected def findAll(
+      ts: Vector[IncomingDLCOfferDb]
+  ): Query[Table[IncomingDLCOfferDb], IncomingDLCOfferDb, Seq] =
     findByPrimaryKeys(ts.map(_.hash))
 
   def delete(pk: Sha256Digest): Future[Int] = {
@@ -67,10 +64,12 @@ case class IncomingDLCOfferDAO()(implicit
     def offerTLV: Rep[DLCOfferTLV] = column("offer_tlv")
 
     override def * =
-      (hash,
-       receivedAt,
-       peer,
-       message,
-       offerTLV) <> (IncomingDLCOfferDb.tupled, IncomingDLCOfferDb.unapply)
+      (
+        hash,
+        receivedAt,
+        peer,
+        message,
+        offerTLV
+      ) <> (IncomingDLCOfferDb.tupled, IncomingDLCOfferDb.unapply)
   }
 }

@@ -50,11 +50,14 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       } yield {
         assert(listAddressesForAcct.nonEmpty)
         assert(listAddressesForAcct.map(_.address).contains(address))
-        assert(exists,
-               s"Wallet must contain address in specific after generating it")
+        assert(
+          exists,
+          s"Wallet must contain address in specific after generating it"
+        )
         assert(
           doesNotExist,
-          s"Wallet must NOT contain address in default account when address is specified")
+          s"Wallet must NOT contain address in default account when address is specified"
+        )
       }
   }
 
@@ -87,8 +90,10 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         addresses <- addressesF
       } yield {
         assert(addresses.size == 10)
-        assert(addresses.distinct.length == addresses.length,
-               s"We receive an identical address!")
+        assert(
+          addresses.distinct.length == addresses.length,
+          s"We receive an identical address!"
+        )
 
       }
   }
@@ -100,7 +105,8 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       emptySpentAddresses <- wallet.listSpentAddresses()
       _ = assert(
         emptySpentAddresses.isEmpty,
-        s"Wallet did not start with empty spent addresses, got $emptySpentAddresses")
+        s"Wallet did not start with empty spent addresses, got $emptySpentAddresses"
+      )
 
       tempAddress <- wallet.getNewAddress()
       tx <- wallet.sendToAddress(tempAddress, Bitcoins(1), None)
@@ -123,8 +129,11 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     } yield {
       val diff = unspentDbs
         .map(_.output)
-        .diff(fundedAddresses.map(tuple =>
-          TransactionOutput(tuple._2, tuple._1.scriptPubKey)))
+        .diff(
+          fundedAddresses.map(tuple =>
+            TransactionOutput(tuple._2, tuple._1.scriptPubKey)
+          )
+        )
       assert(diff.isEmpty, s"Extra funded addresses $diff")
     }
   }

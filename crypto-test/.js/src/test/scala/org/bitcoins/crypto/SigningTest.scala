@@ -26,14 +26,16 @@ class SigningTest extends BitcoinSCryptoTest {
   it must "pass the BIP 340 test-vectors with bcrypto" in {
     BIP340TestVectors.vectors.foreach {
       case (index, secKeyOpt, pubKey, auxRandOpt, msg, sig, result, comment) =>
-        test(index = index,
-             secKeyOpt = secKeyOpt,
-             pubKey = pubKey,
-             auxRandOpt = auxRandOpt,
-             msg = msg,
-             sig = sig,
-             result = result,
-             comment = comment)
+        test(
+          index = index,
+          secKeyOpt = secKeyOpt,
+          pubKey = pubKey,
+          auxRandOpt = auxRandOpt,
+          msg = msg,
+          sig = sig,
+          result = result,
+          comment = comment
+        )
     }
   }
 
@@ -45,7 +47,8 @@ class SigningTest extends BitcoinSCryptoTest {
       msg: String,
       sig: String,
       result: Boolean,
-      comment: String): Assertion = {
+      comment: String
+  ): Assertion = {
     val pkT = Try(SchnorrPublicKey(pubKey))
     val msgBytes = ByteVector.fromHex(msg).get
     val schnorrSigT = Try(SchnorrDigitalSignature(sig))
@@ -75,11 +78,14 @@ class SigningTest extends BitcoinSCryptoTest {
       secKey: ECPrivateKey,
       auxRand: ByteVector,
       msg: ByteVector,
-      expectedSig: SchnorrDigitalSignature): Assertion = {
+      expectedSig: SchnorrDigitalSignature
+  ): Assertion = {
     val bcryptoSig =
       BCryptoCryptoRuntime.schnorrSign(msg, secKey, auxRand)
-    assert(bcryptoSig == expectedSig,
-           s"Test $index failed signing for Bouncy Castle")
+    assert(
+      bcryptoSig == expectedSig,
+      s"Test $index failed signing for Bouncy Castle"
+    )
   }
 
   def testVerify(
@@ -88,11 +94,14 @@ class SigningTest extends BitcoinSCryptoTest {
       msg: ByteVector,
       sig: SchnorrDigitalSignature,
       expectedResult: Boolean,
-      comment: String): Assertion = {
+      comment: String
+  ): Assertion = {
     val bcryptoResult =
       BCryptoCryptoRuntime.schnorrVerify(msg, pubKey, sig)
-    assert(bcryptoResult == expectedResult,
-           s"Test $index failed verification for Bouncy Castle: $comment")
+    assert(
+      bcryptoResult == expectedResult,
+      s"Test $index failed verification for Bouncy Castle: $comment"
+    )
   }
 
 }

@@ -18,7 +18,8 @@ case class DLCAcceptDb(
     collateral: CurrencyUnit,
     changeAddress: BitcoinAddress,
     changeSerialId: UInt64,
-    negotiationFieldsTLV: NegotiationFieldsTLV) {
+    negotiationFieldsTLV: NegotiationFieldsTLV
+) {
 
   lazy val negotiationFields: NegotiationFields =
     NegotiationFields.fromTLV(negotiationFieldsTLV)
@@ -27,7 +28,8 @@ case class DLCAcceptDb(
       tempContractId: Sha256Digest,
       fundingInputs: Vector[DLCFundingInput],
       outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
-      refundSig: PartialSignature): DLCAccept = {
+      refundSig: PartialSignature
+  ): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, payoutAddress)
     val cetSigs = CETSignatures(outcomeSigs)
@@ -47,7 +49,8 @@ case class DLCAcceptDb(
 
   def toDLCAcceptWithoutSigs(
       tempContractId: Sha256Digest,
-      fundingInputs: Vector[DLCFundingInput]): DLCAcceptWithoutSigs = {
+      fundingInputs: Vector[DLCFundingInput]
+  ): DLCAcceptWithoutSigs = {
     val pubKeys =
       DLCPublicKeys(fundingKey, payoutAddress)
 

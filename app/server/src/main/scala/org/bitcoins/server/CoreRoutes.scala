@@ -123,12 +123,15 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
 
             val optionalsJson: Vector[(String, Num)] = {
               val fee = psbt.feeOpt.map(fee =>
-                "fee" -> Num(fee.satoshis.toLong.toDouble))
+                "fee" -> Num(fee.satoshis.toLong.toDouble)
+              )
               val vsize =
                 psbt.estimateVSize.map(vsize =>
-                  "estimated_vsize" -> Num(vsize.toDouble))
+                  "estimated_vsize" -> Num(vsize.toDouble)
+                )
               val feeRate = psbt.estimateSatsPerVByte.map(feeRate =>
-                "estimated_sats_vbyte" -> Num(feeRate.toLong.toDouble))
+                "estimated_sats_vbyte" -> Num(feeRate.toLong.toDouble)
+              )
 
               Vector(fee, vsize, feeRate).flatten
             }
@@ -172,7 +175,8 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
         case DecodeContractInfo(contractInfo) =>
           complete {
             Server.httpSuccess(
-              writeJs(contractInfo)(contractInfoV0TLVJsonWriter))
+              writeJs(contractInfo)(contractInfoV0TLVJsonWriter)
+            )
           }
       }
 
@@ -181,7 +185,8 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
         case DecodeAnnouncement(announcement) =>
           complete {
             Server.httpSuccess(
-              writeJs(announcement)(oracleAnnouncementTLVJsonWriter))
+              writeJs(announcement)(oracleAnnouncementTLVJsonWriter)
+            )
           }
       }
 

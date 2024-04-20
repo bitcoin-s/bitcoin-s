@@ -13,14 +13,13 @@ import org.bitcoins.crypto.{
 
 import scala.annotation.tailrec
 
-/** Useful helper methods for getting
-  * block header related data for
-  * unit tests.
+/** Useful helper methods for getting block header related data for unit tests.
   */
 abstract class BlockHeaderHelper {
 
   /** The previous block to this was [[header2]]
-    * @see [[https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec height #566,093]]
+    * @see
+    *   [[https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec height #566,093]]
     */
   val header1: BlockHeader = {
     val hex =
@@ -29,14 +28,17 @@ abstract class BlockHeaderHelper {
   }
 
   val header1Db: BlockHeaderDb = {
-    BlockHeaderDbHelper.fromBlockHeader(566093,
-                                        Pow.getBlockProof(header1),
-                                        header1)
+    BlockHeaderDbHelper.fromBlockHeader(
+      566093,
+      Pow.getBlockProof(header1),
+      header1
+    )
   }
 
   /** The next block is [[header1]] after this block
     * 000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4
-    * @see [[https://blockstream.info/block/000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4 #566,092]]
+    * @see
+    *   [[https://blockstream.info/block/000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4 #566,092]]
     */
   val header2: BlockHeader = {
     val hex =
@@ -50,15 +52,19 @@ abstract class BlockHeaderHelper {
   }
 
   lazy val twoValidHeaders: Vector[BlockHeader] = {
-    //https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec?expand
+    // https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec?expand
     val headers = Vector(header1, header2)
     headers
   }
 
-  /** Gives us a block header that has a bad prev hash (can't connect to anything */
+  /** Gives us a block header that has a bad prev hash (can't connect to
+    * anything
+    */
   lazy val badPrevHash: BlockHeader = {
-    BlockHeaderHelper.withPrevhash(bh = header1,
-                                   newPrevHash = DoubleSha256DigestBE.empty)
+    BlockHeaderHelper.withPrevhash(
+      bh = header1,
+      newPrevHash = DoubleSha256DigestBE.empty
+    )
   }
 
   lazy val badNonce: BlockHeader = {
@@ -72,40 +78,48 @@ abstract class BlockHeaderHelper {
   /** Modifies the given block header with the newPrevHash */
   def withPrevhash(
       bh: BlockHeader,
-      newPrevHash: DoubleSha256DigestBE): BlockHeader = {
-    BlockHeader(version = bh.version,
-                previousBlockHash = newPrevHash.flip,
-                merkleRootHash = bh.merkleRootHash,
-                time = bh.time,
-                nBits = bh.nBits,
-                nonce = bh.nonce)
+      newPrevHash: DoubleSha256DigestBE
+  ): BlockHeader = {
+    BlockHeader(
+      version = bh.version,
+      previousBlockHash = newPrevHash.flip,
+      merkleRootHash = bh.merkleRootHash,
+      time = bh.time,
+      nBits = bh.nBits,
+      nonce = bh.nonce
+    )
   }
 
   /** Modifies the given block header with the new nonce */
   def withNonce(bh: BlockHeader, newNonce: UInt32): BlockHeader = {
-    BlockHeader(version = bh.version,
-                previousBlockHash = bh.previousBlockHash,
-                merkleRootHash = bh.merkleRootHash,
-                time = bh.time,
-                nBits = bh.nBits,
-                nonce = newNonce)
+    BlockHeader(
+      version = bh.version,
+      previousBlockHash = bh.previousBlockHash,
+      merkleRootHash = bh.merkleRootHash,
+      time = bh.time,
+      nBits = bh.nBits,
+      nonce = newNonce
+    )
   }
 
   /** Modifies the given block header with the new nBits */
   def withNBits(bh: BlockHeader, newNBits: UInt32): BlockHeader = {
-    BlockHeader(version = bh.version,
-                previousBlockHash = bh.previousBlockHash,
-                merkleRootHash = bh.merkleRootHash,
-                time = bh.time,
-                nBits = newNBits,
-                nonce = bh.nonce)
+    BlockHeader(
+      version = bh.version,
+      previousBlockHash = bh.previousBlockHash,
+      merkleRootHash = bh.merkleRootHash,
+      time = bh.time,
+      nBits = newNBits,
+      nonce = bh.nonce
+    )
   }
 
-  /** Builds a block header on top the given prev header
-    * The only consensus requirement that this method adheres to
-    * with the returned [[org.bitcoins.chain.models.BlockHeaderDb]] is that
-    * 1. We reference the [[org.bitcoins.chain.models.BlockHeaderDb.blockHeader.hash]] correct
-    * 2. We increment the height of [[prevHeader]] by one
+  /** Builds a block header on top the given prev header The only consensus
+    * requirement that this method adheres to with the returned
+    * [[org.bitcoins.chain.models.BlockHeaderDb]] is that
+    *   1. We reference the
+    *      [[org.bitcoins.chain.models.BlockHeaderDb.blockHeader.hash]] correct
+    *      2. We increment the height of [[prevHeader]] by one
     * @param prevHeader
     * @return
     */
@@ -116,25 +130,27 @@ abstract class BlockHeaderHelper {
       BlockHeader(
         version = Int32(5),
         previousBlockHash = prevHash,
-        //get random 32 bytes
+        // get random 32 bytes
         merkleRootHash =
           DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
         time = prevHeader.time + UInt32.one,
         nBits = prevHeader.nBits,
-        //generate random uint32 for nonce
+        // generate random uint32 for nonce
         nonce =
           UInt32(Math.abs(scala.util.Random.nextInt() % UInt32.max.toLong))
       )
     }
 
-    //check if header meets pow requirement, if it doesn't generate another
+    // check if header meets pow requirement, if it doesn't generate another
     if (TipValidation.isBadNonce(blockHeader)) {
       buildNextHeader(prevHeader)
     } else {
       val chainWork = prevHeader.chainWork + Pow.getBlockProof(blockHeader)
-      BlockHeaderDbHelper.fromBlockHeader(prevHeader.height + 1,
-                                          chainWork,
-                                          blockHeader)
+      BlockHeaderDbHelper.fromBlockHeader(
+        prevHeader.height + 1,
+        chainWork,
+        blockHeader
+      )
     }
   }
 }

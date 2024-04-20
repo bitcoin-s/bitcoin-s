@@ -27,20 +27,25 @@ trait LndRouterClient { self: LndRpcClient =>
   def queryRoutes(
       amount: CurrencyUnit,
       node: NodeId,
-      routeHints: Vector[LnRoute]): Future[QueryRoutesResponse] = {
+      routeHints: Vector[LnRoute]
+  ): Future[QueryRoutesResponse] = {
     val hopHints = routeHints.map { hint =>
-      HopHint(hint.pubkey.hex,
-              hint.shortChannelID.u64,
-              UInt32(hint.feeBaseMsat.msat.toLong),
-              hint.feePropMilli.u32,
-              UInt32(hint.cltvExpiryDelta))
+      HopHint(
+        hint.pubkey.hex,
+        hint.shortChannelID.u64,
+        UInt32(hint.feeBaseMsat.msat.toLong),
+        hint.feePropMilli.u32,
+        UInt32(hint.cltvExpiryDelta)
+      )
     }
     val request =
-      QueryRoutesRequest(pubKey = node.pubKey.hex,
-                         amt = amount.satoshis.toLong,
-                         finalCltvDelta = 80,
-                         useMissionControl = true,
-                         routeHints = Vector(RouteHint(hopHints)))
+      QueryRoutesRequest(
+        pubKey = node.pubKey.hex,
+        amt = amount.satoshis.toLong,
+        finalCltvDelta = 80,
+        useMissionControl = true,
+        routeHints = Vector(RouteHint(hopHints))
+      )
 
     queryRoutes(request)
   }
@@ -72,7 +77,8 @@ trait LndRouterClient { self: LndRpcClient =>
   def probe(
       amount: Satoshis,
       node: NodeId,
-      routeHints: Vector[LnRoute]): Future[Vector[Route]] = {
+      routeHints: Vector[LnRoute]
+  ): Future[Vector[Route]] = {
     queryRoutes(amount, node, routeHints).map(_.routes).flatMap { routes =>
       val fs = routes.toVector.map { route =>
         val fakeHash = CryptoUtil.sha256(ECPrivateKey.freshPrivateKey.bytes)
@@ -82,27 +88,33 @@ trait LndRouterClient { self: LndRpcClient =>
       Future.sequence(fs).map { results =>
         results
           .filter(
-            _._2.failure.exists(_.code == INCORRECT_OR_UNKNOWN_PAYMENT_DETAILS))
+            _._2.failure.exists(_.code == INCORRECT_OR_UNKNOWN_PAYMENT_DETAILS)
+          )
           .map(_._1)
       }
     }
   }
 
   def sendToRoute(invoice: LnInvoice, route: Route): Future[HTLCAttempt] = {
-    sendToRoute(invoice.lnTags.paymentHash.hash,
-                route,
-                invoice.lnTags.secret.map(_.secret))
+    sendToRoute(
+      invoice.lnTags.paymentHash.hash,
+      route,
+      invoice.lnTags.secret.map(_.secret)
+    )
   }
 
   def sendToRoute(
       paymentHash: Sha256Digest,
       route: Route,
-      secretOpt: Option[PaymentSecret]): Future[HTLCAttempt] = {
+      secretOpt: Option[PaymentSecret]
+  ): Future[HTLCAttempt] = {
     val updatedRoute = secretOpt match {
       case Some(secret) =>
         val last = route.hops.last
-        val mpp = MPPRecord(paymentAddr = secret.bytes,
-                            totalAmtMsat = route.totalAmtMsat)
+        val mpp = MPPRecord(
+          paymentAddr = secret.bytes,
+          totalAmtMsat = route.totalAmtMsat
+        )
         val update = last.copy(mppRecord = Some(mpp), tlvPayload = true)
         val updatedHops = route.hops.init :+ update
 
@@ -111,8 +123,10 @@ trait LndRouterClient { self: LndRpcClient =>
     }
 
     val request =
-      SendToRouteRequest(paymentHash = paymentHash.bytes,
-                         route = Some(updatedRoute))
+      SendToRouteRequest(
+        paymentHash = paymentHash.bytes,
+        route = Some(updatedRoute)
+      )
 
     sendToRoute(request)
   }
@@ -126,7 +140,8 @@ trait LndRouterClient { self: LndRpcClient =>
 
   def attemptToPayRoutes(
       invoice: LnInvoice,
-      routes: Vector[Route]): Future[Option[HTLCAttempt]] = {
+      routes: Vector[Route]
+  ): Future[Option[HTLCAttempt]] = {
     val init: Option[HTLCAttempt] = None
     FutureUtil.foldLeftAsync(init, routes) { case (ret, route) =>
       ret match {

@@ -16,11 +16,13 @@ object MockChainQueryApi extends ChainQueryApi {
 
   // This is a random block on testnet
   val testBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE.fromHex(
-    "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
+    "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75"
+  )
 
   /** Gets the height of the given block */
   override def getBlockHeight(
-      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[Int]] = {
     if (blockHash == testBlockHash) {
       Future.successful(Some(1))
     } else if (
@@ -36,7 +38,8 @@ object MockChainQueryApi extends ChainQueryApi {
 
   /** Gets number of confirmations for the given block hash */
   override def getNumberOfConfirmations(
-      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[Int]] = {
     if (blockHash == testBlockHash) {
       Future.successful(Some(6))
     } else FutureUtil.none
@@ -51,7 +54,8 @@ object MockChainQueryApi extends ChainQueryApi {
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[FilterResponse]] =
+      endHeight: Int
+  ): Future[Vector[FilterResponse]] =
     Future.successful {
 
       import scodec.bits._
@@ -85,10 +89,13 @@ object MockChainQueryApi extends ChainQueryApi {
           hex"c14d41b2d5aefaf539e989f7fa097eac657c70b975c56e26b73fb9401ce3" ++
           hex"81502f0883d52c6a3bcc956e0ea1787f0717d0205fecfe55b01edb1ac0"
       Vector(
-        FilterResponse(compactFilter = BlockFilter
-                         .fromBytes(filterBytes, testBlockHash.flip),
-                       blockHash = testBlockHash,
-                       blockHeight = 1))
+        FilterResponse(
+          compactFilter = BlockFilter
+            .fromBytes(filterBytes, testBlockHash.flip),
+          blockHash = testBlockHash,
+          blockHeight = 1
+        )
+      )
     }
 
   override def epochSecondToBlockHeight(time: Long): Future[Int] =

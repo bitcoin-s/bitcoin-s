@@ -8,4 +8,5 @@ import scala.concurrent.Promise
 case class AddressRequest(
     accountDb: AccountDb,
     chainType: HDChainType,
-    promise: Promise[AddressDb])
+    promise: Promise[AddressDb]
+)

@@ -47,7 +47,7 @@ class UInt32Test extends BitcoinSUnitTest {
   }
 
   it must "create the number 4294967295" in {
-    //this is UInt32_t's max value
+    // this is UInt32_t's max value
     val uInt32 =
       UInt32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt32.toLong must be(4294967295L)

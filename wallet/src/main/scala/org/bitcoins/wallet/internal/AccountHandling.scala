@@ -13,8 +13,8 @@ import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.Future
 
-/** Provides functionality related enumerating accounts. Account
-  * creation does not happen here, as that requires an unlocked wallet.
+/** Provides functionality related enumerating accounts. Account creation does
+  * not happen here, as that requires an unlocked wallet.
   */
 private[wallet] trait AccountHandling { self: Wallet =>
 
@@ -26,7 +26,9 @@ private[wallet] trait AccountHandling { self: Wallet =>
     account.getOrElse(
       throw new RuntimeException(
         s"Could not find account with ${DEFAULT_HD_COIN.purpose.constant} " +
-          s"purpose field and ${DEFAULT_HD_COIN.coinType.toInt} coin field"))
+          s"purpose field and ${DEFAULT_HD_COIN.coinType.toInt} coin field"
+      )
+    )
 
   /** @inheritdoc */
   override def getDefaultAccount(): Future[AccountDb] = {
@@ -46,7 +48,8 @@ private[wallet] trait AccountHandling { self: Wallet =>
 
   /** @inheritdoc */
   override def getDefaultAccountForType(
-      addressType: AddressType): Future[AccountDb] = {
+      addressType: AddressType
+  ): Future[AccountDb] = {
     val hdCoin = addressType match {
       case Legacy       => HDCoin(HDPurposes.Legacy, DEFAULT_HD_COIN_TYPE)
       case NestedSegWit => HDCoin(HDPurposes.NestedSegWit, DEFAULT_HD_COIN_TYPE)
@@ -63,8 +66,8 @@ private[wallet] trait AccountHandling { self: Wallet =>
     HDCoin(walletConfig.defaultAccountKind, coinType)
   }
 
-  /** The default HD coin type for this wallet, derived from
-    * the network we're on
+  /** The default HD coin type for this wallet, derived from the network we're
+    * on
     */
   protected[wallet] lazy val DEFAULT_HD_COIN_TYPE: HDCoinType = {
     chainParams match {

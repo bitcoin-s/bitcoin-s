@@ -34,9 +34,9 @@ case class ValueIterator(value: ByteVector) {
     bytes
   }
 
-  /** IMPORTANT: This only works for factories which read off of
-    * the front of a ByteVector without consuming the whole thing.
-    * If this is not the case, you must specify how many bytes.
+  /** IMPORTANT: This only works for factories which read off of the front of a
+    * ByteVector without consuming the whole thing. If this is not the case, you
+    * must specify how many bytes.
     */
   def take[E <: NetworkElement](factory: Factory[E]): E = {
     val elem = factory(current)
@@ -50,8 +50,10 @@ case class ValueIterator(value: ByteVector) {
   }
 
   def takeBits(numBits: Int): ByteVector = {
-    require(numBits % 8 == 0,
-            s"Must take a round byte number of bits, got $numBits")
+    require(
+      numBits % 8 == 0,
+      s"Must take a round byte number of bits, got $numBits"
+    )
     take(numBytes = numBits / 8)
   }
 
@@ -109,7 +111,8 @@ case class ValueIterator(value: ByteVector) {
       case TRUE_BYTE  => true
       case byte: Byte =>
         throw new RuntimeException(
-          s"Boolean values must be 0x00 or 0x01, got $byte")
+          s"Boolean values must be 0x00 or 0x01, got $byte"
+        )
     }
   }
 

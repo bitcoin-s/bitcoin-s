@@ -44,10 +44,11 @@ case class TapLeaf(leafVersion: Byte, spk: ScriptPubKey) extends TapscriptTree {
 object TapLeaf {
   val leafVersion: Byte = 0xc0.toByte
 
-  /** BIP342 specifies validity rules that apply for leaf version 0xc0,
-    * but future proposals can introduce rules for other leaf versions.
+  /** BIP342 specifies validity rules that apply for leaf version 0xc0, but
+    * future proposals can introduce rules for other leaf versions.
     *
-    * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
+    * @see
+    *   https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
     */
   val knownLeafVersions: Vector[Byte] = Vector(leafVersion, 0xc1.toByte)
 }
@@ -63,7 +64,7 @@ object TapscriptTree {
           if (x.length == 2) {
             TapBranch(x(0), x(1))
           } else {
-            x(0) //odd number of leafs
+            x(0) // odd number of leafs
           }
         }
         loop(branches.toVector)

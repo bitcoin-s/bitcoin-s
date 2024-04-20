@@ -15,15 +15,18 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 
 /** RPC calls in V18 that use descriptor to give us output information
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/deriveaddresses/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/getdescriptorinfo/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/deriveaddresses/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/getdescriptorinfo/]]
   */
 trait DescriptorRpc {
   self: Client =>
 
   def deriveAddresses(
       descriptor: Descriptor,
-      range: Option[Vector[Double]]): Future[DeriveAddressesResult] = {
+      range: Option[Vector[Double]]
+  ): Future[DeriveAddressesResult] = {
     val params =
       if (range.isDefined)
         List(DescriptorWrites.writes(descriptor), Json.toJson(range))
@@ -32,24 +35,30 @@ trait DescriptorRpc {
   }
 
   def getDescriptorInfo(
-      descriptor: Descriptor): Future[GetDescriptorInfoResult] = {
+      descriptor: Descriptor
+  ): Future[GetDescriptorInfoResult] = {
     bitcoindCall[GetDescriptorInfoResult](
       "getdescriptorinfo",
-      List(DescriptorWrites.writes(descriptor)))
+      List(DescriptorWrites.writes(descriptor))
+    )
   }
 
   /** https://bitcoincore.org/en/doc/22.0.0/rpc/wallet/importdescriptors/
     * @param imports
     * @return
     */
-  def importDescriptors(imports: Vector[DescriptorsResult]): Future[
-    Vector[ImportDescriptorResult]] = {
-    bitcoindCall[Vector[ImportDescriptorResult]]("importdescriptors",
-                                                 List(Json.toJson(imports)))
+  def importDescriptors(
+      imports: Vector[DescriptorsResult]
+  ): Future[Vector[ImportDescriptorResult]] = {
+    bitcoindCall[Vector[ImportDescriptorResult]](
+      "importdescriptors",
+      List(Json.toJson(imports))
+    )
   }
 
   def importDescriptor(
-      imp: DescriptorsResult): Future[ImportDescriptorResult] = {
+      imp: DescriptorsResult
+  ): Future[ImportDescriptorResult] = {
     importDescriptors(Vector(imp)).map(_.head)
   }
 
@@ -61,7 +70,8 @@ trait DescriptorRpc {
 
   def listDescriptors(
       priv: Option[Boolean],
-      walletName: String): Future[ListDescriptorsResult] = {
+      walletName: String
+  ): Future[ListDescriptorsResult] = {
     bitcoindCall[ListDescriptorsResult](
       "listdescriptors",
       List(Json.toJson(priv)),

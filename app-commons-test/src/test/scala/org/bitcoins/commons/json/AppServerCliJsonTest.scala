@@ -16,7 +16,8 @@ class AppServerCliJsonTest extends BitcoinSUnitTest {
     assert(parsed1.isSuccess)
     assert(parsed1.get.walletNameOpt == Some(walletName))
     assert(
-      parsed1.get.passwordOpt.map(_.toStringSensitive) == Some(aesPassword))
+      parsed1.get.passwordOpt.map(_.toStringSensitive) == Some(aesPassword)
+    )
     assert(parsed1.get.bip39PasswordOpt == Some(bip39Password))
 
     val arr2 = ujson.Arr(walletName, aesPassword, ujson.Null)
@@ -24,7 +25,8 @@ class AppServerCliJsonTest extends BitcoinSUnitTest {
     assert(parsed2.isSuccess)
     assert(parsed2.get.walletNameOpt == Some(walletName))
     assert(
-      parsed2.get.passwordOpt.map(_.toStringSensitive) == Some(aesPassword))
+      parsed2.get.passwordOpt.map(_.toStringSensitive) == Some(aesPassword)
+    )
   }
 
 }

@@ -148,7 +148,8 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
     resultVecF.map { resultVec =>
       resultVec.foreach { result =>
         assert(
-          result.network == "ipv4" || result.network == "ipv6" || result.network == "onion" || result.network == "i2p")
+          result.network == "ipv4" || result.network == "ipv6" || result.network == "onion" || result.network == "i2p"
+        )
       }
       succeed
     }
@@ -198,7 +199,8 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         client
           .addMultiSigAddress(
             2,
-            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
+            Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress]))
+          )
       decoded <- client.decodeScript(multisig.redeemScript)
       _ <- client.loadWallet("")
       _ <- client.unloadWallet("decodeRWallet")
@@ -222,22 +224,29 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
 
       address <- otherClient.getNewAddress
 
-      input0 = TransactionOutPoint(transaction0.txid.flip,
-                                   UInt32(transaction0.blockindex.get))
-      input1 = TransactionOutPoint(transaction1.txid.flip,
-                                   UInt32(transaction1.blockindex.get))
+      input0 = TransactionOutPoint(
+        transaction0.txid.flip,
+        UInt32(transaction0.blockindex.get)
+      )
+      input1 = TransactionOutPoint(
+        transaction1.txid.flip,
+        UInt32(transaction1.blockindex.get)
+      )
 
       transactionFirst <- {
         val sig: ScriptSignature = ScriptSignature.empty
-        val inputs = Vector(TransactionInput(input0, sig, UInt32(1)),
-                            TransactionInput(input1, sig, UInt32(2)))
+        val inputs = Vector(
+          TransactionInput(input0, sig, UInt32(1)),
+          TransactionInput(input1, sig, UInt32(2))
+        )
         val outputs = Map(address -> Bitcoins(1))
         client.createRawTransaction(inputs, outputs)
       }
       fundedTransactionOne <- client.fundRawTransaction(transactionFirst)
       signedTransactionOne <- BitcoindRpcTestUtil.signRawTransaction(
         client,
-        fundedTransactionOne.hex)
+        fundedTransactionOne.hex
+      )
 
       blocksTwo <- client.generate(2)
       firstBlockTwo <- client.getBlock(blocksTwo(0))
@@ -245,27 +254,35 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       secondBlockTwo <- client.getBlock(blocksTwo(1))
       transaction3 <- client.getTransaction(secondBlockTwo.tx(0))
 
-      input2 = TransactionOutPoint(transaction2.txid.flip,
-                                   UInt32(transaction2.blockindex.get))
-      input3 = TransactionOutPoint(transaction3.txid.flip,
-                                   UInt32(transaction3.blockindex.get))
+      input2 = TransactionOutPoint(
+        transaction2.txid.flip,
+        UInt32(transaction2.blockindex.get)
+      )
+      input3 = TransactionOutPoint(
+        transaction3.txid.flip,
+        UInt32(transaction3.blockindex.get)
+      )
 
       transactionSecond <- {
         val sig: ScriptSignature = ScriptSignature.empty
-        val inputs = Vector(TransactionInput(input2, sig, UInt32(1)),
-                            TransactionInput(input3, sig, UInt32(2)))
+        val inputs = Vector(
+          TransactionInput(input2, sig, UInt32(1)),
+          TransactionInput(input3, sig, UInt32(2))
+        )
         val outputs = Map(address -> Bitcoins(1))
         client.createRawTransaction(inputs, outputs)
       }
       fundedTransactionTwo <- client.fundRawTransaction(transactionSecond)
       signedTransactionTwo <- BitcoindRpcTestUtil.signRawTransaction(
         client,
-        fundedTransactionTwo.hex)
+        fundedTransactionTwo.hex
+      )
 
       _ <- client.generate(100) // Can't spend until depth 100
 
       mempoolAccept <- client.testMempoolAccept(
-        Vector(signedTransactionOne.hex, signedTransactionTwo.hex))
+        Vector(signedTransactionOne.hex, signedTransactionTwo.hex)
+      )
     } yield {
       val mempooltxid: Int = mempoolAccept.length
       assert(mempooltxid > 1)

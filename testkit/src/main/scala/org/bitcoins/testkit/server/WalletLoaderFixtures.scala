@@ -21,17 +21,20 @@ trait WalletLoaderFixtures
         bitcoind <- cachedBitcoindWithFundsF
         config = BitcoinSServerMainUtil.buildBitcoindBitcoinSAppConfig(bitcoind)
         _ <- config.start()
-        //initialize the default wallet so it can be used in tests
-        _ <- config.walletConf.createHDWallet(nodeApi = bitcoind,
-                                              chainQueryApi = bitcoind,
-                                              feeRateApi = bitcoind)
+        // initialize the default wallet so it can be used in tests
+        _ <- config.walletConf.createHDWallet(
+          nodeApi = bitcoind,
+          chainQueryApi = bitcoind,
+          feeRateApi = bitcoind
+        )
 
         walletHolder = WalletHolder.empty
         loader = DLCWalletBitcoindBackendLoader(
           walletHolder = walletHolder,
           bitcoind = bitcoind,
           nodeApi = bitcoind,
-          feeProvider = bitcoind)(config, system)
+          feeProvider = bitcoind
+        )(config, system)
       } yield WalletHolderWithBitcoindLoaderApi(walletHolder, loader)
     }
 

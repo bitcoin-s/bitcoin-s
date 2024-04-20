@@ -8,10 +8,12 @@ import scala.concurrent.{ExecutionContext, Future}
 object MasterXPubUtil {
 
   /** Checks our database xpub is the same as our key manager xpub
-    * @throws RuntimeExceptions if the xpubs do not match
+    * @throws RuntimeExceptions
+    *   if the xpubs do not match
     */
   def checkMasterXPub(xpub: ExtPublicKey, masterXPubDAO: MasterXPubDAO)(implicit
-      ec: ExecutionContext): Future[Boolean] = {
+      ec: ExecutionContext
+  ): Future[Boolean] = {
     val validateF = masterXPubDAO.validate(xpub)
     validateF.map(_ => true)
   }

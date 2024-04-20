@@ -7,12 +7,12 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-/** Takes multiple [[FeeRateApi FeeRateApis]] and attempts to get a fee rate from
-  * one in order until one succeeds.
+/** Takes multiple [[FeeRateApi FeeRateApis]] and attempts to get a fee rate
+  * from one in order until one succeeds.
   */
 case class FallbackFeeRateApi(providers: Vector[FeeRateApi])(implicit
-    ec: ExecutionContext)
-    extends FeeRateApi {
+    ec: ExecutionContext
+) extends FeeRateApi {
 
   override def getFeeRate(): Future[FeeUnit] = {
     val init: Option[FeeUnit] = None

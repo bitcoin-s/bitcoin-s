@@ -35,8 +35,10 @@ class UTXORpcTest extends BitcoindRpcTest {
 
         val vout1 = unspent(0).vout
         val vout2 = unspent(1).vout
-        Vector(RpcOpts.LockUnspentOutputParameter(txid1, vout1),
-               RpcOpts.LockUnspentOutputParameter(txid2, vout2))
+        Vector(
+          RpcOpts.LockUnspentOutputParameter(txid1, vout1),
+          RpcOpts.LockUnspentOutputParameter(txid2, vout2)
+        )
       }
       firstSuccess <- client.lockUnspent(unlock = false, param)
       locked <- client.listLockUnspent

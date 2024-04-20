@@ -17,24 +17,38 @@ class SortedVecTest extends BitcoinSUnitTest {
     assert(SortedVec.sort(Vector(3, 2, 1)) == SortedVec(Vector(1, 2, 3)))
     assert(
       SortedVec.sort(Vector(3.0, 2.0, 1.123)) == SortedVec(
-        Vector(1.123, 2.0, 3.0)))
+        Vector(1.123, 2.0, 3.0)
+      )
+    )
     assert(
-      SortedVec.sort(Vector('c', 'b', 'a')) == SortedVec(Vector('a', 'b', 'c')))
+      SortedVec.sort(Vector('c', 'b', 'a')) == SortedVec(Vector('a', 'b', 'c'))
+    )
     assert(
       SortedVec.sort(Vector("cab", "ceb", "abc")) == SortedVec(
-        Vector("abc", "cab", "ceb")))
+        Vector("abc", "cab", "ceb")
+      )
+    )
     assert(
-      SortedVec.sort[SchnorrNonce, NetworkElement](Vector(
-        SchnorrNonce(
-          "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"),
-        SchnorrNonce(
-          "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc")
-      )) == SortedVec[SchnorrNonce, NetworkElement](Vector(
-        SchnorrNonce(
-          "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc"),
-        SchnorrNonce(
-          "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea")
-      )))
+      SortedVec.sort[SchnorrNonce, NetworkElement](
+        Vector(
+          SchnorrNonce(
+            "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"
+          ),
+          SchnorrNonce(
+            "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc"
+          )
+        )
+      ) == SortedVec[SchnorrNonce, NetworkElement](
+        Vector(
+          SchnorrNonce(
+            "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc"
+          ),
+          SchnorrNonce(
+            "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"
+          )
+        )
+      )
+    )
   }
 
   it should "fail to construct with unsorted vector under normal orderings" in {
@@ -42,14 +56,20 @@ class SortedVecTest extends BitcoinSUnitTest {
     assertThrows[IllegalArgumentException](SortedVec(Vector(3.0, 2.0, 1.123)))
     assertThrows[IllegalArgumentException](SortedVec(Vector('c', 'b', 'a')))
     assertThrows[IllegalArgumentException](
-      SortedVec(Vector("cab", "ceb", "abc")))
+      SortedVec(Vector("cab", "ceb", "abc"))
+    )
     assertThrows[IllegalArgumentException](
-      SortedVec[SchnorrNonce, NetworkElement](Vector(
-        SchnorrNonce(
-          "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"),
-        SchnorrNonce(
-          "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc")
-      )))
+      SortedVec[SchnorrNonce, NetworkElement](
+        Vector(
+          SchnorrNonce(
+            "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"
+          ),
+          SchnorrNonce(
+            "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc"
+          )
+        )
+      )
+    )
   }
 
   it should "sort correctly on construction with custom orderings" in {
@@ -68,7 +88,9 @@ class SortedVecTest extends BitcoinSUnitTest {
 
     assert(
       SortedVec.sort(Vector(0.95, 123.123, 5.55)) == SortedVec(
-        Vector(123.123, 5.55, 0.95)))
+        Vector(123.123, 5.55, 0.95)
+      )
+    )
   }
 
   it should "fail to construct with unsorted vector under custom orderings" in {
@@ -85,7 +107,8 @@ class SortedVecTest extends BitcoinSUnitTest {
     }
 
     assertThrows[IllegalArgumentException](
-      SortedVec(Vector(0.95, 5.55, 123.123)))
+      SortedVec(Vector(0.95, 5.55, 123.123))
+    )
   }
 
   it should "correctly handle ordered list" in {
@@ -97,6 +120,7 @@ class SortedVecTest extends BitcoinSUnitTest {
 
     val _ = SortedVec(nonces)(SortedVec.forOrdered(nonces))
     assertThrows[IllegalArgumentException](
-      SortedVec(wrongOrder)(SortedVec.forOrdered(nonces)))
+      SortedVec(wrongOrder)(SortedVec.forOrdered(nonces))
+    )
   }
 }

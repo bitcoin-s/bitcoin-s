@@ -10,7 +10,7 @@ class DLCConnectionHandlerTest extends BitcoinSAsyncTest {
 
   it must "DLC Accept message that is not aligned with a tcp frame" in {
     forAllAsync(LnMessageGen.dlcAcceptMessage) { accept =>
-      //split the msg at a random index to simulate a tcp frame not being aligned
+      // split the msg at a random index to simulate a tcp frame not being aligned
       val randomIndex = scala.util.Random.nextInt().abs % accept.bytes.size
       val (firstHalf, secondHalf) = accept.bytes.splitAt(randomIndex)
       val (firstHalfParseHeaders, remainingBytes) =
@@ -19,7 +19,8 @@ class DLCConnectionHandlerTest extends BitcoinSAsyncTest {
 
       val (secondHalfParsedHeaders, _) =
         DLCConnectionHandler.parseIndividualMessages(
-          remainingBytes ++ secondHalf)
+          remainingBytes ++ secondHalf
+        )
       val parsedLnMessage = secondHalfParsedHeaders.head
       val parsedLnAcceptMessage =
         parsedLnMessage.asInstanceOf[LnMessage[DLCAcceptTLV]]

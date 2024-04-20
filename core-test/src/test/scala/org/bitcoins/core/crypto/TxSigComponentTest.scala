@@ -23,21 +23,27 @@ class TxSigComponentTest extends BitcoinSUnitTest {
       Vector(
         TransactionInput(
           TransactionOutPoint(DoubleSha256Digest.empty, UInt32.zero),
-          P2SHScriptSignature(scriptSig =
-                                ConditionalScriptSignature(EmptyScriptSignature,
-                                                           condition = true),
-                              redeemScript = P2WPKHWitnessSPKV0(pubKey)),
+          P2SHScriptSignature(
+            scriptSig = ConditionalScriptSignature(
+              EmptyScriptSignature,
+              condition = true
+            ),
+            redeemScript = P2WPKHWitnessSPKV0(pubKey)
+          ),
           TransactionConstants.sequence
-        )),
+        )
+      ),
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey)),
       UInt32.zero
     )
 
     val nonWitnessP2SH =
-      P2SHTxSigComponent(btx,
-                         UInt32.zero,
-                         TransactionOutput(Satoshis.one, p2shNoNest),
-                         Policy.standardFlags)
+      P2SHTxSigComponent(
+        btx,
+        UInt32.zero,
+        TransactionOutput(Satoshis.one, p2shNoNest),
+        Policy.standardFlags
+      )
     assert(!nonWitnessP2SH.isInstanceOf[WitnessTxSigComponentP2SH])
   }
 
@@ -53,18 +59,22 @@ class TxSigComponentTest extends BitcoinSUnitTest {
           TransactionOutPoint(DoubleSha256Digest.empty, UInt32.zero),
           P2SHScriptSignature(wspk),
           TransactionConstants.sequence
-        )),
+        )
+      ),
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey)),
       UInt32.zero,
       TransactionWitness(
-        Vector(P2WPKHWitnessV0(pubKey, DummyECDigitalSignature)))
+        Vector(P2WPKHWitnessV0(pubKey, DummyECDigitalSignature))
+      )
     )
 
     val witnessP2SH =
-      P2SHTxSigComponent(wtx,
-                         UInt32.zero,
-                         TransactionOutput(Satoshis.one, p2shNested),
-                         Policy.standardFlags)
+      P2SHTxSigComponent(
+        wtx,
+        UInt32.zero,
+        TransactionOutput(Satoshis.one, p2shNested),
+        Policy.standardFlags
+      )
 
     assert(witnessP2SH.isInstanceOf[WitnessTxSigComponentP2SH])
   }

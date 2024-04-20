@@ -9,11 +9,11 @@ import scodec.bits.ByteVector
 sealed abstract class CryptoGenerators {
 
   def privateKey: Gen[ECPrivateKey] = {
-    //purposefully don't reach for cryptographically strong
-    //number generation, we want determinism to reproduce failed
-    //test cases. If we don't generate the private key with scalacheck
-    //we won't be able to reproduce the test case with a seed
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/1339
+    // purposefully don't reach for cryptographically strong
+    // number generation, we want determinism to reproduce failed
+    // test cases. If we don't generate the private key with scalacheck
+    // we won't be able to reproduce the test case with a seed
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/1339
     NumberGenerator.bytevector(32).map { vec =>
       ECPrivateKey.fromBytes(vec)
     }
@@ -56,15 +56,17 @@ sealed abstract class CryptoGenerators {
   def xOnlyPubKey: Gen[XOnlyPubKey] = publicKey.map(_.toXOnly)
 
   /** Generate a sequence of private keys
-    * @param num maximum number of keys to generate
+    * @param num
+    *   maximum number of keys to generate
     * @return
     */
   def privateKeySeq(num: Int): Gen[Seq[ECPrivateKey]] =
     Gen.listOfN(num, privateKey)
 
-  /** Generates a sequence of private keys, and determines an amount of 'required' private keys
-    * that a transaction needs to be signed with
-    * @param num the maximum number of keys to generate
+  /** Generates a sequence of private keys, and determines an amount of
+    * 'required' private keys that a transaction needs to be signed with
+    * @param num
+    *   the maximum number of keys to generate
     * @return
     */
   def privateKeySeqWithRequiredSigs(num: Int): Gen[(Seq[ECPrivateKey], Int)] = {
@@ -79,8 +81,8 @@ sealed abstract class CryptoGenerators {
     }
   }
 
-  /** Generates a random number of private keys less than 15.
-    * Also generates a random 'requiredSigs' number that a transaction needs to be signed with
+  /** Generates a random number of private keys less than 15. Also generates a
+    * random 'requiredSigs' number that a transaction needs to be signed with
     */
   def privateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] =
     for {
@@ -88,7 +90,9 @@ sealed abstract class CryptoGenerators {
       keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
     } yield keysAndRequiredSigs
 
-  /** A generator with 7 or less private keys -- useful for creating smaller scripts */
+  /** A generator with 7 or less private keys -- useful for creating smaller
+    * scripts
+    */
   def smallPrivateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] =
     for {
       num <- Gen.choose(0, 7)
@@ -131,8 +135,8 @@ sealed abstract class CryptoGenerators {
     }
   }
 
-  def adaptorSignatureWithDecryptedSignatureAndAdaptor: Gen[
-    (ECAdaptorSignature, ECDigitalSignature, ECPublicKey)] = {
+  def adaptorSignatureWithDecryptedSignatureAndAdaptor
+      : Gen[(ECAdaptorSignature, ECDigitalSignature, ECPublicKey)] = {
     for {
       privKey <- privateKey
       decKey <- privateKey
@@ -169,7 +173,8 @@ sealed abstract class CryptoGenerators {
   }
 
   /** Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]
-    * @param num the number of digets to generate
+    * @param num
+    *   the number of digets to generate
     * @return
     */
   def doubleSha256DigestSeq(num: Int): Gen[Seq[DoubleSha256Digest]] =

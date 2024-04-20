@@ -22,17 +22,23 @@ class RawCompactFilterHeadersMessageSerializerTest extends BitcoinSUnitTest {
     assert(message.filterType == FilterType.Basic)
     assert(
       message.stopHash == DoubleSha256Digest.fromHex(
-        "226f1acd30ec19b541dba2478b673a142283bb39ccddef75015e3caf0ec89f48"))
+        "226f1acd30ec19b541dba2478b673a142283bb39ccddef75015e3caf0ec89f48"
+      )
+    )
     assert(message.previousFilterHeader == DoubleSha256Digest.empty)
     assert(
       message.filterHashes == Vector(
         DoubleSha256Digest.fromHex(
-          "1f30de30fabb7892d15eb985cc5d6c34c54a11b7e4c51f3da498f16255a27bb1"),
+          "1f30de30fabb7892d15eb985cc5d6c34c54a11b7e4c51f3da498f16255a27bb1"
+        ),
         DoubleSha256Digest.fromHex(
-          "57965194aaa7ad3890c977d1b3c738d0a43a357ec645df28dc5c21876fb529c4"),
+          "57965194aaa7ad3890c977d1b3c738d0a43a357ec645df28dc5c21876fb529c4"
+        ),
         DoubleSha256Digest.fromHex(
-          "87eb3f35daf3b6adba13b40c2f0d0e99dee59b624b0e09d870894e1a0d6d3bb0")
-      ))
+          "87eb3f35daf3b6adba13b40c2f0d0e99dee59b624b0e09d870894e1a0d6d3bb0"
+        )
+      )
+    )
   }
 
   it must "have serialization symmetry" in {
@@ -52,9 +58,11 @@ class RawCompactFilterHeadersMessageSerializerTest extends BitcoinSUnitTest {
     val biggerMessage = CompactFilterHeadersMessage(
       filterType = FilterType.Basic,
       stopHash = DoubleSha256Digest.fromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"),
+        "0000000000000000000000000000000000000000000000000000000000000001"
+      ),
       previousFilterHeader = DoubleSha256Digest.fromHex(
-        "0000000000000000000000000000000000000000000000000000000000000002"),
+        "0000000000000000000000000000000000000000000000000000000000000002"
+      ),
       filterHashes = 1.to(2000).toVector.map(_ => DoubleSha256Digest.empty)
     )
 

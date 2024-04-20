@@ -29,8 +29,8 @@ class DLCClient(
     handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory,
     handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
-    extends Actor
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+) extends Actor
     with ActorLogging {
 
   import context.system
@@ -50,13 +50,15 @@ class DLCClient(
         }
       context.become(connecting(peer))
 
-      //currently our request timeout for requests sent to the backend is 60 seconds
-      //so we need the connection timeout to occur before the request times out
-      //when a user tries to submit an accept to the backend
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4080
+      // currently our request timeout for requests sent to the backend is 60 seconds
+      // so we need the connection timeout to occur before the request times out
+      // when a user tries to submit an accept to the backend
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/4080
       val connectionTimeout = 45.seconds
-      IO(Tcp) ! Tcp.Connect(peerOrProxyAddress,
-                            timeout = Some(connectionTimeout))
+      IO(Tcp) ! Tcp.Connect(
+        peerOrProxyAddress,
+        timeout = Some(connectionTimeout)
+      )
   }
 
   def connecting(peer: Peer): Receive = LoggingReceive {
@@ -74,11 +76,14 @@ class DLCClient(
           log.info(s"connected to SOCKS5 proxy $proxyAddress")
           log.info(s"connecting to $remoteAddress via SOCKS5 $proxyAddress")
           val proxy =
-            context.actorOf(Socks5Connection.props(
-                              sender(),
-                              Socks5ProxyParams.proxyCredentials(proxyParams),
-                              Socks5Connect(remoteAddress)),
-                            "Socks5Connection")
+            context.actorOf(
+              Socks5Connection.props(
+                sender(),
+                Socks5ProxyParams.proxyCredentials(proxyParams),
+                Socks5Connect(remoteAddress)
+              ),
+              "Socks5Connection"
+            )
           context watch proxy
           context become socks5Connecting(proxy, remoteAddress, proxyAddress)
         case None =>
@@ -86,12 +91,16 @@ class DLCClient(
           log.info(s"connected to $peerAddress")
           val _ = context.actorOf(
             Props(
-              new DLCConnectionHandler(dlcWalletApi,
-                                       connection,
-                                       handlerP,
-                                       dataHandlerFactory,
-                                       handleWrite,
-                                       handleWriteError)))
+              new DLCConnectionHandler(
+                dlcWalletApi,
+                connection,
+                handlerP,
+                dataHandlerFactory,
+                handleWrite,
+                handleWriteError
+              )
+            )
+          )
           connectedAddress.foreach(_.success(peerAddress))
       }
   }
@@ -99,23 +108,33 @@ class DLCClient(
   def socks5Connecting(
       proxy: ActorRef,
       remoteAddress: InetSocketAddress,
-      proxyAddress: InetSocketAddress): Receive = LoggingReceive {
+      proxyAddress: InetSocketAddress
+  ): Receive = LoggingReceive {
     case c @ Tcp.CommandFailed(_: Socks5Connect) =>
-      val ex = c.cause.getOrElse(new IOException(
-        s"Cannot connect to ${remoteAddress.getHostString}:${remoteAddress.getPort} via Tor"))
-      log.error(s"connection failed to $remoteAddress via SOCKS5 $proxyAddress",
-                ex)
+      val ex = c.cause.getOrElse(
+        new IOException(
+          s"Cannot connect to ${remoteAddress.getHostString}:${remoteAddress.getPort} via Tor"
+        )
+      )
+      log.error(
+        s"connection failed to $remoteAddress via SOCKS5 $proxyAddress",
+        ex
+      )
       throw ex
     case Socks5Connected(_) =>
       log.info(s"connected to $remoteAddress via SOCKS5 proxy $proxyAddress")
       val _ = context.actorOf(
         Props(
-          new DLCConnectionHandler(dlcWalletApi,
-                                   proxy,
-                                   handlerP,
-                                   dataHandlerFactory,
-                                   handleWrite,
-                                   handleWriteError)))
+          new DLCConnectionHandler(
+            dlcWalletApi,
+            proxy,
+            handlerP,
+            dataHandlerFactory,
+            handleWrite,
+            handleWriteError
+          )
+        )
+      )
       connectedAddress.foreach(_.success(remoteAddress))
     case Terminated(actor) if actor == proxy =>
       context stop self
@@ -140,17 +159,18 @@ object DLCClient {
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-      handleWriteError: (
-          BigSizeUInt,
-          ByteVector,
-          Throwable) => Future[Unit]): Props =
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+  ): Props =
     Props(
-      new DLCClient(dlcWalletApi,
-                    connectedAddress,
-                    handlerP,
-                    dataHandlerFactory,
-                    handleWrite,
-                    handleWriteError))
+      new DLCClient(
+        dlcWalletApi,
+        connectedAddress,
+        handlerP,
+        dataHandlerFactory,
+        handleWrite,
+        handleWriteError
+      )
+    )
 
   def connect(
       peer: Peer,
@@ -159,17 +179,20 @@ object DLCClient {
       dataHandlerFactory: DLCDataHandler.Factory =
         DLCDataHandler.defaultFactory,
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])(
-      implicit system: ActorSystem): Future[InetSocketAddress] = {
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+  )(implicit system: ActorSystem): Future[InetSocketAddress] = {
     val promise = Promise[InetSocketAddress]()
     val actor =
       system.actorOf(
-        props(dlcWalletApi,
-              Some(promise),
-              handlerP,
-              dataHandlerFactory,
-              handleWrite,
-              handleWriteError))
+        props(
+          dlcWalletApi,
+          Some(promise),
+          handlerP,
+          dataHandlerFactory,
+          handleWrite,
+          handleWriteError
+        )
+      )
     actor ! Connect(peer)
     promise.future
   }

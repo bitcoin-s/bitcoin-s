@@ -28,17 +28,20 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
   private def fundingTx: Transaction = builder.buildFundingTx
 
   def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
-    DLCSignatureVerifier.validateRemoteFundingSigs(fundingTx,
-                                                   remoteSigs,
-                                                   isInitiator,
-                                                   builder.offerFundingInputs,
-                                                   builder.acceptFundingInputs)
+    DLCSignatureVerifier.validateRemoteFundingSigs(
+      fundingTx,
+      remoteSigs,
+      isInitiator,
+      builder.offerFundingInputs,
+      builder.acceptFundingInputs
+    )
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
   def verifyCETSig(
       adaptorPoint: Indexed[ECPublicKey],
-      sig: ECAdaptorSignature): Boolean = {
+      sig: ECAdaptorSignature
+  ): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
@@ -46,21 +49,25 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
     }
     val cet = builder.buildCET(adaptorPoint)
 
-    DLCSignatureVerifier.validateCETSignature(adaptorPoint.element,
-                                              sig,
-                                              remoteFundingPubKey,
-                                              fundingTx,
-                                              builder.fundOutputIndex,
-                                              cet)
+    DLCSignatureVerifier.validateCETSignature(
+      adaptorPoint.element,
+      sig,
+      remoteFundingPubKey,
+      fundingTx,
+      builder.fundOutputIndex,
+      cet
+    )
   }
 
-  def verifyCETSigs(sigs: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)])(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  def verifyCETSigs(
+      sigs: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)]
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     val correctNumberOfSigs =
       sigs.size >= builder.contractInfo.allOutcomes.length
 
     val verifyFn: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)] => Future[
-      Boolean] = { outcomeSigs =>
+      Boolean
+    ] = { outcomeSigs =>
       FutureUtil.makeAsync { () =>
         outcomeSigs.forall { case (outcome, sig) =>
           verifyCETSig(outcome, sig)
@@ -79,10 +86,12 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
   def verifyRefundSig(sig: PartialSignature): Boolean = {
     val refundTx = builder.buildRefundTx
 
-    DLCSignatureVerifier.validateRefundSignature(sig,
-                                                 fundingTx,
-                                                 builder.fundOutputIndex,
-                                                 refundTx)
+    DLCSignatureVerifier.validateRefundSignature(
+      sig,
+      fundingTx,
+      builder.fundOutputIndex,
+      refundTx
+    )
   }
 }
 
@@ -100,15 +109,18 @@ object DLCSignatureVerifier {
       transaction = cet,
       inputIndex = UInt32.zero,
       output = fundingTx.outputs(fundOutputIndex),
-      flags = Policy.standardFlags)
+      flags = Policy.standardFlags
+    )
 
     val hashType = HashType(
-      ByteVector(0.toByte, 0.toByte, 0.toByte, HashType.sigHashAll.byte))
+      ByteVector(0.toByte, 0.toByte, 0.toByte, HashType.sigHashAll.byte)
+    )
     val hash =
       TransactionSignatureSerializer.hashForSignature(
         txSigComponent = sigComponent,
         hashType = hashType,
-        taprootOptions = TaprootSerializationOptions.empty)
+        taprootOptions = TaprootSerializationOptions.empty
+      )
 
     remoteFundingPubKey.adaptorVerify(hash.bytes, adaptorPoint, sig)
   }
@@ -123,7 +135,8 @@ object DLCSignatureVerifier {
       transaction = refundTx,
       inputIndex = UInt32.zero,
       output = fundingTx.outputs(fundOutputIndex),
-      flags = Policy.standardFlags)
+      flags = Policy.standardFlags
+    )
 
     TransactionSignatureChecker
       .checkSignature(
@@ -142,7 +155,8 @@ object DLCSignatureVerifier {
       fundingSigs: FundingSignatures,
       localIsInitiator: Boolean,
       offerFundingInputs: Vector[DLCFundingInput],
-      acceptFundingInputs: Vector[DLCFundingInput]): Boolean = {
+      acceptFundingInputs: Vector[DLCFundingInput]
+  ): Boolean = {
     val fundingInputs = offerFundingInputs ++ acceptFundingInputs
 
     val serialIdMap =
@@ -175,14 +189,17 @@ object DLCSignatureVerifier {
                   case Some(input) => input
                   case None =>
                     throw new RuntimeException(
-                      s"Could not find fundingInput for outpoint $outPoint")
+                      s"Could not find fundingInput for outpoint $outPoint"
+                    )
                 }
 
               psbt
                 .addUTXOToInput(fundingInput.prevTx, idx)
-                .addFinalizedScriptWitnessToInput(fundingInput.scriptSignature,
-                                                  witness,
-                                                  idx)
+                .addFinalizedScriptWitnessToInput(
+                  fundingInput.scriptSignature,
+                  witness,
+                  idx
+                )
                 .finalizeInput(idx)
             }.flatten match {
               case Success(finalized) =>

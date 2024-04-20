@@ -9,55 +9,58 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class ChainStateDescriptorDb(
     tpe: ChainStateDescriptorType,
-    descriptor: ChainStateDescriptor) {
-  require(descriptor.descriptorType == tpe,
-          s"descriptorTpe=${descriptor.descriptorType} tpe=$tpe")
+    descriptor: ChainStateDescriptor
+) {
+  require(
+    descriptor.descriptorType == tpe,
+    s"descriptorTpe=${descriptor.descriptorType} tpe=$tpe"
+  )
 }
 
 case class ChainStateDescriptorDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: ChainAppConfig)
-    extends CRUD[ChainStateDescriptorDb, ChainStateDescriptorType]
+    override val appConfig: ChainAppConfig
+) extends CRUD[ChainStateDescriptorDb, ChainStateDescriptorType]
     with SlickUtil[ChainStateDescriptorDb, ChainStateDescriptorType] {
   import profile.api._
 
-  implicit val chainStateDescriptorTypeMapper: BaseColumnType[
-    ChainStateDescriptorType] =
+  implicit val chainStateDescriptorTypeMapper
+      : BaseColumnType[ChainStateDescriptorType] =
     MappedColumnType.base[ChainStateDescriptorType, String](
       _.toString,
-      ChainStateDescriptorType.fromString)
+      ChainStateDescriptorType.fromString
+    )
 
-  implicit val chainStateDescriptorMapper: BaseColumnType[
-    ChainStateDescriptor] =
+  implicit val chainStateDescriptorMapper
+      : BaseColumnType[ChainStateDescriptor] =
     MappedColumnType.base[ChainStateDescriptor, String](
       _.toString,
-      ChainStateDescriptor.fromString)
+      ChainStateDescriptor.fromString
+    )
 
   override val table: profile.api.TableQuery[ChainStateDescriptorTable] =
     TableQuery[ChainStateDescriptorTable]
 
-  override def createAll(ts: Vector[ChainStateDescriptorDb]): Future[
-    Vector[ChainStateDescriptorDb]] =
+  override def createAll(
+      ts: Vector[ChainStateDescriptorDb]
+  ): Future[Vector[ChainStateDescriptorDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findByPrimaryKeys(ids: Vector[ChainStateDescriptorType]): Query[
-    ChainStateDescriptorTable,
-    ChainStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKeys(
+      ids: Vector[ChainStateDescriptorType]
+  ): Query[ChainStateDescriptorTable, ChainStateDescriptorDb, Seq] = {
     table.filter(_.tpe.inSet(ids))
   }
 
-  override def findByPrimaryKey(id: ChainStateDescriptorType): Query[
-    Table[ChainStateDescriptorDb],
-    ChainStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKey(
+      id: ChainStateDescriptorType
+  ): Query[Table[ChainStateDescriptorDb], ChainStateDescriptorDb, Seq] = {
     table.filter(_.tpe === id)
   }
 
-  override def findAll(ts: Vector[ChainStateDescriptorDb]): Query[
-    Table[ChainStateDescriptorDb],
-    ChainStateDescriptorDb,
-    Seq] =
+  override def findAll(
+      ts: Vector[ChainStateDescriptorDb]
+  ): Query[Table[ChainStateDescriptorDb], ChainStateDescriptorDb, Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
 
   def getSync(): Future[Option[SyncDescriptor]] = {
@@ -132,17 +135,21 @@ case class ChainStateDescriptorDAO()(implicit
   }
 
   class ChainStateDescriptorTable(t: Tag)
-      extends Table[ChainStateDescriptorDb](t,
-                                            schemaName,
-                                            "state_descriptors") {
+      extends Table[ChainStateDescriptorDb](
+        t,
+        schemaName,
+        "state_descriptors"
+      ) {
 
     def tpe: Rep[ChainStateDescriptorType] = column("type", O.PrimaryKey)
 
     def descriptor: Rep[ChainStateDescriptor] = column("descriptor")
 
     override def * : ProvenShape[ChainStateDescriptorDb] =
-      (tpe, descriptor).<>(ChainStateDescriptorDb.tupled,
-                           ChainStateDescriptorDb.unapply)
+      (tpe, descriptor).<>(
+        ChainStateDescriptorDb.tupled,
+        ChainStateDescriptorDb.unapply
+      )
 
   }
 }

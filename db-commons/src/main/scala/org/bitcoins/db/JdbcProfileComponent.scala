@@ -10,8 +10,8 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
 
   def appConfig: ConfigType
 
-  /** The configuration details for connecting/using the database for our projects
-    * that require database connections
+  /** The configuration details for connecting/using the database for our
+    * projects that require database connections
     */
   lazy val dbConfig: DatabaseConfig[JdbcProfile] = {
     appConfig.slickDbConfig
@@ -29,16 +29,17 @@ trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
   private[this] var hikariLoggerOpt: Option[HikariLogging] = None
 
   /** Starts the background logger for hikari
-    * @param interval - how often hikari logs database connection pool information
+    * @param interval
+    *   \- how often hikari logs database connection pool information
     */
   protected def startHikariLogger(interval: Duration): HikariLogging = {
     hikariLoggerOpt match {
       case Some(hikarkiLogger) => hikarkiLogger
       case None                =>
-        //this is needed to get the 'AsyncExecutor' bean below to register properly
-        //dbConfig.database.ioExecutionContext
+        // this is needed to get the 'AsyncExecutor' bean below to register properly
+        // dbConfig.database.ioExecutionContext
         val _ = database.ioExecutionContext
-        //start a new one
+        // start a new one
         HikariLogging.fromJdbcProfileComponent(this, interval) match {
           case Some(hikariLogger) =>
             hikariLoggerOpt = Some(hikariLogger)

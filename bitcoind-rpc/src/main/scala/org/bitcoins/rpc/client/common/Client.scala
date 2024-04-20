@@ -44,12 +44,10 @@ import scala.concurrent.duration.DurationInt
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-/** This is the base trait for Bitcoin Core
-  * RPC clients. It defines no RPC calls
-  * except for the a ping. It contains functionality
-  * and utilities useful when working with an RPC
-  * client, like data directories, log files
-  * and whether or not the client is started.
+/** This is the base trait for Bitcoin Core RPC clients. It defines no RPC calls
+  * except for the a ping. It contains functionality and utilities useful when
+  * working with an RPC client, like data directories, log files and whether or
+  * not the client is started.
   */
 trait Client
     extends BitcoinSLogger
@@ -61,10 +59,9 @@ trait Client
   protected def walletExtension(walletName: String): String =
     s"/wallet/$walletName"
 
-  /** The log file of the Bitcoin Core daemon.
-    * This returns the log file if the underlying instance is
-    * [[org.bitcoins.rpc.config.BitcoindInstanceLocal]], and
-    * None if the underlying instance is [[BitcoindInstanceRemote]]
+  /** The log file of the Bitcoin Core daemon. This returns the log file if the
+    * underlying instance is [[org.bitcoins.rpc.config.BitcoindInstanceLocal]],
+    * and None if the underlying instance is [[BitcoindInstanceRemote]]
     */
   lazy val logFileOpt: Option[Path] = {
     instance match {
@@ -81,10 +78,9 @@ trait Client
     }
   }
 
-  /** The configuration file of the Bitcoin Core daemon
-    * This returns the conf file is the underlying instance is
-    * [[BitcoindInstanceLocal]] and None if the underlying
-    * instance is [[BitcoindInstanceRemote]]
+  /** The configuration file of the Bitcoin Core daemon This returns the conf
+    * file is the underlying instance is [[BitcoindInstanceLocal]] and None if
+    * the underlying instance is [[BitcoindInstanceRemote]]
     */
   lazy val confFileOpt: Option[Path] = {
     instance match {
@@ -102,8 +98,8 @@ trait Client
     system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
-  /** This is here (and not in JsonWrriters)
-    * so that the implicit network val is accessible
+  /** This is here (and not in JsonWrriters) so that the implicit network val is
+    * accessible
     */
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
 
@@ -113,8 +109,8 @@ trait Client
 
   implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
 
-  /** This is here (and not in JsonWrriters)
-    * so that the implicit network val is accessible
+  /** This is here (and not in JsonWrriters) so that the implicit network val is
+    * accessible
     */
   implicit object ECPrivateKeyBytesWrites extends Writes[ECPrivateKeyBytes] {
 
@@ -139,16 +135,20 @@ trait Client
     instance match {
       case _: BitcoindInstanceRemote =>
         logger.warn(
-          s"Cannot start remote instance with local binary command. You've likely misconfigured something")
+          s"Cannot start remote instance with local binary command. You've likely misconfigured something"
+        )
         ""
       case local: BitcoindInstanceLocal =>
         val binaryPath = local.binary.getAbsolutePath
-        val cmd = List(binaryPath,
-                       "-datadir=" + local.datadir,
-                       "-rpcport=" + instance.rpcUri.getPort,
-                       "-port=" + instance.uri.getPort)
+        val cmd = List(
+          binaryPath,
+          "-datadir=" + local.datadir,
+          "-rpcport=" + instance.rpcUri.getPort,
+          "-port=" + instance.uri.getPort
+        )
         logger.debug(
-          s"starting bitcoind with datadir ${local.datadir} and binary path $binaryPath")
+          s"starting bitcoind with datadir ${local.datadir} and binary path $binaryPath"
+        )
 
         cmd.mkString(" ")
 
@@ -156,9 +156,9 @@ trait Client
   }
 
   /** Starts bitcoind on the local system.
-    * @return a future that completes when bitcoind is fully started.
-    *         This future times out after 60 seconds if the client
-    *         cannot be started
+    * @return
+    *   a future that completes when bitcoind is fully started. This future
+    *   times out after 60 seconds if the client cannot be started
     */
   override def start(): Future[BitcoindRpcClient] = {
     logger.info(s"Client.start() instance=$instance")
@@ -185,14 +185,16 @@ trait Client
         instance match {
           case _: BitcoindInstanceRemote =>
             sys.error(
-              s"Cannot start a remote instance, it needs to be started on the remote host machine")
+              s"Cannot start a remote instance, it needs to be started on the remote host machine"
+            )
           case local: BitcoindInstanceLocal =>
             val versionCheckF = version.map { v =>
               if (v != BitcoindVersion.Unknown) {
                 val foundVersion = local.getVersion
                 if (foundVersion != v) {
                   throw new RuntimeException(
-                    s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
+                    s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion"
+                  )
                 }
               }
             }
@@ -203,9 +205,11 @@ trait Client
               _ <- startedF
               _ <- awaitCookie(instance.authCredentials)
               _ = isStartedFlag.set(true)
-              _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
-                                                  interval = 1.seconds,
-                                                  maxTries = 120)
+              _ <- AsyncUtil.retryUntilSatisfiedF(
+                () => isStartedF,
+                interval = 1.seconds,
+                maxTries = 120
+              )
             } yield this.asInstanceOf[BitcoindRpcClient]
         }
       case true =>
@@ -219,7 +223,8 @@ trait Client
       case Success(_) => logger.debug(s"started bitcoind")
       case Failure(exc) =>
         logger.info(
-          s"Could not start bitcoind instance! Message: ${exc.getMessage}")
+          s"Could not start bitcoind instance! Message: ${exc.getMessage}"
+        )
         // When we're unable to start bitcoind that's most likely
         // either a configuration error or bug in Bitcoin-S. In either
         // case it's much easier to debug this with conf and logs
@@ -271,7 +276,7 @@ trait Client
           if exc.getMessage.contains("Connection refused") =>
         false
       case _: JsonParseException =>
-        //see https://github.com/bitcoin-s/bitcoin-s/issues/527
+        // see https://github.com/bitcoin-s/bitcoin-s/issues/527
         false
     }
   }
@@ -289,12 +294,12 @@ trait Client
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
         instance match {
           case _: BitcoindInstanceRemote =>
-            //we cannot check locally if it has been started
-            //so best we can do is try to ping
+            // we cannot check locally if it has been started
+            // so best we can do is try to ping
             tryPing()
           case _: BitcoindInstanceLocal =>
-            //check if the binary has been started
-            //and then tryPing() if it has
+            // check if the binary has been started
+            // and then tryPing() if it has
             if (isStartedFlag.get) {
               tryPing()
             } else {
@@ -305,16 +310,18 @@ trait Client
     }
   }
 
-  /** Stop method for BitcoindRpcClient that is stopped, inherits from the StartStop trait
-    * @return A future stopped bitcoindRPC client
+  /** Stop method for BitcoindRpcClient that is stopped, inherits from the
+    * StartStop trait
+    * @return
+    *   A future stopped bitcoindRPC client
     */
   def stop(): Future[BitcoindRpcClient] = {
     for {
       _ <- bitcoindCall[String]("stop")
       _ = isStartedFlag.set(false)
-      //do we want to call this right away?
-      //i think bitcoind stops asynchronously
-      //so it returns fast from the 'stop' rpc command
+      // do we want to call this right away?
+      // i think bitcoind stops asynchronously
+      // so it returns fast from the 'stop' rpc command
       _ <- stopBinary()
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
@@ -325,7 +332,8 @@ trait Client
   }
 
   /** Checks whether the underlyind bitcoind daemon is stopped
-    * @return A future boolean which represents isstopped or not
+    * @return
+    *   A future boolean which represents isstopped or not
     */
   def isStoppedF: Future[Boolean] = {
     isStartedF.map(started => !started)
@@ -353,16 +361,18 @@ trait Client
       /** These lines are handy if you want to inspect what's being sent to and
         * returned from bitcoind before it's parsed into a Scala type. However,
         * there will sensitive material in some of those calls (private keys,
-        * XPUBs, balances, etc). It's therefore not a good idea to enable
-        * this logging in production.
+        * XPUBs, balances, etc). It's therefore not a good idea to enable this
+        * logging in production.
         */
 //      logger.info(
 //        s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
 //      logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
-      parseResult(result = (payload \ resultKey).validate[T],
-                  json = payload,
-                  printError = printError,
-                  command = command)
+      parseResult(
+        result = (payload \ resultKey).validate[T],
+        json = payload,
+        printError = printError,
+        command = command
+      )
     }
   }
 
@@ -370,11 +380,14 @@ trait Client
       instance: BitcoindInstance,
       methodName: String,
       params: JsArray,
-      uriExtensionOpt: Option[String] = None): HttpRequest = {
+      uriExtensionOpt: Option[String] = None
+  ): HttpRequest = {
     val uuid = UUID.randomUUID().toString
-    val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
-                                      "params" -> params,
-                                      "id" -> JsString(uuid))
+    val m: Map[String, JsValue] = Map(
+      "method" -> JsString(methodName),
+      "params" -> params,
+      "id" -> JsString(uuid)
+    )
 
     val jsObject = JsObject(m)
 
@@ -388,9 +401,11 @@ trait Client
     HttpRequest(
       method = HttpMethods.POST,
       uri,
-      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
+      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString())
+    )
       .addCredentials(
-        HttpCredentials.createBasicHttpCredentials(username, password))
+        HttpCredentials.createBasicHttpCredentials(username, password)
+      )
   }
 
   /** Cached http client to send requests to bitcoind with */
@@ -399,11 +414,15 @@ trait Client
   private lazy val httpConnectionPoolSettings: ConnectionPoolSettings = {
     instance match {
       case remote: BitcoindInstanceRemote =>
-        Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
-                                                           remote.proxyParams)
+        Socks5ClientTransport.createConnectionPoolSettings(
+          instance.rpcUri,
+          remote.proxyParams
+        )
       case _: BitcoindInstanceLocal =>
-        Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
-                                                           None)
+        Socks5ClientTransport.createConnectionPoolSettings(
+          instance.rpcUri,
+          None
+        )
     }
   }
 
@@ -413,15 +432,16 @@ trait Client
 
   /** Parses the payload of the given response into JSON.
     *
-    * The command, parameters and request are given as debug parameters,
-    * and only used for printing diagnostics if things go belly-up.
+    * The command, parameters and request are given as debug parameters, and
+    * only used for printing diagnostics if things go belly-up.
     */
   protected def getPayload(response: HttpResponse): Future[JsValue] = {
     try {
       Unmarshal(response).to[String].map { data =>
         if (data.isEmpty) {
           throw new IllegalArgumentException(
-            s"Bad authentication credentials supplied, cannot connect to bitcoind rpc")
+            s"Bad authentication credentials supplied, cannot connect to bitcoind rpc"
+          )
         } else {
           Json.parse(data)
         }
@@ -456,7 +476,8 @@ trait Client
               s"Error when parsing result of '$command': ${JsError.toJson(res).toString}!"
             if (printError) logger.error(errString + s"JSON: $jsonResult")
             throw new IllegalArgumentException(
-              s"Could not parse JsResult: $jsonResult! Error: $errString")
+              s"Could not parse JsResult: $jsonResult! Error: $errString"
+            )
         }
     }
   }
@@ -465,7 +486,8 @@ trait Client
   private def checkUnitError[T](
       result: JsResult[T],
       json: JsValue,
-      printError: Boolean): Unit = {
+      printError: Boolean
+  ): Unit = {
     if (result == JsSuccess(())) {
       (json \ errorKey).validate[BitcoindException] match {
         case JsSuccess(err, _) =>

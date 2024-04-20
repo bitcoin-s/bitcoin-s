@@ -13,13 +13,15 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-/** This test spins up one test node and [[NetworkSize]] sender nodes, which open channels with the test one.
-  * Then each sender node sends [[PaymentCount]] payments to the test node one by one. For each payment the
-  * test node generates an invoice and the send node pays it using `sendtonode` API call.
+/** This test spins up one test node and [[NetworkSize]] sender nodes, which
+  * open channels with the test one. Then each sender node sends
+  * [[PaymentCount]] payments to the test node one by one. For each payment the
+  * test node generates an invoice and the send node pays it using `sendtonode`
+  * API call.
   *
-  * The test keeps track of times when a payment was initiated, when the payment ID was received,
-  * and when the corresponding web socket event was received. It writes all results into [[OutputFileName]]
-  * in CSV format.
+  * The test keeps track of times when a payment was initiated, when the payment
+  * ID was received, and when the corresponding web socket event was received.
+  * It writes all results into [[OutputFileName]] in CSV format.
   */
 object EclairBench extends App with EclairRpcTestUtil {
 
@@ -72,7 +74,8 @@ object EclairBench extends App with EclairRpcTestUtil {
   def sendPayments(
       network: EclairNetwork,
       amount: MilliSatoshis,
-      count: Int): Future[Vector[PaymentId]] =
+      count: Int
+  ): Future[Vector[PaymentId]] =
     for {
       _ <- network.testEclairNode.getInfo
       paymentIds <- Future.sequence(network.networkEclairNodes.map { node =>
@@ -104,22 +107,26 @@ object EclairBench extends App with EclairRpcTestUtil {
         val _ = logEvent(event)
       }
       _ = println(
-        s"Set up $NetworkSize nodes, that will send $PaymentCount payments to the test node each")
+        s"Set up $NetworkSize nodes, that will send $PaymentCount payments to the test node each"
+      )
       _ = println(
         s"Test node data directory: ${network.testEclairNode.instance.authCredentials.datadir
-          .getOrElse("")}")
+            .getOrElse("")}"
+      )
       _ = println("Testing...")
       _ <- sendPayments(network, PaymentAmount, PaymentCount)
       _ <- TestAsyncUtil.retryUntilSatisfied(
         condition = paymentLog.size() == NetworkSize * PaymentCount,
         interval = 1.second,
-        maxTries = 100)
+        maxTries = 100
+      )
       _ <-
         TestAsyncUtil
           .retryUntilSatisfied(
             condition = EclairBenchUtil.paymentLogValues().forall(_.completed),
             interval = 1.second,
-            maxTries = 100)
+            maxTries = 100
+          )
           .recover { case ex: Throwable => ex.printStackTrace() }
       _ = println("\nDone!")
     } yield {
@@ -128,13 +135,15 @@ object EclairBench extends App with EclairRpcTestUtil {
   }
 
   val res: Future[Unit] = for {
-    network <- EclairNetwork.start(TestEclairVersion,
-                                   TestEclairCommit,
-                                   SenderEclairVersion,
-                                   SenderEclairCommit,
-                                   NetworkSize,
-                                   ChannelAmount,
-                                   LogbackXml)
+    network <- EclairNetwork.start(
+      TestEclairVersion,
+      TestEclairCommit,
+      SenderEclairVersion,
+      SenderEclairCommit,
+      NetworkSize,
+      ChannelAmount,
+      LogbackXml
+    )
     log <- runTests(network).recoverWith { case e: Throwable =>
       e.printStackTrace()
       Future.successful(Vector.empty[PaymentLogEntry])
@@ -145,17 +154,20 @@ object EclairBench extends App with EclairRpcTestUtil {
       val first = log.head
       val csv =
         Vector(
-          "time,number_of_payments,payment_hash,payment_id,event,payment_sent_at,payment_id_received_at,event_received_at,received_in,completed_in") ++
+          "time,number_of_payments,payment_hash,payment_id,event,payment_sent_at,payment_id_received_at,event_received_at,received_in,completed_in"
+        ) ++
           log.zipWithIndex
             .map { case (x, i) =>
               s"${x.paymentSentAt - first.paymentSentAt},${i + 1},${x.toCSV}"
             }
       val outputFile = new File(OutputFileName)
-      Files.write(outputFile.toPath,
-                  EclairBenchUtil.convertStrings(csv),
-                  StandardOpenOption.CREATE,
-                  StandardOpenOption.WRITE,
-                  StandardOpenOption.TRUNCATE_EXISTING)
+      Files.write(
+        outputFile.toPath,
+        EclairBenchUtil.convertStrings(csv),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.TRUNCATE_EXISTING
+      )
       println(s"The test results was written in ${outputFile.getAbsolutePath}")
     }
   }

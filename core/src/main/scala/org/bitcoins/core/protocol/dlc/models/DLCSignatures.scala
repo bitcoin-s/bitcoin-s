@@ -9,14 +9,14 @@ import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 sealed trait DLCSignatures
 
 case class FundingSignatures(
-    sigs: Vector[(TransactionOutPoint, ScriptWitnessV0)])
-    extends SeqWrapper[(TransactionOutPoint, ScriptWitnessV0)]
+    sigs: Vector[(TransactionOutPoint, ScriptWitnessV0)]
+) extends SeqWrapper[(TransactionOutPoint, ScriptWitnessV0)]
     with DLCSignatures {
 
   require(sigs.nonEmpty, s"FundingSignatures.sigs cannot be empty")
 
-  override protected def wrapped: Vector[
-    (TransactionOutPoint, ScriptWitnessV0)] = sigs
+  override protected def wrapped
+      : Vector[(TransactionOutPoint, ScriptWitnessV0)] = sigs
 
   def get(outPoint: TransactionOutPoint): Option[ScriptWitnessV0] = {
     sigs.find(_._1 == outPoint).map(_._2)
@@ -38,8 +38,10 @@ case class FundingSignatures(
 case class CETSignatures(outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)])
     extends DLCSignatures {
 
-  require(outcomeSigs.nonEmpty,
-          s"CETSignatures cannot have outcomeSigs be empty")
+  require(
+    outcomeSigs.nonEmpty,
+    s"CETSignatures cannot have outcomeSigs be empty"
+  )
   lazy val keys: Vector[ECPublicKey] = outcomeSigs.map(_._1)
   lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
 
@@ -54,6 +56,7 @@ case class CETSignatures(outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)])
       .find(_._1 == key)
       .map(_._2)
       .getOrElse(
-        throw new IllegalArgumentException(s"No signature found for $key"))
+        throw new IllegalArgumentException(s"No signature found for $key")
+      )
   }
 }

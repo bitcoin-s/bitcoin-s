@@ -45,7 +45,8 @@ trait WalletAppConfigWithBitcoindNewestFixtures
 
   def withWalletAppConfigBitcoindCached(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient): FutureOutcome = {
+      bitcoind: BitcoindRpcClient
+  ): FutureOutcome = {
     makeDependentFixture[WalletAppConfigWithBitcoindRpc](
       () => {
         val walletConfig =
@@ -57,7 +58,8 @@ trait WalletAppConfigWithBitcoindNewestFixtures
       },
       { case walletAppConfigWithBitcoindRpc =>
         BitcoinSWalletTest.destroyWalletAppConfig(
-          walletAppConfigWithBitcoindRpc.walletAppConfig)
+          walletAppConfigWithBitcoindRpc.walletAppConfig
+        )
       }
     )(test)
   }

@@ -89,7 +89,8 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
 
       val sync2F = synced1F.flatMap { chainApi =>
         syncHelper(
-          fixture.copy(chainHandler = chainApi.asInstanceOf[ChainHandler]))
+          fixture.copy(chainHandler = chainApi.asInstanceOf[ChainHandler])
+        )
       }
 
       for {
@@ -102,8 +103,8 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
   }
 
   private def syncHelper(
-      bitcoindChainHandler: BitcoindBaseVersionChainHandlerViaRpc): Future[
-    ChainApi] = {
+      bitcoindChainHandler: BitcoindBaseVersionChainHandlerViaRpc
+  ): Future[ChainApi] = {
     val filterType = FilterType.Basic
     val BitcoindBaseVersionChainHandlerViaRpc(bitcoind, chainHandler) =
       bitcoindChainHandler
@@ -113,13 +114,14 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
     val getFilterFunc: BlockHeader => Future[FilterWithHeaderHash] =
       SyncUtil.getFilterFunc(bitcoind, filterType)
 
-    //first sync the chain
+    // first sync the chain
     val syncedHeadersF: Future[ChainApi] = ChainSync.sync(
       chainHandler = chainHandler,
       getBlockHeaderFunc = getBlockHeaderFunc,
-      getBestBlockHashFunc = getBestBlockHashFunc)
+      getBestBlockHashFunc = getBestBlockHashFunc
+    )
 
-    //now sync filters
+    // now sync filters
     syncedHeadersF.flatMap { syncedChainHandler =>
       FilterSync.syncFilters(
         chainApi = syncedChainHandler,

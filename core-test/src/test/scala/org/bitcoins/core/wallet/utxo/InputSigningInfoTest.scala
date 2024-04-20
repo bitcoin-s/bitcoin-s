@@ -17,11 +17,12 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
   it should "fail to build a tx if you have the wrong redeem script" in {
     val p2sh = P2SHScriptPubKey(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Vector(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.validLockVersion,
+      inputs = Nil,
+      outputs = Vector(creditingOutput),
+      lockTime = TransactionConstants.lockTime
+    )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     val inputInfo = InputInfo(
       outPoint = outPoint,
@@ -53,10 +54,12 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
   it should "fail to build a tx if you have the wrong script witness" in {
     val p2wsh = P2WSHWitnessSPKV0(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wsh)
-    val creditingTx = BaseTransaction(TransactionConstants.validLockVersion,
-                                      Nil,
-                                      Vector(creditingOutput),
-                                      TransactionConstants.lockTime)
+    val creditingTx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Nil,
+      Vector(creditingOutput),
+      TransactionConstants.lockTime
+    )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
@@ -95,11 +98,12 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val p2wpkh = P2WPKHWitnessSPKV0(pubKey = privKey.publicKey)
     val creditingOutput =
       TransactionOutput(value = CurrencyUnits.zero, scriptPubKey = p2wpkh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Vector(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.validLockVersion,
+      inputs = Nil,
+      outputs = Vector(creditingOutput),
+      lockTime = TransactionConstants.lockTime
+    )
     val outPoint =
       TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
     val inputInfo = InputInfo(
@@ -132,10 +136,12 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
   it should "fail to sign a p2wpkh if we pass in the wrong public key" in {
     val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
-    val creditingTx = BaseTransaction(TransactionConstants.validLockVersion,
-                                      Nil,
-                                      Vector(creditingOutput),
-                                      TransactionConstants.lockTime)
+    val creditingTx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Nil,
+      Vector(creditingOutput),
+      TransactionConstants.lockTime
+    )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
@@ -173,10 +179,12 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
   it should "fail to sign if the prevTransaction does not match the outPoint" in {
     val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
-    val creditingTx = BaseTransaction(TransactionConstants.validLockVersion,
-                                      Nil,
-                                      Vector(creditingOutput),
-                                      TransactionConstants.lockTime)
+    val creditingTx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Nil,
+      Vector(creditingOutput),
+      TransactionConstants.lockTime
+    )
     val outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
@@ -216,10 +224,12 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
     val creditingTx =
-      BaseTransaction(TransactionConstants.validLockVersion,
-                      Nil,
-                      Vector(TransactionOutput(CurrencyUnits.oneBTC, p2wpkh)),
-                      TransactionConstants.lockTime)
+      BaseTransaction(
+        TransactionConstants.validLockVersion,
+        Nil,
+        Vector(TransactionOutput(CurrencyUnits.oneBTC, p2wpkh)),
+        TransactionConstants.lockTime
+      )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {

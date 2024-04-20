@@ -64,7 +64,8 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
-      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
+      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
+    )
   }
 
   it should "fail for starting above the minimum" in {
@@ -76,7 +77,8 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
-      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
+      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
+    )
   }
 
   it should "fail for ending below the maximum" in {
@@ -88,7 +90,8 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
-      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
+      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
+    )
   }
 
   it should "fail for ending above the maximum" in {
@@ -100,30 +103,36 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
-      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
+      NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
+    )
   }
 
   it should "parse a numeric contract descriptor pre 144" in {
-    //we have to be able to parse old numeric contract descriptors
-    //pre pr 144 on the DLC spec as we have old wallets deployed with this
-    //https://github.com/discreetlogcontracts/dlcspecs/pull/144
+    // we have to be able to parse old numeric contract descriptors
+    // pre pr 144 on the DLC spec as we have old wallets deployed with this
+    // https://github.com/discreetlogcontracts/dlcspecs/pull/144
     val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
-        PiecewisePolynomialPoint(outcome = 0,
-                                 payout = Satoshis(0),
-                                 isEndpoint = true),
-        PiecewisePolynomialPoint(outcome = 3,
-                                 payout = Satoshis(100),
-                                 isEndpoint = true)
+        PiecewisePolynomialPoint(
+          outcome = 0,
+          payout = Satoshis(0),
+          isEndpoint = true
+        ),
+        PiecewisePolynomialPoint(
+          outcome = 3,
+          payout = Satoshis(100),
+          isEndpoint = true
+        )
       ),
       serializationVersion = DLCSerializationVersion.Beta
     )
 
     val expected =
-      NumericContractDescriptor(outcomeValueFunc = func,
-                                numDigits = 2,
-                                roundingIntervals =
-                                  RoundingIntervals.noRounding)
+      NumericContractDescriptor(
+        outcomeValueFunc = func,
+        numDigits = 2,
+        roundingIntervals = RoundingIntervals.noRounding
+      )
 
     val oldHex =
       "fda720260002fda7261a0002010000000000000000000000010300000000000000640000fda724020000"

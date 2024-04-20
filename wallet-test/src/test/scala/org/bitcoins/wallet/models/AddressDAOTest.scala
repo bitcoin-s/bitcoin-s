@@ -24,10 +24,14 @@ class AddressDAOTest extends WalletDAOFixture {
   it should "preserve public key scripts" in { daos =>
     val addressDAO = daos.addressDAO
 
-    val addr1 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
-                                            addressIndex = 0)
-    val addr2 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
-                                            addressIndex = 1)
+    val addr1 = WalletTestUtil.getAddressDb(
+      WalletTestUtil.firstAccountDb,
+      addressIndex = 0
+    )
+    val addr2 = WalletTestUtil.getAddressDb(
+      WalletTestUtil.firstAccountDb,
+      addressIndex = 1
+    )
     assert(addr1.scriptPubKey != addr2.scriptPubKey)
 
     for {
@@ -39,7 +43,9 @@ class AddressDAOTest extends WalletDAOFixture {
       assert(addr2 == created2)
       assert(
         Vector(addr1, addr2).sortBy(_.address.toString) == found.sortBy(
-          _.address.toString))
+          _.address.toString
+        )
+      )
     }
   }
 
@@ -73,10 +79,14 @@ class AddressDAOTest extends WalletDAOFixture {
     val addressDAO = daos.addressDAO
 
     val addr1 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
-    val addr2 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
-                                            addressIndex = 1)
-    val addr3 = WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb,
-                                            addressIndex = 2)
+    val addr2 = WalletTestUtil.getAddressDb(
+      WalletTestUtil.firstAccountDb,
+      addressIndex = 1
+    )
+    val addr3 = WalletTestUtil.getAddressDb(
+      WalletTestUtil.firstAccountDb,
+      addressIndex = 2
+    )
     val spks = Vector(addr1.scriptPubKey, addr2.scriptPubKey)
 
     for {
@@ -98,24 +108,26 @@ class AddressDAOTest extends WalletDAOFixture {
       val addrStr = "bc1qfjex5a4m5w0atqrpwad3zj4vkfkuhun46tge9c"
       val address = Bech32Address.fromString(addrStr)
       val spk = address.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0]
-      //insert the script first
+      // insert the script first
       val spkDb = ScriptPubKeyDb(address.scriptPubKey)
       val createdSpkF = spkDAO.create(spkDb)
 
-      //now try to insert the address in the database
+      // now try to insert the address in the database
       val segwitHdPath: SegWitHDPath =
         SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val pubKey: ECPublicKey = ECPublicKey.freshPublicKey
-      val addressDb = SegWitAddressDb.apply(segwitHdPath,
-                                            pubKey,
-                                            spk.pubKeyHash,
-                                            address,
-                                            EmptyScriptWitness,
-                                            spk)
+      val addressDb = SegWitAddressDb.apply(
+        segwitHdPath,
+        pubKey,
+        spk.pubKeyHash,
+        address,
+        EmptyScriptWitness,
+        spk
+      )
       for {
         createdSpk <- createdSpkF
         _ <- addressDAO.create(addressDb)
-        //make sure we can find it now
+        // make sure we can find it now
         foundOpt <- addressDAO.read(address)
       } yield {
         assert(foundOpt.isDefined)
@@ -131,24 +143,26 @@ class AddressDAOTest extends WalletDAOFixture {
       val addrStr = "bc1qfjex5a4m5w0atqrpwad3zj4vkfkuhun46tge9c"
       val address = Bech32Address.fromString(addrStr)
       val spk = address.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0]
-      //insert the script first
+      // insert the script first
       val spkDb = ScriptPubKeyDb(address.scriptPubKey)
       val createdSpkF = spkDAO.create(spkDb)
 
-      //now try to insert the address in the database
+      // now try to insert the address in the database
       val segwitHdPath: SegWitHDPath =
         SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val pubKey: ECPublicKey = ECPublicKey.freshPublicKey
-      val addressDb = SegWitAddressDb.apply(segwitHdPath,
-                                            pubKey,
-                                            spk.pubKeyHash,
-                                            address,
-                                            EmptyScriptWitness,
-                                            spk)
+      val addressDb = SegWitAddressDb.apply(
+        segwitHdPath,
+        pubKey,
+        spk.pubKeyHash,
+        address,
+        EmptyScriptWitness,
+        spk
+      )
       for {
         createdSpk <- createdSpkF
         _ <- addressDAO.upsert(addressDb)
-        //make sure we can find it now
+        // make sure we can find it now
         foundOpt <- addressDAO.read(address)
       } yield {
         assert(foundOpt.isDefined)

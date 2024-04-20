@@ -25,8 +25,7 @@ sealed trait SecpPoint extends NetworkElement {
 }
 
 /** The point at infinity, this is the secp256k1 group identity element meaning
-  * p + 0x00 = 0x00 + p = p for any point p and
-  * p + (-p) = 0x00.
+  * p + 0x00 = 0x00 + p = p for any point p and p + (-p) = 0x00.
   *
   * Note that this does not correspond to a valid ECPublicKey just like
   * FieldElement.zero does not correspond to a valid private key (and in fact
@@ -52,8 +51,10 @@ case class SecpPointFinite(x: CurveCoordinate, y: CurveCoordinate)
 
   def schnorrNonce: SchnorrNonce = {
     val pub = toPublicKey
-    require(pub.isCompressed,
-            s"SchnorrNonce can only be created from compressed public keys")
+    require(
+      pub.isCompressed,
+      s"SchnorrNonce can only be created from compressed public keys"
+    )
     pub.schnorrNonce
   }
 }
@@ -69,8 +70,10 @@ object SecpPoint {
     SecpPointFinite(CurveCoordinate.fromBytes(x), CurveCoordinate.fromBytes(y))
 
   def apply(x: Array[Byte], y: Array[Byte]): SecpPointFinite =
-    SecpPointFinite(CurveCoordinate.fromByteArray(x),
-                    CurveCoordinate.fromByteArray(y))
+    SecpPointFinite(
+      CurveCoordinate.fromByteArray(x),
+      CurveCoordinate.fromByteArray(y)
+    )
 
   def apply(x: BigInteger, y: BigInteger): SecpPointFinite =
     SecpPointFinite(CurveCoordinate(x), CurveCoordinate(y))

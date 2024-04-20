@@ -35,10 +35,11 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       element: ElementType,
       key: KeyType,
       dao: CRUD[ElementType, KeyType],
-      dlcDAO: DLCDAO): Future[Assertion] = {
+      dlcDAO: DLCDAO
+  ): Future[Assertion] = {
     for {
       _ <- dlcDAO.create(dlcDb)
-      _ <- dao.upsert(element) //upsert in case we are testing the dlcDAO
+      _ <- dao.upsert(element) // upsert in case we are testing the dlcDAO
 
       read <- dao.read(key)
     } yield {
@@ -160,10 +161,12 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         initiatorSig = None
       )
 
-      verifyDatabaseInsertion(sig,
-                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
-                              sigsDAO,
-                              dlcDAO)
+      verifyDatabaseInsertion(
+        sig,
+        DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
+        sigsDAO,
+        dlcDAO
+      )
   }
 
   it should "correctly insert unsigned numeric outcome CET signatures into the database" in {
@@ -179,10 +182,12 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         initiatorSig = None
       )
 
-      verifyDatabaseInsertion(sig,
-                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
-                              sigsDAO,
-                              dlcDAO)
+      verifyDatabaseInsertion(
+        sig,
+        DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
+        sigsDAO,
+        dlcDAO
+      )
   }
 
   it should "correctly find CET signatures by dlcId" in { daos =>
@@ -237,15 +242,18 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     for {
       // no contact
       _ <- recoverToSucceededIf[SQLException](
-        daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address))
+        daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address)
+      )
 
       _ <- daos.contactDAO.create(contact)
 
       // no dlc
       _ <- recoverToSucceededIf[SQLException](
-        daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address))
+        daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address)
+      )
       _ <- recoverToSucceededIf[SQLException](
-        daos.dlcDAO.deleteDLCContactMapping(dlcId))
+        daos.dlcDAO.deleteDLCContactMapping(dlcId)
+      )
 
       created <- daos.dlcDAO.create(dlcDb)
 
@@ -269,7 +277,8 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     for {
       _ <- daos.dlcDAO.create(alphaDLCDb)
       foundOpt <- daos.dlcDAO.findByDLCSerializationVersion(
-        DLCSerializationVersion.Alpha)
+        DLCSerializationVersion.Alpha
+      )
     } yield {
       assert(foundOpt.nonEmpty)
     }

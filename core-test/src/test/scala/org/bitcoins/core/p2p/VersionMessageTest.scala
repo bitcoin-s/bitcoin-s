@@ -38,7 +38,8 @@ class VersionMessageTest extends BitcoinSUnitTest {
     versionMessage.nonce must be(UInt64.zero)
     versionMessage.startHeight must be(Int32.zero)
     versionMessage.timestamp.toLong must be(
-      Instant.now().getEpochSecond +- 1000)
+      Instant.now().getEpochSecond +- 1000
+    )
   }
 
   it must "correctly deduce service flags" in {

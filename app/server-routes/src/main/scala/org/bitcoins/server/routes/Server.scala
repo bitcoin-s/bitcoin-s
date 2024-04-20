@@ -52,7 +52,8 @@ case class Server(
     rpcport: Int,
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
-    wsSource: Source[WsNotification[_], NotUsed])(implicit system: ActorSystem)
+    wsSource: Source[WsNotification[_], NotUsed]
+)(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -61,8 +62,10 @@ case class Server(
     if (rpchost == "localhost" || rpchost == "127.0.0.1") {
       logger.warn(s"RPC password is not set (rpchost=$rpchost)")
     } else {
-      require(rpcPassword.nonEmpty,
-              s"RPC password must be set (rpchost=$rpchost)")
+      require(
+        rpcPassword.nonEmpty,
+        s"RPC password must be set (rpchost=$rpchost)"
+      )
     }
   }
 
@@ -81,7 +84,8 @@ case class Server(
           complete {
             Server.httpError(
               """Resource not found. Hint: all RPC calls are made against root ('/')""",
-              StatusCodes.BadRequest)
+              StatusCodes.BadRequest
+            )
           }
         }
         .result()
@@ -89,8 +93,11 @@ case class Server(
     val exceptionHandler = ExceptionHandler {
       case HttpError.MethodNotFound(method) =>
         complete(
-          Server.httpError(s"'$method' is not a valid method",
-                           StatusCodes.BadRequest))
+          Server.httpError(
+            s"'$method' is not a valid method",
+            StatusCodes.BadRequest
+          )
+        )
       case err: Throwable =>
         logger.error(s"Unhandled error in server:", err)
         complete(Server.httpError(err.getMessage))
@@ -173,7 +180,8 @@ case class Server(
     }
 
     DebuggingDirectives.logRequestResult(
-      ("http-rpc-server", Logging.DebugLevel)) {
+      ("http-rpc-server", Logging.DebugLevel)
+    ) {
       authenticatedRoute
     }
   }
@@ -250,7 +258,8 @@ object Server extends BitcoinSLogger {
   // TODO id parameter
   case class Response(
       result: Option[ujson.Value] = None,
-      error: Option[String] = None) {
+      error: Option[String] = None
+  ) {
 
     def toJsonMap: Map[String, ujson.Value] = {
       Map(
@@ -267,8 +276,9 @@ object Server extends BitcoinSLogger {
   }
 
   /** Creates a HTTP response with the given body as a JSON response */
-  def httpSuccess[T](body: T)(implicit
-      writer: up.Writer[T]): HttpEntity.Strict = {
+  def httpSuccess[T](
+      body: T
+  )(implicit writer: up.Writer[T]): HttpEntity.Strict = {
     val response = Response(result = Some(up.writeJs(body)))
     HttpEntity(
       ContentTypes.`application/json`,
@@ -276,8 +286,9 @@ object Server extends BitcoinSLogger {
     )
   }
 
-  def httpSuccessOption[T](bodyOpt: Option[T])(implicit
-      writer: up.Writer[T]): HttpEntity.Strict = {
+  def httpSuccessOption[T](
+      bodyOpt: Option[T]
+  )(implicit writer: up.Writer[T]): HttpEntity.Strict = {
     val response = Response(result = bodyOpt.map(body => up.writeJs(body)))
     HttpEntity(
       ContentTypes.`application/json`,

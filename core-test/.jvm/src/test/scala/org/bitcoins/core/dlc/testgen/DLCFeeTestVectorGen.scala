@@ -12,7 +12,8 @@ object DLCFeeTestVectorGen
     extends TestVectorGen[DLCFeeTestVector, DLCFeeTestVectorInput] {
 
   override val defaultTestFile: File = new File(
-    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_fee_test.json")
+    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_fee_test.json"
+  )
 
   override val testVectorParser: DLCFeeTestVector.type =
     DLCFeeTestVector
@@ -22,8 +23,8 @@ object DLCFeeTestVectorGen
 
   override val inputStr: String = "inputs"
 
-  override def generateFromInput: DLCFeeTestVectorInput => Future[
-    DLCFeeTestVector] = { input =>
+  override def generateFromInput
+      : DLCFeeTestVectorInput => Future[DLCFeeTestVector] = { input =>
     Future.successful(DLCFeeTestVector(input))
   }
 
@@ -55,7 +56,8 @@ object DLCFeeTestVectorGen
 
     def allTests(
         offerInputs: Vector[FundingFeeInfo],
-        acceptInputs: Vector[FundingFeeInfo]): Vector[DLCFeeTestVector] = {
+        acceptInputs: Vector[FundingFeeInfo]
+    ): Vector[DLCFeeTestVector] = {
       for {
         offerPayoutSPKLen <- payoutSPKLens
         offerChangeSPKLen <- changeSPKLens
@@ -77,7 +79,8 @@ object DLCFeeTestVectorGen
 
     def someTests(
         offerInputs: Vector[FundingFeeInfo],
-        acceptInputs: Vector[FundingFeeInfo]): Vector[DLCFeeTestVector] = {
+        acceptInputs: Vector[FundingFeeInfo]
+    ): Vector[DLCFeeTestVector] = {
       allTests(offerInputs, acceptInputs)
         .sortBy(_ => scala.util.Random.nextDouble())
         .take(10)

@@ -20,51 +20,58 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
   private val dlcRefundSigDAO = dlcWalletDAOs.dlcRefundSigDAO
   private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
 
-  //idk if it matters which profile api i import, but i need access to transactionally
+  // idk if it matters which profile api i import, but i need access to transactionally
   import dlcWalletDAOs.dlcDAO.profile.api._
   private val mappers = new DbCommonsColumnMappers(dlcWalletDAOs.dlcDAO.profile)
   import mappers.sha256DigestMapper
 
-  /** Builds an offer in our database, adds relevant information to the global table,
-    * contract data, announcements, funding inputs, and the actual offer itself
+  /** Builds an offer in our database, adds relevant information to the global
+    * table, contract data, announcements, funding inputs, and the actual offer
+    * itself
     */
   def buildCreateOfferAction(
       dlcDb: DLCDb,
       contractDataDb: DLCContractDataDb,
       dlcAnnouncementDbs: Vector[DLCAnnouncementDb],
       dlcInputs: Vector[DLCFundingInputDb],
-      dlcOfferDb: DLCOfferDb)(implicit ec: ExecutionContext): DBIOAction[
+      dlcOfferDb: DLCOfferDb
+  )(implicit ec: ExecutionContext): DBIOAction[
     Unit,
     NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+    Effect.Read with Effect.Write with Effect.Transactional
+  ] = {
     val globalAction = dlcDAO.upsertAction(dlcDb)
     val contractAction = contractDataDAO.upsertAction(contractDataDb)
     val announcementAction =
       dlcAnnouncementDAO.upsertAllAction(dlcAnnouncementDbs)
     val inputsAction = dlcInputsDAO.upsertAllAction(dlcInputs)
     val offerAction = dlcOfferDAO.upsertAction(dlcOfferDb)
-    val actions = Vector(globalAction,
-                         contractAction,
-                         announcementAction,
-                         inputsAction,
-                         offerAction)
+    val actions = Vector(
+      globalAction,
+      contractAction,
+      announcementAction,
+      inputsAction,
+      offerAction
+    )
     val allActions = DBIO
       .sequence(actions)
       .map(_ => ())
     allActions
   }
 
-  /** Builds an accept in our database, adds relevant information to the
-    * offer table, accept table, cet sigs table, inputs table, and refund table
+  /** Builds an accept in our database, adds relevant information to the offer
+    * table, accept table, cet sigs table, inputs table, and refund table
     */
   def buildCreateAcceptAction(
       dlcDb: DLCDb,
       offerInputs: Vector[DLCFundingInputDb],
       cetSigsDb: Vector[DLCCETSignaturesDb],
-      refundSigsDb: DLCRefundSigsDb)(implicit ec: ExecutionContext): DBIOAction[
+      refundSigsDb: DLCRefundSigsDb
+  )(implicit ec: ExecutionContext): DBIOAction[
     Unit,
     NoStream,
-    Effect.Write with Effect.Read with Effect.Transactional] = {
+    Effect.Write with Effect.Read with Effect.Transactional
+  ] = {
     val dlcDbAction = dlcDAO.updateAction(dlcDb)
     val inputAction = dlcInputsDAO.upsertAllAction(offerInputs)
     val sigsAction = dlcSigsDAO.createAllAction(cetSigsDb)
@@ -77,14 +84,12 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     allActions
   }
 
-  /** Creates the action to delete the given dlc from our database.
-    * This removes references to the dlc in our various tables
+  /** Creates the action to delete the given dlc from our database. This removes
+    * references to the dlc in our various tables
     */
   def deleteDLCAction(dlcId: Sha256Digest)(implicit
-      ec: ExecutionContext): DBIOAction[
-    Unit,
-    NoStream,
-    Effect.Write with Effect.Transactional] = {
+      ec: ExecutionContext
+  ): DBIOAction[Unit, NoStream, Effect.Write with Effect.Transactional] = {
     val deleteSigA = dlcSigsDAO.deleteByDLCIdAction(dlcId)
     val deleteRefundSigA = dlcRefundSigDAO.deleteByDLCIdAction(dlcId)
     val deleteInputSigA = dlcInputsDAO.deleteByDLCIdAction(dlcId)
@@ -108,27 +113,29 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     action
   }
 
-  /** Retrieves a DBIOAction that fetches the global dlc db,
-    * the contract, the offer, and funding inputs
+  /** Retrieves a DBIOAction that fetches the global dlc db, the contract, the
+    * offer, and funding inputs
     */
-  def getDLCOfferDataAction(dlcId: Sha256Digest)(implicit
-      ec: ExecutionContext): DBIOAction[
+  def getDLCOfferDataAction(
+      dlcId: Sha256Digest
+  )(implicit ec: ExecutionContext): DBIOAction[
     (
         Option[DLCDb],
         Option[DLCContractDataDb],
         Option[DLCOfferDb],
-        Vector[DLCFundingInputDb]),
+        Vector[DLCFundingInputDb]
+    ),
     NoStream,
-    Effect.Read with Effect.Transactional] = {
+    Effect.Read with Effect.Transactional
+  ] = {
     val dlcDbQ = dlcDAO.findByPrimaryKey(dlcId)
     val contractDbsQ = contractDataDAO.findByPrimaryKey(dlcId)
     val offerDbsQ = dlcOfferDAO.findByPrimaryKey(dlcId)
-    //optimization to use sql queries rather than action
-    //as this method gets called a lot.
-    val dlcDbOfferDbContractDataDbOptA: DBIOAction[
-      Option[((DLCDb, DLCOfferDb), DLCContractDataDb)],
-      NoStream,
-      Effect.Read with Effect.Transactional] = {
+    // optimization to use sql queries rather than action
+    // as this method gets called a lot.
+    val dlcDbOfferDbContractDataDbOptA: DBIOAction[Option[
+      ((DLCDb, DLCOfferDb), DLCContractDataDb)
+    ], NoStream, Effect.Read with Effect.Transactional] = {
       dlcDbQ
         .join(offerDbsQ)
         .on(_.dlcId === _.dlcId)
@@ -143,7 +150,7 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     val combined = for {
       dlcDbOfferDbContractDataDbOpt <- dlcDbOfferDbContractDataDbOptA
       inputs <- fundingInputsAction
-      //only want offerer inputs
+      // only want offerer inputs
       offerInputs = inputs.filter(_.isInitiator)
     } yield {
       dlcDbOfferDbContractDataDbOpt match {
@@ -157,22 +164,22 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     combined
   }
 
-  /** Updates various tables in our database with oracle attestations
-    * that are published by the oracle
+  /** Updates various tables in our database with oracle attestations that are
+    * published by the oracle
     */
   def updateDLCOracleSigsAction(
-      outcomeAndSigByNonce: Map[
-        SchnorrNonce,
-        (String, SchnorrDigitalSignature)])(implicit
-      ec: ExecutionContext): DBIOAction[
-    Vector[OracleNonceDb],
-    NoStream,
-    Effect.Write with Effect.Read with Effect.Transactional] = {
+      outcomeAndSigByNonce: Map[SchnorrNonce, (String, SchnorrDigitalSignature)]
+  )(implicit ec: ExecutionContext): DBIOAction[Vector[
+    OracleNonceDb
+  ], NoStream, Effect.Write with Effect.Read with Effect.Transactional] = {
     val updateAction = for {
       nonceDbs <- oracleNonceDAO.findByNoncesAction(
-        outcomeAndSigByNonce.keys.toVector)
-      _ = assert(nonceDbs.size == outcomeAndSigByNonce.keys.size,
-                 "Didn't receive all nonce dbs")
+        outcomeAndSigByNonce.keys.toVector
+      )
+      _ = assert(
+        nonceDbs.size == outcomeAndSigByNonce.keys.size,
+        "Didn't receive all nonce dbs"
+      )
 
       updated = nonceDbs.map { db =>
         val (outcome, sig) = outcomeAndSigByNonce(db.nonce)

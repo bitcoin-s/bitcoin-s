@@ -41,7 +41,8 @@ object DLCMessage {
   @tailrec
   def genSerialIds(
       size: Int,
-      notEqualTo: Vector[UInt64] = Vector.empty): Vector[UInt64] = {
+      notEqualTo: Vector[UInt64] = Vector.empty
+  ): Vector[UInt64] = {
     val ids = 0.until(size).toVector.map(_ => genSerialId(notEqualTo))
 
     if (ids.distinct.size != size)
@@ -52,7 +53,9 @@ object DLCMessage {
   sealed trait DLCSetupMessage extends DLCMessage {
     def pubKeys: DLCPublicKeys
 
-    /** The collateral that the offerer/acceptor is putting up on their side of the DLC */
+    /** The collateral that the offerer/acceptor is putting up on their side of
+      * the DLC
+      */
     def collateral: Satoshis
 
     def fundingInputs: Vector[DLCFundingInput]
@@ -61,20 +64,30 @@ object DLCMessage {
 
     require(
       collateral >= Satoshis.zero,
-      s"Cannot have a negative totalCollateral, got: ${collateral.toLong}")
+      s"Cannot have a negative totalCollateral, got: ${collateral.toLong}"
+    )
   }
 
-  /** The initiating party starts the protocol by sending an offer message to the other party.
+  /** The initiating party starts the protocol by sending an offer message to
+    * the other party.
     *
-    * @param contractInfo The oracle public key and R point(s) to use to build the CETs as
-    *                   well as meta information to identify the oracle to be used in the contract,
-    *                   and a map to be used to create CETs.
-    * @param pubKeys The relevant public keys that the initiator will be using
-    * @param collateral How much the initiator inputs into the contract.
-    * @param fundingInputs   The set of UTXOs to be used as input to the fund transaction.
-    * @param changeAddress   The address to use to send the change for the initiator.
-    * @param feeRate         The fee rate to be used when computing fees for the different transactions.
-    * @param timeouts        The set of timeouts for the CETs
+    * @param contractInfo
+    *   The oracle public key and R point(s) to use to build the CETs as well as
+    *   meta information to identify the oracle to be used in the contract, and
+    *   a map to be used to create CETs.
+    * @param pubKeys
+    *   The relevant public keys that the initiator will be using
+    * @param collateral
+    *   How much the initiator inputs into the contract.
+    * @param fundingInputs
+    *   The set of UTXOs to be used as input to the fund transaction.
+    * @param changeAddress
+    *   The address to use to send the change for the initiator.
+    * @param feeRate
+    *   The fee rate to be used when computing fees for the different
+    *   transactions.
+    * @param timeouts
+    *   The set of timeouts for the CETs
     */
   case class DLCOffer(
       protocolVersionOpt: Option[Int],
@@ -88,18 +101,20 @@ object DLCMessage {
       fundOutputSerialId: UInt64,
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts,
-      isExternalAddress: Boolean = false)
-      extends DLCSetupMessage {
+      isExternalAddress: Boolean = false
+  ) extends DLCSetupMessage {
 
     require(fundingInputs.nonEmpty, s"DLCOffer fundingINnputs cannot be empty")
 
     require(
       fundingInputs.map(_.inputSerialId).distinct.size == fundingInputs.size,
-      "All funding input serial ids must be unique")
+      "All funding input serial ids must be unique"
+    )
 
     require(
       changeSerialId != fundOutputSerialId,
-      s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
+      s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)"
+    )
 
     require(
       collateral <= contractInfo.totalCollateral,
@@ -154,7 +169,8 @@ object DLCMessage {
         contractInfo = contractInfo,
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,
-          BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
+          BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)
+        ),
         collateral = offer.offererCollateralSatoshis,
         fundingInputs = offer.fundingInputs.map {
           case input: FundingInputV0TLV => DLCFundingInput.fromTLV(input)
@@ -175,7 +191,9 @@ object DLCMessage {
     }
   }
 
-  /** DLC Accept message that contains refund signatures, but does not contain cet signatures */
+  /** DLC Accept message that contains refund signatures, but does not contain
+    * cet signatures
+    */
   case class DLCAcceptWithoutCetSigs(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -185,7 +203,8 @@ object DLCMessage {
       changeSerialId: UInt64,
       refundSig: PartialSignature,
       negotiationFields: DLCAccept.NegotiationFields,
-      tempContractId: Sha256Digest) {
+      tempContractId: Sha256Digest
+  ) {
 
     def withCetSigs(cetSigs: CETSignatures): DLCAccept = {
       DLCAccept(
@@ -203,7 +222,9 @@ object DLCMessage {
     }
   }
 
-  /** DLC accept message that does not contain cet signatures or refund signatures */
+  /** DLC accept message that does not contain cet signatures or refund
+    * signatures
+    */
   case class DLCAcceptWithoutSigs(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -212,7 +233,8 @@ object DLCMessage {
       payoutSerialId: UInt64,
       changeSerialId: UInt64,
       negotiationFields: DLCAccept.NegotiationFields,
-      tempContractId: Sha256Digest) {
+      tempContractId: Sha256Digest
+  ) {
 
     def withRefundSigs(refundSig: PartialSignature): DLCAcceptWithoutCetSigs = {
       DLCAcceptWithoutCetSigs(
@@ -230,7 +252,8 @@ object DLCMessage {
 
     def withSigs(
         cetSigs: CETSignatures,
-        refundSig: PartialSignature): DLCAccept = {
+        refundSig: PartialSignature
+    ): DLCAccept = {
       DLCAccept(
         collateral = totalCollateral,
         pubKeys = pubKeys,
@@ -257,12 +280,13 @@ object DLCMessage {
       refundSig: PartialSignature,
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest,
-      isExternalAddress: Boolean = false)
-      extends DLCSetupMessage {
+      isExternalAddress: Boolean = false
+  ) extends DLCSetupMessage {
 
     require(
       fundingInputs.map(_.inputSerialId).distinct.size == fundingInputs.size,
-      "All funding input serial ids must be unique")
+      "All funding input serial ids must be unique"
+    )
 
     def toTLV: DLCAcceptTLV = {
       DLCAcceptTLV(
@@ -332,11 +356,12 @@ object DLCMessage {
     }
 
     case class NegotiationFieldsV2(
-        nestedNegotiationFields: Vector[NegotiationFields])
-        extends TLVSerializable[NegotiationFieldsV2TLV]
+        nestedNegotiationFields: Vector[NegotiationFields]
+    ) extends TLVSerializable[NegotiationFieldsV2TLV]
         with NegotiationFields {
       require(
-        nestedNegotiationFields.forall(!_.isInstanceOf[NegotiationFieldsV2]))
+        nestedNegotiationFields.forall(!_.isInstanceOf[NegotiationFieldsV2])
+      )
 
       override def toTLV: NegotiationFieldsV2TLV = {
         NegotiationFieldsV2TLV(nestedNegotiationFields.map(_.toTLV))
@@ -352,7 +377,8 @@ object DLCMessage {
             NegotiationFieldsV1(RoundingIntervals.fromTLV(roundingIntervalsTLV))
           case NegotiationFieldsV2TLV(nestedNegotiationFields) =>
             NegotiationFieldsV2(
-              nestedNegotiationFields.map(NegotiationFields.fromTLV))
+              nestedNegotiationFields.map(NegotiationFields.fromTLV)
+            )
         }
       }
     }
@@ -360,22 +386,25 @@ object DLCMessage {
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        adaptorPoints: Vector[ECPublicKey]): DLCAccept = {
+        adaptorPoints: Vector[ECPublicKey]
+    ): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           adaptorPoints.zip(sigs)
       }
 
-      //add hashtype
+      // add hashtype
       val refundSigWithHashType = {
         ECDigitalSignature.fromBytes(
-          accept.refundSignature.bytes.:+(HashType.sigHashAllByte))
+          accept.refundSignature.bytes.:+(HashType.sigHashAllByte)
+        )
       }
       DLCAccept(
         collateral = accept.acceptCollateralSatoshis,
         pubKeys = DLCPublicKeys(
           accept.fundingPubKey,
-          BitcoinAddress.fromScriptPubKey(accept.payoutSPK, network)),
+          BitcoinAddress.fromScriptPubKey(accept.payoutSPK, network)
+        ),
         fundingInputs = accept.fundingInputs.map {
           case input: FundingInputV0TLV => DLCFundingInput.fromTLV(input)
         },
@@ -396,7 +425,8 @@ object DLCMessage {
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        contractInfo: ContractInfo): DLCAccept = {
+        contractInfo: ContractInfo
+    ): DLCAccept = {
       fromTLV(accept, network, contractInfo.adaptorPoints)
     }
 
@@ -406,7 +436,8 @@ object DLCMessage {
 
     def fromMessage(
         accept: LnMessage[DLCAcceptTLV],
-        offer: DLCOffer): DLCAccept = {
+        offer: DLCOffer
+    ): DLCAccept = {
       fromTLV(accept.tlv, offer)
     }
   }
@@ -415,8 +446,8 @@ object DLCMessage {
       cetSigs: CETSignatures,
       refundSig: PartialSignature,
       fundingSigs: FundingSignatures,
-      contractId: ByteVector)
-      extends DLCMessage {
+      contractId: ByteVector
+  ) extends DLCMessage {
 
     def toTLV: DLCSignTLV = {
       DLCSignTLV(
@@ -439,7 +470,8 @@ object DLCMessage {
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
         adaptorPoints: Vector[ECPublicKey],
-        fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
+        fundingOutPoints: Vector[TransactionOutPoint]
+    ): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
           adaptorPoints.zip(sigs)
@@ -454,7 +486,9 @@ object DLCMessage {
       val refundSig = PartialSignature(
         fundingPubKey,
         ECDigitalSignature(
-          sign.refundSignature.bytes :+ HashType.sigHashAll.byte))
+          sign.refundSignature.bytes :+ HashType.sigHashAll.byte
+        )
+      )
       DLCSign(
         cetSigs = CETSignatures(outcomeSigs),
         refundSig = refundSig,
@@ -464,10 +498,12 @@ object DLCMessage {
     }
 
     def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
-      fromTLV(sign,
-              offer.pubKeys.fundingKey,
-              offer.contractInfo.adaptorPoints,
-              offer.fundingInputs.map(_.outPoint))
+      fromTLV(
+        sign,
+        offer.pubKeys.fundingKey,
+        offer.contractInfo.adaptorPoints,
+        offer.fundingInputs.map(_.outPoint)
+      )
     }
 
     def fromMessage(sign: LnMessage[DLCSignTLV], offer: DLCOffer): DLCSign = {

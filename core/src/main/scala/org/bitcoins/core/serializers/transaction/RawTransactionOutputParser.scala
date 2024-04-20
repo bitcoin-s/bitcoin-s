@@ -23,13 +23,14 @@ sealed abstract class RawTransactionOutputParser
 
   /** Reads a single output from the given bytes, note this is different than
     * [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read RawTransactionOutputParser.read]]
-    * because it does NOT expect a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
-    * to be the first element in the byte array indicating how many outputs we have
+    * because it does NOT expect a
+    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] to be the
+    * first element in the byte array indicating how many outputs we have
     */
   override def read(bytes: ByteVector): TransactionOutput = {
     val satoshisBytes = bytes.take(8)
     val satoshis = RawSatoshisSerializer.read(satoshisBytes)
-    //it doesn't include itself towards the size, thats why it is incremented by one
+    // it doesn't include itself towards the size, thats why it is incremented by one
     val scriptPubKeyBytes = bytes.slice(8, bytes.size)
     val scriptPubKey = RawScriptPubKeyParser.read(scriptPubKeyBytes)
     val parsedOutput = TransactionOutput(satoshis, scriptPubKey)

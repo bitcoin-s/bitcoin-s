@@ -15,7 +15,8 @@ trait DLCOracleAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
     val builder: () => Future[DLCOracleAppConfig] = () => {
       val conf: DLCOracleAppConfig =
         BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(() =>
-          pgUrl())
+          pgUrl()
+        )
       val _ = conf.migrate()
       Future.successful(conf)
     }

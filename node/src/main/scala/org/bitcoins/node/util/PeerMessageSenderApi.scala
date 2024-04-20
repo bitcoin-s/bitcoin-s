@@ -29,13 +29,15 @@ trait PeerMessageSenderApi {
 
   def sendGetDataMessage(
       typeIdentifier: TypeIdentifier,
-      hash: DoubleSha256DigestBE): Future[Unit] = {
+      hash: DoubleSha256DigestBE
+  ): Future[Unit] = {
     sendGetDataMessages(typeIdentifier, Vector(hash))
   }
 
   def sendGetDataMessages(
       typeIdentifier: TypeIdentifier,
-      hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
+      hashes: Vector[DoubleSha256DigestBE]
+  ): Future[Unit]
 
   def sendGetHeadersMessage(hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
 
@@ -46,10 +48,12 @@ trait PeerMessageSenderApi {
   def sendMsg(msg: NetworkPayload): Future[Unit]
 
   def sendGetCompactFilterHeadersMessage(
-      filterSyncMarker: FilterSyncMarker): Future[Unit]
+      filterSyncMarker: FilterSyncMarker
+  ): Future[Unit]
 
   def sendGetCompactFiltersMessage(filterSyncMarker: FilterSyncMarker)(implicit
-      ec: ExecutionContext): Future[Unit]
+      ec: ExecutionContext
+  ): Future[Unit]
 
   def sendInventoryMessage(transactions: Vector[Transaction]): Future[Unit]
 
@@ -72,21 +76,25 @@ trait PeerMessageSenderApi {
     sendMsg(sendHeadersMsg)
   }
 
-  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
+  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our
+    * peer
+    */
   def sendVersionMessage()(implicit conf: NodeAppConfig): Future[Unit]
 
-  def sendVersionMessage(chainApi: ChainApi)(implicit
-      ec: ExecutionContext,
-      conf: NodeAppConfig): Future[Unit] = {
+  def sendVersionMessage(
+      chainApi: ChainApi
+  )(implicit ec: ExecutionContext, conf: NodeAppConfig): Future[Unit] = {
     chainApi.getBestHashBlockHeight().flatMap { height =>
       val localhost = java.net.InetAddress.getLocalHost
       val versionMsg =
-        VersionMessage(conf.network,
-                       NodeConstants.userAgent,
-                       Int32(height),
-                       InetAddress(localhost.getAddress),
-                       InetAddress(localhost.getAddress),
-                       conf.relay)
+        VersionMessage(
+          conf.network,
+          NodeConstants.userAgent,
+          Int32(height),
+          InetAddress(localhost.getAddress),
+          InetAddress(localhost.getAddress),
+          conf.relay
+        )
       sendMsg(versionMsg)
     }
   }

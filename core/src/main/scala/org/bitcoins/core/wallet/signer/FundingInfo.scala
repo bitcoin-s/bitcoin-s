@@ -7,12 +7,14 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
-/** This meant to represent the class used to 'fund' an
-  * unsigned [[org.bitcoins.core.protocol.transaction.Transaction Transaction]].
-  * This is useful for when we have multiple [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
-  * that each have their own transaction type. I.e. we should only be able to have
-  * BitcoinTransactions paired with [[org.bitcoins.core.wallet.utxo.InputSigningInfo[InputInfo] UTXOInfo]],
-  * the same would apply for litecoin etc.
+/** This meant to represent the class used to 'fund' an unsigned
+  * [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]. This is
+  * useful for when we have multiple
+  * [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] that each
+  * have their own transaction type. I.e. we should only be able to have
+  * BitcoinTransactions paired with
+  * [[org.bitcoins.core.wallet.utxo.InputSigningInfo[InputInfo] UTXOInfo]], the
+  * same would apply for litecoin etc.
   */
 sealed abstract class FundingInfo {
 
@@ -31,18 +33,20 @@ object BitcoinFundingInfo {
 
   private case class BitcoinFundingInfoImpl(
       transaction: Transaction,
-      utxos: Seq[InputSigningInfo[InputInfo]])
-      extends BitcoinFundingInfo
+      utxos: Seq[InputSigningInfo[InputInfo]]
+  ) extends BitcoinFundingInfo
 
   def apply(
       tx: BaseTransaction,
-      utxos: Seq[InputSigningInfo[InputInfo]]): BitcoinFundingInfo = {
+      utxos: Seq[InputSigningInfo[InputInfo]]
+  ): BitcoinFundingInfo = {
     BitcoinFundingInfoImpl(tx, utxos)
   }
 
   def apply(
       wtx: WitnessTransaction,
-      utxos: Seq[InputSigningInfo[InputInfo]]): BitcoinFundingInfo = {
+      utxos: Seq[InputSigningInfo[InputInfo]]
+  ): BitcoinFundingInfo = {
     BitcoinFundingInfoImpl(wtx, utxos)
   }
 }

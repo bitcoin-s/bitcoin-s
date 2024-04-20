@@ -39,17 +39,19 @@ class EventOutcomeDAOTest extends DLCOracleDAOFixture {
   def descriptor: EventDescriptorTLV = TLVGen.eventDescriptorTLV.sampleSome
 
   val dummyEventDb: EventDb =
-    EventDb(nonce,
-            publicKey,
-            0,
-            eventName,
-            1,
-            sigVersion,
-            time,
-            None,
-            None,
-            SchnorrDigitalSignature(nonce, FieldElement.one),
-            descriptor)
+    EventDb(
+      nonce,
+      publicKey,
+      0,
+      eventName,
+      1,
+      sigVersion,
+      time,
+      None,
+      None,
+      SchnorrDigitalSignature(nonce, FieldElement.one),
+      descriptor
+    )
 
   it must "create an EventOutcomeDb and read it" in { daos =>
     val rValDAO = daos.rValueDAO

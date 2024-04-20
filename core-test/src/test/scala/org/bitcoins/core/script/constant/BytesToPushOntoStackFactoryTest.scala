@@ -8,9 +8,11 @@ class BytesToPushOntoStackFactoryTest extends BitcoinSUnitTest {
 
   "ScriptNumberFactory" must "represent the number 1" in {
     BytesToPushOntoStack.operations.contains(BytesToPushOntoStack(1)) must be(
-      true)
+      true
+    )
     BytesToPushOntoStack.operations.contains(BytesToPushOntoStack(75)) must be(
-      true)
+      true
+    )
   }
 
   it must "find the number two" in {
@@ -30,7 +32,8 @@ class BytesToPushOntoStackFactoryTest extends BitcoinSUnitTest {
   it must "not allow creation of the script number -2" in {
     intercept[IllegalArgumentException] {
       BytesToPushOntoStack.operations.contains(
-        BytesToPushOntoStack(-2)) must be(false)
+        BytesToPushOntoStack(-2)
+      ) must be(false)
     }
   }
 

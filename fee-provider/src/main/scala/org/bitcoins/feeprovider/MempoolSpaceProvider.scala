@@ -12,14 +12,14 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}
 
-/** Fetches fee rate from mempool.space's API
-  * Documentation found here: https://mempool.space/about
+/** Fetches fee rate from mempool.space's API Documentation found here:
+  * https://mempool.space/about
   */
 case class MempoolSpaceProvider(
     target: MempoolSpaceTarget,
     network: BitcoinNetwork,
-    proxyParams: Option[Socks5ProxyParams])(implicit
-    override val system: ActorSystem)
+    proxyParams: Option[Socks5ProxyParams]
+)(implicit override val system: ActorSystem)
     extends CachedHttpFeeRateProvider[SatoshisPerVirtualByte] {
 
   override val uri: Uri = network match {
@@ -49,7 +49,9 @@ case class MempoolSpaceProvider(
       case JsError(error) =>
         Failure(
           new RuntimeException(
-            s"Unexpected error when parsing response: $error"))
+            s"Unexpected error when parsing response: $error"
+          )
+        )
     }
   }
 }
@@ -58,8 +60,8 @@ object MempoolSpaceProvider extends FeeProviderFactory[MempoolSpaceProvider] {
 
   override def fromBlockTarget(
       blocks: Int,
-      proxyParams: Option[Socks5ProxyParams])(implicit
-      system: ActorSystem): MempoolSpaceProvider = {
+      proxyParams: Option[Socks5ProxyParams]
+  )(implicit system: ActorSystem): MempoolSpaceProvider = {
     val target = MempoolSpaceTarget.fromBlockTarget(blocks)
     MempoolSpaceProvider(target, MainNet, proxyParams)
   }
@@ -67,8 +69,8 @@ object MempoolSpaceProvider extends FeeProviderFactory[MempoolSpaceProvider] {
   def fromBlockTarget(
       blocks: Int,
       network: BitcoinNetwork,
-      proxyParams: Option[Socks5ProxyParams])(implicit
-      system: ActorSystem): MempoolSpaceProvider = {
+      proxyParams: Option[Socks5ProxyParams]
+  )(implicit system: ActorSystem): MempoolSpaceProvider = {
     val target = MempoolSpaceTarget.fromBlockTarget(blocks)
     MempoolSpaceProvider(target, network, proxyParams)
   }
@@ -87,7 +89,8 @@ object MempoolSpaceTarget {
   def fromBlockTarget(blocks: Int): MempoolSpaceTarget = {
     if (blocks <= 0) {
       throw new IllegalArgumentException(
-        s"Cannot have a negative or zero block target, got $blocks")
+        s"Cannot have a negative or zero block target, got $blocks"
+      )
     } else if (blocks < 3) {
       FastestFeeTarget
     } else if (blocks < 6) {

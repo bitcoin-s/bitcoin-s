@@ -11,7 +11,7 @@ import scodec.bits.{BinStringSyntax, ByteVector}
 class GCSTest extends BitcoinSUnitTest {
   behavior of "GCS"
 
-  //https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding
+  // https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding
   it must "encode and decode Golomb Coded Set example 1" in {
     val p = UInt8(2)
     val original = UInt64.zero
@@ -145,9 +145,9 @@ class GCSTest extends BitcoinSUnitTest {
   it must "encode and decode an arbitrary item for an arbitrary p" in {
 
     def delta: Gen[UInt64] = {
-      //what is a reasonable delta? This is means the delta
-      //can be 1 - 16384
-      //if we do a full uint64 it takes forever to encode it
+      // what is a reasonable delta? This is means the delta
+      // can be 1 - 16384
+      // if we do a full uint64 it takes forever to encode it
       Gen
         .choose(1, NumberUtil.pow2(14).toInt)
         .map(UInt64(_))

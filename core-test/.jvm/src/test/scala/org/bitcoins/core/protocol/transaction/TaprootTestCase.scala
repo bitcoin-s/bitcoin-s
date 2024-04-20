@@ -19,14 +19,15 @@ case class TaprootTestCase(
     failure: Try[(ScriptSignature, Option[ScriptWitness])],
     flags: Vector[ScriptFlag],
     `final`: Option[Boolean],
-    comment: String) {
+    comment: String
+) {
 
   def successTxSigComponent: TxSigComponent = {
     buildSigComponent(successTx)
   }
 
-  /** Returns the failed tx sig component iff an exception wasn't
-    * thrown during constructino of the tx sig component
+  /** Returns the failed tx sig component iff an exception wasn't thrown during
+    * constructino of the tx sig component
     */
   def failureTxSigComponentsOpt: Option[TxSigComponent] = {
     failureTxT.map { witTx =>
@@ -39,31 +40,38 @@ case class TaprootTestCase(
     val output = prevouts(index)
     require(
       prevouts.length == outpoints.length,
-      s"prevOutputs.length=${prevouts.length} outpoints.length=${outpoints.length}")
+      s"prevOutputs.length=${prevouts.length} outpoints.length=${outpoints.length}"
+    )
     val outputMap: Map[TransactionOutPoint, TransactionOutput] =
       outpoints.zip(prevouts).toMap
     output.scriptPubKey match {
       case _: TaprootScriptPubKey =>
         tx match {
           case wtx: WitnessTransaction =>
-            TaprootTxSigComponent(transaction = wtx,
-                                  UInt32(index),
-                                  PreviousOutputMap(outputMap),
-                                  flags)
+            TaprootTxSigComponent(
+              transaction = wtx,
+              UInt32(index),
+              PreviousOutputMap(outputMap),
+              flags
+            )
           case nonWitTx: NonWitnessTransaction =>
-            TxSigComponent(transaction = nonWitTx,
-                           UInt32(index),
-                           output,
-                           PreviousOutputMap.empty,
-                           flags)
+            TxSigComponent(
+              transaction = nonWitTx,
+              UInt32(index),
+              output,
+              PreviousOutputMap.empty,
+              flags
+            )
         }
 
       case _: ScriptPubKey =>
-        TxSigComponent(transaction = tx,
-                       inputIndex = UInt32(index),
-                       output,
-                       PreviousOutputMap.empty,
-                       flags)
+        TxSigComponent(
+          transaction = tx,
+          inputIndex = UInt32(index),
+          output,
+          PreviousOutputMap.empty,
+          flags
+        )
     }
 
   }
@@ -96,7 +104,8 @@ case class TaprootTestCase(
 
   private def updateTxWithWitness(
       scriptSig: ScriptSignature,
-      witnessOpt: Option[ScriptWitness]): Transaction = {
+      witnessOpt: Option[ScriptWitness]
+  ): Transaction = {
     val curInput = tx.inputs(index)
     val inputWithScriptSig =
       TransactionInput(curInput.previousOutput, scriptSig, curInput.sequence)
@@ -195,18 +204,20 @@ object TaprootTestCase {
         val flags = ScriptFlagFactory.fromList(obj("flags").str).toVector
         val finals = obj.value.get("final").map {
           case b: ujson.Bool => b.bool
-          case x             => sys.error(s"Expected bool for failure object, got=$x")
+          case x => sys.error(s"Expected bool for failure object, got=$x")
         }
         val comment = obj("comment").str
 
-        TaprootTestCase(tx = transaction,
-                        prevouts = prevouts,
-                        index = index,
-                        success = success,
-                        failure = failure,
-                        flags = flags,
-                        `final` = finals,
-                        comment = comment)
+        TaprootTestCase(
+          tx = transaction,
+          prevouts = prevouts,
+          index = index,
+          success = success,
+          failure = failure,
+          flags = flags,
+          `final` = finals,
+          comment = comment
+        )
       } catch {
         case scala.util.control.NonFatal(exn) =>
           println(s"Failed to parse obj=${obj("comment").str}")

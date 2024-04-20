@@ -14,12 +14,14 @@ trait BytesUtil extends CryptoBytesUtil {
     ByteVector.concat(cmpct.bytes +: ts.map(_.bytes))
   }
 
-  /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
-    * Makes sure that we parse the correct amount of elements
+  /** Used parse a byte sequence to a Seq[TransactionInput],
+    * Seq[TransactionOutput], etc Makes sure that we parse the correct amount of
+    * elements
     */
   def parseCmpctSizeUIntSeq[T <: NetworkElement](
       bytes: ByteVector,
-      factory: Factory[T]): (Vector[T], ByteVector) = {
+      factory: Factory[T]
+  ): (Vector[T], ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
     val payload = bytes.drop(count.byteSize.toInt)
     val builder = Vector.newBuilder[T]
@@ -42,7 +44,8 @@ trait BytesUtil extends CryptoBytesUtil {
     val result = builder.result()
     require(
       result.size == count.num.toInt,
-      s"Could not parse the amount of required elements, got: ${result.size} required: ${count}")
+      s"Could not parse the amount of required elements, got: ${result.size} required: ${count}"
+    )
 
     (result, remaining)
   }

@@ -11,9 +11,9 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** This trait defines RPC calls related to transactions
-  * in Bitcoin Core. These RPC calls generally provide a
-  * higher level of abstraction than the ones found in
+/** This trait defines RPC calls related to transactions in Bitcoin Core. These
+  * RPC calls generally provide a higher level of abstraction than the ones
+  * found in
   * [[org.bitcoins.rpc.client.common.RawTransactionRpc RawTransactionRpc]].
   */
 trait TransactionRpc { self: Client =>
@@ -31,11 +31,14 @@ trait TransactionRpc { self: Client =>
       confTarget: Int = 6,
       totalFee: Option[Satoshis] = None,
       replaceable: Boolean = true,
-      estimateMode: String = "UNSET"): Future[BumpFeeResult] = {
+      estimateMode: String = "UNSET"
+  ): Future[BumpFeeResult] = {
     val optionsNoFee =
-      Map("confTarget" -> JsNumber(confTarget),
-          "replaceable" -> JsBoolean(replaceable),
-          "estimate_mode" -> JsString(estimateMode))
+      Map(
+        "confTarget" -> JsNumber(confTarget),
+        "replaceable" -> JsBoolean(replaceable),
+        "estimate_mode" -> JsString(estimateMode)
+      )
 
     val options = totalFee match {
       case Some(fee) =>
@@ -43,8 +46,10 @@ trait TransactionRpc { self: Client =>
       case None => optionsNoFee
     }
 
-    bitcoindCall[BumpFeeResult]("bumpfee",
-                                List(JsString(txid.hex), JsObject(options)))
+    bitcoindCall[BumpFeeResult](
+      "bumpfee",
+      List(JsString(txid.hex), JsObject(options))
+    )
   }
 
   def bumpFee(
@@ -52,50 +57,58 @@ trait TransactionRpc { self: Client =>
       confTarget: Int,
       totalFee: Option[Satoshis],
       replaceable: Boolean,
-      estimateMode: String): Future[BumpFeeResult] = {
+      estimateMode: String
+  ): Future[BumpFeeResult] = {
     bumpFee(txid.flip, confTarget, totalFee, replaceable, estimateMode)
   }
 
   // Needs manual testing!
   def estimateSmartFee(
       blocks: Int,
-      mode: FeeEstimationMode = FeeEstimationMode.Ecnomical): Future[
-    EstimateSmartFeeResult] = {
+      mode: FeeEstimationMode = FeeEstimationMode.Ecnomical
+  ): Future[EstimateSmartFeeResult] = {
     bitcoindCall[EstimateSmartFeeResult](
       "estimatesmartfee",
-      List(JsNumber(blocks), JsString(mode.toString)))
+      List(JsNumber(blocks), JsString(mode.toString))
+    )
   }
 
   def getTransaction(
       txid: DoubleSha256DigestBE,
       watchOnly: Boolean = false,
-      walletNameOpt: Option[String] = None): Future[GetTransactionResult] = {
+      walletNameOpt: Option[String] = None
+  ): Future[GetTransactionResult] = {
     bitcoindCall[GetTransactionResult](
       "gettransaction",
       List(JsString(txid.hex), JsBoolean(watchOnly)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def getTxOut(
       txid: DoubleSha256DigestBE,
       vout: Long,
-      includeMemPool: Boolean = true): Future[GetTxOutResult] = {
+      includeMemPool: Boolean = true
+  ): Future[GetTxOutResult] = {
     self.version.flatMap { case V22 | V23 | V24 | Unknown =>
       bitcoindCall[GetTxOutResultV22](
         "gettxout",
-        List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+        List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool))
+      )
     }
   }
 
   def getTxOutOpt(
       txid: DoubleSha256DigestBE,
       vout: Long,
-      includeMemPool: Boolean = true): Future[Option[GetTxOutResult]] = {
+      includeMemPool: Boolean = true
+  ): Future[Option[GetTxOutResult]] = {
     self.version
       .flatMap { case V22 | V23 | V24 | Unknown =>
         bitcoindCall[GetTxOutResultV22](
           "gettxout",
-          List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+          List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool))
+        )
       }
       .map(Some(_))
       .recover(_ => None)
@@ -103,7 +116,8 @@ trait TransactionRpc { self: Client =>
 
   private def getTxOutProof(
       txids: Vector[DoubleSha256DigestBE],
-      headerHash: Option[DoubleSha256DigestBE]): Future[MerkleBlock] = {
+      headerHash: Option[DoubleSha256DigestBE]
+  ): Future[MerkleBlock] = {
     val params = {
       val hashes = JsArray(txids.map(hash => JsString(hash.hex)))
       if (headerHash.isEmpty) {
@@ -120,18 +134,23 @@ trait TransactionRpc { self: Client =>
 
   def getTxOutProof(
       txids: Vector[DoubleSha256Digest],
-      headerHash: DoubleSha256Digest): Future[MerkleBlock] =
+      headerHash: DoubleSha256Digest
+  ): Future[MerkleBlock] =
     getTxOutProof(txids.map(_.flip), Some(headerHash.flip))
 
   def getTxOutProof(
       txids: Vector[DoubleSha256DigestBE],
-      headerHash: DoubleSha256DigestBE): Future[MerkleBlock] =
+      headerHash: DoubleSha256DigestBE
+  ): Future[MerkleBlock] =
     getTxOutProof(txids, Some(headerHash))
 
   def verifyTxOutProof(
-      proof: MerkleBlock): Future[Vector[DoubleSha256DigestBE]] = {
-    bitcoindCall[Vector[DoubleSha256DigestBE]]("verifytxoutproof",
-                                               List(JsString(proof.hex)))
+      proof: MerkleBlock
+  ): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
+      "verifytxoutproof",
+      List(JsString(proof.hex))
+    )
   }
 
   def getTxOutSetInfo: Future[GetTxOutSetInfoResult] = {

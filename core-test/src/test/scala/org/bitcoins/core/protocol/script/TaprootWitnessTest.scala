@@ -9,8 +9,8 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
 
   behavior of "TaprootWitness"
 
-  //from this test case in script_assets.json with this comment 'tapscript/input80limit'
-  //in script_assets.json
+  // from this test case in script_assets.json with this comment 'tapscript/input80limit'
+  // in script_assets.json
   val controlBlockHex =
     "c1a7957acbaaf7b444c53d9e0c9436e8a8a3247fd515095d66ddf6201918b40a3668f9a4ccdffcf778da624dca2dd" +
       "a0b08e763ec52fd4ad403ec7563a3504d0cc168b9a77a410029e01dac89567c9b2e6cd726e840351df3f2f58fefe976200a19244150d04153" +
@@ -32,15 +32,18 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   val merkleRoot = Sha256Digest.fromHex(merkleRootHex)
 
   val tapLeafHash = Sha256Digest.fromHex(
-    "8d76c657582b87b087f36579a9ea78816d7e2a94098bc3e3c6113ed4b6315bb4")
+    "8d76c657582b87b087f36579a9ea78816d7e2a94098bc3e3c6113ed4b6315bb4"
+  )
 
   val taprootSPK = TaprootScriptPubKey.fromHex(
-    "2251201ebe8b90363bd097aa9f352c8b21914e1886bc09fe9e70c09f33ef2d2abdf4bc")
+    "2251201ebe8b90363bd097aa9f352c8b21914e1886bc09fe9e70c09f33ef2d2abdf4bc"
+  )
 
   val internalPubKey: XOnlyPubKey = XOnlyPubKey.fromHex(
-    "a7957acbaaf7b444c53d9e0c9436e8a8a3247fd515095d66ddf6201918b40a36")
+    "a7957acbaaf7b444c53d9e0c9436e8a8a3247fd515095d66ddf6201918b40a36"
+  )
   it must "compute a tap leaf hash correctly" in {
-    //from this test case in script_assets.json with this comment 'tapscript/input80limit'
+    // from this test case in script_assets.json with this comment 'tapscript/input80limit'
     val expected =
       "8d76c657582b87b087f36579a9ea78816d7e2a94098bc3e3c6113ed4b6315bb4"
     val asmHex =
@@ -53,7 +56,7 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   }
 
   it must "compute a merkle root for a tapscript tree" in {
-    //expected from the 'compute a tap leaf hash correctly' test case referenced above
+    // expected from the 'compute a tap leaf hash correctly' test case referenced above
 
     val merkleRoot =
       TaprootScriptPath.computeTaprootMerkleRoot(controlBlock, tapLeafHash)
@@ -68,9 +71,11 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   }
   it must "verify a taproot commitment" in {
     val result =
-      TaprootScriptPath.verifyTaprootCommitment(controlBlock = controlBlock,
-                                                program = taprootSPK,
-                                                tapLeafHash = tapLeafHash)
+      TaprootScriptPath.verifyTaprootCommitment(
+        controlBlock = controlBlock,
+        program = taprootSPK,
+        tapLeafHash = tapLeafHash
+      )
     assert(result)
   }
 
@@ -86,7 +91,8 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
     val taprootScriptPath = TaprootScriptPath.fromStack(stack.reverse)
     assert(taprootScriptPath.annexOpt.isDefined)
     assert(
-      taprootScriptPath.annexOpt.get.toHex == "503bd07ecabe591664d9eaac4218fc1d079126033a09e6596a01778f67354f788b12777f96b42168299d453dc6eca16e3d48d7804725926c0dc735622e2a3f7fb6d7f3ac156537b9e649bf0313698d20597713d1fb11601eb658b76076ee44f3878d7ac6d984c8928bfeaac518d758e5d3affd75978f179baeb90aa8440bc7a48e0937fae42cafef7669c5cdbf0d439e511d829466debc8994b68d6f7914536f2fdc7ca88b3fd396c2da5992e9e507a74739e5bc9534000f281fde16b6a2f5e3b03aac139099536ff52649b4a7da13c4148afa7af1831f877f7b951d60a0812f790bf5739d84ef9c3e8a8655ec71237a3c93f10115d63ed2d01572991973baf6a1ef50b3f8d1d465ca54356620c5171a21054ab3bb61d349db6fbdb2b4d6e1e94ae3415fb780a8a7df4cea3ba9d9caa15c275962e7ffc6634436ba0296f7c61be9b98b19857c6f0750d366ff8f7b39fd09f2794e5414032fd93b0056326c156be4cd842c7ae446c57fa1ed6dc83e257bdf5027cf9e39011cd76c01bd1c5a57082b214e347764594752790eb649cd8ac0a3a52f47aad28254dfdb72253fd957d46ad4158daa16cd9f24add4faf73a2bd26417ebfa937681d534614f8e089d2d0aff5815ba2db4018dac77dbaa32da3ecd51e5eb05e398146d17a5db2c7470bd0b85fb5717dfc9a259b4f2e147ea666aa939acb316d5da5a9fa56f129b03dad2ba58627de562d0f04ea98c7b722130052e2dd435b0b0a6586fba4f48a5df53d6e046e80d1a11")
+      taprootScriptPath.annexOpt.get.toHex == "503bd07ecabe591664d9eaac4218fc1d079126033a09e6596a01778f67354f788b12777f96b42168299d453dc6eca16e3d48d7804725926c0dc735622e2a3f7fb6d7f3ac156537b9e649bf0313698d20597713d1fb11601eb658b76076ee44f3878d7ac6d984c8928bfeaac518d758e5d3affd75978f179baeb90aa8440bc7a48e0937fae42cafef7669c5cdbf0d439e511d829466debc8994b68d6f7914536f2fdc7ca88b3fd396c2da5992e9e507a74739e5bc9534000f281fde16b6a2f5e3b03aac139099536ff52649b4a7da13c4148afa7af1831f877f7b951d60a0812f790bf5739d84ef9c3e8a8655ec71237a3c93f10115d63ed2d01572991973baf6a1ef50b3f8d1d465ca54356620c5171a21054ab3bb61d349db6fbdb2b4d6e1e94ae3415fb780a8a7df4cea3ba9d9caa15c275962e7ffc6634436ba0296f7c61be9b98b19857c6f0750d366ff8f7b39fd09f2794e5414032fd93b0056326c156be4cd842c7ae446c57fa1ed6dc83e257bdf5027cf9e39011cd76c01bd1c5a57082b214e347764594752790eb649cd8ac0a3a52f47aad28254dfdb72253fd957d46ad4158daa16cd9f24add4faf73a2bd26417ebfa937681d534614f8e089d2d0aff5815ba2db4018dac77dbaa32da3ecd51e5eb05e398146d17a5db2c7470bd0b85fb5717dfc9a259b4f2e147ea666aa939acb316d5da5a9fa56f129b03dad2ba58627de562d0f04ea98c7b722130052e2dd435b0b0a6586fba4f48a5df53d6e046e80d1a11"
+    )
     val expectedAnnexHash = {
       "1c0aaaf600682c151456bc3c56b49f1a28afd49344c04d88393fe589106ec22e"
     }
@@ -96,7 +102,8 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   it must "construct a taproot keypath witness with an annex" in {
     val vec = Vector(
       "c2bdc23435c7bbdce741081181eecd31865f7d94fad6c49c8b1f4619aad72b83354530dbc9446243ff81e0dac2e77b2d437b9d53d279b535a23fb8c599454b3e02",
-      "50ba")
+      "50ba"
+    )
     val stack = vec.map(ByteVector.fromValidHex(_))
     val tr = TaprootWitness.fromStack(stack.reverse)
     assert(tr.isInstanceOf[TaprootKeyPath])

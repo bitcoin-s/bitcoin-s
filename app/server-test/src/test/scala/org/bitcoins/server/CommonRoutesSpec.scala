@@ -54,7 +54,8 @@ class CommonRoutesSpec
 
         val route =
           commonRoutes.handleCommand(
-            ServerCommand("zipdatadir", ujson.Arr(target.toString)))
+            ServerCommand("zipdatadir", ujson.Arr(target.toString))
+          )
 
         Post() ~> route ~> check {
           assert(contentType == ContentTypes.`application/json`)

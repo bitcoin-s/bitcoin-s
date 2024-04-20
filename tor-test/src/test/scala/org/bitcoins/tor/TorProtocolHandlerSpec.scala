@@ -67,10 +67,13 @@ class TorProtocolHandlerSpec
     val promiseOnionAddress = Promise[InetSocketAddress]()
 
     val protocolHandler = TestActorRef(
-      props(authentication = Password(PASSWORD),
-            privateKeyPath = PkFilePath,
-            virtualPort = 9999,
-            onionAdded = Some(promiseOnionAddress)))
+      props(
+        authentication = Password(PASSWORD),
+        privateKeyPath = PkFilePath,
+        virtualPort = 9999,
+        onionAdded = Some(promiseOnionAddress)
+      )
+    )
 
     protocolHandler ! Connected(LocalHost, LocalHost)
 
@@ -103,14 +106,18 @@ class TorProtocolHandlerSpec
       addr.get,
       InetSocketAddress.createUnresolved(
         "mrl2d3ilhctt2vw4qzvmz3etzjvpnc6dczliq5chrxetthgbuczuggyd.onion",
-        9999))
+        9999
+      )
+    )
 
     val address = Await.result(promiseOnionAddress.future, 3.seconds)
     assertAddressesEqual(
       address,
       InetSocketAddress.createUnresolved(
         "mrl2d3ilhctt2vw4qzvmz3etzjvpnc6dczliq5chrxetthgbuczuggyd.onion",
-        9999))
+        9999
+      )
+    )
 
     assert(readString(PkFilePath) === "ED25519-V3:private-key")
   }
@@ -128,10 +135,13 @@ class TorProtocolHandlerSpec
     val promiseOnionAddress = Promise[InetSocketAddress]()
 
     val protocolHandler = TestActorRef(
-      props(authentication = Password(PASSWORD),
-            privateKeyPath = PkFilePath,
-            virtualPort = 9999,
-            onionAdded = Some(promiseOnionAddress)))
+      props(
+        authentication = Password(PASSWORD),
+        privateKeyPath = PkFilePath,
+        virtualPort = 9999,
+        onionAdded = Some(promiseOnionAddress)
+      )
+    )
 
     protocolHandler ! Connected(LocalHost, LocalHost)
 
@@ -152,10 +162,13 @@ class TorProtocolHandlerSpec
     val promiseOnionAddress = Promise[InetSocketAddress]()
 
     val protocolHandler = TestActorRef(
-      props(authentication = Password(PASSWORD),
-            privateKeyPath = PkFilePath,
-            virtualPort = 9999,
-            onionAdded = Some(promiseOnionAddress)))
+      props(
+        authentication = Password(PASSWORD),
+        privateKeyPath = PkFilePath,
+        virtualPort = 9999,
+        onionAdded = Some(promiseOnionAddress)
+      )
+    )
 
     protocolHandler ! Connected(LocalHost, LocalHost)
 
@@ -167,10 +180,13 @@ class TorProtocolHandlerSpec
         "250 OK\r\n"
     )
 
-    assert(intercept[TorException] {
-      Await.result(promiseOnionAddress.future, 3.seconds)
-    } === TorException(
-      "cannot use authentication 'password', supported methods are 'COOKIE,SAFECOOKIE'"))
+    assert(
+      intercept[TorException] {
+        Await.result(promiseOnionAddress.future, 3.seconds)
+      } === TorException(
+        "cannot use authentication 'password', supported methods are 'COOKIE,SAFECOOKIE'"
+      )
+    )
   }
 
   test("invalid server hash") {
@@ -179,10 +195,13 @@ class TorProtocolHandlerSpec
     Files.write(CookieFilePath, CryptoUtil.randomBytes(32).toArray)
 
     val protocolHandler = TestActorRef(
-      props(authentication = SafeCookie(ClientNonce),
-            privateKeyPath = PkFilePath,
-            virtualPort = 9999,
-            onionAdded = Some(promiseOnionAddress)))
+      props(
+        authentication = SafeCookie(ClientNonce),
+        privateKeyPath = PkFilePath,
+        virtualPort = 9999,
+        onionAdded = Some(promiseOnionAddress)
+      )
+    )
 
     protocolHandler ! Connected(LocalHost, LocalHost)
 
@@ -194,8 +213,11 @@ class TorProtocolHandlerSpec
         "250 OK\r\n"
     )
 
-    expectMsg(ByteString(
-      "AUTHCHALLENGE SAFECOOKIE 8969a7f3c03cd21bfd1cc49dbbd8f398345261b5b66319df76bb2fdd8d96bcca\r\n"))
+    expectMsg(
+      ByteString(
+        "AUTHCHALLENGE SAFECOOKIE 8969a7f3c03cd21bfd1cc49dbbd8f398345261b5b66319df76bb2fdd8d96bcca\r\n"
+      )
+    )
     protocolHandler ! ByteString(
       "250 AUTHCHALLENGE SERVERHASH=6828e74049924f37cbc61f2aad4dd78d8dc09bef1b4c3bf6ff454016ed9d50df SERVERNONCE=b4aa04b6e7e2df60dcb0f62c264903346e05d1675e77795529e22ca90918dee7\r\n"
     )
@@ -216,7 +238,8 @@ class TorProtocolHandlerSpec
         privateKeyPath = PkFilePath,
         virtualPort = 9999,
         onionAdded = Some(promiseOnionAddress)
-      ))
+      )
+    )
 
     protocolHandler ! Connected(LocalHost, LocalHost)
 
@@ -228,22 +251,31 @@ class TorProtocolHandlerSpec
         "250 OK\r\n"
     )
 
-    expectMsg(ByteString(
-      "AUTHCHALLENGE SAFECOOKIE 8969a7f3c03cd21bfd1cc49dbbd8f398345261b5b66319df76bb2fdd8d96bcca\r\n"))
+    expectMsg(
+      ByteString(
+        "AUTHCHALLENGE SAFECOOKIE 8969a7f3c03cd21bfd1cc49dbbd8f398345261b5b66319df76bb2fdd8d96bcca\r\n"
+      )
+    )
     protocolHandler ! ByteString(
       "250 AUTHCHALLENGE SERVERHASH=6828e74049924f37cbc61f2aad4dd78d8dc09bef1b4c3bf6ff454016ed9d50df SERVERNONCE=b4aa04b6e7e2df60dcb0f62c264903346e05d1675e77795529e22ca90918dee7\r\n"
     )
 
-    expectMsg(ByteString(
-      "AUTHENTICATE 0ddcab5deb39876cdef7af7860a1c738953395349f43b99f4e5e0f131b0515df\r\n"))
+    expectMsg(
+      ByteString(
+        "AUTHENTICATE 0ddcab5deb39876cdef7af7860a1c738953395349f43b99f4e5e0f131b0515df\r\n"
+      )
+    )
     protocolHandler ! ByteString(
       "515 Authentication failed: Safe cookie response did not match expected value.\r\n"
     )
 
-    assert(intercept[TorException] {
-      Await.result(promiseOnionAddress.future, 3.seconds)
-    } === TorException(
-      "server returned error: 515 Authentication failed: Safe cookie response did not match expected value."))
+    assert(
+      intercept[TorException] {
+        Await.result(promiseOnionAddress.future, 3.seconds)
+      } === TorException(
+        "server returned error: 515 Authentication failed: Safe cookie response did not match expected value."
+      )
+    )
   }
 
   test("ADD_ONION failure") {
@@ -257,7 +289,8 @@ class TorProtocolHandlerSpec
         privateKeyPath = PkFilePath,
         virtualPort = 9999,
         onionAdded = Some(promiseOnionAddress)
-      ))
+      )
+    )
 
     protocolHandler ! Connected(LocalHost, LocalHost)
 
@@ -269,14 +302,20 @@ class TorProtocolHandlerSpec
         "250 OK\r\n"
     )
 
-    expectMsg(ByteString(
-      "AUTHCHALLENGE SAFECOOKIE 8969a7f3c03cd21bfd1cc49dbbd8f398345261b5b66319df76bb2fdd8d96bcca\r\n"))
+    expectMsg(
+      ByteString(
+        "AUTHCHALLENGE SAFECOOKIE 8969a7f3c03cd21bfd1cc49dbbd8f398345261b5b66319df76bb2fdd8d96bcca\r\n"
+      )
+    )
     protocolHandler ! ByteString(
       "250 AUTHCHALLENGE SERVERHASH=6828e74049924f37cbc61f2aad4dd78d8dc09bef1b4c3bf6ff454016ed9d50df SERVERNONCE=b4aa04b6e7e2df60dcb0f62c264903346e05d1675e77795529e22ca90918dee7\r\n"
     )
 
-    expectMsg(ByteString(
-      "AUTHENTICATE 0ddcab5deb39876cdef7af7860a1c738953395349f43b99f4e5e0f131b0515df\r\n"))
+    expectMsg(
+      ByteString(
+        "AUTHENTICATE 0ddcab5deb39876cdef7af7860a1c738953395349f43b99f4e5e0f131b0515df\r\n"
+      )
+    )
     protocolHandler ! ByteString(
       "250 OK\r\n"
     )
@@ -297,9 +336,11 @@ class TorProtocolHandlerSpec
 
   private def assertAddressesEqual(
       actual: InetSocketAddress,
-      expected: InetSocketAddress) = {
+      expected: InetSocketAddress
+  ) = {
     assert(
-      actual.getHostString == expected.getHostString && actual.getPort == expected.getPort)
+      actual.getHostString == expected.getHostString && actual.getPort == expected.getPort
+    )
   }
 
 }

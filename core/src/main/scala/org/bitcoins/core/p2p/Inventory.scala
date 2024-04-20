@@ -6,10 +6,13 @@ import scodec.bits.ByteVector
 
 /** These are used as unique identifiers inside the peer-to-peer network
   *
-  * @param typeIdentifier The type of object which was hashed
-  * @param hash SHA256(SHA256()) hash of the object in internal byte order.
+  * @param typeIdentifier
+  *   The type of object which was hashed
+  * @param hash
+  *   SHA256(SHA256()) hash of the object in internal byte order.
   *
-  * @see [[https://bitcoin.org/en/developer-reference#term-inventory]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#term-inventory]]
   */
 case class Inventory(typeIdentifier: TypeIdentifier, hash: DoubleSha256Digest)
     extends NetworkElement {
@@ -19,7 +22,7 @@ case class Inventory(typeIdentifier: TypeIdentifier, hash: DoubleSha256Digest)
   override def toString: String = {
     typeIdentifier match {
       case TypeIdentifier.MsgTx | TypeIdentifier.MsgWitnessTx =>
-        //want to make a better toString here so it is easier to search txids
+        // want to make a better toString here so it is easier to search txids
         s"Inventory($typeIdentifier,txIdBE=${hash.flip.hex})"
       case TypeIdentifier.MsgBlock | TypeIdentifier.MsgFilteredWitnessBlock |
           TypeIdentifier.MsgWitnessBlock =>

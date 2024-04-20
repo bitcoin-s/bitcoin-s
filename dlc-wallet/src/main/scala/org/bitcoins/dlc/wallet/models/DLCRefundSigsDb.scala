@@ -6,4 +6,5 @@ import org.bitcoins.crypto.Sha256Digest
 case class DLCRefundSigsDb(
     dlcId: Sha256Digest,
     accepterSig: PartialSignature,
-    initiatorSig: Option[PartialSignature])
+    initiatorSig: Option[PartialSignature]
+)

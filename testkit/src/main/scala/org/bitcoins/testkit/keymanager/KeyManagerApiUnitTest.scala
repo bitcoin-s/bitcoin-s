@@ -13,8 +13,8 @@ trait KeyManagerApiUnitTest extends BitcoinSUnitTest {
       aesPasswordOpt: Option[AesPassword] = KeyManagerTestUtil.aesPasswordOpt,
       kmParams: KeyManagerParams = KeyManagerTestUtil.createKeyManagerParams(),
       entropy: BitVector = MnemonicCode.getEntropy256Bits,
-      bip39PasswordOpt: Option[String] =
-        KeyManagerTestUtil.bip39PasswordOpt): BIP39KeyManager = {
+      bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt
+  ): BIP39KeyManager = {
     val kmResult = BIP39KeyManager.initializeWithEntropy(
       aesPasswordOpt = aesPasswordOpt,
       entropy = entropy,

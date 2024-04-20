@@ -7,8 +7,8 @@ import org.bitcoins.crypto.{CryptoUtil, Sha256Digest}
 case class ScriptPubKeyDb(
     scriptPubKey: ScriptPubKey,
     hash: Sha256Digest,
-    id: Option[Long] = None)
-    extends DbRowAutoInc[ScriptPubKeyDb] {
+    id: Option[Long] = None
+) extends DbRowAutoInc[ScriptPubKeyDb] {
   override def copyWithId(id: Long): ScriptPubKeyDb = copy(id = Option(id))
 }
 

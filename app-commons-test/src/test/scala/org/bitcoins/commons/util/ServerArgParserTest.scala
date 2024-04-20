@@ -13,7 +13,7 @@ class ServerArgParserTest extends BitcoinSUnitTest {
   it must "handle no command line flags" in {
     val parser = ServerArgParser(Vector.empty)
 
-    //config must be empty
+    // config must be empty
     assert(parser.toConfig == ConfigFactory.empty())
   }
 

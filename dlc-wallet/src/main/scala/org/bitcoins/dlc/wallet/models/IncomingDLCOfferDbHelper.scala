@@ -12,7 +12,8 @@ object IncomingDLCOfferDbHelper {
       offerTLV: DLCOfferTLV,
       peer: Option[String] = None,
       message: Option[String] = None,
-      receivedAt: Instant = Instant.now()): IncomingDLCOfferDb = {
+      receivedAt: Instant = Instant.now()
+  ): IncomingDLCOfferDb = {
     IncomingDLCOfferDb(
       hash = CryptoUtil.sha256(offerTLV.bytes),
       receivedAt = receivedAt,

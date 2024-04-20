@@ -25,8 +25,8 @@ import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
 
 class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
-    implicit val executionContext: ExecutionContext)
-    extends CLightningUnixSocketHandler
+    implicit val executionContext: ExecutionContext
+) extends CLightningUnixSocketHandler
     with NativeProcessFactory
     with StartStopAsync[CLightningRpcClient]
     with BitcoinSLogger {
@@ -49,7 +49,9 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
       case AddressType.Legacy =>
         Future.failed(
           new IllegalArgumentException(
-            "clightning cannot generate legacy addresses"))
+            "clightning cannot generate legacy addresses"
+          )
+        )
     }
 
     for {
@@ -62,8 +64,10 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def listFunds: Future[ListFundsResult] = listFunds(false)
 
   def listFunds(spent: Boolean): Future[ListFundsResult] =
-    clightningCall[ListFundsResult]("listfunds",
-                                    JsArray(Vector(JsBoolean(spent))))
+    clightningCall[ListFundsResult](
+      "listfunds",
+      JsArray(Vector(JsBoolean(spent)))
+    )
 
   def walletBalance(): Future[WalletBalances] = {
     listFunds.map { funds =>
@@ -75,8 +79,10 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
           case OutputStatus.Spent => balances
           case OutputStatus.Unconfirmed =>
             val newUnconfirmed = balances.unconfirmedBalance + amt
-            balances.copy(balance = newTotal,
-                          unconfirmedBalance = newUnconfirmed)
+            balances.copy(
+              balance = newTotal,
+              unconfirmedBalance = newUnconfirmed
+            )
           case OutputStatus.Confirmed =>
             val newConfirmed = balances.confirmedBalance + amt
             balances.copy(balance = newTotal, confirmedBalance = newConfirmed)
@@ -91,16 +97,20 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def connect(
       nodeId: NodeId,
       host: String,
-      port: Int): Future[ConnectResult] = {
+      port: Int
+  ): Future[ConnectResult] = {
     val uri = NodeUri(nodeId, host, port)
     connect(uri)
   }
 
   def connect(uri: NodeUri): Future[ConnectResult] = {
     val params = JsArray(
-      Vector(JsString(uri.nodeId.toString),
-             JsString(uri.host),
-             JsNumber(uri.port)))
+      Vector(
+        JsString(uri.nodeId.toString),
+        JsString(uri.host),
+        JsNumber(uri.port)
+      )
+    )
 
     clightningCall[ConnectResult]("connect", params)
   }
@@ -128,7 +138,8 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
       fundingAmount: CurrencyUnit,
       pushAmt: CurrencyUnit,
       feeRate: FeeUnit,
-      privateChannel: Boolean): Future[FundChannelResult] = {
+      privateChannel: Boolean
+  ): Future[FundChannelResult] = {
 
     val params = JsObject(
       Vector(
@@ -137,7 +148,8 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
         "feerate" -> feeRateToJson(feeRate),
         "announce" -> JsBoolean(privateChannel),
         "push_msat" -> JsNumber(MilliSatoshis(pushAmt).toLong)
-      ))
+      )
+    )
 
     clightningCall[FundChannelResult]("fundchannel", params)
   }
@@ -172,14 +184,16 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
       amount: CurrencyUnit,
       label: String,
       description: String,
-      expirySeconds: Long): Future[CLightningInvoiceResult] = {
+      expirySeconds: Long
+  ): Future[CLightningInvoiceResult] = {
     val params = JsObject(
       Vector(
         "msatoshi" -> JsNumber(MilliSatoshis(amount).toLong),
         "label" -> JsString(label),
         "description" -> JsString(description),
         "expiry" -> JsNumber(expirySeconds)
-      ))
+      )
+    )
 
     clightningCall[CLightningInvoiceResult]("invoice", params)
   }
@@ -187,24 +201,28 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def payInvoice(invoice: LnInvoice): Future[CLightningPayResult] = {
     clightningCall[CLightningPayResult](
       "pay",
-      JsArray(Vector(JsString(invoice.toString))))
+      JsArray(Vector(JsString(invoice.toString)))
+    )
   }
 
   def payInvoice(
       invoice: LnInvoice,
-      amount: CurrencyUnit): Future[CLightningPayResult] = {
+      amount: CurrencyUnit
+  ): Future[CLightningPayResult] = {
     val params = JsArray(
-      Vector(JsString(invoice.toString),
-             JsNumber(MilliSatoshis(amount).toLong)))
+      Vector(JsString(invoice.toString), JsNumber(MilliSatoshis(amount).toLong))
+    )
 
     clightningCall[CLightningPayResult]("pay", params)
   }
 
-  def lookupInvoice(paymentHash: Sha256Digest): Future[
-    Option[CLightningLookupInvoiceResult]] = {
+  def lookupInvoice(
+      paymentHash: Sha256Digest
+  ): Future[Option[CLightningLookupInvoiceResult]] = {
     val params = JsObject(Vector("payment_hash" -> JsString(paymentHash.hex)))
     clightningCall[CLightningListInvoicesResult]("listinvoices", params).map(
-      _.invoices.headOption)
+      _.invoices.headOption
+    )
   }
 
   def listInvoices: Future[Vector[CLightningLookupInvoiceResult]] = {
@@ -214,37 +232,45 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def waitInvoice(label: String): Future[CLightningLookupInvoiceResult] = {
     clightningCall[CLightningLookupInvoiceResult](
       "waitinvoice",
-      JsArray(Vector(JsString(label))))
+      JsArray(Vector(JsString(label)))
+    )
   }
 
   def reserveInputs(psbt: PSBT): Future[Vector[InputReservation]] = {
     val param = JsArray(Vector(JsString(psbt.base64)))
     clightningCall[InputReservations]("reserveinputs", param).map(
-      _.reservations)
+      _.reservations
+    )
   }
 
   def reserveInputs(
       psbt: PSBT,
-      exclusive: Boolean): Future[Vector[InputReservation]] = {
+      exclusive: Boolean
+  ): Future[Vector[InputReservation]] = {
     val param = JsArray(Vector(JsString(psbt.base64), JsBoolean(exclusive)))
     clightningCall[InputReservations]("reserveinputs", param).map(
-      _.reservations)
+      _.reservations
+    )
   }
 
   def reserveInputs(
       psbt: PSBT,
       exclusive: Boolean,
-      reserve: Int): Future[Vector[InputReservation]] = {
+      reserve: Int
+  ): Future[Vector[InputReservation]] = {
     val param = JsArray(
-      Vector(JsString(psbt.base64), JsBoolean(exclusive), JsNumber(reserve)))
+      Vector(JsString(psbt.base64), JsBoolean(exclusive), JsNumber(reserve))
+    )
     clightningCall[InputReservations]("reserveinputs", param).map(
-      _.reservations)
+      _.reservations
+    )
   }
 
   def signPSBT(psbt: PSBT): Future[PSBT] = {
     clightningCall[CLightningPsbtResult](
       "signpsbt",
-      JsArray(Vector(JsString(psbt.base64)))).map(_.signed_psbt)
+      JsArray(Vector(JsString(psbt.base64)))
+    ).map(_.signed_psbt)
   }
 
   def signPSBT(psbt: PSBT, indexesToSign: Vector[Int]): Future[PSBT] = {
@@ -252,34 +278,40 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
       Vector(
         "psbt" -> JsString(psbt.base64),
         "signonly" -> JsArray(indexesToSign.map(JsNumber(_)))
-      ))
+      )
+    )
 
     clightningCall[CLightningPsbtResult]("signpsbt", params).map(_.signed_psbt)
   }
 
   def listTransactions(): Future[Vector[CLightningTransaction]] =
     clightningCall[ListTransactionsResults]("listtransactions").map(
-      _.transactions)
+      _.transactions
+    )
 
   def withdraw(
       address: BitcoinAddress,
-      amount: Satoshis): Future[WithdrawResult] =
+      amount: Satoshis
+  ): Future[WithdrawResult] =
     sendToAddress(address, amount)
 
   def withdraw(
       address: BitcoinAddress,
       amount: Satoshis,
-      feeRate: FeeUnit): Future[WithdrawResult] =
+      feeRate: FeeUnit
+  ): Future[WithdrawResult] =
     sendToAddress(address, amount, feeRate)
 
   def sendToAddress(
       address: BitcoinAddress,
-      amount: Satoshis): Future[WithdrawResult] = {
+      amount: Satoshis
+  ): Future[WithdrawResult] = {
     val params = JsObject(
       Vector(
         "destination" -> JsString(address.toString),
         "satoshi" -> JsNumber(amount.toLong)
-      ))
+      )
+    )
 
     clightningCall[WithdrawResult]("withdraw", params)
   }
@@ -287,13 +319,15 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def sendToAddress(
       address: BitcoinAddress,
       amount: Satoshis,
-      feeRate: FeeUnit): Future[WithdrawResult] = {
+      feeRate: FeeUnit
+  ): Future[WithdrawResult] = {
     val params = JsObject(
       Vector(
         "destination" -> JsString(address.toString),
         "satoshi" -> JsNumber(amount.toLong),
         "feerate" -> feeRateToJson(feeRate)
-      ))
+      )
+    )
 
     clightningCall[WithdrawResult]("withdraw", params)
   }
@@ -301,22 +335,26 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def initChannelOpen(
       nodeId: NodeId,
       amount: CurrencyUnit,
-      privateChannel: Boolean): Future[FundChannelStartResult] = {
+      privateChannel: Boolean
+  ): Future[FundChannelStartResult] = {
     val params = JsObject(
       Vector(
         "id" -> JsString(nodeId.toString),
         "amount" -> JsNumber(amount.satoshis.toLong),
         "announce" -> JsBoolean(privateChannel)
-      ))
+      )
+    )
 
     clightningCall[FundChannelStartResult]("fundchannel_start", params)
   }
 
   def completeChannelOpen(
       nodeId: NodeId,
-      psbt: PSBT): Future[FundChannelCompleteResult] = {
+      psbt: PSBT
+  ): Future[FundChannelCompleteResult] = {
     val params = JsArray(
-      Vector(JsString(nodeId.toString), JsString(psbt.base64)))
+      Vector(JsString(nodeId.toString), JsString(psbt.base64))
+    )
 
     clightningCall[FundChannelCompleteResult]("fundchannel_complete", params)
   }
@@ -330,26 +368,30 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def sendCustomMessage(
       peer: NodeId,
       tpe: BigSizeUInt,
-      data: ByteVector): Future[SendCustomMessageResult] = {
+      data: ByteVector
+  ): Future[SendCustomMessageResult] = {
     val tlv = TLV.fromTypeAndValue(tpe, data)
     sendCustomMessage(peer, tlv)
   }
 
   def sendCustomMessage(
       peer: NodeId,
-      tlv: TLV): Future[SendCustomMessageResult] = {
+      tlv: TLV
+  ): Future[SendCustomMessageResult] = {
     val lnMessage = LnMessage[TLV](tlv)
     sendCustomMessage(peer, lnMessage)
   }
 
   def sendCustomMessage(
       peer: NodeId,
-      lnMessage: LnMessage[TLV]): Future[SendCustomMessageResult] = {
+      lnMessage: LnMessage[TLV]
+  ): Future[SendCustomMessageResult] = {
     val params = JsObject(
       Vector(
         "node_id" -> JsString(peer.toString),
         "msg" -> JsString(lnMessage.hex)
-      ))
+      )
+    )
 
     clightningCall[SendCustomMessageResult]("sendcustommsg", params)
   }

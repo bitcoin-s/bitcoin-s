@@ -59,7 +59,8 @@ package object core {
 
       override def compare(
           x: SatoshisPerKiloByte,
-          y: SatoshisPerKiloByte): Int = x.toLong compare y.toLong
+          y: SatoshisPerKiloByte
+      ): Int = x.toLong compare y.toLong
     }
 
   implicit val byteVectorOrdering: Ordering[ByteVector] =
@@ -88,7 +89,8 @@ package object core {
     new Ordering[SchnorrDigitalSignature] {
       override def compare(
           x: SchnorrDigitalSignature,
-          y: SchnorrDigitalSignature): Int = {
+          y: SchnorrDigitalSignature
+      ): Int = {
         nonceOrdering.compare(x.rx, y.rx)
       }
     }
@@ -106,7 +108,8 @@ package object core {
     new Ordering[OutcomePayoutPoint] {
       override def compare(
           x: OutcomePayoutPoint,
-          y: OutcomePayoutPoint): Int = {
+          y: OutcomePayoutPoint
+      ): Int = {
         x.outcome.compare(y.outcome)
       }
     }
@@ -116,7 +119,8 @@ package object core {
     new Ordering[DLCPayoutCurvePiece] {
       override def compare(
           x: DLCPayoutCurvePiece,
-          y: DLCPayoutCurvePiece): Int = {
+          y: DLCPayoutCurvePiece
+      ): Int = {
         outcomePayoutPointOrdering.compare(x.leftEndpoint, y.leftEndpoint)
       }
     }

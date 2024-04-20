@@ -17,8 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class SpendingInfoDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
-    extends CRUDAutoInc[UTXORecord] {
+    override val appConfig: WalletAppConfig
+) extends CRUDAutoInc[UTXORecord] {
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
@@ -27,23 +27,24 @@ case class SpendingInfoDAO()(implicit
   override val table: profile.api.TableQuery[SpendingInfoTable] =
     profile.api.TableQuery[SpendingInfoTable]
 
-  private lazy val addrTable: profile.api.TableQuery[
-    AddressDAO#AddressTable] = {
+  private lazy val addrTable
+      : profile.api.TableQuery[AddressDAO#AddressTable] = {
     AddressDAO()(ec, appConfig).table
   }
 
   private lazy val txTable: profile.api.TableQuery[
-    IncomingTransactionDAO#IncomingTransactionTable] = {
+    IncomingTransactionDAO#IncomingTransactionTable
+  ] = {
     IncomingTransactionDAO().table
   }
 
-  private lazy val tagTable: profile.api.TableQuery[
-    AddressTagDAO#AddressTagTable] = {
+  private lazy val tagTable
+      : profile.api.TableQuery[AddressTagDAO#AddressTagTable] = {
     AddressTagDAO().table
   }
 
-  private lazy val spkTable: profile.api.TableQuery[
-    ScriptPubKeyDAO#ScriptPubKeyTable] = {
+  private lazy val spkTable
+      : profile.api.TableQuery[ScriptPubKeyDAO#ScriptPubKeyTable] = {
     ScriptPubKeyDAO().table
   }
 
@@ -63,13 +64,14 @@ case class SpendingInfoDAO()(implicit
         case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
           throw new SQLException(
-            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
+            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si"
+          )
       }
   }
 
-  def createUnless(si: SpendingInfoDb)(
-      condition: (UTXORecord, UTXORecord) => Boolean): Future[
-    SpendingInfoDb] = {
+  def createUnless(
+      si: SpendingInfoDb
+  )(condition: (UTXORecord, UTXORecord) => Boolean): Future[SpendingInfoDb] = {
     val actions = for {
       foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
       cond <- foundOpt match {
@@ -94,14 +96,14 @@ case class SpendingInfoDAO()(implicit
         case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
           throw new SQLException(
-            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
+            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si"
+          )
       }
   }
 
-  private def insertAction(si: SpendingInfoDb): DBIOAction[
-    UTXORecord,
-    NoStream,
-    Effect.Read with Effect.Write] = {
+  private def insertAction(
+      si: SpendingInfoDb
+  ): DBIOAction[UTXORecord, NoStream, Effect.Read with Effect.Write] = {
     val query =
       table.returning(table.map(_.id)).into((t, id) => t.copyWithId(id = id))
     for {
@@ -118,7 +120,8 @@ case class SpendingInfoDAO()(implicit
           (for {
             newSpkId <-
               (spkTable returning spkTable.map(_.id)) += (ScriptPubKeyDb(
-                si.output.scriptPubKey))
+                si.output.scriptPubKey
+              ))
           } yield {
             val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
             query += utxo
@@ -128,15 +131,19 @@ case class SpendingInfoDAO()(implicit
   }
 
   def upsertAllSpendingInfoDb(
-      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+      ts: Vector[SpendingInfoDb]
+  ): Future[Vector[SpendingInfoDb]] = {
     FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], ts)((acc, si) =>
-      upsert(si).map(res => acc :+ res))
+      upsert(si).map(res => acc :+ res)
+    )
   }
 
   def updateAllSpendingInfoDb(
-      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+      ts: Vector[SpendingInfoDb]
+  ): Future[Vector[SpendingInfoDb]] = {
     FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], ts)((acc, si) =>
-      update(si).map(res => acc :+ res))
+      update(si).map(res => acc :+ res)
+    )
   }
 
   def update(si: SpendingInfoDb): Future[SpendingInfoDb] = {
@@ -154,7 +161,8 @@ case class SpendingInfoDAO()(implicit
           (for {
             newSpkId <-
               (spkTable returning spkTable.map(_.id)) += ScriptPubKeyDb(
-                si.output.scriptPubKey)
+                si.output.scriptPubKey
+              )
           } yield {
             val utxo = UTXORecord.fromSpendingInfoDb(si, newSpkId)
             table.filter(_.id === utxo.id).update(utxo)
@@ -173,7 +181,8 @@ case class SpendingInfoDAO()(implicit
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
           throw new SQLException(
-            s"Unexpected result: Cannot update either a UTXO or a SPK record for $si")
+            s"Unexpected result: Cannot update either a UTXO or a SPK record for $si"
+          )
       }
   }
 
@@ -187,14 +196,17 @@ case class SpendingInfoDAO()(implicit
       _ <- spkOpt match {
         case Some(foundSpk) =>
           table.insertOrUpdate(
-            UTXORecord.fromSpendingInfoDb(si, foundSpk.id.get))
+            UTXORecord.fromSpendingInfoDb(si, foundSpk.id.get)
+          )
         case None =>
           (for {
             newSpkId <-
               (spkTable returning spkTable.map(_.id)) += ScriptPubKeyDb(
-                si.output.scriptPubKey)
+                si.output.scriptPubKey
+              )
           } yield table.insertOrUpdate(
-            UTXORecord.fromSpendingInfoDb(si, newSpkId))).flatten
+            UTXORecord.fromSpendingInfoDb(si, newSpkId)
+          )).flatten
       }
       utxo <- table.filter(_.outPoint === si.outPoint).result.headOption
       spk <-
@@ -209,7 +221,8 @@ case class SpendingInfoDAO()(implicit
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
           throw new SQLException(
-            s"Unexpected result: Cannot upsert either a UTXO or a SPK record for $si")
+            s"Unexpected result: Cannot upsert either a UTXO or a SPK record for $si"
+          )
       }
   }
 
@@ -219,21 +232,21 @@ case class SpendingInfoDAO()(implicit
   }
 
   def deleteAction(
-      si: SpendingInfoDb): DBIOAction[Int, NoStream, Effect.Write] = {
+      si: SpendingInfoDb
+  ): DBIOAction[Int, NoStream, Effect.Write] = {
     deleteSpendingInfoDbAllAction(Vector(si))
   }
 
   def deleteSpendingInfoDbAllAction(
-      sis: Vector[SpendingInfoDb]): DBIOAction[Int, NoStream, Effect.Write] = {
+      sis: Vector[SpendingInfoDb]
+  ): DBIOAction[Int, NoStream, Effect.Write] = {
     val ids = sis.map(_.id).flatten
     val query = table.filter(t => t.id.inSet(ids))
     query.delete
   }
 
-  def findAllSpendingInfosAction(): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findAllSpendingInfosAction()
+      : DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     for {
       all <- findAllAction()
       utxos <- utxoToInfoAction(all)
@@ -246,8 +259,7 @@ case class SpendingInfoDAO()(implicit
       utxos <- utxoToInfo(all)
     } yield utxos
 
-  /** Fetches all the received TXOs in our DB that are in
-    * the given TX
+  /** Fetches all the received TXOs in our DB that are in the given TX
     */
   def findTx(tx: Transaction): Future[Vector[SpendingInfoDb]] =
     findTxs(Vector(tx))
@@ -258,22 +270,21 @@ case class SpendingInfoDAO()(implicit
   }
 
   /** Fetches all received txos in our db that are in the given txs */
-  def findTxsAction(txs: Vector[Transaction]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findTxsAction(
+      txs: Vector[Transaction]
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     findOutputsReceivedAction(txs.map(_.txIdBE))
   }
 
-  def findTxAction(tx: Transaction): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findTxAction(
+      tx: Transaction
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     findTxsAction(Vector(tx))
   }
 
-  private def _findOutputsBeingSpentQuery(txs: Vector[Transaction]): Vector[
-    Query[SpendingInfoTable, UTXORecord, Seq]] = {
+  private def _findOutputsBeingSpentQuery(
+      txs: Vector[Transaction]
+  ): Vector[Query[SpendingInfoTable, UTXORecord, Seq]] = {
     val outPoints: Vector[TransactionOutPoint] = txs
       .flatMap(_.inputs)
       .map(_.previousOutput)
@@ -287,44 +298,43 @@ case class SpendingInfoDAO()(implicit
     queries.toVector
   }
 
-  /** Finds all the outputs being spent in the given
-    * transaction
+  /** Finds all the outputs being spent in the given transaction
     */
   def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     findOutputsBeingSpent(Vector(tx))
   }
 
   private def findOutputsBeingSpentQuery(
-      txs: Vector[Transaction]): Vector[Query[
+      txs: Vector[Transaction]
+  ): Vector[Query[
     (SpendingInfoTable, ScriptPubKeyDAO#ScriptPubKeyTable),
     (UTXORecord, ScriptPubKeyDAO#ScriptPubKeyTable#TableElementType),
-    Seq]] = {
+    Seq
+  ]] = {
     _findOutputsBeingSpentQuery(txs).map { query =>
       query.join(spkTable).on(_.scriptPubKeyId === _.id)
     }
   }
 
   def findOutputsBeingSpent(
-      txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
+      txs: Vector[Transaction]
+  ): Future[Vector[SpendingInfoDb]] = {
     val action = findOutputsBeingSpentAction(txs)
     safeDatabase.run(action)
   }
 
-  def findOutputsBeingSpentAction(txs: Vector[Transaction]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findOutputsBeingSpentAction(
+      txs: Vector[Transaction]
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     val queries = findOutputsBeingSpentQuery(txs)
-    val actions: Vector[DBIOAction[
-      Vector[(UTXORecord, ScriptPubKeyDb)],
-      NoStream,
-      Effect.Read]] = {
+    val actions: Vector[
+      DBIOAction[Vector[(UTXORecord, ScriptPubKeyDb)], NoStream, Effect.Read]
+    ] = {
       queries.map(_.result.map(_.toVector))
     }
-    val action: DBIOAction[
-      Vector[(UTXORecord, ScriptPubKeyDb)],
-      NoStream,
-      Effect.Read] = DBIO.sequence(actions).map(_.flatten.toVector)
+    val action: DBIOAction[Vector[
+      (UTXORecord, ScriptPubKeyDb)
+    ], NoStream, Effect.Read] = DBIO.sequence(actions).map(_.flatten.toVector)
 
     action.map(_.map { case (utxo, spk) =>
       utxo.toSpendingInfoDb(spk.scriptPubKey)
@@ -333,8 +343,9 @@ case class SpendingInfoDAO()(implicit
 
   /** Given a TXID, fetches all incoming TXOs and the address the TXO pays to
     */
-  def withAddress(txid: DoubleSha256DigestBE): Future[
-    Vector[(SpendingInfoDb, AddressDb)]] = {
+  def withAddress(
+      txid: DoubleSha256DigestBE
+  ): Future[Vector[(SpendingInfoDb, AddressDb)]] = {
     def _withAddress: Future[Vector[(UTXORecord, AddressRecord)]] = {
       val query = {
         val filtered = table.filter(_.txid === txid)
@@ -350,14 +361,17 @@ case class SpendingInfoDAO()(implicit
       addrSpks <- findScriptPubKeys(res.map(_._2.scriptPubKeyId))
     } yield {
       res.map(r =>
-        (r._1.toSpendingInfoDb(utxoSpks(r._1.scriptPubKeyId).scriptPubKey),
-         r._2.toAddressDb(addrSpks(r._2.scriptPubKeyId).scriptPubKey)))
+        (
+          r._1.toSpendingInfoDb(utxoSpks(r._1.scriptPubKeyId).scriptPubKey),
+          r._2.toAddressDb(addrSpks(r._2.scriptPubKeyId).scriptPubKey)
+        )
+      )
     }
 
   }
 
-  /** Fetches all the incoming TXOs in our DB that are in
-    * the transaction with the given TXID
+  /** Fetches all the incoming TXOs in our DB that are in the transaction with
+    * the given TXID
     */
   def findDbsForTx(txid: DoubleSha256DigestBE): Future[Vector[UTXORecord]] = {
     val query = table.filter(_.txid === txid)
@@ -369,14 +383,12 @@ case class SpendingInfoDAO()(implicit
     .join(spkTable)
     .on(_.scriptPubKeyId === _.id)
 
-  /** Fetches all the incoming TXOs in our DB that are in
-    * the transaction with the given TXID
+  /** Fetches all the incoming TXOs in our DB that are in the transaction with
+    * the given TXID
     */
   def findOutputsReceivedAction(
-      txids: Vector[DoubleSha256DigestBE]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+      txids: Vector[DoubleSha256DigestBE]
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     spkJoinQuery
       .filter(_._1.state.inSet(TxoState.receivedStates))
       .filter(_._1.txid.inSet(txids))
@@ -384,27 +396,31 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        })
+        }
+      )
       .map(_.toVector)
   }
 
-  /** Fetches all the incoming TXOs in our DB that are in
-    * the transaction with the given TXID
+  /** Fetches all the incoming TXOs in our DB that are in the transaction with
+    * the given TXID
     */
   def findOutputsReceived(
-      txids: Vector[DoubleSha256DigestBE]): Future[Vector[SpendingInfoDb]] = {
+      txids: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[SpendingInfoDb]] = {
     safeDatabase.run(findOutputsReceivedAction(txids))
   }
 
   def findByScriptPubKey(
-      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+      scriptPubKey: ScriptPubKey
+  ): Future[Vector[SpendingInfoDb]] = {
     val filtered = spkJoinQuery.filter(_._2.scriptPubKey === scriptPubKey)
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        })
+        }
+      )
   }
 
   def findByScriptPubKeyId(scriptPubKeyId: Long): Future[Vector[UTXORecord]] = {
@@ -413,67 +429,66 @@ case class SpendingInfoDAO()(implicit
   }
 
   /** Enumerates all unspent TX outputs in the wallet with the state
-    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]]
+    * [[TxoState.PendingConfirmationsReceived]] or
+    * [[TxoState.ConfirmedReceived]]
     */
   def _findAllUnspent(): Future[Vector[UTXORecord]] = {
     safeDatabase.run(_findAllUnspentAction())
   }
 
   /** Enumerates all unspent TX outputs in the wallet with the state
-    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]]
+    * [[TxoState.PendingConfirmationsReceived]] or
+    * [[TxoState.ConfirmedReceived]]
     */
-  def _findAllUnspentAction(): DBIOAction[
-    Vector[UTXORecord],
-    NoStream,
-    Effect.Read] = _findByStateAction(TxoState.receivedStates.toVector)
+  def _findAllUnspentAction()
+      : DBIOAction[Vector[UTXORecord], NoStream, Effect.Read] =
+    _findByStateAction(TxoState.receivedStates.toVector)
 
-  def _findByStateAction(states: Vector[TxoState]): DBIOAction[
-    Vector[UTXORecord],
-    NoStream,
-    Effect.Read] = {
+  def _findByStateAction(
+      states: Vector[TxoState]
+  ): DBIOAction[Vector[UTXORecord], NoStream, Effect.Read] = {
     table.filter(_.state.inSet(states)).result.map(_.toVector)
   }
 
-  def utxoToInfoAction(utxos: Vector[UTXORecord]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def utxoToInfoAction(
+      utxos: Vector[UTXORecord]
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     for {
       spks <- findScriptPubKeysAction(utxos)
     } yield utxos.map(utxo =>
-      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
+      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey)
+    )
   }
 
   def utxoToInfo(utxos: Vector[UTXORecord]): Future[Vector[SpendingInfoDb]] =
     for {
       spks <- findScriptPubKeysByUtxos(utxos)
     } yield utxos.map(utxo =>
-      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
+      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey)
+    )
 
   def infoToUtxo(infos: Vector[SpendingInfoDb]): Future[Vector[UTXORecord]] =
     for {
       spks <- findPublicKeyScriptsBySpendingInfoDb(infos)
     } yield infos.map(utxo =>
-      UTXORecord.fromSpendingInfoDb(utxo, spks(utxo.output.scriptPubKey)))
+      UTXORecord.fromSpendingInfoDb(utxo, spks(utxo.output.scriptPubKey))
+    )
 
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
     safeDatabase.run(findAllUnspentAction())
   }
 
-  def findAllUnspentAction(): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findAllUnspentAction()
+      : DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     for {
       utxos <- _findAllUnspentAction()
       infos <- utxoToInfoAction(utxos)
     } yield infos
   }
 
-  def getBalanceAction(accountOpt: Option[HDAccount] = None): DBIOAction[
-    CurrencyUnit,
-    NoStream,
-    Effect.Read] = {
+  def getBalanceAction(
+      accountOpt: Option[HDAccount] = None
+  ): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
     val account = accountOpt.getOrElse(appConfig.defaultAccount)
     for {
       utxos <- _findAllUnspentAction()
@@ -482,8 +497,9 @@ case class SpendingInfoDAO()(implicit
     } yield forAccount.map(_.output.value).sum
   }
 
-  def getConfirmedBalanceAction(accountOpt: Option[HDAccount] =
-    None): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
+  def getConfirmedBalanceAction(
+      accountOpt: Option[HDAccount] = None
+  ): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
     val account = accountOpt.getOrElse(appConfig.defaultAccount)
     for {
       utxos <- _findByStateAction(Vector(TxoState.ConfirmedReceived))
@@ -492,8 +508,9 @@ case class SpendingInfoDAO()(implicit
     } yield forAccount.map(_.output.value).sum
   }
 
-  def getUnconfirmedBalanceAction(accountOpt: Option[HDAccount] =
-    None): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
+  def getUnconfirmedBalanceAction(
+      accountOpt: Option[HDAccount] = None
+  ): DBIOAction[CurrencyUnit, NoStream, Effect.Read] = {
     val account = accountOpt.getOrElse(appConfig.defaultAccount)
     for {
       utxos <- _findByStateAction(TxoState.pendingReceivedStates.toVector)
@@ -504,36 +521,37 @@ case class SpendingInfoDAO()(implicit
 
   private def filterUtxosByAccount(
       utxos: Vector[SpendingInfoDb],
-      hdAccount: HDAccount): Vector[SpendingInfoDb] = {
+      hdAccount: HDAccount
+  ): Vector[SpendingInfoDb] = {
     utxos.filter(utxo =>
-      HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
-                              account = hdAccount))
+      HDAccount.isSameAccount(bip32Path = utxo.privKeyPath, account = hdAccount)
+    )
   }
 
   /** Finds all utxos for a given account */
   def findAllUnspentForAccount(
-      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+      hdAccount: HDAccount
+  ): Future[Vector[SpendingInfoDb]] = {
     val allUtxosF = findAllUnspent()
     allUtxosF.map(filterUtxosByAccount(_, hdAccount))
   }
 
-  def findAllUnspentForAccountAction(hdAccount: HDAccount): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findAllUnspentForAccountAction(
+      hdAccount: HDAccount
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     val allUtxosA = findAllUnspentAction()
     allUtxosA.map(filterUtxosByAccount(_, hdAccount))
   }
 
-  def findAllForAccountAction(hdAccount: HDAccount): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findAllForAccountAction(
+      hdAccount: HDAccount
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     findAllSpendingInfosAction().map(filterUtxosByAccount(_, hdAccount))
   }
 
   def findAllForAccount(
-      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+      hdAccount: HDAccount
+  ): Future[Vector[SpendingInfoDb]] = {
     val action = findAllForAccountAction(hdAccount)
     safeDatabase.run(action)
   }
@@ -549,11 +567,13 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        })
+        }
+      )
   }
 
   /** Enumerates all TX outputs in the wallet with the state
-    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.PendingConfirmationsSpent]]
+    * [[TxoState.PendingConfirmationsReceived]] or
+    * [[TxoState.PendingConfirmationsSpent]]
     */
   def findAllPendingConfirmation: Future[Vector[SpendingInfoDb]] = {
     val query = table
@@ -566,7 +586,8 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        })
+        }
+      )
   }
 
   /** Enumerates all TX outputs in the wallet with the state
@@ -583,7 +604,8 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        })
+        }
+      )
   }
 
   /** Enumerates all TX outpoints in the wallet */
@@ -593,13 +615,15 @@ case class SpendingInfoDAO()(implicit
   }
 
   def findByOutPoint(
-      outPoint: TransactionOutPoint): Future[Option[SpendingInfoDb]] = {
+      outPoint: TransactionOutPoint
+  ): Future[Option[SpendingInfoDb]] = {
     findByOutPoints(Vector(outPoint)).map(_.headOption)
   }
 
   /** Enumerates all TX outpoints in the wallet */
-  def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
-    Vector[SpendingInfoDb]] = {
+  def findByOutPoints(
+      outPoints: Vector[TransactionOutPoint]
+  ): Future[Vector[SpendingInfoDb]] = {
     val query = table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -609,13 +633,13 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        })
+        }
+      )
   }
 
-  def findAllUnspentForTagAction(tag: AddressTag): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read] = {
+  def findAllUnspentForTagAction(
+      tag: AddressTag
+  ): DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
     table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -637,25 +661,25 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.run(findAllUnspentForTagAction(tag))
   }
 
-  def markAsReservedAction(ts: Vector[SpendingInfoDb]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Read with Effect.Write] = {
-    //1. Check if any are reserved already
-    //2. if not, reserve them
-    //3. if they are reserved, throw an exception?
+  def markAsReservedAction(ts: Vector[SpendingInfoDb]): DBIOAction[Vector[
+    SpendingInfoDb
+  ], NoStream, Effect.Read with Effect.Write] = {
+    // 1. Check if any are reserved already
+    // 2. if not, reserve them
+    // 3. if they are reserved, throw an exception?
     val outPoints = ts.map(_.outPoint)
     table
       .filter(_.outPoint.inSet(outPoints))
       .filter(
         _.state.inSet(TxoState.receivedStates)
-      ) //must be available to reserve
+      ) // must be available to reserve
       .map(_.state)
       .update(TxoState.Reserved)
       .flatMap { count =>
         if (count != ts.length) {
           val exn = new RuntimeException(
-            s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
+            s"Failed to reserve all utxos, expected=${ts.length} actual=$count"
+          )
           DBIO.failed(exn)
         } else {
           DBIO.successful(count)
@@ -665,20 +689,21 @@ case class SpendingInfoDAO()(implicit
   }
 
   def markAsReserved(
-      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+      ts: Vector[SpendingInfoDb]
+  ): Future[Vector[SpendingInfoDb]] = {
     safeDatabase.run(markAsReservedAction(ts))
   }
 
   def hasDuplicates(): Future[Boolean] = FutureUtil.makeAsync { () =>
     withStatement(
-      s"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM $fullTableName GROUP BY tx_outpoint HAVING COUNT(*) > 1)") {
-      st =>
-        val rs = st.executeQuery()
-        try {
-          if (rs.next()) {
-            rs.getBoolean(1)
-          } else false
-        } finally rs.close()
+      s"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM $fullTableName GROUP BY tx_outpoint HAVING COUNT(*) > 1)"
+    ) { st =>
+      val rs = st.executeQuery()
+      try {
+        if (rs.next()) {
+          rs.getBoolean(1)
+        } else false
+      } finally rs.close()
     }
   }
 
@@ -706,10 +731,9 @@ case class SpendingInfoDAO()(implicit
     }
   }
 
-  private def findScriptPubKeysAction(ids: Seq[Long]): DBIOAction[
-    Map[Long, ScriptPubKeyDb],
-    NoStream,
-    Effect.Read] = {
+  private def findScriptPubKeysAction(
+      ids: Seq[Long]
+  ): DBIOAction[Map[Long, ScriptPubKeyDb], NoStream, Effect.Read] = {
     val query = spkTable.filter(t => t.id.inSet(ids))
     query.result.map { action =>
       action.map { case spk =>
@@ -719,27 +743,29 @@ case class SpendingInfoDAO()(implicit
   }
 
   private def findScriptPubKeys(
-      ids: Seq[Long]): Future[Map[Long, ScriptPubKeyDb]] = {
+      ids: Seq[Long]
+  ): Future[Map[Long, ScriptPubKeyDb]] = {
     val action = findScriptPubKeysAction(ids)
     safeDatabase.run(action)
   }
 
-  private def findScriptPubKeysAction(utxos: Vector[UTXORecord]): DBIOAction[
-    Map[Long, ScriptPubKeyDb],
-    NoStream,
-    Effect.Read] = {
+  private def findScriptPubKeysAction(
+      utxos: Vector[UTXORecord]
+  ): DBIOAction[Map[Long, ScriptPubKeyDb], NoStream, Effect.Read] = {
     val ids = utxos.map(_.scriptPubKeyId)
     findScriptPubKeysAction(ids)
   }
 
   private def findScriptPubKeysByUtxos(
-      utxos: Vector[UTXORecord]): Future[Map[Long, ScriptPubKeyDb]] = {
+      utxos: Vector[UTXORecord]
+  ): Future[Map[Long, ScriptPubKeyDb]] = {
     val action = findScriptPubKeysAction(utxos)
     safeDatabase.run(action)
   }
 
   private def findPublicKeyScriptsBySpendingInfoDb(
-      spendingInfoDbs: Seq[SpendingInfoDb]): Future[Map[ScriptPubKey, Long]] = {
+      spendingInfoDbs: Seq[SpendingInfoDb]
+  ): Future[Map[ScriptPubKey, Long]] = {
     val spks = spendingInfoDbs.map(_.output.scriptPubKey)
     val query = spkTable.filter(t => t.scriptPubKey.inSet(spks))
     safeDatabase
@@ -747,11 +773,10 @@ case class SpendingInfoDAO()(implicit
       .map(_.map(spk => (spk.scriptPubKey, spk.id.get)).toMap)
   }
 
-  /** This table stores the necessary information to spend
-    * a transaction output (TXO) at a later point in time. It
-    * also stores how many confirmations it has, whether
-    * or not it is spent (i.e. if it is a UTXO or not) and the
-    * TXID of the transaction that created this output.
+  /** This table stores the necessary information to spend a transaction output
+    * (TXO) at a later point in time. It also stores how many confirmations it
+    * has, whether or not it is spent (i.e. if it is a UTXO or not) and the TXID
+    * of the transaction that created this output.
     */
   case class SpendingInfoTable(tag: Tag)
       extends TableAutoInc[UTXORecord](tag, schemaName, "txo_spending_info") {
@@ -775,23 +800,27 @@ case class SpendingInfoDAO()(implicit
     def scriptWitnessOpt: Rep[Option[ScriptWitness]] = column("script_witness")
 
     def spendingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] = column(
-      "spending_txid")
+      "spending_txid"
+    )
 
     /** All UTXOs must have a SPK in the wallet that gets spent to */
     def fk_scriptPubKeyId: slick.lifted.ForeignKeyQuery[_, ScriptPubKeyDb] = {
       val scriptPubKeyTable = spkTable
-      foreignKey("fk_scriptPubKeyId",
-                 sourceColumns = scriptPubKeyId,
-                 targetTableQuery = scriptPubKeyTable)(_.id)
+      foreignKey(
+        "fk_scriptPubKeyId",
+        sourceColumns = scriptPubKeyId,
+        targetTableQuery = scriptPubKeyTable
+      )(_.id)
     }
 
     /** All UTXOs must have a corresponding transaction in the wallet */
-    def fk_incoming_txId: slick.lifted.ForeignKeyQuery[
-      _,
-      IncomingTransactionDb] = {
-      foreignKey("fk_incoming_txId",
-                 sourceColumns = txid,
-                 targetTableQuery = txTable)(_.txIdBE)
+    def fk_incoming_txId
+        : slick.lifted.ForeignKeyQuery[_, IncomingTransactionDb] = {
+      foreignKey(
+        "fk_incoming_txId",
+        sourceColumns = txid,
+        targetTableQuery = txTable
+      )(_.txIdBE)
     }
 
     private val fromTuple: (
@@ -805,8 +834,11 @@ case class SpendingInfoDAO()(implicit
             Option[ScriptPubKey],
             Option[ScriptWitness],
             Option[DoubleSha256DigestBE],
-            Option[Long])) => UTXORecord = {
-      case (outpoint,
+            Option[Long]
+        )
+    ) => UTXORecord = {
+      case (
+            outpoint,
             _,
             state,
             scriptPubKeyId,
@@ -815,16 +847,19 @@ case class SpendingInfoDAO()(implicit
             redeemScriptOpt,
             scriptWitOpt,
             spendingTxIdOpt,
-            idOpt) =>
-        UTXORecord(outpoint,
-                   state,
-                   scriptPubKeyId,
-                   value,
-                   path,
-                   redeemScriptOpt,
-                   scriptWitOpt,
-                   spendingTxIdOpt,
-                   idOpt)
+            idOpt
+          ) =>
+        UTXORecord(
+          outpoint,
+          state,
+          scriptPubKeyId,
+          value,
+          path,
+          redeemScriptOpt,
+          scriptWitOpt,
+          spendingTxIdOpt,
+          idOpt
+        )
     }
 
     private val toTuple: UTXORecord => Option[
@@ -838,31 +873,38 @@ case class SpendingInfoDAO()(implicit
           Option[ScriptPubKey],
           Option[ScriptWitness],
           Option[DoubleSha256DigestBE],
-          Option[Long])] = { case utxo: UTXORecord =>
+          Option[Long]
+      )
+    ] = { case utxo: UTXORecord =>
       Some(
-        (utxo.outpoint,
-         utxo.outpoint.txIdBE,
-         utxo.state,
-         utxo.scriptPubKeyId,
-         utxo.value,
-         utxo.path,
-         utxo.redeemScript,
-         utxo.scriptWitness,
-         utxo.spendingTxIdOpt,
-         utxo.id))
+        (
+          utxo.outpoint,
+          utxo.outpoint.txIdBE,
+          utxo.state,
+          utxo.scriptPubKeyId,
+          utxo.value,
+          utxo.path,
+          utxo.redeemScript,
+          utxo.scriptWitness,
+          utxo.spendingTxIdOpt,
+          utxo.id
+        )
+      )
     }
 
     override def * = {
-      (outPoint,
-       txid,
-       state,
-       scriptPubKeyId,
-       value,
-       privKeyPath,
-       redeemScriptOpt,
-       scriptWitnessOpt,
-       spendingTxIdOpt,
-       id.?).<>(fromTuple, toTuple)
+      (
+        outPoint,
+        txid,
+        state,
+        scriptPubKeyId,
+        value,
+        privKeyPath,
+        redeemScriptOpt,
+        scriptWitnessOpt,
+        spendingTxIdOpt,
+        id.?
+      ).<>(fromTuple, toTuple)
     }
   }
 }

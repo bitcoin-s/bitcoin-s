@@ -38,12 +38,16 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
     multiSigScriptPubKey.publicKeys must be(
       Seq(
         ECPublicKeyBytes(
-          "025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"),
+          "025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"
+        ),
         ECPublicKeyBytes(
-          "03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906"),
+          "03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906"
+        ),
         ECPublicKeyBytes(
-          "0215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f")
-      ))
+          "0215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f"
+        )
+      )
+    )
 
   }
 
@@ -74,7 +78,9 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
       case (multiSigScriptPubKey, _) =>
         assert(
           MultiSignatureScriptPubKey(
-            multiSigScriptPubKey.hex) == multiSigScriptPubKey)
+            multiSigScriptPubKey.hex
+          ) == multiSigScriptPubKey
+        )
     }
   }
 

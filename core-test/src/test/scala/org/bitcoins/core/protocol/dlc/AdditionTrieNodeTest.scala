@@ -13,8 +13,9 @@ class AdditionTrieNodeTest extends BitcoinSUnitTest {
   val nonces: Int = 10
 
   @tailrec
-  private def computeAllPrefixes(accum: Vector[Vector[Vector[Int]]] =
-    Vector.empty): Vector[Vector[Int]] = {
+  private def computeAllPrefixes(
+      accum: Vector[Vector[Vector[Int]]] = Vector.empty
+  ): Vector[Vector[Int]] = {
     if (accum.length == nonces) {
       accum.flatten
     } else {

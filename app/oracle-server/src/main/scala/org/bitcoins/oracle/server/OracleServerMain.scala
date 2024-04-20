@@ -13,8 +13,8 @@ import scala.concurrent.{Await, Future}
 
 class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
-    conf: DLCOracleAppConfig)
-    extends BitcoinSServerRunner[Unit] {
+    conf: DLCOracleAppConfig
+) extends BitcoinSServerRunner[Unit] {
 
   override def start(): Future[Unit] = {
 
@@ -31,21 +31,25 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
       routes = Seq(OracleRoutes(oracle), commonRoutes).map(Future.successful)
       server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
-          Server(conf = conf,
-                 handlersF = routes,
-                 rpcbindOpt = bindConfOpt,
-                 rpcport = rpcport,
-                 rpcPassword = conf.rpcPassword,
-                 None,
-                 Source.empty)
+          Server(
+            conf = conf,
+            handlersF = routes,
+            rpcbindOpt = bindConfOpt,
+            rpcport = rpcport,
+            rpcPassword = conf.rpcPassword,
+            None,
+            Source.empty
+          )
         case None =>
-          Server(conf = conf,
-                 handlersF = routes,
-                 rpcbindOpt = bindConfOpt,
-                 rpcport = conf.rpcPort,
-                 rpcPassword = conf.rpcPassword,
-                 None,
-                 Source.empty)
+          Server(
+            conf = conf,
+            handlersF = routes,
+            rpcbindOpt = bindConfOpt,
+            rpcport = conf.rpcPort,
+            rpcPassword = conf.rpcPassword,
+            None,
+            Source.empty
+          )
       }
 
       bindings <- server.start()
@@ -88,14 +92,16 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
 
   implicit lazy val conf: DLCOracleAppConfig =
     DLCOracleAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
-      system.dispatcher)
+      system.dispatcher
+    )
 
   val m = new OracleServerMain(serverCmdLineArgs)
   m.run()
 
   sys.addShutdownHook {
     logger.info(
-      s"@@@@@@@@@@@@@@@@@@@@@ Shutting down ${getClass.getSimpleName} @@@@@@@@@@@@@@@@@@@@@")
+      s"@@@@@@@@@@@@@@@@@@@@@ Shutting down ${getClass.getSimpleName} @@@@@@@@@@@@@@@@@@@@@"
+    )
     Await.result(m.stop(), 10.seconds)
   }
 }

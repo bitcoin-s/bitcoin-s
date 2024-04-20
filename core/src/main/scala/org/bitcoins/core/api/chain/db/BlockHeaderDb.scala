@@ -14,7 +14,8 @@ case class BlockHeaderDb(
     nBits: UInt32,
     nonce: UInt32,
     hex: String,
-    chainWork: BigInt) {
+    chainWork: BigInt
+) {
 
   lazy val blockHeader: BlockHeader = {
     val blockHeader = BlockHeader.fromHex(hex)
@@ -26,7 +27,8 @@ case class BlockHeaderDb(
     require(blockHeader.nonce == nonce)
     require(
       blockHeader.time == time,
-      s"Inconsistent in memory time=$time vs serialized time=${blockHeader.time}")
+      s"Inconsistent in memory time=$time vs serialized time=${blockHeader.time}"
+    )
 
     blockHeader
   }
@@ -48,7 +50,8 @@ object BlockHeaderDbHelper {
   def fromBlockHeader(
       height: Int,
       chainWork: BigInt,
-      bh: BlockHeader): BlockHeaderDb = {
+      bh: BlockHeader
+  ): BlockHeaderDb = {
     BlockHeaderDb(
       height = height,
       hashBE = bh.hashBE,

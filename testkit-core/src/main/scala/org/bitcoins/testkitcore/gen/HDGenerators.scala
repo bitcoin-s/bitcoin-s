@@ -96,10 +96,12 @@ object HDGenerators {
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType
-    } yield LegacyHDPath(coinType = coinType,
-                         addressIndex = addressIndex,
-                         accountIndex = accountIndex,
-                         chainType = chainType)
+    } yield LegacyHDPath(
+      coinType = coinType,
+      addressIndex = addressIndex,
+      accountIndex = accountIndex,
+      chainType = chainType
+    )
 
   def segwithHdPath: Gen[SegWitHDPath] =
     for {
@@ -107,10 +109,12 @@ object HDGenerators {
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType
-    } yield SegWitHDPath(coinType = coinType,
-                         addressIndex = addressIndex,
-                         accountIndex = accountIndex,
-                         chainType = chainType)
+    } yield SegWitHDPath(
+      coinType = coinType,
+      addressIndex = addressIndex,
+      accountIndex = accountIndex,
+      chainType = chainType
+    )
 
   def nestedSegwithHdPath: Gen[NestedSegWitHDPath] =
     for {
@@ -118,10 +122,12 @@ object HDGenerators {
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType
-    } yield NestedSegWitHDPath(coinType = coinType,
-                               addressIndex = addressIndex,
-                               accountIndex = accountIndex,
-                               chainType = chainType)
+    } yield NestedSegWitHDPath(
+      coinType = coinType,
+      addressIndex = addressIndex,
+      accountIndex = accountIndex,
+      chainType = chainType
+    )
 
   def hdPath: Gen[HDPath] =
     Gen.oneOf(legacyHdPath, segwithHdPath, nestedSegwithHdPath)

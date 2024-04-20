@@ -29,10 +29,8 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
       Future.unit
   }
 
-  private val handleWriteErrorFn: (
-      BigSizeUInt,
-      ByteVector,
-      Throwable) => Future[Unit] = {
+  private val handleWriteErrorFn
+      : (BigSizeUInt, ByteVector, Throwable) => Future[Unit] = {
     case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
       Future.unit
   }
@@ -60,7 +58,8 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
         },
         handleWriteFn,
         handleWriteErrorFn
-      ))
+      )
+    )
 
     val resultF: Future[Future[Assertion]] = for {
       _ <- boundAddressPromise.future
@@ -79,7 +78,8 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
           },
           handleWriteFn,
           handleWriteErrorFn
-        ))
+        )
+      )
       client ! DLCClient.Connect(Peer(connectAddress, socks5ProxyParams = None))
 
       for {
@@ -87,13 +87,16 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
         _ <- AsyncUtil.retryUntilSatisfied(serverConnectionHandlerOpt.isDefined)
         _ <- AsyncUtil.retryUntilSatisfied(clientConnectionHandlerOpt.isDefined)
         pingTLV =
-          PingTLV(UInt16.one,
-                  ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
+          PingTLV(
+            UInt16.one,
+            ByteVector.fromValidHex("00112233445566778899aabbccddeeff")
+          )
         clientConnectionHandler = clientConnectionHandlerOpt.get
         _ = clientProbe.send(clientConnectionHandler, pingTLV)
         _ = serverProbe.expectMsg(DLCDataHandler.Received(LnMessage(pingTLV)))
         pongTLV = PongTLV.forIgnored(
-          ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
+          ByteVector.fromValidHex("00112233445566778899aabbccddeeff")
+        )
         serverConnectionHandler = serverConnectionHandlerOpt.get
         _ = serverProbe.send(serverConnectionHandler, pongTLV)
         _ = clientProbe.expectMsg(DLCDataHandler.Received(LnMessage(pongTLV)))
@@ -103,8 +106,10 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
           PongTLV.forIgnored(ignored)
         _ = clientProbe.send(clientConnectionHandler, bigTLV)
         _ = serverProbe.expectMsg(DLCDataHandler.Received(LnMessage(bigTLV)))
-        _ = clientProbe.send(clientConnectionHandler,
-                             DLCConnectionHandler.CloseConnection)
+        _ = clientProbe.send(
+          clientConnectionHandler,
+          DLCConnectionHandler.CloseConnection
+        )
         _ = clientProbe.send(clientConnectionHandler, pingTLV)
         _ = serverProbe.expectNoMessage()
         _ = serverProbe.send(serverConnectionHandler, pongTLV)

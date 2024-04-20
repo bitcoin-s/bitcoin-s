@@ -8,7 +8,8 @@ object LegacyHDPath extends HDPathFactory[LegacyHDPath] {
 
   /** The purpose constant from BIP44
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#purpose BIP44]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#purpose BIP44]]
     */
   override val PURPOSE: Int = 44
 
@@ -18,7 +19,8 @@ object LegacyHDPath extends HDPathFactory[LegacyHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int): LegacyHDPath = {
+      addressIndex: Int
+  ): LegacyHDPath = {
 
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)

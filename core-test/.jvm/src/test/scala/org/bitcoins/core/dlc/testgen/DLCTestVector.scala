@@ -47,18 +47,21 @@ case class FundingInputTx(
     idx: Int,
     inputKeys: Vector[ECPrivateKey],
     redeemScript: Option[WitnessScriptPubKey],
-    scriptWitness: ScriptWitnessV0) {
+    scriptWitness: ScriptWitnessV0
+) {
 
   val outputRef: OutputReference =
     OutputReference(TransactionOutPoint(tx.txId, UInt32(idx)), tx.outputs(idx))
 
   lazy val scriptSignatureParams: ScriptSignatureParams[InputInfo] = {
     ScriptSignatureParams(
-      InputInfo(TransactionOutPoint(tx.txId, UInt32(idx)),
-                tx.outputs(idx),
-                redeemScript,
-                Some(scriptWitness),
-                ConditionalPath.NoCondition),
+      InputInfo(
+        TransactionOutPoint(tx.txId, UInt32(idx)),
+        tx.outputs(idx),
+        redeemScript,
+        Some(scriptWitness),
+        ConditionalPath.NoCondition
+      ),
       tx,
       inputKeys,
       HashType.sigHashAll
@@ -66,19 +69,23 @@ case class FundingInputTx(
   }
 
   def toFundingInput: DLCFundingInput = {
-    DLCFundingInput.fromInputSigningInfo(scriptSignatureParams,
-                                         serialId,
-                                         tx.inputs(idx).sequence)
+    DLCFundingInput.fromInputSigningInfo(
+      scriptSignatureParams,
+      serialId,
+      tx.inputs(idx).sequence
+    )
   }
 
   def toSerializedFundingInputTx: SerializedFundingInputTx = {
-    SerializedFundingInputTx(serialId,
-                             tx,
-                             idx,
-                             inputKeys,
-                             redeemScript,
-                             scriptWitness,
-                             scriptSignatureParams.maxWitnessLen)
+    SerializedFundingInputTx(
+      serialId,
+      tx,
+      idx,
+      inputKeys,
+      redeemScript,
+      scriptWitness,
+      scriptSignatureParams.maxWitnessLen
+    )
   }
 }
 
@@ -89,7 +96,8 @@ case class SerializedFundingInputTx(
     inputKeys: Vector[ECPrivateKey],
     redeemScript: Option[WitnessScriptPubKey],
     scriptWitness: ScriptWitnessV0,
-    maxWitnessLen: Int) {
+    maxWitnessLen: Int
+) {
 
   def toFundingInputTx: FundingInputTx = {
     FundingInputTx(serialId, tx, idx, inputKeys, redeemScript, scriptWitness)
@@ -105,7 +113,8 @@ case class DLCPartyParams(
     fundingPrivKey: ECPrivateKey,
     payoutAddress: BitcoinAddress,
     payoutSerialId: UInt64,
-    fundOutputSerialId: UInt64) {
+    fundOutputSerialId: UInt64
+) {
 
   def fundingInputs: Vector[DLCFundingInput] =
     fundingInputTxs.map(_.toFundingInput)
@@ -119,7 +128,8 @@ case class DLCPartyParams(
       DLCOfferTLV.currentVersionOpt,
       SingleContractInfo(
         EnumContractDescriptor(params.contractInfo.map(_.toMapEntry)),
-        params.oracleInfo),
+        params.oracleInfo
+      ),
       DLCPublicKeys(fundingPrivKey.publicKey, payoutAddress),
       collateral.satoshis,
       fundingInputs,
@@ -136,7 +146,8 @@ case class DLCPartyParams(
 case class SerializedContractInfoEntry(
     preImage: String,
     outcome: Sha256Digest,
-    localPayout: CurrencyUnit) {
+    localPayout: CurrencyUnit
+) {
 
   def toMapEntry: (EnumOutcome, Satoshis) = {
     EnumOutcome(preImage) -> localPayout.satoshis
@@ -145,12 +156,15 @@ case class SerializedContractInfoEntry(
 
 object SerializedContractInfoEntry {
 
-  def fromContractDescriptor(contractInfo: EnumContractDescriptor): Vector[
-    SerializedContractInfoEntry] = {
+  def fromContractDescriptor(
+      contractInfo: EnumContractDescriptor
+  ): Vector[SerializedContractInfoEntry] = {
     contractInfo.map { case (EnumOutcome(str), amt) =>
-      SerializedContractInfoEntry(str,
-                                  CryptoUtil.sha256DLCAttestation(str),
-                                  amt)
+      SerializedContractInfoEntry(
+        str,
+        CryptoUtil.sha256DLCAttestation(str),
+        amt
+      )
     }.toVector
   }
 }
@@ -162,20 +176,24 @@ case class DLCParams(
     contractTimeout: BlockTimeStamp,
     feeRate: SatoshisPerVirtualByte,
     realOutcome: Sha256Digest,
-    oracleSignature: SchnorrDigitalSignature)
+    oracleSignature: SchnorrDigitalSignature
+)
 
 case class ValidTestInputs(
     params: DLCParams,
     offerParams: DLCPartyParams,
-    acceptParams: DLCPartyParams) {
+    acceptParams: DLCPartyParams
+) {
 
   def offer: DLCOffer = offerParams.toOffer(params)
 
   def accept: DLCAcceptWithoutSigs =
     DLCAcceptWithoutSigs(
       acceptParams.collateral.satoshis,
-      DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
-                    acceptParams.payoutAddress),
+      DLCPublicKeys(
+        acceptParams.fundingPrivKey.publicKey,
+        acceptParams.payoutAddress
+      ),
       acceptParams.fundingInputs,
       acceptParams.changeAddress,
       acceptParams.payoutSerialId,
@@ -212,7 +230,8 @@ object ValidTestInputs {
 case class DLCTransactions(
     fundingTx: Transaction,
     cets: Vector[Transaction],
-    refundTx: Transaction)
+    refundTx: Transaction
+)
 
 case class SuccessTestVector(
     testInputs: ValidTestInputs,
@@ -220,8 +239,8 @@ case class SuccessTestVector(
     accept: LnMessage[DLCAcceptTLV],
     sign: LnMessage[DLCSignTLV],
     unsignedTxs: DLCTransactions,
-    signedTxs: DLCTransactions)
-    extends DLCTestVector {
+    signedTxs: DLCTransactions
+) extends DLCTestVector {
 
   override def toJson: JsValue = {
     Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
@@ -239,7 +258,8 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
   implicit val u64Format: Format[UInt64] = hexFormat(UInt64)
 
   implicit val oracleInfoFormat: Format[EnumSingleOracleInfo] = hexFormat(
-    EnumSingleOracleInfo)
+    EnumSingleOracleInfo
+  )
 
   implicit val blockTimeStampFormat: Format[BlockTimeStamp] =
     Format[BlockTimeStamp](
@@ -256,7 +276,8 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
     )
 
   implicit val sha256DigestFormat: Format[Sha256Digest] = hexFormat(
-    Sha256Digest)
+    Sha256Digest
+  )
 
   implicit val schnorrDigitalSignatureFormat: Format[SchnorrDigitalSignature] =
     hexFormat(SchnorrDigitalSignature)
@@ -312,13 +333,16 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
     Json.format[DLCPartyParams]
 
   implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV]] = hexFormat(
-    LnMessageFactory(DLCOfferTLV))
+    LnMessageFactory(DLCOfferTLV)
+  )
 
   implicit val acceptMsgFormat: Format[LnMessage[DLCAcceptTLV]] = hexFormat(
-    LnMessageFactory(DLCAcceptTLV))
+    LnMessageFactory(DLCAcceptTLV)
+  )
 
   implicit val signMsgFormat: Format[LnMessage[DLCSignTLV]] = hexFormat(
-    LnMessageFactory(DLCSignTLV))
+    LnMessageFactory(DLCSignTLV)
+  )
 
   implicit val validTestInputsFormat: Format[ValidTestInputs] =
     Json.format[ValidTestInputs]

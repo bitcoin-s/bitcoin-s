@@ -14,12 +14,16 @@ object TorUtil extends BitcoinSLogger {
     .isDefined
 
   def torProxyAddress =
-    new InetSocketAddress(InetAddress.getLoopbackAddress,
-                          TorParams.DefaultProxyPort)
+    new InetSocketAddress(
+      InetAddress.getLoopbackAddress,
+      TorParams.DefaultProxyPort
+    )
 
   def torControlAddress =
-    new InetSocketAddress(InetAddress.getLoopbackAddress,
-                          TorParams.DefaultControlPort)
+    new InetSocketAddress(
+      InetAddress.getLoopbackAddress,
+      TorParams.DefaultControlPort
+    )
 
   def torProxyEnabled: Boolean = portIsBound(torProxyAddress)
   def torControlEnabled: Boolean = portIsBound(torControlAddress)
@@ -27,9 +31,11 @@ object TorUtil extends BitcoinSLogger {
   def verifyTorEnabled(): Unit = {
     assume(
       torProxyEnabled,
-      s"Tor daemon is not running or listening port ${TorParams.DefaultProxyPort}")
+      s"Tor daemon is not running or listening port ${TorParams.DefaultProxyPort}"
+    )
     assume(
       torControlEnabled,
-      s"Tor daemon is not running or listening port ${TorParams.DefaultControlPort}")
+      s"Tor daemon is not running or listening port ${TorParams.DefaultControlPort}"
+    )
   }
 }

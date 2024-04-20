@@ -6,13 +6,15 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE
 }
 
-/** Bip 157 Block Filter Headers which commit to a chain of block filters,
-  * much in the same way that block headers commit to a block chain
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#filter-headers]]
+/** Bip 157 Block Filter Headers which commit to a chain of block filters, much
+  * in the same way that block headers commit to a block chain
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#filter-headers]]
   */
 case class FilterHeader(
     filterHash: DoubleSha256Digest,
-    prevHeaderHash: DoubleSha256Digest) {
+    prevHeaderHash: DoubleSha256Digest
+) {
 
   val hash: DoubleSha256Digest = {
     CryptoUtil.doubleSHA256(filterHash.bytes ++ prevHeaderHash.bytes)
@@ -25,7 +27,8 @@ case class FilterHeader(
     FilterHeader(filterHash = nextFilter.hash, prevHeaderHash = this.hash)
   }
 
-  /** Given the next Block Filter hash, constructs the next Block Filter Header */
+  /** Given the next Block Filter hash, constructs the next Block Filter Header
+    */
   def nextHeader(nextFilterHash: DoubleSha256Digest): FilterHeader = {
     FilterHeader(filterHash = nextFilterHash, prevHeaderHash = this.hash)
   }
@@ -39,7 +42,8 @@ object FilterHeader {
 
   def apply(
       filterHash: DoubleSha256DigestBE,
-      prevHeaderHash: DoubleSha256DigestBE): FilterHeader = {
+      prevHeaderHash: DoubleSha256DigestBE
+  ): FilterHeader = {
     new FilterHeader(filterHash.flip, prevHeaderHash.flip)
   }
 

@@ -15,9 +15,9 @@ import scala.annotation.tailrec
 
 object InputUtil {
 
-  /** Returns a valid sequence number for the given [[ScriptNumber]]
-    * A transaction needs a valid sequence number to spend a OP_CHECKSEQUENCEVERIFY script.
-    * See BIP68/112 for more information
+  /** Returns a valid sequence number for the given [[ScriptNumber]] A
+    * transaction needs a valid sequence number to spend a
+    * OP_CHECKSEQUENCEVERIFY script. See BIP68/112 for more information
     * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki]]
     * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
     */
@@ -29,23 +29,26 @@ object InputUtil {
     } else {
       val n = scriptNum.toLong
       val sequence = UInt32(
-        n & TransactionConstants.sequenceLockTimeMask.toLong)
-      //set sequence number to indicate this is relative locktime
+        n & TransactionConstants.sequenceLockTimeMask.toLong
+      )
+      // set sequence number to indicate this is relative locktime
       sequence | TransactionConstants.sequenceLockTimeTypeFlag
     }
 
-  /** This helper function calculates the appropriate sequence number for each transaction input.
-    * [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need certain sequence numbers on the inputs
-    * to make them spendable.
-    * See BIP68/112 and BIP65 for more info
+  /** This helper function calculates the appropriate sequence number for each
+    * transaction input. [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need
+    * certain sequence numbers on the inputs to make them spendable. See
+    * BIP68/112 and BIP65 for more info
     */
   def calcSequenceForInputInfos(
       utxos: Seq[InputInfo],
-      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence
+  ): Seq[TransactionInput] = {
     @tailrec
     def loop(
         remaining: Seq[InputInfo],
-        accum: Seq[TransactionInput]): Seq[TransactionInput] =
+        accum: Seq[TransactionInput]
+    ): Seq[TransactionInput] =
       remaining match {
         case Nil => accum.reverse
         case spendingInfo +: newRemaining =>
@@ -55,23 +58,30 @@ object InputUtil {
                 case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
                 case _: CLTVScriptPubKey  => UInt32.zero
               }
-              val input = TransactionInput(lockTime.outPoint,
-                                           EmptyScriptSignature,
-                                           sequence)
+              val input = TransactionInput(
+                lockTime.outPoint,
+                EmptyScriptSignature,
+                sequence
+              )
               loop(newRemaining, input +: accum)
             case p2pkWithTimeout: P2PKWithTimeoutInputInfo =>
               if (p2pkWithTimeout.isBeforeTimeout) {
                 val input =
-                  TransactionInput(spendingInfo.outPoint,
-                                   EmptyScriptSignature,
-                                   defaultSequence)
+                  TransactionInput(
+                    spendingInfo.outPoint,
+                    EmptyScriptSignature,
+                    defaultSequence
+                  )
                 loop(newRemaining, input +: accum)
               } else {
                 val sequence = solveSequenceForCSV(
-                  p2pkWithTimeout.scriptPubKey.lockTime)
-                val input = TransactionInput(p2pkWithTimeout.outPoint,
-                                             EmptyScriptSignature,
-                                             sequence)
+                  p2pkWithTimeout.scriptPubKey.lockTime
+                )
+                val input = TransactionInput(
+                  p2pkWithTimeout.outPoint,
+                  EmptyScriptSignature,
+                  sequence
+                )
                 loop(newRemaining, input +: accum)
               }
             case p2sh: P2SHInputInfo =>
@@ -83,11 +93,13 @@ object InputUtil {
             case _: P2WPKHV0InputInfo | _: UnassignedSegwitNativeInputInfo |
                 _: P2PKInputInfo | _: P2PKHInputInfo |
                 _: MultiSignatureInputInfo | _: EmptyInputInfo =>
-              //none of these script types affect the sequence number of a tx so the defaultSequence is used
+              // none of these script types affect the sequence number of a tx so the defaultSequence is used
               val input =
-                TransactionInput(spendingInfo.outPoint,
-                                 EmptyScriptSignature,
-                                 defaultSequence)
+                TransactionInput(
+                  spendingInfo.outPoint,
+                  EmptyScriptSignature,
+                  defaultSequence
+                )
               loop(newRemaining, input +: accum)
           }
       }
@@ -95,14 +107,15 @@ object InputUtil {
     loop(utxos, Nil)
   }
 
-  /** This helper function calculates the appropriate sequence number for each transaction input.
-    * [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need certain sequence numbers on the inputs
-    * to make them spendable.
-    * See BIP68/112 and BIP65 for more info
+  /** This helper function calculates the appropriate sequence number for each
+    * transaction input. [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need
+    * certain sequence numbers on the inputs to make them spendable. See
+    * BIP68/112 and BIP65 for more info
     */
   def calcSequenceForInputs(
       utxos: Seq[InputSigningInfo[InputInfo]],
-      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence
+  ): Seq[TransactionInput] = {
     calcSequenceForInputInfos(utxos.map(_.inputInfo), defaultSequence)
   }
 }

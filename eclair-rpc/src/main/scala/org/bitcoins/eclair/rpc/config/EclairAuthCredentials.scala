@@ -34,19 +34,21 @@ sealed trait EclairAuthCredentials {
   def rpcPort: Int
 
   def copyWithDatadir(datadir: File): EclairAuthCredentials = {
-    EclairAuthCredentials(password = password,
-                          bitcoinAuthOpt = bitcoinAuthOpt,
-                          rpcPort = rpcPort,
-                          bitcoindRpcUri = bitcoindRpcUri,
-                          datadir = Some(datadir))
+    EclairAuthCredentials(
+      password = password,
+      bitcoinAuthOpt = bitcoinAuthOpt,
+      rpcPort = rpcPort,
+      bitcoindRpcUri = bitcoindRpcUri,
+      datadir = Some(datadir)
+    )
   }
 }
 
 /** @define fromConfigDoc
-  * Parses a [[com.typesafe.config.Config Config]] in the format of this
-  * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
-  * file to a
-  * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+  *   Parses a [[com.typesafe.config.Config Config]] in the format of this
+  *   [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+  *   file to a
+  *   [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
   */
 object EclairAuthCredentials {
 
@@ -55,20 +57,23 @@ object EclairAuthCredentials {
       bitcoinAuthOpt: Option[BitcoindAuthCredentials],
       rpcPort: Int,
       bitcoindRpcUri: URI,
-      datadir: Option[File])
-      extends EclairAuthCredentials
+      datadir: Option[File]
+  ) extends EclairAuthCredentials
 
   def apply(
       password: String,
       bitcoinAuthOpt: Option[BitcoindAuthCredentials],
       rpcPort: Int,
       bitcoindRpcUri: URI,
-      datadir: Option[File] = None): EclairAuthCredentials = {
-    AuthCredentialsImpl(password,
-                        bitcoinAuthOpt,
-                        rpcPort,
-                        bitcoindRpcUri,
-                        datadir)
+      datadir: Option[File] = None
+  ): EclairAuthCredentials = {
+    AuthCredentialsImpl(
+      password,
+      bitcoinAuthOpt,
+      rpcPort,
+      bitcoindRpcUri,
+      datadir
+    )
   }
 
   def fromDatadir(datadir: File): EclairAuthCredentials = {
@@ -90,36 +95,43 @@ object EclairAuthCredentials {
 
   private[config] def fromConfig(
       config: Config,
-      datadir: Option[File]): EclairAuthCredentials = {
+      datadir: Option[File]
+  ): EclairAuthCredentials = {
 
     val bitcoindUsername = config.getString("eclair.bitcoind.rpcuser")
     val bitcoindPassword = config.getString("eclair.bitcoind.rpcpassword")
 
     val defaultBitcoindPort = getDefaultBitcoindRpcPort(config)
     val bitcoindRpcPort =
-      ConfigUtil.getIntOrElse(config,
-                              "eclair.bitcoind.rpcport",
-                              defaultBitcoindPort)
+      ConfigUtil.getIntOrElse(
+        config,
+        "eclair.bitcoind.rpcport",
+        defaultBitcoindPort
+      )
 
     val bitcoindRpcHost =
       ConfigUtil.getStringOrElse(config, "eclair.bitcoind.host", "localhost")
 
     val bitcoindUri = new URI(s"http://$bitcoindRpcHost:$bitcoindRpcPort")
 
-    //does eclair not have a username field??
+    // does eclair not have a username field??
     val password = config.getString("eclair.api.password")
     val eclairRpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
 
     val bitcoindAuth = {
-      BitcoindAuthCredentials.PasswordBased(username = bitcoindUsername,
-                                            password = bitcoindPassword)
+      BitcoindAuthCredentials.PasswordBased(
+        username = bitcoindUsername,
+        password = bitcoindPassword
+      )
     }
 
-    EclairAuthCredentials(password = password,
-                          bitcoinAuthOpt = Some(bitcoindAuth),
-                          rpcPort = eclairRpcPort,
-                          bitcoindRpcUri = bitcoindUri,
-                          datadir = datadir)
+    EclairAuthCredentials(
+      password = password,
+      bitcoinAuthOpt = Some(bitcoindAuth),
+      rpcPort = eclairRpcPort,
+      bitcoindRpcUri = bitcoindUri,
+      datadir = datadir
+    )
   }
 
   private def getDefaultBitcoindRpcPort(config: Config): Int = {
@@ -130,7 +142,8 @@ object EclairAuthCredentials {
       case "regtest" => RegTest.rpcPort
       case _: String =>
         throw new IllegalArgumentException(
-          s"Got invalid chain parameter $network ")
+          s"Got invalid chain parameter $network "
+        )
     }
   }
 

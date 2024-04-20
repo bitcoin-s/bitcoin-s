@@ -22,19 +22,21 @@ case class OracleAnnouncementDataDb(
 object OracleAnnouncementDbHelper {
 
   def fromAnnouncement(tlv: OracleAnnouncementTLV): OracleAnnouncementDataDb = {
-    OracleAnnouncementDataDb(None,
-                             tlv.announcementSignature,
-                             tlv.publicKey,
-                             tlv.publicKey,
-                             tlv.eventTLV.eventId,
-                             tlv.eventTLV.eventDescriptor,
-                             tlv.eventTLV.eventMaturityEpoch)
+    OracleAnnouncementDataDb(
+      None,
+      tlv.announcementSignature,
+      tlv.publicKey,
+      tlv.publicKey,
+      tlv.eventTLV.eventId,
+      tlv.eventTLV.eventDescriptor,
+      tlv.eventTLV.eventMaturityEpoch
+    )
 
   }
 
   def fromAnnouncements(
-      announcementTLVs: Vector[OracleAnnouncementTLV]): Vector[
-    OracleAnnouncementDataDb] = {
+      announcementTLVs: Vector[OracleAnnouncementTLV]
+  ): Vector[OracleAnnouncementDataDb] = {
     announcementTLVs.map(fromAnnouncement)
   }
 }

@@ -77,7 +77,7 @@ class DescriptorTest extends BitcoinSUnitTest {
     val expected12 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
     runTest(str12, expected12)
 
-    //invalid hardened derivation, needs to be removed from BIP381
+    // invalid hardened derivation, needs to be removed from BIP381
     /*    val str13 =
       "pkh(xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB/2147483647'/0)"
     val expected13 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
@@ -132,23 +132,29 @@ class DescriptorTest extends BitcoinSUnitTest {
 
     val str3 =
       "wpkh([ffffffff/13']xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH/1/2/*)"
-    val expected3 = Vector("0014326b2249e3a25d5dc60935f044ee835d090ba859",
-                           "0014af0bd98abc2f2cae66e36896a39ffe2d32984fb7",
-                           "00141fa798efd1cbf95cebf912c031b8a4a6e9fb9f27")
+    val expected3 = Vector(
+      "0014326b2249e3a25d5dc60935f044ee835d090ba859",
+      "0014af0bd98abc2f2cae66e36896a39ffe2d32984fb7",
+      "00141fa798efd1cbf95cebf912c031b8a4a6e9fb9f27"
+    )
     runDerivationTest(str3, expected3)
 
     val str4 =
       "sh(wpkh(xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*'))"
-    val expected4 = Vector("a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
-                           "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
-                           "a9148483aa1116eb9c05c482a72bada4b1db24af654387")
+    val expected4 = Vector(
+      "a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
+      "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
+      "a9148483aa1116eb9c05c482a72bada4b1db24af654387"
+    )
     runDerivationTest(str4, expected4)
 
     val str5 =
       "sh(wpkh(xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi/10/20/30/40/*'))"
-    val expected5 = Vector("a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
-                           "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
-                           "a9148483aa1116eb9c05c482a72bada4b1db24af654387")
+    val expected5 = Vector(
+      "a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87",
+      "a914bed59fc0024fae941d6e20a3b44a109ae740129287",
+      "a9148483aa1116eb9c05c482a72bada4b1db24af654387"
+    )
     runDerivationTest(str5, expected5)
 
     val str6 = "wsh(pkh(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1))"
@@ -453,7 +459,7 @@ class DescriptorTest extends BitcoinSUnitTest {
   }
 
   it must "have fidelity with the type of hardened derivation used as input" in {
-    //note using h instead of ' for hardened derivation path
+    // note using h instead of ' for hardened derivation path
     val str =
       "wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)"
     val desc = Descriptor.fromString(str)
@@ -468,7 +474,8 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   @tailrec
   private def parseExtKeyExpression(
-      expression: ScriptExpression): ExtECPublicKeyExpression = {
+      expression: ScriptExpression
+  ): ExtECPublicKeyExpression = {
     expression match {
       case x: KeyExpressionScriptExpression[_] =>
         x.source match {
@@ -487,7 +494,8 @@ class DescriptorTest extends BitcoinSUnitTest {
         parseExtKeyExpression(x.source)
       case x: RawScriptExpression =>
         sys.error(
-          s"RawScriptExpression cannot be used in runDerivationTest(), got=$x")
+          s"RawScriptExpression cannot be used in runDerivationTest(), got=$x"
+        )
       case x: ScriptPathTreeExpression =>
         x.source.leafs.head.source
           .asInstanceOf[P2PKScriptExpression[_]]
@@ -499,7 +507,8 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   def runDerivationTest(
       descriptor: String,
-      expectedSPKs: Vector[String]): Assertion = {
+      expectedSPKs: Vector[String]
+  ): Assertion = {
     val desc = ScriptDescriptor.fromString(descriptor)
     assert(desc.toString == descriptor)
     val extKeyDesc = parseExtKeyExpression(desc.expression)
@@ -537,7 +546,8 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   private def runMultisigDerivationTest(
       descriptor: String,
-      expectedSPKs: Vector[String]): Assertion = {
+      expectedSPKs: Vector[String]
+  ): Assertion = {
     val desc: ScriptDescriptor = ScriptDescriptor.fromString(descriptor)
     val expression: MultisigScriptExpression = desc.expression match {
       case m: MultisigScriptExpression => m
@@ -574,7 +584,8 @@ class DescriptorTest extends BitcoinSUnitTest {
             (P2WSHWitnessSPKV0(multisig), P2WSHWitnessSPKV0.fromAsmHex(s))
           case x =>
             sys.error(
-              s"Invalid descriptor type=$x for runMultisigDerivationTest()")
+              s"Invalid descriptor type=$x for runMultisigDerivationTest()"
+            )
         }
 
       }
@@ -593,7 +604,8 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   private def runComboTest(
       descriptor: String,
-      expectedSPKs: Vector[String]): Assertion = {
+      expectedSPKs: Vector[String]
+  ): Assertion = {
     val desc = ComboDescriptor.fromString(descriptor)
     expectedSPKs.zipWithIndex.foreach { case (s, idx) =>
       if (idx == 0) {
@@ -621,7 +633,8 @@ class DescriptorTest extends BitcoinSUnitTest {
 
   private def runComboDerivationTest(
       descriptor: String,
-      expectedSPKsNested: Vector[Vector[String]]): Assertion = {
+      expectedSPKsNested: Vector[Vector[String]]
+  ): Assertion = {
     val desc = ComboDescriptor.fromString(descriptor)
     expectedSPKsNested.zipWithIndex.foreach { case (expectedSPKs, idx) =>
       val extKey = desc.expression.source.asInstanceOf[ExtECPublicKeyExpression]

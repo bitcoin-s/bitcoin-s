@@ -5,7 +5,9 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-/** Tests from https://github.com/sipa/bips/blob/bip-taproot/bip-0340/test-vectors.csv */
+/** Tests from
+  * https://github.com/sipa/bips/blob/bip-taproot/bip-0340/test-vectors.csv
+  */
 class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
   behavior of "Schnorr Signing"
 
@@ -14,14 +16,19 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
       secKey: ECPrivateKey,
       auxRand: ByteVector,
       msg: ByteVector,
-      expectedSig: SchnorrDigitalSignature): Assertion = {
+      expectedSig: SchnorrDigitalSignature
+  ): Assertion = {
     val secpSig = secKey.schnorrSign(msg, auxRand)
     val bouncyCastleSig =
       BouncycastleCryptoRuntime.schnorrSign(msg, secKey, auxRand)
-    assert(secpSig == expectedSig,
-           s"Test $index failed signing for libsecp256k1")
-    assert(bouncyCastleSig == expectedSig,
-           s"Test $index failed signing for Bouncy Castle")
+    assert(
+      secpSig == expectedSig,
+      s"Test $index failed signing for libsecp256k1"
+    )
+    assert(
+      bouncyCastleSig == expectedSig,
+      s"Test $index failed signing for Bouncy Castle"
+    )
     assert(bouncyCastleSig == secpSig)
   }
 
@@ -31,15 +38,20 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
       msg: ByteVector,
       sig: SchnorrDigitalSignature,
       expectedResult: Boolean,
-      comment: String): Assertion = {
+      comment: String
+  ): Assertion = {
     val secpResult = Try(pubKey.verify(msg, sig)).getOrElse(false)
     val bouncyCastleResult =
       Try(BouncycastleCryptoRuntime.schnorrVerify(msg, pubKey, sig))
         .getOrElse(false)
-    assert(secpResult == expectedResult,
-           s"Test $index failed verification for libsecp256k1: $comment")
-    assert(bouncyCastleResult == expectedResult,
-           s"Test $index failed verification for Bouncy Castle: $comment")
+    assert(
+      secpResult == expectedResult,
+      s"Test $index failed verification for libsecp256k1: $comment"
+    )
+    assert(
+      bouncyCastleResult == expectedResult,
+      s"Test $index failed verification for Bouncy Castle: $comment"
+    )
     assert(bouncyCastleResult == secpResult)
   }
 
@@ -51,7 +63,8 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
       msg: String,
       sig: String,
       result: Boolean,
-      comment: String): Assertion = {
+      comment: String
+  ): Assertion = {
     val pkT = Try(SchnorrPublicKey(pubKey))
     val msgBytes = ByteVector.fromHex(msg).get
     val schnorrSigT = Try(SchnorrDigitalSignature(sig))
@@ -79,14 +92,16 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
   it must "pass the BIP 340 test-vectors with both secp256k1 bindings and bouncy castle" in {
     BIP340TestVectors.vectors.foreach {
       case (index, secKeyOpt, pubKey, auxRandOpt, msg, sig, result, comment) =>
-        test(index = index,
-             secKeyOpt = secKeyOpt,
-             pubKey = pubKey,
-             auxRandOpt = auxRandOpt,
-             msg = msg,
-             sig = sig,
-             result = result,
-             comment = comment)
+        test(
+          index = index,
+          secKeyOpt = secKeyOpt,
+          pubKey = pubKey,
+          auxRandOpt = auxRandOpt,
+          msg = msg,
+          sig = sig,
+          result = result,
+          comment = comment
+        )
     }
   }
 }

@@ -17,8 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object BitcoinSServerMainUtil {
 
-  /** Builds a configuration with the proper bitcoind credentials and bitcoin-s node mode set to bitcoind
-    * and sets tor config
+  /** Builds a configuration with the proper bitcoind credentials and bitcoin-s
+    * node mode set to bitcoind and sets tor config
     */
   def buildBitcoindConfig(instance: BitcoindInstance): Config = {
     val version = instance match {
@@ -49,15 +49,17 @@ object BitcoinSServerMainUtil {
   }
 
   /** Builds a [[BitcoinSAppConfig]] that uses a bitcoind backend */
-  def buildBitcoindBitcoinSAppConfig(bitcoind: BitcoindRpcClient)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
+  def buildBitcoindBitcoinSAppConfig(
+      bitcoind: BitcoindRpcClient
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val conf = BitcoinSServerMainUtil.buildBitcoindConfig(bitcoind.instance)
     val datadir = FileUtil.tmpDir()
     BitcoinSAppConfig(datadir.toPath, Vector(conf))
   }
 
-  def destroyBitcoinSAppConfig(appConfig: BitcoinSAppConfig)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def destroyBitcoinSAppConfig(
+      appConfig: BitcoinSAppConfig
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     val stopF = appConfig
       .stop()
       .map(_ => BitcoinSTestAppConfig.deleteAppConfig(appConfig))

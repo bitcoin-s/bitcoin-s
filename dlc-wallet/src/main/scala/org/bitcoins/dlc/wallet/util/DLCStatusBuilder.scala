@@ -12,9 +12,10 @@ import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 
 /** Creates a case class that represents all DLC data from dlcdb.sqlite
-  * Unfortunately we have to read some data from walletdb.sqlite to build a
-  * full [[DLCStatus]]
-  * @see https://github.com/bitcoin-s/bitcoin-s/pull/4555#issuecomment-1200113188
+  * Unfortunately we have to read some data from walletdb.sqlite to build a full
+  * [[DLCStatus]]
+  * @see
+  *   https://github.com/bitcoin-s/bitcoin-s/pull/4555#issuecomment-1200113188
   */
 case class IntermediaryDLCStatus(
     dlcDb: DLCDb,
@@ -29,16 +30,18 @@ case class IntermediaryDLCStatus(
 
   def complete(
       payoutAddressOpt: Option[PayoutAddress],
-      closingTxOpt: Option[TransactionDb]): DLCStatus = {
+      closingTxOpt: Option[TransactionDb]
+  ): DLCStatus = {
     val dlcId = dlcDb.dlcId
     dlcDb.state match {
       case _: DLCState.InProgressState =>
-        DLCStatusBuilder.buildInProgressDLCStatus(dlcDb = dlcDb,
-                                                  contractInfo = contractInfo,
-                                                  contractData = contractData,
-                                                  offerDb = offerDb,
-                                                  payoutAddress =
-                                                    payoutAddressOpt)
+        DLCStatusBuilder.buildInProgressDLCStatus(
+          dlcDb = dlcDb,
+          contractInfo = contractInfo,
+          contractData = contractData,
+          offerDb = offerDb,
+          payoutAddress = payoutAddressOpt
+        )
       case _: DLCState.ClosedState =>
         (acceptDbOpt, closingTxOpt) match {
           case (Some(acceptDb), Some(closingTx)) =>
@@ -56,13 +59,16 @@ case class IntermediaryDLCStatus(
             )
           case (None, None) =>
             throw new RuntimeException(
-              s"Could not find acceptDb or closingTx for closing state=${dlcDb.state} dlcId=$dlcId")
+              s"Could not find acceptDb or closingTx for closing state=${dlcDb.state} dlcId=$dlcId"
+            )
           case (Some(_), None) =>
             throw new RuntimeException(
-              s"Could not find closingTx for state=${dlcDb.state} dlcId=$dlcId")
+              s"Could not find closingTx for state=${dlcDb.state} dlcId=$dlcId"
+            )
           case (None, Some(_)) =>
             throw new RuntimeException(
-              s"Cannot find acceptDb for dlcId=$dlcId. This likely means we have data corruption")
+              s"Cannot find acceptDb for dlcId=$dlcId. This likely means we have data corruption"
+            )
         }
     }
   }
@@ -70,13 +76,16 @@ case class IntermediaryDLCStatus(
 
 object DLCStatusBuilder {
 
-  /** Helper method to convert a bunch of indepdendent datastructures into a in progress dlc status */
+  /** Helper method to convert a bunch of indepdendent datastructures into a in
+    * progress dlc status
+    */
   def buildInProgressDLCStatus(
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
       offerDb: DLCOfferDb,
-      payoutAddress: Option[PayoutAddress]): DLCStatus = {
+      payoutAddress: Option[PayoutAddress]
+  ): DLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.InProgressState],
       s"Cannot have divergent states between dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -215,7 +224,8 @@ object DLCStatusBuilder {
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
       closingTx: Transaction,
-      payoutAddress: Option[PayoutAddress]): ClosedDLCStatus = {
+      payoutAddress: Option[PayoutAddress]
+  ): ClosedDLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.ClosedState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -235,7 +245,7 @@ object DLCStatusBuilder {
     }
     val status = dlcDb.state.asInstanceOf[DLCState.ClosedState] match {
       case DLCState.Refunded =>
-        //no oracle information in the refund case
+        // no oracle information in the refund case
         val refund = Refunded(
           dlcId,
           dlcDb.isInitiator,
@@ -259,7 +269,8 @@ object DLCStatusBuilder {
         val (oracleOutcome, sigs) = getOracleOutcomeAndSigs(
           announcementIds = announcementIds,
           announcementsWithId = announcementsWithId,
-          nonceDbs = nonceDbs)
+          nonceDbs = nonceDbs
+        )
 
         oracleOutcomeState match {
           case DLCState.Claimed =>
@@ -309,15 +320,14 @@ object DLCStatusBuilder {
     status
   }
 
-  /** Calculates oracle outcome and signatures. Returns none if the dlc is not in a valid state to
-    * calculate the outcome
+  /** Calculates oracle outcome and signatures. Returns none if the dlc is not
+    * in a valid state to calculate the outcome
     */
   def getOracleOutcomeAndSigs(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
-      nonceDbs: Vector[OracleNonceDb]): (
-      OracleOutcome,
-      OrderedSchnorrSignatures) = {
+      nonceDbs: Vector[OracleNonceDb]
+  ): (OracleOutcome, OrderedSchnorrSignatures) = {
     val noncesByAnnouncement: Map[Long, Vector[OracleNonceDb]] =
       nonceDbs.sortBy(_.index).groupBy(_.announcementId)
     val oracleOutcome = {
@@ -325,19 +335,25 @@ object DLCStatusBuilder {
       val usedOracles = usedOracleIds.sortBy(_.index).map { used =>
         announcementsWithId.find(_._2 == used.announcementId).get
       }
-      require(usedOracles.nonEmpty,
-              s"Error, no oracles used, dlcIds=${announcementIds.map(_.dlcId)}")
+      require(
+        usedOracles.nonEmpty,
+        s"Error, no oracles used, dlcIds=${announcementIds.map(_.dlcId)}"
+      )
       announcementsWithId.head._1.eventTLV.eventDescriptor match {
         case _: EnumEventDescriptorV0TLV =>
           val oracleInfos = usedOracles.map(t => EnumSingleOracleInfo(t._1))
           val outcomes = usedOracles.map { case (_, id) =>
             val nonces = noncesByAnnouncement(id)
-            require(nonces.size == 1,
-                    s"Only 1 outcome for enum, got ${nonces.size}")
+            require(
+              nonces.size == 1,
+              s"Only 1 outcome for enum, got ${nonces.size}"
+            )
             EnumOutcome(nonces.head.outcomeOpt.get)
           }
-          require(outcomes.distinct.size == 1,
-                  s"Should only be one outcome for enum, got $outcomes")
+          require(
+            outcomes.distinct.size == 1,
+            s"Should only be one outcome for enum, got $outcomes"
+          )
           EnumOracleOutcome(oracleInfos, outcomes.head)
         case _: UnsignedDigitDecompositionEventDescriptor =>
           val oraclesAndOutcomes = usedOracles.map { case (announcement, id) =>

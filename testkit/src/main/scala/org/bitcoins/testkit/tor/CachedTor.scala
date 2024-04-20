@@ -8,9 +8,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-/** A trait that holds a cached instance of a the tor daemon
-  * This is useful for using with fixtures to avoid starting tor everytime a
-  * new test is run.
+/** A trait that holds a cached instance of a the tor daemon This is useful for
+  * using with fixtures to avoid starting tor everytime a new test is run.
   */
 trait CachedTor {
   _: BitcoinSPekkoAsyncTest =>

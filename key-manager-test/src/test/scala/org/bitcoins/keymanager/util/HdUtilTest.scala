@@ -25,19 +25,29 @@ class HdUtilTest extends KeyManagerApiUnitTest {
 
   it must "get the correct version for a public key" in {
     assert(
-      HDUtil.getXpubVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPub)
+      HDUtil.getXpubVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPub
+    )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Pub)
+      HDUtil.getXpubVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Pub
+    )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPub)
+      HDUtil.getXpubVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPub
+    )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Pub)
+      HDUtil.getXpubVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Pub
+    )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.NestedSegWit,
-                            MainNet) == NestedSegWitMainNetPub)
+      HDUtil.getXpubVersion(
+        HDPurposes.NestedSegWit,
+        MainNet
+      ) == NestedSegWitMainNetPub
+    )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.NestedSegWit,
-                            TestNet3) == NestedSegWitTestNet3Pub)
+      HDUtil.getXpubVersion(
+        HDPurposes.NestedSegWit,
+        TestNet3
+      ) == NestedSegWitTestNet3Pub
+    )
 
     assertThrows[IllegalArgumentException] {
       HDUtil.getXpubVersion(HDPurpose(1), TestNet3)
@@ -46,19 +56,29 @@ class HdUtilTest extends KeyManagerApiUnitTest {
 
   it must "get the correct version for a private key" in {
     assert(
-      HDUtil.getXprivVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPriv)
+      HDUtil.getXprivVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPriv
+    )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Priv)
+      HDUtil.getXprivVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Priv
+    )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPriv)
+      HDUtil.getXprivVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPriv
+    )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Priv)
+      HDUtil.getXprivVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Priv
+    )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.NestedSegWit,
-                             MainNet) == NestedSegWitMainNetPriv)
+      HDUtil.getXprivVersion(
+        HDPurposes.NestedSegWit,
+        MainNet
+      ) == NestedSegWitMainNetPriv
+    )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.NestedSegWit,
-                             TestNet3) == NestedSegWitTestNet3Priv)
+      HDUtil.getXprivVersion(
+        HDPurposes.NestedSegWit,
+        TestNet3
+      ) == NestedSegWitTestNet3Priv
+    )
 
     assertThrows[IllegalArgumentException] {
       HDUtil.getXprivVersion(HDPurpose(1), MainNet)
@@ -71,36 +91,52 @@ class HdUtilTest extends KeyManagerApiUnitTest {
 
   it must "find the corresponding priv version for a pubkey" in {
     assert(
-      HDUtil.getMatchingExtKeyVersion(LegacyMainNetPub) == LegacyMainNetPriv)
+      HDUtil.getMatchingExtKeyVersion(LegacyMainNetPub) == LegacyMainNetPriv
+    )
     assert(
-      HDUtil.getMatchingExtKeyVersion(LegacyTestNet3Pub) == LegacyTestNet3Priv)
+      HDUtil.getMatchingExtKeyVersion(LegacyTestNet3Pub) == LegacyTestNet3Priv
+    )
     assert(
-      HDUtil.getMatchingExtKeyVersion(SegWitMainNetPub) == SegWitMainNetPriv)
+      HDUtil.getMatchingExtKeyVersion(SegWitMainNetPub) == SegWitMainNetPriv
+    )
     assert(
-      HDUtil.getMatchingExtKeyVersion(SegWitTestNet3Pub) == SegWitTestNet3Priv)
+      HDUtil.getMatchingExtKeyVersion(SegWitTestNet3Pub) == SegWitTestNet3Priv
+    )
     assert(
       HDUtil.getMatchingExtKeyVersion(
-        NestedSegWitMainNetPub) == NestedSegWitMainNetPriv)
+        NestedSegWitMainNetPub
+      ) == NestedSegWitMainNetPriv
+    )
     assert(
       HDUtil.getMatchingExtKeyVersion(
-        NestedSegWitTestNet3Pub) == NestedSegWitTestNet3Priv)
+        NestedSegWitTestNet3Pub
+      ) == NestedSegWitTestNet3Priv
+    )
   }
 
   it must "find the corresponding pub version for a privkey" in {
     assert(
-      HDUtil.getMatchingExtKeyVersion(LegacyMainNetPriv) == LegacyMainNetPub)
+      HDUtil.getMatchingExtKeyVersion(LegacyMainNetPriv) == LegacyMainNetPub
+    )
     assert(
-      HDUtil.getMatchingExtKeyVersion(LegacyTestNet3Priv) == LegacyTestNet3Pub)
+      HDUtil.getMatchingExtKeyVersion(LegacyTestNet3Priv) == LegacyTestNet3Pub
+    )
     assert(
-      HDUtil.getMatchingExtKeyVersion(SegWitMainNetPriv) == SegWitMainNetPub)
+      HDUtil.getMatchingExtKeyVersion(SegWitMainNetPriv) == SegWitMainNetPub
+    )
     assert(
-      HDUtil.getMatchingExtKeyVersion(SegWitTestNet3Priv) == SegWitTestNet3Pub)
+      HDUtil.getMatchingExtKeyVersion(SegWitTestNet3Priv) == SegWitTestNet3Pub
+    )
     assert(
       HDUtil.getMatchingExtKeyVersion(
-        NestedSegWitMainNetPriv) == NestedSegWitMainNetPub)
+        NestedSegWitMainNetPriv
+      ) == NestedSegWitMainNetPub
+    )
     assert(
       HDUtil.getMatchingExtKeyVersion(
-        NestedSegWitTestNet3Priv) == NestedSegWitTestNet3Pub)
+        NestedSegWitTestNet3Priv
+      ) == NestedSegWitTestNet3Pub
+    )
   }
 
   it must "get the right coin type" in {

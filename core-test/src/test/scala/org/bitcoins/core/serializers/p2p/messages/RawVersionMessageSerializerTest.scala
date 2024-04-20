@@ -9,8 +9,8 @@ import scodec.bits._
 
 class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
 
-  //take from the bitcoin developer reference underneath this section
-  //https://bitcoin.org/en/developer-reference#version
+  // take from the bitcoin developer reference underneath this section
+  // https://bitcoin.org/en/developer-reference#version
 
   val protocolVersion = "72110100"
   val services = "0100000000000000"
@@ -53,7 +53,8 @@ class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
     versionMessage.addressTransPort must be(8333)
 
     versionMessage.nonce.toBigInt must be(
-      BigInt(BytesUtil.decodeHex(nonce).toArray))
+      BigInt(BytesUtil.decodeHex(nonce).toArray)
+    )
 
     versionMessage.userAgentSize must be(CompactSizeUInt(UInt64(15), 1))
     versionMessage.userAgent must be("/Satoshi:0.9.3/")
@@ -68,8 +69,8 @@ class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "read a VersionMessage that bitcoins created" in {
-    //random version message bitcoins created when connecting to a testnet seed
-    //and sending it a version message
+    // random version message bitcoins created when connecting to a testnet seed
+    // and sending it a version message
     val hex =
       "7c1101000000000000000000d805833655010000000000000000000000000000000000000000ffff0a940106479d010000000000000000000000000000000000ffff739259bb479d0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000"
     val versionMessage = RawVersionMessageSerializer.read(hex)
@@ -100,17 +101,20 @@ class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
     assert(versionMessage.services.nodeNetwork)
     versionMessage.timestamp must be(Int64(-4420735367386806222L))
     versionMessage.addressReceiveIpAddress must be(
-      InetAddress(hex"00000000000000000000ffff00000000"))
+      InetAddress(hex"00000000000000000000ffff00000000")
+    )
     assert(versionMessage.addressReceiveServices.nodeNone)
     versionMessage.addressReceivePort must be(17057)
     assert(versionMessage.addressTransServices.nodeNone)
     versionMessage.addressTransIpAddress must be(
-      InetAddress(hex"00000000000000000000ffff00000000"))
+      InetAddress(hex"00000000000000000000ffff00000000")
+    )
     versionMessage.addressTransPort must be(41963)
     versionMessage.nonce must be(UInt64(BigInt("9223372036854775809")))
     versionMessage.userAgentSize must be(CompactSizeUInt(UInt64(86), 1))
     versionMessage.userAgent must be(
-      "NcQHwZ87bRe9y4m6PA7lX2iVA5If1jWjUycykFOQeqB0REj92awaKy0zMRdckvEKq1j97i3Mal3Eo7QxgdjcpV")
+      "NcQHwZ87bRe9y4m6PA7lX2iVA5If1jWjUycykFOQeqB0REj92awaKy0zMRdckvEKq1j97i3Mal3Eo7QxgdjcpV"
+    )
     versionMessage.startHeight must be(Int32(-919905282))
     versionMessage.relay must be(false)
     versionMessage.hex must be(hex)

@@ -8,7 +8,8 @@ object MultisigHDPath extends HDPathFactory[MultisigHDPath] {
 
   /** The purpose constant from BIP45
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0045.mediawiki BIP45]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0045.mediawiki BIP45]]
     */
   override val PURPOSE: Int = 45
 
@@ -19,7 +20,8 @@ object MultisigHDPath extends HDPathFactory[MultisigHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int): MultisigHDPath = {
+      addressIndex: Int
+  ): MultisigHDPath = {
 
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)

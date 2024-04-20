@@ -22,11 +22,12 @@ trait DualWalletTestCachedBitcoind
   implicit protected def config2: BitcoinSAppConfig = {
     val config = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
       getBIP39PasswordOpt(),
-      Some(BaseWalletTest.segwitWalletConf))
+      Some(BaseWalletTest.segwitWalletConf)
+    )
     val randomHex = CryptoUtil.randomBytes(3).toHex
-    //with postgres, we need unique wallet names as postgres wallets
-    //share the same database. They have a unique schema with the database
-    //based on wallet name which is why we set this here.
+    // with postgres, we need unique wallet names as postgres wallets
+    // share the same database. They have a unique schema with the database
+    // based on wallet name which is why we set this here.
     val walletNameConfig =
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
     val extraConfig = config.withFallback(walletNameConfig)
@@ -49,9 +50,9 @@ trait DualWalletTestCachedBitcoind
     super.beforeAll()
   }
 
-  /** Creates two segwit wallets that are funded with some bitcoin, these wallets are NOT
-    * peered with a bitcoind so the funds in the wallets are not tied to an
-    * underlying blockchain
+  /** Creates two segwit wallets that are funded with some bitcoin, these
+    * wallets are NOT peered with a bitcoind so the funds in the wallets are not
+    * tied to an underlying blockchain
     */
   def withDualFundedDLCWallets(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
@@ -62,7 +63,8 @@ trait DualWalletTestCachedBitcoind
             walletA <-
               FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
             walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
-              bitcoind)(config2, system)
+              bitcoind
+            )(config2, system)
           } yield (walletA, walletB, bitcoind),
       destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet, _) =>
         for {
@@ -76,7 +78,8 @@ trait DualWalletTestCachedBitcoind
   /** Creates 2 funded segwit wallets that have a DLC initiated */
   def withDualDLCWallets(
       test: OneArgAsyncTest,
-      contractOraclePair: ContractOraclePair): FutureOutcome = {
+      contractOraclePair: ContractOraclePair
+  ): FutureOutcome = {
     makeDependentFixture(
       build =
         () => {
@@ -88,11 +91,12 @@ trait DualWalletTestCachedBitcoind
           val walletBF = for {
             bitcoind <- bitcoindF
 
-            //its important to map on this otherwise we generate blocks in parallel
-            //causing a reorg inside of createFundedDLCWallet
+            // its important to map on this otherwise we generate blocks in parallel
+            // causing a reorg inside of createFundedDLCWallet
             _ <- walletAF
             walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
-              bitcoind)(config2, system)
+              bitcoind
+            )(config2, system)
           } yield { walletB }
 
           for {

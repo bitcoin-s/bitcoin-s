@@ -26,7 +26,8 @@ class HDAccountTest extends BitcoinSUnitTest {
 
     assert(
       isNotSame,
-      s"If we drop the last element from the defualt path, we are not in the same account anymore")
+      s"If we drop the last element from the defualt path, we are not in the same account anymore"
+    )
   }
 
   it must "fail if we modify the last element in the path" in {
@@ -35,8 +36,10 @@ class HDAccountTest extends BitcoinSUnitTest {
 
     val isNotSame = !HDAccount.isSameAccount(modifiedLast, defaultAcct)
 
-    assert(isNotSame,
-           s"We should have the same account if we modify the account index")
+    assert(
+      isNotSame,
+      s"We should have the same account if we modify the account index"
+    )
   }
 
   it must "succeed if we add an arbitrary element onto the end of the path" in {
@@ -46,7 +49,8 @@ class HDAccountTest extends BitcoinSUnitTest {
 
     assert(
       isSame,
-      s"If we add an extra element onto the path, we are still in the same account")
+      s"If we add an extra element onto the path, we are still in the same account"
+    )
   }
 
   it must "fail with the empty path" in {

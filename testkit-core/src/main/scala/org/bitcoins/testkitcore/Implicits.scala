@@ -6,9 +6,8 @@ import org.scalatest.exceptions.TestFailedException
 
 import scala.annotation.tailrec
 
-/** Provides extension methods, syntax
-  * and other handy implicit values that
-  * aid in testing.
+/** Provides extension methods, syntax and other handy implicit values that aid
+  * in testing.
   */
 object Implicits {
 
@@ -22,7 +21,8 @@ object Implicits {
       def loop(counter: Int): T =
         if (counter > max) {
           sys.error(
-            s"Could not get a sample from generator after $max attempts")
+            s"Could not get a sample from generator after $max attempts"
+          )
         } else {
           gen.sample match {
             case None         => loop(counter + 1)
@@ -43,7 +43,8 @@ object Implicits {
         case Seq() =>
           throw new TestFailedException(
             message = "Cannot turn an empty list into an assertion!",
-            failedCodeStackDepth = 0)
+            failedCodeStackDepth = 0
+          )
         // this should force all collection kinds to
         // evaluate all their members, throwing when
         // evaluating a bad one

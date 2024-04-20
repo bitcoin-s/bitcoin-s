@@ -15,11 +15,12 @@ class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
   val config = ChainAppConfig(baseDatadir = tempDir, Vector.empty)
 
-  //if we don't turn off logging here, isInitF a few lines down will
-  //produce some nasty error logs since we are testing initialization
-  //of the chain project
+  // if we don't turn off logging here, isInitF a few lines down will
+  // produce some nasty error logs since we are testing initialization
+  // of the chain project
   val chainAppConfig = cachedChainConf.withOverrides(
-    ConfigFactory.parseString("bitcoin-s.logging.level=OFF"))
+    ConfigFactory.parseString("bitcoin-s.logging.level=OFF")
+  )
 
   behavior of "ChainAppConfig"
 
@@ -94,7 +95,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     appConfig.addCallbacks(printlnCallback)
     assert(!appConfig.isCallbackEmpty)
 
-    //clear the callback
+    // clear the callback
     appConfig.clearCallbacks()
     assert(appConfig.isCallbackEmpty)
   }

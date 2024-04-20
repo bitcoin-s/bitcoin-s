@@ -7,9 +7,8 @@ import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/** Created by chris on 5/19/16.
-  * Represents a block in our blockchain
-  * Bitcoin Core implementation:
+/** Created by chris on 5/19/16. Represents a block in our blockchain Bitcoin
+  * Core implementation:
   * [[https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L73]]
   * Bitcoin Developer Reference link:
   * [[https://bitcoin.org/en/developer-reference#serialized-blocks]]
@@ -19,8 +18,8 @@ sealed abstract class Block extends NetworkElement {
   /** The block header for this block */
   def blockHeader: BlockHeader
 
-  /** The total number of transactions in this block,
-    * including the coinbase transaction.
+  /** The total number of transactions in this block, including the coinbase
+    * transaction.
     */
   def txCount: CompactSizeUInt
 
@@ -29,13 +28,16 @@ sealed abstract class Block extends NetworkElement {
 
   override def bytes = RawBlockSerializer.write(this)
 
-  /** This is the new computation to determine the maximum size of a block as per BIP141
+  /** This is the new computation to determine the maximum size of a block as
+    * per BIP141
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#block-size]]
     * The weight of a block is determined as follows:
     *
-    * Base size is the block size in bytes with the original transaction serialization without any witness-related data
+    * Base size is the block size in bytes with the original transaction
+    * serialization without any witness-related data
     *
-    * Total size is the block size in bytes with transactions serialized as described in BIP144, including base data and witness data.
+    * Total size is the block size in bytes with transactions serialized as
+    * described in BIP144, including base data and witness data.
     *
     * Block weight is defined as Base size * 3 + Total size
     * [[https://github.com/bitcoin/bitcoin/blob/7490ae8b699d2955b665cf849d86ff5bb5245c28/src/primitives/block.cpp#L35]]
@@ -50,8 +52,8 @@ object Block extends Factory[Block] {
   private case class BlockImpl(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
-      transactions: Seq[Transaction])
-      extends Block {
+      transactions: Seq[Transaction]
+  ) extends Block {
 
     override def toString: String = {
       s"Block(blockHeader=${blockHeader}, txCount=${txCount.toLong})"
@@ -61,7 +63,8 @@ object Block extends Factory[Block] {
   def apply(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
-      transactions: Seq[Transaction]): Block = {
+      transactions: Seq[Transaction]
+  ): Block = {
     BlockImpl(blockHeader, txCount, transactions)
   }
 

@@ -19,14 +19,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class WalletStateDescriptorDb(
     tpe: WalletStateDescriptorType,
-    descriptor: WalletStateDescriptor) {
+    descriptor: WalletStateDescriptor
+) {
   require(descriptor.descriptorType == tpe)
 }
 
 case class WalletStateDescriptorDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
-    extends CRUD[WalletStateDescriptorDb, WalletStateDescriptorType]
+    override val appConfig: WalletAppConfig
+) extends CRUD[WalletStateDescriptorDb, WalletStateDescriptorType]
     with SlickUtil[WalletStateDescriptorDb, WalletStateDescriptorType] {
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -35,28 +36,26 @@ case class WalletStateDescriptorDAO()(implicit
   override val table: profile.api.TableQuery[WalletStateDescriptorTable] =
     TableQuery[WalletStateDescriptorTable]
 
-  override def createAll(ts: Vector[WalletStateDescriptorDb]): Future[
-    Vector[WalletStateDescriptorDb]] =
+  override def createAll(
+      ts: Vector[WalletStateDescriptorDb]
+  ): Future[Vector[WalletStateDescriptorDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findByPrimaryKeys(ids: Vector[WalletStateDescriptorType]): Query[
-    WalletStateDescriptorTable,
-    WalletStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKeys(
+      ids: Vector[WalletStateDescriptorType]
+  ): Query[WalletStateDescriptorTable, WalletStateDescriptorDb, Seq] = {
     table.filter(_.tpe.inSet(ids))
   }
 
-  override def findByPrimaryKey(id: WalletStateDescriptorType): Query[
-    Table[WalletStateDescriptorDb],
-    WalletStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKey(
+      id: WalletStateDescriptorType
+  ): Query[Table[WalletStateDescriptorDb], WalletStateDescriptorDb, Seq] = {
     table.filter(_.tpe === id)
   }
 
-  override def findAll(ts: Vector[WalletStateDescriptorDb]): Query[
-    Table[WalletStateDescriptorDb],
-    WalletStateDescriptorDb,
-    Seq] =
+  override def findAll(
+      ts: Vector[WalletStateDescriptorDb]
+  ): Query[Table[WalletStateDescriptorDb], WalletStateDescriptorDb, Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
 
   def getSyncHeight(): Future[Option[SyncHeightDescriptor]] = {
@@ -70,7 +69,8 @@ case class WalletStateDescriptorDAO()(implicit
 
   def updateSyncHeight(
       hash: DoubleSha256DigestBE,
-      height: Int): Future[WalletStateDescriptorDb] = {
+      height: Int
+  ): Future[WalletStateDescriptorDb] = {
     val tpe: WalletStateDescriptorType = SyncHeight
     val query = table.filter(_.tpe === tpe)
     val action = for {
@@ -112,7 +112,8 @@ case class WalletStateDescriptorDAO()(implicit
 
   def compareAndSetRescanning(
       expectedValue: Boolean,
-      newValue: Boolean): Future[Boolean] = {
+      newValue: Boolean
+  ): Future[Boolean] = {
     val tpe: WalletStateDescriptorType = Rescan
     val query = table.filter(_.tpe === tpe)
 
@@ -139,17 +140,21 @@ case class WalletStateDescriptorDAO()(implicit
   }
 
   class WalletStateDescriptorTable(t: Tag)
-      extends Table[WalletStateDescriptorDb](t,
-                                             schemaName,
-                                             "state_descriptors") {
+      extends Table[WalletStateDescriptorDb](
+        t,
+        schemaName,
+        "state_descriptors"
+      ) {
 
     def tpe: Rep[WalletStateDescriptorType] = column("type", O.PrimaryKey)
 
     def descriptor: Rep[WalletStateDescriptor] = column("descriptor")
 
     override def * : ProvenShape[WalletStateDescriptorDb] =
-      (tpe, descriptor).<>(WalletStateDescriptorDb.tupled,
-                           WalletStateDescriptorDb.unapply)
+      (tpe, descriptor).<>(
+        WalletStateDescriptorDb.tupled,
+        WalletStateDescriptorDb.unapply
+      )
 
   }
 }

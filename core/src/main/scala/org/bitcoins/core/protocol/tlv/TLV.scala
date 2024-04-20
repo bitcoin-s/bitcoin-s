@@ -78,14 +78,16 @@ trait TLVUtil {
 
   protected def u16PrefixedList[T](
       vec: Vector[T],
-      serialize: T => ByteVector): ByteVector = {
+      serialize: T => ByteVector
+  ): ByteVector = {
     vec.foldLeft(UInt16(vec.length).bytes) { case (accum, elem) =>
       accum ++ serialize(elem)
     }
   }
 
   protected def u16PrefixedList[T <: NetworkElement](
-      vec: Vector[T]): ByteVector = {
+      vec: Vector[T]
+  ): ByteVector = {
     u16PrefixedList[T](vec, { elem: NetworkElement => elem.bytes })
   }
 
@@ -95,14 +97,16 @@ trait TLVUtil {
 
   protected def bigSizePrefixedList[T](
       vec: Vector[T],
-      serialize: T => ByteVector): ByteVector = {
+      serialize: T => ByteVector
+  ): ByteVector = {
     vec.foldLeft(BigSizeUInt(vec.length).bytes) { case (accum, elem) =>
       accum ++ serialize(elem)
     }
   }
 
   protected def bigSizePrefixedList[T <: NetworkElement](
-      vec: Vector[T]): ByteVector = {
+      vec: Vector[T]
+  ): ByteVector = {
     bigSizePrefixedList[T](vec, { elem: NetworkElement => elem.bytes })
   }
 }
@@ -114,8 +118,8 @@ trait TLVSerializable[+T <: TLV] extends NetworkElement {
 }
 
 abstract class TLVDeserializable[T <: TLV, +U <: TLVSerializable[T]](
-    tlvFactory: Factory[T])
-    extends Factory[U] {
+    tlvFactory: Factory[T]
+) extends Factory[U] {
   def fromTLV(tlv: T): U
 
   override def fromBytes(bytes: ByteVector): U =
@@ -137,7 +141,8 @@ sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
       case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
       case None =>
         throw new IllegalArgumentException(
-          s"Unknown $typeName type got $tpe (${TLV.getTypeName(tpe)})")
+          s"Unknown $typeName type got $tpe (${TLV.getTypeName(tpe)})"
+        )
     }
   }
 }
@@ -150,7 +155,8 @@ object TLV extends TLVParentFactory[TLV] {
   case class DecodeTLVResult(
       tpe: BigSizeUInt,
       length: BigSizeUInt,
-      value: ByteVector)
+      value: ByteVector
+  )
 
   def decodeTLV(bytes: ByteVector): DecodeTLVResult = {
     val tpe = BigSizeUInt(bytes)
@@ -159,7 +165,8 @@ object TLV extends TLVParentFactory[TLV] {
 
     require(
       bytes.length >= prefixSize + length.num.toLong,
-      s"Length specified was $length but not enough bytes in ${bytes.drop(prefixSize)}")
+      s"Length specified was $length but not enough bytes in ${bytes.drop(prefixSize)}"
+    )
 
     val value = bytes.drop(prefixSize).take(length.num.toLong)
     DecodeTLVResult(tpe, length, value)
@@ -242,8 +249,10 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   override def fromBytes(bytes: ByteVector): T = {
     val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
 
-    require(tpe == this.tpe,
-            s"Got ${TLV.getTypeName(tpe)} type when expecting ${typeName}")
+    require(
+      tpe == this.tpe,
+      s"Got ${TLV.getTypeName(tpe)} type when expecting ${typeName}"
+    )
 
     fromTLVValue(value)
   }
@@ -285,11 +294,13 @@ object NormalizedString extends StringFactory[NormalizedString] {
   // If other kinds of Iterables are needed, there's a fancy thing to do
   // that is done all over the Seq code using params and an implicit CanBuildFrom
   implicit def stringVecToNormalized(
-      strs: Vector[String]): Vector[NormalizedString] =
+      strs: Vector[String]
+  ): Vector[NormalizedString] =
     strs.map(apply)
 
   implicit def normalizedVecToString(
-      strs: Vector[NormalizedString]): Vector[String] =
+      strs: Vector[NormalizedString]
+  ): Vector[String] =
     strs.map(_.normStr)
 
   override def fromString(string: String): NormalizedString =
@@ -397,19 +408,25 @@ object PaymentDataTLV extends TLVFactory[PaymentDataTLV] {
   override val typeName: String = "PaymentDataTLV"
 }
 
-/** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-init-message */
+/** @see
+  *   https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-init-message
+  */
 case class InitTLV(
     globalFeatureBytes: ByteVector,
     featureBytes: ByteVector,
-    initTLVs: Vector[TLV])
-    extends TLV {
+    initTLVs: Vector[TLV]
+) extends TLV {
   initTLVs.collect { case UnknownTLV(tpe, _) =>
-    require(tpe.toBigInt % 2 != 0,
-            s"Cannot have unknown even initTLVs, got $initTLVs")
+    require(
+      tpe.toBigInt % 2 != 0,
+      s"Cannot have unknown even initTLVs, got $initTLVs"
+    )
   }
 
-  require(initTLVs.map(_.tpe).distinct.size == initTLVs.size,
-          s"Cannot have duplicate TLV types in initTLVs, got $initTLVs")
+  require(
+    initTLVs.map(_.tpe).distinct.size == initTLVs.size,
+    s"Cannot have duplicate TLV types in initTLVs, got $initTLVs"
+  )
 
   override val tpe: BigSizeUInt = InitTLV.tpe
 
@@ -445,7 +462,9 @@ object InitTLV extends TLVFactory[InitTLV] {
   override val typeName: String = "InitTLV"
 }
 
-/** @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-error-message]] */
+/** @see
+  *   [[https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-error-message]]
+  */
 case class ErrorTLV(id: ByteVector, data: ByteVector) extends TLV {
   require(id.length == 32, s"ID associated with error is incorrect length: $id")
 
@@ -526,7 +545,8 @@ sealed trait EventDescriptorTLV extends DLCOracleTLV {
   def noncesNeeded: Int
 
   /** Event descriptors all use the same signing version as of now.
-    * @see https://github.com/discreetlogcontracts/dlcspecs/pull/113
+    * @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/pull/113
     */
   def signingVersion: SigningVersion = DLCOracleV0SigningVersion
 }
@@ -540,8 +560,10 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 }
 
 /** Describes an event over an enumerated set of outcomes
-  * @param outcomes The set of possible outcomes
-  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
+  * @param outcomes
+  *   The set of possible outcomes
+  * @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
   */
 case class EnumEventDescriptorV0TLV(outcomes: Vector[NormalizedString])
     extends EventDescriptorTLV {
@@ -567,7 +589,8 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
   }
 
   val dummy: EnumEventDescriptorV0TLV = EnumEventDescriptorV0TLV(
-    Vector("dummy"))
+    Vector("dummy")
+  )
 
   override val typeName: String = "EnumEventDescriptorV0TLV"
 }
@@ -598,9 +621,9 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
   /** The unit of the outcome value */
   def unit: NormalizedString
 
-  /** The precision of the outcome representing the base exponent
-    * by which to multiply the number represented by the composition
-    * of the digits to obtain the actual outcome value.
+  /** The precision of the outcome representing the base exponent by which to
+    * multiply the number represented by the composition of the digits to obtain
+    * the actual outcome value.
     *
     * Modifies unit.
     */
@@ -614,10 +637,10 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 
   def maxToPrecision: BigDecimal = precisionModifier * BigDecimal(maxNum)
 
-  /** Checks if a outcome is contained in the set of outcomes when adjusted for precision
-    * If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
-    * This would return true if passed a value [0, 0.1, 0.2,...,1.0]
-    * If passed in the not precision adjusted outcomes [0,1,2,...10] it will return false
+  /** Checks if a outcome is contained in the set of outcomes when adjusted for
+    * precision If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
+    * This would return true if passed a value [0, 0.1, 0.2,...,1.0] If passed
+    * in the not precision adjusted outcomes [0,1,2,...10] it will return false
     */
   def containsPreciseOutcome(outcome: BigDecimal): Boolean = {
     (outcome / precisionModifier).toBigIntExact match {
@@ -633,8 +656,10 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 /** Describes a large range event using numerical decomposition */
 sealed trait DigitDecompositionEventDescriptorV0TLV
     extends NumericEventDescriptorTLV {
-  require(numDigits > UInt16.zero,
-          s"Number of digits must be positive, got $numDigits")
+  require(
+    numDigits > UInt16.zero,
+    s"Number of digits must be positive, got $numDigits"
+  )
 
   /** The number of digits that the oracle will sign */
   def numDigits: UInt16
@@ -705,8 +730,8 @@ case class SignedDigitDecompositionEventDescriptor(
     base: UInt16,
     numDigits: UInt16,
     unit: NormalizedString,
-    precision: Int32)
-    extends DigitDecompositionEventDescriptorV0TLV {
+    precision: Int32
+) extends DigitDecompositionEventDescriptorV0TLV {
 
   override val isSigned: Boolean = true
 }
@@ -716,8 +741,8 @@ case class UnsignedDigitDecompositionEventDescriptor(
     base: UInt16,
     numDigits: UInt16,
     unit: NormalizedString,
-    precision: Int32)
-    extends DigitDecompositionEventDescriptorV0TLV {
+    precision: Int32
+) extends DigitDecompositionEventDescriptorV0TLV {
   override val isSigned: Boolean = false
 }
 
@@ -727,7 +752,8 @@ object DigitDecompositionEventDescriptorV0TLV
   override val tpe: BigSizeUInt = BigSizeUInt(55306)
 
   override def fromTLVValue(
-      value: ByteVector): DigitDecompositionEventDescriptorV0TLV = {
+      value: ByteVector
+  ): DigitDecompositionEventDescriptorV0TLV = {
     val iter = ValueIterator(value)
 
     val base = iter.takeU16()
@@ -736,11 +762,13 @@ object DigitDecompositionEventDescriptorV0TLV
     val precision = iter.takeI32()
     val numDigits = iter.takeU16()
 
-    DigitDecompositionEventDescriptorV0TLV(base,
-                                           isSigned,
-                                           numDigits.toInt,
-                                           unit,
-                                           precision)
+    DigitDecompositionEventDescriptorV0TLV(
+      base,
+      isSigned,
+      numDigits.toInt,
+      unit,
+      precision
+    )
   }
 
   def apply(
@@ -748,17 +776,22 @@ object DigitDecompositionEventDescriptorV0TLV
       isSigned: Boolean,
       numDigits: Int,
       unit: NormalizedString,
-      precision: Int32): DigitDecompositionEventDescriptorV0TLV = {
+      precision: Int32
+  ): DigitDecompositionEventDescriptorV0TLV = {
     if (isSigned) {
-      SignedDigitDecompositionEventDescriptor(base,
-                                              UInt16(numDigits),
-                                              unit,
-                                              precision)
+      SignedDigitDecompositionEventDescriptor(
+        base,
+        UInt16(numDigits),
+        unit,
+        precision
+      )
     } else {
-      UnsignedDigitDecompositionEventDescriptor(base,
-                                                UInt16(numDigits),
-                                                unit,
-                                                precision)
+      UnsignedDigitDecompositionEventDescriptor(
+        base,
+        UInt16(numDigits),
+        unit,
+        precision
+      )
     }
   }
 
@@ -834,18 +867,20 @@ object OracleAnnouncementTLV extends TLVParentFactory[OracleAnnouncementTLV] {
 case class OracleAnnouncementV0TLV(
     announcementSignature: SchnorrDigitalSignature,
     publicKey: SchnorrPublicKey,
-    eventTLV: OracleEventV0TLV)
-    extends OracleAnnouncementTLV {
+    eventTLV: OracleEventV0TLV
+) extends OracleAnnouncementTLV {
   override def tpe: BigSizeUInt = OracleAnnouncementV0TLV.tpe
 
   override val value: ByteVector =
     announcementSignature.bytes ++ publicKey.bytes ++ eventTLV.bytes
 
   override def validateSignature: Boolean = {
-    publicKey.verify(CryptoUtil
-                       .sha256DLCAnnouncement(eventTLV.bytes)
-                       .bytes,
-                     announcementSignature)
+    publicKey.verify(
+      CryptoUtil
+        .sha256DLCAnnouncement(eventTLV.bytes)
+        .bytes,
+      announcementSignature
+    )
   }
 }
 
@@ -864,14 +899,18 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
   lazy val dummy: OracleAnnouncementV0TLV = {
     val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
-      "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
-    val event = OracleEventV0TLV(Vector(dummyPrivKey.schnorrNonce),
-                                 UInt32.zero,
-                                 EnumEventDescriptorV0TLV.dummy,
-                                 "dummy")
+      "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853"
+    )
+    val event = OracleEventV0TLV(
+      Vector(dummyPrivKey.schnorrNonce),
+      UInt32.zero,
+      EnumEventDescriptorV0TLV.dummy,
+      "dummy"
+    )
     val sig =
       dummyPrivKey.schnorrSign(
-        CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+        CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes
+      )
 
     OracleAnnouncementV0TLV(sig, dummyPrivKey.schnorrPublicKey, event)
   }
@@ -879,12 +918,14 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
   def dummyForEventsAndKeys(
       privKey: ECPrivateKey,
       nonce: SchnorrNonce,
-      events: Vector[EnumOutcome]): OracleAnnouncementTLV = {
+      events: Vector[EnumOutcome]
+  ): OracleAnnouncementTLV = {
     val event = OracleEventV0TLV(
       Vector(nonce),
       UInt32.zero,
       EnumEventDescriptorV0TLV(events.map(outcome => outcome.outcome)),
-      "dummy")
+      "dummy"
+    )
     val sig =
       privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
@@ -893,13 +934,15 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
   def dummyForKeys(
       privKey: ECPrivateKey,
-      nonces: OrderedNonces): OracleAnnouncementTLV = {
-    val eventDescriptor = DigitDecompositionEventDescriptorV0TLV(UInt16(2),
-                                                                 isSigned =
-                                                                   false,
-                                                                 nonces.length,
-                                                                 "dummy",
-                                                                 Int32.zero)
+      nonces: OrderedNonces
+  ): OracleAnnouncementTLV = {
+    val eventDescriptor = DigitDecompositionEventDescriptorV0TLV(
+      UInt16(2),
+      isSigned = false,
+      nonces.length,
+      "dummy",
+      Int32.zero
+    )
     val event =
       OracleEventV0TLV(nonces.toVector, UInt32.zero, eventDescriptor, "dummy")
     val sig =
@@ -931,17 +974,19 @@ case class OracleAttestmentV0TLV(
     eventId: NormalizedString,
     publicKey: SchnorrPublicKey,
     unsortedSignatures: Vector[SchnorrDigitalSignature],
-    outcomes: Vector[NormalizedString])
-    extends OracleAttestmentTLV {
+    outcomes: Vector[NormalizedString]
+) extends OracleAttestmentTLV {
   require(unsortedSignatures.nonEmpty, "Cannot have 0 signatures")
   require(
     outcomes.size == unsortedSignatures.size,
-    s"Number of outcomes must match number of signatures, ${outcomes.size} != ${sigs.size}")
+    s"Number of outcomes must match number of signatures, ${outcomes.size} != ${sigs.size}"
+  )
   override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
 
-  /** This should be used very carefully with v0 attestments. We do not have a requirement in the
-    * in the original protocol that signatures are sorted. If you are seeing signature verification
-    * failing you probably need to be using [[unsortedSignatures]] rather than [[sigs]]
+  /** This should be used very carefully with v0 attestments. We do not have a
+    * requirement in the in the original protocol that signatures are sorted. If
+    * you are seeing signature verification failing you probably need to be
+    * using [[unsortedSignatures]] rather than [[sigs]]
     */
   override val sigs: OrderedSchnorrSignatures =
     OrderedSchnorrSignatures.fromUnsorted(unsortedSignatures)
@@ -982,10 +1027,12 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
     val outcome = NormalizedString("outcome")
     val sig = key.schnorrSign(CryptoUtil.sha256DLCAttestation(outcome).bytes)
 
-    OracleAttestmentV0TLV(eventId,
-                          key.schnorrPublicKey,
-                          Vector(sig),
-                          Vector(outcome))
+    OracleAttestmentV0TLV(
+      eventId,
+      key.schnorrPublicKey,
+      Vector(sig),
+      Vector(outcome)
+    )
   }
 
   override val typeName: String = "OracleAttestmentV0TLV"
@@ -1005,7 +1052,9 @@ object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
   val empty: ContractDescriptorTLV = ContractDescriptorV0TLV(Vector.empty)
 }
 
-/** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */
+/** @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info
+  */
 case class ContractDescriptorV0TLV(outcomes: Vector[(String, Satoshis)])
     extends ContractDescriptorTLV {
   override val tpe: BigSizeUInt = ContractDescriptorV0TLV.tpe
@@ -1016,7 +1065,8 @@ case class ContractDescriptorV0TLV(outcomes: Vector[(String, Satoshis)])
       { case (outcome, amt) =>
         val outcomeBytes = CryptoUtil.serializeForHash(outcome)
         bigSizePrefix(outcomeBytes) ++ satBytes(amt)
-      })
+      }
+    )
   }
 }
 
@@ -1051,7 +1101,8 @@ case class RoundingIntervalsV0TLV(intervalStarts: Vector[(Long, Satoshis)])
       { case (outcome, roundingModSats) =>
         BigSizeUInt(outcome).bytes ++
           BigSizeUInt(roundingModSats.toLong).bytes
-      })
+      }
+    )
   }
 }
 
@@ -1101,11 +1152,14 @@ object TLVPoint extends Factory[TLVPoint] {
     val outcome = BigSizeUInt(bytes)
     val value = BigSizeUInt(bytes.drop(outcome.byteSize))
     val extraPrecision = UInt16(
-      bytes.drop(outcome.byteSize + value.byteSize).take(2)).toInt
+      bytes.drop(outcome.byteSize + value.byteSize).take(2)
+    ).toInt
 
-    TLVPoint(outcome = outcome.toLong,
-             value = Satoshis(value.toLong),
-             extraPrecision = extraPrecision)
+    TLVPoint(
+      outcome = outcome.toLong,
+      value = Satoshis(value.toLong),
+      extraPrecision = extraPrecision
+    )
   }
 }
 
@@ -1113,8 +1167,8 @@ case class OldTLVPoint(
     outcome: Long,
     value: Satoshis,
     extraPrecision: Int,
-    isEndpoint: Boolean)
-    extends NetworkElement {
+    isEndpoint: Boolean
+) extends NetworkElement {
 
   lazy val leadingByte: Byte = if (isEndpoint) {
     1.toByte
@@ -1138,17 +1192,20 @@ object OldTLVPoint extends Factory[OldTLVPoint] {
       case 1 => true
       case b: Byte =>
         throw new IllegalArgumentException(
-          s"Did not recognize leading byte: $b")
+          s"Did not recognize leading byte: $b"
+        )
     }
 
     val outcome = BigSizeUInt(bytes.tail)
     val value = UInt64(bytes.drop(1 + outcome.byteSize).take(8))
     val extraPrecision = UInt16(bytes.drop(9 + outcome.byteSize).take(2)).toInt
 
-    OldTLVPoint(outcome = outcome.toLong,
-                value = Satoshis(value.toLong),
-                extraPrecision = extraPrecision,
-                isEndpoint = isEndpoint)
+    OldTLVPoint(
+      outcome = outcome.toLong,
+      value = Satoshis(value.toLong),
+      extraPrecision = extraPrecision,
+      isEndpoint = isEndpoint
+    )
   }
 }
 
@@ -1176,7 +1233,8 @@ object PolynomialPayoutCurvePieceTLV
   override val tpe: BigSizeUInt = BigSizeUInt(42792)
 
   override def fromTLVValue(
-      value: ByteVector): PolynomialPayoutCurvePieceTLV = {
+      value: ByteVector
+  ): PolynomialPayoutCurvePieceTLV = {
     val iter = ValueIterator(value)
 
     val points = iter.takeU16PrefixedList(() => iter.take(TLVPoint))
@@ -1190,8 +1248,8 @@ object PolynomialPayoutCurvePieceTLV
 case class Signed16PTLVNumber(
     sign: Boolean,
     withoutPrecision: Long,
-    extraPrecision: Int)
-    extends NetworkElement {
+    extraPrecision: Int
+) extends NetworkElement {
 
   lazy val toBigDecimal: BigDecimal = {
     val absVal = withoutPrecision + (BigDecimal(extraPrecision) / (1 << 16))
@@ -1243,8 +1301,8 @@ case class HyperbolaPayoutCurvePieceTLV(
     a: Signed16PTLVNumber,
     b: Signed16PTLVNumber,
     c: Signed16PTLVNumber,
-    d: Signed16PTLVNumber)
-    extends PayoutCurvePieceTLV {
+    d: Signed16PTLVNumber
+) extends PayoutCurvePieceTLV {
   override val tpe: BigSizeUInt = HyperbolaPayoutCurvePieceTLV.tpe
 
   override val value: ByteVector = {
@@ -1273,13 +1331,15 @@ object HyperbolaPayoutCurvePieceTLV
     val c = iter.take(Signed16PTLVNumber)
     val d = iter.take(Signed16PTLVNumber)
 
-    HyperbolaPayoutCurvePieceTLV(usePositivePiece,
-                                 translateOutcome,
-                                 translatePayout,
-                                 a,
-                                 b,
-                                 c,
-                                 d)
+    HyperbolaPayoutCurvePieceTLV(
+      usePositivePiece,
+      translateOutcome,
+      translatePayout,
+      a,
+      b,
+      c,
+      d
+    )
   }
 
   override def typeName: String = "HyperbolaPayoutCurvePieceTLV"
@@ -1292,15 +1352,18 @@ case class OldPayoutFunctionV0TLV(points: Vector[OldTLVPoint])
   override val value: ByteVector = u16PrefixedList(points)
 }
 
-/** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
+/** @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization
+  */
 case class PayoutFunctionV0TLV(
     endpoints: OrderedTLVPoints,
     pieces: Vector[PayoutCurvePieceTLV],
-    serializationVersion: DLCSerializationVersion)
-    extends DLCSetupPieceTLV {
+    serializationVersion: DLCSerializationVersion
+) extends DLCSetupPieceTLV {
   require(
     endpoints.length == pieces.length + 1,
-    s"Number of endpoints (${endpoints.length}) does not match number of pieces (${pieces.length}).")
+    s"Number of endpoints (${endpoints.length}) does not match number of pieces (${pieces.length})."
+  )
 
   override val tpe: BigSizeUInt = PayoutFunctionV0TLV.tpe
 
@@ -1309,7 +1372,8 @@ case class PayoutFunctionV0TLV(
       endpoints.toVector.init.zip(pieces),
       { case (leftEndpoint: TLVPoint, piece: PayoutCurvePieceTLV) =>
         leftEndpoint.bytes ++ piece.bytes
-      }) ++ endpoints.toVector.last.bytes
+      }
+    ) ++ endpoints.toVector.last.bytes
   }
 
   def piecewisePolynomialEndpoints: Vector[PiecewisePolynomialEndpoint] = {
@@ -1319,8 +1383,11 @@ case class PayoutFunctionV0TLV(
   override val byteSize: Long = {
     serializationVersion match {
       case DLCSerializationVersion.Alpha =>
-        val old = OldPayoutFunctionV0TLV(endpoints.toVector.map(p =>
-          OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
+        val old = OldPayoutFunctionV0TLV(
+          endpoints.toVector.map(p =>
+            OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)
+          )
+        )
         old.byteSize
       case DLCSerializationVersion.Beta =>
         super.byteSize
@@ -1341,16 +1408,18 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
         (leftEndpoint, piece)
       }
       val rightEndpoint = iter.take(TLVPoint)
-      //we assume that points are in ordered when they are serialized
-      //if they are not, the person that serialized them is not following
-      //the spec
+      // we assume that points are in ordered when they are serialized
+      // if they are not, the person that serialized them is not following
+      // the spec
       val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
       val orderedEndpoints = OrderedTLVPoints(endpoints)
       val pieces = endpointsAndPieces.map(_._2)
 
-      PayoutFunctionV0TLV(orderedEndpoints,
-                          pieces,
-                          serializationVersion = DLCSerializationVersion.Beta)
+      PayoutFunctionV0TLV(
+        orderedEndpoints,
+        pieces,
+        serializationVersion = DLCSerializationVersion.Beta
+      )
     }
 
     t.getOrElse(oldfromTLVValue(value))
@@ -1368,8 +1437,8 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
 case class ContractDescriptorV1TLV(
     numDigits: Int,
     payoutFunction: PayoutFunctionV0TLV,
-    roundingIntervals: RoundingIntervalsV0TLV)
-    extends ContractDescriptorTLV {
+    roundingIntervals: RoundingIntervalsV0TLV
+) extends ContractDescriptorTLV {
   override val tpe: BigSizeUInt = ContractDescriptorV1TLV.tpe
 
   val numDigitsU16: UInt16 = UInt16(numDigits)
@@ -1488,8 +1557,8 @@ sealed trait OracleParamsTLV extends DLCSetupPieceTLV
 case class OracleParamsV0TLV(
     maxErrorExp: Int,
     minFailExp: Int,
-    maximizeCoverage: Boolean)
-    extends OracleParamsTLV {
+    maximizeCoverage: Boolean
+) extends OracleParamsTLV {
   override val tpe: BigSizeUInt = OracleParamsV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1518,8 +1587,8 @@ object OracleParamsV0TLV extends TLVFactory[OracleParamsV0TLV] {
 case class OracleInfoV2TLV(
     threshold: Int,
     oracles: OrderedAnnouncements,
-    params: OracleParamsTLV)
-    extends MultiOracleInfoTLV {
+    params: OracleParamsTLV
+) extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV2TLV.tpe
 
   override val value: ByteVector = {
@@ -1561,8 +1630,8 @@ object ContractInfoTLV extends TLVParentFactory[ContractInfoTLV] {
 case class ContractInfoV0TLV(
     totalCollateral: Satoshis,
     contractDescriptor: ContractDescriptorTLV,
-    oracleInfo: OracleInfoTLV)
-    extends ContractInfoTLV {
+    oracleInfo: OracleInfoTLV
+) extends ContractInfoTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1579,7 +1648,8 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
     ContractInfoV0TLV(
       Satoshis.zero,
       ContractDescriptorV0TLV(Vector("dummy" -> Satoshis(10000))),
-      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummy))
+      OracleInfoV0TLV(OracleAnnouncementV0TLV.dummy)
+    )
   }
 
   override def fromTLVValue(value: ByteVector): ContractInfoV0TLV = {
@@ -1599,8 +1669,8 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
 
 case class ContractInfoV1TLV(
     totalCollateral: Satoshis,
-    contractOraclePairs: Vector[(ContractDescriptorTLV, OracleInfoTLV)])
-    extends ContractInfoTLV {
+    contractOraclePairs: Vector[(ContractDescriptorTLV, OracleInfoTLV)]
+) extends ContractInfoTLV {
 
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
@@ -1645,8 +1715,8 @@ case class FundingInputV0TLV(
     prevTxVout: UInt32,
     sequence: UInt32,
     maxWitnessLen: UInt16,
-    redeemScriptOpt: Option[WitnessScriptPubKey])
-    extends FundingInputTLV {
+    redeemScriptOpt: Option[WitnessScriptPubKey]
+) extends FundingInputTLV {
   override val tpe: BigSizeUInt = FundingInputV0TLV.tpe
 
   lazy val output: TransactionOutput = prevTx.outputs(prevTxVout.toInt)
@@ -1695,25 +1765,30 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
       case wspk: WitnessScriptPubKey => Some(wspk)
       case _: NonWitnessScriptPubKey =>
         throw new IllegalArgumentException(
-          s"Redeem Script must be Segwit SPK: $redeemScript")
+          s"Redeem Script must be Segwit SPK: $redeemScript"
+        )
     }
 
-    FundingInputV0TLV(serialId,
-                      prevTx,
-                      prevTxVout,
-                      sequence,
-                      maxWitnessLen,
-                      redeemScriptOpt)
+    FundingInputV0TLV(
+      serialId,
+      prevTx,
+      prevTxVout,
+      sequence,
+      maxWitnessLen,
+      redeemScriptOpt
+    )
   }
 
   override val typeName: String = "FundingInputV0TLV"
 
-  val dummy: FundingInputV0TLV = FundingInputV0TLV(UInt64.zero,
-                                                   EmptyTransaction,
-                                                   prevTxVout = UInt32.zero,
-                                                   UInt32.zero,
-                                                   UInt16.zero,
-                                                   None)
+  val dummy: FundingInputV0TLV = FundingInputV0TLV(
+    UInt64.zero,
+    EmptyTransaction,
+    prevTxVout = UInt32.zero,
+    UInt32.zero,
+    UInt16.zero,
+    None
+  )
 }
 
 sealed trait CETSignaturesTLV extends DLCSetupPieceTLV
@@ -1731,8 +1806,7 @@ case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     if (sigs.length <= 5) {
       super.toString
     } else {
-      s"CETSignaturesV0TLV(sigs=${sigs.take(
-        2)}..., omitting remainingSigs of length=${sigs.length - 2})"
+      s"CETSignaturesV0TLV(sigs=${sigs.take(2)}..., omitting remainingSigs of length=${sigs.length - 2})"
     }
   }
 }
@@ -1763,7 +1837,8 @@ case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
       witnesses,
       { witness: ScriptWitnessV0 =>
         u16PrefixedList[ByteVector](witness.stack.toVector.reverse, u16Prefix)
-      })
+      }
+    )
   }
 }
 
@@ -1783,7 +1858,8 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
         case witness: ScriptWitnessV0 => witness
         case taprootWitness: TaprootWitness =>
           throw new IllegalArgumentException(
-            s"Invalid witness, taproot not supported in DLC spec, got=$taprootWitness")
+            s"Invalid witness, taproot not supported in DLC spec, got=$taprootWitness"
+          )
       }
     }
 
@@ -1798,12 +1874,14 @@ sealed trait DLCSetupTLV extends TLV
 case class SendOfferTLV(
     peer: NormalizedString,
     message: NormalizedString,
-    offer: DLCOfferTLV)
-    extends DLCSetupTLV {
+    offer: DLCOfferTLV
+) extends DLCSetupTLV {
 
   require(peer.length <= 1024, "peer length must not exceed 1024 characters")
-  require(message.length <= 1024,
-          "message length must not exceed 1024 characters")
+  require(
+    message.length <= 1024,
+    "message length must not exceed 1024 characters"
+  )
 
   override val tpe: BigSizeUInt = SendOfferTLV.tpe
 
@@ -1842,11 +1920,12 @@ case class DLCOfferTLV(
     fundOutputSerialId: UInt64,
     feeRate: SatoshisPerVirtualByte,
     contractMaturityBound: BlockTimeStamp,
-    contractTimeout: BlockTimeStamp)
-    extends DLCSetupTLV {
+    contractTimeout: BlockTimeStamp
+) extends DLCSetupTLV {
   require(
     changeSerialId != fundOutputSerialId,
-    s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
+    s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)"
+  )
 
   override val tpe: BigSizeUInt = DLCOfferTLV.tpe
 
@@ -1959,8 +2038,8 @@ object NoNegotiationFieldsTLVFactory
 }
 
 case class NegotiationFieldsV1TLV(
-    roundingIntervalsV0TLV: RoundingIntervalsV0TLV)
-    extends NegotiationFieldsTLV {
+    roundingIntervalsV0TLV: RoundingIntervalsV0TLV
+) extends NegotiationFieldsTLV {
   override val tpe: BigSizeUInt = NegotiationFieldsV1TLV.tpe
 
   override val value: ByteVector = {
@@ -1983,10 +2062,11 @@ object NegotiationFieldsV1TLV extends TLVFactory[NegotiationFieldsV1TLV] {
 }
 
 case class NegotiationFieldsV2TLV(
-    nestedNegotiationFields: Vector[NegotiationFieldsTLV])
-    extends NegotiationFieldsTLV {
+    nestedNegotiationFields: Vector[NegotiationFieldsTLV]
+) extends NegotiationFieldsTLV {
   require(
-    nestedNegotiationFields.forall(!_.isInstanceOf[NegotiationFieldsV2TLV]))
+    nestedNegotiationFields.forall(!_.isInstanceOf[NegotiationFieldsV2TLV])
+  )
 
   override val tpe: BigSizeUInt = NegotiationFieldsV2TLV.tpe
 
@@ -2021,8 +2101,8 @@ case class DLCAcceptTLV(
     changeSerialId: UInt64,
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
-    negotiationFields: NegotiationFieldsTLV)
-    extends DLCSetupTLV {
+    negotiationFields: NegotiationFieldsTLV
+) extends DLCSetupTLV {
   override val tpe: BigSizeUInt = DLCAcceptTLV.tpe
 
   override val value: ByteVector = {
@@ -2085,8 +2165,8 @@ case class DLCSignTLV(
     contractId: ByteVector,
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
-    fundingSignatures: FundingSignaturesTLV)
-    extends DLCSetupTLV {
+    fundingSignatures: FundingSignaturesTLV
+) extends DLCSetupTLV {
   override val tpe: BigSizeUInt = DLCSignTLV.tpe
 
   override val value: ByteVector = {

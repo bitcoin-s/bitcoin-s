@@ -10,23 +10,25 @@ import scala.concurrent.ExecutionContext
 
 case class IncomingTransactionDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
-    extends TxDAO[IncomingTransactionDb] {
+    override val appConfig: WalletAppConfig
+) extends TxDAO[IncomingTransactionDb] {
   import profile.api._
 
   override val table: profile.api.TableQuery[IncomingTransactionTable] = {
     TableQuery[IncomingTransactionTable]
   }
 
-  private lazy val txTable: profile.api.TableQuery[
-    TransactionDAO#TransactionTable] = {
+  private lazy val txTable
+      : profile.api.TableQuery[TransactionDAO#TransactionTable] = {
     TransactionDAO().table
   }
 
   class IncomingTransactionTable(tag: Tag)
-      extends TxTable[IncomingTransactionDb](tag,
-                                             schemaName,
-                                             "wallet_incoming_txs") {
+      extends TxTable[IncomingTransactionDb](
+        tag,
+        schemaName,
+        "wallet_incoming_txs"
+      ) {
 
     private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
     import mappers._
@@ -42,8 +44,9 @@ case class IncomingTransactionDAO()(implicit
         IncomingTransactionDb(txId, incomingAmount)
     }
 
-    private val toTuple: IncomingTransactionDb => Option[
-      IncomingTransactionTuple] = tx => Some((tx.txIdBE, tx.incomingAmount))
+    private val toTuple
+        : IncomingTransactionDb => Option[IncomingTransactionTuple] = tx =>
+      Some((tx.txIdBE, tx.incomingAmount))
 
     def * : ProvenShape[IncomingTransactionDb] =
       (txIdBE, incomingAmount).<>(fromTuple, toTuple)
@@ -52,9 +55,11 @@ case class IncomingTransactionDAO()(implicit
       primaryKey("pk_in_tx", sourceColumns = txIdBE)
 
     def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_, TransactionDb] = {
-      foreignKey("fk_underlying_tx",
-                 sourceColumns = txIdBE,
-                 targetTableQuery = txTable)(_.txIdBE)
+      foreignKey(
+        "fk_underlying_tx",
+        sourceColumns = txIdBE,
+        targetTableQuery = txTable
+      )(_.txIdBE)
     }
   }
 }

@@ -8,7 +8,8 @@ object NestedSegWitHDPath extends HDPathFactory[NestedSegWitHDPath] {
 
   /** The purpose constant from BIP49
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
     */
   override val PURPOSE: Int = 49
 
@@ -19,7 +20,8 @@ object NestedSegWitHDPath extends HDPathFactory[NestedSegWitHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int): NestedSegWitHDPath = {
+      addressIndex: Int
+  ): NestedSegWitHDPath = {
 
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)

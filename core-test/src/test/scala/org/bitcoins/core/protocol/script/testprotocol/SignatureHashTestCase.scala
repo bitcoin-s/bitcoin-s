@@ -14,7 +14,8 @@ case class SignatureHashTestCase(
     inputIndex: UInt32,
     hashTypeNum: Int32,
     hashType: HashType,
-    hash: DoubleSha256Digest)
+    hash: DoubleSha256Digest
+)
 
 object SignatureHashTestCase {
 
@@ -24,7 +25,8 @@ object SignatureHashTestCase {
         case array: Arr => array
         case _: Value =>
           throw new RuntimeException(
-            "Script signature hash test case must be in Arr format")
+            "Script signature hash test case must be in Arr format"
+          )
       }
       val elements: Vector[Value] = Arr.value.toVector
       val transaction: Transaction =
@@ -36,11 +38,13 @@ object SignatureHashTestCase {
       val hashType: HashType = HashType(hashTypeNum.toInt)
       val hash: DoubleSha256Digest =
         DoubleSha256Digest(elements.last.str)
-      SignatureHashTestCase(transaction,
-                            script,
-                            inputIndex,
-                            hashTypeNum,
-                            hashType,
-                            hash)
+      SignatureHashTestCase(
+        transaction,
+        script,
+        inputIndex,
+        hashTypeNum,
+        hashType,
+        hash
+      )
     }
 }

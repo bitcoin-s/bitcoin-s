@@ -33,8 +33,8 @@ case class RpcTransactionV22(
     locktime: UInt32,
     vin: Vector[TransactionInput],
     vout: Vector[RpcTransactionOutputV22],
-    hex: Option[Transaction])
-    extends RpcTransaction
+    hex: Option[Transaction]
+) extends RpcTransaction
 
 sealed trait RpcTransactionOutput extends RawTransactionResult {
   def value: Bitcoins
@@ -45,14 +45,14 @@ sealed trait RpcTransactionOutput extends RawTransactionResult {
 case class RpcTransactionOutputPreV22(
     value: Bitcoins,
     n: Int,
-    scriptPubKey: RpcScriptPubKeyPreV22)
-    extends RpcTransactionOutput
+    scriptPubKey: RpcScriptPubKeyPreV22
+) extends RpcTransactionOutput
 
 case class RpcTransactionOutputV22(
     value: Bitcoins,
     n: Int,
-    scriptPubKey: RpcScriptPubKeyPostV22)
-    extends RpcTransactionOutput
+    scriptPubKey: RpcScriptPubKeyPostV22
+) extends RpcTransactionOutput
 
 sealed trait RpcScriptPubKey extends RawTransactionResult {
   def asm: String
@@ -66,16 +66,16 @@ case class RpcScriptPubKeyPreV22(
     hex: String,
     reqSigs: Option[Int],
     scriptType: ScriptType,
-    addresses: Option[Vector[BitcoinAddress]])
-    extends RpcScriptPubKey
+    addresses: Option[Vector[BitcoinAddress]]
+) extends RpcScriptPubKey
 
 case class RpcScriptPubKeyPostV22(
     asm: String,
     hex: String,
     scriptType: ScriptType,
     addresses: Option[Vector[BitcoinAddress]],
-    address: Option[BitcoinAddress])
-    extends RpcScriptPubKey
+    address: Option[BitcoinAddress]
+) extends RpcScriptPubKey
 
 sealed trait DecodeScriptResult extends RawTransactionResult {
   def asm: String
@@ -86,14 +86,14 @@ sealed trait DecodeScriptResult extends RawTransactionResult {
 case class DecodeScriptResultV22(
     asm: String,
     typeOfScript: Option[ScriptType],
-    p2sh: P2SHAddress)
-    extends DecodeScriptResult
+    p2sh: P2SHAddress
+) extends DecodeScriptResult
 
 case class FundRawTransactionResult(
     hex: Transaction,
     fee: Bitcoins,
-    changepos: Int)
-    extends RawTransactionResult
+    changepos: Int
+) extends RawTransactionResult
 
 case class SignRawTransactionWithWalletResult(
     hex: Transaction,
@@ -131,8 +131,8 @@ case class GetRawTransactionResultV22(
     blockhash: Option[DoubleSha256DigestBE],
     confirmations: Option[Int],
     time: Option[UInt32],
-    blocktime: Option[UInt32])
-    extends GetRawTransactionResult
+    blocktime: Option[UInt32]
+) extends GetRawTransactionResult
 
 case class GetRawTransactionVin(
     txid: Option[DoubleSha256DigestBE],
@@ -148,16 +148,16 @@ case class GetRawTransactionScriptSig(asm: String, hex: ScriptSignature)
 case class SignRawTransactionResult(
     hex: Transaction,
     complete: Boolean,
-    errors: Option[Vector[SignRawTransactionError]])
-    extends RawTransactionResult
+    errors: Option[Vector[SignRawTransactionError]]
+) extends RawTransactionResult
 
 case class SignRawTransactionError(
     txid: DoubleSha256DigestBE,
     vout: Int,
     scriptSig: ScriptPubKey,
     sequence: UInt32,
-    error: String)
-    extends RawTransactionResult
+    error: String
+) extends RawTransactionResult
 
 final case class GetRpcInfoResult(
     active_commands: Vector[RpcCommands]
@@ -165,5 +165,5 @@ final case class GetRpcInfoResult(
 
 final case class RpcCommands(
     method: String,
-    duration: FiniteDuration //this time is in microseconds
+    duration: FiniteDuration // this time is in microseconds
 ) extends RawTransactionResult

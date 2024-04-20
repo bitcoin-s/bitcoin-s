@@ -8,8 +8,10 @@ object P2PGenerator {
 
   /** Generates a valid P2P network message */
   def message: Gen[NetworkPayload] =
-    Gen.oneOf(ControlMessageGenerator.controlMessage,
-              DataMessageGenerator.dataMessage)
+    Gen.oneOf(
+      ControlMessageGenerator.controlMessage,
+      DataMessageGenerator.dataMessage
+    )
 
   def inetAddress: Gen[InetAddress] = {
     def ipRangeNum = Gen.choose(0, 255)

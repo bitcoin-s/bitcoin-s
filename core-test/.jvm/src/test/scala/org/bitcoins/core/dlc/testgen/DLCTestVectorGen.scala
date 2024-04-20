@@ -9,7 +9,8 @@ import scala.concurrent.Future
 object DLCTestVectorGen extends TestVectorGen[DLCTestVector, ValidTestInputs] {
 
   override val defaultTestFile: File = new File(
-    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_test.json")
+    "core-test/.jvm/src/test/scala/org/bitcoins/core/dlc/testgen/dlc_test.json"
+  )
 
   override val testVectorParser: DLCTestVector.type = DLCTestVector
 
@@ -37,6 +38,8 @@ object DLCTestVectorGen extends TestVectorGen[DLCTestVector, ValidTestInputs] {
 
     Future.sequence(
       (numOutcomesTests ++ nonP2WPKHInputTests ++ multiInputTests).map(
-        Future.fromTry))
+        Future.fromTry
+      )
+    )
   }
 }

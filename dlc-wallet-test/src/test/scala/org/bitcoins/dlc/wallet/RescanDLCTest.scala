@@ -37,26 +37,31 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
             DLCWalletUtil.getSigs(single)
           case disjoint: DisjointUnionContractInfo =>
             sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+            )
         }
       }
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = (walletA, walletB),
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = (walletA, walletB),
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
       Vector(hash) <- bitcoind.generate(1)
 
-      _ <- wallet.rescanNeutrinoWallet(startOpt = None,
-                                       endOpt = Some(BlockHash(hash)),
-                                       addressBatchSize = 20,
-                                       useCreationTime = false,
-                                       force = false)
+      _ <- wallet.rescanNeutrinoWallet(
+        startOpt = None,
+        endOpt = Some(BlockHash(hash)),
+        addressBatchSize = 20,
+        useCreationTime = false,
+        force = false
+      )
 
       postStatus <- getDLCStatus(wallet)
     } yield assert(postStatus.state == DLCState.Claimed)
@@ -77,26 +82,31 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
             DLCWalletUtil.getSigs(single)
           case disjoint: DisjointUnionContractInfo =>
             sys.error(
-              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint"
+            )
         }
       }
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = (walletA, walletB),
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = (walletA, walletB),
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
       Vector(hash) <- bitcoind.generate(1)
 
-      _ <- wallet.rescanNeutrinoWallet(startOpt = None,
-                                       endOpt = Some(BlockHash(hash)),
-                                       addressBatchSize = 20,
-                                       useCreationTime = false,
-                                       force = false)
+      _ <- wallet.rescanNeutrinoWallet(
+        startOpt = None,
+        endOpt = Some(BlockHash(hash)),
+        addressBatchSize = 20,
+        useCreationTime = false,
+        force = false
+      )
 
       postStatus <- getDLCStatus(wallet)
     } yield assert(postStatus.state == DLCState.RemoteClaimed)

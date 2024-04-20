@@ -17,12 +17,15 @@ import scala.util.{Failure, Success, Try}
 
 sealed abstract class LnInvoice {
 
-  require(timestamp < LnInvoice.MAX_TIMESTAMP_U64,
-          s"timestamp ${timestamp.toBigInt} < ${LnInvoice.MAX_TIMESTAMP}")
+  require(
+    timestamp < LnInvoice.MAX_TIMESTAMP_U64,
+    s"timestamp ${timestamp.toBigInt} < ${LnInvoice.MAX_TIMESTAMP}"
+  )
 
   require(
     isValidSignature,
-    s"Did not receive a valid digital signature for the invoice $toString")
+    s"Did not receive a valid digital signature for the invoice $toString"
+  )
 
   def hrp: LnHumanReadablePart
 
@@ -46,10 +49,11 @@ sealed abstract class LnInvoice {
     amount.map(_.toPicoBitcoins)
   }
 
-  /** The [[org.bitcoins.core.protocol.ln.node.NodeId NodeId]] that we are paying this invoice too
-    * We can either recover this with public key recovery from
-    * the [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]] or if
-    * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]] is
+  /** The [[org.bitcoins.core.protocol.ln.node.NodeId NodeId]] that we are
+    * paying this invoice too We can either recover this with public key
+    * recovery from the
+    * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]] or
+    * if [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]] is
     * defined we MUST use that NodeId, as per
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#requirements-3 BOLT11]]
     */
@@ -81,8 +85,9 @@ sealed abstract class LnInvoice {
     sig
   }
 
-  /** The hash that is signed by the [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] corresponding
-    * to the `nodeId`
+  /** The hash that is signed by the
+    * [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] corresponding to the
+    * `nodeId`
     */
   private def sigHash: Sha256Digest = {
     val hash = CryptoUtil.sha256(signatureData)
@@ -118,8 +123,8 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      signature: LnInvoiceSignature)
-      extends LnInvoice
+      signature: LnInvoiceSignature
+  ) extends LnInvoice
 
   val MAX_TIMESTAMP: BigInt = NumberUtil.pow2(35)
 
@@ -135,7 +140,8 @@ object LnInvoice extends StringFactory[LnInvoice] {
 
   def createChecksum(
       hrp: LnHumanReadablePart,
-      data: Vector[UInt5]): Vector[UInt5] = {
+      data: Vector[UInt5]
+  ): Vector[UInt5] = {
     val hrpBytes = hrpExpand(hrp)
     val u5s = Bech32.createChecksum(hrpBytes ++ data, Bech32Encoding.Bech32)
     u5s
@@ -149,21 +155,22 @@ object LnInvoice extends StringFactory[LnInvoice] {
 
   def apply(hrp: LnHumanReadablePart, data: Vector[UInt5]): LnInvoice = {
 
-    //https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part
+    // https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part
     val TIMESTAMP_LEN = 7
     val SIGNATURE_LEN = 104
     val MIN_LENGTH = TIMESTAMP_LEN + SIGNATURE_LEN
     if (data.length < MIN_LENGTH) {
       throw new IllegalArgumentException(
-        s"Cannot create invoice with data length less then $MIN_LENGTH, got ${data.length}")
+        s"Cannot create invoice with data length less then $MIN_LENGTH, got ${data.length}"
+      )
     } else {
-      //first 35 bits is time stamp
+      // first 35 bits is time stamp
       val timestampU5s = data.take(TIMESTAMP_LEN)
 
       val timestamp = decodeTimestamp(timestampU5s)
 
-      //last bits should be a 520 bit signature
-      //should be 104 5 bit increments (104 * 5 = 520)
+      // last bits should be a 520 bit signature
+      // should be 104 5 bit increments (104 * 5 = 520)
       val signatureU5s = data.takeRight(SIGNATURE_LEN)
       val signature = LnInvoiceSignature.fromU5s(signatureU5s)
 
@@ -171,10 +178,12 @@ object LnInvoice extends StringFactory[LnInvoice] {
 
       val taggedFields = LnTaggedFields.fromUInt5s(tags)
 
-      LnInvoice(hrp = hrp,
-                timestamp = timestamp,
-                lnTags = taggedFields,
-                signature = signature)
+      LnInvoice(
+        hrp = hrp,
+        timestamp = timestamp,
+        lnTags = taggedFields,
+        signature = signature
+      )
     }
 
   }
@@ -187,7 +196,8 @@ object LnInvoice extends StringFactory[LnInvoice] {
     }
     if (sepIndexes.isEmpty) {
       throw new IllegalArgumentException(
-        "LnInvoice did not have the correct separator")
+        "LnInvoice did not have the correct separator"
+      )
     } else {
       val (_, sepIndex) = sepIndexes.last
 
@@ -228,30 +238,37 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      signature: LnInvoiceSignature): LnInvoice = {
-    LnInvoiceImpl(hrp = hrp,
-                  timestamp = timestamp,
-                  lnTags = lnTags,
-                  signature = signature)
+      signature: LnInvoiceSignature
+  ): LnInvoice = {
+    LnInvoiceImpl(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = signature
+    )
   }
 
   def apply(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey): LnInvoice = {
+      privateKey: ECPrivateKey
+  ): LnInvoice = {
 
     val signature = buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
-    LnInvoiceImpl(hrp = hrp,
-                  timestamp = timestamp,
-                  lnTags = lnTags,
-                  signature = signature)
+    LnInvoiceImpl(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = signature
+    )
   }
 
   def buildSignatureData(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
-      lnTags: LnTaggedFields): ByteVector = {
+      lnTags: LnTaggedFields
+  ): ByteVector = {
     val tsu5 = uInt64ToBase32(timestamp)
     val payloadU5 = tsu5 ++ lnTags.data
     val payloadU8 = Bech32.from5bitTo8bit(payloadU5, pad = true)
@@ -262,7 +279,8 @@ object LnInvoice extends StringFactory[LnInvoice] {
   def buildSigHashData(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
-      lnTags: LnTaggedFields): Sha256Digest = {
+      lnTags: LnTaggedFields
+  ): Sha256Digest = {
     val sigdata = buildSignatureData(hrp, timestamp, lnTags)
     CryptoUtil.sha256(sigdata)
   }
@@ -271,7 +289,8 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey): LnInvoiceSignature = {
+      privateKey: ECPrivateKey
+  ): LnInvoiceSignature = {
     val sigHash = buildSigHashData(hrp, timestamp, lnTags)
     val sig = privateKey.sign(sigHash)
 
@@ -281,49 +300,66 @@ object LnInvoice extends StringFactory[LnInvoice] {
     LnInvoiceSignature(recoverId = recoveryId, signature = sig)
   }
 
-  /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * is by just passing the given pareameters and
-    * and then build will create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * with a valid [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
-    * @param hrp the [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
-    * @param timestamp the timestamp on the invoice
-    * @param lnTags the various tags in the invoice
-    * @param privateKey - the key used to sign the invoice
+  /** The easiest way to create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] is by just passing
+    * the given pareameters and and then build will create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] with a valid
+    * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
+    * @param hrp
+    *   the
+    *   [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * @param timestamp
+    *   the timestamp on the invoice
+    * @param lnTags
+    *   the various tags in the invoice
+    * @param privateKey
+    *   \- the key used to sign the invoice
     */
   def build(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey): LnInvoice = {
+      privateKey: ECPrivateKey
+  ): LnInvoice = {
     val lnInvoiceSignature =
       buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
 
-    LnInvoice(hrp = hrp,
-              timestamp = timestamp,
-              lnTags = lnTags,
-              signature = lnInvoiceSignature)
+    LnInvoice(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = lnInvoiceSignature
+    )
   }
 
-  /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * is by just passing the given parameters and
-    * and then build will create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * with a valid [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
-    * @param hrp the [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
-    * @param lnTags the various tags in the invoice
-    * @param privateKey - the key used to sign the invoice
+  /** The easiest way to create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] is by just passing
+    * the given parameters and and then build will create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] with a valid
+    * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
+    * @param hrp
+    *   the
+    *   [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * @param lnTags
+    *   the various tags in the invoice
+    * @param privateKey
+    *   \- the key used to sign the invoice
     */
   def build(
       hrp: LnHumanReadablePart,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey): LnInvoice = {
+      privateKey: ECPrivateKey
+  ): LnInvoice = {
     val timestamp = UInt64(System.currentTimeMillis() / 1000L)
     val lnInvoiceSignature =
       buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
 
-    LnInvoice(hrp = hrp,
-              timestamp = timestamp,
-              lnTags = lnTags,
-              signature = lnInvoiceSignature)
+    LnInvoice(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = lnInvoiceSignature
+    )
   }
 
   private def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
@@ -337,20 +373,26 @@ object LnInvoice extends StringFactory[LnInvoice] {
     numNoPadding.toVector
   }
 
-  /** Checks the checksum on a [[org.bitcoins.core.protocol.Bech32Address Bech32Address]]
-    * and if it is valid, strips the checksum from @d and returns strictly
-    * the payload
-    * @param h - the [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]] of the invoice
-    * @param d - the payload WITH the checksum included
+  /** Checks the checksum on a
+    * [[org.bitcoins.core.protocol.Bech32Address Bech32Address]] and if it is
+    * valid, strips the checksum from @d and returns strictly the payload
+    * @param h
+    *   \- the
+    *   [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    *   of the invoice
+    * @param d
+    *   \- the payload WITH the checksum included
     */
   private def stripChecksumIfValid(
       h: LnHumanReadablePart,
-      d: Vector[UInt5]): Try[Vector[UInt5]] = {
+      d: Vector[UInt5]
+  ): Try[Vector[UInt5]] = {
     if (verifyChecksum(h, d)) {
       if (d.size < 6) Success(Vector.empty)
       else Success(d.take(d.size - 6))
     } else
       Failure(
-        new IllegalArgumentException("Checksum was invalid on the LnInvoice"))
+        new IllegalArgumentException("Checksum was invalid on the LnInvoice")
+      )
   }
 }

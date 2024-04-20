@@ -6,8 +6,8 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class RawNetworkIpAddressSerializerTest extends BitcoinSUnitTest {
 
-  //from this bitcoin developer guide example
-  //https://bitcoin.org/en/developer-reference#addr
+  // from this bitcoin developer guide example
+  // https://bitcoin.org/en/developer-reference#addr
   val time = "d91f4854"
   val services = "0100000000000000"
   val address = "00000000000000000000ffffc0000233"

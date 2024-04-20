@@ -13,13 +13,13 @@ import scala.util.{Failure, Success, Try}
 
 case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
     ec: ExecutionContext,
-    nodeAppConfig: NodeAppConfig)
-    extends P2PLogger {
+    nodeAppConfig: NodeAppConfig
+) extends P2PLogger {
 
   def handleControlPayload(
       payload: ControlPayload,
-      peerMsgSenderApi: PeerMessageSenderApi): Future[
-    Option[ControlMessageHandlerState]] = {
+      peerMsgSenderApi: PeerMessageSenderApi
+  ): Future[Option[ControlMessageHandlerState]] = {
     val peer = peerMsgSenderApi.peer
     payload match {
 
@@ -38,8 +38,8 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           .sendPong(ping)
           .map(_ => None)
       case SendHeadersMessage =>
-        //we want peers to just send us headers
-        //we don't want to have to request them manually
+        // we want peers to just send us headers
+        // we don't want to have to request them manually
         peerMsgSenderApi
           .sendHeadersMessage()
           .map(_ => None)
@@ -74,9 +74,10 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           }
           val inetAddress =
             NetworkUtil.parseInetSocketAddress(bytes, networkAddress.port)
-          val peer = Peer.fromSocket(socket = inetAddress,
-                                     socks5ProxyParams =
-                                       nodeAppConfig.socks5ProxyParams)
+          val peer = Peer.fromSocket(
+            socket = inetAddress,
+            socks5ProxyParams = nodeAppConfig.socks5ProxyParams
+          )
           val pd = peerFinder.buildPeerData(peer, isPersistent = false)
           peerFinder.addToTry(Vector(pd), 0)
         }
@@ -86,9 +87,10 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
         val services = ServiceIdentifier.fromBytes(addr.services.bytes)
         val inetAddress =
           NetworkUtil.parseInetSocketAddress(bytes, port)
-        val peer = Peer.fromSocket(socket = inetAddress,
-                                   socks5ProxyParams =
-                                     nodeAppConfig.socks5ProxyParams)
+        val peer = Peer.fromSocket(
+          socket = inetAddress,
+          socks5ProxyParams = nodeAppConfig.socks5ProxyParams
+        )
         val priority = if (services.nodeCompactFilters) 1 else 0
         addr match {
           case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>

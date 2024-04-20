@@ -61,7 +61,8 @@ object DLCFundingInput {
       prevTxVout: UInt32,
       sequence: UInt32,
       maxWitnessLen: UInt16,
-      redeemScriptOpt: Option[WitnessScriptPubKey]): DLCFundingInput = {
+      redeemScriptOpt: Option[WitnessScriptPubKey]
+  ): DLCFundingInput = {
     prevTx.outputs(prevTxVout.toInt).scriptPubKey match {
       case _: P2SHScriptPubKey =>
         redeemScriptOpt match {
@@ -70,37 +71,46 @@ object DLCFundingInput {
               case _: P2WPKHWitnessSPKV0 =>
                 require(
                   maxWitnessLen == UInt16(107) || maxWitnessLen == UInt16(108),
-                  s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen")
+                  s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen"
+                )
               case _: P2WSHWitnessSPKV0 => ()
               case spk: TaprootScriptPubKey =>
                 throw new IllegalArgumentException(
-                  s"Taproot not yet supported: $spk")
+                  s"Taproot not yet supported: $spk"
+                )
               case spk: UnassignedWitnessScriptPubKey =>
                 throw new IllegalArgumentException(
-                  s"Unknown segwit version: $spk")
+                  s"Unknown segwit version: $spk"
+                )
             }
 
-            DLCFundingInputP2SHSegwit(inputSerialId,
-                                      prevTx,
-                                      prevTxVout,
-                                      sequence,
-                                      maxWitnessLen,
-                                      redeemScript)
+            DLCFundingInputP2SHSegwit(
+              inputSerialId,
+              prevTx,
+              prevTxVout,
+              sequence,
+              maxWitnessLen,
+              redeemScript
+            )
           case None =>
             throw new IllegalArgumentException(
-              "P2SH input requires a redeem script")
+              "P2SH input requires a redeem script"
+            )
         }
       case _: P2WPKHWitnessSPKV0 =>
         require(
           maxWitnessLen == UInt16(107) || maxWitnessLen == UInt16(108),
-          s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen")
+          s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen"
+        )
         DLCFundingInputP2WPKHV0(inputSerialId, prevTx, prevTxVout, sequence)
       case _: P2WSHWitnessSPKV0 =>
-        DLCFundingInputP2WSHV0(inputSerialId,
-                               prevTx,
-                               prevTxVout,
-                               sequence,
-                               maxWitnessLen)
+        DLCFundingInputP2WSHV0(
+          inputSerialId,
+          prevTx,
+          prevTxVout,
+          sequence,
+          maxWitnessLen
+        )
       case spk: TaprootScriptPubKey =>
         throw new IllegalArgumentException(s"Taproot not yet supported: $spk")
       case spk: UnassignedWitnessScriptPubKey =>
@@ -124,7 +134,8 @@ object DLCFundingInput {
   def fromInputSigningInfo(
       info: ScriptSignatureParams[InputInfo],
       inputSerialId: UInt64,
-      sequence: UInt32): DLCFundingInput = {
+      sequence: UInt32
+  ): DLCFundingInput = {
     DLCFundingInput(
       inputSerialId,
       info.prevTransaction,
@@ -142,10 +153,12 @@ case class DLCFundingInputP2WPKHV0(
     inputSerialId: UInt64,
     prevTx: Transaction,
     prevTxVout: UInt32,
-    sequence: UInt32)
-    extends DLCFundingInput {
-  require(output.scriptPubKey.isInstanceOf[P2WPKHWitnessSPKV0],
-          s"Funding input not P2WPKH: ${output.scriptPubKey}")
+    sequence: UInt32
+) extends DLCFundingInput {
+  require(
+    output.scriptPubKey.isInstanceOf[P2WPKHWitnessSPKV0],
+    s"Funding input not P2WPKH: ${output.scriptPubKey}"
+  )
 
   override val maxWitnessLen: UInt16 = UInt16(107)
   override val redeemScriptOpt: Option[WitnessScriptPubKey] = None
@@ -156,10 +169,12 @@ case class DLCFundingInputP2WSHV0(
     prevTx: Transaction,
     prevTxVout: UInt32,
     sequence: UInt32,
-    maxWitnessLen: UInt16)
-    extends DLCFundingInput {
-  require(output.scriptPubKey.isInstanceOf[P2WSHWitnessSPKV0],
-          s"Funding input not P2WSH: ${output.scriptPubKey}")
+    maxWitnessLen: UInt16
+) extends DLCFundingInput {
+  require(
+    output.scriptPubKey.isInstanceOf[P2WSHWitnessSPKV0],
+    s"Funding input not P2WSH: ${output.scriptPubKey}"
+  )
 
   override val redeemScriptOpt: Option[WitnessScriptPubKey] = None
 }
@@ -170,8 +185,8 @@ case class DLCFundingInputP2SHSegwit(
     prevTxVout: UInt32,
     sequence: UInt32,
     maxWitnessLen: UInt16,
-    redeemScript: WitnessScriptPubKey)
-    extends DLCFundingInput {
+    redeemScript: WitnessScriptPubKey
+) extends DLCFundingInput {
   require(
     output.scriptPubKey == P2SHScriptPubKey(redeemScript),
     s"Funding input not correct P2SH: ${output.scriptPubKey}; expected ${P2SHScriptPubKey(redeemScript)}"
@@ -182,7 +197,8 @@ case class DLCFundingInputP2SHSegwit(
 
 case class SpendingInfoWithSerialId(
     spendingInfo: ScriptSignatureParams[InputInfo],
-    serialId: UInt64) {
+    serialId: UInt64
+) {
 
   def toDLCFundingInput(sequence: UInt32): DLCFundingInput =
     DLCFundingInput.fromInputSigningInfo(spendingInfo, serialId, sequence)
