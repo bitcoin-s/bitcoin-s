@@ -69,27 +69,6 @@ abstract trait GetBlockWithTransactionsResult extends BlockchainResult {
   def nextblockhash: Option[DoubleSha256DigestBE]
 }
 
-case class GetBlockWithTransactionsResultPreV22(
-    hash: DoubleSha256DigestBE,
-    confirmations: Int,
-    strippedsize: Int,
-    size: Int,
-    weight: Int,
-    height: Int,
-    version: Int,
-    versionHex: Int32,
-    merkleroot: DoubleSha256DigestBE,
-    tx: Vector[RpcTransactionPreV22],
-    time: UInt32,
-    mediantime: UInt32,
-    nonce: UInt32,
-    bits: UInt32,
-    difficulty: BigDecimal,
-    chainwork: String,
-    previousblockhash: Option[DoubleSha256DigestBE],
-    nextblockhash: Option[DoubleSha256DigestBE])
-    extends GetBlockWithTransactionsResult
-
 case class GetBlockWithTransactionsResultV22(
     hash: DoubleSha256DigestBE,
     confirmations: Int,
@@ -432,14 +411,6 @@ sealed abstract trait GetTxOutResult extends BlockchainResult {
   def scriptPubKey: RpcScriptPubKey
   def coinbase: Boolean
 }
-
-case class GetTxOutResultPreV22(
-    bestblock: DoubleSha256DigestBE,
-    confirmations: Int,
-    value: Bitcoins,
-    scriptPubKey: RpcScriptPubKeyPreV22,
-    coinbase: Boolean)
-    extends GetTxOutResult
 
 case class GetTxOutResultV22(
     bestblock: DoubleSha256DigestBE,

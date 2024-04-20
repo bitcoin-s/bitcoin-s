@@ -53,7 +53,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      bitcoindV: BitcoindVersion = BitcoindVersion.V21)(implicit
+      bitcoindV: BitcoindVersion = BitcoindVersion.newest)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
                                     port = port,

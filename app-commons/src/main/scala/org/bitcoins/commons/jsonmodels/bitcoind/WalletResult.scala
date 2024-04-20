@@ -17,7 +17,6 @@ import org.bitcoins.crypto.{
   Sha256Hash160Digest
 }
 
-import java.io.File
 import java.time.ZonedDateTime
 
 sealed abstract class WalletResult
@@ -101,21 +100,6 @@ sealed trait GetWalletInfoResult extends WalletResult {
 
 }
 
-case class GetWalletInfoResultPreV22(
-    walletname: String,
-    walletversion: Int,
-    balance: Bitcoins,
-    unconfirmed_balance: Bitcoins,
-    immature_balance: Bitcoins,
-    txcount: Int,
-    keypoololdest: Option[UInt32],
-    keypoolsize: Int,
-    keypoolsize_hd_internal: Int,
-    paytxfee: BitcoinFeeUnit,
-    hdmasterkeyid: Option[Sha256Hash160Digest],
-    unlocked_until: Option[Int])
-    extends GetWalletInfoResult
-
 case class GetWalletInfoResultPostV22(
     walletname: String,
     walletversion: Int,
@@ -150,9 +134,6 @@ case class RpcAccount(
     amount: Bitcoins,
     confirmations: Int)
     extends WalletResult
-
-case class DumpWalletResult(filename: File)
-
 case class LoadWalletResult(name: String, warning: String) extends WalletResult
 
 case class RescanBlockChainResult(start_height: Int, stop_height: Int)
@@ -479,7 +460,12 @@ case class DescriptorsResult(
     internal: Option[Boolean],
     range: Option[Vector[Int]],
     next: Option[Int]
-) extends WalletResult
+) extends WalletResult {
+
+  override def toString(): String = {
+    s"${getClass.getSimpleName}(desc=$desc,timestamp=$timestamp,active=$active,internal=$internal,range=$range,next=$next)"
+  }
+}
 
 case class EmbeddedResult(
     isscript: Boolean,

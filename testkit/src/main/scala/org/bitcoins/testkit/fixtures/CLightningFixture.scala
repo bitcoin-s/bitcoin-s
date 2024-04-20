@@ -38,7 +38,7 @@ trait CLightningFixture extends BitcoinSFixture with CachedBitcoindNewest {
 }
 
 /** A trait that is useful if you need dual clightning fixtures for your test suite */
-trait DualCLightningFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait DualCLightningFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam =
     (BitcoindRpcClient, CLightningRpcClient, CLightningRpcClient)
@@ -72,7 +72,7 @@ trait DualCLightningFixture extends BitcoinSFixture with CachedBitcoindV21 {
 /** Creates two clightnings with no channels opened */
 trait CLightningChannelOpenerFixture
     extends BitcoinSFixture
-    with CachedBitcoindV21 {
+    with CachedBitcoindNewest {
 
   override type FixtureParam =
     (BitcoindRpcClient, CLightningRpcClient, CLightningRpcClient)

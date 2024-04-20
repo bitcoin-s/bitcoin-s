@@ -143,18 +143,8 @@ object JsonSerializers {
   implicit val rpcTransactionOutputV22Reads: Reads[RpcTransactionOutputV22] =
     Json.reads[RpcTransactionOutputV22]
 
-  implicit val rpcTransactionPreV22Reads: Reads[RpcTransactionPreV22] =
-    Json.reads[RpcTransactionPreV22]
-
   implicit val rpcTransactionV22Reads: Reads[RpcTransactionV22] =
     Json.reads[RpcTransactionV22]
-
-  implicit val decodeScriptResultPreV22Reads: Reads[DecodeScriptResultPreV22] =
-    ((__ \ "asm").read[String] and
-      (__ \ "type").readNullable[ScriptType] and
-      (__ \ "reqSigs").readNullable[Int] and
-      (__ \ "addresses").readNullable[Vector[P2PKHAddress]] and
-      (__ \ "p2sh").read[P2SHAddress])(DecodeScriptResultPreV22)
 
   implicit val decodeScriptResultV22Reads: Reads[DecodeScriptResultV22] =
     ((__ \ "asm").read[String] and
@@ -173,10 +163,6 @@ object JsonSerializers {
 
   implicit val getRawTransactionVinReads: Reads[GetRawTransactionVin] =
     Json.reads[GetRawTransactionVin]
-
-  implicit val getRawTransactionResultPreV22Reads: Reads[
-    GetRawTransactionResultPreV22] =
-    Json.reads[GetRawTransactionResultPreV22]
 
   implicit val getRawTransactionResultV22Reads: Reads[
     GetRawTransactionResultV22] =
@@ -262,9 +248,6 @@ object JsonSerializers {
   implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
     Json.reads[NodeBanPostV22]
 
-  implicit val nodeBanPostV20Reads: Reads[NodeBanPostV20] =
-    Json.reads[NodeBanPostV20]
-
   implicit val nodeBanPreV20Reads: Reads[NodeBanPreV20] =
     Json.reads[NodeBanPreV20]
 
@@ -274,10 +257,6 @@ object JsonSerializers {
 
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
-
-  implicit val getBlockWithTransactionsResultPreV22Reads: Reads[
-    GetBlockWithTransactionsResultPreV22] =
-    Json.reads[GetBlockWithTransactionsResultPreV22]
 
   implicit val getBlockWithTransactionsResultV22Reads: Reads[
     GetBlockWithTransactionsResultV22] =
@@ -347,9 +326,6 @@ object JsonSerializers {
   implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] =
     Json.reads[GetMemPoolInfoResult]
 
-  implicit val getTxOutResultPreV22Reads: Reads[GetTxOutResultPreV22] =
-    Json.reads[GetTxOutResultPreV22]
-
   implicit val getTxOutResultV22Reads: Reads[GetTxOutResultV22] =
     Json.reads[GetTxOutResultV22]
 
@@ -407,10 +383,6 @@ object JsonSerializers {
       (__ \ "details").read[Vector[TransactionDetails]] and
       (__ \ "hex").read[Transaction])(GetTransactionResult)
 
-  implicit val getWalletInfoResultReadsPreV22: Reads[
-    GetWalletInfoResultPreV22] =
-    Json.reads[GetWalletInfoResultPreV22]
-
   implicit val getWalletInfoResultReadsPostV22: Reads[
     GetWalletInfoResultPostV22] =
     Json.reads[GetWalletInfoResultPostV22]
@@ -424,9 +396,6 @@ object JsonSerializers {
   implicit val rpcAddressReads: Reads[RpcAddress] = RpcAddressReads
 
   implicit val rpcAccoutReads: Reads[RpcAccount] = Json.reads[RpcAccount]
-
-  implicit val dumpWalletResultReads: Reads[DumpWalletResult] =
-    Json.reads[DumpWalletResult]
 
   implicit val loadWalletResultReads: Reads[LoadWalletResult] =
     Json.reads[LoadWalletResult]
@@ -625,14 +594,8 @@ object JsonSerializers {
   implicit val mapPubKeySignatureReads: Reads[
     Map[ECPublicKey, ECDigitalSignature]] = MapPubKeySignatureReads
 
-  implicit val rpcPsbtInputPreV22Reads: Reads[RpcPsbtInputPreV22] =
-    RpcPsbtInputPreV22Reads
-
   implicit val rpcPsbtInputV22Reads: Reads[RpcPsbtInputV22] =
     RpcPsbtInputV22Reads
-
-  implicit val decodePsbtResultPreV22Reads: Reads[DecodePsbtResultPreV22] =
-    Json.reads[DecodePsbtResultPreV22]
 
   implicit val decodePsbtResultV22Reads: Reads[DecodePsbtResultV22] =
     Json.reads[DecodePsbtResultV22]
@@ -645,17 +608,6 @@ object JsonSerializers {
 
   implicit val analyzePsbtResultReads: Reads[AnalyzePsbtResult] =
     Json.reads[AnalyzePsbtResult]
-
-  implicit val getNodeAddressesPreV22Reads: Reads[
-    GetNodeAddressesResultPreV22] =
-    Reads[GetNodeAddressesResultPreV22] { js =>
-      for {
-        time <- (js \ "time").validate[Long].map(_.seconds)
-        services <- (js \ "services").validate[Int]
-        address <- (js \ "address").validate[URI]
-        port <- (js \ "port").validate[Int]
-      } yield GetNodeAddressesResultPreV22(time, services, address, port)
-    }
 
   implicit val getNodeAddressesPostV22Reads: Reads[
     GetNodeAddressesResultPostV22] =

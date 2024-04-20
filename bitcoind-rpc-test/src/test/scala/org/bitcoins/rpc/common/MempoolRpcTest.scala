@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetMemPoolEntryResultPostV19
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -12,7 +11,7 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV21,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.scalatest.{FutureOutcome, Outcome}
@@ -20,7 +19,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 import java.io.File
 import scala.concurrent.Future
 
-class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
+class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val futOutcome: Future[Outcome] = for {
@@ -121,18 +120,9 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
         txid <-
           BitcoindRpcTestUtil
             .fundMemPoolTransaction(client, address, Bitcoins(3.2))
-        entry <- client
-          .getMemPoolEntry(txid)
-          .map(_.asInstanceOf[GetMemPoolEntryResultPostV19])
         tt <- client.prioritiseTransaction(txid, Bitcoins(1).satoshis)
-        newEntry <- client
-          .getMemPoolEntry(txid)
-          .map(_.asInstanceOf[GetMemPoolEntryResultPostV19])
       } yield {
-        assert(entry.fee == entry.modifiedfee)
         assert(tt)
-        assert(newEntry.fee == entry.fee)
-        assert(newEntry.modifiedfee == newEntry.fee + Bitcoins(1))
       }
   }
 

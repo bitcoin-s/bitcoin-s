@@ -224,12 +224,6 @@ case class NodeBanPreV20(
     ban_reason: String)
     extends NodeBan
 
-case class NodeBanPostV20(
-    address: URI,
-    banned_until: UInt32,
-    ban_created: UInt32)
-    extends NodeBan
-
 case class NodeBanPostV22(
     address: URI,
     ban_created: UInt32,
@@ -244,13 +238,6 @@ sealed trait GetNodeAddressesResult extends NetworkResult {
   def address: java.net.URI
   def port: Int
 }
-
-case class GetNodeAddressesResultPreV22(
-    time: FiniteDuration,
-    services: Int,
-    address: java.net.URI,
-    port: Int
-) extends GetNodeAddressesResult
 
 case class GetNodeAddressesResultPostV22(
     time: FiniteDuration,

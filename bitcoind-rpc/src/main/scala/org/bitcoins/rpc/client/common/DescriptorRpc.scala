@@ -4,7 +4,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   DeriveAddressesResult,
   DescriptorsResult,
   GetDescriptorInfoResult,
-  ImportDescriptorResult
+  ImportDescriptorResult,
+  ListDescriptorsResult
 }
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters.DescriptorWrites
@@ -45,5 +46,40 @@ trait DescriptorRpc {
     Vector[ImportDescriptorResult]] = {
     bitcoindCall[Vector[ImportDescriptorResult]]("importdescriptors",
                                                  List(Json.toJson(imports)))
+  }
+
+  def importDescriptor(
+      imp: DescriptorsResult): Future[ImportDescriptorResult] = {
+    importDescriptors(Vector(imp)).map(_.head)
+  }
+
+  def listDescriptors(): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
+      "listdescriptors"
+    )
+  }
+
+  def listDescriptors(
+      priv: Option[Boolean],
+      walletName: String): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
+      "listdescriptors",
+      List(Json.toJson(priv)),
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
+  }
+
+  def listDescriptors(priv: Option[Boolean]): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
+      "listdescriptors",
+      List(Json.toJson(priv))
+    )
+  }
+
+  def listDescriptors(walletName: String): Future[ListDescriptorsResult] = {
+    bitcoindCall[ListDescriptorsResult](
+      "listdescriptors",
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 }

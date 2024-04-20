@@ -165,8 +165,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       descript match {
         case walletInfoPostV22: GetWalletInfoResultPostV22 =>
           assert(walletInfoPostV22.descriptors)
-        case _: GetWalletInfoResultPreV22 =>
-          fail("descriptors only available on V22 or higher")
       }
     }
   }
@@ -184,8 +182,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         walletPriv match {
           case walletInfoPostV22: GetWalletInfoResultPostV22 =>
             assert(!walletInfoPostV22.private_keys_enabled)
-          case _: GetWalletInfoResultPreV22 =>
-            fail("private key parameter only available on V22 or higher")
         }
       }
   }
@@ -208,10 +204,6 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       _ <- client.unloadWallet("decodeRWallet")
     } yield {
       decoded match {
-        case decodedPreV22: DecodeScriptResultPreV22 =>
-          assert(decodedPreV22.reqSigs.contains(2))
-          assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
-          assert(decodedPreV22.addresses.get.contains(address))
         case decodedV22: DecodeScriptResultV22 =>
           assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
       }
