@@ -5,47 +5,44 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   RpcOpts
 }
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesCachedPairNewest,
+  BitcoindRpcTestUtil
+}
 
 import scala.concurrent.Future
 
-class MiningRpcTest extends BitcoindRpcTest {
-
-  lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+class MiningRpcTest extends BitcoindFixturesCachedPairNewest {
 
   behavior of "MiningRpc"
 
-  it should "be able to get a block template" in {
-    clientsF.flatMap { case (client, _) =>
-      val opts =
-        RpcOpts.BlockTemplateRequest(
-          mode = "template",
-          capabilities = Vector.empty,
-          rules = Vector("segwit")
-        )
-      val getBlockF = client.getBlockTemplate(Some(opts))
-      getBlockF
-        .map(_ => succeed)
-    }
+  it should "be able to get a block template" in { case nodePair =>
+    val client = nodePair.node1
+    val opts =
+      RpcOpts.BlockTemplateRequest(
+        mode = "template",
+        capabilities = Vector.empty,
+        rules = Vector("segwit")
+      )
+    val getBlockF = client.getBlockTemplate(Some(opts))
+    getBlockF
+      .map(_ => succeed)
   }
 
-  it should "be able to generate blocks" in {
+  it should "be able to generate blocks" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       blocks <- client.generate(3)
     } yield assert(blocks.length == 3)
   }
 
-  it should "be able to generate a block" in {
+  it should "be able to generate a block" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       address <- client.getNewAddress
       unspent <- client.listUnspent
       changeAddress <- client.getRawChangeAddress
@@ -78,16 +75,17 @@ class MiningRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the mining info" in {
+  it should "be able to get the mining info" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       info <- client.getMiningInfo
     } yield assert(info.chain == "regtest")
   }
 
-  it should "be able to generate blocks to an address" in {
+  it should "be able to generate blocks to an address" in { case nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
     for {
-      (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress
       blocks <- client.generateToAddress(3, address)
       foundBlocks <- {
@@ -109,29 +107,31 @@ class MiningRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to generate blocks and then get their serialized headers" in {
-    for {
-      (client, _) <- clientsF
-      blocks <- client.generate(2)
-      header <- client.getBlockHeaderRaw(blocks(1))
-    } yield assert(header.previousBlockHashBE == blocks(0))
+    case nodePair =>
+      val client = nodePair.node1
+      for {
+        blocks <- client.generate(2)
+        header <- client.getBlockHeaderRaw(blocks(1))
+      } yield assert(header.previousBlockHashBE == blocks(0))
   }
 
   it should "be able to generate blocks and then get their headers" in {
-    for {
-      (client, _) <- clientsF
-      blocks <- client.generate(2)
-      firstHeader <- client.getBlockHeader(blocks(0))
-      secondHeader <- client.getBlockHeader(blocks(1))
-    } yield {
-      assert(firstHeader.nextblockhash.contains(blocks(1)))
-      assert(secondHeader.previousblockhash.contains(blocks(0)))
-      assert(secondHeader.nextblockhash.isEmpty)
-    }
+    case nodePair =>
+      val client = nodePair.node1
+      for {
+        blocks <- client.generate(2)
+        firstHeader <- client.getBlockHeader(blocks(0))
+        secondHeader <- client.getBlockHeader(blocks(1))
+      } yield {
+        assert(firstHeader.nextblockhash.contains(blocks(1)))
+        assert(secondHeader.previousblockhash.contains(blocks(0)))
+        assert(secondHeader.nextblockhash.isEmpty)
+      }
   }
 
-  it should "be able to get the network hash per sec" in {
+  it should "be able to get the network hash per sec" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       hps <- client.getNetworkHashPS()
     } yield assert(hps > 0)
   }
