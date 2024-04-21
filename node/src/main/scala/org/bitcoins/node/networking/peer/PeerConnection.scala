@@ -128,9 +128,13 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Flow.apply
   }
 
-  private val bidiFlow: BidiFlow[ByteString, Vector[
-    NetworkMessage
-  ], ByteString, ByteString, NotUsed] = {
+  private val bidiFlow: BidiFlow[ByteString,
+                                 Vector[
+                                   NetworkMessage
+                                 ],
+                                 ByteString,
+                                 ByteString,
+                                 NotUsed] = {
     BidiFlow.fromFlows(parseToNetworkMsgFlow, writeNetworkMsgFlow)
   }
 
@@ -143,9 +147,12 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       .preMaterialize()
   }
 
-  private val connectionFlow: Flow[ByteString, Vector[
-    NetworkMessage
-  ], (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
+  private val connectionFlow
+      : Flow[ByteString,
+             Vector[
+               NetworkMessage
+             ],
+             (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
     connection
       .idleTimeout(nodeAppConfig.peerTimeout)
       .joinMat(bidiFlow)(Keep.left)
@@ -264,8 +271,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               logger.error(
                 s"Failed to offer initialize timeout for peer=$peer",
                 err
-              )
-            )
+              ))
         }
 
         val resultF: Future[Unit] = {

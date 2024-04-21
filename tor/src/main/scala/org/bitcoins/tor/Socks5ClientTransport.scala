@@ -149,8 +149,7 @@ class Socks5ProxyGraphStage(
   private val greetingsMessage = socks5Greeting(credentialsOpt.isDefined)
 
   private val authMessage = credentialsOpt.map(c =>
-    socks5PasswordAuthenticationRequest(c.username, c.password)
-  )
+    socks5PasswordAuthenticationRequest(c.username, c.password))
 
   private val connectMessage = socks5ConnectionRequest(
     InetSocketAddress.createUnresolved(targetHostName, targetPort)

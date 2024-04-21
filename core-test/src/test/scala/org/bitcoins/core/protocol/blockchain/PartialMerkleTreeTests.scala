@@ -373,9 +373,9 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
     val numTransactions = UInt32(20)
     val bits = BitVector.bits(
       List(true, true, true, true, true, true, true, false, true, true, false,
-        true, true, true, false, true, true, true, true, false, true, true,
-        true, true, true, true, true, false, true, true, true, true, false,
-        true, true, true, true, false, false, false)
+           true, true, true, false, true, true, true, true, false, true, true,
+           true, true, true, true, true, false, true, true, true, true, false,
+           true, true, true, true, false, false, false)
     )
     val tree = PartialMerkleTree(numTransactions, hashes, bits)
     tree.extractMatches.contains(

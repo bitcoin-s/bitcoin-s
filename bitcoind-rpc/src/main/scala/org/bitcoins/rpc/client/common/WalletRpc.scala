@@ -92,8 +92,7 @@ trait WalletRpc { self: Client =>
       params,
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     ).map(addr =>
-      BitcoinAddress.fromScriptPubKey(addr.scriptPubKey, instance.network)
-    )
+      BitcoinAddress.fromScriptPubKey(addr.scriptPubKey, instance.network))
   }
 
   def getNewAddress: Future[BitcoinAddress] =

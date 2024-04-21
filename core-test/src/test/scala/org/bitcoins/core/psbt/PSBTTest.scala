@@ -31,18 +31,15 @@ class PSBTTest extends BitcoinSUnitTest {
       val newGlobal = PSBTGenerators.pruneGlobal(global)
       val newInputs =
         inputs.map(input =>
-          InputPSBTMap(PSBTGenerators.pruneVec(input.elements))
-        )
+          InputPSBTMap(PSBTGenerators.pruneVec(input.elements)))
       val newOutputs =
         outputs.map(output =>
-          OutputPSBTMap(PSBTGenerators.pruneVec(output.elements))
-        )
+          OutputPSBTMap(PSBTGenerators.pruneVec(output.elements)))
 
       val psbt1 = PSBT(newGlobal, newInputs, newOutputs)
 
       val oppositeGlobalElements = global.elements.filterNot(e =>
-        newGlobal.elements.contains(e)
-      ) :+ global.unsignedTransaction
+        newGlobal.elements.contains(e)) :+ global.unsignedTransaction
       val oppositeGlobal = GlobalPSBTMap(oppositeGlobalElements.distinct)
       val oppositeInputs = inputs.zip(newInputs).map { case (map, pruned) =>
         InputPSBTMap(map.elements.filterNot(e => pruned.elements.contains(e)))
@@ -129,8 +126,7 @@ class PSBTTest extends BitcoinSUnitTest {
       case (psbtEmptyOutputs, _, redeemScripts) =>
         val psbtWithOutputs =
           redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)((psbt, spk) =>
-            psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2)
-          )
+            psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
         val allOutputsValid =
           psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
@@ -146,8 +142,7 @@ class PSBTTest extends BitcoinSUnitTest {
       case (psbtEmptyOutputs, _, redeemScripts) =>
         val psbtWithOutputs =
           redeemScripts.zipWithIndex.foldLeft(psbtEmptyOutputs)((psbt, spk) =>
-            psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2)
-          )
+            psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
         val allOutputsValid =
           psbtWithOutputs.outputMaps.zip(redeemScripts).forall {

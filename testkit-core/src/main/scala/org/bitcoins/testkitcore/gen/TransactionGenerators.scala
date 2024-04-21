@@ -57,8 +57,7 @@ object TransactionGenerators {
   def realisticWitnessOutput: Gen[TransactionOutput] = {
     CurrencyUnitGenerator.positiveRealistic.flatMap { amt =>
       ScriptGenerators.witnessScriptPubKeyV0.map(spk =>
-        TransactionOutput(amt, spk._1)
-      )
+        TransactionOutput(amt, spk._1))
     }
   }
 

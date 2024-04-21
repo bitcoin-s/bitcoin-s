@@ -30,8 +30,7 @@ class PreciousBlockRpcTest extends BitcoindFixturesCachedPairNewest {
         freshClient
           .addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.OneTry)
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        BitcoindRpcTestUtil.hasSeenBlock(otherFreshClient, bestHash1)
-      )
+        BitcoindRpcTestUtil.hasSeenBlock(otherFreshClient, bestHash1))
 
       _ <- otherFreshClient.preciousBlock(bestHash1)
       newBestHash <- otherFreshClient.getBestBlockHash()

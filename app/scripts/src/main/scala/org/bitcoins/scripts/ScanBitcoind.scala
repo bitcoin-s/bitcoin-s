@@ -41,8 +41,7 @@ class ScanBitcoind()(implicit
       _ <- countTaprootTxsInBlocks(endHeight, 50000, bitcoind)
     } yield ()
     f.failed.foreach(err =>
-      logger.error(s"Failed to count witness v1 mempool txs", err)
-    )
+      logger.error(s"Failed to count witness v1 mempool txs", err))
     Future.unit
   }
 
@@ -145,8 +144,7 @@ class ScanBitcoind()(implicit
     countF.foreach(c =>
       logger.info(
         s"Found $c mempool transactions with witness v1 outputs at ${Instant.now}"
-      )
-    )
+      ))
     countF
   }
 

@@ -219,8 +219,7 @@ case class PSBT(
         }
 
       finalizedInputMapsT.map(finalizedInputMaps =>
-        this.copy(inputMaps = finalizedInputMaps)
-      )
+        this.copy(inputMaps = finalizedInputMaps))
     }
   }
 
@@ -645,9 +644,11 @@ case class PSBT(
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
 
-  private def addKeyPathToMap[RecordType <: PSBTRecord, MapType <: PSBTMap[
-    RecordType
-  ]](
+  private def addKeyPathToMap[
+      RecordType <: PSBTRecord,
+      MapType <: PSBTMap[
+        RecordType
+      ]](
       extKey: ExtKey,
       path: BIP32Path,
       pubKey: ECPublicKey,

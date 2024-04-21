@@ -84,8 +84,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
     f.failed.foreach(err =>
       config.callBacks
-        .executeOnAcceptFailed(dlcOffer.tlv.tempContractId, err.getMessage)
-    )
+        .executeOnAcceptFailed(dlcOffer.tlv.tempContractId, err.getMessage))
 
     f
   }

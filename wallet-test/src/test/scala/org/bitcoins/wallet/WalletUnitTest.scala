@@ -353,8 +353,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
           Files.delete(wallet.walletConfig.seedPath)
         }
         modifiedMnemonic = mnemonic.copy(creationTime =
-          Instant.now.minusSeconds(60 * 60 + 1)
-        ) // 1 hour and 1 minute
+          Instant.now.minusSeconds(60 * 60 + 1)) // 1 hour and 1 minute
 
         _ = WalletStorage.writeSeedToDisk(seedPath, modifiedMnemonic)
         // delete old wallet database

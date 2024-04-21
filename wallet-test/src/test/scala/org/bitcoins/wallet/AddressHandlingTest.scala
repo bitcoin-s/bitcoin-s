@@ -131,8 +131,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         .map(_.output)
         .diff(
           fundedAddresses.map(tuple =>
-            TransactionOutput(tuple._2, tuple._1.scriptPubKey)
-          )
+            TransactionOutput(tuple._2, tuple._1.scriptPubKey))
         )
       assert(diff.isEmpty, s"Extra funded addresses $diff")
     }

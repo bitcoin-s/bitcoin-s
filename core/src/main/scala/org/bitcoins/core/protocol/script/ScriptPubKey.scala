@@ -304,8 +304,7 @@ object MultiSignatureScriptPubKey
             op.isInstanceOf[ScriptConstant] || op
               .isInstanceOf[BytesToPushOntoStack] || op
               .isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
-              op == OP_CHECKMULTISIGVERIFY
-          )
+              op == OP_CHECKMULTISIGVERIFY)
 
           val result =
             asm.nonEmpty &&

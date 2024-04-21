@@ -295,9 +295,10 @@ sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
 }
 
 object ExactMultiOracleInfo
-    extends TLVDeserializable[OracleInfoV1TLV, ExactMultiOracleInfo[
-      SingleOracleInfo
-    ]](OracleInfoV1TLV) {
+    extends TLVDeserializable[OracleInfoV1TLV,
+                              ExactMultiOracleInfo[
+                                SingleOracleInfo
+                              ]](OracleInfoV1TLV) {
 
   def apply(tlv: OracleInfoV1TLV): ExactMultiOracleInfo[SingleOracleInfo] = {
     tlv.oracles.head.eventTLV.eventDescriptor match {

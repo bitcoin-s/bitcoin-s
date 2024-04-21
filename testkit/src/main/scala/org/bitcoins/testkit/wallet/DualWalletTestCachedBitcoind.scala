@@ -56,16 +56,15 @@ trait DualWalletTestCachedBitcoind
     */
   def withDualFundedDLCWallets(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build =
-        () =>
-          for {
-            bitcoind <- cachedBitcoindWithFundsF
-            walletA <-
-              FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
-            walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
-              bitcoind
-            )(config2, system)
-          } yield (walletA, walletB, bitcoind),
+      build = () =>
+        for {
+          bitcoind <- cachedBitcoindWithFundsF
+          walletA <-
+            FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
+          walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
+            bitcoind
+          )(config2, system)
+        } yield (walletA, walletB, bitcoind),
       destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet, _) =>
         for {
           _ <- destroyDLCWallet(fundedWallets._1.wallet)
@@ -81,34 +80,33 @@ trait DualWalletTestCachedBitcoind
       contractOraclePair: ContractOraclePair
   ): FutureOutcome = {
     makeDependentFixture(
-      build =
-        () => {
-          val bitcoindF = cachedBitcoindWithFundsF
+      build = () => {
+        val bitcoindF = cachedBitcoindWithFundsF
 
-          val walletAF = bitcoindF.flatMap { bitcoind =>
-            FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
-          }
-          val walletBF = for {
-            bitcoind <- bitcoindF
+        val walletAF = bitcoindF.flatMap { bitcoind =>
+          FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
+        }
+        val walletBF = for {
+          bitcoind <- bitcoindF
 
-            // its important to map on this otherwise we generate blocks in parallel
-            // causing a reorg inside of createFundedDLCWallet
-            _ <- walletAF
-            walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
-              bitcoind
-            )(config2, system)
-          } yield { walletB }
+          // its important to map on this otherwise we generate blocks in parallel
+          // causing a reorg inside of createFundedDLCWallet
+          _ <- walletAF
+          walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
+            bitcoind
+          )(config2, system)
+        } yield { walletB }
 
-          for {
-            walletA <- walletAF
-            walletB <- walletBF
-            amt = expectedDefaultAmt / Satoshis(2)
-            contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
-            (dlcWalletA, dlcWalletB) <-
-              DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
-            bitcoind <- bitcoindF
-          } yield (dlcWalletA, dlcWalletB, bitcoind)
-        },
+        for {
+          walletA <- walletAF
+          walletB <- walletBF
+          amt = expectedDefaultAmt / Satoshis(2)
+          contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
+          (dlcWalletA, dlcWalletB) <-
+            DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
+          bitcoind <- bitcoindF
+        } yield (dlcWalletA, dlcWalletB, bitcoind)
+      },
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet, _) =>
         for {
           _ <- destroyDLCWallet(dlcWallets._1.wallet)

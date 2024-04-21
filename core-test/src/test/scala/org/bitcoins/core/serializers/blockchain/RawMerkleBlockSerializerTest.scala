@@ -123,7 +123,7 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
           UInt32(6),
           BitVector.bits(
             List(true, true, true, false, true, true, false, true, false, false,
-              false, false, false, false, false, false)
+                 false, false, false, false, false, false)
           ),
           List(
             DoubleSha256Digest(

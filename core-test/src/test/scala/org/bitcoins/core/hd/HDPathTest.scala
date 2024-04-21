@@ -74,8 +74,7 @@ class HDPathTest extends BitcoinSUnitTest {
     HDCoinType.fromInt(1) must be(HDCoinType.Testnet)
     forAll(
       NumberGenerator.ints.suchThat(i =>
-        !HDCoinType.all.map(_.toInt).contains(i)
-      )
+        !HDCoinType.all.map(_.toInt).contains(i))
     ) { i =>
       HDCoinType.fromInt(i) must be(HDCoinType.UnknownCoinType(i))
       HDCoinType.fromKnown(i) must be(None)

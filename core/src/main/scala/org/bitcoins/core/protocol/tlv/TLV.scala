@@ -1385,8 +1385,7 @@ case class PayoutFunctionV0TLV(
       case DLCSerializationVersion.Alpha =>
         val old = OldPayoutFunctionV0TLV(
           endpoints.toVector.map(p =>
-            OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)
-          )
+            OldTLVPoint(p.outcome, p.value, p.extraPrecision, true))
         )
         old.byteSize
       case DLCSerializationVersion.Beta =>
@@ -1806,7 +1805,8 @@ case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     if (sigs.length <= 5) {
       super.toString
     } else {
-      s"CETSignaturesV0TLV(sigs=${sigs.take(2)}..., omitting remainingSigs of length=${sigs.length - 2})"
+      s"CETSignaturesV0TLV(sigs=${sigs.take(
+          2)}..., omitting remainingSigs of length=${sigs.length - 2})"
     }
   }
 }

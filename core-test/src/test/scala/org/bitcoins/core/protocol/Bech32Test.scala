@@ -252,8 +252,7 @@ class Bech32Test extends BitcoinSUnitTest {
   )
   it must "fail to find the bech32 weakness" in {
     val failsAll = invalidBech32.forall(invalid =>
-      Bech32.splitToHrpAndData(invalid, Bech32Encoding.Bech32).isSuccess
-    )
+      Bech32.splitToHrpAndData(invalid, Bech32Encoding.Bech32).isSuccess)
     assert(failsAll)
   }
 

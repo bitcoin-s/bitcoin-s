@@ -110,8 +110,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
               } yield ()
 
               f.failed.foreach(err =>
-                logger.error(s"Failed to reset rescan state", err)
-              )
+                logger.error(s"Failed to reset rescan state", err))
             }
           } yield {
             state
@@ -124,8 +123,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
             case r: RescanState.RescanStarted =>
               r.entireRescanDoneF.map(_ =>
                 logger.info(s"Finished rescanning the wallet. It took ${System
-                    .currentTimeMillis() - startTime}ms")
-              )
+                    .currentTimeMillis() - startTime}ms"))
             case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
                 RescanState.RescanNotNeeded =>
             // nothing to log
@@ -478,20 +476,28 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       addressBatchSize: Int
   ): DBIOAction[Vector[
-    BitcoinAddress
-  ], NoStream, Effect.Read with Effect.Write with Effect.Transactional] = {
-    val receiveAddressesA: DBIOAction[Vector[
-      BitcoinAddress
-    ], NoStream, Effect.Read with Effect.Write with Effect.Transactional] = {
+                  BitcoinAddress
+                ],
+                NoStream,
+                Effect.Read with Effect.Write with Effect.Transactional] = {
+    val receiveAddressesA: DBIOAction[
+      Vector[
+        BitcoinAddress
+      ],
+      NoStream,
+      Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
           .map(_ => getNewAddressAction(account))
       }
     }.map(_.toVector)
 
-    val changeAddressesA: DBIOAction[Vector[
-      BitcoinAddress
-    ], NoStream, Effect.Read with Effect.Write with Effect.Transactional] = {
+    val changeAddressesA: DBIOAction[
+      Vector[
+        BitcoinAddress
+      ],
+      NoStream,
+      Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
           .map(_ => getNewChangeAddressAction(account))
@@ -512,8 +518,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int,
       forceGenerateSpks: Boolean
   ): DBIOAction[Vector[
-    ScriptPubKey
-  ], NoStream, Effect.Read with Effect.Write with Effect.Transactional] = {
+                  ScriptPubKey
+                ],
+                NoStream,
+                Effect.Read with Effect.Write with Effect.Transactional] = {
     val addressCountA = addressDAO.countAction
     for {
       addressCount <- addressCountA

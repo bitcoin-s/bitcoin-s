@@ -79,7 +79,6 @@ object ChainHandlerCached {
         stateDAO = stateDAO,
         blockchains = chains,
         blockFilterCheckpoints = Map.empty
-      )
-    )
+      ))
   }
 }

@@ -241,8 +241,7 @@ case class SignDbState(
     require(
       cetSigs.forall(_.initiatorSig.isDefined),
       s"Offerer CET signatures must be defined when in SignDbState"
-    )
-  )
+    ))
 
   override val allFundingInputs: Vector[DLCFundingInputDb] =
     offerFundingInputsDb ++ acceptFundingInputsDb

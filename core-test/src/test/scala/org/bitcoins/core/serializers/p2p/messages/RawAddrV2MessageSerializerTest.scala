@@ -85,8 +85,7 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
       time <- NumberGenerator.uInt32s
       services <- NumberGenerator.compactSizeUInts
       networkId <- NumberGenerator.byte.suchThat(byte =>
-        !AddrV2Message.knownNetworkBytes.contains(byte)
-      )
+        !AddrV2Message.knownNetworkBytes.contains(byte))
       addrBytes <- NumberGenerator.bytevector
       port <- NumberGenerator.uInt16
     } yield UnknownNetworkAddrV2Message(

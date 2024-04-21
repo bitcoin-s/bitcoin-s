@@ -750,8 +750,7 @@ object Picklers {
       Obj(
         "threshold" -> Num(threshold.toDouble),
         "announcements" -> oracles.map(o =>
-          writeJs(o)(oracleAnnouncementTLVJsonWriter)
-        )
+          writeJs(o)(oracleAnnouncementTLVJsonWriter))
       )
     }
 
@@ -776,8 +775,7 @@ object Picklers {
       Obj(
         "threshold" -> Num(threshold.toDouble),
         "announcements" -> oracles.map(o =>
-          writeJs(o)(oracleAnnouncementTLVJsonWriter)
-        ),
+          writeJs(o)(oracleAnnouncementTLVJsonWriter)),
         "params" -> writeJs(params)
       )
     }
@@ -1287,8 +1285,7 @@ object Picklers {
           PayoutAddress(
             BitcoinAddress.fromString(a),
             json("isExternal").boolOpt.getOrElse(false)
-          )
-        )
+          ))
       case Null => None
       case v: Value =>
         throw new IllegalArgumentException(s"Unexpected payout address $v")

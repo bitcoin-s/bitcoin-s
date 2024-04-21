@@ -91,8 +91,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
     spentAddressesF.map { spentAddresses =>
       spentAddresses.filter(addr =>
-        HDAccount.isSameAccount(addr._1.path, account)
-      )
+        HDAccount.isSameAccount(addr._1.path, account))
     }
   }
 
@@ -107,8 +106,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
     unusedAddressesF.map { unusedAddresses =>
       unusedAddresses.filter(addr =>
-        HDAccount.isSameAccount(addr.path, account)
-      )
+        HDAccount.isSameAccount(addr.path, account))
     }
   }
 

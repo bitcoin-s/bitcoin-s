@@ -10,8 +10,7 @@ class SpendingInfoDbTest extends BitcoinSUnitTest {
   it must "throw an exception if the spending txid is the same as txid" in {
     assertThrows[IllegalArgumentException] {
       TransactionTestUtil.spendingInfoDb.copy(spendingTxIdOpt =
-        Some(DoubleSha256DigestBE.empty)
-      )
+        Some(DoubleSha256DigestBE.empty))
     }
   }
 }

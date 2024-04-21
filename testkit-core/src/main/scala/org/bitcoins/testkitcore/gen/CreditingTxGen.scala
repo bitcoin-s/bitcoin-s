@@ -100,8 +100,7 @@ sealed abstract class CreditingTxGen {
         p2wshOutput
       )
       .suchThat(output =>
-        !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey)
-      )
+        !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey))
       .suchThat {
         case ScriptSignatureParams(
               P2SHNestedSegwitV0InputInfo(_, _, witness, _, _),
@@ -336,8 +335,7 @@ sealed abstract class CreditingTxGen {
   def p2wshOutput: Gen[ScriptSignatureParams[InputInfo]] =
     nonP2WSHOutput
       .suchThat(output =>
-        !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey)
-      )
+        !ScriptGenerators.redeemScriptTooBig(output.output.scriptPubKey))
       .flatMap { case ScriptSignatureParams(info, _, signers, _) =>
         val spk = info.scriptPubKey
         spk match {

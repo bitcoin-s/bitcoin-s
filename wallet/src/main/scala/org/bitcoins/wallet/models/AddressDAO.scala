@@ -186,8 +186,7 @@ case class AddressDAO()(implicit
       .map(res =>
         res.map { case (addrRec, spkRec) =>
           addrRec.toAddressDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   private def addressesForAccountQuery(accountIndex: Int): Query[
@@ -215,8 +214,7 @@ case class AddressDAO()(implicit
       .map(res =>
         res.map { case (addrRec, spkRec) =>
           addrRec.toAddressDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   def findAllForAccount(account: HDAccount): Future[Vector[AddressRecord]] = {
@@ -277,8 +275,7 @@ case class AddressDAO()(implicit
       .map(res =>
         res.map { case ((addrRec, spkRec), _) =>
           addrRec.toAddressDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   def getUnusedAddresses(hdAccount: HDAccount): Future[Vector[AddressDb]] = {
@@ -300,8 +297,7 @@ case class AddressDAO()(implicit
       .map(res =>
         res.map { case (addrRec, spkRec) =>
           addrRec.toAddressDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   def getFundedAddresses: Future[Vector[(AddressDb, CurrencyUnit)]] = {
@@ -346,8 +342,10 @@ case class AddressDAO()(implicit
       account: HDAccount,
       chain: HDChainType
   ): DBIOAction[Option[
-    (AddressRecord, ScriptPubKeyDb)
-  ], NoStream, Effect.Read] = {
+                  (AddressRecord, ScriptPubKeyDb)
+                ],
+                NoStream,
+                Effect.Read] = {
     addressesForAccountQuery(account.index)
       .filter(_._1.purpose === account.purpose)
       .filter(_._1.accountCoin === account.coin.coinType)

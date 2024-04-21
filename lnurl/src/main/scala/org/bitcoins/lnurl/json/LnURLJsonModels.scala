@@ -100,8 +100,8 @@ object LnURLJsonModels {
   }
 
   implicit val LnURLResponseReads: Reads[LnURLResponse] = {
-    case other @ (JsNull | _: JsBoolean | JsNumber(_) | JsString(_) |
-        JsArray(_)) =>
+    case other @ (JsNull | _: JsBoolean | JsNumber(_) | JsString(_) | JsArray(
+          _)) =>
       throw new IllegalArgumentException(s"Expected JsObject, got $other")
     case obj: JsObject =>
       obj.value.get("tag") match {

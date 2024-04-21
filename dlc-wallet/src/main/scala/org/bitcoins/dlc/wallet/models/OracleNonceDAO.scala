@@ -43,9 +43,7 @@ case class OracleNonceDAO()(implicit
       case (accum, OracleNoncePrimaryKey(announcementId, index)) =>
         accum.flatMap(_ =>
           table.filter(t =>
-            t.announcementId === announcementId && t.index === index
-          )
-        )
+            t.announcementId === announcementId && t.index === index))
     }
   }
 
@@ -53,8 +51,7 @@ case class OracleNonceDAO()(implicit
       id: OracleNoncePrimaryKey
   ): profile.api.Query[profile.api.Table[OracleNonceDb], OracleNonceDb, Seq] = {
     table.filter(t =>
-      t.announcementId === id.announcementId && t.index === id.index
-    )
+      t.announcementId === id.announcementId && t.index === id.index)
   }
 
   override def find(

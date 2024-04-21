@@ -10,9 +10,12 @@ import scala.concurrent.Future
   */
 trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
 
-  def findByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[Option[
-    T
-  ], profile.api.NoStream, profile.api.Effect.Read] = {
+  def findByDLCIdAction(
+      dlcId: Sha256Digest): profile.api.DBIOAction[Option[
+                                                     T
+                                                   ],
+                                                   profile.api.NoStream,
+                                                   profile.api.Effect.Read] = {
     findByDLCIdsAction(Vector(dlcId))
       .map(_.headOption)
   }
@@ -20,8 +23,10 @@ trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   def findByDLCIdsAction(
       dlcId: Vector[Sha256Digest]
   ): profile.api.DBIOAction[Vector[
-    T
-  ], profile.api.NoStream, profile.api.Effect.Read]
+                              T
+                            ],
+                            profile.api.NoStream,
+                            profile.api.Effect.Read]
 
   def findByDLCId(dlcId: Sha256Digest): Future[Option[T]] = {
     safeDatabase.run(findByDLCIdAction(dlcId))
@@ -41,9 +46,12 @@ trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   */
 trait DLCIdDaoUtilNoPK[T] { _: CRUD[T, _] =>
 
-  def findByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[Vector[
-    T
-  ], profile.api.NoStream, profile.api.Effect.Read]
+  def findByDLCIdAction(
+      dlcId: Sha256Digest): profile.api.DBIOAction[Vector[
+                                                     T
+                                                   ],
+                                                   profile.api.NoStream,
+                                                   profile.api.Effect.Read]
 
   def findByDLCId(dlcId: Sha256Digest): Future[Vector[T]] = {
     safeDatabase.runVec(findByDLCIdAction(dlcId))

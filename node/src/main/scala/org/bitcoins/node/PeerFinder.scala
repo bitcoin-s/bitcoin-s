@@ -89,8 +89,7 @@ case class PeerFinder(
 
     val partitionF = dbF.map(
       _.partition(b =>
-        !ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters
-      )
+        !ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters)
     )
 
     partitionF.map { p =>
@@ -120,8 +119,7 @@ case class PeerFinder(
     */
   private def getPeersFromConfig: Vector[Peer] = {
     val addresses = nodeAppConfig.peers.filter(p =>
-      nodeAppConfig.torConf.enabled || !p.toString.contains(".onion")
-    )
+      nodeAppConfig.torConf.enabled || !p.toString.contains(".onion"))
     addresses
   }
 
@@ -170,8 +168,7 @@ case class PeerFinder(
           dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
           dbCf = dbCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
           peersDbs <- getPeersFromDnsSeeds.map(dns =>
-            dns ++ getPeersFromResources ++ dbNonCf
-          )
+            dns ++ getPeersFromResources ++ dbNonCf)
         } yield {
           val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)

@@ -212,8 +212,7 @@ sealed abstract class ScriptParser
           ScriptNumber(g.group(1))
         } else {
           ScriptConstant(g.group(1))
-        }
-      )
+        })
     scriptConstants.toVector
   }
 

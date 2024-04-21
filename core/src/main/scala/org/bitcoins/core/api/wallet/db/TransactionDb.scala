@@ -66,8 +66,7 @@ object TransactionDbHelper {
             input.previousOutput,
             EmptyScriptSignature,
             input.sequence
-          )
-        )
+          ))
         (
           BaseTransaction(
             btx.version,
@@ -83,8 +82,7 @@ object TransactionDbHelper {
             input.previousOutput,
             EmptyScriptSignature,
             input.sequence
-          )
-        )
+          ))
         val uwtx = WitnessTransaction(
           wtx.version,
           unsignedInputs,

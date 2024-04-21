@@ -50,9 +50,7 @@ case class DLCAnnouncementDAO()(implicit
         accum.flatMap(_ =>
           table.filter(t =>
             t.dlcId === dlcId &&
-              t.announcementId === announcementId
-          )
-        )
+              t.announcementId === announcementId))
     }
   }
 
@@ -60,8 +58,7 @@ case class DLCAnnouncementDAO()(implicit
       id: DLCAnnouncementPrimaryKey
   ): Query[DLCAnnouncementTable, DLCAnnouncementDb, Seq] = {
     table.filter(t =>
-      t.dlcId === id.dlcId && t.announcementId === id.announcementId
-    )
+      t.dlcId === id.dlcId && t.announcementId === id.announcementId)
   }
 
   override def find(
@@ -90,9 +87,12 @@ case class DLCAnnouncementDAO()(implicit
     query.result.map(_.toVector)
   }
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[Vector[
-    DLCAnnouncementDb
-  ], profile.api.NoStream, profile.api.Effect.Read] = {
+  override def findByDLCIdAction(
+      dlcId: Sha256Digest): DBIOAction[Vector[
+                                         DLCAnnouncementDb
+                                       ],
+                                       profile.api.NoStream,
+                                       profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }

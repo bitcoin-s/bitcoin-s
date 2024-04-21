@@ -294,8 +294,7 @@ class FundTransactionHandlingTest
 
       assert(
         tx.inputs.forall(input =>
-          expectedUtxos.exists(_.outPoint == input.previousOutput)
-        )
+          expectedUtxos.exists(_.outPoint == input.previousOutput))
       )
     }
   }

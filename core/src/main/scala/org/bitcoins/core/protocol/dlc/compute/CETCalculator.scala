@@ -555,8 +555,7 @@ object CETCalculator {
       oracles.map(Vector(_))
     } else {
       combinations(oracles.tail, threshold - 1).map(vec =>
-        oracles.head +: vec
-      ) ++ combinations(oracles.tail, threshold)
+        oracles.head +: vec) ++ combinations(oracles.tail, threshold)
     }
   }
 

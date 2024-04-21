@@ -31,8 +31,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends StringFactory[T] {
     if (result.isEmpty) {
       // try and remove the 'OP_' prefix on the operations and see if it matches anything.
       operations.find(op =>
-        removeOP_Prefix(op.toString) == removeOP_Prefix(str)
-      )
+        removeOP_Prefix(op.toString) == removeOP_Prefix(str))
     } else result
   }
 

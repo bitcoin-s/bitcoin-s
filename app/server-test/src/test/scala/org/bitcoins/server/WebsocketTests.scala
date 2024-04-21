@@ -550,8 +550,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                 "Connection refused"
               )
             case _ => false
-          }
-        )
+          })
       )
     }
   }

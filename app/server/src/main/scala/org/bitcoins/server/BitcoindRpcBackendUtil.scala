@@ -490,8 +490,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
               )
             } // reset polling variable
             f.failed.foreach(err =>
-              logger.error(s"Failed to poll bitcoind", err)
-            )
+              logger.error(s"Failed to poll bitcoind", err))
           } else {
             logger.info(s"Previous bitcoind polling still running")
           }

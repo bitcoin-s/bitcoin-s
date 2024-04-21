@@ -200,8 +200,7 @@ object JsonSerializers {
 
       def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
         SerializerUtil.processJsNumber(num =>
-          SatoshisPerKiloByte(Satoshis(num.toBigInt))
-        )(json)
+          SatoshisPerKiloByte(Satoshis(num.toBigInt)))(json)
     }
 
   implicit val satsPerVBReads: Reads[SatoshisPerVirtualByte] =
@@ -209,8 +208,7 @@ object JsonSerializers {
 
       def reads(json: JsValue): JsResult[SatoshisPerVirtualByte] =
         SerializerUtil.processJsNumber(num =>
-          SatoshisPerVirtualByte(Satoshis(num.toBigInt))
-        )(json)
+          SatoshisPerVirtualByte(Satoshis(num.toBigInt)))(json)
     }
 
   implicit val TransactionOutputReads: Reads[TransactionOutput] =
@@ -838,44 +836,37 @@ object JsonSerializers {
   implicit def mapDoubleSha256DigestReadsPreV19
       : Reads[Map[DoubleSha256Digest, GetMemPoolResultPreV19]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPreV19](s =>
-      JsSuccess(DoubleSha256Digest.fromHex(s))
-    )
+      JsSuccess(DoubleSha256Digest.fromHex(s)))
 
   implicit def mapDoubleSha256DigestReadsPostV19
       : Reads[Map[DoubleSha256Digest, GetMemPoolResultPostV19]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPostV19](s =>
-      JsSuccess(DoubleSha256Digest.fromHex(s))
-    )
+      JsSuccess(DoubleSha256Digest.fromHex(s)))
 
   implicit def mapDoubleSha256DigestReadsPostV23
       : Reads[Map[DoubleSha256Digest, GetMemPoolResultPostV23]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPostV23](s =>
-      JsSuccess(DoubleSha256Digest.fromHex(s))
-    )
+      JsSuccess(DoubleSha256Digest.fromHex(s)))
 
   implicit def mapDoubleSha256DigestBEReadsPreV19
       : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]] =
     Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPreV19](s =>
-      JsSuccess(DoubleSha256DigestBE.fromHex(s))
-    )
+      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit def mapDoubleSha256DigestBEReadsPostV19
       : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]] =
     Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPostV19](s =>
-      JsSuccess(DoubleSha256DigestBE.fromHex(s))
-    )
+      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit def mapDoubleSha256DigestBEReadsPostV23
       : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]] =
     Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPostV23](s =>
-      JsSuccess(DoubleSha256DigestBE.fromHex(s))
-    )
+      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit def mapAddressesByLabelReads
       : Reads[Map[BitcoinAddress, LabelResult]] =
     Reads.mapReads[BitcoinAddress, LabelResult](s =>
-      JsSuccess(BitcoinAddress.fromString(s))
-    )
+      JsSuccess(BitcoinAddress.fromString(s)))
 
   implicit def mapSatsPerKByteByIntReads: Reads[Map[Int, SatoshisPerKiloByte]] =
     Reads.mapReads[Int, SatoshisPerKiloByte](s => JsSuccess(s.toInt))

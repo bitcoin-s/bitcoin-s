@@ -193,8 +193,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       fourthClientF
         .flatMap(_.getInfo)
         .flatMap(info =>
-          firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100)))
-        )
+          firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
         .map(route => route.head.asInstanceOf[NodeRoute].nodeIds.length == 4)
         .recover {
           case err: RuntimeException
@@ -979,8 +978,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           val connect1And3 =
             EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient3)
           val connect1And4 = connect1And3.flatMap(_ =>
-            EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient4)
-          )
+            EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient4))
           connect1And3.flatMap { _ =>
             connect1And4.map { _ =>
               EclairNodes4(
@@ -1179,8 +1177,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             ourUpdates.flatMap(our =>
               allUpdates.map { all =>
                 our != all
-              }
-            )
+              })
           }
 
           AsyncUtil

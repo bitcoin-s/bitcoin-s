@@ -134,16 +134,14 @@ case class SpendingInfoDAO()(implicit
       ts: Vector[SpendingInfoDb]
   ): Future[Vector[SpendingInfoDb]] = {
     FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], ts)((acc, si) =>
-      upsert(si).map(res => acc :+ res)
-    )
+      upsert(si).map(res => acc :+ res))
   }
 
   def updateAllSpendingInfoDb(
       ts: Vector[SpendingInfoDb]
   ): Future[Vector[SpendingInfoDb]] = {
     FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], ts)((acc, si) =>
-      update(si).map(res => acc :+ res)
-    )
+      update(si).map(res => acc :+ res))
   }
 
   def update(si: SpendingInfoDb): Future[SpendingInfoDb] = {
@@ -333,8 +331,11 @@ case class SpendingInfoDAO()(implicit
       queries.map(_.result.map(_.toVector))
     }
     val action: DBIOAction[Vector[
-      (UTXORecord, ScriptPubKeyDb)
-    ], NoStream, Effect.Read] = DBIO.sequence(actions).map(_.flatten.toVector)
+                             (UTXORecord, ScriptPubKeyDb)
+                           ],
+                           NoStream,
+                           Effect.Read] =
+      DBIO.sequence(actions).map(_.flatten.toVector)
 
     action.map(_.map { case (utxo, spk) =>
       utxo.toSpendingInfoDb(spk.scriptPubKey)
@@ -364,8 +365,7 @@ case class SpendingInfoDAO()(implicit
         (
           r._1.toSpendingInfoDb(utxoSpks(r._1.scriptPubKeyId).scriptPubKey),
           r._2.toAddressDb(addrSpks(r._2.scriptPubKeyId).scriptPubKey)
-        )
-      )
+        ))
     }
 
   }
@@ -396,8 +396,7 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        }
-      )
+        })
       .map(_.toVector)
   }
 
@@ -419,8 +418,7 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   def findByScriptPubKeyId(scriptPubKeyId: Long): Future[Vector[UTXORecord]] = {
@@ -456,23 +454,20 @@ case class SpendingInfoDAO()(implicit
     for {
       spks <- findScriptPubKeysAction(utxos)
     } yield utxos.map(utxo =>
-      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey)
-    )
+      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
   }
 
   def utxoToInfo(utxos: Vector[UTXORecord]): Future[Vector[SpendingInfoDb]] =
     for {
       spks <- findScriptPubKeysByUtxos(utxos)
     } yield utxos.map(utxo =>
-      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey)
-    )
+      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
 
   def infoToUtxo(infos: Vector[SpendingInfoDb]): Future[Vector[UTXORecord]] =
     for {
       spks <- findPublicKeyScriptsBySpendingInfoDb(infos)
     } yield infos.map(utxo =>
-      UTXORecord.fromSpendingInfoDb(utxo, spks(utxo.output.scriptPubKey))
-    )
+      UTXORecord.fromSpendingInfoDb(utxo, spks(utxo.output.scriptPubKey)))
 
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
     safeDatabase.run(findAllUnspentAction())
@@ -524,8 +519,8 @@ case class SpendingInfoDAO()(implicit
       hdAccount: HDAccount
   ): Vector[SpendingInfoDb] = {
     utxos.filter(utxo =>
-      HDAccount.isSameAccount(bip32Path = utxo.privKeyPath, account = hdAccount)
-    )
+      HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                              account = hdAccount))
   }
 
   /** Finds all utxos for a given account */
@@ -567,8 +562,7 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   /** Enumerates all TX outputs in the wallet with the state
@@ -586,8 +580,7 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   /** Enumerates all TX outputs in the wallet with the state
@@ -604,8 +597,7 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   /** Enumerates all TX outpoints in the wallet */
@@ -633,8 +625,7 @@ case class SpendingInfoDAO()(implicit
       .map(res =>
         res.map { case (utxoRec, spkRec) =>
           utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
-        }
-      )
+        })
   }
 
   def findAllUnspentForTagAction(
@@ -661,9 +652,12 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.run(findAllUnspentForTagAction(tag))
   }
 
-  def markAsReservedAction(ts: Vector[SpendingInfoDb]): DBIOAction[Vector[
-    SpendingInfoDb
-  ], NoStream, Effect.Read with Effect.Write] = {
+  def markAsReservedAction(
+      ts: Vector[SpendingInfoDb]): DBIOAction[Vector[
+                                                SpendingInfoDb
+                                              ],
+                                              NoStream,
+                                              Effect.Read with Effect.Write] = {
     // 1. Check if any are reserved already
     // 2. if not, reserve them
     // 3. if they are reserved, throw an exception?

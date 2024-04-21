@@ -41,9 +41,11 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     * as it is only ever used for things of the form TableQuery[XDAO().table] ->
     * TableQuery[XDAO#XTable].
     */
-  implicit protected def tableQuerySafeSubtypeCast[SpecificT <: AbstractTable[
-    _
-  ], SomeT <: SpecificT](
+  implicit protected def tableQuerySafeSubtypeCast[
+      SpecificT <: AbstractTable[
+        _
+      ],
+      SomeT <: SpecificT](
       tableQuery: TableQuery[SomeT]
   ): TableQuery[SpecificT] = {
     tableQuery.asInstanceOf[TableQuery[SpecificT]]

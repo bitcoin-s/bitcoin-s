@@ -102,8 +102,10 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean
   ): DBIOAction[FundRawTxHelper[
-    ShufflingNonInteractiveFinalizer
-  ], NoStream, Effect.Read with Effect.Write with Effect.Transactional] = {
+                  ShufflingNonInteractiveFinalizer
+                ],
+                NoStream,
+                Effect.Read with Effect.Write with Effect.Transactional] = {
     val amts = destinations.map(_.value)
     // need to allow 0 for OP_RETURN outputs
     require(
@@ -125,8 +127,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                 HDAccount.isSameAccount(
                   bip32Path = utxo.privKeyPath,
                   account = fromAccount.hdAccount
-                )
-              )
+                ))
             }
         }
         utxoWithTxs <- DBIO.sequence {
@@ -142,8 +143,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           _._1.state == TxoState.ImmatureCoinbase
         )
       } yield utxoWithTxs.filter(utxo =>
-        !immatureCoinbases.exists(_._1 == utxo._1)
-      )
+        !immatureCoinbases.exists(_._1 == utxo._1))
 
     val selectedUtxosA =
       for {
@@ -163,8 +163,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
         )
         filtered = walletUtxos.filter(utxo =>
-          utxos.exists(_.outPoint == utxo._1.outPoint)
-        )
+          utxos.exists(_.outPoint == utxo._1.outPoint))
         (_, callbackF) <-
           if (markAsReserved) markUTXOsAsReservedAction(filtered.map(_._1))
           else DBIO.successful((Vector.empty, Future.unit))

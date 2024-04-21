@@ -113,8 +113,10 @@ case class CompactFilterHeaderDAO()(implicit
   private def getAtHeightQuery(
       height: Int
   ): slick.sql.FixedSqlStreamingAction[Seq[
-    CompactFilterHeaderDb
-  ], CompactFilterHeaderDb, Effect.Read] = {
+                                         CompactFilterHeaderDb
+                                       ],
+                                       CompactFilterHeaderDb,
+                                       Effect.Read] = {
     table.filter(_.height === height).result
   }
 
@@ -212,8 +214,10 @@ case class CompactFilterHeaderDAO()(implicit
       from: Int,
       to: Int
   ): profile.StreamingProfileAction[Seq[
-    CompactFilterHeaderDb
-  ], CompactFilterHeaderDb, Effect.Read] = {
+                                      CompactFilterHeaderDb
+                                    ],
+                                    CompactFilterHeaderDb,
+                                    Effect.Read] = {
     table.filter(header => header.height >= from && header.height <= to).result
   }
 

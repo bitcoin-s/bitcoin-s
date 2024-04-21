@@ -396,8 +396,7 @@ object MultiSignatureScriptSignature
   private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
     asm.forall(token =>
       token.isInstanceOf[ScriptConstant] ||
-        StackPushOperationFactory.isPushOperation(token)
-    )
+        StackPushOperationFactory.isPushOperation(token))
   }
 }
 

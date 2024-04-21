@@ -376,8 +376,7 @@ trait ServerJsonModels {
 
   def jsToTransactionOutPointSeq(js: Value): Seq[TransactionOutPoint] = {
     js.arr.foldLeft(Seq.empty[TransactionOutPoint])((seq, outPoint) =>
-      seq :+ jsToTransactionOutPoint(outPoint)
-    )
+      seq :+ jsToTransactionOutPoint(outPoint))
   }
 
   def jsToTransactionOutPoint(js: Value): TransactionOutPoint =
@@ -390,8 +389,7 @@ trait ServerJsonModels {
       js: Value
   ): Seq[LockUnspentOutputParameter] = {
     js.arr.foldLeft(Seq.empty[LockUnspentOutputParameter])((seq, outPoint) =>
-      seq :+ jsToLockUnspentOutputParameter(outPoint)
-    )
+      seq :+ jsToLockUnspentOutputParameter(outPoint))
   }
 
   def jsToCoinSelectionAlgo(js: Value): CoinSelectionAlgo =

@@ -30,8 +30,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
       log.info(s"Received LnMessage ${lnMessage.typeName}")
       val f: Future[Unit] = handleTLVMessage(lnMessage)
       f.failed.foreach(err =>
-        log.error(err, s"Failed to process lnMessage=${lnMessage} ")
-      )
+        log.error(err, s"Failed to process lnMessage=${lnMessage} "))
     case DLCConnectionHandler.WriteFailed(_) =>
       log.error("Write failed")
     case Terminated(actor) if actor == connectionHandler =>

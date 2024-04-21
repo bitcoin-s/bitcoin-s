@@ -216,8 +216,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               filtered =
                 if (outputParams.nonEmpty) {
                   utxos.filter(utxo =>
-                    outputParams.exists(_.outPoint == utxo.outPoint)
-                  )
+                    outputParams.exists(_.outPoint == utxo.outPoint))
                 } else utxos
 
               reserved <- func(filtered)
@@ -1047,8 +1046,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               .headOption
               .flatMap(wn =>
                 if (wn.endsWith("-")) Some(wn.substring(0, wn.length - 1))
-                else None
-              )
+                else None)
           }
         Server.httpSuccess(list)
       }

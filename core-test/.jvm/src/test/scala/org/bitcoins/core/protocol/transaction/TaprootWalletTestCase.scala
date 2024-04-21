@@ -102,8 +102,7 @@ object TaprootWalletTestCase {
     val leafHashesOpt =
       if (intermediaryObj.value.exists(_._1 == "leafHashes")) {
         val leaves = intermediaryObj("leafHashes").arr.map(l =>
-          Sha256Digest.fromHex(l.str)
-        )
+          Sha256Digest.fromHex(l.str))
         Some(leaves.toVector)
       } else {
         None

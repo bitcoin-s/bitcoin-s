@@ -81,8 +81,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val headerDbF = createdF.flatMap(_ =>
-        blockHeaderDAO.findClosestToTime(UInt32(TimeUtil.currentEpochSecond))
-      )
+        blockHeaderDAO.findClosestToTime(UInt32(TimeUtil.currentEpochSecond)))
 
       headerDbF.map { headerDb =>
         assert(headerDb == blockHeader)
@@ -95,8 +94,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val headerDbF = createdF.flatMap(_ =>
-        blockHeaderDAO.findClosestToTime(blockHeader.time)
-      )
+        blockHeaderDAO.findClosestToTime(blockHeader.time))
 
       headerDbF.map { headerDb =>
         assert(headerDb == blockHeader)
@@ -111,8 +109,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val headerDbsF = createdF.flatMap(_ =>
         blockHeaderDAO.findClosestBeforeTime(
           UInt32(TimeUtil.currentEpochSecond)
-        )
-      )
+        ))
 
       headerDbsF.map { headerDbOpt =>
         assert(headerDbOpt.isDefined)
@@ -300,8 +297,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val createdF = blockHeaderDAO.create(blockHeader)
 
       val genesisF = createdF.flatMap(created =>
-        blockHeaderDAO.getAncestorAtHeight(created, 0)
-      )
+        blockHeaderDAO.getAncestorAtHeight(created, 0))
 
       genesisF.map { genesisOpt =>
         assert(genesisOpt.contains(genesisHeaderDb))

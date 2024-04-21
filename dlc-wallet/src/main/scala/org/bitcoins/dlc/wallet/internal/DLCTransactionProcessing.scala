@@ -327,8 +327,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       val sendF = updatedDlcDbsF.flatMap { updatedDlcDbs =>
         Future.sequence {
           updatedDlcDbs.map(u =>
-            dlcConfig.walletCallbacks.executeOnDLCStateChange(u.get)
-          )
+            dlcConfig.walletCallbacks.executeOnDLCStateChange(u.get))
         }
       }
       sendF.map(_ => ())

@@ -129,8 +129,7 @@ object RawTxSigner {
     )
     require(
       utxoInfos.forall(utxo =>
-        utx.inputs.exists(_.previousOutput == utxo.outPoint)
-      ),
+        utx.inputs.exists(_.previousOutput == utxo.outPoint)),
       "All UTXOSatisfyingInfos must correspond to an input."
     )
 

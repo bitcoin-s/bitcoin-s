@@ -656,8 +656,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield BitcoindSyncState(syncF, pollingCancellable)
 
     f.failed.foreach(err =>
-      logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err)
-    )
+      logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
   }
 

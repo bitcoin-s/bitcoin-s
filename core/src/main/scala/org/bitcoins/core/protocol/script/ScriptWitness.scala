@@ -123,8 +123,7 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
     // with a exponential decay on the probability of smaller sigs
     // [[https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm]]
     val relevantStack = stack.toVector.tail.filter(bytes =>
-      bytes.length >= 67 && bytes.length <= 73
-    )
+      bytes.length >= 67 && bytes.length <= 73)
 
     relevantStack.map(ECDigitalSignature.fromBytes)
   }

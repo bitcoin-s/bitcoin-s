@@ -45,9 +45,10 @@ case class PeerInfo(
 
 case class ChannelCommandResult(
     results: scala.collection.Map[Either[
-      ShortChannelId,
-      FundedChannelId
-    ], State]
+                                    ShortChannelId,
+                                    FundedChannelId
+                                  ],
+                                  State]
 )
 
 case class UpdateRelayFeeResult(

@@ -357,9 +357,10 @@ object Bech32 extends Bech32 {
    * See [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
    * for more
    */
-  val charset: Vector[Char] = Vector('q', 'p', 'z', 'r', 'y', '9', 'x', '8',
-    'g', 'f', '2', 't', 'v', 'd', 'w', '0', 's', '3', 'j', 'n', '5', '4', 'k',
-    'h', 'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
+  val charset: Vector[Char] =
+    Vector('q', 'p', 'z', 'r', 'y', '9', 'x', '8', 'g', 'f', '2', 't', 'v', 'd',
+           'w', '0', 's', '3', 'j', 'n', '5', '4', 'k', 'h', 'c', 'e', '6', 'm',
+           'u', 'a', '7', 'l')
 
   /** The Bech32 character set for decoding.
     * @see

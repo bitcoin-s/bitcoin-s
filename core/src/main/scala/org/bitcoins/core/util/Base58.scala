@@ -86,8 +86,7 @@ sealed abstract class Base58 {
     val zeroes = ByteVector(input.takeWhile(_ == '1').map(_ => 0: Byte))
     val trim = input.dropWhile(_ == '1').toList
     val decoded = trim.foldLeft(BigInt(0))((a, b) =>
-      a.*(BigInt(58L)).+(BigInt(base58Pairs(b)))
-    )
+      a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
     if (trim.isEmpty) zeroes
     else zeroes ++ ByteVector(decoded.toByteArray.dropWhile(_ == 0))
   }

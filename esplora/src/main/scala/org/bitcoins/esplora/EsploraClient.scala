@@ -45,8 +45,7 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
       .singleRequest(request, settings = httpConnectionPoolSettings)
       .flatMap(response =>
         response.entity.dataBytes
-          .runFold(ByteString.empty)(_ ++ _)
-      )
+          .runFold(ByteString.empty)(_ ++ _))
   }
 
   private def sendRequest(request: HttpRequest): Future[String] = {

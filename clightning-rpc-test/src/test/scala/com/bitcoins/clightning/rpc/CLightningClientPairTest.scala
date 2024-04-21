@@ -115,8 +115,7 @@ class CLightningClientPairTest extends DualCLightningFixture {
       _ <- TestAsyncUtil.awaitConditionF(() =>
         clightningA
           .lookupInvoice(invoiceResult.payment_hash)
-          .map(_.exists(_.status.paid))
-      )
+          .map(_.exists(_.status.paid)))
     } yield succeed
   }
 

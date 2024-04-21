@@ -364,8 +364,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
               NamedMultiElement(
                 "encryptedSig" -> sig.adaptedSig,
                 "dleqProof" -> sig.dleqProof
-              )
-            )
+              ))
           )
         )
         DLCTLVTestVector(tlv, "cet_adaptor_signatures_v0", fields)

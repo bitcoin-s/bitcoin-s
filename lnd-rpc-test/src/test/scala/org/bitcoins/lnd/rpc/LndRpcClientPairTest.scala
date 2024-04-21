@@ -310,8 +310,7 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       _ = assert(payment.htlcs.nonEmpty)
 
       _ <- TestAsyncUtil.awaitConditionF(() =>
-        lndA.lookupInvoice(invoice.rHash).map(_.state.isSettled)
-      )
+        lndA.lookupInvoice(invoice.rHash).map(_.state.isSettled))
     } yield succeed
   }
 

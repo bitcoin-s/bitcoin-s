@@ -329,8 +329,7 @@ object BitcoinSigner extends SignerUtils {
           case btx: NonWitnessTransaction =>
             val witnesses = psbt.inputMaps.map { map =>
               map.witnessScriptOpt.map(scriptWit =>
-                P2WSHWitnessV0(scriptWit.witnessScript)
-              )
+                P2WSHWitnessV0(scriptWit.witnessScript))
             }
             val transactionWitness = TransactionWitness.fromWitOpt(witnesses)
 

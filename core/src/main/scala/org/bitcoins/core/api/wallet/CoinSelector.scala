@@ -185,8 +185,7 @@ object CoinSelector extends CoinSelector {
           outPoints.foreach { outPoint =>
             if (
               !result.exists(utxo =>
-                utxo.outPoint.txId == outPoint._1 && utxo.outPoint.vout.toInt == outPoint._2
-              )
+                utxo.outPoint.txId == outPoint._1 && utxo.outPoint.vout.toInt == outPoint._2)
             )
               throw new IllegalArgumentException(
                 s"Unknown UTXO: ${outPoint._1}:${outPoint._2}"

@@ -45,10 +45,10 @@ case class DLCWalletCallbackStreamManager(
     matSourceAndQueue(stateChangeSource, stateChangeSink)
   }
 
-  private val offerAddSource
-      : Source[IncomingDLCOfferDb, SourceQueueWithComplete[
-        IncomingDLCOfferDb
-      ]] = {
+  private val offerAddSource: Source[IncomingDLCOfferDb,
+                                     SourceQueueWithComplete[
+                                       IncomingDLCOfferDb
+                                     ]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 

@@ -600,8 +600,7 @@ case class DataMessageHandler(
           val filterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
             Future
               .traverse(filterBatch)(f =>
-                chainApi.getFilterHeader(f.blockHashBE)
-              )
+                chainApi.getFilterHeader(f.blockHashBE))
               .map(_.flatten.toVector)
           }
 
@@ -618,8 +617,7 @@ case class DataMessageHandler(
           for {
             bestChainTips <- bestChainTipsF
           } yield filterBatch.exists(f =>
-            bestChainTips.exists(_.hashBE == f.blockHashBE)
-          )
+            bestChainTips.exists(_.hashBE == f.blockHashBE))
         }
     } yield {
       isSynced

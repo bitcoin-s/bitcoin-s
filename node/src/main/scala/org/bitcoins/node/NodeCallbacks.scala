@@ -17,9 +17,11 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
 
-  def onCompactFiltersReceived: CallbackHandler[Vector[
-    (DoubleSha256DigestBE, GolombFilter)
-  ], OnCompactFiltersReceived]
+  def onCompactFiltersReceived
+      : CallbackHandler[Vector[
+                          (DoubleSha256DigestBE, GolombFilter)
+                        ],
+                        OnCompactFiltersReceived]
 
   def onTxReceived: CallbackHandler[Transaction, OnTxReceived]
 
@@ -120,8 +122,10 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
   // Use Impl pattern here to enforce the correct names on the CallbackHandlers
   private case class NodeCallbacksImpl(
       onCompactFiltersReceived: CallbackHandler[Vector[
-        (DoubleSha256DigestBE, GolombFilter)
-      ], OnCompactFiltersReceived],
+                                                  (DoubleSha256DigestBE,
+                                                   GolombFilter)
+                                                ],
+                                                OnCompactFiltersReceived],
       onTxReceived: CallbackHandler[Transaction, OnTxReceived],
       onBlockReceived: CallbackHandler[Block, OnBlockReceived],
       onMerkleBlockReceived: CallbackHandler[
@@ -129,8 +133,9 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
         OnMerkleBlockReceived
       ],
       onBlockHeadersReceived: CallbackHandler[Vector[
-        BlockHeader
-      ], OnBlockHeadersReceived]
+                                                BlockHeader
+                                              ],
+                                              OnBlockHeadersReceived]
   ) extends NodeCallbacks {
 
     override def +(other: NodeCallbacks): NodeCallbacks =
@@ -194,12 +199,14 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
       onBlockHeadersReceived: Vector[OnBlockHeadersReceived] = Vector.empty
   )(implicit system: ActorSystem): NodeCallbacks = {
     val n = NodeCallbacksImpl(
-      onCompactFiltersReceived = CallbackHandler[Vector[
-        (DoubleSha256DigestBE, GolombFilter)
-      ], OnCompactFiltersReceived](
-        "onCompactFilterReceived",
-        onCompactFiltersReceived
-      ),
+      onCompactFiltersReceived =
+        CallbackHandler[Vector[
+                          (DoubleSha256DigestBE, GolombFilter)
+                        ],
+                        OnCompactFiltersReceived](
+          "onCompactFilterReceived",
+          onCompactFiltersReceived
+        ),
       onTxReceived = CallbackHandler[Transaction, OnTxReceived](
         "onTxReceived",
         onTxReceived

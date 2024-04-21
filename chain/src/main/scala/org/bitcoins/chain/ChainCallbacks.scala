@@ -15,9 +15,11 @@ trait ChainCallbacks
   def onBlockHeaderConnected
       : CallbackHandler[Vector[(Int, BlockHeader)], OnBlockHeaderConnected]
 
-  def onCompactFilterHeaderConnected: CallbackHandler[Vector[
-    CompactFilterHeaderDb
-  ], OnCompactFilterHeaderConnected]
+  def onCompactFilterHeaderConnected
+      : CallbackHandler[Vector[
+                          CompactFilterHeaderDb
+                        ],
+                        OnCompactFilterHeaderConnected]
 
   def onCompactFilterConnected
       : CallbackHandler[Vector[CompactFilterDb], OnCompactFilterConnected]
@@ -95,14 +97,18 @@ object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
 
   private case class ChainCallbacksImpl(
       onBlockHeaderConnected: CallbackHandler[Vector[
-        (Int, BlockHeader)
-      ], OnBlockHeaderConnected],
-      onCompactFilterHeaderConnected: CallbackHandler[Vector[
-        CompactFilterHeaderDb
-      ], OnCompactFilterHeaderConnected],
+                                                (Int, BlockHeader)
+                                              ],
+                                              OnBlockHeaderConnected],
+      onCompactFilterHeaderConnected: CallbackHandler[
+        Vector[
+          CompactFilterHeaderDb
+        ],
+        OnCompactFilterHeaderConnected],
       onCompactFilterConnected: CallbackHandler[Vector[
-        CompactFilterDb
-      ], OnCompactFilterConnected],
+                                                  CompactFilterDb
+                                                ],
+                                                OnCompactFilterConnected],
       onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged]
   ) extends ChainCallbacks {
 
@@ -151,12 +157,14 @@ object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
           "onBlockHeaderConnected",
           onBlockHeaderConnected
         ),
-      onCompactFilterHeaderConnected = CallbackHandler[Vector[
-        CompactFilterHeaderDb
-      ], OnCompactFilterHeaderConnected](
-        "onCompactFilterHeaderConnected",
-        onCompactFilterHeaderConnected
-      ),
+      onCompactFilterHeaderConnected =
+        CallbackHandler[Vector[
+                          CompactFilterHeaderDb
+                        ],
+                        OnCompactFilterHeaderConnected](
+          "onCompactFilterHeaderConnected",
+          onCompactFilterHeaderConnected
+        ),
       onCompactFilterConnected =
         CallbackHandler[Vector[CompactFilterDb], OnCompactFilterConnected](
           "onCompactFilterConnected",

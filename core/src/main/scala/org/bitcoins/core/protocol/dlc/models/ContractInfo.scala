@@ -450,8 +450,7 @@ case class DisjointUnionContractInfo(contracts: Vector[SingleContractInfo])
     ContractInfoV1TLV(
       totalCollateral,
       contracts.map(contract =>
-        (contract.contractDescriptor.toTLV, contract.oracleInfo.toTLV)
-      )
+        (contract.contractDescriptor.toTLV, contract.oracleInfo.toTLV))
     )
   }
 

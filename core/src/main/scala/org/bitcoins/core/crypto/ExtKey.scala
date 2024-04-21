@@ -197,8 +197,7 @@ sealed abstract class ExtPrivateKey
     */
   def deriveChildPrivKey(path: BIP32Path): ExtPrivateKey = {
     path.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Node) =>
-      accum.deriveChildPrivKey(curr.toUInt32)
-    )
+      accum.deriveChildPrivKey(curr.toUInt32))
   }
 
   def deriveChildPrivKey(idx: UInt32): ExtPrivateKey = {
@@ -396,8 +395,7 @@ object ExtPrivateKey
     )
 
     path.foldLeft(root)((accum, curr) =>
-      accum.deriveChildPrivKey(curr.toUInt32)
-    )
+      accum.deriveChildPrivKey(curr.toUInt32))
   }
 
   /** Generates a extended private key from the provided seed and version */

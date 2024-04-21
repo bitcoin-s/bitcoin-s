@@ -389,8 +389,7 @@ abstract class DLCWallet
       newAnnouncements = announcements.filter(a =>
         groupedAnnouncements.newAnnouncements.exists(
           _.announcementSignature == a.announcementSignature
-        )
-      )
+        ))
 
       newAnnouncementsWithId = newAnnouncements.map { tlv =>
         val idOpt: Option[Long] =
@@ -699,8 +698,7 @@ abstract class DLCWallet
 
           newAnnouncements = announcements.filter(a =>
             groupedAnnouncements.newAnnouncements
-              .exists(_.announcementSignature == a.announcementSignature)
-          )
+              .exists(_.announcementSignature == a.announcementSignature))
 
           newAnnouncementsWithId = newAnnouncements.map { tlv =>
             val idOpt = createdDbs
@@ -801,8 +799,7 @@ abstract class DLCWallet
       oracleInfos: Vector[OracleInfo]
   ): Boolean = {
     oracleInfos.forall(infos =>
-      infos.singleOracleInfos.forall(_.announcement.validateSignature)
-    )
+      infos.singleOracleInfos.forall(_.announcement.validateSignature))
   }
 
   private def fundDLCAcceptMsg(
@@ -878,8 +875,7 @@ abstract class DLCWallet
           TransactionDbHelper.fromTransaction(
             funding.prevTx,
             blockHashOpt = None
-          )
-        )
+          ))
         _ <- remoteTxDAO.upsertAll(offerPrevTxs)
 
         fundingPrivKey = getFundingPrivKey(
@@ -981,8 +977,7 @@ abstract class DLCWallet
         _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
       } yield accept
       result.onComplete(_ =>
-        DLCWallet.AcceptingOffersLatch.doneAccepting(offer.tempContractId)
-      )
+        DLCWallet.AcceptingOffersLatch.doneAccepting(offer.tempContractId))
       result
     }.flatten
 
@@ -1241,8 +1236,7 @@ abstract class DLCWallet
       }
 
       updatedRefundSigsDb = refundSigsDb.copy(initiatorSig =
-        signerOpt.map(_.signRefundTx)
-      )
+        signerOpt.map(_.signRefundTx))
       _ <- dlcRefundSigDAO.update(updatedRefundSigsDb)
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
@@ -1539,8 +1533,7 @@ abstract class DLCWallet
           transactionDAO
             .findByOutPoint(utxo.outPoint)
             .map(txOpt =>
-              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum
-            )
+              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
         }
     } yield scriptSigParams
   }
@@ -1959,8 +1952,10 @@ abstract class DLCWallet
 
   private def fetchWalletDbInfo(
       dlcAction: DBIOAction[Vector[
-        IntermediaryDLCStatus
-      ], NoStream, Effect.Read]
+                              IntermediaryDLCStatus
+                            ],
+                            NoStream,
+                            Effect.Read]
   ): Future[Vector[DLCStatus]] = {
     safeDLCDatabase.run(dlcAction).flatMap { intermediaries =>
       val actions = intermediaries.map { intermediary =>
@@ -2002,8 +1997,7 @@ abstract class DLCWallet
       logger.debug(
         s"Done finding tempContractId=$tempContractId, it took=${System
             .currentTimeMillis() - start}ms"
-      )
-    )
+      ))
     dlcOptF
   }
 
@@ -2082,9 +2076,12 @@ abstract class DLCWallet
 
     // optimization to use sql queries rather than action
     // as this method gets called a lot.
-    val offerAndContractA: DBIOAction[Vector[
-      ((DLCOfferDb, DLCContractDataDb), Option[DLCAcceptDb])
-    ], NoStream, Effect.Read] = {
+    val offerAndContractA
+        : DBIOAction[Vector[
+                       ((DLCOfferDb, DLCContractDataDb), Option[DLCAcceptDb])
+                     ],
+                     NoStream,
+                     Effect.Read] = {
       offerDbsQ
         .join(contractDbsQ)
         .on(_.dlcId === _.dlcId)
@@ -2225,8 +2222,7 @@ abstract class DLCWallet
       newAnnouncements = announcementTLVs.filterNot(a =>
         existingAnnouncementsDb.exists(
           _.announcementSignature == a.announcementSignature
-        )
-      )
+        ))
     } yield {
       val newAnnouncementsDb =
         OracleAnnouncementDbHelper.fromAnnouncements(newAnnouncements)

@@ -61,9 +61,11 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(txBroadcastQueueSource, txBroadcastSink)
   }
 
-  private val onReservedUtxosSource: Source[Vector[
-    SpendingInfoDb
-  ], SourceQueueWithComplete[Vector[SpendingInfoDb]]] = {
+  private val onReservedUtxosSource
+      : Source[Vector[
+                 SpendingInfoDb
+               ],
+               SourceQueueWithComplete[Vector[SpendingInfoDb]]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 

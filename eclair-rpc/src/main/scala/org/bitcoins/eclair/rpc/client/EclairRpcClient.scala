@@ -680,8 +680,7 @@ class EclairRpcClient(
     resF.flatMap(xs =>
       Future.sequence(
         xs.map(x => Future.fromTry(LnInvoice.fromStringT(x.serialized)))
-      )
-    )
+      ))
   }
 
   override def usableBalances(): Future[Vector[UsableBalancesResult]] = {
@@ -1048,8 +1047,7 @@ class EclairRpcClient(
     }
 
     connected.failed.foreach(ex =>
-      logger.error(s"Cannot connect to web socket $uri ", ex)
-    )
+      logger.error(s"Cannot connect to web socket $uri ", ex))
 
     connected.map(_ => ())
   }

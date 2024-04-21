@@ -394,8 +394,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         hashes0 <- bitcoind0.generate(1)
         chainApi <- node.chainApiFromDb()
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-          chainApi.getHeader(hashes0.head).map(_.isDefined)
-        )
+          chainApi.getHeader(hashes0.head).map(_.isDefined))
         // generate another block to make sure the reorg is complete
         hashes1 <- bitcoind0.generate(1)
         _ <- NodeTestUtil.awaitAllSync(

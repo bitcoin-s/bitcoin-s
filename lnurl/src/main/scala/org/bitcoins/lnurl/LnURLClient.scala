@@ -37,8 +37,7 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
       .singleRequest(request, settings = httpConnectionPoolSettings)
       .flatMap(response =>
         response.entity.dataBytes
-          .runFold(ByteString.empty)(_ ++ _)
-      )
+          .runFold(ByteString.empty)(_ ++ _))
       .map(payload => payload.decodeString(ByteString.UTF_8))
   }
 

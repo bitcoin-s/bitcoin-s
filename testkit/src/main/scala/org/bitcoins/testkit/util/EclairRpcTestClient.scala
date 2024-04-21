@@ -77,8 +77,7 @@ object EclairRpcTestClient extends SbtBinaryFactory {
       )
 
     fileOpt.map(f =>
-      EclairRpcTestClient(binary = f.toPath, bitcoindRpcClientOpt)
-    )
+      EclairRpcTestClient(binary = f.toPath, bitcoindRpcClientOpt))
   }
 
   def fromSbtDownload(

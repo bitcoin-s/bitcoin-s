@@ -198,8 +198,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
         client.connectPeer(
           NodeId(info.identityPubkey),
           new InetSocketAddress(uri.getHost, uri.getPort)
-        )
-      )
+        ))
     }
 
     def isConnected: Future[Boolean] = {

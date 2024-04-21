@@ -302,15 +302,18 @@ object Socks5Connection extends BitcoinSLogger {
     )
   ] = {
 
-    val flowState: Flow[ByteString, Either[
-      ByteString,
-      Socks5ConnectionState
-    ], NotUsed] = {
+    val flowState: Flow[ByteString,
+                        Either[
+                          ByteString,
+                          Socks5ConnectionState
+                        ],
+                        NotUsed] = {
       Flow[ByteString]
-        .statefulMap[Socks5ConnectionState, Either[
-          ByteString,
-          Socks5ConnectionState
-        ]](() => Socks5ConnectionState.Disconnected)(
+        .statefulMap[Socks5ConnectionState,
+                     Either[
+                       ByteString,
+                       Socks5ConnectionState
+                     ]](() => Socks5ConnectionState.Disconnected)(
           { case (state, bytes) =>
             state match {
               case Socks5ConnectionState.Disconnected =>

@@ -263,8 +263,7 @@ abstract class Wallet
       logger.error(
         s"Failed to clear utxos, addresses and scripts from the database",
         err
-      )
-    )
+      ))
 
     resultedF.map(_ => this)
   }
@@ -411,8 +410,7 @@ abstract class Wallet
         utxoDbs.map(utxo =>
           transactionDAO
             .findByOutPoint(utxo.outPoint)
-            .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction))
-        )
+            .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction)))
       }
       inputInfos = utxos.map(_.inputInfo)
 
@@ -475,8 +473,7 @@ abstract class Wallet
       )
 
       prevTxFs = utxoDbs.map(utxo =>
-        transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction)
-      )
+        transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
       prevTxs <- FutureUtil.collect(prevTxFs)
       utxos =
         utxoDbs
@@ -546,8 +543,7 @@ abstract class Wallet
         transactionDAO
           .findByOutPoint(utxo.outPoint)
           .map(txDbOpt =>
-            utxo.toUTXOInfo(keyManager = keyManager, txDbOpt.get.transaction)
-          )
+            utxo.toUTXOInfo(keyManager = keyManager, txDbOpt.get.transaction))
       }
 
       _ = {
@@ -839,8 +835,7 @@ abstract class Wallet
               .map(bip32Path =>
                 HDPath.fromString(
                   bip32Path.path.toString
-                )
-              ) // TODO add a way to get a HDPath from a BIP32 Path
+                )) // TODO add a way to get a HDPath from a BIP32 Path
 
             val (utxoPath, withData) = {
               val outPoint = unsigned.transaction.inputs(index).previousOutput

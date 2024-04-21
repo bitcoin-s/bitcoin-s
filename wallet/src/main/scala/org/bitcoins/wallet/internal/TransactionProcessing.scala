@@ -96,8 +96,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         }
 
         f.onComplete(failure =>
-          signalBlockProcessingCompletion(block.blockHeader.hashBE, failure)
-        )
+          signalBlockProcessingCompletion(block.blockHeader.hashBE, failure))
 
         f.foreach { _ =>
           val stop = TimeUtil.currentEpochMs
@@ -109,8 +108,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           logger.error(
             s"Error processing of block=${block.blockHeader.hash.flip.hex}.",
             e
-          )
-        )
+          ))
         f
       case None =>
         logger.warn(
@@ -613,8 +611,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               case None =>
                 // State was not updated so we need to update it so it's block hash is in the database
                 spendingInfoDAO.update(foundTxo)
-            }
-          )
+            })
         case None =>
           logger.debug(
             s"Skipping further processing of transaction=${transaction.txIdBE.hex}, already processed."
@@ -764,8 +761,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     } else {
       val filteredOutputs =
         transaction.outputs.zipWithIndex.filter(o =>
-          relevantReceivedOutputs.contains(OutputWithIndex(o._1, o._2))
-        )
+          relevantReceivedOutputs.contains(OutputWithIndex(o._1, o._2)))
 
       if (filteredOutputs.isEmpty) {
         // no relevant outputs in this tx, return early

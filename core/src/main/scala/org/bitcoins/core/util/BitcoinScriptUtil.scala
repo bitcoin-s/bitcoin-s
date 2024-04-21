@@ -71,8 +71,7 @@ trait BitcoinScriptUtil {
       op.isInstanceOf[BytesToPushOntoStack]
         || op == OP_PUSHDATA1
         || op == OP_PUSHDATA2
-        || op == OP_PUSHDATA4
-    )
+        || op == OP_PUSHDATA4)
   }
 
   /** Returns only the data ScriptTokens in a script that are pushed onto the

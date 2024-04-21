@@ -53,9 +53,12 @@ case class DLCFundingInputDAO()(implicit
   ): Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[Vector[
-    DLCFundingInputDb
-  ], profile.api.NoStream, profile.api.Effect.Read] = {
+  override def findByDLCIdAction(
+      dlcId: Sha256Digest): DBIOAction[Vector[
+                                         DLCFundingInputDb
+                                       ],
+                                       profile.api.NoStream,
+                                       profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }

@@ -94,9 +94,10 @@ trait ChainUnitTest
   ) {
 
     def inFixtured(
-        partialTestFun: PartialFunction[FixtureParam, Future[
-          compatible.Assertion
-        ]]
+        partialTestFun: PartialFunction[FixtureParam,
+                                        Future[
+                                          compatible.Assertion
+                                        ]]
     )(implicit pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
         fixture: FixtureParam =>
@@ -124,9 +125,10 @@ trait ChainUnitTest
   final class SugaryItVerbString(itVerbString: ItVerbString) {
 
     def inFixtured(
-        partialTestFun: PartialFunction[FixtureParam, Future[
-          compatible.Assertion
-        ]]
+        partialTestFun: PartialFunction[FixtureParam,
+                                        Future[
+                                          compatible.Assertion
+                                        ]]
     )(implicit pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
         fixture: FixtureParam =>
@@ -400,8 +402,7 @@ trait ChainUnitTest
         chainApi <- processorF
         chainApiWithHeaders <-
           FutureUtil.foldLeftAsync(chainApi, headers.grouped(2000).toVector)(
-            (chainApi, headers) => chainApi.processHeaders(headers)
-          )
+            (chainApi, headers) => chainApi.processHeaders(headers))
       } yield {
         FutureUtil.foldLeftAsync(
           (

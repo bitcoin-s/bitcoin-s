@@ -728,8 +728,7 @@ class UTXOLifeCycleTest
         _ <- wallet
           .listUtxos(TxoState.Reserved)
           .map(utxos =>
-            assert(utxos.contains(utxo.copyWithState(TxoState.Reserved)))
-          )
+            assert(utxos.contains(utxo.copyWithState(TxoState.Reserved))))
 
         // now process another block
         hashes2 <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)

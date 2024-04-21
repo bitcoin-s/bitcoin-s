@@ -216,8 +216,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     } yield {
       assert(
         outPoints.forall(outPoint =>
-          tx.inputs.exists(_.previousOutput == outPoint)
-        ),
+          tx.inputs.exists(_.previousOutput == outPoint)),
         "Every outpoint was not included included"
       )
       assert(tx.inputs.size == outPoints.size, "An extra input was added")
@@ -244,8 +243,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
         wallet.feeRateApi.asInstanceOf[RandomFeeProvider].lastFeeRate.get
       assert(
         outPoints.forall(outPoint =>
-          tx.inputs.exists(_.previousOutput == outPoint)
-        ),
+          tx.inputs.exists(_.previousOutput == outPoint)),
         "Every outpoint was not included included"
       )
       assert(tx.inputs.size == outPoints.size, "An extra input was added")
@@ -560,8 +558,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
           err.getMessage.contains(
             "Not enough value in given outputs to make transaction spending 599500000 sats plus fees"
           )
-        )
-      )
+        ))
 
   }
 }

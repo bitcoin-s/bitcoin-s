@@ -52,10 +52,12 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest])
-      : DBIOAction[Vector[
-        DLCDb
-      ], profile.api.NoStream, profile.api.Effect.Read] = {
+  override def findByDLCIdsAction(
+      dlcIds: Vector[Sha256Digest]): DBIOAction[Vector[
+                                                  DLCDb
+                                                ],
+                                                profile.api.NoStream,
+                                                profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }

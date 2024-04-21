@@ -47,8 +47,7 @@ class AttestationVerificationTest extends BitcoinSUnitTest {
     )
     val sorted = OrderedSchnorrSignatures.fromUnsorted(unsorted.toVector)
     validUnsignedDigitDecompAttestation.copy(unsortedSignatures =
-      sorted.toVector
-    )
+      sorted.toVector)
   }
 
   // this one was generated with a different public key

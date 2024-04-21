@@ -94,8 +94,7 @@ sealed abstract class TransactionSignatureCreator {
     val signature = sign(hash.bytes)
     // append 1 byte hash type onto the end
     val sig = signature.map(s =>
-      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte))
-    )
+      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte)))
     sig.map { s =>
       require(
         s.isStrictEncoded,
@@ -182,8 +181,7 @@ sealed abstract class TransactionSignatureCreator {
     val signature = sign(hash.bytes)
     // append 1 byte hash type onto the end
     val sig = signature.map(s =>
-      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte))
-    )
+      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte)))
     sig.map { s =>
       require(
         s.isStrictEncoded,

@@ -94,8 +94,7 @@ object JsonReaders {
         ZonedDateTime.ofInstant(
           Instant.ofEpochSecond(bigInt.toLong),
           ZoneOffset.UTC
-        )
-      )(json)
+        ))(json)
   }
 
   implicit object LocalDateTimeReads extends Reads[LocalDateTime] {
@@ -105,8 +104,7 @@ object JsonReaders {
         LocalDateTime.ofInstant(
           Instant.ofEpochSecond(bigInt.toLong),
           ZoneId.systemDefault()
-        )
-      )(json)
+        ))(json)
   }
 
   implicit object BigIntReads extends Reads[BigInt] {
@@ -164,8 +162,7 @@ object JsonReaders {
 
     override def reads(json: JsValue): JsResult[CurrencyUnit] =
       SerializerUtil.processJsNumber[CurrencyUnit](num =>
-        Satoshis(num.toBigInt)
-      )(json)
+        Satoshis(num.toBigInt))(json)
   }
 
   implicit object SatoshisReads extends Reads[Satoshis] {
@@ -726,16 +723,14 @@ object JsonReaders {
 
     override def reads(json: JsValue): JsResult[BitcoinFeeUnit] =
       SerializerUtil.processJsNumber[BitcoinFeeUnit](num =>
-        SatoshisPerByte(Satoshis((num * 100000).toBigInt))
-      )(json)
+        SatoshisPerByte(Satoshis((num * 100000).toBigInt)))(json)
   }
 
   implicit object SatoshisPerVByteReads extends Reads[SatoshisPerVirtualByte] {
 
     override def reads(json: JsValue): JsResult[SatoshisPerVirtualByte] =
       SerializerUtil.processJsNumberBigInt[SatoshisPerVirtualByte](num =>
-        SatoshisPerVirtualByte.fromLong(num.toLong)
-      )(json)
+        SatoshisPerVirtualByte.fromLong(num.toLong))(json)
   }
 
   implicit object FileReads extends Reads[File] {
@@ -944,8 +939,7 @@ object JsonReaders {
         unknown <- (jsValue \ "unknown").validate[Set[UnknownFeature]]
       } yield {
         val activated = activatedObj.toSeq.map(x =>
-          ActivatedFeature(featuresByName(x._1), x._2)
-        )
+          ActivatedFeature(featuresByName(x._1), x._2))
         Features(
           activated = activated.toSet,
           unknown = unknown
@@ -1204,14 +1198,12 @@ object JsonReaders {
   val instantReadsMilliseconds: Reads[Instant] =
     Reads { js =>
       SerializerUtil.processJsNumberBigInt(x =>
-        Instant.ofEpochMilli(x.longValue)
-      )(js)
+        Instant.ofEpochMilli(x.longValue))(js)
     }
 
   val instantReadsSeconds: Reads[Instant] = Reads { js =>
     SerializerUtil.processJsNumberBigInt(x =>
-      Instant.ofEpochSecond(x.longValue)
-    )(js)
+      Instant.ofEpochSecond(x.longValue))(js)
   }
 
   implicit val paymentTypeReads: Reads[PaymentType] = Reads { jsValue =>

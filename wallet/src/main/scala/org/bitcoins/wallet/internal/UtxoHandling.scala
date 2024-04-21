@@ -57,8 +57,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     spendingInfoDAO.findAllUnspentForTag(tag).map { utxos =>
       utxos.filter(utxo =>
         HDAccount
-          .isSameAccount(bip32Path = utxo.privKeyPath, account = hdAccount)
-      )
+          .isSameAccount(bip32Path = utxo.privKeyPath, account = hdAccount))
     }
   }
 
@@ -73,8 +72,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     spendingInfoDAO.findByTxoState(state).map { utxos =>
       utxos.filter(utxo =>
         HDAccount
-          .isSameAccount(bip32Path = utxo.privKeyPath, account = hdAccount)
-      )
+          .isSameAccount(bip32Path = utxo.privKeyPath, account = hdAccount))
     }
   }
 
@@ -373,8 +371,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
       // update the utxos that are in blocks but not considered confirmed yet
       pendingConf = updatedUtxos.filterNot(utxo =>
-        updatedConfirmed.exists(_.outPoint == utxo.outPoint)
-      )
+        updatedConfirmed.exists(_.outPoint == utxo.outPoint))
       updated <- spendingInfoDAO.updateAllSpendingInfoDb(
         pendingConf ++ updatedConfirmed
       )

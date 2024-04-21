@@ -191,8 +191,7 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     val assert1 = assert0.flatMap(_ =>
       addresses1F.map { addresses =>
         assert(addresses == expected1)
-      }
-    )
+      })
 
     assert1
   }

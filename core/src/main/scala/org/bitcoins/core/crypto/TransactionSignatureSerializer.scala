@@ -108,8 +108,7 @@ sealed abstract class TransactionSignatureSerializer {
           require(
             input.scriptSignature.asm.isEmpty,
             "Input asm was not empty " + input.scriptSignature.asm
-          )
-        )
+          ))
 
         // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
         // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.

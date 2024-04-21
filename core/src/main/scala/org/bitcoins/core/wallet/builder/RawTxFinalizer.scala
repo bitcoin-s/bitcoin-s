@@ -410,8 +410,7 @@ case class AddFutureFeeFinalizer(
 
   override def buildTx(txBuilderResult: RawTxBuilderResult): Transaction = {
     val changeOutputs = txBuilderResult.outputs.filter(output =>
-      changeSPKs.contains(output.scriptPubKey)
-    )
+      changeSPKs.contains(output.scriptPubKey))
 
     val outputT = txBuilderResult.outputs.zipWithIndex
       .find(_._1.scriptPubKey == spk) match {

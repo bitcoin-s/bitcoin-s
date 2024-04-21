@@ -101,9 +101,12 @@ case class CompactFilterDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  private def getAtHeightQuery(height: Int): profile.StreamingProfileAction[Seq[
-    CompactFilterDb
-  ], CompactFilterDb, Effect.Read] = {
+  private def getAtHeightQuery(
+      height: Int): profile.StreamingProfileAction[Seq[
+                                                     CompactFilterDb
+                                                   ],
+                                                   CompactFilterDb,
+                                                   Effect.Read] = {
     table.filter(_.height === height).result
   }
 
@@ -130,8 +133,10 @@ case class CompactFilterDAO()(implicit
       from: Int,
       to: Int
   ): profile.StreamingProfileAction[Seq[
-    CompactFilterDb
-  ], CompactFilterDb, Effect.Read] = {
+                                      CompactFilterDb
+                                    ],
+                                    CompactFilterDb,
+                                    Effect.Read] = {
     table
       .filter(header => header.height >= from && header.height <= to)
       .sortBy(_.height)

@@ -148,8 +148,7 @@ object PSBTGenerators {
         val newInputsMaps = psbt.inputMaps.map { map =>
           InputPSBTMap(
             map.elements.filterNot(element =>
-              PSBTInputKeyId.fromBytes(element.key) == PartialSignatureKeyId
-            )
+              PSBTInputKeyId.fromBytes(element.key) == PartialSignatureKeyId)
           )
         }
 

@@ -1445,8 +1445,7 @@ sealed abstract class ScriptInterpreter {
     val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
     val txNotHeavierThanBlock = transaction.weight < Consensus.maxBlockWeight
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
-      o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney
-    )
+      o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
 
     val outputValues = transaction.outputs.map(_.value)
     val totalSpentByOutputs: CurrencyUnit =

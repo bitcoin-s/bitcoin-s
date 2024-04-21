@@ -134,9 +134,12 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  def getAtHeightQuery(height: Int): profile.StreamingProfileAction[Seq[
-    BlockHeaderDb
-  ], BlockHeaderDb, Effect.Read] = {
+  def getAtHeightQuery(
+      height: Int): profile.StreamingProfileAction[Seq[
+                                                     BlockHeaderDb
+                                                   ],
+                                                   BlockHeaderDb,
+                                                   Effect.Read] = {
     table.filter(_.height === height).result
   }
 
@@ -146,9 +149,12 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  def getAtChainWorkQuery(work: BigInt): profile.StreamingProfileAction[Seq[
-    BlockHeaderDb
-  ], BlockHeaderDb, Effect.Read] = {
+  def getAtChainWorkQuery(
+      work: BigInt): profile.StreamingProfileAction[Seq[
+                                                      BlockHeaderDb
+                                                    ],
+                                                    BlockHeaderDb,
+                                                    Effect.Read] = {
     table.filter(_.chainWork === work).result
   }
 
@@ -213,8 +219,10 @@ case class BlockHeaderDAO()(implicit
       from: Int,
       to: Int
   ): profile.StreamingProfileAction[Seq[
-    BlockHeaderDb
-  ], BlockHeaderDb, Effect.Read] = {
+                                      BlockHeaderDb
+                                    ],
+                                    BlockHeaderDb,
+                                    Effect.Read] = {
     table.filter(header => header.height >= from && header.height <= to).result
   }
 
@@ -456,8 +464,7 @@ case class BlockHeaderDAO()(implicit
   ): Vector[Blockchain] = {
     val usedHeaders = chains.flatMap(_.headers).distinct
     val diff = allHeaders.filter(header =>
-      !usedHeaders.exists(_.hashBE == header.hashBE)
-    )
+      !usedHeaders.exists(_.hashBE == header.hashBE))
     if (diff.isEmpty) {
       chains
     } else {

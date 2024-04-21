@@ -244,8 +244,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
             (
               BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
               out.value
-            )
-          )
+            ))
         assert(changeAddresses.size == 1)
         assert(changeAddresses.head._1 != address)
         (changeAddresses.head._1, changeAddresses.head._2)

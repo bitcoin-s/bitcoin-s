@@ -51,8 +51,10 @@ case class DLCAcceptDAO()(implicit
   override def findByDLCIdsAction(
       dlcIds: Vector[Sha256Digest]
   ): DBIOAction[Vector[
-    DLCAcceptDb
-  ], profile.api.NoStream, profile.api.Effect.Read] = {
+                  DLCAcceptDb
+                ],
+                profile.api.NoStream,
+                profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }

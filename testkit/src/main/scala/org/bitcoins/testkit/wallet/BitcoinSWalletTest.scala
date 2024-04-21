@@ -423,8 +423,8 @@ object BitcoinSWalletTest extends WalletLogger {
   )(implicit system: ActorSystem): Future[WalletWithBitcoindRpc] = {
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
     bitcoindF.map(bitcoind =>
-      WalletWithBitcoindRpc(wallet, bitcoind, wallet.walletConfig)
-    )(system.dispatcher)
+      WalletWithBitcoindRpc(wallet, bitcoind, wallet.walletConfig))(
+      system.dispatcher)
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the
@@ -437,8 +437,7 @@ object BitcoinSWalletTest extends WalletLogger {
     import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
     bitcoindF.map(bitcoind =>
-      WalletWithBitcoindRpc(wallet, bitcoind, wallet.walletConfig)
-    )
+      WalletWithBitcoindRpc(wallet, bitcoind, wallet.walletConfig))
   }
 
   def createWalletWithBitcoind(bitcoind: BitcoindRpcClient)(implicit

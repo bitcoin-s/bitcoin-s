@@ -66,8 +66,7 @@ object SerializedPSBT {
     val prevTxOpt = input.nonWitnessOrUnknownUTXOOpt.map(_.transactionSpent)
     val nonWitnessUtxo = prevTxOpt.map(decodeRawTransaction)
     val witnessUtxo = input.witnessUTXOOpt.map(rec =>
-      decodeTransactionOutput(rec.witnessUTXO, index)
-    )
+      decodeTransactionOutput(rec.witnessUTXO, index))
 
     val sigs = input.partialSignatures
     val sigsOpt = if (sigs.nonEmpty) Some(sigs) else None
@@ -80,8 +79,7 @@ object SerializedPSBT {
     val finalizedScriptSig =
       input.finalizedScriptSigOpt.map(_.scriptSig.asm.toVector)
     val finalizedWitScript = input.finalizedScriptWitnessOpt.flatMap(rec =>
-      decodeRawTransactionWitness(rec.scriptWitness)
-    )
+      decodeRawTransactionWitness(rec.scriptWitness))
 
     val porCommit = input.proofOfReservesCommitmentOpt.map(_.porCommitment)
 

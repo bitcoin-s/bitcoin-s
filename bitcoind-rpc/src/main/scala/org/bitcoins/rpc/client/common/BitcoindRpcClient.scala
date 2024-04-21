@@ -64,8 +64,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     instance match {
       case _: BitcoindInstanceRemote =>
         getNetworkInfo.map(info =>
-          BitcoindVersion.fromNetworkVersion(info.version)
-        )
+          BitcoindVersion.fromNetworkVersion(info.version))
       case local: BitcoindInstanceLocal =>
         Future.successful(local.getVersion)
     }
@@ -216,8 +215,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     getChainTips.flatMap(tips =>
       Future.traverse(tips) { tip =>
         getBlockHeader(tip.hash).map(_.blockHeaderDb)
-      }
-    )
+      })
   }
 
   override def getBestBlockHeader(): Future[BlockHeaderDb] =

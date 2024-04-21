@@ -230,8 +230,7 @@ object DLCTLVGen {
   ): CETSignatures = {
     CETSignatures(
       outcomes.map(outcome =>
-        EnumOracleOutcome(Vector(oracleInfo), outcome).sigPoint -> adaptorSig
-      )
+        EnumOracleOutcome(Vector(oracleInfo), outcome).sigPoint -> adaptorSig)
     )
   }
 

@@ -226,8 +226,7 @@ case class NeutrinoNode(
     }
 
     resultF.failed.foreach(err =>
-      logger.error(s"Failed to run inactivity checks for peers=${peers}", err)
-    )
+      logger.error(s"Failed to run inactivity checks for peers=${peers}", err))
 
     Await.result(resultF, INACTIVITY_CHECK_TIMEOUT)
   }

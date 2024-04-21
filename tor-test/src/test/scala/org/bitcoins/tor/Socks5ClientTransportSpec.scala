@@ -51,8 +51,7 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
     for {
       response <- Http().singleRequest(
         HttpRequest(uri =
-          "http://explorerzydxu5ecjrkwceayqybizmpjjznk5izmitf2modhcusuqlid.onion/"
-        ),
+          "http://explorerzydxu5ecjrkwceayqybizmpjjznk5izmitf2modhcusuqlid.onion/"),
         settings = settings
       )
       html <- response.entity.dataBytes

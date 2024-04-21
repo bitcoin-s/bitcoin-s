@@ -51,8 +51,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     assert(
       psbt.globalMap.elements.exists(record =>
         PSBTGlobalKeyId
-          .fromByte(record.key.head) == PSBTGlobalKeyId.XPubKeyKeyId
-      )
+          .fromByte(record.key.head) == PSBTGlobalKeyId.XPubKeyKeyId)
     )
 
     val globalXPubs = psbt.globalMap.extendedPublicKeys
@@ -254,8 +253,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "fail to serialize invalid PSBTs" in {
     invalidPsbts.foreach(invalidPsbt =>
-      assertThrows[RuntimeException](PSBT(invalidPsbt))
-    )
+      assertThrows[RuntimeException](PSBT(invalidPsbt)))
 
     succeed
   }

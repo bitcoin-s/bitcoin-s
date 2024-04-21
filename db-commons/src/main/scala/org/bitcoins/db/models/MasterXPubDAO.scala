@@ -49,8 +49,10 @@ case class MasterXPubDAO()(implicit
   override def createAllAction(
       ts: Vector[ExtPublicKeyDTO]
   ): profile.api.DBIOAction[Vector[
-    ExtPublicKeyDTO
-  ], profile.api.NoStream, Effect.Write] = {
+                              ExtPublicKeyDTO
+                            ],
+                            profile.api.NoStream,
+                            Effect.Write] = {
     val fixedSqlAction = table ++= ts
 
     fixedSqlAction.map(_ => ts)
@@ -87,16 +89,20 @@ case class MasterXPubDAO()(implicit
   override protected def findByPrimaryKeys(
       pubkeys: Vector[ECPublicKey]
   ): profile.api.Query[profile.api.Table[
-    ExtPublicKeyDTO
-  ], ExtPublicKeyDTO, Seq] = {
+                         ExtPublicKeyDTO
+                       ],
+                       ExtPublicKeyDTO,
+                       Seq] = {
     table.filter(_.key.inSet(pubkeys))
   }
 
   override protected def findAll(
       ts: Vector[ExtPublicKeyDTO]
   ): profile.api.Query[profile.api.Table[
-    ExtPublicKeyDTO
-  ], ExtPublicKeyDTO, Seq] = {
+                         ExtPublicKeyDTO
+                       ],
+                       ExtPublicKeyDTO,
+                       Seq] = {
     findByPrimaryKeys(ts.map(_.publicKey))
   }
 

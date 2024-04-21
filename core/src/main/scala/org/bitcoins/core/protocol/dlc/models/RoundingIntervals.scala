@@ -40,8 +40,7 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
   def intervalContaining(outcome: BigDecimal): Interval = {
     implicit val ord: Ordering[IntervalStart] =
       Ordering.by[IntervalStart, (BigDecimal, Long)](i =>
-        (i.firstOutcome, i.roundingMod)
-      )
+        (i.firstOutcome, i.roundingMod))
 
     // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
     val index =

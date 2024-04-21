@@ -483,8 +483,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         // wait until our peer has put the channel in the
         // NORMAL state so we can route payments to them
         val normalF = client2F.flatMap(c2 =>
-          EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid)
-        )
+          EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid))
 
         normalF.map(_ => cid)
 
@@ -661,8 +660,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       .map(MilliSatoshis(_))
       .map(sats =>
         c1.createInvoice(s"this is a note for $sats")
-          .flatMap(invoice => c2.payInvoice(invoice, sats))
-      )
+          .flatMap(invoice => c2.payInvoice(invoice, sats)))
 
     val resultF = Future.sequence(payments).map(_.toVector)
 
@@ -874,8 +872,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
             .toVector
             .map(_ =>
               EclairRpcTestUtil
-                .eclairInstance(bitcoind, logbackXml = logbackXml)
-            )
+                .eclairInstance(bitcoind, logbackXml = logbackXml))
         networkEclairNodes = networkEclairInstances.map(
           new EclairRpcClient(
             _,

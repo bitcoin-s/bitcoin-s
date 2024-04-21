@@ -28,8 +28,7 @@ object HttpFeeRateProvider {
       .flatMap(response =>
         response.entity.dataBytes
           .runFold(ByteString.empty)(_ ++ _)
-          .map(payload => payload.decodeString(ByteString.UTF_8))
-      )
+          .map(payload => payload.decodeString(ByteString.UTF_8)))
   }
 }
 

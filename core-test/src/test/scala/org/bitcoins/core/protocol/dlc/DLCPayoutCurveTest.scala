@@ -37,8 +37,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     Gen
       .listOfN(n, pointGen)
       .suchThat(points =>
-        points.map(_.outcome).distinct.length == points.length
-      )
+        points.map(_.outcome).distinct.length == points.length)
       .map(_.toVector.sortBy(_.outcome))
   }
 

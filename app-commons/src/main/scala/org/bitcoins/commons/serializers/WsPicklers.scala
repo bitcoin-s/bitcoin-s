@@ -128,8 +128,7 @@ object WsPicklers {
         upickle.default.writeJs(address)(Picklers.bitcoinAddressPickler)
       case ReservedUtxosNotification(utxos) =>
         val vec = utxos.map(u =>
-          upickle.default.writeJs(u)(Picklers.spendingInfoDbPickler)
-        )
+          upickle.default.writeJs(u)(Picklers.spendingInfoDbPickler))
         ujson.Arr.from(vec)
       case DLCStateChangeNotification(status) =>
         upickle.default.writeJs(status)(Picklers.dlcStatusW)

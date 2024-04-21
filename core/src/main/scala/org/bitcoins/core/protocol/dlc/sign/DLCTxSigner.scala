@@ -292,9 +292,12 @@ case class DLCTxSigner(
     val cetsAndSigsF: Future[
       Vector[Vector[(ECPublicKey, WitnessTransaction, ECAdaptorSignature)]]
     ] = {
-      FutureUtil.batchAndParallelExecute[Indexed[ECPublicKey], Vector[
-        (ECPublicKey, WitnessTransaction, ECAdaptorSignature)
-      ]](elements = adaptorPoints, f = fn)
+      FutureUtil.batchAndParallelExecute[Indexed[ECPublicKey],
+                                         Vector[
+                                           (ECPublicKey,
+                                            WitnessTransaction,
+                                            ECAdaptorSignature)
+                                         ]](elements = adaptorPoints, f = fn)
     }
 
     for {

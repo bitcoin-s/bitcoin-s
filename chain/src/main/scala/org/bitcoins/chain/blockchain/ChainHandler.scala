@@ -124,8 +124,7 @@ class ChainHandler(
 
       // if we already have the header don't process it again
       val filteredHeaders = headers.filterNot(h =>
-        headersWeAlreadyHave.exists(_.hashBE == h.hashBE)
-      )
+        headersWeAlreadyHave.exists(_.hashBE == h.hashBE))
 
       if (filteredHeaders.isEmpty) {
         return Future.failed(
@@ -174,8 +173,7 @@ class ChainHandler(
           if (chainConfig.callBacks.onBlockHeaderConnected.nonEmpty) {
             val headersWithHeight: Vector[(Int, BlockHeader)] = {
               headersToBeCreated.reverseIterator.map(h =>
-                (h.height, h.blockHeader)
-              )
+                (h.height, h.blockHeader))
             }.toVector
 
             chainConfig.callBacks
@@ -484,8 +482,7 @@ class ChainHandler(
     for {
       candidateStartHeaders <- candidateStartHeadersF
       fsmOptVec <- Future.traverse(candidateStartHeaders)(h =>
-        getFilterSyncStopHash(h, stopBlockHeaderDb, batchSize)
-      )
+        getFilterSyncStopHash(h, stopBlockHeaderDb, batchSize))
     } yield {
       val flatten = fsmOptVec.flatten
       if (flatten.length > 1) {
@@ -583,8 +580,7 @@ class ChainHandler(
     val newFiltersF = for {
       duplicates <- duplicateFiltersF
     } yield messages.filterNot(f =>
-      duplicates.exists(_.blockHashBE == f.blockHash.flip)
-    )
+      duplicates.exists(_.blockHashBE == f.blockHash.flip))
 
     logger.debug(
       s"processFilters: len=${messages.length} messages.blockHash=${messages
@@ -891,8 +887,7 @@ class ChainHandler(
         blockchainOpt <- blockchainOptF
         bestHeadersForChainFOpt = {
           blockchainOpt.map(b =>
-            filterHeaderDAO.getBestFilterHeaderForHeaders(b.toVector)
-          )
+            filterHeaderDAO.getBestFilterHeaderForHeaders(b.toVector))
         }
         bestHeadersForChain <- bestHeadersForChainFOpt match {
           case Some(f) => f
@@ -982,9 +977,7 @@ class ChainHandler(
       .getBetweenHeights(startHeight, endHeight)
       .map(dbos =>
         dbos.map(dbo =>
-          FilterResponse(dbo.golombFilter, dbo.blockHashBE, dbo.height)
-        )
-      )
+          FilterResponse(dbo.golombFilter, dbo.blockHashBE, dbo.height)))
 
   /** @inheritdoc */
   override def getHeadersBetween(

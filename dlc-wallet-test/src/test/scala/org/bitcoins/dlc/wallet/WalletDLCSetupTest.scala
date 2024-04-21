@@ -377,8 +377,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
           outcomeSigs.exists(dbSig =>
-            (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig))
-          )
+            (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig)))
         })
 
         // Test that the Addresses are in the wallet's database
@@ -484,13 +483,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (sign: DLCSign) =>
-          sign.copy(fundingSigs =
-            FundingSignatures(
-              sign.fundingSigs
-                .map(_.copy(_2 = P2WPKHWitnessV0(ECPublicKey.freshPublicKey)))
-                .toVector
-            )
-          )
+          sign.copy(fundingSigs = FundingSignatures(
+            sign.fundingSigs
+              .map(_.copy(_2 = P2WPKHWitnessV0(ECPublicKey.freshPublicKey)))
+              .toVector
+          ))
       )
   }
 
@@ -876,8 +873,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
           assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
             outcomeSigs.exists(dbSig =>
-              (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig))
-            )
+              (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig)))
           })
 
           // Test that the Addresses are in the wallet's database

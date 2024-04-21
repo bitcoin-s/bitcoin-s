@@ -537,8 +537,7 @@ object NodeUnitTest extends P2PLogger {
       _ <- bitcoind.syncWithValidationInterfaceQueue()
       _ <- node.sync()
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        node.chainApiFromDb().flatMap(_.isSyncing())
-      )
+        node.chainApiFromDb().flatMap(_.isSyncing()))
     } yield node
   }
 

@@ -253,9 +253,11 @@ object P2WSHDescriptor
 }
 
 object P2PKDescriptor
-    extends DescriptorFactory[P2PKDescriptor[PublicKey], P2PKScriptExpression[
-      PublicKey
-    ], DescriptorType.PK.type] {
+    extends DescriptorFactory[P2PKDescriptor[PublicKey],
+                              P2PKScriptExpression[
+                                PublicKey
+                              ],
+                              DescriptorType.PK.type] {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
 
   override protected def parseValidExpression(
@@ -420,11 +422,12 @@ object TaprootDescriptor
 
 object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
 
-  private val map: Map[DescriptorType, DescriptorFactory[
-    _ <: ScriptDescriptor,
-    _ <: ScriptExpression,
-    _ <: DescriptorType
-  ]] = {
+  private val map: Map[DescriptorType,
+                       DescriptorFactory[
+                         _ <: ScriptDescriptor,
+                         _ <: ScriptExpression,
+                         _ <: DescriptorType
+                       ]] = {
     Map(
       DescriptorType.Raw -> RawDescriptor,
       DescriptorType.WPKH -> P2WPKHDescriptor,

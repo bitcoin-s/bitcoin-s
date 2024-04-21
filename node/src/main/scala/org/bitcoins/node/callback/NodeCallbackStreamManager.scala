@@ -32,9 +32,11 @@ case class NodeCallbackStreamManager(
     with BitcoinSLogger {
   import system.dispatcher
 
-  private val filterQueueSource: Source[Vector[
-    (DoubleSha256DigestBE, GolombFilter)
-  ], SourceQueueWithComplete[Vector[(DoubleSha256DigestBE, GolombFilter)]]] = {
+  private val filterQueueSource: Source[
+    Vector[
+      (DoubleSha256DigestBE, GolombFilter)
+    ],
+    SourceQueueWithComplete[Vector[(DoubleSha256DigestBE, GolombFilter)]]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -62,9 +64,11 @@ case class NodeCallbackStreamManager(
   private val (txQueue, txSinkCompleteF) =
     matSourceAndQueue(txQueueSource, txSink)
 
-  private val headerQueueSource: Source[Vector[
-    BlockHeader
-  ], SourceQueueWithComplete[Vector[BlockHeader]]] = {
+  private val headerQueueSource
+      : Source[Vector[
+                 BlockHeader
+               ],
+               SourceQueueWithComplete[Vector[BlockHeader]]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -92,9 +96,10 @@ case class NodeCallbackStreamManager(
     matSourceAndQueue(blockQueueSource, blockSink)
 
   private val merkleBlockQueueSource
-      : Source[(MerkleBlock, Vector[Transaction]), SourceQueueWithComplete[
-        (MerkleBlock, Vector[Transaction])
-      ]] = {
+      : Source[(MerkleBlock, Vector[Transaction]),
+               SourceQueueWithComplete[
+                 (MerkleBlock, Vector[Transaction])
+               ]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -158,9 +163,11 @@ case class NodeCallbackStreamManager(
       .run()
   }
 
-  override def onCompactFiltersReceived: CallbackHandler[Vector[
-    (DoubleSha256DigestBE, GolombFilter)
-  ], OnCompactFiltersReceived] = {
+  override def onCompactFiltersReceived
+      : CallbackHandler[Vector[
+                          (DoubleSha256DigestBE, GolombFilter)
+                        ],
+                        OnCompactFiltersReceived] = {
     callbacks.onCompactFiltersReceived
   }
 

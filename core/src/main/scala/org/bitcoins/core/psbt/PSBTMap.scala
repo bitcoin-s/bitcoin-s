@@ -54,9 +54,12 @@ object PSBTMap {
   final val separatorByte: Byte = 0x00.byteValue
 }
 
-sealed trait PSBTMapFactory[RecordType <: PSBTRecord, MapType <: PSBTMap[
-  RecordType
-]] extends Factory[MapType] {
+sealed trait PSBTMapFactory[
+    RecordType <: PSBTRecord,
+    MapType <: PSBTMap[
+      RecordType
+    ]]
+    extends Factory[MapType] {
   def recordFactory: Factory[RecordType]
 
   def constructMap(elements: Vector[RecordType]): MapType
@@ -244,8 +247,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case multi: MultiSignatureScriptPubKey =>
         if (partialSignatures.size < multi.requiredSigs) {
           val keys = multi.publicKeys.filterNot(key =>
-            partialSignatures.exists(_.pubKey == key)
-          )
+            partialSignatures.exists(_.pubKey == key))
           keys.map(key => CryptoUtil.sha256Hash160(key.bytes)).toVector
         } else Vector.empty
       case p2wpkh: P2WPKHWitnessSPKV0 =>
@@ -612,8 +614,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
                 ))
               } else {
                 val hashes = multiSig.publicKeys.toVector.map(pubKey =>
-                  CryptoUtil.sha256Hash160(pubKey.bytes)
-                )
+                  CryptoUtil.sha256Hash160(pubKey.bytes))
                 builder += ((
                   ConditionalPath.fromBranch(path),
                   hashes,

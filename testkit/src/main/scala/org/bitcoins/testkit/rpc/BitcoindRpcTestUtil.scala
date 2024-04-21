@@ -982,8 +982,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
             .flatMap(receiver.submitBlock)
         }
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        sender.getTransaction(txid).map(_.confirmations == 1)
-      )
+        sender.getTransaction(txid).map(_.confirmations == 1))
     } yield {
       txid
     }

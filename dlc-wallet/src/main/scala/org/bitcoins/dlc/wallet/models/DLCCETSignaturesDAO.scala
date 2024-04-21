@@ -43,8 +43,7 @@ case class DLCCETSignaturesDAO()(implicit
       .foldLeft(starting) { case (accum, (dlcId, vec)) =>
         accum.flatMap { _ =>
           table.filter(t =>
-            t.dlcId === dlcId && t.index.inSet(vec.map(_.contractIndex))
-          )
+            t.dlcId === dlcId && t.index.inSet(vec.map(_.contractIndex)))
         }
       }
   }
@@ -68,9 +67,12 @@ case class DLCCETSignaturesDAO()(implicit
       dlcs.map(sig => DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index))
     )
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[Vector[
-    DLCCETSignaturesDb
-  ], profile.api.NoStream, profile.api.Effect.Read] = {
+  override def findByDLCIdAction(
+      dlcId: Sha256Digest): DBIOAction[Vector[
+                                         DLCCETSignaturesDb
+                                       ],
+                                       profile.api.NoStream,
+                                       profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }

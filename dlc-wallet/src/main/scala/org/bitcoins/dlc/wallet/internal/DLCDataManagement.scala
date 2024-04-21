@@ -77,8 +77,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       announcementIdsA.flatMap(ids => announcementDAO.findByIdsAction(ids))
     val noncesDbA =
       announcementIdsA.flatMap(ids =>
-        oracleNonceDAO.findByAnnouncementIdsAction(ids)
-      )
+        oracleNonceDAO.findByAnnouncementIdsAction(ids))
 
     for {
       announcements <- announcementsA

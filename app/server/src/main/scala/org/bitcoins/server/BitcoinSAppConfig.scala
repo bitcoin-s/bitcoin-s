@@ -92,8 +92,7 @@ case class BitcoinSAppConfig(
     // method, we need to run them on their own
     val migrateTorDependentDbConfigsF =
       Future.traverse(dbConfigsDependentOnTor)(dbConfig =>
-        Future(dbConfig.migrate())
-      )
+        Future(dbConfig.migrate()))
 
     val startedTorDependentConfigsF = for {
       _ <- torConfig

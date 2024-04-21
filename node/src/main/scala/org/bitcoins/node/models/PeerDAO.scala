@@ -51,8 +51,7 @@ case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
   ): Query[PeerTable, PeerDb, Seq] = {
     // from: https://stackoverflow.com/questions/26815913/how-to-do-or-filter-in-slick
     table.filter(r =>
-      ids.map(i => r.address === i._1 && r.port === i._2).reduceLeft(_ || _)
-    )
+      ids.map(i => r.address === i._1 && r.port === i._2).reduceLeft(_ || _))
   }
 
   override protected def findAll(
