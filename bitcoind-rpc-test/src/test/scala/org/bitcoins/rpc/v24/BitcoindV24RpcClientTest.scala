@@ -390,4 +390,11 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       info1 <- client.getTxOut(block.tx.head.txid, 0)
     } yield assert(info1.coinbase)
   }
+
+  it should "be able to validate a bitcoin address" in { case client =>
+    for {
+      address <- client.getNewAddress
+      validation <- client.validateAddress(address)
+    } yield assert(validation.isvalid)
+  }
 }
