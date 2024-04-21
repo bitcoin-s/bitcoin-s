@@ -1,14 +1,18 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.jsonmodels.bitcoind.{DecodeScriptResultV22, RpcOpts}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   ScriptPubKey,
   ScriptSignature
 }
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.ScriptType
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -208,5 +212,101 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       sentTx <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
       rawTx <- client.getRawTransactionRaw(sentTx.txid)
     } yield assert(rawTx.txIdBE == sentTx.txid)
+  }
+
+  it should "be able to decode a reedem script" in {
+    for {
+      (client, _) <- clientsF
+      ecPrivKey1 = ECPrivateKey.freshPrivateKey
+      pubKey1 = ecPrivKey1.publicKey
+      _ <- client.unloadWallet("")
+      _ <- client.createWallet("decodeRWallet")
+      address <- client.getNewAddress(addressType = AddressType.Legacy)
+      multisig <- client.addMultiSigAddress(
+        2,
+        Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
+      decoded <- client.decodeScript(multisig.redeemScript)
+      _ <- client.loadWallet("")
+      _ <- client.unloadWallet("decodeRWallet")
+    } yield {
+      decoded match {
+        case decodedV22: DecodeScriptResultV22 =>
+          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
+      }
+    }
+  }
+
+  it should "output more than one txid" in {
+    for {
+      (client, otherClient) <- clientsF
+      blocks <- client.generate(2)
+      firstBlock <- client.getBlock(blocks(0))
+      transaction0 <- client.getTransaction(firstBlock.tx(0))
+      secondBlock <- client.getBlock(blocks(1))
+      transaction1 <- client.getTransaction(secondBlock.tx(0))
+
+      address <- otherClient.getNewAddress
+
+      input0 = TransactionOutPoint(
+        transaction0.txid.flip,
+        UInt32(transaction0.blockindex.get)
+      )
+      input1 = TransactionOutPoint(
+        transaction1.txid.flip,
+        UInt32(transaction1.blockindex.get)
+      )
+
+      transactionFirst <- {
+        val sig: ScriptSignature = ScriptSignature.empty
+        val inputs = Vector(
+          TransactionInput(input0, sig, UInt32(1)),
+          TransactionInput(input1, sig, UInt32(2))
+        )
+        val outputs = Map(address -> Bitcoins(1))
+        client.createRawTransaction(inputs, outputs)
+      }
+      fundedTransactionOne <- client.fundRawTransaction(transactionFirst)
+      signedTransactionOne <- BitcoindRpcTestUtil.signRawTransaction(
+        client,
+        fundedTransactionOne.hex
+      )
+
+      blocksTwo <- client.generate(2)
+      firstBlockTwo <- client.getBlock(blocksTwo(0))
+      transaction2 <- client.getTransaction(firstBlockTwo.tx(0))
+      secondBlockTwo <- client.getBlock(blocksTwo(1))
+      transaction3 <- client.getTransaction(secondBlockTwo.tx(0))
+
+      input2 = TransactionOutPoint(
+        transaction2.txid.flip,
+        UInt32(transaction2.blockindex.get)
+      )
+      input3 = TransactionOutPoint(
+        transaction3.txid.flip,
+        UInt32(transaction3.blockindex.get)
+      )
+
+      transactionSecond <- {
+        val sig: ScriptSignature = ScriptSignature.empty
+        val inputs = Vector(
+          TransactionInput(input2, sig, UInt32(1)),
+          TransactionInput(input3, sig, UInt32(2))
+        )
+        val outputs = Map(address -> Bitcoins(1))
+        client.createRawTransaction(inputs, outputs)
+      }
+      fundedTransactionTwo <- client.fundRawTransaction(transactionSecond)
+      signedTransactionTwo <- BitcoindRpcTestUtil.signRawTransaction(
+        client,
+        fundedTransactionTwo.hex
+      )
+      _ <- client.generate(100) // Can't spend until depth 100
+      mempoolAccept <- client.testMempoolAccept(
+        Vector(signedTransactionOne.hex, signedTransactionTwo.hex)
+      )
+    } yield {
+      val mempooltxid: Int = mempoolAccept.length
+      assert(mempooltxid > 1)
+    }
   }
 }

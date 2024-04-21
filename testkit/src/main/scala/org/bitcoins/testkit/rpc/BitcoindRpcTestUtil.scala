@@ -30,7 +30,6 @@ import org.bitcoins.crypto.{
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.config._
@@ -178,7 +177,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V22 | V23 | V24) =>
+      case known @ (V23 | V24) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -242,22 +241,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     BitcoindInstanceLocal.fromConfig(conf, binary)
   }
 
-  def v22Instance(
-      port: Int = RpcUtil.randomPort,
-      rpcPort: Int = RpcUtil.randomPort,
-      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(
-      port = port,
-      rpcPort = rpcPort,
-      zmqConfig = zmqConfig,
-      pruneMode = pruneMode,
-      versionOpt = Some(BitcoindVersion.V22),
-      binaryDirectory = binaryDirectory
-    )
-
   def v23Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
@@ -300,14 +283,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   )(implicit system: ActorSystem): BitcoindInstanceLocal = {
     bitcoindVersion match {
-      case BitcoindVersion.V22 =>
-        BitcoindRpcTestUtil.v22Instance(
-          port,
-          rpcPort,
-          zmqConfig,
-          pruneMode,
-          binaryDirectory = binaryDirectory
-        )
       case BitcoindVersion.V23 =>
         BitcoindRpcTestUtil.v23Instance(
           port,
@@ -339,7 +314,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         val createWalletF = for {
           version <- server.version
           descriptors = version match {
-            case V22 | Unknown =>
+            case Unknown =>
               false
             case V23 | V24 => true
           }
@@ -666,10 +641,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       val rpc = version match {
         case BitcoindVersion.Unknown =>
           BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
-        case BitcoindVersion.V22 =>
-          BitcoindV22RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v22Instance()
-          )
         case BitcoindVersion.V23 =>
           BitcoindV23RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v23Instance()
@@ -765,13 +736,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       (first, second)
     }
   }
-
-  def createNodePairV22(
-      clientAccum: RpcClientAccum
-  )(implicit system: ActorSystem): Future[
-    (BitcoindV22RpcClient, BitcoindV22RpcClient)
-  ] = // shouldn't this be V22
-    createNodePairInternal(BitcoindVersion.V22, clientAccum)
 
   /** Returns a pair of
     * [[org.bitcoins.rpc.client.v23.BitcoindV23RpcClient BitcoindV23RpcClient]]
@@ -892,8 +856,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         v24.signRawTransactionWithWallet(transaction, utxoDeps)
       case v23: BitcoindV23RpcClient =>
         v23.signRawTransactionWithWallet(transaction, utxoDeps)
-      case v22: BitcoindV22RpcClient =>
-        v22.signRawTransactionWithWallet(transaction, utxoDeps)
       case unknown: BitcoindRpcClient =>
         sys.error(
           s"Cannot sign tx with unknown version of bitcoind, got=$unknown"

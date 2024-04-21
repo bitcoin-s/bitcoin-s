@@ -6,7 +6,7 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V22, V23, V24}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V23, V24}
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -90,7 +90,7 @@ trait TransactionRpc { self: Client =>
       vout: Long,
       includeMemPool: Boolean = true
   ): Future[GetTxOutResult] = {
-    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+    self.version.flatMap { case V23 | V24 | Unknown =>
       bitcoindCall[GetTxOutResultV22](
         "gettxout",
         List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool))
@@ -104,7 +104,7 @@ trait TransactionRpc { self: Client =>
       includeMemPool: Boolean = true
   ): Future[Option[GetTxOutResult]] = {
     self.version
-      .flatMap { case V22 | V23 | V24 | Unknown =>
+      .flatMap { case V23 | V24 | Unknown =>
         bitcoindCall[GetTxOutResultV22](
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool))

@@ -6,9 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.rpc.client.common.BitcoindVersion.V22
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
@@ -53,37 +51,6 @@ trait NodeUnitTest extends BaseNodeTest {
           _ <- appConfig.stop()
         } yield ()
       }
-    )(test)
-  }
-
-  def withNeutrinoNodeConnectedToBitcoindV22(test: OneArgAsyncTest)(implicit
-      system: ActorSystem,
-      appConfig: BitcoinSAppConfig
-  ): FutureOutcome = {
-    val nodeWithBitcoindBuilder
-        : () => Future[NeutrinoNodeConnectedWithBitcoindV22] = { () =>
-      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-      for {
-        bitcoind <-
-          BitcoinSFixture
-            .createBitcoindWithFunds(Some(V22))
-            .map(_.asInstanceOf[BitcoindV22RpcClient])
-        peer <- NodeUnitTest.createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNode(peer, None)(
-          system,
-          appConfig.chainConf,
-          appConfig.nodeConf
-        )
-        started <- node.start()
-        _ <- NodeUnitTest.syncNeutrinoNode(started, bitcoind)
-      } yield NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind)
-    }
-
-    makeDependentFixture(
-      build = nodeWithBitcoindBuilder,
-      destroy = NodeUnitTest.destroyNodeConnectedWithBitcoind(
-        _: NodeConnectedWithBitcoind
-      )(system, appConfig)
     )(test)
   }
 

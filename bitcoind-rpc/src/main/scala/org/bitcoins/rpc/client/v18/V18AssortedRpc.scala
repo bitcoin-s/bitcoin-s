@@ -1,15 +1,13 @@
 package org.bitcoins.rpc.client.v18
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{
-  GetNodeAddressesResult,
   GetRpcInfoResult,
   ListWalletDirResult
 }
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetNodeAddressesResultPostV22}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.rpc.client.common.{BitcoindVersion, Client}
-import play.api.libs.json.{JsString, Json}
+import org.bitcoins.rpc.client.common.{Client}
+import play.api.libs.json.{JsString}
 
 import scala.concurrent.Future
 
@@ -25,25 +23,6 @@ import scala.concurrent.Future
   */
 trait V18AssortedRpc {
   self: Client =>
-
-  private def getNodeAddresses(
-      count: Option[Int]
-  ): Future[Vector[GetNodeAddressesResult]] = {
-    self.version.flatMap {
-      case BitcoindVersion.V22 | BitcoindVersion.V23 | BitcoindVersion.V24 |
-          BitcoindVersion.Unknown =>
-        bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
-          "getnodeaddresses",
-          List(Json.toJson(count))
-        )
-    }
-  }
-
-  def getNodeAddresses(count: Int): Future[Vector[GetNodeAddressesResult]] =
-    getNodeAddresses(Some(count))
-
-  def getNodeAddresses(): Future[Vector[GetNodeAddressesResult]] =
-    getNodeAddresses(None)
 
   def listWalletDir(): Future[ListWalletDirResult] = {
     bitcoindCall[ListWalletDirResult]("listwalletdir")

@@ -3,10 +3,11 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
-import play.api.libs.json.{JsBoolean, JsString}
+import play.api.libs.json.{JsBoolean, JsString, Json}
 
 import scala.concurrent.Future
 
@@ -34,17 +35,11 @@ trait MempoolRpc { self: Client =>
       txid: DoubleSha256DigestBE
   ): Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
 
-    self.version.flatMap {
-      case V24 | V23 | V24 | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
-          "getmempoolancestors",
-          List(JsString(txid.hex), JsBoolean(true))
-        )
-      case V22 | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]](
-          "getmempoolancestors",
-          List(JsString(txid.hex), JsBoolean(true))
-        )
+    self.version.flatMap { case V24 | V23 | V24 | Unknown =>
+      bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
+        "getmempoolancestors",
+        List(JsString(txid.hex), JsBoolean(true))
+      )
     }
   }
 
@@ -72,17 +67,11 @@ trait MempoolRpc { self: Client =>
   def getMemPoolDescendantsVerbose(
       txid: DoubleSha256DigestBE
   ): Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
-    self.version.flatMap {
-      case V24 | V23 | V24 | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
-          "getmempooldescendants",
-          List(JsString(txid.hex), JsBoolean(true))
-        )
-      case V22 | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]](
-          "getmempooldescendants",
-          List(JsString(txid.hex), JsBoolean(true))
-        )
+    self.version.flatMap { case V24 | V23 | V24 | Unknown =>
+      bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
+        "getmempooldescendants",
+        List(JsString(txid.hex), JsBoolean(true))
+      )
     }
   }
 
@@ -96,17 +85,11 @@ trait MempoolRpc { self: Client =>
       txid: DoubleSha256DigestBE
   ): Future[GetMemPoolEntryResult] = {
 
-    self.version.flatMap {
-      case V24 | V23 | V24 | Unknown =>
-        bitcoindCall[GetMemPoolEntryResultPostV23](
-          "getmempoolentry",
-          List(JsString(txid.hex))
-        )
-      case V22 | Unknown =>
-        bitcoindCall[GetMemPoolEntryResultPostV19](
-          "getmempoolentry",
-          List(JsString(txid.hex))
-        )
+    self.version.flatMap { case V24 | V23 | V24 | Unknown =>
+      bitcoindCall[GetMemPoolEntryResultPostV23](
+        "getmempoolentry",
+        List(JsString(txid.hex))
+      )
     }
 
   }
@@ -147,17 +130,11 @@ trait MempoolRpc { self: Client =>
   def getRawMemPoolWithTransactions
       : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
 
-    self.version.flatMap {
-      case V24 | V23 | V24 | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
-          "getrawmempool",
-          List(JsBoolean(true))
-        )
-      case V22 | Unknown =>
-        bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]](
-          "getrawmempool",
-          List(JsBoolean(true))
-        )
+    self.version.flatMap { case V24 | V23 | V24 | Unknown =>
+      bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
+        "getrawmempool",
+        List(JsBoolean(true))
+      )
     }
 
   }
@@ -166,4 +143,13 @@ trait MempoolRpc { self: Client =>
     bitcoindCall[Unit]("savemempool")
   }
 
+  def testMempoolAccept(
+      transaction: Vector[Transaction],
+      maxFeeRate: Double = 0.10
+  ): Future[Vector[TestMempoolAcceptResultPostV22]] = {
+    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
+      "testmempoolaccept",
+      List(Json.toJson(transaction), Json.toJson(maxFeeRate))
+    )
+  }
 }

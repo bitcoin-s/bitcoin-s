@@ -23,7 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("24.2", "23.2", "22.0", "0.21.1")
+    List("24.2", "23.2")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -96,9 +96,7 @@ TaskKeys.downloadBitcoind := {
           if (Properties.isLinux)
             Map(
               "24.2" -> "7540d6e34c311e355af2fd76e5eee853b76c291978d6b5ebb555c7877e9de38d",
-              "23.2" -> "853b9b0a50800a5b355df7a39dbdd6d7a2339f765e2d31a36d14bd705e7dbce1",
-              "22.0" -> "59ebd25dd82a51638b7a6bb914586201e67db67b919b2a1ff08925a7936d1b16",
-              "0.21.1" -> "366eb44a7a0aa5bd342deea215ec19a184a11f2ca22220304ebb20b9c8917e2b",
+              "23.2" -> "853b9b0a50800a5b355df7a39dbdd6d7a2339f765e2d31a36d14bd705e7dbce1"
             )
           else if (Properties.isMac)
             Map(
@@ -109,16 +107,12 @@ TaskKeys.downloadBitcoind := {
               "23.2" -> (if (System.getProperty("os.arch") == "aarch64")
                            "33f8680f820327d5f9e64c02e476d03a5b2e5bd403e1b1cb0a82bd7ec2a8dc5e"
                          else
-                           "f56f2e21718c3ef13b962775f1e9985eed962ae6237684deebf6b59f799a912f"),
-              "22.0" -> "2744d199c3343b2d94faffdfb2c94d75a630ba27301a70e47b0ad30a7e0155e9",
-              "0.21.1" -> "1ea5cedb64318e9868a66d3ab65de14516f9ada53143e460d50af428b5aec3c7"
+                           "f56f2e21718c3ef13b962775f1e9985eed962ae6237684deebf6b59f799a912f")
             )
           else if (Properties.isWin)
             Map(
               "24.2" -> "544436bc9d5ce017e679bbccfe8a4928fbc840b414ee0240db8c3523ba54340a",
-              "23.2" -> "29dd4c94de8b292fd19fd9475f2f31f891d04f16238bd7defa48eef3f2f8546a",
-              "22.0" -> "9485e4b52ed6cebfe474ab4d7d0c1be6d0bb879ba7246a8239326b2230a77eb1",
-              "0.21.1" -> "94c80f90184cdc7e7e75988a55b38384de262336abd80b1b30121c6e965dc74e"
+              "23.2" -> "29dd4c94de8b292fd19fd9475f2f31f891d04f16238bd7defa48eef3f2f8546a"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 

@@ -1,7 +1,8 @@
 package org.bitcoins.rpc.common
 
-import java.net.URI
+import org.bitcoins.commons.jsonmodels.bitcoind.GetNodeAddressesResultPostV22
 
+import java.net.URI
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddNodeArgument,
   SetBanCommand
@@ -195,6 +196,38 @@ class P2PRpcTest extends BitcoindRpcTest {
       assert(preCount1 != preCount2)
       assert(postCount1 == postCount2)
       assert(hash1 == hash2)
+    }
+  }
+
+  it should "take a network input and output addresses of same network" in {
+    val networkOption = Vector("ipv4", "ipv6", "onion", "i2p")
+    for {
+      (client, _) <- clientPairF
+      _ <- Future.traverse(networkOption) { networkType =>
+        val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] =
+          client.getNodeAddresses(networkType, 10)
+        resultVecF.map { resultVec =>
+          resultVec.map { result =>
+            assert(result.network == networkType)
+          }
+        }
+      }
+    } yield {
+      succeed
+    }
+  }
+
+  it should "return a network address" in {
+    for {
+      (client, _) <- clientPairF
+      resultVec <- client.getNodeAddresses()
+    } yield {
+      resultVec.foreach { result =>
+        assert(
+          result.network == "ipv4" || result.network == "ipv6" || result.network == "onion" || result.network == "i2p"
+        )
+      }
+      succeed
     }
   }
 }

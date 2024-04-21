@@ -97,7 +97,7 @@ trait PsbtRpc {
   }
 
   def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] = {
-    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+    self.version.flatMap { case V23 | V24 | Unknown =>
       bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
     }
 

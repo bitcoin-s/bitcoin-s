@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetMemoryInfoResult
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetMemoryInfoResult,
+  GetNodeAddressesResultPostV22
+}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.commons.serializers.JsonSerializers._
@@ -71,4 +74,31 @@ trait NodeRpc { self: Client =>
   def help(rpcName: String = ""): Future[String] = {
     bitcoindCall[String]("help", List(JsString(rpcName)))
   }
+
+  private def getNodeAddresses(
+      count: Option[Int]
+  ): Future[Vector[GetNodeAddressesResultPostV22]] = {
+    bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
+      "getnodeaddresses",
+      List(Json.toJson(count))
+    )
+  }
+
+  def getNodeAddresses(
+      network: String,
+      count: Int
+  ): Future[Vector[GetNodeAddressesResultPostV22]] = {
+    bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
+      "getnodeaddresses",
+      List(Json.toJson(count), Json.toJson(network))
+    )
+  }
+
+  def getNodeAddresses(
+      count: Int
+  ): Future[Vector[GetNodeAddressesResultPostV22]] =
+    getNodeAddresses(Some(count))
+
+  def getNodeAddresses(): Future[Vector[GetNodeAddressesResultPostV22]] =
+    getNodeAddresses(None)
 }
