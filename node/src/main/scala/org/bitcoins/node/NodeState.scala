@@ -61,9 +61,8 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def replacePeers(
-      peerWithServicesDataMap: Map[
-        PeerWithServices,
-        PersistentPeerData]): NodeRunningState = {
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData]
+  ): NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
         h.copy(peerWithServicesDataMap = peerWithServicesDataMap)
@@ -86,8 +85,8 @@ sealed trait NodeRunningState extends NodeState {
     val peerDataOpt = peerFinder.popFromCache(peer)
     peerDataOpt match {
       case None =>
-        //do we just want to ignore the attempt if
-        //the peer does not exist??
+        // do we just want to ignore the attempt if
+        // the peer does not exist??
         this
       case Some(peerData) =>
         val persistentPeerData = peerData match {
@@ -125,7 +124,8 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def replaceWaitingForDisconnection(
-      newWaitingForDisconnection: Set[Peer]): NodeRunningState = {
+      newWaitingForDisconnection: Set[Peer]
+  ): NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
         h.copy(waitingForDisconnection = newWaitingForDisconnection)
@@ -146,11 +146,12 @@ sealed trait NodeRunningState extends NodeState {
 
   def randomPeer(
       excludePeers: Set[Peer],
-      services: ServiceIdentifier): Option[Peer] = {
+      services: ServiceIdentifier
+  ): Option[Peer] = {
     val filteredPeers =
       peersWithServices
         .filterNot(p => excludePeers.exists(_ == p.peer))
-        //don't give peer a peer that we are waiting to disconnect
+        // don't give peer a peer that we are waiting to disconnect
         .filterNot(p => waitingForDisconnection.exists(_ == p.peer))
         .filter(p => p.services.hasServicesOf(services))
         .toVector
@@ -165,7 +166,8 @@ sealed trait NodeRunningState extends NodeState {
 
   def randomPeerMessageSender(
       excludePeers: Set[Peer],
-      services: ServiceIdentifier): Option[PeerMessageSender] = {
+      services: ServiceIdentifier
+  ): Option[PeerMessageSender] = {
     randomPeer(excludePeers, services).flatMap { p =>
       getPeerMsgSender(p)
     }
@@ -190,7 +192,8 @@ sealed trait NodeRunningState extends NodeState {
 sealed abstract class SyncNodeState extends NodeRunningState {
   require(
     peers.exists(_ == syncPeer),
-    s"syncPeer must be a member of peers, syncPeer=$syncPeer peers=$peers")
+    s"syncPeer must be a member of peers, syncPeer=$syncPeer peers=$peers"
+  )
   override def isSyncing: Boolean = true
 
   def syncPeer: Peer
@@ -209,12 +212,14 @@ sealed abstract class SyncNodeState extends NodeRunningState {
     }
   }
 
-  /** Replaces the current sync peer with a new sync peer,
-    * returns None if there is not a new peer available
+  /** Replaces the current sync peer with a new sync peer, returns None if there
+    * is not a new peer available
     */
   def replaceSyncPeer: Option[SyncNodeState] = {
-    randomPeer(excludePeers = Set(syncPeer),
-               ServiceIdentifier.NODE_COMPACT_FILTERS).map { p =>
+    randomPeer(
+      excludePeers = Set(syncPeer),
+      ServiceIdentifier.NODE_COMPACT_FILTERS
+    ).map { p =>
       replaceSyncPeer(p)
     }
   }
@@ -253,7 +258,9 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   }
 }
 
-/** Either we are syncing [[NodeState.FilterHeaderSync]] or [[NodeState.FilterSync]] */
+/** Either we are syncing [[NodeState.FilterHeaderSync]] or
+  * [[NodeState.FilterSync]]
+  */
 sealed trait FilterOrFilterHeaderSync extends SyncNodeState
 
 object NodeState {
@@ -263,16 +270,16 @@ object NodeState {
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder,
-      sentQuery: Instant)
-      extends SyncNodeState
+      sentQuery: Instant
+  ) extends SyncNodeState
 
   case class FilterHeaderSync(
       syncPeer: Peer,
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder,
-      sentQuery: Instant)
-      extends FilterOrFilterHeaderSync
+      sentQuery: Instant
+  ) extends FilterOrFilterHeaderSync
 
   case class FilterSync(
       syncPeer: Peer,
@@ -280,8 +287,8 @@ object NodeState {
       waitingForDisconnection: Set[Peer],
       filterBatchCache: Set[CompactFilterMessage],
       peerFinder: PeerFinder,
-      sentQuery: Instant)
-      extends FilterOrFilterHeaderSync {
+      sentQuery: Instant
+  ) extends FilterOrFilterHeaderSync {
 
     override def toString: String = {
       s"FilterSync(syncPeer=$syncPeer,peers=$peers,waitingForDisconnection=$waitingForDisconnection,filterBatchCache.size=${filterBatchCache.size})"
@@ -292,13 +299,14 @@ object NodeState {
       badPeer: Peer,
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
-      peerFinder: PeerFinder)
-      extends NodeRunningState {
+      peerFinder: PeerFinder
+  ) extends NodeRunningState {
     if (peers.nonEmpty) {
-      //needed for the case where the last peer we are connected to is the bad peer
+      // needed for the case where the last peer we are connected to is the bad peer
       require(
         peers.exists(_ == badPeer),
-        s"MisbehavingPeer must be in peers, badPeer=$badPeer peers=$peers")
+        s"MisbehavingPeer must be in peers, badPeer=$badPeer peers=$peers"
+      )
     }
 
     override val isSyncing: Boolean = false
@@ -309,23 +317,24 @@ object NodeState {
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
       isSyncing: Boolean,
-      peerFinder: PeerFinder)
-      extends NodeRunningState {
+      peerFinder: PeerFinder
+  ) extends NodeRunningState {
     require(
       peersToRemove.forall(rm => peers.exists(_ == rm)),
-      s"peersToRemove must be subset of peers, peersToRemove=$peersToRemove peers=$peers")
+      s"peersToRemove must be subset of peers, peersToRemove=$peersToRemove peers=$peers"
+    )
   }
 
   /** State to indicate we are not currently syncing with a peer */
   case class DoneSyncing(
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
-      peerFinder: PeerFinder)
-      extends NodeRunningState {
+      peerFinder: PeerFinder
+  ) extends NodeRunningState {
     override val isSyncing: Boolean = false
 
-    /** Selects a random peer and returns us a header sync state
-      * returns None if we don't have a peer ot sync with
+    /** Selects a random peer and returns us a header sync state returns None if
+      * we don't have a peer ot sync with
       */
     def toHeaderSync: Option[HeaderSync] = {
       val syncPeerOpt =
@@ -364,8 +373,8 @@ object NodeState {
   case class NodeShuttingDown(
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData],
       waitingForDisconnection: Set[Peer],
-      peerFinder: PeerFinder)
-      extends NodeRunningState {
+      peerFinder: PeerFinder
+  ) extends NodeRunningState {
     override val isSyncing: Boolean = false
   }
 

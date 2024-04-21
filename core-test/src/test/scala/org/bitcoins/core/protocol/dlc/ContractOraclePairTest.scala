@@ -18,27 +18,34 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
   it should "not be able to construct an invalid enum contract oracle pair" in {
     val contractDescriptor = EnumContractDescriptor(
       Vector("Never", "gonna", "give", "you", "up").map(
-        EnumOutcome(_) -> Satoshis.zero))
+        EnumOutcome(_) -> Satoshis.zero
+      )
+    )
 
     def enumOracleInfo(outcomes: Vector[String]): EnumSingleOracleInfo = {
       EnumSingleOracleInfo(
         OracleAnnouncementV0TLV.dummyForEventsAndKeys(
           ECPrivateKey.freshPrivateKey,
           ECPrivateKey.freshPrivateKey.schnorrNonce,
-          outcomes.map(EnumOutcome.apply)))
+          outcomes.map(EnumOutcome.apply)
+        )
+      )
     }
 
     val oracleInfo1 =
       enumOracleInfo(Vector("Never", "gonna", "let", "you", "down"))
     val oracleInfo2 = enumOracleInfo(
-      Vector("Never", "gonna", "run", "around", "and", "desert", "you"))
+      Vector("Never", "gonna", "run", "around", "and", "desert", "you")
+    )
     val oracleInfo3 =
       enumOracleInfo(Vector("Never", "gonna", "make", "you", "cry"))
 
     val multiOracleInfo = EnumMultiOracleInfo(
       2,
       OrderedAnnouncements(
-        Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement)))
+        Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement)
+      )
+    )
 
     assertThrows[IllegalArgumentException](
       ContractOraclePair.EnumPair(contractDescriptor, oracleInfo1)
@@ -59,9 +66,12 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
     val contractDescriptor =
       NumericContractDescriptor(
         DLCPayoutCurve.polynomialInterpolate(
-          Vector(PiecewisePolynomialEndpoint(0, 0),
-                 PiecewisePolynomialEndpoint((1L << 7) - 1, 1)),
-          serializationVersion = DLCSerializationVersion.Beta),
+          Vector(
+            PiecewisePolynomialEndpoint(0, 0),
+            PiecewisePolynomialEndpoint((1L << 7) - 1, 1)
+          ),
+          serializationVersion = DLCSerializationVersion.Beta
+        ),
         numDigits = 7,
         RoundingIntervals.noRounding
       )
@@ -71,8 +81,11 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
         Vector.fill(numDigits)(ECPrivateKey.freshPrivateKey.schnorrNonce)
       val sorted = OrderedNonces.fromUnsorted(unsorted)
       NumericSingleOracleInfo(
-        OracleAnnouncementV0TLV.dummyForKeys(ECPrivateKey.freshPrivateKey,
-                                             sorted))
+        OracleAnnouncementV0TLV.dummyForKeys(
+          ECPrivateKey.freshPrivateKey,
+          sorted
+        )
+      )
     }
 
     val oracleInfo1 = numericOracleInfo(1)
@@ -81,13 +94,16 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
 
     val announcements =
       OrderedAnnouncements(
-        Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement))
+        Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement)
+      )
     val multiOracleInfoExact = NumericExactMultiOracleInfo(2, announcements)
-    val multiOracleInfo = NumericMultiOracleInfo(2,
-                                                 announcements,
-                                                 maxErrorExp = 2,
-                                                 minFailExp = 1,
-                                                 maximizeCoverage = true)
+    val multiOracleInfo = NumericMultiOracleInfo(
+      2,
+      announcements,
+      maxErrorExp = 2,
+      minFailExp = 1,
+      maximizeCoverage = true
+    )
 
     assertThrows[IllegalArgumentException](
       ContractOraclePair.NumericPair(contractDescriptor, oracleInfo1)

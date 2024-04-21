@@ -23,7 +23,9 @@ import java.io.File
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-/** These tests are all copied over from WalletRpcTest and changed to be for multi-wallet */
+/** These tests are all copied over from WalletRpcTest and changed to be for
+  * multi-wallet
+  */
 class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   val walletName = "other"
@@ -43,9 +45,12 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     clientsF.flatMap(setupWalletClient)
   }
 
-  /** We need to test bitcoin core's wallet specific features, so we need to set that up */
-  private def setupWalletClient(pair: NodePair[BitcoindRpcClient]): Future[
-    NodePair[BitcoindRpcClient]] = {
+  /** We need to test bitcoin core's wallet specific features, so we need to set
+    * that up
+    */
+  private def setupWalletClient(
+      pair: NodePair[BitcoindRpcClient]
+  ): Future[NodePair[BitcoindRpcClient]] = {
     val NodePair(client: BitcoindRpcClient, walletClient: BitcoindRpcClient) =
       pair
     for {
@@ -228,9 +233,11 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       address <- otherClient.getNewAddress(Some(walletName))
       _ <- client.walletPassphrase(password, 1000, Some(walletName))
-      txid <- client.sendToAddress(address,
-                                   Bitcoins(1),
-                                   walletNameOpt = Some(walletName))
+      txid <- client.sendToAddress(
+        address,
+        Bitcoins(1),
+        walletNameOpt = Some(walletName)
+      )
       transaction <-
         client.getTransaction(txid, walletNameOpt = Some(walletName))
     } yield {
@@ -248,8 +255,10 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <- client.walletPassphrase(password, 1000, Some(walletName))
       txid <-
         client
-          .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)),
-                    walletNameOpt = Some(walletName))
+          .sendMany(
+            Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)),
+            walletNameOpt = Some(walletName)
+          )
       transaction <-
         client.getTransaction(txid, walletNameOpt = Some(walletName))
     } yield {
@@ -286,20 +295,27 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       for {
         firstResult <-
           client
-            .createMultiSig(2,
-                            Vector(privKey1.publicKey, privKey2.publicKey),
-                            AddressType.Bech32,
-                            walletNameOpt = Some(walletName))
+            .createMultiSig(
+              2,
+              Vector(privKey1.publicKey, privKey2.publicKey),
+              AddressType.Bech32,
+              walletNameOpt = Some(walletName)
+            )
         address2 = firstResult.address
 
         secondResult <-
           client
             .importMulti(
               Vector(
-                RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
-                                           UInt32(0)),
-                RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
-                                           UInt32(0))),
+                RpcOpts.ImportMultiRequest(
+                  RpcOpts.ImportMultiAddress(address1),
+                  UInt32(0)
+                ),
+                RpcOpts.ImportMultiRequest(
+                  RpcOpts.ImportMultiAddress(address2),
+                  UInt32(0)
+                )
+              ),
               rescan = false,
               walletNameOpt = Some(walletName)
             )
@@ -343,7 +359,9 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(transaction.inputs.length == 1)
       assert(
         transaction.outputs.contains(
-          TransactionOutput(Bitcoins(1), address.scriptPubKey)))
+          TransactionOutput(Bitcoins(1), address.scriptPubKey)
+        )
+      )
     }
   }
 

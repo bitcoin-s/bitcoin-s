@@ -15,11 +15,12 @@ trait TestMempoolAcceptRpc { self: Client =>
 
   def testMempoolAccept(
       transaction: Vector[Transaction],
-      maxFeeRate: Double = 0.10): Future[
-    Vector[TestMempoolAcceptResultPostV22]] = {
+      maxFeeRate: Double = 0.10
+  ): Future[Vector[TestMempoolAcceptResultPostV22]] = {
     bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
       "testmempoolaccept",
-      List(Json.toJson(transaction), Json.toJson(maxFeeRate)))
+      List(Json.toJson(transaction), Json.toJson(maxFeeRate))
+    )
   }
 
 }

@@ -20,7 +20,7 @@ trait LnRouteGen {
 
   def feeBaseMSat: Gen[FeeBaseMSat] =
     for {
-      //note that the feebase msat is only 4 bytes
+      // note that the feebase msat is only 4 bytes
       u32 <- NumberGenerator.uInt32s
     } yield {
       val ms = MilliSatoshis(u32.toBigInt)
@@ -39,11 +39,13 @@ trait LnRouteGen {
       baseFee <- feeBaseMSat
       feeProp <- feeProportionalMillionths
       cltvExpiryDelta <- NumberGenerator.positiveShort
-    } yield LnRoute(pubkey = pubKey,
-                    shortChannelID = id,
-                    feeBaseMsat = baseFee,
-                    feePropMilli = feeProp,
-                    cltvExpiryDelta = cltvExpiryDelta)
+    } yield LnRoute(
+      pubkey = pubKey,
+      shortChannelID = id,
+      feeBaseMsat = baseFee,
+      feePropMilli = feeProp,
+      cltvExpiryDelta = cltvExpiryDelta
+    )
 
   def routes: Gen[Vector[LnRoute]] = {
     Gen

@@ -15,9 +15,11 @@ class LnInvoiceSignatureTest extends BitcoinSUnitTest {
   it must "have serialization symmetry for raw r,s,recovId" in {
     forAll(CryptoGenerators.digitalSignature, LnInvoiceGen.signatureVersion) {
       case (ecSig, recovId) =>
-        val lnSig = LnInvoiceSignature.fromRS(r = ecSig.r.bigInteger,
-                                              s = ecSig.s.bigInteger,
-                                              recovId = recovId)
+        val lnSig = LnInvoiceSignature.fromRS(
+          r = ecSig.r.bigInteger,
+          s = ecSig.s.bigInteger,
+          recovId = recovId
+        )
 
         val serialized = lnSig.hex
 

@@ -42,7 +42,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     def indexSynced(client: BitcoindRpcClient): Future[Boolean] = {
       client.getIndexInfo.map { indexes =>
         indexes("txindex").best_block_height == 101 && indexes(
-          "basic block filter index").best_block_height == 101
+          "basic block filter index"
+        ).best_block_height == 101
       }
     }
     for {
@@ -112,7 +113,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
   it should "analyze a descriptor" in { client =>
     val descriptor =
       Descriptor.fromString(
-        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7")
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7"
+      )
 
     val descriptorF = client.getDescriptorInfo(descriptor)
 
@@ -165,7 +167,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       client.deriveAddresses(descriptor0, None).map(_.addresses)
     val expected0 =
       Vector("bcrt1qjqmxmkpmxt80xz4y3746zgt0q3u3ferr34acd5").map(
-        BitcoinAddress.fromString)
+        BitcoinAddress.fromString
+      )
     val assert0 = addresses0F.map { addresses =>
       assert(addresses == expected0)
     }
@@ -178,9 +181,11 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     val addresses1F =
       client.deriveAddresses(descriptor1, Some(Vector(0, 2))).map(_.addresses)
     val expected1 =
-      Vector("bcrt1qjqmxmkpmxt80xz4y3746zgt0q3u3ferr34acd5",
-             "bcrt1qhku5rq7jz8ulufe2y6fkcpnlvpsta7rq4442dy",
-             "bcrt1qpgptk2gvshyl0s9lqshsmx932l9ccsv265tvaq")
+      Vector(
+        "bcrt1qjqmxmkpmxt80xz4y3746zgt0q3u3ferr34acd5",
+        "bcrt1qhku5rq7jz8ulufe2y6fkcpnlvpsta7rq4442dy",
+        "bcrt1qpgptk2gvshyl0s9lqshsmx932l9ccsv265tvaq"
+      )
         .map(BitcoinAddress.fromString)
 
     val assert1 = assert0.flatMap(_ =>
@@ -195,12 +200,14 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     val str1 =
       "wpkh(tprv8ZgxMBicQKsPd7Uf69XL1XwhmjHopUGep8GuEiJDZmbQz6o58LninorQAfcKZWARbtRtfnLcJ5MQ2AtHcQJCCRUcMRvmDUjyEmNUWwx8UbK/1/1/*)#kft60nuy"
     val descriptor = Descriptor.fromString(str1)
-    val imp = DescriptorsResult(desc = descriptor,
-                                timestamp = Instant.now().getEpochSecond,
-                                active = true,
-                                internal = None,
-                                range = Some(Vector(0, 2)),
-                                next = None)
+    val imp = DescriptorsResult(
+      desc = descriptor,
+      timestamp = Instant.now().getEpochSecond,
+      active = true,
+      internal = None,
+      range = Some(Vector(0, 2)),
+      next = None
+    )
 
     val resultF = client.importDescriptors(Vector(imp))
 
@@ -209,7 +216,7 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       _ = assert(result.forall(_.success))
       firstAddress <- client.getNewAddress
       secondAddress <- client.getNewAddress
-      //check it by deriving addresses externally
+      // check it by deriving addresses externally
       deriveAddresses <- client
         .deriveAddresses(descriptor, Some(Vector(0, 1)))
         .map(_.addresses)
@@ -243,7 +250,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
         }
         prevFilter <- client.getBlockFilter(
           block.blockHeader.previousBlockHashBE,
-          FilterType.Basic)
+          FilterType.Basic
+        )
       } yield {
         val pubKeys = fundingOutputs.map(_.scriptPubKey).toVector
         val filter = BlockFilter(block, pubKeys)
@@ -251,7 +259,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
         assert(
           blockFilter.header == filter
             .getHeader(prevFilter.header.flip)
-            .hashBE)
+            .hashBE
+        )
       }
   }
 
@@ -264,7 +273,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       val blockReward = 50
       assert(immatureBalance.mine.immature.toBigDecimal >= 0)
       assert(
-        immatureBalance.mine.trusted.toBigDecimal + blockReward == newImmatureBalance.mine.trusted.toBigDecimal)
+        immatureBalance.mine.trusted.toBigDecimal + blockReward == newImmatureBalance.mine.trusted.toBigDecimal
+      )
     }
   }
 
@@ -313,7 +323,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
 
       val psbt =
         PSBT.fromBase64(
-          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA==")
+          "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA=="
+        )
 
       for {
         result <- client.utxoUpdatePsbt(psbt, Seq(descriptor))
@@ -328,15 +339,19 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       val pubKey2 = ECPublicKey.freshPublicKey
 
       for {
-        multiSigResult <- client.createMultiSig(2,
-                                                Vector(pubKey1, pubKey2),
-                                                AddressType.Bech32)
+        multiSigResult <- client.createMultiSig(
+          2,
+          Vector(pubKey1, pubKey2),
+          AddressType.Bech32
+        )
       } yield {
         // just validate we are able to receive a sane descriptor
         // no need to check checksum
         assert(
           multiSigResult.descriptor.startsWith(
-            s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"))
+            s"wsh(multi(2,${pubKey1.hex},${pubKey2.hex}))#"
+          )
+        )
       }
   }
 

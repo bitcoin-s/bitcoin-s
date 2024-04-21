@@ -4,7 +4,9 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 // TODO test against secp256k1-zkp someday
-/** Contains constants, hash functions, and signing/verification functionality for MuSig */
+/** Contains constants, hash functions, and signing/verification functionality
+  * for MuSig
+  */
 object MuSigUtil {
 
   val nonceNum: Int = 2
@@ -35,7 +37,8 @@ object MuSigUtil {
       b: FieldElement,
       add: (T, T) => T,
       multiply: (T, FieldElement) => T,
-      identity: T): T = {
+      identity: T
+  ): T = {
     nonces
       .foldLeft((FieldElement.one, identity)) { case ((pow, sumSoFar), nonce) =>
         val prod = multiply(nonce, pow)
@@ -45,13 +48,15 @@ object MuSigUtil {
       ._2
   }
 
-  /** Generates a MuSig partial signature, accompanied by the aggregate R value */
+  /** Generates a MuSig partial signature, accompanied by the aggregate R value
+    */
   def sign(
       noncePriv: MuSigNoncePriv,
       aggNoncePub: MuSigNoncePub,
       privKey: ECPrivateKey,
       message: ByteVector,
-      keySet: KeySet): (ECPublicKey, FieldElement) = {
+      keySet: KeySet
+  ): (ECPublicKey, FieldElement) = {
     val pubKey = privKey.publicKey
     val coef = keySet.keyAggCoef(pubKey.schnorrPublicKey)
     val SigningSession(b, aggNonce, e) =
@@ -75,14 +80,18 @@ object MuSigUtil {
 
     val s = adjustedPrivKey.multiply(e).multiply(coef).add(privNonceSum)
 
-    require(partialSigVerify(s,
-                             noncePriv.toPublicNonces,
-                             pubKey.schnorrPublicKey,
-                             keySet,
-                             b,
-                             aggNonce,
-                             e),
-            "Failed verification when generating signature.")
+    require(
+      partialSigVerify(
+        s,
+        noncePriv.toPublicNonces,
+        pubKey.schnorrPublicKey,
+        keySet,
+        b,
+        aggNonce,
+        e
+      ),
+      "Failed verification when generating signature."
+    )
 
     (aggNonce, s)
   }
@@ -92,16 +101,21 @@ object MuSigUtil {
       pubNonces: Vector[MuSigNoncePub],
       keySet: KeySet,
       message: ByteVector,
-      signerIndex: Int): Boolean = {
-    require(signerIndex >= 0 && signerIndex < keySet.length,
-            s"Invalid signer index $signerIndex for ${keySet.length} signers")
+      signerIndex: Int
+  ): Boolean = {
+    require(
+      signerIndex >= 0 && signerIndex < keySet.length,
+      s"Invalid signer index $signerIndex for ${keySet.length} signers"
+    )
 
-    partialSigVerify(partialSig,
-                     pubNonces(signerIndex),
-                     MuSigNoncePub.aggregate(pubNonces),
-                     keySet(signerIndex),
-                     keySet,
-                     message)
+    partialSigVerify(
+      partialSig,
+      pubNonces(signerIndex),
+      MuSigNoncePub.aggregate(pubNonces),
+      keySet(signerIndex),
+      keySet,
+      message
+    )
   }
 
   def partialSigVerify(
@@ -110,7 +124,8 @@ object MuSigUtil {
       aggNoncePub: MuSigNoncePub,
       pubKey: SchnorrPublicKey,
       keySet: KeySet,
-      message: ByteVector): Boolean = {
+      message: ByteVector
+  ): Boolean = {
     val SigningSession(b, aggNonce, e) =
       SigningSession(aggNoncePub, keySet, message)
 
@@ -124,7 +139,8 @@ object MuSigUtil {
       keySet: KeySet,
       b: FieldElement,
       aggNonce: ECPublicKey,
-      e: FieldElement): Boolean = {
+      e: FieldElement
+  ): Boolean = {
     val nonceSum = noncePub.sumToKey(b)
     val nonceSumAdjusted = aggNonce.parity match {
       case EvenParity => nonceSum
@@ -137,15 +153,18 @@ object MuSigUtil {
     val aggKey = pubKey.toXOnly.publicKey(aggKeyParity)
     val a = keySet.keyAggCoef(pubKey)
     partialSig.getPublicKey == nonceSumAdjusted.add(
-      aggKey.multiply(e.multiply(a)))
+      aggKey.multiply(e.multiply(a))
+    )
   }
 
-  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature */
+  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
+    */
   def signAgg(
       sVals: Vector[FieldElement],
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
-      message: ByteVector): SchnorrDigitalSignature = {
+      message: ByteVector
+  ): SchnorrDigitalSignature = {
     val SigningSession(_, aggNonce, e) =
       SigningSession(aggNoncePub, keySet, message)
     val tweakData =
@@ -154,11 +173,13 @@ object MuSigUtil {
     signAgg(sVals, aggNonce, Some(tweakData))
   }
 
-  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature */
+  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
+    */
   def signAgg(
       sVals: Vector[FieldElement],
       aggPubNonce: ECPublicKey,
-      tweakDataOpt: Option[MuSigTweakData] = None): SchnorrDigitalSignature = {
+      tweakDataOpt: Option[MuSigTweakData] = None
+  ): SchnorrDigitalSignature = {
     val sSum = sVals.reduce(_.add(_))
     val s = tweakDataOpt match {
       case Some(tweakData) => sSum.add(tweakData.additiveTweak)

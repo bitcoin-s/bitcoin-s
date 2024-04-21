@@ -30,15 +30,15 @@ object DatadirUtil {
     }
   }
 
-  /** Sets the final datadir for our applicatoin.
-    * We allow useres to pass in a --datadir command line
-    * flag that needs to be used instead of the [[datadir]]
-    * specified in bitcoin-s.conf
+  /** Sets the final datadir for our applicatoin. We allow useres to pass in a
+    * --datadir command line flag that needs to be used instead of the
+    * [[datadir]] specified in bitcoin-s.conf
     */
   def getFinalDatadir(
       datadir: Path,
       baseConfig: Config,
-      customFinalDirOpt: Option[String] = None): Path = {
+      customFinalDirOpt: Option[String] = None
+  ): Path = {
 
     // $HOME is not set for windows, need to manually set it
     if (Properties.isWin) {

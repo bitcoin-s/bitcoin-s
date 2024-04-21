@@ -32,14 +32,13 @@ trait BitcoindRpcBaseTest extends BitcoinSLogger {
     }
   }
 
-  /** Bitcoind RPC clients can be added to this builder
-    * as they are created in tests. After tests have
-    * stopped running (either by succeeding or failing)
+  /** Bitcoind RPC clients can be added to this builder as they are created in
+    * tests. After tests have stopped running (either by succeeding or failing)
     * all clients found in the builder is shut down.
     */
-  lazy val clientAccum: mutable.Builder[
-    BitcoindRpcClient,
-    Vector[BitcoindRpcClient]] = Vector.newBuilder
+  lazy val clientAccum
+      : mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]] =
+    Vector.newBuilder
 
   override def afterAll(): Unit = {
     val stopF = BitcoindRpcTestUtil.stopServers(clientAccum.result())

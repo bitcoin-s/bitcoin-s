@@ -21,7 +21,7 @@ class TipValidationTest extends ChainDbUnitTest {
 
   behavior of "TipValidation"
 
-  //blocks 566,092 and 566,093
+  // blocks 566,092 and 566,093
   val newValidTip = BlockHeaderHelper.header1
   val currentTipDb = BlockHeaderHelper.header2Db
   val blockchain = Blockchain.fromHeaders(Vector(currentTipDb))
@@ -31,7 +31,8 @@ class TipValidationTest extends ChainDbUnitTest {
       BlockHeaderDbHelper.fromBlockHeader(
         566093,
         currentTipDb.chainWork + Pow.getBlockProof(newValidTip),
-        newValidTip)
+        newValidTip
+      )
     val expected = TipUpdateResult.Success(newValidTipDb)
 
     runTest(newValidTip, expected, blockchain)
@@ -62,7 +63,8 @@ class TipValidationTest extends ChainDbUnitTest {
   private def runTest(
       header: BlockHeader,
       expected: TipUpdateResult,
-      blockchain: Blockchain): Assertion = {
+      blockchain: Blockchain
+  ): Assertion = {
     val result = TipValidation.checkNewTip(header, blockchain)
     assert(result == expected)
   }

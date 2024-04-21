@@ -11,14 +11,17 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 class BitwiseInterpreterTest extends BitcoinSUnitTest {
 
   private val pubKeyHash = ScriptConstant(
-    "5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
+    "5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase
+  )
   val BI = BitwiseInterpreter
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = BI.opEqual(program)
     newProgram.stack.head must be(OP_TRUE)
   }
@@ -27,8 +30,10 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
     val stack = List(OP_1, OP_TRUE)
     val script = List(OP_EQUAL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = BI.opEqual(program)
     newProgram.stack.head must be(OP_TRUE)
   }
@@ -36,16 +41,18 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
       BI.opEqual(
-        TestUtil.testProgramExecutionInProgress.updateStackAndScript(List(),
-                                                                     List()))
+        TestUtil.testProgramExecutionInProgress
+          .updateStackAndScript(List(), List())
+      )
     }
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
       BI.opEqual(
-        TestUtil.testProgramExecutionInProgress.updateStackAndScript(List(),
-                                                                     List()))
+        TestUtil.testProgramExecutionInProgress
+          .updateStackAndScript(List(), List())
+      )
     }
   }
 
@@ -53,10 +60,12 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val result = BI.opEqualVerify(program)
-    //if verification fails it will transform the script to a ExecutedProgram with an error set
+    // if verification fails it will transform the script to a ExecutedProgram with an error set
     result.isInstanceOf[ExecutedScriptProgram] must be(false)
   }
 
@@ -65,8 +74,10 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
     val stack = List(pubKeyHash, uniquePubKey)
     val script = List(OP_EQUALVERIFY)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val result = BI.opEqualVerify(program)
     result.stackTopIsTrue must be(false)
   }
@@ -75,15 +86,19 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptNumber(2), ScriptConstant("02"))
     val script = List(OP_EQUAL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     BI.opEqual(program).stack.head must be(OP_TRUE)
 
     val stack1 = List(ScriptConstant("02"), ScriptNumber(2))
     val script1 = List(OP_EQUAL)
     val program1 =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack1,
-                                                                   script1)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack1,
+        script1
+      )
     BI.opEqual(program1).stack.head must be(OP_TRUE)
   }
 
@@ -91,8 +106,10 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
     val stack = List(OP_0, ScriptNumber.zero)
     val script = List(OP_EQUAL)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     BI.opEqual(program).stack.head must be(OP_TRUE)
   }
 
@@ -100,11 +117,14 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
     val stack = List(OP_0)
     val script = List(OP_EQUALVERIFY)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = BI.opEqualVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
-      Some(ScriptErrorInvalidStackOperation))
+      Some(ScriptErrorInvalidStackOperation)
+    )
   }
 }

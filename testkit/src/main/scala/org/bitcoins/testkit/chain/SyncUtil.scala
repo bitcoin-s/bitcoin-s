@@ -22,51 +22,65 @@ import org.bitcoins.wallet.sync.WalletSync
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Useful utilities to use in the chain project for syncing things against bitcoind */
+/** Useful utilities to use in the chain project for syncing things against
+  * bitcoind
+  */
 abstract class SyncUtil extends BitcoinSLogger {
 
-  /** Creates a function that will retrun bitcoin's best block hash when called */
+  /** Creates a function that will retrun bitcoin's best block hash when called
+    */
   def getBestBlockHashFunc(
-      bitcoind: BitcoindRpcClient): () => Future[DoubleSha256DigestBE] = { () =>
+      bitcoind: BitcoindRpcClient
+  ): () => Future[DoubleSha256DigestBE] = { () =>
     bitcoind.getBestBlockHash()
   }
 
-  /** Creates a function that you can pass a hash to and it returns the block header */
+  /** Creates a function that you can pass a hash to and it returns the block
+    * header
+    */
   def getBlockHeaderFunc(bitcoind: BitcoindRpcClient)(implicit
-      ec: ExecutionContext): DoubleSha256DigestBE => Future[BlockHeader] = {
+      ec: ExecutionContext
+  ): DoubleSha256DigestBE => Future[BlockHeader] = {
     hash: DoubleSha256DigestBE =>
       bitcoind.getBlockHeader(hash).map(_.blockHeader)
   }
 
-  /** Creates a function that you can pass a block header to and it's return's it's [[GolombFilter]] */
+  /** Creates a function that you can pass a block header to and it's return's
+    * it's [[GolombFilter]]
+    */
   def getFilterFunc(bitcoind: BlockchainRpc, filterType: FilterType)(implicit
-      ec: ExecutionContext): BlockHeader => Future[FilterWithHeaderHash] = {
-    case header: BlockHeader =>
-      val prevFilterResultF =
-        bitcoind.getBlockFilter(header.hashBE, filterType)
-      prevFilterResultF.map { case GetBlockFilterResult(filter, header) =>
-        FilterWithHeaderHash(filter, header)
-      }
+      ec: ExecutionContext
+  ): BlockHeader => Future[FilterWithHeaderHash] = { case header: BlockHeader =>
+    val prevFilterResultF =
+      bitcoind.getBlockFilter(header.hashBE, filterType)
+    prevFilterResultF.map { case GetBlockFilterResult(filter, header) =>
+      FilterWithHeaderHash(filter, header)
+    }
   }
 
   def getBlockFunc(
-      bitcoind: BitcoindRpcClient): DoubleSha256DigestBE => Future[Block] = {
+      bitcoind: BitcoindRpcClient
+  ): DoubleSha256DigestBE => Future[Block] = {
     bitcoind.getBlockRaw(_: DoubleSha256DigestBE)
   }
 
-  def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(implicit
-      ec: ExecutionContext): NodeApi = {
+  def getNodeApi(
+      bitcoindRpcClient: BitcoindRpcClient
+  )(implicit ec: ExecutionContext): NodeApi = {
     new NodeApi {
 
       override def broadcastTransactions(
-          transactions: Vector[Transaction]): Future[Unit] = {
+          transactions: Vector[Transaction]
+      ): Future[Unit] = {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
 
-      /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+      /** Request the underlying node to download the given blocks from its
+        * peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
         */
       override def downloadBlocks(
-          blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
+          blockHashes: Vector[DoubleSha256DigestBE]
+      ): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
         val f: Vector[DoubleSha256DigestBE] => Future[Vector[Unit]] = {
           case hashes =>
@@ -79,14 +93,17 @@ abstract class SyncUtil extends BitcoinSLogger {
         }
 
         val batchSize = 25
-        val batchedExecutedF = FutureUtil.batchExecute(elements = blockHashes,
-                                                       f = f,
-                                                       init = Vector.empty,
-                                                       batchSize = batchSize)
+        val batchedExecutedF = FutureUtil.batchExecute(
+          elements = blockHashes,
+          f = f,
+          init = Vector.empty,
+          batchSize = batchSize
+        )
 
         batchedExecutedF.map { _ =>
           logger.info(
-            s"Done fetching ${blockHashes.length} hashes from bitcoind")
+            s"Done fetching ${blockHashes.length} hashes from bitcoind"
+          )
           ()
         }
       }
@@ -98,14 +115,18 @@ abstract class SyncUtil extends BitcoinSLogger {
 
   def getNodeApiWalletCallback(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet])(implicit system: ActorSystem): NodeApi = {
-    BitcoindRpcBackendUtil.buildBitcoindNodeApi(bitcoindRpcClient,
-                                                walletF,
-                                                None)
+      walletF: Future[Wallet]
+  )(implicit system: ActorSystem): NodeApi = {
+    BitcoindRpcBackendUtil.buildBitcoindNodeApi(
+      bitcoindRpcClient,
+      walletF,
+      None
+    )
   }
 
-  def getNodeChainQueryApi(bitcoind: BitcoindRpcClient)(implicit
-      ec: ExecutionContext): NodeChainQueryApi = {
+  def getNodeChainQueryApi(
+      bitcoind: BitcoindRpcClient
+  )(implicit ec: ExecutionContext): NodeChainQueryApi = {
     val chainQuery = bitcoind
     val nodeApi = SyncUtil.getNodeApi(bitcoind)
     node.NodeChainQueryApi(nodeApi, chainQuery)
@@ -113,8 +134,8 @@ abstract class SyncUtil extends BitcoinSLogger {
 
   def getNodeChainQueryApiWalletCallback(
       bitcoind: BitcoindRpcClient,
-      walletF: Future[Wallet])(implicit
-      system: ActorSystem): NodeChainQueryApi = {
+      walletF: Future[Wallet]
+  )(implicit system: ActorSystem): NodeChainQueryApi = {
     val chainQuery = bitcoind
     val nodeApi =
       SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)
@@ -125,7 +146,8 @@ abstract class SyncUtil extends BitcoinSLogger {
     * [[Wallet.processBlock()]]
     */
   def syncWalletFullBlocks(wallet: WalletApi, bitcoind: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): Future[WalletApi] = {
+      implicit ec: ExecutionContext
+  ): Future[WalletApi] = {
     val genesisBlockHashF = bitcoind.getBlockHash(0)
     for {
       genesisBlockHash <- genesisBlockHashF
@@ -139,14 +161,16 @@ abstract class SyncUtil extends BitcoinSLogger {
     } yield syncedWalletApi
   }
 
-  /** Syncs the given chain handler to the given bitcoind node. This also syncs block filters
-    * since we know a bitcoind v19 node has block filter capability
+  /** Syncs the given chain handler to the given bitcoind node. This also syncs
+    * block filters since we know a bitcoind v19 node has block filter
+    * capability
     */
   def syncBitcoindWithChainHandler(
-      bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc)(implicit
+      bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc
+  )(implicit
       ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[
-    BitcoindBaseVersionChainHandlerViaRpc] = {
+      chainAppConfig: ChainAppConfig
+  ): Future[BitcoindBaseVersionChainHandlerViaRpc] = {
     val bitcoindV19 = bitcoindWithChainHandler.bitcoindRpc
     val chainApiF = syncBitcoindWithChainHandler(bitcoindWithChainHandler)
       .map(_.chainHandler)
@@ -166,7 +190,8 @@ abstract class SyncUtil extends BitcoinSLogger {
       )
     } yield BitcoindBaseVersionChainHandlerViaRpc(
       bitcoindRpc = bitcoindWithChainHandler.bitcoindRpc,
-      chainHandler = filterSyncChainApi.asInstanceOf[ChainHandler])
+      chainHandler = filterSyncChainApi.asInstanceOf[ChainHandler]
+    )
   }
 }
 

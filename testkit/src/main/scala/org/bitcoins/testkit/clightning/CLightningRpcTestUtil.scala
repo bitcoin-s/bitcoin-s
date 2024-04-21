@@ -35,8 +35,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
   /** Makes a best effort to get a 0.21 bitcoind instance
     */
   def startedBitcoindRpcClient(
-      instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
-      actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+      instanceOpt: Option[BitcoindInstanceLocal] = None
+  )(implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt, Vector.newBuilder)
   }
 
@@ -44,34 +44,38 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
   def bitcoindInstance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      bitcoindV: BitcoindVersion = BitcoindVersion.newest)(implicit
-      system: ActorSystem): BitcoindInstanceLocal = {
-    BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
-                                    port = port,
-                                    rpcPort = rpcPort)
+      bitcoindV: BitcoindVersion = BitcoindVersion.newest
+  )(implicit system: ActorSystem): BitcoindInstanceLocal = {
+    BitcoindRpcTestUtil.getInstance(
+      bitcoindVersion = bitcoindV,
+      port = port,
+      rpcPort = rpcPort
+    )
   }
 
   def commonConfig(
       datadir: Path,
       bitcoindInstance: BitcoindInstance,
-      port: Int = RpcUtil.randomPort): String = {
+      port: Int = RpcUtil.randomPort
+  ): String = {
     val bitcoinCliPath: Path = bitcoindInstance match {
       case local: BitcoindInstanceLocal =>
         local.binary.toPath.getParent.resolve("bitcoin-cli")
       case _: BitcoindInstanceRemote =>
         throw new RuntimeException(
-          "Local bitcoind instance required for clightning")
+          "Local bitcoind instance required for clightning"
+        )
     }
     s"""
        |network=regtest
        |addr=127.0.0.1:$port
        |bitcoin-cli=${bitcoinCliPath.toAbsolutePath}
        |bitcoin-rpcuser=${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .username}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .username}
        |bitcoin-rpcpassword=${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .password}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .password}
        |bitcoin-rpcconnect=127.0.0.1
        |bitcoin-rpcport=${bitcoindInstance.rpcUri.getPort}
        |log-file=${datadir.resolve("clightning.log")}
@@ -80,12 +84,13 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
 
   def cLightningDataDir(
       bitcoindRpcClient: BitcoindRpcClient,
-      isCanonical: Boolean): File = {
+      isCanonical: Boolean
+  ): File = {
     val bitcoindInstance = bitcoindRpcClient.instance
     if (isCanonical) {
       canonicalDatadir
     } else {
-      //creates a random clightning datadir, but still assumes that a bitcoind instance is running right now
+      // creates a random clightning datadir, but still assumes that a bitcoind instance is running right now
       val datadir = randomCLightningDatadir()
       datadir.mkdirs()
       logger.trace(s"Creating temp clightning dir ${datadir.getAbsolutePath}")
@@ -100,41 +105,48 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  def cLightingInstance(bitcoindRpc: BitcoindRpcClient)(implicit
-      system: ActorSystem): CLightningInstanceLocal = {
+  def cLightingInstance(
+      bitcoindRpc: BitcoindRpcClient
+  )(implicit system: ActorSystem): CLightningInstanceLocal = {
     val datadir = cLightningDataDir(bitcoindRpc, isCanonical = false)
     cLightingInstance(datadir)
   }
 
-  def cLightingInstance(datadir: File)(implicit
-      system: ActorSystem): CLightningInstanceLocal = {
+  def cLightingInstance(
+      datadir: File
+  )(implicit system: ActorSystem): CLightningInstanceLocal = {
     CLightningInstanceLocal.fromDataDir(datadir)
   }
 
-  /** Returns a `Future` that is completed when both clightning and bitcoind have the same block height
-    * Fails the future if they are not synchronized within the given timeout.
+  /** Returns a `Future` that is completed when both clightning and bitcoind
+    * have the same block height Fails the future if they are not synchronized
+    * within the given timeout.
     */
   def awaitInSync(clightning: CLightningRpcClient, bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit system: ActorSystem
+  ): Future[Unit] = {
     import system.dispatcher
     TestAsyncUtil.retryUntilSatisfiedF(
       conditionF = () => clientInSync(clightning, bitcoind),
-      interval = 1.seconds)
+      interval = 1.seconds
+    )
   }
 
   private def clientInSync(
       client: CLightningRpcClient,
-      bitcoind: BitcoindRpcClient)(implicit
-      ec: ExecutionContext): Future[Boolean] =
+      bitcoind: BitcoindRpcClient
+  )(implicit ec: ExecutionContext): Future[Boolean] =
     for {
       blockCount <- bitcoind.getBlockCount()
       info <- client.getInfo
     } yield info.blockheight == blockCount
 
-  /** Shuts down an clightning daemon and the bitcoind daemon it is associated with
+  /** Shuts down an clightning daemon and the bitcoind daemon it is associated
+    * with
     */
-  def shutdown(CLightningRpcClient: CLightningRpcClient)(implicit
-      system: ActorSystem): Future[Unit] = {
+  def shutdown(
+      CLightningRpcClient: CLightningRpcClient
+  )(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     val shutdownF = for {
       bitcoindRpc <- startedBitcoindRpcClient()
@@ -142,11 +154,13 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
       _ <- CLightningRpcClient.stop()
     } yield {
       logger.debug(
-        "Successfully shutdown clightning and it's corresponding bitcoind")
+        "Successfully shutdown clightning and it's corresponding bitcoind"
+      )
     }
     shutdownF.failed.foreach { err: Throwable =>
       logger.info(
-        s"Killed a bitcoind instance, but could not find an clightning process to kill")
+        s"Killed a bitcoind instance, but could not find an clightning process to kill"
+      )
       throw err
     }
     shutdownF
@@ -154,8 +168,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
 
   def connectLNNodes(
       client: CLightningRpcClient,
-      otherClient: CLightningRpcClient)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      otherClient: CLightningRpcClient
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     val infoF = otherClient.getInfo
     val nodeIdF = client.getInfo.map(_.id)
     val connectionF = infoF.flatMap { info =>
@@ -172,9 +186,10 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
     }
 
     logger.debug(s"Awaiting connection between clients")
-    val connected = TestAsyncUtil.retryUntilSatisfiedF(conditionF =
-                                                         () => isConnected,
-                                                       interval = 1.second)
+    val connected = TestAsyncUtil.retryUntilSatisfiedF(
+      conditionF = () => isConnected,
+      interval = 1.second
+    )
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 
@@ -184,8 +199,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
   def fundLNNodes(
       bitcoind: BitcoindRpcClient,
       client: CLightningRpcClient,
-      otherClient: CLightningRpcClient)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      otherClient: CLightningRpcClient
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       addrA <- client.getNewAddress
       addrB <- otherClient.getNewAddress
@@ -196,10 +211,12 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
   }
 
   /** Creates two clightning nodes that are connected together and returns their
-    * respective [[com.bitcoins.clightning.rpc.CLightningRpcClient CLightningRpcClient]]s
+    * respective
+    * [[com.bitcoins.clightning.rpc.CLightningRpcClient CLightningRpcClient]]s
     */
   def createNodePair(bitcoind: BitcoindRpcClient)(implicit
-  system: ActorSystem): Future[(CLightningRpcClient, CLightningRpcClient)] = {
+      system: ActorSystem
+  ): Future[(CLightningRpcClient, CLightningRpcClient)] = {
     import system.dispatcher
     val clientA = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
     val clientB = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
@@ -248,8 +265,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
       n1: CLightningRpcClient,
       n2: CLightningRpcClient,
       amt: CurrencyUnit = DEFAULT_CHANNEL_AMT,
-      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2))(implicit
-      ec: ExecutionContext): Future[FundChannelResult] = {
+      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2)
+  )(implicit ec: ExecutionContext): Future[FundChannelResult] = {
 
     val n1NodeIdF = n1.nodeId
     val n2NodeIdF = n2.nodeId
@@ -261,12 +278,15 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
     val fundedChannelIdF =
       nodeIdsF.flatMap { case (nodeId1, nodeId2) =>
         logger.debug(
-          s"Opening a channel from $nodeId1 -> $nodeId2 with amount $amt")
-        n1.openChannel(nodeId = nodeId2,
-                       fundingAmount = amt,
-                       pushAmt = pushAmt,
-                       feeRate = SatoshisPerVirtualByte.fromLong(10),
-                       privateChannel = false)
+          s"Opening a channel from $nodeId1 -> $nodeId2 with amount $amt"
+        )
+        n1.openChannel(
+          nodeId = nodeId2,
+          fundingAmount = amt,
+          pushAmt = pushAmt,
+          feeRate = SatoshisPerVirtualByte.fromLong(10),
+          privateChannel = false
+        )
       }
 
     val genF = for {
@@ -290,7 +310,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
     openedF.flatMap { _ =>
       nodeIdsF.map { case (nodeId1, nodeId2) =>
         logger.debug(
-          s"Channel successfully opened $nodeId1 -> $nodeId2 with amount $amt")
+          s"Channel successfully opened $nodeId1 -> $nodeId2 with amount $amt"
+        )
       }
     }
 
@@ -299,13 +320,16 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
 
   private def awaitUntilChannelActive(
       client: CLightningRpcClient,
-      destination: NodeId)(implicit ec: ExecutionContext): Future[Unit] = {
+      destination: NodeId
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     def isActive: Future[Boolean] = {
       client.listChannels().map(_.exists(_.destination == destination))
     }
 
-    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isActive,
-                                       interval = 1.seconds)
+    TestAsyncUtil.retryUntilSatisfiedF(
+      conditionF = () => isActive,
+      interval = 1.seconds
+    )
   }
 }
 

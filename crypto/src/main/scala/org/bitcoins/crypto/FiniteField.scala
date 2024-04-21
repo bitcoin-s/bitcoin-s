@@ -6,13 +6,16 @@ import java.math.BigInteger
 
 abstract class FiniteFieldMember[F <: FiniteFieldMember[F]](
     fieldOrder: BigInteger,
-    byteSize: Int)
-    extends NetworkElement {
-  require(bytes.length == byteSize,
-          s"Finite field member must have $byteSize bytes, got $bytes")
+    byteSize: Int
+) extends NetworkElement {
+  require(
+    bytes.length == byteSize,
+    s"Finite field member must have $byteSize bytes, got $bytes"
+  )
   require(
     toBigInteger.compareTo(fieldOrder) < 0,
-    s"$bytes is not a valid field member (was not less than $fieldOrder).")
+    s"$bytes is not a valid field member (was not less than $fieldOrder)."
+  )
 
   def isZero: Boolean = bytes.toArray.forall(_ == 0.toByte)
 
@@ -53,8 +56,8 @@ abstract class FiniteFieldMember[F <: FiniteFieldMember[F]](
 
 abstract class FiniteFieldObject[F <: FiniteFieldMember[F]](
     fieldOrder: BigInteger,
-    byteSize: Int)
-    extends Factory[F] {
+    byteSize: Int
+) extends Factory[F] {
 
   def fieldMemberConstructor(bytes: ByteVector): F
 
@@ -67,7 +70,8 @@ abstract class FiniteFieldObject[F <: FiniteFieldMember[F]](
       fieldMemberConstructor(bytes.tail)
     } else {
       throw new IllegalArgumentException(
-        s"Field element cannot have more than 32 bytes, got $bytes")
+        s"Field element cannot have more than 32 bytes, got $bytes"
+      )
     }
   }
 
@@ -112,8 +116,9 @@ abstract class FiniteFieldObject[F <: FiniteFieldMember[F]](
     apply(neg)
   }
 
-  /** Computes the inverse (mod fieldOrder) of the input using the Euclidean Algorithm (log time)
-    * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
+  /** Computes the inverse (mod fieldOrder) of the input using the Euclidean
+    * Algorithm (log time) Cribbed from
+    * [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
     */
   def computeInverse(fe: F): F = {
     val inv = fe.toBigInteger.modInverse(fieldOrder)

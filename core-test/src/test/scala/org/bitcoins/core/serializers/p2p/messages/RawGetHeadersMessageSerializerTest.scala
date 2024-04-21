@@ -20,7 +20,9 @@ class RawGetHeadersMessageSerializerTest extends BitcoinSUnitTest {
 
     getHeadersMessage.hashStop must be(
       DoubleSha256Digest(
-        "0000000000000000000000000000000000000000000000000000000000000000"))
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      )
+    )
   }
 
   it must "write a GetHeaderMessage" in {

@@ -10,8 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCContactDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCContactDb, InetSocketAddress]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCContactDb, InetSocketAddress]
     with SlickUtil[DLCContactDb, InetSocketAddress] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
@@ -21,7 +21,8 @@ case class DLCContactDAO()(implicit
     TableQuery[DLCContactTable]
 
   override def createAll(
-      ts: Vector[DLCContactDb]): Future[Vector[DLCContactDb]] =
+      ts: Vector[DLCContactDb]
+  ): Future[Vector[DLCContactDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   def createIfDoesNotExist(contact: DLCContactDb): Future[DLCContactDb] = {
@@ -41,20 +42,21 @@ case class DLCContactDAO()(implicit
     safeDatabase.run(action)
   }
 
-  override protected def findByPrimaryKeys(ids: Vector[
-    InetSocketAddress]): Query[DLCContactTable, DLCContactDb, Seq] =
+  override protected def findByPrimaryKeys(
+      ids: Vector[InetSocketAddress]
+  ): Query[DLCContactTable, DLCContactDb, Seq] =
     table.filter(_.address.inSet(ids)).sortBy(_.alias)
 
   override def findByPrimaryKey(
-      id: InetSocketAddress): Query[DLCContactTable, DLCContactDb, Seq] = {
+      id: InetSocketAddress
+  ): Query[DLCContactTable, DLCContactDb, Seq] = {
     table
       .filter(_.address === id)
   }
 
-  override def findAll(contacts: Vector[DLCContactDb]): Query[
-    DLCContactTable,
-    DLCContactDb,
-    Seq] =
+  override def findAll(
+      contacts: Vector[DLCContactDb]
+  ): Query[DLCContactTable, DLCContactDb, Seq] =
     findByPrimaryKeys(contacts.map(_.address))
 
   def delete(address: InetSocketAddress): Future[Int] = {

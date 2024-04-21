@@ -6,7 +6,8 @@ import scodec.bits._
 
 /** Filter types for BIP158 block content filters
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters BIP158]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters BIP158]]
   */
 sealed abstract class FilterType extends NetworkElement {
   val M: UInt64
@@ -24,7 +25,8 @@ object FilterType extends Factory[FilterType] with StringFactory[FilterType] {
       case Basic.bytes => Basic
       case other: ByteVector =>
         throw new IllegalArgumentException(
-          s"'${other.toHex}' is not a known filter type")
+          s"'${other.toHex}' is not a known filter type"
+        )
     }
 
   /** Currently the only defined filter type */
@@ -40,7 +42,8 @@ object FilterType extends Factory[FilterType] with StringFactory[FilterType] {
       case Some(code) => code
       case None =>
         throw new IllegalArgumentException(
-          s"Unknown filter type: ${filterType}")
+          s"Unknown filter type: ${filterType}"
+        )
     }
 
   def byCode(code: Short): FilterType =

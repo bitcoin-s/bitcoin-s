@@ -43,7 +43,8 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
           okP.success("ok")
           Future.unit
         }
-      })
+      }
+    )
     configA.addCallbacks(established)
 
     val initiatedP = Promise[String]()
@@ -68,10 +69,13 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
       ok <- okP.future
       _ = assert(ok == "ok")
       _ = assert(!errorP.isCompleted)
-      invalidAddr = InetSocketAddress.createUnresolved(addrB.getHostString,
-                                                       NetworkUtil.randomPort())
+      invalidAddr = InetSocketAddress.createUnresolved(
+        addrB.getHostString,
+        NetworkUtil.randomPort()
+      )
       _ <- recoverToSucceededIf[Exception](
-        nodeA.checkPeerConnection(invalidAddr))
+        nodeA.checkPeerConnection(invalidAddr)
+      )
       error <- errorP.future
     } yield {
       assert(error == "err")
@@ -92,14 +96,16 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
       _ = assert(preDLCsA.isEmpty)
       _ = assert(preDLCsB.isEmpty)
 
-      offer <- walletA.createDLCOffer(sampleContractInfo,
-                                      half,
-                                      Some(SatoshisPerVirtualByte.one),
-                                      UInt32.zero,
-                                      UInt32.one,
-                                      None,
-                                      None,
-                                      None)
+      offer <- walletA.createDLCOffer(
+        sampleContractInfo,
+        half,
+        Some(SatoshisPerVirtualByte.one),
+        UInt32.zero,
+        UInt32.one,
+        None,
+        None,
+        None
+      )
 
       _ <- nodeB.acceptDLCOffer(addrA, offer.toMessage, None, None)
 

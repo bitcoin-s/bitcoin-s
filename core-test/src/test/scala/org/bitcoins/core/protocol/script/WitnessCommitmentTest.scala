@@ -7,7 +7,7 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
   */
 class WitnessCommitmentTest extends BitcoinSUnitTest {
 
-  //witness commitment from https://www.blocktrail.com/tBTC/block/00000000000002f59cc8b806b2cf6bbe37a367a085de60f9e5e3386081abbb48
+  // witness commitment from https://www.blocktrail.com/tBTC/block/00000000000002f59cc8b806b2cf6bbe37a367a085de60f9e5e3386081abbb48
   val hex =
     "356a24aa21a9ed309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b50e6d696e65642062792062636f696e"
   "WitnessCommitment" must "be able to parse a witness commitment from testnet3" in {
@@ -18,7 +18,8 @@ class WitnessCommitmentTest extends BitcoinSUnitTest {
   it must "find the correct witness root hash in a witness commitment" in {
     val commitment = WitnessCommitment(hex)
     commitment.witnessRootHash.hex must be(
-      "309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b5")
+      "309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b5"
+    )
   }
 
   it must "serialization symmetry" in {

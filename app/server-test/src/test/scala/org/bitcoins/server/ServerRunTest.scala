@@ -18,8 +18,8 @@ class ServerRunTest extends BitcoinSAsyncTest {
   // Note: on this test passing it will output a stack trace
   // because runMain calls err.printStackTrace() on failure
   it must "throw errors" in {
-    //custom configuration to make peers empty
-    //this should cause an exception in startBitcoinSBackend()
+    // custom configuration to make peers empty
+    // this should cause an exception in startBitcoinSBackend()
     val noPeersConfig =
       ConfigFactory.parseString(s"""bitcoin-s.node.peers=[]""")
     implicit val config =
@@ -27,10 +27,12 @@ class ServerRunTest extends BitcoinSAsyncTest {
     val datadir = config.chainConf.datadir
 
     val invalidPort = -1
-    val args = Vector("--datadir",
-                      datadir.toAbsolutePath.toString,
-                      "--rpcport",
-                      invalidPort.toString)
+    val args = Vector(
+      "--datadir",
+      datadir.toAbsolutePath.toString,
+      "--rpcport",
+      invalidPort.toString
+    )
 
     val serverArgParser = ServerArgParser(args)
     val main = new BitcoinSServerMain(serverArgParser)

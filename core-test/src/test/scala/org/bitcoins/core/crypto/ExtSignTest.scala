@@ -14,9 +14,11 @@ class ExtSignTest extends BitcoinSUnitTest {
   }
 
   it must "be able to sign a specific path of a ext key" in {
-    forAll(CryptoGenerators.extPrivateKey,
-           CryptoGenerators.sha256Digest,
-           HDGenerators.bip32Path) { case (extPrivKey, hash, path) =>
+    forAll(
+      CryptoGenerators.extPrivateKey,
+      CryptoGenerators.sha256Digest,
+      HDGenerators.bip32Path
+    ) { case (extPrivKey, hash, path) =>
       val sig = extPrivKey.deriveAndSign(hash.bytes, path)
       val childPubKey = extPrivKey.deriveChildPubKey(path).get
       assert(childPubKey.key.verify(hash, sig))

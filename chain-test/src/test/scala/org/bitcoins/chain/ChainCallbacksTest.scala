@@ -65,11 +65,13 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       val nextCompactFilterHeaderDb =
         CompactFilterHeaderDb(
           hashBE = DoubleSha256DigestBE.fromHex(
-            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
+            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
+          ),
           previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
           height = 1,
           filterHashBE = DoubleSha256DigestBE.fromHex(
-            "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
+            "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
+          ),
           blockHashBE = newValidHeader.hashBE
         )
 
@@ -77,7 +79,8 @@ class ChainCallbacksTest extends ChainDbUnitTest {
         _ <- chainHandler.processHeader(newValidHeader.blockHeader)
         _ <- chainHandler.processFilterHeader(
           nextCompactFilterHeaderDb.filterHeader,
-          nextCompactFilterHeaderDb.blockHashBE)
+          nextCompactFilterHeaderDb.blockHashBE
+        )
         result <- resultP.future
       } yield assert(result)
   }
@@ -106,7 +109,8 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       val nextCompactFilterHeaderDb =
         CompactFilterHeaderDb(
           hashBE = DoubleSha256DigestBE.fromHex(
-            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
+            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
+          ),
           previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
           height = 1,
           filterHashBE = hashBE.flip,
@@ -122,13 +126,16 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       )
 
       val filterMessage =
-        CompactFilterMessage(nextCompactFilter.blockHashBE.flip,
-                             nextCompactFilter.golombFilter)
+        CompactFilterMessage(
+          nextCompactFilter.blockHashBE.flip,
+          nextCompactFilter.golombFilter
+        )
       for {
         _ <- chainHandler.processHeader(newValidHeader.blockHeader)
         _ <- chainHandler.processFilterHeader(
           nextCompactFilterHeaderDb.filterHeader,
-          nextCompactFilterHeaderDb.blockHashBE)
+          nextCompactFilterHeaderDb.blockHashBE
+        )
         _ <- chainHandler.processFilter(filterMessage)
         result <- resultP.future
       } yield assert(result)

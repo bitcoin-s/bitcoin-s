@@ -17,14 +17,14 @@ class TaprootTxTests extends BitcoinSAsyncTest {
 
   behavior of "Taproot test cases"
 
-  //these static test vectors take forever
+  // these static test vectors take forever
   override lazy val timeLimit: Span = 10.minutes
 
   implicit override val executionContext: ExecutionContext =
     system.dispatchers.lookup("pekko.actor.multi-core-dispatcher")
 
-  //these tests are from
-  //https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json
+  // these tests are from
+  // https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json
   lazy val url = getClass.getResource("/script_assets_test_cp.json")
 
   lazy val lines = {
@@ -36,8 +36,8 @@ class TaprootTxTests extends BitcoinSAsyncTest {
   }
 
   it must "parse a taproot test case" in {
-    //https://github.com/bitcoin/bitcoin/blob/v22.0/test/functional/feature_taproot.py#L1112
-    //https://github.com/bitcoin/bitcoin/blob/3820090bd619ac85ab35eff376c03136fe4a9f04/src/test/script_tests.cpp#L1673
+    // https://github.com/bitcoin/bitcoin/blob/v22.0/test/functional/feature_taproot.py#L1112
+    // https://github.com/bitcoin/bitcoin/blob/3820090bd619ac85ab35eff376c03136fe4a9f04/src/test/script_tests.cpp#L1673
     val first = testCases.head
     val expectedTxHex =
       "f705d6e8019870958e85d1d8f94aa6d74746ba974db0f5ccae49a49b32dcada4e19de4eb5ecb00000000925977cc01f9875c000000000016001431d2b00cd4687ceb34008d9894de84062def14aa05406346"
@@ -58,7 +58,7 @@ class TaprootTxTests extends BitcoinSAsyncTest {
   }
 
   it must "run the success test cases through the script interpreter" in {
-    //execute in parallel as running test cases sequentially takes 17 minutes on CI
+    // execute in parallel as running test cases sequentially takes 17 minutes on CI
     val groupedTestCases =
       testCases.grouped(Runtime.getRuntime.availableProcessors())
 
@@ -74,7 +74,8 @@ class TaprootTxTests extends BitcoinSAsyncTest {
   }
 
   private def executeSuccessTestCases(
-      testCases: Vector[TaprootTestCase]): Future[Vector[Assertion]] = {
+      testCases: Vector[TaprootTestCase]
+  ): Future[Vector[Assertion]] = {
     FutureUtil.makeAsync { () =>
       testCases.map { testCase =>
         withClue(testCase.comment) {

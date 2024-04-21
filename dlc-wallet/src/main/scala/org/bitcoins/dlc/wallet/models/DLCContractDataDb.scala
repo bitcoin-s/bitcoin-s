@@ -6,8 +6,8 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
 import org.bitcoins.crypto._
 
-/** This table contains all the meta information about a DLC.
-  * This includes various identifiers as well as state and a BIP 32 key path.
+/** This table contains all the meta information about a DLC. This includes
+  * various identifiers as well as state and a BIP 32 key path.
   */
 case class DLCContractDataDb(
     dlcId: Sha256Digest,

@@ -8,27 +8,19 @@ import scodec.bits.ByteVector
   * Note that the naming is not entirely consistent between the specification
   * and this file in hopes of making this code more readable.
   *
-  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * The naming in this file more closely matches the naming in the secp256k1-zkp
+  * implementation:
   * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
   *
-  * Legend:
-  * x <> fe
-  * X <> p1/point
-  * y <> adaptorSecret
-  * Y <> adaptorPoint/adaptor
-  * Z <> p2/tweakedPoint
-  * a <> k
-  * A_G <> r1
-  * A_Y <> r2
-  * b <> e
-  * c <> s
-  * proof <> (e, s)
+  * Legend: x <> fe X <> p1/point y <> adaptorSecret Y <> adaptorPoint/adaptor Z
+  * <> p2/tweakedPoint a <> k A_G <> r1 A_Y <> r2 b <> e c <> s proof <> (e, s)
   */
 object DLEQUtil {
 
   def dleqPair(
       fe: FieldElement,
-      adaptorPoint: ECPublicKey): (ECPublicKey, ECPublicKey) = {
+      adaptorPoint: ECPublicKey
+  ): (ECPublicKey, ECPublicKey) = {
     val point = fe.getPublicKey
     val tweakedPoint = adaptorPoint.multiply(fe)
 
@@ -43,16 +35,19 @@ object DLEQUtil {
       adaptorPoint: ECPublicKey,
       point: ECPublicKey,
       tweakedPoint: ECPublicKey,
-      auxRand: ByteVector): FieldElement = {
+      auxRand: ByteVector
+  ): FieldElement = {
     val hash = CryptoUtil
       .sha256(point.bytes ++ tweakedPoint.bytes)
       .bytes
 
-    AdaptorUtil.adaptorNonce(hash,
-                             fe.toPrivateKey,
-                             adaptorPoint,
-                             "DLEQ",
-                             auxRand)
+    AdaptorUtil.adaptorNonce(
+      hash,
+      fe.toPrivateKey,
+      adaptorPoint,
+      "DLEQ",
+      auxRand
+    )
   }
 
   /** Computes the challenge hash value for dleqProve as specified in
@@ -63,22 +58,26 @@ object DLEQUtil {
       r1: ECPublicKey,
       r2: ECPublicKey,
       p1: ECPublicKey,
-      p2: ECPublicKey): ByteVector = {
+      p2: ECPublicKey
+  ): ByteVector = {
     CryptoUtil
       .sha256DLEQ(
         p1.bytes ++ adaptorPoint.bytes ++
-          p2.bytes ++ r1.bytes ++ r2.bytes)
+          p2.bytes ++ r1.bytes ++ r2.bytes
+      )
       .bytes
   }
 
-  /** Proves that the DLOG_G(R') = DLOG_Y(R) (= fe)
-    * For a full description, see https://cs.nyu.edu/courses/spring07/G22.3220-001/lec3.pdf
-    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
+  /** Proves that the DLOG_G(R') = DLOG_Y(R) (= fe) For a full description, see
+    * https://cs.nyu.edu/courses/spring07/G22.3220-001/lec3.pdf
+    * @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
     */
   def dleqProve(
       fe: FieldElement,
       adaptorPoint: ECPublicKey,
-      auxRand: ByteVector): (FieldElement, FieldElement) = {
+      auxRand: ByteVector
+  ): (FieldElement, FieldElement) = {
     require(!fe.isZero, "Input field element cannot be zero.")
 
     // (fe*G, fe*Y)
@@ -113,14 +112,16 @@ object DLEQUtil {
   }
 
   /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2
-    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#verifying
+    * @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#verifying
     */
   def dleqVerify(
       s: FieldElement,
       e: FieldElement,
       p1: ECPublicKey,
       adaptor: ECPublicKey,
-      p2: ECPublicKey): Boolean = {
+      p2: ECPublicKey
+  ): Boolean = {
     val r1 = p1.multiply(e.negate).add(s.getPublicKey)
     val r2 = p2.multiply(e.negate).add(adaptor.multiply(s))
     val challengeHash = dleqChallengeHash(adaptor, r1, r2, p1, p2)

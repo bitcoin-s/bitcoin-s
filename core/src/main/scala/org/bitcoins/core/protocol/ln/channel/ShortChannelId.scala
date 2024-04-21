@@ -19,8 +19,10 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
     */
   override def toString: String = toHumanReadableString
 
-  /** Converts the short channel id into the human readable form defined in BOLT.
-    * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md  BOLT7]]
+  /** Converts the short channel id into the human readable form defined in
+    * BOLT.
+    * @see
+    *   [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md BOLT7]]
     *
     * Output example:
     * {{{
@@ -54,18 +56,26 @@ object ShortChannelId extends Factory[ShortChannelId] {
   def apply(
       blockHeight: BigInt,
       txIndex: Int,
-      outputIndex: Int): ShortChannelId = {
-    require(blockHeight >= 0 && blockHeight <= 0xffffff,
-            s"ShortChannelId: invalid block height $blockHeight")
+      outputIndex: Int
+  ): ShortChannelId = {
+    require(
+      blockHeight >= 0 && blockHeight <= 0xffffff,
+      s"ShortChannelId: invalid block height $blockHeight"
+    )
 
-    require(txIndex >= 0 && txIndex <= 0xffffff,
-            s"ShortChannelId:invalid tx index $txIndex")
+    require(
+      txIndex >= 0 && txIndex <= 0xffffff,
+      s"ShortChannelId:invalid tx index $txIndex"
+    )
 
-    require(outputIndex >= 0 && outputIndex <= 0xffff,
-            s"ShortChannelId: invalid output index $outputIndex")
+    require(
+      outputIndex >= 0 && outputIndex <= 0xffff,
+      s"ShortChannelId: invalid output index $outputIndex"
+    )
 
     val u64 = UInt64(
-      ((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL))
+      ((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL)
+    )
     ShortChannelId(u64)
   }
 }

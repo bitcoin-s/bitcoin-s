@@ -95,9 +95,11 @@ trait RemoteLndFixture extends BitcoinSFixture with CachedBitcoindNewest {
           }
 
           // create a remote instance and client
-          remoteInstance = LndInstanceRemote(lnd.instance.rpcUri,
-                                             lnd.instance.macaroon,
-                                             cert)
+          remoteInstance = LndInstanceRemote(
+            lnd.instance.rpcUri,
+            lnd.instance.macaroon,
+            cert
+          )
           remoteLnd = LndRpcClient(remoteInstance)
         } yield remoteLnd
       },

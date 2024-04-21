@@ -11,18 +11,21 @@ import org.bitcoins.core.util.NumberUtil
 
 import scala.annotation.tailrec
 
-/** Specifies a list of intervals with corresponding rounding moduli.
-  * In particular, each element (outcome, roundingMod) of intervalStarts
-  * represents the beginning of a new interval at outcome with new modulus roundingMod.
+/** Specifies a list of intervals with corresponding rounding moduli. In
+  * particular, each element (outcome, roundingMod) of intervalStarts represents
+  * the beginning of a new interval at outcome with new modulus roundingMod.
   *
-  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#rounding-intervals
+  * @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#rounding-intervals
   */
 case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
   if (intervalStarts.nonEmpty) {
-    require(intervalStarts.init.zip(intervalStarts.tail).forall {
-              case (i1, i2) => i1.firstOutcome < i2.firstOutcome
-            },
-            s"Intervals must be ascending: $intervalStarts")
+    require(
+      intervalStarts.init.zip(intervalStarts.tail).forall { case (i1, i2) =>
+        i1.firstOutcome < i2.firstOutcome
+      },
+      s"Intervals must be ascending: $intervalStarts"
+    )
   }
 
   def toTLV: RoundingIntervalsV0TLV = {
@@ -31,7 +34,9 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
     })
   }
 
-  /** Returns the rounding interval (start, end, mod) containing the given outcome */
+  /** Returns the rounding interval (start, end, mod) containing the given
+    * outcome
+    */
   def intervalContaining(outcome: BigDecimal): Interval = {
     implicit val ord: Ordering[IntervalStart] =
       Ordering.by[IntervalStart, (BigDecimal, Long)](i =>
@@ -39,8 +44,10 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
 
     // Using Long.MaxValue guarantees that index will point to index of right endpoint of interval
     val index =
-      NumberUtil.search(intervalStarts,
-                        IntervalStart(outcome, Long.MaxValue)) - 1
+      NumberUtil.search(
+        intervalStarts,
+        IntervalStart(outcome, Long.MaxValue)
+      ) - 1
 
     if (index == -1) {
       val firstIntervalChange =
@@ -101,7 +108,8 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
         thisIntervals: Vector[IntervalStart],
         thisCurrentMod: Long,
         otherIntervals: Vector[IntervalStart],
-        otherCurrentMod: Long): Unit = {
+        otherCurrentMod: Long
+    ): Unit = {
       if (thisIntervals.isEmpty) {
         val otherEnd = otherIntervals.map {
           case IntervalStart(startRange, otherMod) =>
@@ -120,30 +128,38 @@ case class RoundingIntervals(intervalStarts: Vector[IntervalStart]) {
 
         if (thisNextStart < otherNextStart) {
           addInterval(thisNextStart, Math.min(thisNextMod, otherCurrentMod))
-          minMerge(thisIntervals.tail,
-                   thisNextMod,
-                   otherIntervals,
-                   otherCurrentMod)
+          minMerge(
+            thisIntervals.tail,
+            thisNextMod,
+            otherIntervals,
+            otherCurrentMod
+          )
         } else if (thisNextStart > otherNextStart) {
           addInterval(otherNextStart, Math.min(otherNextMod, thisCurrentMod))
-          minMerge(thisIntervals,
-                   thisCurrentMod,
-                   otherIntervals.tail,
-                   otherNextMod)
+          minMerge(
+            thisIntervals,
+            thisCurrentMod,
+            otherIntervals.tail,
+            otherNextMod
+          )
         } else {
           addInterval(thisNextStart, Math.min(thisNextMod, otherNextMod))
-          minMerge(thisIntervals.tail,
-                   thisNextMod,
-                   otherIntervals.tail,
-                   otherNextMod)
+          minMerge(
+            thisIntervals.tail,
+            thisNextMod,
+            otherIntervals.tail,
+            otherNextMod
+          )
         }
       }
     }
 
-    minMerge(thisIntervals = intervalStarts,
-             thisCurrentMod = 1L,
-             otherIntervals = other.intervalStarts,
-             otherCurrentMod = 1L)
+    minMerge(
+      thisIntervals = intervalStarts,
+      thisCurrentMod = 1L,
+      otherIntervals = other.intervalStarts,
+      otherCurrentMod = 1L
+    )
 
     models.RoundingIntervals(builder.result()).canonicalForm()
   }
@@ -171,9 +187,12 @@ object RoundingIntervals {
   case class Interval(
       firstOutcome: BigDecimal,
       nextFirstOutcome: BigDecimal,
-      roundingMod: Long) {
-    require(firstOutcome < nextFirstOutcome,
-            s"First outcome must come before last, $this")
+      roundingMod: Long
+  ) {
+    require(
+      firstOutcome < nextFirstOutcome,
+      s"First outcome must come before last, $this"
+    )
   }
 
   def fromTLV(tlv: RoundingIntervalsV0TLV): RoundingIntervals = {

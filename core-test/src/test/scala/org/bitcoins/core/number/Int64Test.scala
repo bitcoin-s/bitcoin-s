@@ -25,14 +25,17 @@ class Int64Test extends BitcoinSUnitTest {
 
   it must "represent the number -1 with 8 bytes" in {
     val int64 = Int64(
-      ByteVector(0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte))
+      ByteVector(
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte
+      )
+    )
     int64.toLong must be(-1)
   }
   it must "represent the Int32 max value" in {
@@ -54,52 +57,64 @@ class Int64Test extends BitcoinSUnitTest {
 
   it must "represent the Int32 min value - 1" in {
     val int64 = Int64(
-      ByteVector(0xff.toByte,
-                 0x7f.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte))
+      ByteVector(
+        0xff.toByte,
+        0x7f.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte
+      )
+    )
     int64.toLong must be(-2147483649L)
   }
 
   it must "represent the minimum value for int64" in {
     val int64 = Int64(
-      ByteVector(0x80.toByte,
-                 0.toByte,
-                 0.toByte,
-                 0.toByte,
-                 0.toByte,
-                 0.toByte,
-                 0.toByte,
-                 0.toByte))
+      ByteVector(
+        0x80.toByte,
+        0.toByte,
+        0.toByte,
+        0.toByte,
+        0.toByte,
+        0.toByte,
+        0.toByte,
+        0.toByte
+      )
+    )
     int64.toLong must be(-9223372036854775808L)
   }
 
   it must "represent the maximum value for a int64" in {
     val int64 = Int64(
-      ByteVector(0x7f.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte,
-                 0xff.toByte))
+      ByteVector(
+        0x7f.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte,
+        0xff.toByte
+      )
+    )
     int64.toLong must be(9223372036854775807L)
   }
 
   it must "throw an exception when trying to create a Int64 out of 9 bytes or more" in {
     intercept[IllegalArgumentException] {
       Int64(
-        ByteVector(0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte,
-                   0.toByte))
+        ByteVector(
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte,
+          0.toByte
+        )
+      )
     }
   }
 

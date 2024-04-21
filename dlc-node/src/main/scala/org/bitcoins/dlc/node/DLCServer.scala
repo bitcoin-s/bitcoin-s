@@ -25,8 +25,8 @@ class DLCServer(
     boundAddress: Option[Promise[InetSocketAddress]],
     dataHandlerFactory: DLCDataHandler.Factory,
     handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
-    extends Actor
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+) extends Actor
     with ActorLogging {
 
   import context.system
@@ -55,12 +55,16 @@ class DLCServer(
       log.info(s"Received a connection from $remoteAddress")
       val _ = context.actorOf(
         Props(
-          new DLCConnectionHandler(dlcWalletApi,
-                                   connection,
-                                   None,
-                                   dataHandlerFactory,
-                                   handleWrite,
-                                   handleWriteError)))
+          new DLCConnectionHandler(
+            dlcWalletApi,
+            connection,
+            None,
+            dataHandlerFactory,
+            handleWrite,
+            handleWriteError
+          )
+        )
+      )
   }
 
   override def postStop(): Unit = {
@@ -88,17 +92,18 @@ object DLCServer extends BitcoinSLogger {
       boundAddress: Option[Promise[InetSocketAddress]] = None,
       dataHandlerFactory: DLCDataHandler.Factory,
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-      handleWriteError: (
-          BigSizeUInt,
-          ByteVector,
-          Throwable) => Future[Unit]): Props =
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+  ): Props =
     Props(
-      new DLCServer(dlcWalletApi,
-                    bindAddress,
-                    boundAddress,
-                    dataHandlerFactory,
-                    handleWrite,
-                    handleWriteError))
+      new DLCServer(
+        dlcWalletApi,
+        bindAddress,
+        boundAddress,
+        dataHandlerFactory,
+        handleWrite,
+        handleWriteError
+      )
+    )
 
   def bind(
       dlcWalletApi: DLCWalletApi,
@@ -107,9 +112,8 @@ object DLCServer extends BitcoinSLogger {
       torParams: Option[TorParams],
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
       handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit],
-      dataHandlerFactory: DLCDataHandler.Factory =
-        DLCDataHandler.defaultFactory)(implicit
-      system: ActorSystem): Future[(InetSocketAddress, ActorRef)] = {
+      dataHandlerFactory: DLCDataHandler.Factory = DLCDataHandler.defaultFactory
+  )(implicit system: ActorSystem): Future[(InetSocketAddress, ActorRef)] = {
     import system.dispatcher
 
     val promise = Promise[InetSocketAddress]()
@@ -128,16 +132,20 @@ object DLCServer extends BitcoinSLogger {
             .map(Some(_))
         case None =>
           logger.warn(
-            s"Tor must be enabled to negotiate a dlc, you can set this with bitcoin-s.tor.enabled=true and bitcoin-s.control.enabled=true in your bitcoin-s.conf")
+            s"Tor must be enabled to negotiate a dlc, you can set this with bitcoin-s.tor.enabled=true and bitcoin-s.control.enabled=true in your bitcoin-s.conf"
+          )
           Future.successful(None)
       }
       actorRef = system.actorOf(
-        props(dlcWalletApi,
-              bindAddress,
-              Some(promise),
-              dataHandlerFactory,
-              handleWrite,
-              handleWriteError))
+        props(
+          dlcWalletApi,
+          bindAddress,
+          Some(promise),
+          dataHandlerFactory,
+          handleWrite,
+          handleWriteError
+        )
+      )
       boundAddress <- promise.future
     } yield {
       val addr = onionAddress.getOrElse(boundAddress)

@@ -6,8 +6,10 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
-/** Responsible for serialization and deserialization of VersionMessages on the p2p network
-  * @see https://bitcoin.org/en/developer-reference#version
+/** Responsible for serialization and deserialization of VersionMessages on the
+  * p2p network
+  * @see
+  *   https://bitcoin.org/en/developer-reference#version
   */
 trait RawVersionMessageSerializer extends RawBitcoinSerializer[VersionMessage] {
 
@@ -41,7 +43,8 @@ trait RawVersionMessageSerializer extends RawBitcoinSerializer[VersionMessage] {
 
     val userAgentBytes = bytes.slice(
       userAgentBytesStartIndex,
-      userAgentBytesStartIndex + userAgentSize.num.toInt)
+      userAgentBytesStartIndex + userAgentSize.num.toInt
+    )
 
     val userAgent = userAgentBytes.toArray.map(_.toChar).mkString
 
@@ -49,7 +52,8 @@ trait RawVersionMessageSerializer extends RawBitcoinSerializer[VersionMessage] {
       userAgentBytesStartIndex + userAgentSize.num.toInt
 
     val startHeight = Int32(
-      bytes.slice(startHeightStartIndex, startHeightStartIndex + 4).reverse)
+      bytes.slice(startHeightStartIndex, startHeightStartIndex + 4).reverse
+    )
 
     val relay = bytes(startHeightStartIndex + 4) != 0
 
@@ -76,13 +80,13 @@ trait RawVersionMessageSerializer extends RawBitcoinSerializer[VersionMessage] {
       versionMessage.timestamp.bytes.reverse ++
       versionMessage.addressReceiveServices.bytes ++
       NetworkIpAddress.writeAddress(versionMessage.addressReceiveIpAddress) ++
-      //encode hex returns 8 characters, but we only need the last 4 since port number is a uint16
-      //check for precision loss here?
+      // encode hex returns 8 characters, but we only need the last 4 since port number is a uint16
+      // check for precision loss here?
       ByteVector.fromShort(versionMessage.addressReceivePort.toShort) ++
       versionMessage.addressTransServices.bytes ++
       NetworkIpAddress.writeAddress(versionMessage.addressTransIpAddress) ++
-      //encode hex returns 8 characters, but we only need the last 4 since port number is a uint16
-      //check for precision loss here?
+      // encode hex returns 8 characters, but we only need the last 4 since port number is a uint16
+      // check for precision loss here?
       ByteVector.fromShort(versionMessage.addressTransPort.toShort) ++
       versionMessage.nonce.bytes ++
       versionMessage.userAgentSize.bytes ++

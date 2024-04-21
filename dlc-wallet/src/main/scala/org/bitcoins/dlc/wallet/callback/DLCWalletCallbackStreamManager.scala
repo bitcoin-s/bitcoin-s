@@ -22,16 +22,16 @@ import scala.concurrent.Future
 case class DLCWalletCallbackStreamManager(
     callbacks: DLCWalletCallbacks,
     overflowStrategy: OverflowStrategy = OverflowStrategy.backpressure,
-    maxBufferSize: Int = 16)(implicit system: ActorSystem)
+    maxBufferSize: Int = 16
+)(implicit system: ActorSystem)
     extends DLCWalletCallbacks
     with StartStopAsync[Unit]
     with BitcoinSLogger {
 
   import system.dispatcher
 
-  private val stateChangeSource: Source[
-    DLCStatus,
-    SourceQueueWithComplete[DLCStatus]] = {
+  private val stateChangeSource
+      : Source[DLCStatus, SourceQueueWithComplete[DLCStatus]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -45,9 +45,10 @@ case class DLCWalletCallbackStreamManager(
     matSourceAndQueue(stateChangeSource, stateChangeSink)
   }
 
-  private val offerAddSource: Source[
-    IncomingDLCOfferDb,
-    SourceQueueWithComplete[IncomingDLCOfferDb]] = {
+  private val offerAddSource: Source[IncomingDLCOfferDb,
+                                     SourceQueueWithComplete[
+                                       IncomingDLCOfferDb
+                                     ]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -61,9 +62,8 @@ case class DLCWalletCallbackStreamManager(
     matSourceAndQueue(offerAddSource, offerAddSink)
   }
 
-  private val offerRemoveSource: Source[
-    Sha256Digest,
-    SourceQueueWithComplete[Sha256Digest]] = {
+  private val offerRemoveSource
+      : Source[Sha256Digest, SourceQueueWithComplete[Sha256Digest]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -81,15 +81,13 @@ case class DLCWalletCallbackStreamManager(
     callbacks.onStateChange
   }
 
-  override def onOfferAdd: CallbackHandler[
-    IncomingDLCOfferDb,
-    OnDLCOfferAdd] = {
+  override def onOfferAdd
+      : CallbackHandler[IncomingDLCOfferDb, OnDLCOfferAdd] = {
     callbacks.onOfferAdd
   }
 
-  override def onOfferRemove: CallbackHandler[
-    Sha256Digest,
-    OnDLCOfferRemove] = {
+  override def onOfferRemove
+      : CallbackHandler[Sha256Digest, OnDLCOfferRemove] = {
     callbacks.onOfferRemove
   }
 
@@ -106,16 +104,17 @@ case class DLCWalletCallbackStreamManager(
   override def stop(): Future[Unit] = {
     val start = System.currentTimeMillis()
 
-    //can't complete a stream twice
+    // can't complete a stream twice
     if (!isStopped.get()) {
-      //complete all queues
+      // complete all queues
       offerAddQueue.complete()
       offerRemoveQueue.complete()
       stateChangeQueue.complete()
       isStopped.set(true)
     } else {
       logger.warn(
-        s"Already stopped all queues associated with this DLCWalletCallbackManagerStream")
+        s"Already stopped all queues associated with this DLCWalletCallbackManagerStream"
+      )
     }
 
     for {
@@ -125,16 +124,16 @@ case class DLCWalletCallbackStreamManager(
     } yield {
       logger.info(
         s"Done draining akka streams for DLCWalletCallbackManagerStream, it took=${System
-          .currentTimeMillis() - start}ms")
+            .currentTimeMillis() - start}ms"
+      )
       ()
     }
   }
 
   private def matSourceAndQueue[T](
       source: Source[T, SourceQueueWithComplete[T]],
-      sink: Sink[T, Future[Done]]): (
-      SourceQueueWithComplete[T],
-      Future[Done]) = {
+      sink: Sink[T, Future[Done]]
+  ): (SourceQueueWithComplete[T], Future[Done]) = {
     source
       .toMat(sink)(Keep.both)
       .run()

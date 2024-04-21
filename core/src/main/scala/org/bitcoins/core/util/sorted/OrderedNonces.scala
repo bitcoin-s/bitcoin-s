@@ -6,7 +6,8 @@ import org.bitcoins.crypto.SchnorrNonce
 case class OrderedNonces(private val vec: Vector[SchnorrNonce])
     extends SortedVec[SchnorrNonce, SchnorrNonce](
       vec,
-      org.bitcoins.core.nonceOrdering)
+      org.bitcoins.core.nonceOrdering
+    )
 
 object OrderedNonces extends SortedVecFactory[SchnorrNonce, OrderedNonces] {
 

@@ -46,6 +46,8 @@ object NodeStreamMessage {
 
   case object NodeShutdown extends NodeStreamMessage
 
-  /** Checks our peers are healthy, for instance checking that we are peered with compact filter peers */
+  /** Checks our peers are healthy, for instance checking that we are peered
+    * with compact filter peers
+    */
   case object PeerHealthCheck extends NodeStreamMessage
 }

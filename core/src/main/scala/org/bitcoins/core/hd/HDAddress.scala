@@ -34,14 +34,16 @@ object HDAddress {
       account: HDAccount,
       chain: HDChain,
       index: Int,
-      purpose: HDPurpose)
-      extends HDAddress
+      purpose: HDPurpose
+  ) extends HDAddress
 
   def apply(chain: HDChain, index: Int): HDAddress =
-    HDAddressImpl(coin = chain.coin,
-                  account = chain.account,
-                  chain = chain,
-                  index = index,
-                  purpose = chain.purpose)
+    HDAddressImpl(
+      coin = chain.coin,
+      account = chain.account,
+      chain = chain,
+      index = index,
+      purpose = chain.purpose
+    )
 
 }

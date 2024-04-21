@@ -139,8 +139,11 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
 
   it must "have Long syntax" in {
     forAll(
-      Gen.choose(LnPolicy.minMilliBitcoins.toLong,
-                 LnPolicy.maxMilliBitcoins.toLong)) { num =>
+      Gen.choose(
+        LnPolicy.minMilliBitcoins.toLong,
+        LnPolicy.maxMilliBitcoins.toLong
+      )
+    ) { num =>
       assert(num.millibitcoins == MilliBitcoins(num))
       assert(num.millibitcoin == MilliBitcoins(num))
       assert(num.mBTC == MilliBitcoins(num))

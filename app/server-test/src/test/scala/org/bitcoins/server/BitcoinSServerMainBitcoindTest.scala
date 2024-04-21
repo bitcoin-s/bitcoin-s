@@ -27,8 +27,10 @@ class BitcoinSServerMainBitcoindTest
     config: BitcoinSAppConfig =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
-      val cliConfig = Config(rpcPortOpt = Some(config.rpcPort),
-                             rpcPassword = config.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(config.rpcPort),
+        rpcPassword = config.rpcPassword
+      )
 
       for {
         _ <- server.start()
@@ -38,7 +40,7 @@ class BitcoinSServerMainBitcoindTest
         addr = exec(GetNewAddress(labelOpt = None), cliConfig)
         blockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
         _ <- AsyncUtil.nonBlockingSleep(1.second)
-        _ <- server.stop() //stop to free all resources
+        _ <- server.stop() // stop to free all resources
       } yield {
         assert(info.isSuccess)
         assert(balance.isSuccess)
@@ -54,8 +56,10 @@ class BitcoinSServerMainBitcoindTest
 
     val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
-    val cliConfig = Config(rpcPortOpt = Some(config.rpcPort),
-                           rpcPassword = config.rpcPassword)
+    val cliConfig = Config(
+      rpcPortOpt = Some(config.rpcPort),
+      rpcPassword = config.rpcPassword
+    )
 
     val mnemonic =
       MnemonicCode.fromEntropy(ECPrivateKey.freshPrivateKey.bytes.toBitVector)
@@ -136,7 +140,8 @@ class BitcoinSServerMainBitcoindTest
         assert(infoT.isFailure)
         assert(
           infoT.failed.get.getMessage
-            .contains("The supplied authentication is invalid"))
+            .contains("The supplied authentication is invalid")
+        )
       }
 
       failF

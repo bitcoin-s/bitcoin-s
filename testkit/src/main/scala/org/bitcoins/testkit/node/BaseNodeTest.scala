@@ -46,10 +46,12 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   /** Helper method to generate blocks every interval
-    * @return a cancellable that will stop generating blocks
+    * @return
+    *   a cancellable that will stop generating blocks
     */
-  def genBlockInterval(bitcoind: BitcoindRpcClient)(implicit
-      system: ActorSystem): Cancellable = {
+  def genBlockInterval(
+      bitcoind: BitcoindRpcClient
+  )(implicit system: ActorSystem): Cancellable = {
 
     var counter = 0
     val desiredBlocks = 5
@@ -73,20 +75,24 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
   val genesisChainApi: ChainApi = new ChainApi {
 
     override def processHeaders(
-        headers: Vector[BlockHeader]): Future[ChainApi] =
+        headers: Vector[BlockHeader]
+    ): Future[ChainApi] =
       Future.successful(this)
 
     override def getHeader(
-        hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
+        hash: DoubleSha256DigestBE
+    ): Future[Option[BlockHeaderDb]] =
       Future.successful(None)
 
-    override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
-      Vector[Option[BlockHeaderDb]]] = {
+    override def getHeaders(
+        hashes: Vector[DoubleSha256DigestBE]
+    ): Future[Vector[Option[BlockHeaderDb]]] = {
       Future.successful(Vector.fill(hashes.length)(None))
     }
 
     override def getHeadersAtHeight(
-        height: Int): Future[Vector[BlockHeaderDb]] =
+        height: Int
+    ): Future[Vector[BlockHeaderDb]] =
       Future.successful(Vector.empty)
 
     override def getBlockCount(): Future[Int] = Future.successful(0)
@@ -96,34 +102,40 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
     override def processFilterHeaders(
         filterHeaders: Vector[FilterHeader],
-        stopHash: DoubleSha256DigestBE): Future[ChainApi] =
+        stopHash: DoubleSha256DigestBE
+    ): Future[ChainApi] =
       Future.successful(this)
 
     override def nextBlockHeaderBatchRange(
         prevStopHash: DoubleSha256DigestBE,
         stopHash: DoubleSha256DigestBE,
-        batchSize: Int): Future[Option[FilterSyncMarker]] =
+        batchSize: Int
+    ): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
 
     override def nextFilterHeaderBatchRange(
         stopBlockHash: DoubleSha256DigestBE,
         batchSize: Int,
-        startHeightOpt: Option[Int]): Future[Option[FilterSyncMarker]] =
+        startHeightOpt: Option[Int]
+    ): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
 
     override def processFilters(
-        message: Vector[CompactFilterMessage]): Future[ChainApi] =
+        message: Vector[CompactFilterMessage]
+    ): Future[ChainApi] =
       Future.successful(this)
 
     override def processCheckpoints(
         checkpoints: Vector[DoubleSha256DigestBE],
-        blockHash: DoubleSha256DigestBE): Future[ChainApi] =
+        blockHash: DoubleSha256DigestBE
+    ): Future[ChainApi] =
       Future.successful(this)
 
     override def getFilterHeaderCount(): Future[Int] = Future.successful(0)
 
     override def getFilterHeadersAtHeight(
-        height: Int): Future[Vector[CompactFilterHeaderDb]] =
+        height: Int
+    ): Future[Vector[CompactFilterHeaderDb]] =
       Future.successful(Vector.empty)
 
     override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
@@ -133,17 +145,20 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
       Future.successful(None)
     }
 
-    override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
-      Option[CompactFilterHeaderDb]] = Future.successful(None)
+    override def getFilterHeader(
+        blockHash: DoubleSha256DigestBE
+    ): Future[Option[CompactFilterHeaderDb]] = Future.successful(None)
 
     override def getFilter(
-        hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] =
+        hash: DoubleSha256DigestBE
+    ): Future[Option[CompactFilterDb]] =
       Future.successful(None)
 
     override def getFilterCount(): Future[Int] = Future.successful(0)
 
     override def getFiltersAtHeight(
-        height: Int): Future[Vector[CompactFilterDb]] =
+        height: Int
+    ): Future[Vector[CompactFilterDb]] =
       Future.successful(Vector.empty)
 
     override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
@@ -151,11 +166,13 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
     override def getHeadersBetween(
         from: BlockHeaderDb,
-        to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] =
+        to: BlockHeaderDb
+    ): Future[Vector[BlockHeaderDb]] =
       Future.successful(Vector.empty)
 
     override def getBlockHeight(
-        blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
+        blockHash: DoubleSha256DigestBE
+    ): Future[Option[Int]] =
       Future.successful(None)
 
     override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
@@ -166,12 +183,14 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     }
 
     override def getNumberOfConfirmations(
-        blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
+        blockHashOpt: DoubleSha256DigestBE
+    ): Future[Option[Int]] =
       Future.successful(None)
 
     override def getFiltersBetweenHeights(
         startHeight: Int,
-        endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
+        endHeight: Int
+    ): Future[Vector[ChainQueryApi.FilterResponse]] =
       Future.successful(Vector.empty)
 
     override def epochSecondToBlockHeight(time: Long): Future[Int] =

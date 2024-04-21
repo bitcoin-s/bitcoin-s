@@ -29,8 +29,10 @@ object LnURL extends StringFactory[LnURL] {
   def decode(url: String): Try[String] = {
     Bech32.splitToHrpAndData(url, Bech32Encoding.Bech32).map {
       case (hrp, data) =>
-        require(hrp.equalsIgnoreCase(lnurlHRP),
-                s"LNURL must start with $lnurlHRP")
+        require(
+          hrp.equalsIgnoreCase(lnurlHRP),
+          s"LNURL must start with $lnurlHRP"
+        )
         val converted = NumberUtil.convertUInt5sToUInt8(data)
         val bytes = UInt8.toBytes(converted)
         new String(bytes.toArray, "UTF-8")

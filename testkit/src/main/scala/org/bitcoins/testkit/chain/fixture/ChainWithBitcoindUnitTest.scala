@@ -30,7 +30,8 @@ trait ChainWithBitcoindNewestCachedUnitTest
 
   def withBitcoindNewestChainHandlerViaRpc(
       test: OneArgAsyncTest,
-      bitcoindRpcClient: BitcoindRpcClient): FutureOutcome = {
+      bitcoindRpcClient: BitcoindRpcClient
+  ): FutureOutcome = {
     val builder: () => Future[BitcoindBaseVersionChainHandlerViaRpc] = { () =>
       ChainUnitTest.createChainApiWithBitcoindRpc(bitcoindRpcClient)
     }

@@ -43,10 +43,8 @@ class DLCServerTorTest
       Future.unit
   }
 
-  private val handleWriteErrorFn: (
-      BigSizeUInt,
-      ByteVector,
-      Throwable) => Future[Unit] = {
+  private val handleWriteErrorFn
+      : (BigSizeUInt, ByteVector, Throwable) => Future[Unit] = {
     case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
       Future.unit
   }
@@ -83,7 +81,8 @@ class DLCServerTorTest
             },
             handleWriteFn,
             handleWriteErrorFn
-          ))
+          )
+        )
 
         val resultF: Future[Future[Assertion]] = for {
           _ <- boundAddressPromise.future
@@ -103,32 +102,41 @@ class DLCServerTorTest
               },
               handleWriteFn,
               handleWriteErrorFn
-            ))
+            )
+          )
 
           client ! DLCClient.Connect(
-            Peer(connectAddress,
-                 socks5ProxyParams = Some(
-                   Socks5ProxyParams(
-                     address = torProxyAddress,
-                     credentialsOpt = None,
-                     randomizeCredentials = true
-                   ))))
+            Peer(
+              connectAddress,
+              socks5ProxyParams = Some(
+                Socks5ProxyParams(
+                  address = torProxyAddress,
+                  credentialsOpt = None,
+                  randomizeCredentials = true
+                )
+              )
+            )
+          )
 
           for {
             _ <- connectedAddressPromise.future
             _ <- AsyncUtil.retryUntilSatisfied(
-              serverConnectionHandlerOpt.isDefined)
+              serverConnectionHandlerOpt.isDefined
+            )
             _ <- AsyncUtil.retryUntilSatisfied(
-              clientConnectionHandlerOpt.isDefined)
+              clientConnectionHandlerOpt.isDefined
+            )
             pingTLV =
               PingTLV(
                 UInt16.one,
-                ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
+                ByteVector.fromValidHex("00112233445566778899aabbccddeeff")
+              )
             clientConnectionHandler = clientConnectionHandlerOpt.get
             _ = clientProbe.send(clientConnectionHandler, pingTLV)
             _ = serverProbe.expectMsg(timeout, Received(LnMessage(pingTLV)))
             pongTLV = PongTLV.forIgnored(
-              ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
+              ByteVector.fromValidHex("00112233445566778899aabbccddeeff")
+            )
             serverConnectionHandler = serverConnectionHandlerOpt.get
             _ = serverProbe.send(serverConnectionHandler, pongTLV)
             _ = clientProbe.expectMsg(timeout, Received(LnMessage(pongTLV)))
@@ -137,8 +145,10 @@ class DLCServerTorTest
             bigTLV = PongTLV.forIgnored(ignored)
             _ = clientProbe.send(clientConnectionHandler, bigTLV)
             _ = serverProbe.expectMsg(timeout, Received(LnMessage(bigTLV)))
-            _ = clientProbe.send(clientConnectionHandler,
-                                 DLCConnectionHandler.CloseConnection)
+            _ = clientProbe.send(
+              clientConnectionHandler,
+              DLCConnectionHandler.CloseConnection
+            )
             _ = clientProbe.send(clientConnectionHandler, pingTLV)
             _ = serverProbe.expectNoMessage()
             _ = serverProbe.send(serverConnectionHandler, pongTLV)
@@ -156,8 +166,8 @@ class DLCServerTorTest
   private def withTempFile(
       prefix: String,
       suffix: String,
-      create: Boolean = false)(
-      f: File => Future[Assertion]): Future[Assertion] = {
+      create: Boolean = false
+  )(f: File => Future[Assertion]): Future[Assertion] = {
     val tempFile = File.createTempFile(prefix, suffix)
     if (!create) {
       tempFile.delete()

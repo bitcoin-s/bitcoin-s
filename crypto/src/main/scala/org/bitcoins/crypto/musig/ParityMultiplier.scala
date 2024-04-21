@@ -8,13 +8,13 @@ import org.bitcoins.crypto.{
   OddParity
 }
 
-/** Represents either FieldElement.one or FieldElement.orderMinusOne.
-  * Using this ADT rather than those actual FieldElements saves computation
-  * including some unnecessary point multiplications.
+/** Represents either FieldElement.one or FieldElement.orderMinusOne. Using this
+  * ADT rather than those actual FieldElements saves computation including some
+  * unnecessary point multiplications.
   *
-  * In general there is a correspondence between Pos <-> EvenParity and Neg <-> OddParity,
-  * this is because in general x-only keys are assumed to be even and need to be negated
-  * if they are meant to be used as odd keys.
+  * In general there is a correspondence between Pos <-> EvenParity and Neg <->
+  * OddParity, this is because in general x-only keys are assumed to be even and
+  * need to be negated if they are meant to be used as odd keys.
   */
 sealed trait ParityMultiplier {
 
@@ -32,7 +32,9 @@ sealed trait ParityMultiplier {
     }
   }
 
-  /** Combines two ParityMultiplier into a single one representing their net modification */
+  /** Combines two ParityMultiplier into a single one representing their net
+    * modification
+    */
   def multiply(other: ParityMultiplier): ParityMultiplier = {
     (this, other) match {
       case (Pos, Pos) | (Neg, Neg) => Pos

@@ -54,7 +54,8 @@ sealed abstract class RawMerkleBlockSerializer
         .foldLeft(ByteVector.empty)(_ ++ _.bytes)
     }
     val flagCount = CompactSizeUInt(
-      UInt64(Math.ceil(partialMerkleTree.bits.size.toDouble / 8).toInt))
+      UInt64(Math.ceil(partialMerkleTree.bits.size.toDouble / 8).toInt)
+    )
     val hashes: ByteVector = BytesUtil.toByteVector(merkleBlock.hashes)
     merkleBlock.blockHeader.bytes ++
       merkleBlock.transactionCount.bytes.reverse ++
@@ -62,27 +63,34 @@ sealed abstract class RawMerkleBlockSerializer
       hashes ++ flagCount.bytes ++ byteVectors
   }
 
-  /** Parses a sequence of transactions hashes from inside of a merkle block message
-    * @param bytes the bytes from which the tx hashes are parsed from
-    * @param hashCount the amount of tx hashes we need to parse from bytes
-    * @return the sequence of tx hashes and the remaining bytes to be parsed into a MerkleBlockMessage
+  /** Parses a sequence of transactions hashes from inside of a merkle block
+    * message
+    * @param bytes
+    *   the bytes from which the tx hashes are parsed from
+    * @param hashCount
+    *   the amount of tx hashes we need to parse from bytes
+    * @return
+    *   the sequence of tx hashes and the remaining bytes to be parsed into a
+    *   MerkleBlockMessage
     */
   private def parseTransactionHashes(
       bytes: ByteVector,
-      hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], ByteVector) = {
+      hashCount: CompactSizeUInt
+  ): (Seq[DoubleSha256Digest], ByteVector) = {
     @tailrec
     def loop(
         remainingHashes: Long,
         remainingBytes: ByteVector,
-        accum: List[DoubleSha256Digest]): (
-        Seq[DoubleSha256Digest],
-        ByteVector) = {
+        accum: List[DoubleSha256Digest]
+    ): (Seq[DoubleSha256Digest], ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else {
         val (hashBytes, newRemainingBytes) = remainingBytes.splitAt(32)
-        loop(remainingHashes - 1,
-             newRemainingBytes,
-             DoubleSha256Digest(hashBytes) :: accum)
+        loop(
+          remainingHashes - 1,
+          newRemainingBytes,
+          DoubleSha256Digest(hashBytes) :: accum
+        )
       }
     }
     loop(hashCount.num.toInt, bytes, Nil)

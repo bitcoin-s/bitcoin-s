@@ -45,7 +45,9 @@ object DecodeAccept extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length} Expected: 1"))
+            s"Bad number of arguments: ${other.length} Expected: 1"
+          )
+        )
     }
   }
 }
@@ -75,7 +77,9 @@ object DecodeSign extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length} Expected: 1"))
+            s"Bad number of arguments: ${other.length} Expected: 1"
+          )
+        )
     }
   }
 }
@@ -97,7 +101,9 @@ object DecodeAttestations extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"
+          )
+        )
     }
   }
 }
@@ -106,7 +112,8 @@ case class DLCDataFromFile(
     path: Path,
     destinationOpt: Option[Path],
     externalPayoutAddressOpt: Option[BitcoinAddress],
-    externalChangeAddressOpt: Option[BitcoinAddress])
+    externalChangeAddressOpt: Option[BitcoinAddress]
+)
 
 object DLCDataFromFile extends ServerJsonModels {
 
@@ -115,7 +122,8 @@ object DLCDataFromFile extends ServerJsonModels {
         pathJs: Value,
         destJs: Value,
         payoutAddressJs: Value,
-        changeAddressJs: Value) = Try {
+        changeAddressJs: Value
+    ) = Try {
       val path = new File(pathJs.str).toPath
       val destJsOpt = nullToOpt(destJs)
       val destOpt = destJsOpt.map(js => new File(js.str).toPath)
@@ -143,7 +151,9 @@ object DLCDataFromFile extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"
+          )
+        )
     }
   }
 }
@@ -151,7 +161,8 @@ object DLCDataFromFile extends ServerJsonModels {
 case class OfferAdd(
     offerTLV: DLCOfferTLV,
     peer: Option[String],
-    message: Option[String])
+    message: Option[String]
+)
 
 object OfferAdd extends ServerJsonModels {
 
@@ -167,7 +178,8 @@ object OfferAdd extends ServerJsonModels {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to offer-add, got=${other.length} expected=3")
+          s"Bad number or arguments to offer-add, got=${other.length} expected=3"
+        )
         Failure(exn)
     }
   }
@@ -186,7 +198,8 @@ object OfferRemove {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to offer-remove, got=${other.length} expected=1")
+          s"Bad number or arguments to offer-remove, got=${other.length} expected=1"
+        )
         Failure(exn)
     }
   }
@@ -195,7 +208,8 @@ object OfferRemove {
 case class OfferSend(
     remoteAddress: InetSocketAddress,
     message: String,
-    offerE: Either[DLCOfferTLV, Sha256Digest])
+    offerE: Either[DLCOfferTLV, Sha256Digest]
+)
 
 object OfferSend extends ServerJsonModels {
 
@@ -216,7 +230,8 @@ object OfferSend extends ServerJsonModels {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to offer-send, got=${other.length} expected=3")
+          s"Bad number or arguments to offer-send, got=${other.length} expected=3"
+        )
         Failure(exn)
     }
   }
@@ -236,7 +251,8 @@ object GetDLCOffer {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to offer-send, got=${other.length} expected=1")
+          s"Bad number or arguments to offer-send, got=${other.length} expected=1"
+        )
         Failure(exn)
     }
   }
@@ -251,7 +267,8 @@ trait ServerJsonModels {
       case _: Value =>
         throw Value.InvalidData(
           js,
-          "Expected an OracleAnnouncementTLV as a hex string")
+          "Expected an OracleAnnouncementTLV as a hex string"
+        )
     }
 
   def jsToContractInfoTLV(js: Value): ContractInfoV0TLV =
@@ -311,7 +328,8 @@ trait ServerJsonModels {
     LockUnspentOutputParameter.fromJson(js)
 
   def jsToLockUnspentOutputParameters(
-      js: Value): Seq[LockUnspentOutputParameter] = {
+      js: Value
+  ): Seq[LockUnspentOutputParameter] = {
     js.arr.foldLeft(Seq.empty[LockUnspentOutputParameter])((seq, outPoint) =>
       seq :+ jsToLockUnspentOutputParameter(outPoint))
   }
@@ -337,11 +355,13 @@ trait ServerJsonModels {
       case _: Value =>
         throw Value.InvalidData(
           js,
-          "Expected a SchnorrDigitalSignature as a hex string")
+          "Expected a SchnorrDigitalSignature as a hex string"
+        )
     }
 
   def jsToSchnorrDigitalSignatureVec(
-      js: Value): Vector[SchnorrDigitalSignature] = {
+      js: Value
+  ): Vector[SchnorrDigitalSignature] = {
     js.arr.foldLeft(Vector.empty[SchnorrDigitalSignature])((vec, sig) =>
       vec :+ jsToSchnorrDigitalSignature(sig))
   }
@@ -353,7 +373,8 @@ trait ServerJsonModels {
       case _: Value =>
         throw Value.InvalidData(
           js,
-          "Expected a OracleAttestmentTLV as a hex string")
+          "Expected a OracleAttestmentTLV as a hex string"
+        )
     }
 
   def jsToOracleAttestmentTLVVec(js: Value): Vector[OracleAttestmentTLV] = {
@@ -384,7 +405,8 @@ trait ServerJsonModels {
   }
 
   def jsToWalletNameAndPassword(
-      js: Value): (Option[String], Option[AesPassword]) = {
+      js: Value
+  ): (Option[String], Option[AesPassword]) = {
     js match {
       case Arr(arr) =>
         if (arr.size >= 2) {
@@ -403,14 +425,16 @@ trait ServerJsonModels {
       case Arr(arr) => arr.map(_.str).toVector
       case Null | False | True | Num(_) | Obj(_) =>
         throw new IllegalArgumentException(
-          "mnemonic must be a string or array of strings")
+          "mnemonic must be a string or array of strings"
+        )
     }
     MnemonicCode.fromWords(mnemonicWords)
   }
 
   def jsToInetSocketAddress(
       js: Value,
-      defaultPort: Int = -1): InetSocketAddress = {
+      defaultPort: Int = -1
+  ): InetSocketAddress = {
     js match {
       case str: Str =>
         val uri = new URI("tcp://" + str.str)

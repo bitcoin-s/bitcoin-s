@@ -22,8 +22,8 @@ class DLCConnectionHandler(
     handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory,
     handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
-    extends Actor
+    handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+) extends Actor
     with ActorLogging {
 
   private val handler = {
@@ -44,8 +44,10 @@ class DLCConnectionHandler(
     case lnMessage: LnMessage[TLV] =>
       val id = tlvId(lnMessage)
       val byteMessage = ByteString(lnMessage.bytes.toArray)
-      connection ! Tcp.Write(byteMessage,
-                             DLCConnectionHandler.Ack(lnMessage.tlv.tpe, id))
+      connection ! Tcp.Write(
+        byteMessage,
+        DLCConnectionHandler.Ack(lnMessage.tlv.tpe, id)
+      )
       connection ! Tcp.ResumeReading
 
     case tlv: TLV =>
@@ -71,8 +73,8 @@ class DLCConnectionHandler(
         connection ! Tcp.ResumeReading
       }
 
-      //we need to aggregate our previous 'unalignedBytes' with the new message
-      //we just received from our peer to hopefully be able to parse full messages
+      // we need to aggregate our previous 'unalignedBytes' with the new message
+      // we just received from our peer to hopefully be able to parse full messages
       val bytes: ByteVector = unalignedBytes ++ byteVec
       log.debug(s"Bytes for message parsing: ${bytes.toHex}")
       val (messages, newUnalignedBytes) = parseIndividualMessages(bytes)
@@ -96,7 +98,7 @@ class DLCConnectionHandler(
     case Tcp.PeerClosed => context.stop(self)
 
     case DLCConnectionHandler.Ack(tlvType, tlvId) =>
-      //is this right? do i need to block here (or not block?)
+      // is this right? do i need to block here (or not block?)
       val _ = handleWrite(tlvType, tlvId)
       ()
     case c @ Tcp.CommandFailed(write: Tcp.Write) =>
@@ -107,7 +109,7 @@ class DLCConnectionHandler(
       log.error("Cannot write bytes ", ex)
       val (tlvType, tlvId) = write.ack match {
         case DLCConnectionHandler.Ack(t, id) => (t, id)
-        case _                               => (BigSizeUInt(0), ByteVector.empty)
+        case _ => (BigSizeUInt(0), ByteVector.empty)
       }
       handleWriteError(tlvType, tlvId, ex)
 
@@ -144,25 +146,28 @@ object DLCConnectionHandler extends BitcoinSLogger {
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-      handleWriteError: (
-          BigSizeUInt,
-          ByteVector,
-          Throwable) => Future[Unit]): Props = {
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit]
+  ): Props = {
     Props(
-      new DLCConnectionHandler(dlcWalletApi,
-                               connection,
-                               handlerP,
-                               dataHandlerFactory,
-                               handleWrite,
-                               handleWriteError))
+      new DLCConnectionHandler(
+        dlcWalletApi,
+        connection,
+        handlerP,
+        dataHandlerFactory,
+        handleWrite,
+        handleWriteError
+      )
+    )
   }
 
   private[bitcoins] def parseIndividualMessages(
-      bytes: ByteVector): (Vector[LnMessage[TLV]], ByteVector) = {
+      bytes: ByteVector
+  ): (Vector[LnMessage[TLV]], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
-        accum: Vector[LnMessage[TLV]]): (Vector[LnMessage[TLV]], ByteVector) = {
+        accum: Vector[LnMessage[TLV]]
+    ): (Vector[LnMessage[TLV]], ByteVector) = {
       if (remainingBytes.length <= 0) {
         (accum, remainingBytes)
       } else {
@@ -175,7 +180,8 @@ object DLCConnectionHandler extends BitcoinSLogger {
           case Success(message) =>
             val newRemainingBytes = remainingBytes.drop(message.byteSize)
             logger.debug(
-              s"Parsed a message=${message.typeName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
+              s"Parsed a message=${message.typeName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}"
+            )
             loop(newRemainingBytes, accum :+ message)
         }
       }

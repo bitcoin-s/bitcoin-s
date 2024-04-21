@@ -11,27 +11,23 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Callbacks for responding to events in the wallet.
-  * The appropriate callback is executed whenever the wallet finishes,
-  * the corresponding function.
+/** Callbacks for responding to events in the wallet. The appropriate callback
+  * is executed whenever the wallet finishes, the corresponding function.
   */
 trait WalletCallbacks
     extends ModuleCallbacks[WalletCallbacks]
     with BitcoinSLogger {
 
-  def onTransactionProcessed: CallbackHandler[
-    Transaction,
-    OnTransactionProcessed]
+  def onTransactionProcessed
+      : CallbackHandler[Transaction, OnTransactionProcessed]
 
-  def onTransactionBroadcast: CallbackHandler[
-    Transaction,
-    OnTransactionBroadcast]
+  def onTransactionBroadcast
+      : CallbackHandler[Transaction, OnTransactionBroadcast]
 
   def onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos]
 
-  def onNewAddressGenerated: CallbackHandler[
-    BitcoinAddress,
-    OnNewAddressGenerated]
+  def onNewAddressGenerated
+      : CallbackHandler[BitcoinAddress, OnNewAddressGenerated]
 
   def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
@@ -41,70 +37,95 @@ trait WalletCallbacks
 
   def +(other: WalletCallbacks): WalletCallbacks
 
-  def executeOnTransactionProcessed(tx: Transaction)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnTransactionProcessed(
+      tx: Transaction
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onTransactionProcessed.execute(
       tx,
       (err: Throwable) =>
         logger.error(
           s"${onTransactionProcessed.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnTransactionBroadcast(tx: Transaction)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnTransactionBroadcast(
+      tx: Transaction
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onTransactionBroadcast.execute(
       tx,
       (err: Throwable) =>
         logger.error(
           s"${onTransactionProcessed.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnReservedUtxos(utxos: Vector[SpendingInfoDb])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnReservedUtxos(
+      utxos: Vector[SpendingInfoDb]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onReservedUtxos.execute(
       utxos,
       (err: Throwable) =>
-        logger.error(s"${onReservedUtxos.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onReservedUtxos.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
-  def executeOnNewAddressGenerated(address: BitcoinAddress)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnNewAddressGenerated(
+      address: BitcoinAddress
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onNewAddressGenerated.execute(
       address,
       (err: Throwable) =>
         logger.error(
           s"${onNewAddressGenerated.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnBlockProcessed(block: Block)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnBlockProcessed(
+      block: Block
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onBlockProcessed.execute(
       block,
       (err: Throwable) =>
-        logger.error(s"${onBlockProcessed.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onBlockProcessed.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
-  def executeOnRescanComplete(walletName: String)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnRescanComplete(
+      walletName: String
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onRescanComplete.execute(
       walletName,
       (err: Throwable) =>
-        logger.error(s"${onRescanComplete.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onRescanComplete.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
-  def executeOnFeeRateChanged(feeRate: FeeUnit)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnFeeRateChanged(
+      feeRate: FeeUnit
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onFeeRateChanged.execute(
       feeRate,
       (err: Throwable) =>
-        logger.error(s"${onFeeRateChanged.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onFeeRateChanged.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
 }
@@ -114,14 +135,17 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
   private case class WalletCallbacksImpl(
       onTransactionProcessed: CallbackHandler[
         Transaction,
-        OnTransactionProcessed],
+        OnTransactionProcessed
+      ],
       onTransactionBroadcast: CallbackHandler[
         Transaction,
-        OnTransactionBroadcast],
+        OnTransactionBroadcast
+      ],
       onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos],
       onNewAddressGenerated: CallbackHandler[
         BitcoinAddress,
-        OnNewAddressGenerated],
+        OnNewAddressGenerated
+      ],
       onBlockProcessed: CallbackHandler[Block, OnBlockProcessed],
       onRescanComplete: CallbackHandler[String, OnRescanComplete],
       onFeeRateChanged: CallbackHandler[FeeUnit, OnFeeRateChanged]
@@ -150,7 +174,9 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
   def onTransactionBroadcast(f: OnTransactionBroadcast): WalletCallbacks =
     WalletCallbacks(onTransactionBroadcast = Vector(f))
 
-  /** Constructs a set of callbacks that only acts on utxos becoming reserved or unreserved */
+  /** Constructs a set of callbacks that only acts on utxos becoming reserved or
+    * unreserved
+    */
   def onReservedUtxos(f: OnReservedUtxos): WalletCallbacks =
     WalletCallbacks(onReservedUtxos = Vector(f))
 
@@ -168,12 +194,14 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
 
   /** Empty callbacks that does nothing with the received data */
   override val empty: WalletCallbacks =
-    apply(Vector.empty,
-          Vector.empty,
-          Vector.empty,
-          Vector.empty,
-          Vector.empty,
-          Vector.empty)
+    apply(
+      Vector.empty,
+      Vector.empty,
+      Vector.empty,
+      Vector.empty,
+      Vector.empty,
+      Vector.empty
+    )
 
   def apply(
       onTransactionProcessed: Vector[OnTransactionProcessed] = Vector.empty,
@@ -188,29 +216,35 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
       onTransactionProcessed =
         CallbackHandler[Transaction, OnTransactionProcessed](
           "onTransactionProcessed",
-          onTransactionProcessed),
+          onTransactionProcessed
+        ),
       onTransactionBroadcast =
         CallbackHandler[Transaction, OnTransactionBroadcast](
           "onTransactionBroadcast",
-          onTransactionBroadcast),
+          onTransactionBroadcast
+        ),
       onReservedUtxos =
         CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos](
           "onReservedUtxos",
-          onReservedUtxos),
+          onReservedUtxos
+        ),
       onNewAddressGenerated =
         CallbackHandler[BitcoinAddress, OnNewAddressGenerated](
           "onNewAddressGenerated",
-          onNewAddressGenerated),
+          onNewAddressGenerated
+        ),
       onBlockProcessed = CallbackHandler[Block, OnBlockProcessed](
         "onBlockProcessed",
         onBlockProcessed
       ),
-      onRescanComplete =
-        CallbackHandler[String, OnRescanComplete]("onRescanComplete",
-                                                  onRescanComplete),
-      onFeeRateChanged =
-        CallbackHandler[FeeUnit, OnFeeRateChanged]("onFeeRateChanged",
-                                                   onFeeRateChanged)
+      onRescanComplete = CallbackHandler[String, OnRescanComplete](
+        "onRescanComplete",
+        onRescanComplete
+      ),
+      onFeeRateChanged = CallbackHandler[FeeUnit, OnFeeRateChanged](
+        "onFeeRateChanged",
+        onFeeRateChanged
+      )
     )
   }
 }

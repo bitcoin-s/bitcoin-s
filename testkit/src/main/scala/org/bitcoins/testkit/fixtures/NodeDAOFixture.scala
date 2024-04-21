@@ -12,15 +12,18 @@ import scala.concurrent.Future
 case class NodeDAOs(
     txDAO: BroadcastAbleTransactionDAO,
     peerDAO: PeerDAO,
-    nodeAppConfig: NodeAppConfig)
+    nodeAppConfig: NodeAppConfig
+)
 
 /** Provides a fixture where all DAOs used by the node projects are provided */
 trait NodeDAOFixture extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
-                                                              Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      () => pgUrl(),
+      Vector.empty
+    )
 
   final override type FixtureParam = NodeDAOs
 

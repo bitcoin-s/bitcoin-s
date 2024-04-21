@@ -47,8 +47,8 @@ trait NumberGenerator {
 
   def uInt16: Gen[UInt16] = Gen.choose(0, 65535).map(UInt16(_))
 
-  /** Generates a number in the range 0 <= x <= 2 ^^32 - 1
-    * then wraps it in a UInt32
+  /** Generates a number in the range 0 <= x <= 2 ^^32 - 1 then wraps it in a
+    * UInt32
     */
   def uInt32s: Gen[UInt32] =
     Gen.choose(0L, (NumberUtil.pow2(32) - 1).toLong).map(UInt32(_))
@@ -64,8 +64,7 @@ trait NumberGenerator {
   def bigIntsUInt64Range: Gen[BigInt] =
     positiveBigInts.filter(_ < (BigInt(1) << 64))
 
-  /** Generates a number in the range 0 <= x < 2^^64
-    * then wraps it in a UInt64
+  /** Generates a number in the range 0 <= x < 2^^64 then wraps it in a UInt64
     */
   def uInt64s: Gen[UInt64] = uInt64
 
@@ -131,8 +130,10 @@ trait NumberGenerator {
 
   /** Generates a random GCS P parameter.
     *
-    * Bit parameter for GCS, cannot be more than 32 as we will have a number too large for a UInt64.
-    * @see [[https://github.com/Roasbeef/btcutil/blob/b5d74480bb5b02a15a9266cbeae37ecf9dd6ffca/gcs/gcs.go#L67]]
+    * Bit parameter for GCS, cannot be more than 32 as we will have a number too
+    * large for a UInt64.
+    * @see
+    *   [[https://github.com/Roasbeef/btcutil/blob/b5d74480bb5b02a15a9266cbeae37ecf9dd6ffca/gcs/gcs.go#L67]]
     */
   def genP: Gen[UInt8] = {
     Gen.choose(0, 32).map(UInt8(_))

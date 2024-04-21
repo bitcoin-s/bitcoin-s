@@ -18,7 +18,8 @@ import scala.util.Try
 object HttpFeeRateProvider {
 
   def makeApiCall(uri: Uri, proxyParam: Option[Socks5ProxyParams])(implicit
-      system: ActorSystem): Future[String] = {
+      system: ActorSystem
+  ): Future[String] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
     val connectionPoolSettings =
       Socks5ClientTransport.createConnectionPoolSettings(proxyParam)

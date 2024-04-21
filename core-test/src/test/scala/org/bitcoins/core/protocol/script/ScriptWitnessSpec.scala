@@ -24,8 +24,10 @@ class ScriptWitnessSpec extends BitcoinSUnitTest {
   }
 
   it must "pull script signature out of p2wsh witness" in {
-    forAll(ScriptGenerators.rawScriptPubKey,
-           ScriptGenerators.rawScriptSignature) { case ((spk, _), scriptSig) =>
+    forAll(
+      ScriptGenerators.rawScriptPubKey,
+      ScriptGenerators.rawScriptSignature
+    ) { case ((spk, _), scriptSig) =>
       assert(P2WSHWitnessV0(spk, scriptSig).scriptSignature == scriptSig)
     }
   }

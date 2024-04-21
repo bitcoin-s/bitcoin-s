@@ -19,9 +19,12 @@ import scala.concurrent.Future
 
 /** Set of utilities to analyze, join, and update existing PSBTs
   *
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/analyzepsbt/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/joinpsbts/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/utxoupdatepsbt/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/analyzepsbt/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/joinpsbts/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/utxoupdatepsbt/]]
   */
 trait PsbtRpc {
   self: Client =>
@@ -39,14 +42,17 @@ trait PsbtRpc {
   }
 
   def utxoUpdatePsbt(psbt: PSBT, descriptors: Seq[String]): Future[PSBT] = {
-    bitcoindCall[PSBT]("utxoupdatepsbt",
-                       List(JsString(psbt.base64), Json.toJson(descriptors)))
+    bitcoindCall[PSBT](
+      "utxoupdatepsbt",
+      List(JsString(psbt.base64), Json.toJson(descriptors))
+    )
   }
 
   def convertToPsbt(
       rawTx: Transaction,
       permitSigData: Boolean = false,
-      isWitness: Option[Boolean] = None): Future[PSBT] = {
+      isWitness: Option[Boolean] = None
+  ): Future[PSBT] = {
     val firstArgs: List[JsValue] =
       List(Json.toJson(rawTx), JsBoolean(permitSigData))
     val args: List[JsValue] = firstArgs ++ isWitness.map(Json.toJson(_)).toList
@@ -57,18 +63,23 @@ trait PsbtRpc {
       inputs: Vector[TransactionInput],
       outputs: Map[BitcoinAddress, CurrencyUnit],
       locktime: Int = 0,
-      replacable: Boolean = false): Future[PSBT] = {
+      replacable: Boolean = false
+  ): Future[PSBT] = {
     val outputsJson =
       Json.toJson {
         outputs.map { case (addr, curr) =>
           addr -> Bitcoins(curr.satoshis)
         }
       }
-    bitcoindCall[PSBT]("createpsbt",
-                       List(Json.toJson(inputs),
-                            outputsJson,
-                            JsNumber(locktime),
-                            JsBoolean(replacable)))
+    bitcoindCall[PSBT](
+      "createpsbt",
+      List(
+        Json.toJson(inputs),
+        outputsJson,
+        JsNumber(locktime),
+        JsBoolean(replacable)
+      )
+    )
   }
 
   def combinePsbt(psbts: Vector[PSBT]): Future[PSBT] = {
@@ -77,10 +88,12 @@ trait PsbtRpc {
 
   def finalizePsbt(
       psbt: PSBT,
-      extract: Boolean = true): Future[FinalizePsbtResult] = {
+      extract: Boolean = true
+  ): Future[FinalizePsbtResult] = {
     bitcoindCall[FinalizePsbtResult](
       "finalizepsbt",
-      List(JsString(psbt.base64), JsBoolean(extract)))
+      List(JsString(psbt.base64), JsBoolean(extract))
+    )
   }
 
   def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] = {

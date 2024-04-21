@@ -20,8 +20,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCDb, Sha256Digest]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCDb, Sha256Digest]
     with SlickUtil[DLCDb, Sha256Digest]
     with DLCIdDaoUtil[DLCDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -30,18 +30,21 @@ case class DLCDAO()(implicit
 
   override val table: TableQuery[DLCTable] = TableQuery[DLCTable]
 
-  private lazy val contactTable: slick.lifted.TableQuery[
-    DLCContactDAO#DLCContactTable] = DLCContactDAO().table
+  private lazy val contactTable
+      : slick.lifted.TableQuery[DLCContactDAO#DLCContactTable] =
+    DLCContactDAO().table
 
   override def createAll(ts: Vector[DLCDb]): Future[Vector[DLCDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256Digest]): Query[DLCTable, DLCDb, Seq] =
+      ids: Vector[Sha256Digest]
+  ): Query[DLCTable, DLCDb, Seq] =
     table.filter(_.dlcId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256Digest): Query[DLCTable, DLCDb, Seq] = {
+      id: Sha256Digest
+  ): Query[DLCTable, DLCDb, Seq] = {
     table
       .filter(_.dlcId === id)
   }
@@ -49,18 +52,19 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
-    Vector[DLCDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdsAction(
+      dlcIds: Vector[Sha256Digest]): DBIOAction[Vector[
+                                                  DLCDb
+                                                ],
+                                                profile.api.NoStream,
+                                                profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(
+      dlcId: Sha256Digest
+  ): DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
@@ -71,7 +75,8 @@ case class DLCDAO()(implicit
   }
 
   def findByTempContractId(
-      tempContractId: Sha256Digest): Future[Option[DLCDb]] = {
+      tempContractId: Sha256Digest
+  ): Future[Option[DLCDb]] = {
     val q = table.filter(_.tempContractId === tempContractId)
 
     safeDatabase.run(q.result).map {
@@ -81,12 +86,14 @@ case class DLCDAO()(implicit
         None
       case dlcs: Vector[DLCDb] =>
         throw new RuntimeException(
-          s"More than one DLC per tempContractId (${tempContractId.hex}), got: $dlcs")
+          s"More than one DLC per tempContractId (${tempContractId.hex}), got: $dlcs"
+        )
     }
   }
 
   def findByTempContractId(
-      tempContractId: Sha256DigestBE): Future[Option[DLCDb]] =
+      tempContractId: Sha256DigestBE
+  ): Future[Option[DLCDb]] =
     findByTempContractId(tempContractId.flip)
 
   def findByContractId(contractId: ByteVector): Future[Option[DLCDb]] = {
@@ -99,19 +106,22 @@ case class DLCDAO()(implicit
         None
       case dlcs: Vector[DLCDb] =>
         throw new RuntimeException(
-          s"More than one DLC per contractId (${contractId.toHex}), got: $dlcs")
+          s"More than one DLC per contractId (${contractId.toHex}), got: $dlcs"
+        )
     }
   }
 
   def findByFundingOutPoint(
-      outPoint: TransactionOutPoint): Future[Option[DLCDb]] = {
+      outPoint: TransactionOutPoint
+  ): Future[Option[DLCDb]] = {
     val q = table.filter(_.fundingOutPointOpt === outPoint)
 
     safeDatabase.run(q.result).map(_.headOption)
   }
 
   def findByFundingOutPoints(
-      outPoints: Vector[TransactionOutPoint]): Future[Vector[DLCDb]] = {
+      outPoints: Vector[TransactionOutPoint]
+  ): Future[Vector[DLCDb]] = {
     val q = table.filter(_.fundingOutPointOpt.inSet(outPoints))
 
     safeDatabase.runVec(q.result)
@@ -128,20 +138,21 @@ case class DLCDAO()(implicit
   }
 
   def findByContactIdAction(
-      contactId: String): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
+      contactId: String
+  ): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
     val peer: Option[String] = Some(contactId)
     table.filter(_.peerOpt === peer).result.map(_.toVector)
   }
 
   def findByStateAction(
-      state: DLCState): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
+      state: DLCState
+  ): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
     table.filter(_.state === state).result.map(_.toVector)
   }
 
-  def findByStatesAction(states: Vector[DLCState]): DBIOAction[
-    Vector[DLCDb],
-    NoStream,
-    Effect.Read] = {
+  def findByStatesAction(
+      states: Vector[DLCState]
+  ): DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
     table.filter(_.state.inSet(states)).result.map(_.toVector)
   }
 
@@ -151,7 +162,8 @@ case class DLCDAO()(implicit
 
   def updateDLCContactMapping(
       dlcId: Sha256Digest,
-      contcatId: InetSocketAddress): Future[Unit] = {
+      contcatId: InetSocketAddress
+  ): Future[Unit] = {
     val contactQuery = contactTable.filter(_.address === contcatId)
 
     val action = for {
@@ -161,7 +173,8 @@ case class DLCDAO()(implicit
         else DBIO.failed(new SQLException(s"Unknown contact: $contcatId"))
       res <- updatePeerAction(
         dlcId,
-        Some(contcatId.getHostName + ":" + contcatId.getPort))
+        Some(contcatId.getHostName + ":" + contcatId.getPort)
+      )
     } yield res
 
     safeDatabase.run(action).map(_ => ())
@@ -175,10 +188,8 @@ case class DLCDAO()(implicit
 
   private def updatePeerAction(
       dlcId: Sha256Digest,
-      peerOpt: Option[String]): DBIOAction[
-    Int,
-    NoStream,
-    Effect.Read with Effect.Write] = {
+      peerOpt: Option[String]
+  ): DBIOAction[Int, NoStream, Effect.Read with Effect.Write] = {
     val dlcQuery = table.filter(_.dlcId === dlcId)
 
     for {
@@ -192,7 +203,8 @@ case class DLCDAO()(implicit
   }
 
   def findByDLCSerializationVersion(
-      version: DLCSerializationVersion): Future[Vector[DLCDb]] = {
+      version: DLCSerializationVersion
+  ): Future[Vector[DLCDb]] = {
     val action = table.filter(_.serializationVersion === version).result
     safeDatabase
       .run(action)
@@ -238,31 +250,35 @@ case class DLCDAO()(implicit
       column("closing_tx_id")
 
     def aggregateSignatureOpt: Rep[Option[SchnorrDigitalSignature]] = column(
-      "aggregate_signature")
+      "aggregate_signature"
+    )
 
     def serializationVersion: Rep[DLCSerializationVersion] = column(
-      "serialization_version")
+      "serialization_version"
+    )
 
     def peerOpt: Rep[Option[String]] = column("peer")
 
     override def * : ProvenShape[DLCDb] =
-      (dlcId,
-       tempContractId,
-       contractId,
-       protocolVersion,
-       state,
-       isInitiator,
-       account,
-       changeIndex,
-       keyIndex,
-       feeRate,
-       fundOutputSerialId,
-       lastUpdated,
-       fundingOutPointOpt,
-       fundingTxIdOpt,
-       closingTxIdOpt,
-       aggregateSignatureOpt,
-       serializationVersion,
-       peerOpt).<>(DLCDb.tupled, DLCDb.unapply)
+      (
+        dlcId,
+        tempContractId,
+        contractId,
+        protocolVersion,
+        state,
+        isInitiator,
+        account,
+        changeIndex,
+        keyIndex,
+        feeRate,
+        fundOutputSerialId,
+        lastUpdated,
+        fundingOutPointOpt,
+        fundingTxIdOpt,
+        closingTxIdOpt,
+        aggregateSignatureOpt,
+        serializationVersion,
+        peerOpt
+      ).<>(DLCDb.tupled, DLCDb.unapply)
   }
 }

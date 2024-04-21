@@ -13,8 +13,8 @@ sealed abstract class NetworkResult
 case class Node(
     addednode: URI,
     connected: Option[Boolean],
-    addresses: Option[Vector[NodeAddress]])
-    extends NetworkResult
+    addresses: Option[Vector[NodeAddress]]
+) extends NetworkResult
 
 case class NodeAddress(address: URI, connected: String) extends NetworkResult
 
@@ -22,8 +22,8 @@ case class GetNetTotalsResult(
     totalbytesrecv: Int,
     totalbytessent: Int,
     timemillis: UInt64,
-    uploadtarget: NetTarget)
-    extends NetworkResult
+    uploadtarget: NetTarget
+) extends NetworkResult
 
 case class NetTarget(
     timeframe: UInt32,
@@ -31,8 +31,8 @@ case class NetTarget(
     target_reached: Boolean,
     serve_historical_blocks: Boolean,
     bytes_left_in_cycle: Int,
-    time_left_in_cycle: UInt32)
-    extends NetworkResult
+    time_left_in_cycle: UInt32
+) extends NetworkResult
 
 trait GetNetworkInfoResult extends NetworkResult {
   def version: Int
@@ -65,8 +65,8 @@ case class GetNetworkInfoResultPreV21(
     relayfee: Bitcoins,
     incrementalfee: Bitcoins,
     localaddresses: Vector[NetworkAddress],
-    warnings: String)
-    extends GetNetworkInfoResult
+    warnings: String
+) extends GetNetworkInfoResult
 
 case class GetNetworkInfoResultPostV21(
     version: Int,
@@ -84,16 +84,16 @@ case class GetNetworkInfoResultPostV21(
     relayfee: Bitcoins,
     incrementalfee: Bitcoins,
     localaddresses: Vector[NetworkAddress],
-    warnings: String)
-    extends GetNetworkInfoResult
+    warnings: String
+) extends GetNetworkInfoResult
 
 case class Network(
     name: String,
     limited: Boolean,
     reachable: Boolean,
     proxy: String,
-    proxy_randomize_credentials: Boolean)
-    extends NetworkResult
+    proxy_randomize_credentials: Boolean
+) extends NetworkResult
 
 case class NetworkAddress(address: String, port: Int, score: Int)
     extends NetworkResult
@@ -127,8 +127,8 @@ case class PeerPostV21(
     inflight: Vector[Int],
     bytessent_per_msg: Map[String, Int],
     bytesrecv_per_msg: Map[String, Int],
-    minfeefilter: Option[SatoshisPerKiloByte])
-    extends Peer {
+    minfeefilter: Option[SatoshisPerKiloByte]
+) extends Peer {
   override val addnode: Boolean = connection_type == "manual"
 }
 
@@ -148,8 +148,8 @@ case class PeerV22(
     minfeefilter: Option[SatoshisPerKiloByte],
     bip152_hb_to: Boolean,
     bip152_hb_from: Boolean,
-    permissions: Vector[String])
-    extends Peer {
+    permissions: Vector[String]
+) extends Peer {
   override val addnode: Boolean = connection_type == "manual"
 }
 
@@ -186,8 +186,8 @@ case class PeerNetworkInfoPreV21(
     timeoffset: Int,
     pingtime: Option[BigDecimal],
     minping: Option[BigDecimal],
-    pingwait: Option[BigDecimal])
-    extends PeerNetworkInfo
+    pingwait: Option[BigDecimal]
+) extends PeerNetworkInfo
 
 case class PeerNetworkInfoPostV21(
     addr: URI,
@@ -208,8 +208,8 @@ case class PeerNetworkInfoPostV21(
     timeoffset: Int,
     pingtime: Option[BigDecimal],
     minping: Option[BigDecimal],
-    pingwait: Option[BigDecimal])
-    extends PeerNetworkInfo
+    pingwait: Option[BigDecimal]
+) extends PeerNetworkInfo
 
 trait NodeBan extends NetworkResult {
   def address: URI
@@ -221,8 +221,8 @@ case class NodeBanPreV20(
     address: URI,
     banned_until: UInt32,
     ban_created: UInt32,
-    ban_reason: String)
-    extends NodeBan
+    ban_reason: String
+) extends NodeBan
 
 case class NodeBanPostV22(
     address: URI,

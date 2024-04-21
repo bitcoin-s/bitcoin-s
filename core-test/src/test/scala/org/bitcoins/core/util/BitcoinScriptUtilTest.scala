@@ -17,7 +17,7 @@ import scodec.bits.ByteVector
   */
 class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
-  //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+  // from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   val asm = TestUtil.p2pkhScriptPubKey.asm
   val expectedHex = TestUtil.rawP2PKHScriptPubKey
   "BitcoinScriptUtil" must "give us the correct hexadecimal value of an asm script" in {
@@ -29,21 +29,25 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
     BitcoinScriptUtil
       .filterPushOps(
         Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++
-          BytesToPushOntoStack.operations)
+          BytesToPushOntoStack.operations
+      )
       .isEmpty must be(true)
   }
 
   // https://en.bitcoin.it/wiki/Genesis_block
   it must "filter out non-data from the genesis coinbase transaction" in {
     val genesisPK = ECPublicKeyBytes.fromHex(
-      "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")
+      "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"
+    )
     val output = TransactionOutput.fromHex(
-      "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac")
+      "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac"
+    )
     val scriptPubKey = output.scriptPubKey
     assert(
       BitcoinScriptUtil
         .getDataTokens(scriptPubKey.asm)
-        .map(_.bytes) == Vector(genesisPK.bytes))
+        .map(_.bytes) == Vector(genesisPK.bytes)
+    )
   }
 
   it must "filter out all but the data tokens" in {
@@ -51,35 +55,40 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
       assert(
         BitcoinScriptUtil
           .getDataTokens(p2pkhScript.asm)
-          .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes))
+          .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes)
+      )
     }
 
     forAll(ScriptGenerators.p2shScriptPubKey) { case (p2shScript, _, _) =>
       assert(
         BitcoinScriptUtil
           .getDataTokens(p2shScript.asm)
-          .map(_.bytes) == Vector(p2shScript.scriptHash.bytes))
+          .map(_.bytes) == Vector(p2shScript.scriptHash.bytes)
+      )
     }
 
     forAll(ScriptGenerators.p2wshSPKV0) { case (p2wshScript, _, _) =>
       assert(
         BitcoinScriptUtil
           .getDataTokens(p2wshScript.asm)
-          .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes))
+          .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes)
+      )
     }
 
     forAll(ScriptGenerators.p2wpkhSPKV0) { case (p2wpkhScript, _) =>
       assert(
         BitcoinScriptUtil
           .getDataTokens(p2wpkhScript.asm)
-          .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes))
+          .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes)
+      )
     }
 
     forAll(ScriptGenerators.multiSigScriptPubKey) { case (multiSigScript, _) =>
       assert(
         BitcoinScriptUtil
           .getDataTokens(multiSigScript.asm)
-          .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes))
+          .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes)
+      )
     }
   }
 
@@ -90,12 +99,14 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
     BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_NOP) must be(true)
     BitcoinScriptUtil.countsTowardsScriptOpLimit(
-      OP_CHECKLOCKTIMEVERIFY) must be(true)
+      OP_CHECKLOCKTIMEVERIFY
+    ) must be(true)
   }
 
   it must "not count script constants towards the script count limit" in {
     BitcoinScriptUtil.countsTowardsScriptOpLimit(
-      ScriptConstant("1234")) must be(false)
+      ScriptConstant("1234")
+    ) must be(false)
   }
 
   it must "not count OP_PUSHDATA operations towards the script count" in {
@@ -115,17 +126,17 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
     BitcoinScriptUtil.countSigOps(Seq(OP_CHECKSIGVERIFY)) must be(1)
 
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_CHECKSIG,
-          OP_CHECKSIG,
-          OP_CHECKSIG,
-          OP_CHECKSIG,
-          OP_CHECKSIG)) must be(5)
+      Seq(OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG)
+    ) must be(5)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_CHECKSIGVERIFY,
-          OP_CHECKSIGVERIFY,
-          OP_CHECKSIGVERIFY,
-          OP_CHECKSIGVERIFY,
-          OP_CHECKSIGVERIFY)) must be(5)
+      Seq(
+        OP_CHECKSIGVERIFY,
+        OP_CHECKSIGVERIFY,
+        OP_CHECKSIGVERIFY,
+        OP_CHECKSIGVERIFY,
+        OP_CHECKSIGVERIFY
+      )
+    ) must be(5)
   }
 
   it must "count n sigops when have n possible signatures in a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY" in {
@@ -137,26 +148,31 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
     BitcoinScriptUtil.countSigOps(Seq(OP_16, OP_CHECKMULTISIG)) must be(16)
     BitcoinScriptUtil.countSigOps(Seq(OP_16, OP_CHECKMULTISIGVERIFY)) must be(
-      16)
+      16
+    )
   }
 
   it must "count n sigops when have n possible signatures with multiple occurrences OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY in a script" in {
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_0, OP_CHECKMULTISIG, OP_0, OP_CHECKMULTISIG)) must be(0)
+      Seq(OP_0, OP_CHECKMULTISIG, OP_0, OP_CHECKMULTISIG)
+    ) must be(0)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_0, OP_CHECKMULTISIGVERIFY, OP_0, OP_CHECKMULTISIGVERIFY)) must be(
-      0)
+      Seq(OP_0, OP_CHECKMULTISIGVERIFY, OP_0, OP_CHECKMULTISIGVERIFY)
+    ) must be(0)
 
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_1, OP_CHECKMULTISIG, OP_1, OP_CHECKMULTISIG)) must be(2)
+      Seq(OP_1, OP_CHECKMULTISIG, OP_1, OP_CHECKMULTISIG)
+    ) must be(2)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_1, OP_CHECKMULTISIGVERIFY, OP_1, OP_CHECKMULTISIGVERIFY)) must be(
-      2)
+      Seq(OP_1, OP_CHECKMULTISIGVERIFY, OP_1, OP_CHECKMULTISIGVERIFY)
+    ) must be(2)
 
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_16, OP_CHECKMULTISIG, OP_16, OP_CHECKMULTISIG)) must be(32)
+      Seq(OP_16, OP_CHECKMULTISIG, OP_16, OP_CHECKMULTISIG)
+    ) must be(32)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_16, OP_CHECKMULTISIGVERIFY, OP_16, OP_CHECKMULTISIG)) must be(32)
+      Seq(OP_16, OP_CHECKMULTISIGVERIFY, OP_16, OP_CHECKMULTISIG)
+    ) must be(32)
   }
 
   it must "determine if the empty script is push only" in {
@@ -170,22 +186,28 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
   it must "determine that a script is not push only if it contains a ScriptConstant" in {
     BitcoinScriptUtil.isPushOnly(
-      Seq(OP_NOP, BytesToPushOntoStack(1), ScriptConstant("51"))) must be(false)
+      Seq(OP_NOP, BytesToPushOntoStack(1), ScriptConstant("51"))
+    ) must be(false)
   }
 
   it must "determine that the script is not push only if it contains an script number operation" in {
     BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1), OP_1) must be(
-      false)
+      false
+    )
   }
 
   it must "determine that a script is not minimal push when pushing 4f (-1)" in {
-    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1),
-                                    ScriptConstant("81")) must be(false)
+    BitcoinScriptUtil.isMinimalPush(
+      BytesToPushOntoStack(1),
+      ScriptConstant("81")
+    ) must be(false)
   }
 
   it must "determine that a script is minimal push when pushing 4f (79)" in {
-    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1),
-                                    ScriptConstant("4f")) must be(true)
+    BitcoinScriptUtil.isMinimalPush(
+      BytesToPushOntoStack(1),
+      ScriptConstant("4f")
+    ) must be(true)
   }
 
   it must "determine that a script is minimal push when pushing OP_1NEGATE (-1)" in {
@@ -252,25 +274,31 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0500")) must be(false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("050000")) must be(
-      false)
+      false
+    )
 
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0580")) must be(false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("050080")) must be(
-      false)
+      false
+    )
 
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("ff7f80")) must be(
-      false)
+      false
+    )
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("ff7f00")) must be(
-      false)
+      false
+    )
 
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("ffff7f80")) must be(
-      false)
+      false
+    )
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("ffff7f00")) must be(
-      false)
+      false
+    )
   }
 
   it must "check a public key's encoding" in {
-    //pubkeys must be compressed or uncompressed or else that are not validly encoded
+    // pubkeys must be compressed or uncompressed or else that are not validly encoded
     val key = ECPublicKeyBytes("00")
     val program = TestUtil.testProgramExecutionInProgress
     BitcoinScriptUtil.checkPubKeyEncoding(key, program) must be(false)
@@ -283,43 +311,55 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
     val scriptNum16 = ScriptNumber(16)
     val scriptNum17 = ScriptNumber(17)
     BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum100) must be(
-      scriptNum100)
+      scriptNum100
+    )
     BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum10) must be(
-      OP_10)
+      OP_10
+    )
     BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNumZero) must be(
-      OP_0)
+      OP_0
+    )
     BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum16) must be(
-      OP_16)
+      OP_16
+    )
     BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum17) must be(
-      scriptNum17)
+      scriptNum17
+    )
     BitcoinScriptUtil.minimalScriptNumberRepresentation(
-      ScriptNumber(-1)) must be(OP_1NEGATE)
+      ScriptNumber(-1)
+    ) must be(OP_1NEGATE)
     BitcoinScriptUtil.minimalScriptNumberRepresentation(
-      ScriptNumber(-2)) must be(ScriptNumber(-2))
+      ScriptNumber(-2)
+    ) must be(ScriptNumber(-2))
   }
 
   it must "determine if a segwit pubkey is compressed" in {
     val key = ECPrivateKeyBytes.freshPrivateKey(false)
     val pubKey = key.publicKeyBytes
     val flags = Seq(ScriptVerifyWitnessPubKeyType)
-    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,
-                                            SigVersionWitnessV0,
-                                            flags) must be(
-      Some(ScriptErrorWitnessPubKeyType))
+    BitcoinScriptUtil.isValidPubKeyEncoding(
+      pubKey,
+      SigVersionWitnessV0,
+      flags
+    ) must be(Some(ScriptErrorWitnessPubKeyType))
 
     val key2 = ECPrivateKeyBytes.freshPrivateKey(false)
     val pubKey2 = key2.publicKeyBytes
-    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2,
-                                            SigVersionBase,
-                                            flags) must be(None)
+    BitcoinScriptUtil.isValidPubKeyEncoding(
+      pubKey2,
+      SigVersionBase,
+      flags
+    ) must be(None)
   }
 
   it must "remove the signatures from a p2sh scriptSig" in {
     val p2shScriptSig = TestUtil.p2sh2Of3ScriptSig
     val signatures = p2shScriptSig.signatures
     val asmWithoutSigs =
-      BitcoinScriptUtil.removeSignaturesFromScript(signatures,
-                                                   p2shScriptSig.asm)
+      BitcoinScriptUtil.removeSignaturesFromScript(
+        signatures,
+        p2shScriptSig.asm
+      )
     val sigExists =
       signatures.map(sig => asmWithoutSigs.contains(ScriptConstant(sig.hex)))
     sigExists.contains(true) must be(false)
@@ -328,7 +368,8 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
   it must "cast a script token to a boolean value" in {
     BitcoinScriptUtil.castToBool(ScriptConstant("")) must be(false)
     BitcoinScriptUtil.castToBool(
-      ScriptConstant(ByteVector(0x80.toByte))) must be(false)
+      ScriptConstant(ByteVector(0x80.toByte))
+    ) must be(false)
     BitcoinScriptUtil.castToBool(ScriptConstant("000000")) must be(false)
     BitcoinScriptUtil.castToBool(ScriptConstant("00000080")) must be(false)
 

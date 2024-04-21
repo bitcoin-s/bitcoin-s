@@ -13,21 +13,23 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
-/** Created by chris on 1/8/16.
-  * Responsible for matching script op codes with their given
-  * hexadecimal representation or byte representation
+/** Created by chris on 1/8/16. Responsible for matching script op codes with
+  * their given hexadecimal representation or byte representation
   */
 trait ScriptOperationFactory[T <: ScriptOperation] extends StringFactory[T] {
 
-  /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s for a particular `T`. */
+  /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s
+    * for a particular `T`.
+    */
   def operations: Vector[T]
 
-  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given string
+  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from
+    * a given string
     */
   override def fromStringOpt(str: String): Option[T] = {
     val result: Option[T] = operations.find(_.toString == str)
     if (result.isEmpty) {
-      //try and remove the 'OP_' prefix on the operations and see if it matches anything.
+      // try and remove the 'OP_' prefix on the operations and see if it matches anything.
       operations.find(op =>
         removeOP_Prefix(op.toString) == removeOP_Prefix(str))
     } else result
@@ -41,21 +43,24 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends StringFactory[T] {
     }
   }
 
-  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from its hexadecimal representation.
+  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from
+    * its hexadecimal representation.
     */
   def fromHex(hex: String): Option[T] = {
     val bytes = BytesUtil.decodeHex(hex)
     fromBytes(bytes)
   }
 
-  /** Removes the 'OP_' prefix from a given operation.
-    * Example: `OP_EQUALVERIFY` would be transformed into `EQUALVERIFY`
+  /** Removes the 'OP_' prefix from a given operation. Example: `OP_EQUALVERIFY`
+    * would be transformed into `EQUALVERIFY`
     */
   private def removeOP_Prefix(str: String): String = {
     str.replace("OP_", "")
   }
 
-  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
+  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from
+    * a given [[scala.Byte Byte]].
+    */
   @inline final def fromByte(byte: Byte): T = {
     scriptOpMap(byte).asInstanceOf[T]
   }
@@ -79,11 +84,9 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends StringFactory[T] {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  /** This contains duplicate operations
-    * There is an optimization here by moving popular opcodes
-    * to the front of the vector so when we iterate through it,
-    * we are more likely to find the op code we are looking for
-    * sooner
+  /** This contains duplicate operations There is an optimization here by moving
+    * popular opcodes to the front of the vector so when we iterate through it,
+    * we are more likely to find the op code we are looking for sooner
     */
   final override val operations: Vector[ScriptOperation] = {
     StackPushOperationFactory.pushDataOperations ++

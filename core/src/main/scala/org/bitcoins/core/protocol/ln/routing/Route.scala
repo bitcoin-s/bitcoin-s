@@ -12,10 +12,10 @@ sealed trait Route {
 
 case class NodeRoute(
     override val amount: MilliSatoshis,
-    nodeIds: Vector[NodeId])
-    extends Route
+    nodeIds: Vector[NodeId]
+) extends Route
 
 case class ChannelRoute(
     override val amount: MilliSatoshis,
-    shortChannelIds: Vector[ShortChannelId])
-    extends Route
+    shortChannelIds: Vector[ShortChannelId]
+) extends Route

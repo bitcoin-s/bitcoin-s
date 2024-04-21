@@ -19,14 +19,16 @@ abstract class AddressFactory[T <: Address] extends StringFactory[T] {
     }
   }
 
-  /** Attempts to create a address from the given [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
-    * and [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
+  /** Attempts to create a address from the given
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] and
+    * [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
     */
   def fromScriptPubKeyT(spk: ScriptPubKey, np: NetworkParameters): Try[T]
 
   def fromScriptPubKeyOpt(
       spk: ScriptPubKey,
-      np: NetworkParameters): Option[T] = {
+      np: NetworkParameters
+  ): Option[T] = {
     fromScriptPubKeyT(spk, np).toOption
   }
 

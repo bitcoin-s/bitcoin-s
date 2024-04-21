@@ -17,10 +17,12 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
   }
 
   it must "parse networks" in {
-    val conf = BitcoindConfig("""
+    val conf = BitcoindConfig(
+      """
                                 |regtest=1
         """.stripMargin,
-                              tmpDir)
+      tmpDir
+    )
     assert(conf.network == RegTest)
   }
 

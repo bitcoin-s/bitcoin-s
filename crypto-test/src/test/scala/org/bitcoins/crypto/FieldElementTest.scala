@@ -37,8 +37,10 @@ class FieldElementTest extends BitcoinSCryptoTest {
   }
 
   it must "add small numbers correctly" in {
-    forAll(CryptoGenerators.smallFieldElement,
-           CryptoGenerators.smallFieldElement) { case (fe1, fe2) =>
+    forAll(
+      CryptoGenerators.smallFieldElement,
+      CryptoGenerators.smallFieldElement
+    ) { case (fe1, fe2) =>
       val feSum = fe1.add(fe2).toBigInteger
       val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger)
 
@@ -47,8 +49,10 @@ class FieldElementTest extends BitcoinSCryptoTest {
   }
 
   it must "add large numbers correctly" in {
-    forAll(CryptoGenerators.largeFieldElement,
-           CryptoGenerators.largeFieldElement) { case (fe1, fe2) =>
+    forAll(
+      CryptoGenerators.largeFieldElement,
+      CryptoGenerators.largeFieldElement
+    ) { case (fe1, fe2) =>
       val feSum = fe1.add(fe2).toBigInteger
       val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger).subtract(N)
 
@@ -75,15 +79,18 @@ class FieldElementTest extends BitcoinSCryptoTest {
 
   it must "wrap around correctly" in {
     assert(
-      FieldElement.orderMinusOne.add(FieldElement.one) == FieldElement.zero)
+      FieldElement.orderMinusOne.add(FieldElement.one) == FieldElement.zero
+    )
     assert(
-      FieldElement.zero.subtract(
-        FieldElement.one) == FieldElement.orderMinusOne)
+      FieldElement.zero.subtract(FieldElement.one) == FieldElement.orderMinusOne
+    )
   }
 
   it must "multiply small numbers correctly" in {
-    forAll(CryptoGenerators.reallySmallFieldElement,
-           CryptoGenerators.reallySmallFieldElement) { case (fe1, fe2) =>
+    forAll(
+      CryptoGenerators.reallySmallFieldElement,
+      CryptoGenerators.reallySmallFieldElement
+    ) { case (fe1, fe2) =>
       val feProduct = fe1.multiply(fe2).toBigInteger
       val bigIntProduct = fe1.toBigInteger.multiply(fe2.toBigInteger)
 

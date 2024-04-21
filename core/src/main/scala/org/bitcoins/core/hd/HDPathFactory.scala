@@ -13,7 +13,8 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
       coin: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int): PathType
+      addressIndex: Int
+  ): PathType
 
   /** Tries to generate a HD path from the given path segments
     */
@@ -43,7 +44,8 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
     val purpose: HDPurpose = maybePurpose match {
       case BIP32Node(_, None) =>
         throw new IllegalArgumentException(
-          "The first child in a HD path must be hardened")
+          "The first child in a HD path must be hardened"
+        )
       case BIP32Node(HDPurposes.Legacy.constant, Some(_)) => HDPurposes.Legacy
       case BIP32Node(HDPurposes.SegWit.constant, Some(_)) => HDPurposes.SegWit
       case BIP32Node(HDPurposes.NestedSegWit.constant, Some(_)) =>
@@ -52,42 +54,53 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
         HDPurposes.Multisig
       case BIP32Node(unknown, Some(_)) =>
         throw new IllegalArgumentException(
-          s"Purpose constant ($unknown) is not a known purpose constant")
+          s"Purpose constant ($unknown) is not a known purpose constant"
+        )
     }
 
     require(
       purpose.constant == PURPOSE,
-      s"Expected $PURPOSE' as the purpose constant, got ${purpose.constant}'")
+      s"Expected $PURPOSE' as the purpose constant, got ${purpose.constant}'"
+    )
 
-    require(children.length == 5,
-            s"A $pathName path string must have five elements")
+    require(
+      children.length == 5,
+      s"A $pathName path string must have five elements"
+    )
 
     val (coinChild, accountChild, chainChild, addressChild) = {
-      require(children.length == 5,
-              s"Must have 5 elements in HDPath, got=$children")
+      require(
+        children.length == 5,
+        s"Must have 5 elements in HDPath, got=$children"
+      )
       (children(1), children(2), children(3), children(4))
     }
 
     require(coinChild.hardened, "The coin type child must be hardened!")
     require(accountChild.hardened, "The account child must be hardened!")
     require(!chainChild.hardened, "The chain child must not be hardened!")
-    require(!addressChild.hardened,
-            "The address index child must not be hardened!")
+    require(
+      !addressChild.hardened,
+      "The address index child must not be hardened!"
+    )
 
     val chainType = HDChainType.fromInt(chainChild.index)
     val coinType = HDCoinType.fromInt(coinChild.index)
 
-    apply(coin = coinType,
-          accountIndex = accountChild.index,
-          chainType = chainType,
-          addressIndex = addressChild.index)
+    apply(
+      coin = coinType,
+      accountIndex = accountChild.index,
+      chainType = chainType,
+      addressIndex = addressChild.index
+    )
   }
 
   protected def assembleAddress(
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int): HDAddress = {
+      addressIndex: Int
+  ): HDAddress = {
     val coin = HDCoin(hdPurpose, coinType)
     val account = HDAccount(coin = coin, index = accountIndex)
     val chain =
@@ -97,7 +110,8 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
 
   /** The purpose constant from BIP43
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki#purpose BIP43]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki#purpose BIP43]]
     */
   def PURPOSE: Int
 

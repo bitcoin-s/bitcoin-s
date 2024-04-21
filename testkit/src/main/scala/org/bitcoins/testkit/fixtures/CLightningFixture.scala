@@ -12,7 +12,8 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
 
-/** A trait that is useful if you need clightning fixtures for your test suite */
+/** A trait that is useful if you need clightning fixtures for your test suite
+  */
 trait CLightningFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam = CLightningRpcClient
@@ -37,7 +38,9 @@ trait CLightningFixture extends BitcoinSFixture with CachedBitcoindNewest {
   }
 }
 
-/** A trait that is useful if you need dual clightning fixtures for your test suite */
+/** A trait that is useful if you need dual clightning fixtures for your test
+  * suite
+  */
 trait DualCLightningFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam =

@@ -18,15 +18,16 @@ import scala.util.{Failure, Success}
 
 case class DLCNode(wallet: DLCWalletApi)(implicit
     system: ActorSystem,
-    val config: DLCNodeAppConfig)
-    extends DLCNodeApi
+    val config: DLCNodeAppConfig
+) extends DLCNodeApi
     with BitcoinSLogger {
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   private[node] lazy val serverBindF: Future[(InetSocketAddress, ActorRef)] = {
     logger.info(
-      s"Binding server to ${config.listenAddress}, with tor hidden service: ${config.torParams.isDefined}")
+      s"Binding server to ${config.listenAddress}, with tor hidden service: ${config.torParams.isDefined}"
+    )
     DLCServer
       .bind(
         wallet,
@@ -66,22 +67,24 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       peerAddress: InetSocketAddress,
       dlcOffer: LnMessage[DLCOfferTLV],
       externalPayoutAddress: Option[BitcoinAddress],
-      externalChangeAddress: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCAccept] = {
+      externalChangeAddress: Option[BitcoinAddress]
+  ): Future[DLCMessage.DLCAccept] = {
     val f = for {
       handler <- connectToPeer(peerAddress)
-      accept <- wallet.acceptDLCOffer(dlcOffer.tlv,
-                                      Some(peerAddress),
-                                      externalPayoutAddress,
-                                      externalChangeAddress)
+      accept <- wallet.acceptDLCOffer(
+        dlcOffer.tlv,
+        Some(peerAddress),
+        externalPayoutAddress,
+        externalChangeAddress
+      )
     } yield {
       handler ! DLCDataHandler.Send(accept.toMessage)
       accept
     }
 
     f.failed.foreach(err =>
-      config.callBacks.executeOnAcceptFailed(dlcOffer.tlv.tempContractId,
-                                             err.getMessage))
+      config.callBacks
+        .executeOnAcceptFailed(dlcOffer.tlv.tempContractId, err.getMessage))
 
     f
   }
@@ -89,16 +92,19 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
   override def sendDLCOffer(
       peerAddress: InetSocketAddress,
       message: String,
-      offerTLV: DLCOfferTLV): Future[Sha256Digest] = {
+      offerTLV: DLCOfferTLV
+  ): Future[Sha256Digest] = {
     val f = for {
       handler <- connectToPeer(peerAddress)
       localAddress <- getHostAddress
     } yield {
       val peer = NormalizedString(
-        localAddress.getHostString + ":" + peerAddress.getPort)
+        localAddress.getHostString + ":" + peerAddress.getPort
+      )
       val msg = NormalizedString(message)
       val lnMessage = LnMessage(
-        SendOfferTLV(peer = peer, message = msg, offer = offerTLV))
+        SendOfferTLV(peer = peer, message = msg, offer = offerTLV)
+      )
       handler ! DLCDataHandler.Send(lnMessage)
       offerTLV.tempContractId
     }
@@ -106,9 +112,12 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     f.failed.foreach { err =>
       logger.error(
         s"Failed to send offer.tempContractId=${offerTLV.tempContractId}",
-        err)
-      config.callBacks.executeOnOfferSendFailed(offerTLV.tempContractId,
-                                                err.getMessage)
+        err
+      )
+      config.callBacks.executeOnOfferSendFailed(
+        offerTLV.tempContractId,
+        err.getMessage
+      )
     }
 
     f
@@ -117,22 +126,28 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
   override def sendDLCOffer(
       peerAddress: InetSocketAddress,
       message: String,
-      temporaryContractId: Sha256Digest): Future[Sha256Digest] = {
+      temporaryContractId: Sha256Digest
+  ): Future[Sha256Digest] = {
     for {
       dlcOpt <- wallet.findDLCByTemporaryContractId(temporaryContractId)
       dlc = dlcOpt.getOrElse(
         throw new IllegalArgumentException(
-          s"Cannot find a DLC with temp contact ID $temporaryContractId"))
+          s"Cannot find a DLC with temp contact ID $temporaryContractId"
+        )
+      )
       offerOpt <- wallet.getDLCOffer(dlc.dlcId)
       offer = offerOpt.getOrElse(
         throw new IllegalArgumentException(
-          s"Cannot find an offer with for DLC ID ${dlc.dlcId}"))
+          s"Cannot find an offer with for DLC ID ${dlc.dlcId}"
+        )
+      )
       res <- sendDLCOffer(peerAddress, message, offer.toTLV)
     } yield res
   }
 
   override def checkPeerConnection(
-      peerAddress: InetSocketAddress): Future[Unit] = {
+      peerAddress: InetSocketAddress
+  ): Future[Unit] = {
     for {
       handler <- connectToPeer(peerAddress)
     } yield {
@@ -143,45 +158,57 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
   private def handleTLVSendFailed(
       tlvType: BigSizeUInt,
       tlvId: ByteVector,
-      error: Throwable): Future[Unit] = {
+      error: Throwable
+  ): Future[Unit] = {
     logger.info("TLV send error ", error)
     tlvType match {
       case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
-        config.callBacks.executeOnOfferSendFailed(Sha256Digest.fromBytes(tlvId),
-                                                  error.getMessage)
+        config.callBacks.executeOnOfferSendFailed(
+          Sha256Digest.fromBytes(tlvId),
+          error.getMessage
+        )
       case DLCAcceptTLV.tpe =>
-        config.callBacks.executeOnAcceptFailed(Sha256Digest.fromBytes(tlvId),
-                                               error.getMessage)
+        config.callBacks.executeOnAcceptFailed(
+          Sha256Digest.fromBytes(tlvId),
+          error.getMessage
+        )
       case DLCSignTLV.tpe =>
-        config.callBacks.executeOnSignFailed(Sha256Digest.fromBytes(tlvId),
-                                             error.getMessage)
+        config.callBacks.executeOnSignFailed(
+          Sha256Digest.fromBytes(tlvId),
+          error.getMessage
+        )
       case unknown =>
         val exn = new RuntimeException(
-          s"Unknown tpe=$unknown inside of handleTLVSendFailed")
+          s"Unknown tpe=$unknown inside of handleTLVSendFailed"
+        )
         Future.failed(exn)
     }
   }
 
   private def handleTLVSendSucceed(
       tlvType: BigSizeUInt,
-      tlvId: ByteVector): Future[Unit] = {
+      tlvId: ByteVector
+  ): Future[Unit] = {
     tlvType match {
       case SendOfferTLV.tpe | DLCOfferTLV.tpe =>
         config.callBacks.executeOnOfferSendSucceed(
-          Sha256Digest.fromBytes(tlvId))
+          Sha256Digest.fromBytes(tlvId)
+        )
       case DLCAcceptTLV.tpe =>
         config.callBacks.executeOnAcceptSucceed(Sha256Digest.fromBytes(tlvId))
       case DLCSignTLV.tpe =>
         config.callBacks.executeOnSignSucceed(Sha256Digest.fromBytes(tlvId))
       case unknown =>
         val exn = new RuntimeException(
-          s"Unknown tpe=$unknown inside of handleTLVSendSucceed")
+          s"Unknown tpe=$unknown inside of handleTLVSendSucceed"
+        )
         Future.failed(exn)
     }
   }
 
   private def connectToPeer(
-      peerAddress: InetSocketAddress): Future[ActorRef] = {
+      peerAddress: InetSocketAddress
+  ): Future[ActorRef] = {
 
     val peer =
       Peer(socket = peerAddress, socks5ProxyParams = config.socks5ProxyParams)
@@ -190,11 +217,13 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
     val f = for {
       _ <- config.callBacks.executeOnPeerConnectionInitiated(peerAddress)
-      _ <- DLCClient.connect(peer,
-                             wallet,
-                             Some(handlerP),
-                             handleWrite = handleTLVSendSucceed,
-                             handleWriteError = handleTLVSendFailed)
+      _ <- DLCClient.connect(
+        peer,
+        wallet,
+        Some(handlerP),
+        handleWrite = handleTLVSendSucceed,
+        handleWriteError = handleTLVSendFailed
+      )
       handler <- handlerP.future
     } yield handler
 

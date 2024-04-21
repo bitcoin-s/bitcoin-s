@@ -19,7 +19,8 @@ case class DLCFundingInputDb(
     nSequence: UInt32,
     maxWitnessLength: Long,
     redeemScriptOpt: Option[ScriptPubKey],
-    witnessScriptOpt: Option[ScriptWitness]) {
+    witnessScriptOpt: Option[ScriptWitness]
+) {
 
   lazy val toOutputReference: OutputReference =
     OutputReference(outPoint, output)

@@ -18,9 +18,11 @@ class NetworkPayloadTest extends BitcoinSUnitTest {
     val inet = InetAddress(ipArr)
     val testVersionMessage = VersionMessage(TestNet3, inet, inet, relay = false)
     payload.asInstanceOf[VersionMessage].addressReceiveIpAddress must be(
-      testVersionMessage.addressReceiveIpAddress)
+      testVersionMessage.addressReceiveIpAddress
+    )
     payload.asInstanceOf[VersionMessage].addressReceivePort must be(
-      testVersionMessage.addressReceivePort)
+      testVersionMessage.addressReceivePort
+    )
   }
 
   // this tests has a bunch of messages to choose between, so we set a high config value

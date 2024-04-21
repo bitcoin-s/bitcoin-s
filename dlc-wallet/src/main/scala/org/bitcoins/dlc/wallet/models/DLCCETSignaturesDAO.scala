@@ -11,8 +11,8 @@ case class DLCCETSignaturesPrimaryKey(dlcId: Sha256Digest, contractIndex: Long)
 
 case class DLCCETSignaturesDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
     with SlickUtil[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
     with DLCIdDaoUtilNoPK[DLCCETSignaturesDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -27,14 +27,13 @@ case class DLCCETSignaturesDAO()(implicit
   }
 
   override def createAll(
-      ts: Vector[DLCCETSignaturesDb]): Future[Vector[DLCCETSignaturesDb]] =
+      ts: Vector[DLCCETSignaturesDb]
+  ): Future[Vector[DLCCETSignaturesDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[DLCCETSignaturesPrimaryKey]): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] = {
+      ids: Vector[DLCCETSignaturesPrimaryKey]
+  ): Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] = {
     // is there a better way to do this?
     val starting = table.filter(_.dlcId =!= Sha256Digest.empty)
 
@@ -49,39 +48,38 @@ case class DLCCETSignaturesDAO()(implicit
       }
   }
 
-  override def findByPrimaryKey(id: DLCCETSignaturesPrimaryKey): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] = {
+  override def findByPrimaryKey(
+      id: DLCCETSignaturesPrimaryKey
+  ): Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] = {
     table.filter(t => t.dlcId === id.dlcId && t.index === id.contractIndex)
   }
 
-  override def find(t: DLCCETSignaturesDb): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] = {
+  override def find(
+      t: DLCCETSignaturesDb
+  ): Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] = {
     findByPrimaryKey(DLCCETSignaturesPrimaryKey(t.dlcId, t.index))
   }
 
-  override def findAll(dlcs: Vector[DLCCETSignaturesDb]): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] =
+  override def findAll(
+      dlcs: Vector[DLCCETSignaturesDb]
+  ): Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] =
     findByPrimaryKeys(
-      dlcs.map(sig => DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index)))
+      dlcs.map(sig => DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index))
+    )
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Vector[DLCCETSignaturesDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdAction(
+      dlcId: Sha256Digest): DBIOAction[Vector[
+                                         DLCCETSignaturesDb
+                                       ],
+                                       profile.api.NoStream,
+                                       profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(
+      dlcId: Sha256Digest
+  ): DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
@@ -102,14 +100,17 @@ case class DLCCETSignaturesDAO()(implicit
     def * : ProvenShape[DLCCETSignaturesDb] =
       (dlcId, index, sigPoint, accepterSig, initiatorSig).<>(
         DLCCETSignaturesDb.tupled,
-        DLCCETSignaturesDb.unapply)
+        DLCCETSignaturesDb.unapply
+      )
 
     def pk: PrimaryKey =
       primaryKey(name = "pk_cet_sigs", sourceColumns = (dlcId, index))
 
     def fk =
-      foreignKey("fk_dlc_id",
-                 sourceColumns = dlcId,
-                 targetTableQuery = dlcTable)(_.dlcId)
+      foreignKey(
+        "fk_dlc_id",
+        sourceColumns = dlcId,
+        targetTableQuery = dlcTable
+      )(_.dlcId)
   }
 }

@@ -16,15 +16,16 @@ import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import java.time.Instant
 import scala.concurrent.Future
 
-/** Useful script for scanning bitcoind
-  * This file assumes you have pre-configured the connection
-  * between bitcoin-s and bitcoind inside of bitcoin-s.conf
-  * @see https://bitcoin-s.org/docs/config/configuration#example-configuration-file
+/** Useful script for scanning bitcoind This file assumes you have
+  * pre-configured the connection between bitcoin-s and bitcoind inside of
+  * bitcoin-s.conf
+  * @see
+  *   https://bitcoin-s.org/docs/config/configuration#example-configuration-file
   */
 class ScanBitcoind()(implicit
     override val system: ActorSystem,
-    rpcAppConfig: BitcoindRpcAppConfig)
-    extends BitcoinSRunner[Unit] {
+    rpcAppConfig: BitcoindRpcAppConfig
+) extends BitcoinSRunner[Unit] {
 
   override def start(): Future[Unit] = {
 
@@ -36,7 +37,7 @@ class ScanBitcoind()(implicit
     val f = for {
       bitcoind <- bitcoindF
       endHeight <- endHeightF
-      //_ <- countWitV1MempoolTxs(bitcoind)
+      // _ <- countWitV1MempoolTxs(bitcoind)
       _ <- countTaprootTxsInBlocks(endHeight, 50000, bitcoind)
     } yield ()
     f.failed.foreach(err =>
@@ -50,13 +51,15 @@ class ScanBitcoind()(implicit
       .map(_ => ())
   }
 
-  /** Searches a given Source[Int] that represents block heights applying f to them and returning a Seq[T] with the results */
+  /** Searches a given Source[Int] that represents block heights applying f to
+    * them and returning a Seq[T] with the results
+    */
   def searchBlocks[T](
       bitcoind: BitcoindRpcClient,
       source: Source[Int, NotUsed],
       f: Block => T,
-      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[
-    Seq[T]] = {
+      numParallelism: Int = Runtime.getRuntime.availableProcessors()
+  ): Future[Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
@@ -66,7 +69,8 @@ class ScanBitcoind()(implicit
       }
       .mapAsync(numParallelism) { case (block, height) =>
         logger.info(
-          s"Searching block at height=$height hashBE=${block.blockHeader.hashBE.hex}")
+          s"Searching block at height=$height hashBE=${block.blockHeader.hashBE.hex}"
+        )
         FutureUtil.makeAsync { () =>
           f(block)
         }
@@ -78,11 +82,12 @@ class ScanBitcoind()(implicit
   def countSegwitTxs(
       bitcoind: BitcoindRpcClient,
       startHeight: Int,
-      endHeight: Int): Future[Unit] = {
+      endHeight: Int
+  ): Future[Unit] = {
     val startTime = System.currentTimeMillis()
     val source: Source[Int, NotUsed] = Source(startHeight.to(endHeight))
 
-    //in this simple example, we are going to count the number of witness transactions
+    // in this simple example, we are going to count the number of witness transactions
     val countSegwitTxs: Block => Int = { block: Block =>
       block.transactions.count(_.isInstanceOf[WitnessTransaction])
     }
@@ -96,14 +101,16 @@ class ScanBitcoind()(implicit
       count <- countF
       endTime = System.currentTimeMillis()
       _ = logger.info(
-        s"Count of segwit txs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
+        s"Count of segwit txs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms "
+      )
     } yield ()
   }
 
   def countTaprootTxsInBlocks(
       endHeight: Int,
       lastBlocks: Int,
-      bitcoind: BitcoindRpcClient): Future[Int] = {
+      bitcoind: BitcoindRpcClient
+  ): Future[Int] = {
     val startTime = System.currentTimeMillis()
     val startHeight = endHeight - lastBlocks
     val source: Source[Int, NotUsed] = Source(startHeight.to(endHeight))
@@ -124,7 +131,8 @@ class ScanBitcoind()(implicit
       count <- countF
       endTime = System.currentTimeMillis()
       _ = logger.info(
-        s"Count of taproot outputs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
+        s"Count of taproot outputs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms "
+      )
     } yield count
   }
 
@@ -135,12 +143,14 @@ class ScanBitcoind()(implicit
     })
     countF.foreach(c =>
       logger.info(
-        s"Found $c mempool transactions with witness v1 outputs at ${Instant.now}"))
+        s"Found $c mempool transactions with witness v1 outputs at ${Instant.now}"
+      ))
     countF
   }
 
   def getMemPoolSource(
-      bitcoind: BitcoindRpcClient): Future[Source[Transaction, NotUsed]] = {
+      bitcoind: BitcoindRpcClient
+  ): Future[Source[Transaction, NotUsed]] = {
     val mempoolF = bitcoind.getRawMemPool
     val sourceF: Future[Source[DoubleSha256DigestBE, NotUsed]] =
       mempoolF.map(Source(_))

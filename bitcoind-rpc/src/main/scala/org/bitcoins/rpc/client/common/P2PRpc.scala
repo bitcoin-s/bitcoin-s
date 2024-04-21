@@ -13,15 +13,16 @@ import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 import java.net.URI
 import scala.concurrent.Future
 
-/** This trait defines functionality relating to how
-  * Bitcoin Core connects to and selects its network peers.
+/** This trait defines functionality relating to how Bitcoin Core connects to
+  * and selects its network peers.
   */
 trait P2PRpc { self: Client =>
 
   def addNode(address: URI, command: AddNodeArgument): Future[Unit] = {
     bitcoindCall[Unit](
       "addnode",
-      List(JsString(address.getAuthority), JsString(command.toString)))
+      List(JsString(address.getAuthority), JsString(command.toString))
+    )
   }
 
   def clearBanned(): Future[Unit] = {
@@ -78,12 +79,17 @@ trait P2PRpc { self: Client =>
       address: URI,
       command: SetBanCommand,
       banTime: Int = 86400,
-      absolute: Boolean = false): Future[Unit] = {
-    bitcoindCall[Unit]("setban",
-                       List(JsString(address.getAuthority),
-                            JsString(command.toString),
-                            JsNumber(banTime),
-                            JsBoolean(absolute)))
+      absolute: Boolean = false
+  ): Future[Unit] = {
+    bitcoindCall[Unit](
+      "setban",
+      List(
+        JsString(address.getAuthority),
+        JsString(command.toString),
+        JsNumber(banTime),
+        JsBoolean(absolute)
+      )
+    )
   }
 
   def setNetworkActive(activate: Boolean): Future[Unit] = {

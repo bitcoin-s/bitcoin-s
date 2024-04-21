@@ -39,14 +39,16 @@ import scala.concurrent.duration.{
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
-  * @param directory The data directory of the wallet
-  * @param conf Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the wallet
+  * @param conf
+  *   Optional sequence of configuration overrides
   */
 case class WalletAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config],
-    kmConfOpt: Option[KeyManagerAppConfig] = None)(implicit
-    val system: ActorSystem)
+    kmConfOpt: Option[KeyManagerAppConfig] = None
+)(implicit val system: ActorSystem)
     extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig]
@@ -61,7 +63,8 @@ case class WalletAppConfig(
   override protected[bitcoins] type ConfigType = WalletAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Vector[Config]): WalletAppConfig =
+      configs: Vector[Config]
+  ): WalletAppConfig =
     WalletAppConfig(baseDatadir, configs)
 
   override def appConfig: WalletAppConfig = this
@@ -73,7 +76,9 @@ case class WalletAppConfig(
     Executors.newScheduledThreadPool(
       1,
       AsyncUtil.getNewThreadFactory(
-        s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"))
+        s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"
+      )
+    )
   }
 
   private lazy val rescanThreadFactory: ThreadFactory =
@@ -81,8 +86,10 @@ case class WalletAppConfig(
 
   /** Threads for rescanning the wallet */
   private[wallet] lazy val rescanThreadPool: ExecutorService =
-    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors(),
-                                 rescanThreadFactory)
+    Executors.newFixedThreadPool(
+      Runtime.getRuntime.availableProcessors(),
+      rescanThreadFactory
+    )
 
   override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
 
@@ -112,8 +119,10 @@ case class WalletAppConfig(
 
   lazy val defaultAccount: HDAccount = {
     val purpose = defaultAccountKind
-    HDAccount(coin = HDCoin(purpose, HDCoinType.fromNetwork(network)),
-              index = 0)
+    HDAccount(
+      coin = HDCoin(purpose, HDCoinType.fromNetwork(network)),
+      index = 0
+    )
   }
 
   lazy val bloomFalsePositiveRate: Double =
@@ -127,15 +136,19 @@ case class WalletAppConfig(
 
   lazy val requiredConfirmations: Int = {
     val confs = config.getInt("bitcoin-s.wallet.requiredConfirmations")
-    require(confs >= 1,
-            s"requiredConfirmations cannot be less than 1, got: $confs")
+    require(
+      confs >= 1,
+      s"requiredConfirmations cannot be less than 1, got: $confs"
+    )
     confs
   }
 
   lazy val longTermFeeRate: SatoshisPerVirtualByte = {
     val feeRate = config.getInt("bitcoin-s.wallet.longTermFeeRate")
-    require(feeRate >= 0,
-            s"longTermFeeRate cannot be less than 0, got: $feeRate")
+    require(
+      feeRate >= 0,
+      s"longTermFeeRate cannot be less than 0, got: $feeRate"
+    )
     SatoshisPerVirtualByte.fromLong(feeRate)
   }
 
@@ -187,8 +200,10 @@ case class WalletAppConfig(
   override lazy val schemaName: Option[String] = {
     driver match {
       case PostgreSQL =>
-        val schema = PostgresUtil.getSchemaName(moduleName = moduleName,
-                                                walletName = walletName)
+        val schema = PostgresUtil.getSchemaName(
+          moduleName = moduleName,
+          walletName = walletName
+        )
         Some(schema)
       case SQLite =>
         None
@@ -209,7 +224,8 @@ case class WalletAppConfig(
       isExists <- seedExists()
       _ <- {
         logger.info(
-          s"Starting wallet with xpub=${masterXpub} walletName=${walletName}")
+          s"Starting wallet with xpub=${masterXpub} walletName=${walletName}"
+        )
         if (!isExists) {
           masterXPubDAO
             .create(masterXpub)
@@ -221,7 +237,7 @@ case class WalletAppConfig(
     } yield {
       logger.debug(s"Initializing wallet setup")
       if (isHikariLoggingEnabled) {
-        //.get is safe because hikari logging is enabled
+        // .get is safe because hikari logging is enabled
         startHikariLogger(hikariLoggingInterval.get)
       }
       logger.info(s"Applied $numMigrations to the wallet project")
@@ -241,9 +257,9 @@ case class WalletAppConfig(
     stopCallbacksF.flatMap { _ =>
       clearCallbacks()
       stopRebroadcastTxsScheduler()
-      //this eagerly shuts down all scheduled tasks on the scheduler
-      //in the future, we should actually cancel all things that are scheduled
-      //manually, and then shutdown the scheduler
+      // this eagerly shuts down all scheduled tasks on the scheduler
+      // in the future, we should actually cancel all things that are scheduled
+      // manually, and then shutdown the scheduler
       scheduler.shutdownNow()
       rescanThreadPool.shutdownNow()
       super.stop()
@@ -257,7 +273,8 @@ case class WalletAppConfig(
   def kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath, defaultAccountKind, network)
 
-  /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
+  /** How much elements we can have in
+    * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we throw an exception
     */
   def addressQueueSize: Int = {
@@ -268,7 +285,8 @@ case class WalletAppConfig(
     }
   }
 
-  /** How long we wait while generating an address in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
+  /** How long we wait while generating an address in
+    * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we timeout
     */
   def addressQueueTimeout: Duration = {
@@ -282,13 +300,12 @@ case class WalletAppConfig(
   }
 
   /** Checks if the following exist
-    *  1. A seed exists
-    *  2. wallet exists
-    *  3. The account exists
+    *   1. A seed exists 2. wallet exists 3. The account exists
     */
   def hasWallet()(implicit
       walletConf: WalletAppConfig,
-      ec: ExecutionContext): Future[Boolean] = {
+      ec: ExecutionContext
+  ): Future[Boolean] = {
     if (kmConf.seedExists()) {
       val hdCoin = walletConf.defaultAccount.coin
       val walletDB = walletConf.dbPath resolve walletConf.dbName
@@ -309,20 +326,23 @@ case class WalletAppConfig(
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit system: ActorSystem): Future[Wallet] = {
-    WalletAppConfig.createHDWallet(nodeApi = nodeApi,
-                                   chainQueryApi = chainQueryApi,
-                                   feeRateApi = feeRateApi)(this, system)
+      feeRateApi: FeeRateApi
+  )(implicit system: ActorSystem): Future[Wallet] = {
+    WalletAppConfig.createHDWallet(
+      nodeApi = nodeApi,
+      chainQueryApi = chainQueryApi,
+      feeRateApi = feeRateApi
+    )(this, system)
   }
 
-  private[this] var rebroadcastTransactionsCancelOpt: Option[
-    ScheduledFuture[_]] = None
+  private[this] var rebroadcastTransactionsCancelOpt
+      : Option[ScheduledFuture[_]] = None
 
   /** Starts the wallet's rebroadcast transaction scheduler */
   def startRebroadcastTxsScheduler(wallet: Wallet): Unit = synchronized {
     rebroadcastTransactionsCancelOpt match {
       case Some(_) =>
-        //already scheduled, do nothing
+        // already scheduled, do nothing
         ()
       case None =>
         logger.info(s"Starting wallet rebroadcast task")
@@ -330,10 +350,12 @@ case class WalletAppConfig(
         val interval = rebroadcastFrequency.toSeconds
         val initDelay = interval
         val future =
-          scheduler.scheduleAtFixedRate(RebroadcastTransactionsRunnable(wallet),
-                                        initDelay,
-                                        interval,
-                                        TimeUnit.SECONDS)
+          scheduler.scheduleAtFixedRate(
+            RebroadcastTransactionsRunnable(wallet),
+            initDelay,
+            interval,
+            TimeUnit.SECONDS
+          )
         rebroadcastTransactionsCancelOpt = Some(future)
         ()
     }
@@ -354,8 +376,8 @@ case class WalletAppConfig(
     }
   }
 
-  /** The creation time of the mnemonic seed
-    * If we cannot decrypt the seed because of invalid passwords, we return None
+  /** The creation time of the mnemonic seed If we cannot decrypt the seed
+    * because of invalid passwords, we return None
     */
   def creationTime: Instant = {
     kmConf.creationTime
@@ -371,20 +393,23 @@ object WalletAppConfig
 
   val moduleName: String = "wallet"
 
-  /** Constructs a wallet configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a wallet configuration from the default Bitcoin-S data
+    * directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      system: ActorSystem): WalletAppConfig =
+      system: ActorSystem
+  ): WalletAppConfig =
     WalletAppConfig(datadir, confs)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi)(implicit
+      feeRateApi: FeeRateApi
+  )(implicit
       walletConf: WalletAppConfig,
-      system: ActorSystem): Future[Wallet] = {
+      system: ActorSystem
+  ): Future[Wallet] = {
     import system.dispatcher
     walletConf.hasWallet().flatMap { walletExists =>
       val bip39PasswordOpt = walletConf.bip39PasswordOpt
@@ -399,15 +424,17 @@ object WalletAppConfig
         val unInitializedWallet =
           Wallet(nodeApi, chainQueryApi, feeRateApi)
 
-        Wallet.initialize(wallet = unInitializedWallet,
-                          bip39PasswordOpt = bip39PasswordOpt)
+        Wallet.initialize(
+          wallet = unInitializedWallet,
+          bip39PasswordOpt = bip39PasswordOpt
+        )
       }
     }
   }
 
   case class RebroadcastTransactionsRunnable(wallet: Wallet)(implicit
-      ec: ExecutionContext)
-      extends Runnable {
+      ec: ExecutionContext
+  ) extends Runnable {
 
     override def run(): Unit = {
       val f = for {
@@ -416,7 +443,8 @@ object WalletAppConfig
         _ = {
           if (txs.size > 1)
             logger.info(
-              s"Rebroadcasting ${txs.size} transactions, txids=${txs.map(_.txIdBE)}")
+              s"Rebroadcasting ${txs.size} transactions, txids=${txs.map(_.txIdBE)}"
+            )
         }
 
         _ <- wallet.nodeApi.broadcastTransactions(txs)

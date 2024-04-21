@@ -22,7 +22,7 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
   }
 
   it must "perform a RIPEMD160 on a SHA256 hash to generate a bitcoin address" in {
-    //https://bitcoin.stackexchange.com/questions/37040/ripemd160sha256publickey-where-am-i-going-wrong
+    // https://bitcoin.stackexchange.com/questions/37040/ripemd160sha256publickey-where-am-i-going-wrong
     val bytes =
       hex"ea571f53cb3a9865d3dc74735e0c16643d319c6ad81e199b9c8408cecbcec7bb"
     val expected = "5238c71458e464d9ff90299abca4a1d7b9cb76ab"
@@ -94,13 +94,16 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
     forAll(NumberGenerator.bytevector) { bytes =>
       assert(
         CryptoUtil.sha256SchnorrChallenge(bytes) == CryptoUtil
-          .taggedSha256(bytes, "BIP0340/challenge"))
+          .taggedSha256(bytes, "BIP0340/challenge")
+      )
       assert(
         CryptoUtil.sha256SchnorrNonce(bytes) == CryptoUtil
-          .taggedSha256(bytes, "BIP0340/nonce"))
+          .taggedSha256(bytes, "BIP0340/nonce")
+      )
       assert(
         CryptoUtil.sha256SchnorrAuxRand(bytes) == CryptoUtil
-          .taggedSha256(bytes, "BIP0340/aux"))
+          .taggedSha256(bytes, "BIP0340/aux")
+      )
     }
   }
 
@@ -143,13 +146,15 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
     val nonComposite = "fi"
     assert(
       CryptoUtil.serializeForHash(nonComposite) == ByteVector.fromValidHex(
-        "6669")
+        "6669"
+      )
     )
 
     val accentString = "éléphant"
     assert(
       CryptoUtil.serializeForHash(accentString) == ByteVector.fromValidHex(
-        "c3a96cc3a97068616e74")
+        "c3a96cc3a97068616e74"
+      )
     )
   }
 
@@ -159,40 +164,55 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
     assert(
       singletons
         .map(CryptoUtil.sha256)
-        .forall(_ == Sha256Digest(
-          "0a94dc9d420d1142d6b71de60f9bf7e2f345a4d62c9f141b091539769ddf3075"))
+        .forall(
+          _ == Sha256Digest(
+            "0a94dc9d420d1142d6b71de60f9bf7e2f345a4d62c9f141b091539769ddf3075"
+          )
+        )
     )
 
     val canonicalComposites = Vector("\u00f4", "\u006f\u0302")
     assert(
       canonicalComposites
         .map(CryptoUtil.sha256)
-        .forall(_ == Sha256Digest(
-          "cc912dbca598fd80ca7f5d98ece5d846b447f4a9ae3f73c352e2687eb293eef5"))
+        .forall(
+          _ == Sha256Digest(
+            "cc912dbca598fd80ca7f5d98ece5d846b447f4a9ae3f73c352e2687eb293eef5"
+          )
+        )
     )
 
     val multipleCombiningMarks = Vector("\u1e69", "\u0073\u0323\u0307")
     assert(
       multipleCombiningMarks
         .map(CryptoUtil.sha256)
-        .forall(_ == Sha256Digest(
-          "ceca1ea456e95ee498463622915209bb08a018e8ee9741b46b64ef1a08fb56ab"))
+        .forall(
+          _ == Sha256Digest(
+            "ceca1ea456e95ee498463622915209bb08a018e8ee9741b46b64ef1a08fb56ab"
+          )
+        )
     )
 
     val compatibilityComposite = "\ufb01"
     assert(
       CryptoUtil.sha256(compatibilityComposite) == Sha256Digest(
-        "b6554cce8a93f1c8818280e2a768116a79216ad5501a85357d233409db87d340"))
+        "b6554cce8a93f1c8818280e2a768116a79216ad5501a85357d233409db87d340"
+      )
+    )
 
     val nonComposite = "fi"
     assert(
       CryptoUtil.sha256(nonComposite) == Sha256Digest(
-        "b4bdc848109722a383d0a972c6eb859f2abd29565b8c4cc7199e7c9eb708f1b7"))
+        "b4bdc848109722a383d0a972c6eb859f2abd29565b8c4cc7199e7c9eb708f1b7"
+      )
+    )
 
     val accentString = "éléphant"
     assert(
       CryptoUtil.sha256(accentString) == Sha256Digest(
-        "c941ae685f62cbe7bb47d0791af7154788fd9e873e5c57fd2449d1454ed5b16f"))
+        "c941ae685f62cbe7bb47d0791af7154788fd9e873e5c57fd2449d1454ed5b16f"
+      )
+    )
   }
 
   it must "encode strings correctly when hashing" in {
@@ -228,7 +248,7 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
     assert(!CryptoUtil.checkEntropy(sameBytes1.toBitVector))
     assert(!CryptoUtil.checkEntropy(sameBytes2.toBitVector))
 
-    //to short of entropy
+    // to short of entropy
     val toShort = ByteVector.fromValidHex("0123456789abcdef")
     assert(!CryptoUtil.checkEntropy(toShort.toBitVector))
   }

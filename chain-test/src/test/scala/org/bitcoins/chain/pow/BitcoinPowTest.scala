@@ -30,12 +30,15 @@ class BitcoinPowTest extends ChainDbUnitTest {
   it must "NOT calculate a POW change when one is not needed" inFixtured {
     case ChainFixture.Empty =>
       val blockchain = Blockchain.fromHeaders(
-        Vector(ChainTestUtil.ValidPOWChange.blockHeaderDb566494))
+        Vector(ChainTestUtil.ValidPOWChange.blockHeaderDb566494)
+      )
       val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
 
       val nextWork =
-        Pow.getNetworkWorkRequired(newPotentialTip = header2.blockHeader,
-                                   blockchain = blockchain)
+        Pow.getNetworkWorkRequired(
+          newPotentialTip = header2.blockHeader,
+          blockchain = blockchain
+        )
 
       assert(nextWork == blockchain.tip.nBits)
   }
@@ -47,9 +50,11 @@ class BitcoinPowTest extends ChainDbUnitTest {
       val expectedNextWork =
         ChainTestUtil.ValidPOWChange.blockHeader566496.nBits
       val calculatedWork =
-        Pow.calculateNextWorkRequired(currentTipDb,
-                                      firstBlockDb,
-                                      MainNetChainParams)
+        Pow.calculateNextWorkRequired(
+          currentTipDb,
+          firstBlockDb,
+          MainNetChainParams
+        )
 
       assert(calculatedWork == expectedNextWork)
   }
@@ -63,10 +68,12 @@ class BitcoinPowTest extends ChainDbUnitTest {
           .until(ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
           .toVector
       val assertionFs: Future[Assertion] = FutureUtil
-        .batchExecute(elements = iterator,
-                      f = batchCheckHeaderPOW(_: Vector[Int], blockHeaderDAO),
-                      init = succeed,
-                      batchSize = 1000)
+        .batchExecute(
+          elements = iterator,
+          f = batchCheckHeaderPOW(_: Vector[Int], blockHeaderDAO),
+          init = succeed,
+          batchSize = 1000
+        )
 
       assertionFs
   }
@@ -94,7 +101,8 @@ class BitcoinPowTest extends ChainDbUnitTest {
   /** Helper method to check headers proof of work in batches */
   private def batchCheckHeaderPOW(
       iterator: Vector[Int],
-      blockHeaderDAO: BlockHeaderDAO): Future[Assertion] = {
+      blockHeaderDAO: BlockHeaderDAO
+  ): Future[Assertion] = {
     val nestedAssertions: Vector[Future[Assertion]] = {
       iterator.map { height =>
         val blockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)

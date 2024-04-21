@@ -13,17 +13,17 @@ object DLCState extends StringFactory[DLCState] {
   /** Means that someone has attempted to claim the DLC */
   sealed abstract class ClosedState extends DLCState
 
-  /** A state meant to represent we are computing adaptor sigs.
-    * Computing adaptor signatures can take awhile on certain hardware
-    * (raspberry pi) which is why we model this state
+  /** A state meant to represent we are computing adaptor sigs. Computing
+    * adaptor signatures can take awhile on certain hardware (raspberry pi)
+    * which is why we model this state
     */
   sealed abstract class AdaptorSigComputationState extends InProgressState
 
   /** A state that requires an oracle outcome to be valid */
   sealed trait ClosedViaOracleOutcomeState extends ClosedState
 
-  /** The state where an offer has been created but no
-    * accept message has yet been created/received.
+  /** The state where an offer has been created but no accept message has yet
+    * been created/received.
     */
   final case object Offered extends InProgressState {
     override val order: Int = 0
@@ -33,8 +33,8 @@ object DLCState extends StringFactory[DLCState] {
     override val order: Int = 1
   }
 
-  /** The state where an offer has been accepted but
-    * no sign message has yet been created/received.
+  /** The state where an offer has been accepted but no sign message has yet
+    * been created/received.
     */
   final case object Accepted extends InProgressState {
     override val order: Int = 2
@@ -44,62 +44,62 @@ object DLCState extends StringFactory[DLCState] {
     override val order: Int = 3
   }
 
-  /** The state where the initiating party has created
-    * a sign message in response to an accept message
-    * but the DLC funding transaction has not yet been
-    * broadcasted to the network.
+  /** The state where the initiating party has created a sign message in
+    * response to an accept message but the DLC funding transaction has not yet
+    * been broadcasted to the network.
     */
   final case object Signed extends InProgressState {
     override val order: Int = 4
   }
 
-  /** The state where the accepting (non-initiating)
-    * party has broadcasted the DLC funding transaction
-    * to the blockchain, and it has not yet been confirmed.
+  /** The state where the accepting (non-initiating) party has broadcasted the
+    * DLC funding transaction to the blockchain, and it has not yet been
+    * confirmed.
     */
   final case object Broadcasted extends InProgressState {
     override val order: Int = 5
   }
 
-  /** The state where the DLC funding transaction has been
-    * confirmed on-chain and no execution paths have yet been
-    * initiated.
+  /** The state where the DLC funding transaction has been confirmed on-chain
+    * and no execution paths have yet been initiated.
     */
   final case object Confirmed extends InProgressState {
     override val order: Int = 6
   }
 
-  /** The state where one of the CETs has been accepted by the network
-    * and executed by ourselves.
+  /** The state where one of the CETs has been accepted by the network and
+    * executed by ourselves.
     */
   final case object Claimed extends ClosedViaOracleOutcomeState {
     override val order: Int = 7
   }
 
-  /** The state where one of the CETs has been accepted by the network
-    * and executed by a remote party.
+  /** The state where one of the CETs has been accepted by the network and
+    * executed by a remote party.
     */
   final case object RemoteClaimed extends ClosedViaOracleOutcomeState {
     override val order: Int = 7
   }
 
-  /** The state where the DLC refund transaction has been
-    * accepted by the network.
+  /** The state where the DLC refund transaction has been accepted by the
+    * network.
     */
   final case object Refunded extends ClosedState {
     val order: Int = 7
   }
 
-  val all: Vector[DLCState] = Vector(Offered,
-                                     AcceptComputingAdaptorSigs,
-                                     Accepted,
-                                     SignComputingAdaptorSigs,
-                                     Signed,
-                                     Broadcasted,
-                                     Confirmed,
-                                     Claimed,
-                                     RemoteClaimed,
-                                     Refunded)
+  val all: Vector[DLCState] = Vector(
+    Offered,
+    AcceptComputingAdaptorSigs,
+    Accepted,
+    SignComputingAdaptorSigs,
+    Signed,
+    Broadcasted,
+    Confirmed,
+    Claimed,
+    RemoteClaimed,
+    Refunded
+  )
 
   /** The states where you can cancel a DLC in your wallet */
   val cancellableState = Vector(

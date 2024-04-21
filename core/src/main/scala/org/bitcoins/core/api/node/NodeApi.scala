@@ -18,7 +18,8 @@ trait NodeApi {
     */
   def broadcastTransactions(transactions: Vector[Transaction]): Future[Unit]
 
-  /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+  /** Request the underlying node to download the given blocks from its peers
+    * and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
     */
   def downloadBlocks(blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit]
 

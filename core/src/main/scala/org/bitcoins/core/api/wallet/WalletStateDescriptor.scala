@@ -22,7 +22,8 @@ object WalletStateDescriptorType
       case Some(state) => state
       case None =>
         sys.error(
-          s"Could not find WalletStateDescriptorType for string=$string")
+          s"Could not find WalletStateDescriptorType for string=$string"
+        )
     }
   }
 }

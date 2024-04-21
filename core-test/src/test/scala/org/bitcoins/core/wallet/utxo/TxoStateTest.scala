@@ -9,14 +9,16 @@ class TxoStateTest extends BitcoinSUnitTest {
   it must "read from string" in {
 
     TxoState.fromString("PendingConfirmationsReceived") must be(
-      TxoState.PendingConfirmationsReceived)
+      TxoState.PendingConfirmationsReceived
+    )
 
     TxoState.fromString("ConfirmedReceived") must be(TxoState.ConfirmedReceived)
 
     TxoState.fromString("Reserved") must be(TxoState.Reserved)
 
     TxoState.fromString("PendingConfirmationsSpent") must be(
-      TxoState.PendingConfirmationsSpent)
+      TxoState.PendingConfirmationsSpent
+    )
 
     TxoState.fromString("ConfirmedSpent") must be(TxoState.ConfirmedSpent)
   }

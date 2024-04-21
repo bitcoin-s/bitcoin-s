@@ -81,20 +81,26 @@ object DLCWalletUtil extends BitcoinSLogger {
   }
 
   lazy val sampleOracleInfo: EnumSingleOracleInfo =
-    EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
-                                      rValue,
-                                      sampleOutcomes.map(_._1))
+    EnumSingleOracleInfo.dummyForKeys(
+      oraclePrivKey,
+      rValue,
+      sampleOutcomes.map(_._1)
+    )
 
   lazy val sampleOracleInfoNonWinnerTakeAll: EnumSingleOracleInfo = {
-    EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
-                                      rValue,
-                                      nonWinnerTakeAllOutcomes.map(_._1))
+    EnumSingleOracleInfo.dummyForKeys(
+      oraclePrivKey,
+      rValue,
+      nonWinnerTakeAllOutcomes.map(_._1)
+    )
   }
 
   lazy val invalidOracleInfo: EnumSingleOracleInfo = {
-    val info = EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
-                                                 rValue,
-                                                 sampleOutcomes.map(_._1))
+    val info = EnumSingleOracleInfo.dummyForKeys(
+      oraclePrivKey,
+      rValue,
+      sampleOutcomes.map(_._1)
+    )
     val announcement = info.announcement.asInstanceOf[OracleAnnouncementV0TLV]
     val invalidAnnouncement =
       announcement.copy(announcementSignature = SchnorrDigitalSignature.dummy)
@@ -104,17 +110,22 @@ object DLCWalletUtil extends BitcoinSLogger {
   lazy val sampleContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
-  lazy val sampleContractOraclePairNonWinnerTakeAll: ContractOraclePair.EnumPair = {
-    ContractOraclePair.EnumPair(sampleContractDescriptorNonWinnerTakeAll,
-                                sampleOracleInfoNonWinnerTakeAll)
+  lazy val sampleContractOraclePairNonWinnerTakeAll
+      : ContractOraclePair.EnumPair = {
+    ContractOraclePair.EnumPair(
+      sampleContractDescriptorNonWinnerTakeAll,
+      sampleOracleInfoNonWinnerTakeAll
+    )
   }
 
   lazy val invalidContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, invalidOracleInfo)
 
   lazy val sampleContractInfo: SingleContractInfo =
-    SingleContractInfo(totalCollateral = total,
-                       contractOraclePair = sampleContractOraclePair)
+    SingleContractInfo(
+      totalCollateral = total,
+      contractOraclePair = sampleContractOraclePair
+    )
 
   lazy val sampleContractInfoNonWinnerTakeAll: SingleContractInfo = {
     SingleContractInfo(total, sampleContractOraclePairNonWinnerTakeAll)
@@ -143,12 +154,15 @@ object DLCWalletUtil extends BitcoinSLogger {
     val unsorted = rValues.take(numDigits).toVector
     val sorted = OrderedNonces.fromUnsorted(unsorted)
     NumericSingleOracleInfo(
-      OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, sorted))
+      OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, sorted)
+    )
   }
 
   lazy val multiNonceContractOraclePair: ContractOraclePair.NumericPair = {
-    ContractOraclePair.NumericPair(multiNonceContractDescriptor,
-                                   multiNonceOracleInfo)
+    ContractOraclePair.NumericPair(
+      multiNonceContractDescriptor,
+      multiNonceOracleInfo
+    )
   }
 
   lazy val multiNonceContractInfo: ContractInfo =
@@ -179,29 +193,36 @@ object DLCWalletUtil extends BitcoinSLogger {
   }
 
   lazy val dummyAddress: BitcoinAddress = BitcoinAddress(
-    "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2")
+    "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
+  )
 
   lazy val dummyDLCKeys: DLCPublicKeys =
     DLCPublicKeys(dummyKey, dummyAddress)
 
   lazy val dummyBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE(
-    "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
+    "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75"
+  )
 
   val dummyPrevTx: BaseTransaction = BaseTransaction(
     TransactionConstants.validLockVersion,
     Vector.empty,
     Vector.fill(2)(TransactionOutput(half, P2WPKHWitnessSPKV0(dummyKey))),
-    UInt32.zero)
+    UInt32.zero
+  )
 
   val dummyFundingInputs = Vector(
-    DLCFundingInputP2WPKHV0(UInt64.zero,
-                            dummyPrevTx,
-                            UInt32.zero,
-                            TransactionConstants.sequence),
-    DLCFundingInputP2WPKHV0(UInt64.one,
-                            dummyPrevTx,
-                            UInt32.one,
-                            TransactionConstants.sequence)
+    DLCFundingInputP2WPKHV0(
+      UInt64.zero,
+      dummyPrevTx,
+      UInt32.zero,
+      TransactionConstants.sequence
+    ),
+    DLCFundingInputP2WPKHV0(
+      UInt64.one,
+      dummyPrevTx,
+      UInt32.one,
+      TransactionConstants.sequence
+    )
   )
 
   lazy val sampleOfferPayoutSerialId: UInt64 = DLCMessage.genSerialId()
@@ -267,10 +288,12 @@ object DLCWalletUtil extends BitcoinSLogger {
     Vector(
       EnumOracleOutcome(
         Vector(sampleOracleInfo),
-        EnumOutcome(winStr)).sigPoint -> ECAdaptorSignature.dummy,
+        EnumOutcome(winStr)
+      ).sigPoint -> ECAdaptorSignature.dummy,
       EnumOracleOutcome(
         Vector(sampleOracleInfo),
-        EnumOutcome(loseStr)).sigPoint -> ECAdaptorSignature.dummy
+        EnumOutcome(loseStr)
+      ).sigPoint -> ECAdaptorSignature.dummy
     )
 
   lazy val dummyCETSigs: CETSignatures =
@@ -280,7 +303,8 @@ object DLCWalletUtil extends BitcoinSLogger {
     DLCMessage.genSerialId(Vector(sampleOfferPayoutSerialId))
 
   lazy val sampleAcceptChangeSerialId: UInt64 = DLCMessage.genSerialId(
-    Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId))
+    Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId)
+  )
 
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
     collateral = half,
@@ -297,17 +321,22 @@ object DLCWalletUtil extends BitcoinSLogger {
 
   lazy val dummyFundingSignatures: FundingSignatures = FundingSignatures(
     Vector(
-      (TransactionOutPoint(dummyBlockHash, UInt32.zero), dummyScriptWitness)))
+      (TransactionOutPoint(dummyBlockHash, UInt32.zero), dummyScriptWitness)
+    )
+  )
 
   lazy val sampleDLCSign: DLCSign =
-    DLCSign(dummyCETSigs,
-            dummyPartialSig,
-            dummyFundingSignatures,
-            ByteVector.empty)
+    DLCSign(
+      dummyCETSigs,
+      dummyPartialSig,
+      dummyFundingSignatures,
+      ByteVector.empty
+    )
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
     dlcId = Sha256Digest(
-      "9da9922b9067007f8d9c56c37f202a568f0cdb104e5ef9752ad6cbc1834f0334"),
+      "9da9922b9067007f8d9c56c37f202a568f0cdb104e5ef9752ad6cbc1834f0334"
+    ),
     tempContractId = sampleDLCOffer.tempContractId,
     contractIdOpt = None,
     protocolVersion = 0,
@@ -345,9 +374,10 @@ object DLCWalletUtil extends BitcoinSLogger {
       payoutAddressAOpt: Option[BitcoinAddress] = None,
       changeAddressAOpt: Option[BitcoinAddress] = None,
       payoutAddressBOpt: Option[BitcoinAddress] = None,
-      changeAddressBOpt: Option[BitcoinAddress] = None)(implicit
-      ec: ExecutionContext): Future[
-    (InitializedDLCWallet, InitializedDLCWallet)] = {
+      changeAddressBOpt: Option[BitcoinAddress] = None
+  )(implicit
+      ec: ExecutionContext
+  ): Future[(InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
     for {
@@ -361,17 +391,21 @@ object DLCWalletUtil extends BitcoinSLogger {
         externalPayoutAddressOpt = payoutAddressAOpt,
         externalChangeAddressOpt = changeAddressAOpt
       )
-      accept <- walletB.acceptDLCOffer(offer,
-                                       None,
-                                       payoutAddressBOpt,
-                                       changeAddressBOpt)
+      accept <- walletB.acceptDLCOffer(
+        offer,
+        None,
+        payoutAddressBOpt,
+        changeAddressBOpt
+      )
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
       _ <- walletA.processTransaction(tx, None)
     } yield {
-      (InitializedDLCWallet(FundedDLCWallet(walletA)),
-       InitializedDLCWallet(FundedDLCWallet(walletB)))
+      (
+        InitializedDLCWallet(FundedDLCWallet(walletA)),
+        InitializedDLCWallet(FundedDLCWallet(walletB))
+      )
     }
   }
 
@@ -379,8 +413,9 @@ object DLCWalletUtil extends BitcoinSLogger {
     val wallet: DLCWallet = funded.wallet
   }
 
-  def getDLCStatus(wallet: DLCWallet)(implicit
-      ec: ExecutionContext): Future[DLCStatus] = {
+  def getDLCStatus(
+      wallet: DLCWallet
+  )(implicit ec: ExecutionContext): Future[DLCStatus] = {
     for {
       dbs <- wallet.dlcDAO.findAll()
       _ = require(dbs.size == 1, "There should only be one dlc initialized")
@@ -389,8 +424,9 @@ object DLCWalletUtil extends BitcoinSLogger {
     } yield status.get
   }
 
-  def getContractId(wallet: DLCWallet)(implicit
-      ec: ExecutionContext): Future[ByteVector] = {
+  def getContractId(
+      wallet: DLCWallet
+  )(implicit ec: ExecutionContext): Future[ByteVector] = {
     wallet.dlcDAO.findAll().map { all =>
       require(all.size == 1, "There should only be one dlc initialized")
       all.head.contractIdOpt.get
@@ -401,7 +437,8 @@ object DLCWalletUtil extends BitcoinSLogger {
       transaction: Transaction,
       inputIndex: Long,
       prevOut: TransactionOutput,
-      outputMap: PreviousOutputMap): Boolean = {
+      outputMap: PreviousOutputMap
+  ): Boolean = {
     val sigComponent = WitnessTxSigComponent(
       transaction.asInstanceOf[WitnessTransaction],
       UInt32(inputIndex),
@@ -416,7 +453,8 @@ object DLCWalletUtil extends BitcoinSLogger {
       wallets: (InitializedDLCWallet, InitializedDLCWallet),
       asInitiator: Boolean,
       func: DLCWallet => Future[Transaction],
-      expectedOutputs: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
+      expectedOutputs: Int
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     val dlcA = wallets._1.wallet
     val dlcB = wallets._2.wallet
     dlcExecutionTest(dlcA, dlcB, asInitiator, func, expectedOutputs)
@@ -427,7 +465,8 @@ object DLCWalletUtil extends BitcoinSLogger {
       dlcB: DLCWallet,
       asInitiator: Boolean,
       func: DLCWallet => Future[Transaction],
-      expectedOutputs: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
+      expectedOutputs: Int
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     for {
       contractId <- getContractId(dlcA)
       fundingTx <- dlcB.broadcastDLCFundingTx(contractId)
@@ -462,8 +501,9 @@ object DLCWalletUtil extends BitcoinSLogger {
     }
   }
 
-  def verifyProperlySetTxIds(wallet: DLCWallet)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def verifyProperlySetTxIds(
+      wallet: DLCWallet
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       contractId <- getContractId(wallet)
       dlcDbOpt <- wallet.dlcDAO.findByContractId(contractId)
@@ -477,9 +517,9 @@ object DLCWalletUtil extends BitcoinSLogger {
     }
   }
 
-  def getSigs(contractInfo: SingleContractInfo): (
-      OracleAttestmentTLV,
-      OracleAttestmentTLV) = {
+  def getSigs(
+      contractInfo: SingleContractInfo
+  ): (OracleAttestmentTLV, OracleAttestmentTLV) = {
     val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
       case desc: EnumContractDescriptor => desc
       case _: NumericContractDescriptor =>
@@ -493,33 +533,43 @@ object DLCWalletUtil extends BitcoinSLogger {
         ._1
         .outcome
     val initiatorWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(CryptoUtil
-                              .sha256DLCAttestation(initiatorWinStr)
-                              .bytes,
-                            DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(
+        CryptoUtil
+          .sha256DLCAttestation(initiatorWinStr)
+          .bytes,
+        DLCWalletUtil.kValue
+      )
 
     // Get a hash that the recipient wins for
     val recipientWinStr =
       desc.find(_._2 == Satoshis.zero).get._1.outcome
     val recipientWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(CryptoUtil
-                              .sha256DLCAttestation(recipientWinStr)
-                              .bytes,
-                            DLCWalletUtil.kValue)
+      .schnorrSignWithNonce(
+        CryptoUtil
+          .sha256DLCAttestation(recipientWinStr)
+          .bytes,
+        DLCWalletUtil.kValue
+      )
 
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
     val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
       case v0: OracleEventV0TLV => v0.eventId
     }
 
-    (OracleAttestmentV0TLV(eventId,
-                           publicKey,
-                           Vector(initiatorWinSig),
-                           Vector(initiatorWinStr)),
-     OracleAttestmentV0TLV(eventId,
-                           publicKey,
-                           Vector(recipientWinSig),
-                           Vector(recipientWinStr)))
+    (
+      OracleAttestmentV0TLV(
+        eventId,
+        publicKey,
+        Vector(initiatorWinSig),
+        Vector(initiatorWinStr)
+      ),
+      OracleAttestmentV0TLV(
+        eventId,
+        publicKey,
+        Vector(recipientWinSig),
+        Vector(recipientWinStr)
+      )
+    )
   }
 
 }

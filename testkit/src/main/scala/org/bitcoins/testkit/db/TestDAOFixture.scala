@@ -20,8 +20,10 @@ sealed trait TestDAOFixture
 
   implicit private val testConfig: TestAppConfig = {
     val configOverrides =
-      BitcoinSTestAppConfig.configWithEmbeddedDb(Some(ProjectType.Test),
-                                                 () => pgUrl())
+      BitcoinSTestAppConfig.configWithEmbeddedDb(
+        Some(ProjectType.Test),
+        () => pgUrl()
+      )
     TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverrides))
   }
 
@@ -50,10 +52,12 @@ sealed trait TestDAOFixture
 
   val testDb: TestDb = TestDb("abc", hex"0054")
 
-  val testDbs: Vector[TestDb] = Vector(TestDb("abc", hex"0050"),
-                                       TestDb("abc1", hex"0051"),
-                                       TestDb("abc2", hex"0052"),
-                                       TestDb("abc3", hex"0053"))
+  val testDbs: Vector[TestDb] = Vector(
+    TestDb("abc", hex"0050"),
+    TestDb("abc1", hex"0051"),
+    TestDb("abc2", hex"0052"),
+    TestDb("abc3", hex"0053")
+  )
 
   val updatedDb: TestDb = testDb.copy(data = hex"0000")
 

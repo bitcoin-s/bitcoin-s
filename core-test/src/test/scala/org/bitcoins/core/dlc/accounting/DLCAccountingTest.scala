@@ -9,7 +9,7 @@ class DLCAccountingTest extends BitcoinSUnitTest {
 
   it must "calculate basic pnl where we win all funds" in {
     val myCollateral = Satoshis(50000)
-    val theirCollateral = myCollateral //symmetrical collateral
+    val theirCollateral = myCollateral // symmetrical collateral
 
     val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
@@ -19,14 +19,14 @@ class DLCAccountingTest extends BitcoinSUnitTest {
       theirPayout = Satoshis.zero
     )
 
-    //we make 50,000 sats (their collateral) is the profit
+    // we make 50,000 sats (their collateral) is the profit
     assert(accounting1.pnl == theirCollateral)
     assert(accounting1.rorPrettyPrint == "100.00%")
   }
 
   it must "calculate basic pnl where we lose all funds" in {
     val myCollateral = Satoshis(50000)
-    val theirCollateral = myCollateral //symmetrical collateral
+    val theirCollateral = myCollateral // symmetrical collateral
 
     val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
@@ -36,7 +36,7 @@ class DLCAccountingTest extends BitcoinSUnitTest {
       theirPayout = myCollateral + theirCollateral
     )
 
-    //we lose 50,000 sats (my collateral) is the loss
+    // we lose 50,000 sats (my collateral) is the loss
     assert(accounting1.pnl == -myCollateral)
     assert(accounting1.rateOfReturn == -1)
     assert(accounting1.rorPrettyPrint == "-100.00%")
@@ -44,7 +44,7 @@ class DLCAccountingTest extends BitcoinSUnitTest {
 
   it must "calculate basic pnl where funds are refunded" in {
     val myCollateral = Satoshis(50000)
-    val theirCollateral = myCollateral //symmetrical collateral
+    val theirCollateral = myCollateral // symmetrical collateral
 
     val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
@@ -54,7 +54,7 @@ class DLCAccountingTest extends BitcoinSUnitTest {
       theirPayout = theirCollateral
     )
 
-    //collateral refunded, so no pnl
+    // collateral refunded, so no pnl
     assert(accounting1.pnl == Satoshis.zero)
     assert(accounting1.rateOfReturn == 0)
     assert(accounting1.rorPrettyPrint == "0.00%")

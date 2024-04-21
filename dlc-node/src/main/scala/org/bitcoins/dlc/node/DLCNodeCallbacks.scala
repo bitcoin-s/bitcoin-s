@@ -13,23 +13,19 @@ trait DLCNodeCallbacks
     extends ModuleCallbacks[DLCNodeCallbacks]
     with BitcoinSLogger {
 
-  def onPeerConnectionInitiated: CallbackHandler[
-    InetSocketAddress,
-    OnPeerConnectionInitiated]
+  def onPeerConnectionInitiated
+      : CallbackHandler[InetSocketAddress, OnPeerConnectionInitiated]
 
-  def onPeerConnectionEstablished: CallbackHandler[
-    InetSocketAddress,
-    OnPeerConnectionEstablished]
+  def onPeerConnectionEstablished
+      : CallbackHandler[InetSocketAddress, OnPeerConnectionEstablished]
 
-  def onPeerConnectionFailed: CallbackHandler[
-    InetSocketAddress,
-    OnPeerConnectionFailed]
+  def onPeerConnectionFailed
+      : CallbackHandler[InetSocketAddress, OnPeerConnectionFailed]
 
   def onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed]
 
-  def onOfferSendFailed: CallbackHandler[
-    (Sha256Digest, String),
-    OnOfferSendFailed]
+  def onOfferSendFailed
+      : CallbackHandler[(Sha256Digest, String), OnOfferSendFailed]
 
   def onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed]
 
@@ -41,88 +37,116 @@ trait DLCNodeCallbacks
 
   override def +(other: DLCNodeCallbacks): DLCNodeCallbacks
 
-  def executeOnPeerConnectionInitiated(peerAddress: InetSocketAddress)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnPeerConnectionInitiated(
+      peerAddress: InetSocketAddress
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onPeerConnectionInitiated.execute(
       peerAddress,
       (err: Throwable) =>
         logger.error(
           s"${onPeerConnectionInitiated.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnPeerConnectionEstablished(peerAddress: InetSocketAddress)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def executeOnPeerConnectionEstablished(
+      peerAddress: InetSocketAddress
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onPeerConnectionEstablished.execute(
       peerAddress,
       (err: Throwable) =>
         logger.error(
           s"${onPeerConnectionEstablished.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnPeerConnectionFailed(peerAddress: InetSocketAddress)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnPeerConnectionFailed(
+      peerAddress: InetSocketAddress
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onPeerConnectionFailed.execute(
       peerAddress,
       (err: Throwable) =>
         logger.error(
           s"${onPeerConnectionFailed.name} Callback failed with error: ",
-          err))
+          err
+        )
+    )
   }
 
-  def executeOnOfferSendSucceed(tempContractId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnOfferSendSucceed(
+      tempContractId: Sha256Digest
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onOfferSendSucceed.execute(
       tempContractId,
       (err: Throwable) =>
-        logger.error(s"${onOfferSendSucceed.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onOfferSendSucceed.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
   def executeOnOfferSendFailed(
       tempContractId: Sha256Digest,
-      errorMessage: String)(implicit ec: ExecutionContext): Future[Unit] = {
+      errorMessage: String
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onOfferSendFailed.execute(
       (tempContractId, errorMessage),
       (err: Throwable) =>
-        logger.error(s"${onOfferSendFailed.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onOfferSendFailed.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
-  def executeOnAcceptSucceed(tempContractId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnAcceptSucceed(
+      tempContractId: Sha256Digest
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onAcceptSucceed.execute(
       tempContractId,
       (err: Throwable) =>
-        logger.error(s"${onAcceptSucceed.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onAcceptSucceed.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
   def executeOnAcceptFailed(tempContractId: Sha256Digest, errorMessage: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      implicit ec: ExecutionContext
+  ): Future[Unit] = {
     onAcceptFailed.execute(
       (tempContractId, errorMessage),
       (err: Throwable) =>
-        logger.error(s"${onAcceptFailed.name} Callback failed with error: ",
-                     err))
+        logger.error(
+          s"${onAcceptFailed.name} Callback failed with error: ",
+          err
+        )
+    )
   }
 
-  def executeOnSignSucceed(tempContractId: Sha256Digest)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def executeOnSignSucceed(
+      tempContractId: Sha256Digest
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     onSignSucceed.execute(
       tempContractId,
       (err: Throwable) =>
-        logger.error(s"${onSignSucceed.name} Callback failed with error: ",
-                     err))
+        logger.error(s"${onSignSucceed.name} Callback failed with error: ", err)
+    )
   }
 
   def executeOnSignFailed(tempContractId: Sha256Digest, errorMessage: String)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      implicit ec: ExecutionContext
+  ): Future[Unit] = {
     onSignFailed.execute(
       (tempContractId, errorMessage),
       (err: Throwable) =>
-        logger.error(s"${onSignFailed.name} Callback failed with error: ", err))
+        logger.error(s"${onSignFailed.name} Callback failed with error: ", err)
+    )
   }
 }
 
@@ -150,22 +174,26 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
   private case class DLCNodeCallbacksImpl(
       onPeerConnectionInitiated: CallbackHandler[
         InetSocketAddress,
-        OnPeerConnectionInitiated],
+        OnPeerConnectionInitiated
+      ],
       onPeerConnectionEstablished: CallbackHandler[
         InetSocketAddress,
-        OnPeerConnectionEstablished],
+        OnPeerConnectionEstablished
+      ],
       onPeerConnectionFailed: CallbackHandler[
         InetSocketAddress,
-        OnPeerConnectionFailed],
+        OnPeerConnectionFailed
+      ],
       onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed],
       onOfferSendFailed: CallbackHandler[
         (Sha256Digest, String),
-        OnOfferSendFailed],
+        OnOfferSendFailed
+      ],
       onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed],
       onAcceptFailed: CallbackHandler[(Sha256Digest, String), OnAcceptFailed],
       onSignSucceed: CallbackHandler[Sha256Digest, OnSignSucceed],
-      onSignFailed: CallbackHandler[(Sha256Digest, String), OnSignFailed])
-      extends DLCNodeCallbacks {
+      onSignFailed: CallbackHandler[(Sha256Digest, String), OnSignFailed]
+  ) extends DLCNodeCallbacks {
 
     override def +(other: DLCNodeCallbacks): DLCNodeCallbacks =
       copy(
@@ -185,11 +213,13 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
   }
 
   def onPeerConnectionInitiated(
-      f: OnPeerConnectionInitiated): DLCNodeCallbacks =
+      f: OnPeerConnectionInitiated
+  ): DLCNodeCallbacks =
     DLCNodeCallbacks(onPeerConnectionInitiated = Vector(f))
 
   def onPeerConnectionEstablished(
-      f: OnPeerConnectionEstablished): DLCNodeCallbacks =
+      f: OnPeerConnectionEstablished
+  ): DLCNodeCallbacks =
     DLCNodeCallbacks(onPeerConnectionEstablished = Vector(f))
 
   def onPeerConnectionFailed(f: OnPeerConnectionFailed): DLCNodeCallbacks =
@@ -216,34 +246,43 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
       onPeerConnectionInitiated =
         CallbackHandler[InetSocketAddress, OnPeerConnectionInitiated](
           "onPeerConnectionInitiated",
-          onPeerConnectionInitiated),
+          onPeerConnectionInitiated
+        ),
       onPeerConnectionEstablished =
         CallbackHandler[InetSocketAddress, OnPeerConnectionEstablished](
           "onPeerConnectionEstablished",
-          onPeerConnectionEstablished),
+          onPeerConnectionEstablished
+        ),
       onPeerConnectionFailed =
         CallbackHandler[InetSocketAddress, OnPeerConnectionFailed](
           "onPeerConnectionFailed",
-          onPeerConnectionFailed),
-      onOfferSendSucceed =
-        CallbackHandler[Sha256Digest, OnOfferSendSucceed]("onOfferSendSucceed",
-                                                          onOfferSendSucceed),
+          onPeerConnectionFailed
+        ),
+      onOfferSendSucceed = CallbackHandler[Sha256Digest, OnOfferSendSucceed](
+        "onOfferSendSucceed",
+        onOfferSendSucceed
+      ),
       onOfferSendFailed =
         CallbackHandler[(Sha256Digest, String), OnOfferSendFailed](
           "onOfferSendFailed",
-          onOfferSendFailed),
-      onAcceptSucceed =
-        CallbackHandler[Sha256Digest, OnAcceptSucceed]("onAcceptSucceed",
-                                                       onAcceptSucceed),
+          onOfferSendFailed
+        ),
+      onAcceptSucceed = CallbackHandler[Sha256Digest, OnAcceptSucceed](
+        "onAcceptSucceed",
+        onAcceptSucceed
+      ),
       onAcceptFailed = CallbackHandler[(Sha256Digest, String), OnAcceptFailed](
         "onAcceptFailed",
-        onAcceptFailed),
-      onSignSucceed =
-        CallbackHandler[Sha256Digest, OnSignSucceed]("onSignSucceed",
-                                                     onSignSucceed),
-      onSignFailed =
-        CallbackHandler[(Sha256Digest, String), OnSignFailed]("onSignFailed",
-                                                              onSignFailed)
+        onAcceptFailed
+      ),
+      onSignSucceed = CallbackHandler[Sha256Digest, OnSignSucceed](
+        "onSignSucceed",
+        onSignSucceed
+      ),
+      onSignFailed = CallbackHandler[(Sha256Digest, String), OnSignFailed](
+        "onSignFailed",
+        onSignFailed
+      )
     )
   }
 }

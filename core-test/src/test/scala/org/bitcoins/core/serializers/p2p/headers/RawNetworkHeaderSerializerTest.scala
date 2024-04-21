@@ -9,11 +9,11 @@ import scodec.bits._
 class RawNetworkHeaderSerializerTest extends BitcoinSUnitTest {
   val hex = "f9beb4d976657261636b000000000000000000005df6e0e2"
   "RawMessageHeaderSerializer" must "read hex string into a message header" in {
-    //this example is from this section in the bitcoin developer reference
-    //https://bitcoin.org/en/developer-reference#message-headers
+    // this example is from this section in the bitcoin developer reference
+    // https://bitcoin.org/en/developer-reference#message-headers
 
     val messageHeader = RawNetworkHeaderSerializer.read(hex)
-    //this is the mainnet id
+    // this is the mainnet id
     messageHeader.network.magicBytes must be(hex"f9beb4d9")
 
     messageHeader.commandName must be("verack")

@@ -10,7 +10,8 @@ case class ConstRandAdaptorSign(privKey: ECPrivateKey) extends AdaptorSign {
 
   override def adaptorSign(
       adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature = {
+      msg: ByteVector
+  ): ECAdaptorSignature = {
     adaptorSign(adaptorPoint, msg, ConstRandAdaptorSign.constRand)
   }
 
@@ -24,14 +25,16 @@ case class ConstRandAdaptorSign(privKey: ECPrivateKey) extends AdaptorSign {
 
   override def signWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature = {
+      entropy: ByteVector
+  ): ECDigitalSignature = {
     privKey.signWithEntropy(bytes, entropy)
   }
 
   override def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector): ECAdaptorSignature = {
+      auxRand: ByteVector
+  ): ECAdaptorSignature = {
     privKey.adaptorSign(adaptorPoint, msg, auxRand)
   }
 }

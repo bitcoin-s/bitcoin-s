@@ -44,23 +44,28 @@ class WIFEncodingTest extends BitcoinSUnitTest {
 
   it must "correctly decode a private key from WIF" in {
     val privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
-      "cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
-    //derived hex on bitcore's playground
+      "cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC"
+    )
+    // derived hex on bitcore's playground
     privateKey.hex must be(
-      "ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac")
+      "ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac"
+    )
   }
 
   it must "decode a WIF private key corresponding to uncompressed public key" in {
     val wif = "5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C"
     val privKey = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
     privKey.publicKeyBytes.hex must be(
-      "045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0")
+      "045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0"
+    )
   }
 
   it must "have serialization symmetry for WIF format" in {
-    forAll(CryptoGenerators.privateKey,
-           ChainParamsGenerator.networkParams,
-           NumberGenerator.bool) { (privKey, network, compressed) =>
+    forAll(
+      CryptoGenerators.privateKey,
+      ChainParamsGenerator.networkParams,
+      NumberGenerator.bool
+    ) { (privKey, network, compressed) =>
       val wif =
         ECPrivateKeyUtil.toWIF(privKey.toPrivateKeyBytes(compressed), network)
       assert(ECPrivateKeyUtil.isCompressed(wif) == compressed)
@@ -72,21 +77,27 @@ class WIFEncodingTest extends BitcoinSUnitTest {
       }
       assert(
         ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey.toPrivateKeyBytes(
-          compressed))
+          compressed
+        )
+      )
     }
   }
 
   it must "have serialization symmetry for WIF format when private key ends in 0x01" in {
     val privKey = ECPrivateKey(
-      "710ed6c96012015f02e352cddd6f5a5b32499f2926ac7752b57d93b38be8c701")
+      "710ed6c96012015f02e352cddd6f5a5b32499f2926ac7752b57d93b38be8c701"
+    )
     val wif =
-      ECPrivateKeyUtil.toWIF(privKey.toPrivateKeyBytes(isCompressed = false),
-                             TestNet3)
+      ECPrivateKeyUtil.toWIF(
+        privKey.toPrivateKeyBytes(isCompressed = false),
+        TestNet3
+      )
     assert(!ECPrivateKeyUtil.isCompressed(wif))
     assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
     assert(
       ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey
-        .toPrivateKeyBytes(isCompressed = false))
+        .toPrivateKeyBytes(isCompressed = false)
+    )
   }
 
   it must "fail to parse unknown WIF networks" in {

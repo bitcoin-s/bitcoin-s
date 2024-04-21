@@ -14,7 +14,8 @@ sealed abstract class Consensus {
 
   def maxBlockWeight: Long = maxBlockSize * weightScalar
 
-  /** BIP141 changes this from 20,000 -> 80,000, to see how sigops are counted please see BIP 141
+  /** BIP141 changes this from 20,000 -> 80,000, to see how sigops are counted
+    * please see BIP 141
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#sigops]]
     */
   def maxSigOps = 80000

@@ -31,10 +31,8 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       Future.unit
   }
 
-  private val handleWriteErrorFn: (
-      BigSizeUInt,
-      ByteVector,
-      Throwable) => Future[Unit] = {
+  private val handleWriteErrorFn
+      : (BigSizeUInt, ByteVector, Throwable) => Future[Unit] = {
     case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
       Future.unit
   }
@@ -52,17 +50,21 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val handlerP = Promise[ActorRef]()
 
       for {
-        _ <- DLCServer.bind(dlcWalletApi = walletA,
-                            bindAddress = bindAddress,
-                            targets = Vector(),
-                            torParams = None,
-                            handleWrite = handleWriteFn,
-                            handleWriteError = handleWriteErrorFn)
-        _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
-                               walletB,
-                               Some(handlerP),
-                               handleWrite = handleWriteFn,
-                               handleWriteError = handleWriteErrorFn)
+        _ <- DLCServer.bind(
+          dlcWalletApi = walletA,
+          bindAddress = bindAddress,
+          targets = Vector(),
+          torParams = None,
+          handleWrite = handleWriteFn,
+          handleWriteError = handleWriteErrorFn
+        )
+        _ <- DLCClient.connect(
+          Peer(connectAddress, socks5ProxyParams = None),
+          walletB,
+          Some(handlerP),
+          handleWrite = handleWriteFn,
+          handleWriteError = handleWriteErrorFn
+        )
 
         handler <- handlerP.future
 
@@ -72,14 +74,16 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         _ = assert(preDLCsA.isEmpty)
         _ = assert(preDLCsB.isEmpty)
 
-        offer <- walletB.createDLCOffer(sampleContractInfo,
-                                        half,
-                                        Some(SatoshisPerVirtualByte.one),
-                                        UInt32.zero,
-                                        UInt32.one,
-                                        None,
-                                        None,
-                                        None)
+        offer <- walletB.createDLCOffer(
+          sampleContractInfo,
+          half,
+          Some(SatoshisPerVirtualByte.one),
+          UInt32.zero,
+          UInt32.one,
+          None,
+          None,
+          None
+        )
         accept <- walletA.acceptDLCOffer(offer, None, None, None)
 
         // Send accept message to begin p2p
@@ -115,12 +119,14 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val errorP = Promise[ByteVector]()
 
       for {
-        _ <- DLCServer.bind(walletA,
-                            bindAddress,
-                            Vector(),
-                            None,
-                            handleWrite = handleWriteFn,
-                            handleWriteError = handleWriteErrorFn)
+        _ <- DLCServer.bind(
+          walletA,
+          bindAddress,
+          Vector(),
+          None,
+          handleWrite = handleWriteFn,
+          handleWriteError = handleWriteErrorFn
+        )
         _ <- DLCClient.connect(
           Peer(connectAddress, socks5ProxyParams = None),
           walletB,
@@ -142,14 +148,16 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         _ = assert(preA.isEmpty)
         _ = assert(preB.isEmpty)
 
-        offer <- walletB.createDLCOffer(sampleContractInfo,
-                                        half,
-                                        Some(SatoshisPerVirtualByte.one),
-                                        UInt32.zero,
-                                        UInt32.one,
-                                        None,
-                                        None,
-                                        None)
+        offer <- walletB.createDLCOffer(
+          sampleContractInfo,
+          half,
+          Some(SatoshisPerVirtualByte.one),
+          UInt32.zero,
+          UInt32.one,
+          None,
+          None,
+          None
+        )
         tlv = SendOfferTLV(peer = "peer", message = "msg", offer = offer.toTLV)
 
         _ = assert(!okP.isCompleted)

@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 final case class BroadcastAbleTransactionDAO()(implicit
     override val appConfig: NodeAppConfig,
-    override val ec: ExecutionContext)
-    extends CRUD[BroadcastAbleTransaction, DoubleSha256DigestBE]
+    override val ec: ExecutionContext
+) extends CRUD[BroadcastAbleTransaction, DoubleSha256DigestBE]
     with SlickUtil[BroadcastAbleTransaction, DoubleSha256DigestBE] {
 
   import profile.api._
@@ -22,30 +22,32 @@ final case class BroadcastAbleTransactionDAO()(implicit
   override val table: profile.api.TableQuery[BroadcastAbleTransactionTable] =
     profile.api.TableQuery[BroadcastAbleTransactionTable]
 
-  override def createAll(ts: Vector[BroadcastAbleTransaction]): Future[
-    Vector[BroadcastAbleTransaction]] = createAllNoAutoInc(ts, safeDatabase)
+  override def createAll(
+      ts: Vector[BroadcastAbleTransaction]
+  ): Future[Vector[BroadcastAbleTransaction]] =
+    createAllNoAutoInc(ts, safeDatabase)
 
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
-      txIds: Vector[DoubleSha256DigestBE]): Query[
-    BroadcastAbleTransactionTable,
-    BroadcastAbleTransaction,
-    Seq] = {
+      txIds: Vector[DoubleSha256DigestBE]
+  ): Query[BroadcastAbleTransactionTable, BroadcastAbleTransaction, Seq] = {
     table.filter(_.txid.inSet(txIds))
   }
 
-  override protected def findAll(ts: Vector[BroadcastAbleTransaction]): Query[
-    BroadcastAbleTransactionTable,
-    BroadcastAbleTransaction,
-    Seq] = findByPrimaryKeys(ts.map(_.transaction.txIdBE))
+  override protected def findAll(
+      ts: Vector[BroadcastAbleTransaction]
+  ): Query[BroadcastAbleTransactionTable, BroadcastAbleTransaction, Seq] =
+    findByPrimaryKeys(ts.map(_.transaction.txIdBE))
 
   def findByHash(
-      hash: DoubleSha256DigestBE): Future[Option[BroadcastAbleTransaction]] =
+      hash: DoubleSha256DigestBE
+  ): Future[Option[BroadcastAbleTransaction]] =
     findByHash(hash.flip)
 
   /** Searches for a TX by its TXID */
   def findByHash(
-      hash: DoubleSha256Digest): Future[Option[BroadcastAbleTransaction]] = {
+      hash: DoubleSha256Digest
+  ): Future[Option[BroadcastAbleTransaction]] = {
     val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
     import mappers._
 
@@ -55,9 +57,11 @@ final case class BroadcastAbleTransactionDAO()(implicit
 
   /** Table over TXs we can broadcast over the P2P network */
   class BroadcastAbleTransactionTable(tag: Tag)
-      extends Table[BroadcastAbleTransaction](tag,
-                                              schemaName,
-                                              "broadcast_elements") {
+      extends Table[BroadcastAbleTransaction](
+        tag,
+        schemaName,
+        "broadcast_elements"
+      ) {
     private type Tuple = (DoubleSha256DigestBE, ByteVector)
 
     private val fromTuple: Tuple => BroadcastAbleTransaction = {

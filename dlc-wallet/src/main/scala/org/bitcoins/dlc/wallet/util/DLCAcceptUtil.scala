@@ -34,7 +34,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object DLCAcceptUtil extends BitcoinSLogger {
 
-  /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
+  /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of
+    * the [[DLCWallet]]
+    */
   def buildAcceptWithoutSigs(
       keyIndex: Int,
       chainType: HDChainType,
@@ -45,14 +47,14 @@ object DLCAcceptUtil extends BitcoinSLogger {
       collateral: CurrencyUnit,
       networkParameters: NetworkParameters,
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): (
-      DLCAcceptWithoutSigs,
-      DLCPublicKeys) = {
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): (DLCAcceptWithoutSigs, DLCPublicKeys) = {
     val spendingInfos = fundRawTxHelper.scriptSigParams
     val txBuilder = fundRawTxHelper.txBuilderWithFinalizer
     val serialIds = DLCMessage.genSerialIds(
       spendingInfos.size,
-      offer.fundingInputs.map(_.inputSerialId))
+      offer.fundingInputs.map(_.inputSerialId)
+    )
     val utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
       DLCFundingInput
         .fromInputSigningInfo(utxo, id, TransactionConstants.enableRBFSequence)
@@ -71,12 +73,15 @@ object DLCAcceptUtil extends BitcoinSLogger {
       externalPayoutAddressOpt = externalPayoutAddressOpt
     )
 
-    require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
-            "Did not derive the same funding private and public key")
+    require(
+      dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
+      "Did not derive the same funding private and public key"
+    )
 
     val payoutSerialId = DLCMessage.genSerialId(Vector(offer.payoutSerialId))
     val changeSerialId = DLCMessage.genSerialId(
-      Vector(offer.fundOutputSerialId, offer.changeSerialId))
+      Vector(offer.fundOutputSerialId, offer.changeSerialId)
+    )
     val acceptWithoutSigs = DLCAcceptWithoutSigs(
       totalCollateral = collateral.satoshis,
       pubKeys = dlcPubKeys,
@@ -94,7 +99,8 @@ object DLCAcceptUtil extends BitcoinSLogger {
   def buildAcceptContractDataDb(
       contractInfo: ContractInfo,
       dlcId: Sha256Digest,
-      offer: DLCOffer): DLCContractDataDb = {
+      offer: DLCOffer
+  ): DLCContractDataDb = {
     val oracleParamsOpt =
       OracleInfo.getOracleParamsOpt(contractInfo.oracleInfos.head)
     DLCContractDataDb(
@@ -116,7 +122,8 @@ object DLCAcceptUtil extends BitcoinSLogger {
       chainType: HDChainType,
       nextIndex: Int,
       contractInfo: ContractInfo,
-      peerOpt: Option[String]): DLCDb = {
+      peerOpt: Option[String]
+  ): DLCDb = {
     DLCDb(
       dlcId = dlcId,
       tempContractId = offer.tempContractId,
@@ -143,7 +150,8 @@ object DLCAcceptUtil extends BitcoinSLogger {
       dlc: DLCDb,
       acceptWithoutSigs: DLCAcceptWithoutSigs,
       dlcPubKeys: DLCPublicKeys,
-      collateral: CurrencyUnit): DLCAcceptDb = {
+      collateral: CurrencyUnit
+  ): DLCAcceptDb = {
     DLCAcceptDb(
       dlcId = dlc.dlcId,
       fundingKey = dlcPubKeys.fundingKey,
@@ -161,14 +169,15 @@ object DLCAcceptUtil extends BitcoinSLogger {
       dlcId: Sha256Digest,
       offer: DLCOffer,
       dlcWalletDAOs: DLCWalletDAOs,
-      transactionDAO: TransactionDAO)(implicit
-      ec: ExecutionContext): Future[Option[DLCAccept]] = {
+      transactionDAO: TransactionDAO
+  )(implicit ec: ExecutionContext): Future[Option[DLCAccept]] = {
     val resultNestedF: Future[Option[Future[DLCAccept]]] = for {
       dlcAcceptDbs <- dlcWalletDAOs.dlcAcceptDAO.findByDLCId(dlcId)
       dlcAcceptFOpt = {
         dlcAcceptDbs.headOption.map { case dlcAcceptDb =>
           logger.debug(
-            s"DLC Accept (${dlcId.hex}) has already been made, returning accept")
+            s"DLC Accept (${dlcId.hex}) has already been made, returning accept"
+          )
           for {
             fundingInputs <-
               dlcWalletDAOs.dlcInputsDAO.findByDLCId(dlcId, isInitiator = false)
@@ -180,12 +189,14 @@ object DLCAcceptUtil extends BitcoinSLogger {
             val inputRefs =
               DLCTxUtil.matchPrevTxsWithInputs(fundingInputs, prevTxs)
 
-            dlcAcceptDb.toDLCAccept(offer.tempContractId,
-                                    inputRefs,
-                                    outcomeSigsDbs.map { db =>
-                                      db.sigPoint -> db.accepterSig
-                                    },
-                                    refundSigsDb.get.accepterSig)
+            dlcAcceptDb.toDLCAccept(
+              offer.tempContractId,
+              inputRefs,
+              outcomeSigsDbs.map { db =>
+                db.sigPoint -> db.accepterSig
+              },
+              refundSigsDb.get.accepterSig
+            )
           }
         }
       }

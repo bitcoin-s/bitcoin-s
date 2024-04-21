@@ -5,11 +5,11 @@ import play.api.libs.json.{JsResult, JsValue}
 import play.api.libs.json.JsError
 import play.api.libs.json.JsSuccess
 
-/** Represents failures that can happen when using the
-  * `bitcoind` RPC interface.
+/** Represents failures that can happen when using the `bitcoind` RPC interface.
   *
-  * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
-  *      for an enumeration of all error codes used
+  * @see
+  *   [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
+  *   for an enumeration of all error codes used
   */
 sealed abstract class BitcoindException(private val message: String)
     extends Exception {
@@ -19,8 +19,9 @@ sealed abstract class BitcoindException(private val message: String)
 
 /** Wallet errors from `bitcoind` RPC calls
   *
-  * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
-  *      for an enumeration of all error codes used
+  * @see
+  *   [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
+  *   for an enumeration of all error codes used
   */
 
 object BitcoindException {
@@ -36,7 +37,8 @@ object BitcoindException {
         exception <- BitcoindException.fromCodeAndMessage(code, message) match {
           case None =>
             JsError(
-              s"Could not construct bitcoind exception with code $code and message '$message'")
+              s"Could not construct bitcoind exception with code $code and message '$message'"
+            )
           case Some(value) => JsSuccess(value)
         }
       } yield exception
@@ -78,10 +80,12 @@ object BitcoindException {
     NotSpecified(_)
   )
 
-  /** Attempts to construct a BitcoindException from the given code and message */
+  /** Attempts to construct a BitcoindException from the given code and message
+    */
   def fromCodeAndMessage(
       code: Int,
-      message: String): Option[BitcoindException] = {
+      message: String
+  ): Option[BitcoindException] = {
 
     val constructorOpt = all.find(func => func(message).code == code)
 
@@ -93,8 +97,8 @@ object BitcoindException {
     val code: Int = -32602
   }
 
-  /** InternalError is only used for genuine errors in bitcoind
-    * (for example datadir corruption)
+  /** InternalError is only used for genuine errors in bitcoind (for example
+    * datadir corruption)
     */
   final case class InternalError(private val message: String)
       extends BitcoindException(message) {
@@ -159,7 +163,8 @@ object BitcoindException {
       extends BitcoindException(
         if (message == "non-final")
           "Transaction is not final. Try again in a bit."
-        else message) {
+        else message
+      ) {
     val code: Int = -26
   }
 
@@ -188,10 +193,11 @@ object BitcoindException {
   }
 }
 
-/**  P2P client errors
+/** P2P client errors
   *
-  * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
-  *      for an enumeration of all error codes used
+  * @see
+  *   [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/rpc/protocol.h#L32 protcol.h]]
+  *   for an enumeration of all error codes used
   */
 sealed abstract class BitcoindP2PException(private val message: String)
     extends BitcoindException(message)
@@ -282,7 +288,9 @@ object BitcoindWalletException {
     val code: Int = -14
   }
 
-  /** Command given in wrong wallet encryption state (encrypting an encrypted wallet etc.) */
+  /** Command given in wrong wallet encryption state (encrypting an encrypted
+    * wallet etc.)
+    */
   final case class WrongEncState(private val message: String)
       extends BitcoindWalletException(message) {
     val code: Int = -15

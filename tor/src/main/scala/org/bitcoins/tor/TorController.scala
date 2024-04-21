@@ -22,15 +22,18 @@ import scala.concurrent.{Future, Promise}
 
 /** Created by rorp
   *
-  * @param address              Tor control address
-  * @param protocolHandlerProps Tor protocol handler props
-  * @param ec                   execution context
+  * @param address
+  *   Tor control address
+  * @param protocolHandlerProps
+  *   Tor protocol handler props
+  * @param ec
+  *   execution context
   */
 class TorController(
     address: InetSocketAddress,
     protocolHandlerProps: Props,
-    connectedPromiseOpt: Option[Promise[Done]])
-    extends Actor
+    connectedPromiseOpt: Option[Promise[Done]]
+) extends Actor
     with ActorLogging {
 
   import Tcp._
@@ -65,8 +68,10 @@ class TorController(
         case c @ CommandFailed(_: Write) =>
           // O/S buffer was full
           protocolHandler ! SendFailed
-          log.error("Tor command failed",
-                    c.cause.getOrElse(new RuntimeException("Unknown error")))
+          log.error(
+            "Tor command failed",
+            c.cause.getOrElse(new RuntimeException("Unknown error"))
+          )
         case Received(data) =>
           protocolHandler ! data
         case _: ConnectionClosed =>
@@ -90,7 +95,8 @@ object TorController extends BitcoinSLogger {
   def props(
       address: InetSocketAddress,
       protocolHandlerProps: Props,
-      connectedPromiseOpt: Option[Promise[Done]]) =
+      connectedPromiseOpt: Option[Promise[Done]]
+  ) =
     Props(new TorController(address, protocolHandlerProps, connectedPromiseOpt))
 
   case object SendFailed
@@ -100,19 +106,25 @@ object TorController extends BitcoinSLogger {
     *
     * Note: only Tor protocol v3 is supported
     *
-    * @param controlAddress      Tor control address
-    * @param authentication      Tor controller auth mechanism (password or safecookie)
-    * @param privateKeyPath      path to a file that contains a Tor private key
-    * @param virtualPort         port for the public hidden service (typically 9735)
-    * @param targets             address of our protected server (format [host:]port), 127.0.0.1:[[virtualPort]] if empty
+    * @param controlAddress
+    *   Tor control address
+    * @param authentication
+    *   Tor controller auth mechanism (password or safecookie)
+    * @param privateKeyPath
+    *   path to a file that contains a Tor private key
+    * @param virtualPort
+    *   port for the public hidden service (typically 9735)
+    * @param targets
+    *   address of our protected server (format [host:]port),
+    *   127.0.0.1:[[virtualPort]] if empty
     */
   def setUpHiddenService(
       controlAddress: InetSocketAddress,
       authentication: Authentication,
       privateKeyPath: Path,
       virtualPort: Int,
-      targets: Seq[String] = Seq.empty)(implicit
-      system: ActorSystem): Future[InetSocketAddress] = {
+      targets: Seq[String] = Seq.empty
+  )(implicit system: ActorSystem): Future[InetSocketAddress] = {
     import system.dispatcher
     val promiseTorAddress = Promise[InetSocketAddress]()
     val promiseConnected = Promise[Done]()
@@ -126,9 +138,11 @@ object TorController extends BitcoinSLogger {
     )
 
     val _ = system.actorOf(
-      TorController.props(address = controlAddress,
-                          protocolHandlerProps = protocolHandlerProps,
-                          connectedPromiseOpt = Some(promiseConnected)),
+      TorController.props(
+        address = controlAddress,
+        protocolHandlerProps = protocolHandlerProps,
+        connectedPromiseOpt = Some(promiseConnected)
+      ),
       s"tor-${System.currentTimeMillis()}"
     )
 

@@ -27,13 +27,17 @@ class DisjointUnionDLCTest extends BitcoinSJvmTest with DLCTest {
     val numDisjoint = 2
     val numDigits = 10
     val singleParams = 0.until(numDisjoint).toVector.map { _ =>
-      val oracleParams = OracleParamsV0TLV(maxErrorExp = 6,
-                                           minFailExp = 2,
-                                           maximizeCoverage = true)
-      NumericContractParams(numDigits,
-                            oracleThreshold = 1,
-                            numOracles = 1,
-                            Some(oracleParams))
+      val oracleParams = OracleParamsV0TLV(
+        maxErrorExp = 6,
+        minFailExp = 2,
+        maximizeCoverage = true
+      )
+      NumericContractParams(
+        numDigits,
+        oracleThreshold = 1,
+        numOracles = 1,
+        Some(oracleParams)
+      )
     }
     val contractParams = DisjointUnionContractParams(singleParams)
     val outcomes = 0.until(numDisjoint).toVector.flatMap { contractIndex =>
@@ -50,14 +54,18 @@ class DisjointUnionDLCTest extends BitcoinSJvmTest with DLCTest {
     val numDigits = 10
     val enumParams =
       EnumContractParams(numOutcomes, oracleThreshold = 1, numOracles = 1)
-    val oracleParams = OracleParamsV0TLV(maxErrorExp = 6,
-                                         minFailExp = 2,
-                                         maximizeCoverage = true)
+    val oracleParams = OracleParamsV0TLV(
+      maxErrorExp = 6,
+      minFailExp = 2,
+      maximizeCoverage = true
+    )
     val numericParams =
-      NumericContractParams(numDigits,
-                            oracleThreshold = 1,
-                            numOracles = 1,
-                            Some(oracleParams))
+      NumericContractParams(
+        numDigits,
+        oracleThreshold = 1,
+        numOracles = 1,
+        Some(oracleParams)
+      )
 
     val contractParams =
       DisjointUnionContractParams(Vector(enumParams, numericParams))

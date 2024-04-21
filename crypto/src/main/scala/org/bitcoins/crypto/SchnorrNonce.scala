@@ -25,7 +25,8 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
   def kFromBipSchnorr(
       privKey: ECPrivateKey,
       message: ByteVector,
-      auxRand: ByteVector): ECPrivateKey = {
+      auxRand: ByteVector
+  ): ECPrivateKey = {
     val privKeyForUse = privKey.schnorrKey
 
     val randHash =
@@ -33,19 +34,20 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
     val maskedKey = randHash.xor(privKeyForUse.bytes)
 
     val nonceHash = CryptoUtil.sha256SchnorrNonce(
-      maskedKey ++ privKey.schnorrPublicKey.bytes ++ message)
+      maskedKey ++ privKey.schnorrPublicKey.bytes ++ message
+    )
 
     ECPrivateKey(nonceHash.bytes).nonceKey
   }
 
-  /** Computes the bip-schnorr nonce for a given message and private key.
-    * This is intended to ensure that no two messages are signed with the
-    * same nonce.
+  /** Computes the bip-schnorr nonce for a given message and private key. This
+    * is intended to ensure that no two messages are signed with the same nonce.
     */
   def fromBipSchnorr(
       privKey: ECPrivateKey,
       message: ByteVector,
-      auxRand: ByteVector): SchnorrNonce = {
+      auxRand: ByteVector
+  ): SchnorrNonce = {
     val k = kFromBipSchnorr(privKey, message, auxRand)
     k.publicKey.schnorrNonce
   }

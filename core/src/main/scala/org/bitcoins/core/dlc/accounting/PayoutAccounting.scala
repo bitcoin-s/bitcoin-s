@@ -13,12 +13,14 @@ trait PayoutAccounting {
   def theirPayout: CurrencyUnit
 
   /** Profit and loss for the DLC
-    * @see https://www.investopedia.com/terms/p/plstatement.asp
+    * @see
+    *   https://www.investopedia.com/terms/p/plstatement.asp
     */
   def pnl: CurrencyUnit = myPayout - myCollateral
 
   /** Rate of return for the DLC
-    * @see https://www.investopedia.com/terms/r/rateofreturn.asp
+    * @see
+    *   https://www.investopedia.com/terms/r/rateofreturn.asp
     */
   def rateOfReturn: BigDecimal = if (myCollateral != Satoshis.zero)
     pnl.toBigDecimal / myCollateral.toBigDecimal

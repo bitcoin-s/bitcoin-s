@@ -29,17 +29,19 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
 
   it must "calculate the varint for the following hex string" in {
     CompactSizeUInt.calculateCompactSizeUInt("00") must be(
-      CompactSizeUInt(UInt64.one, 1))
+      CompactSizeUInt(UInt64.one, 1)
+    )
 
-    //for a string that is 256 bytes long
+    // for a string that is 256 bytes long
     val byteSeq256Size = ByteVector(Array.fill(256)(0.toByte))
     CompactSizeUInt.calculateCompactSizeUInt(byteSeq256Size) must be(
-      CompactSizeUInt(UInt64(256), 3))
+      CompactSizeUInt(UInt64(256), 3)
+    )
   }
 
   it must "calculate the correct compact size uint for a number 515 bytes long" in {
-    //from the bitcoin developer reference
-    //https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+    // from the bitcoin developer reference
+    // https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
     val byteSeq515Size = ByteVector(Array.fill(515)(0.toByte))
     val compactSizeUInt =
       CompactSizeUInt.calculateCompactSizeUInt(byteSeq515Size)
@@ -64,30 +66,35 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
   it must "parse a variable length integer (VarInt)" in {
     val str = "fdfd00"
     CompactSizeUInt.parseCompactSizeUInt(str) must be(
-      CompactSizeUInt(UInt64(253), 3))
+      CompactSizeUInt(UInt64(253), 3)
+    )
 
     val str1 = "00"
     CompactSizeUInt.parseCompactSizeUInt(str1) must be(
-      CompactSizeUInt(UInt64.zero, 1))
+      CompactSizeUInt(UInt64.zero, 1)
+    )
 
     val str2 = "fe20a10700"
     CompactSizeUInt.parseCompactSizeUInt(str2) must be(
-      CompactSizeUInt(UInt64(500000)))
+      CompactSizeUInt(UInt64(500000))
+    )
 
     val str3 = "ffffffffff"
     CompactSizeUInt.parseCompactSizeUInt(str3) must be(
-      CompactSizeUInt(UInt64(4294967295L), 9))
+      CompactSizeUInt(UInt64(4294967295L), 9)
+    )
   }
 
   it must "parse a variable length integer the same from a tx input and a script sig" in {
     CompactSizeUInt.parseCompactSizeUInt(
-      TestUtil.txInput.scriptSignature.bytes) must be(
-      TestUtil.txInput.scriptSignature.compactSizeUInt)
+      TestUtil.txInput.scriptSignature.bytes
+    ) must be(TestUtil.txInput.scriptSignature.compactSizeUInt)
   }
 
   it must "parse the variable length integer of the empty script" in {
     CompactSizeUInt.parseCompactSizeUInt(ScriptSignature.empty) must be(
-      CompactSizeUInt(UInt64.one, 1))
+      CompactSizeUInt(UInt64.one, 1)
+    )
   }
 
   it must "parse variable length integer of script sig at least 0xffff bytes in length, and greater than 0xffffffff" in {
@@ -97,9 +104,11 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
     val s1 = c(s1NoCmpct).hex + s1NoCmpct
     val s2 = c(s2NoCmpct).hex + s2NoCmpct
     CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(s1)) must be(
-      CompactSizeUInt(UInt64(30453), 3))
+      CompactSizeUInt(UInt64(30453), 3)
+    )
     CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(s2)) must be(
-      CompactSizeUInt(UInt64(73085), 5))
+      CompactSizeUInt(UInt64(73085), 5)
+    )
   }
 
   it must "parse 8 bit, 16 bit, 32 bit number and 64 bit number as compactsizeuints" in {

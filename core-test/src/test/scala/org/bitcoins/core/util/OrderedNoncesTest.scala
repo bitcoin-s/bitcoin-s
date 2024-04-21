@@ -10,9 +10,11 @@ class OrderedNoncesTest extends BitcoinSUnitTest {
 
   val unsorted = Vector(
     SchnorrNonce(
-      "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"),
+      "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"
+    ),
     SchnorrNonce(
-      "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc")
+      "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc"
+    )
   )
 
   it must "throw an exception if you create an unordered nonces" in {

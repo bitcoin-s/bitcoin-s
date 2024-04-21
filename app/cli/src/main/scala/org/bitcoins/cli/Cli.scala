@@ -18,7 +18,8 @@ object Cli extends App {
   } catch {
     case _: ConnectException =>
       printerr(
-        "Connection refused! Check that the server is running and configured correctly.")
+        "Connection refused! Check that the server is running and configured correctly."
+      )
       sys.exit(1)
   }
 }

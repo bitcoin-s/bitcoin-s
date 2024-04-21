@@ -53,9 +53,11 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       syncing <- bitcoind.isSyncing()
       _ = assert(!syncing)
-      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind,
-                                                       wallet,
-                                                       Some(callbacks))
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(
+        bitcoind,
+        wallet,
+        Some(callbacks)
+      )
       _ <- AsyncUtil.awaitConditionF { () => bitcoind.isSyncing().map(!_) }
 
       balance <- wallet.getBalance()
@@ -90,16 +92,20 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       addr <- wallet.getNewAddress()
       _ <- bitcoind.sendToAddress(addr, amountToSend)
       bitcoindAddr <- bitcoind.getNewAddress
-      _ <- bitcoind.generateToAddress(wallet.walletConfig.requiredConfirmations,
-                                      bitcoindAddr)
+      _ <- bitcoind.generateToAddress(
+        wallet.walletConfig.requiredConfirmations,
+        bitcoindAddr
+      )
 
       // assert wallet hasn't seen it yet
       firstBalance <- wallet.getBalance()
       _ = assert(firstBalance == Satoshis.zero)
 
       // Set sync height
-      _ <- wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE,
-                                                      header.height)
+      _ <- wallet.stateDescriptorDAO.updateSyncHeight(
+        header.hashBE,
+        header.height
+      )
 
       _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet, None)
 
@@ -185,7 +191,8 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         // confirm utxos
         _ <- bitcoind.generateToAddress(
           wallet.walletConfig.requiredConfirmations,
-          bitcoindAddr)
+          bitcoindAddr
+        )
 
         // sync wallet
         _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet, None)
@@ -199,18 +206,22 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
   }
 
   private def createWallet(
-      params: WalletAppConfigWithBitcoindRpc): Future[Wallet] = {
+      params: WalletAppConfigWithBitcoindRpc
+  ): Future[Wallet] = {
     val bitcoind = params.bitcoind
     implicit val walletAppConfig: WalletAppConfig = params.walletAppConfig
 
     for {
-      tmpWallet <- BitcoinSWalletTest.createDefaultWallet(nodeApi = bitcoind,
-                                                          chainQueryApi =
-                                                            bitcoind)
+      tmpWallet <- BitcoinSWalletTest.createDefaultWallet(
+        nodeApi = bitcoind,
+        chainQueryApi = bitcoind
+      )
     } yield {
-      BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
-                                                               tmpWallet,
-                                                               None)
+      BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+        bitcoind,
+        tmpWallet,
+        None
+      )
     }
   }
 }

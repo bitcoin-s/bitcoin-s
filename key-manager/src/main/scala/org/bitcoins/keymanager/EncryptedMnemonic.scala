@@ -35,8 +35,8 @@ case class DecryptedMnemonic(
     private[keymanager] val mnemonicCode: MnemonicCode,
     creationTime: Instant,
     backupTimeOpt: Option[Instant],
-    imported: Boolean)
-    extends DecryptedSeedState {
+    imported: Boolean
+) extends DecryptedSeedState {
   override protected val strToEncrypt: String = mnemonicCode.words.mkString(" ")
 
   override def withBackupTime(backupTime: Instant): SeedState = {
@@ -48,8 +48,8 @@ case class DecryptedExtPrivKey(
     private[keymanager] val xprv: ExtPrivateKey,
     creationTime: Instant,
     backupTimeOpt: Option[Instant],
-    imported: Boolean)
-    extends DecryptedSeedState {
+    imported: Boolean
+) extends DecryptedSeedState {
   override protected val strToEncrypt: String = xprv.toStringSensitive
 
   override def withBackupTime(backupTime: Instant): SeedState = {
@@ -62,8 +62,8 @@ case class EncryptedSeed(
     salt: AesSalt,
     creationTime: Instant,
     backupTimeOpt: Option[Instant],
-    imported: Boolean)
-    extends SeedState {
+    imported: Boolean
+) extends SeedState {
 
   private def decryptStr(password: AesPassword): Try[String] = {
     val key = password.toKey(salt)

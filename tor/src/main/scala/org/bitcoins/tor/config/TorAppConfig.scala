@@ -18,13 +18,16 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
-  * @param directory The data directory of the node
-  * @param confs Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the node
+  * @param confs
+  *   Optional sequence of configuration overrides
   */
 case class TorAppConfig(
     baseDatadir: Path,
     private val subModuleNameOpt: Option[String],
-    configOverrides: Vector[Config])(implicit ec: ExecutionContext)
+    configOverrides: Vector[Config]
+)(implicit ec: ExecutionContext)
     extends AppConfig
     with CallbackConfig[TorCallbacks] {
 
@@ -32,7 +35,8 @@ case class TorAppConfig(
   override protected[bitcoins] type ConfigType = TorAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Vector[Config]): TorAppConfig =
+      configs: Vector[Config]
+  ): TorAppConfig =
     TorAppConfig(baseDatadir, subModuleNameOpt, configs)
 
   override lazy val callbackFactory: TorCallbacks.type = TorCallbacks
@@ -52,13 +56,17 @@ case class TorAppConfig(
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (getBoolean("proxy.enabled")) {
       val address = if (torProvided) {
-        NetworkUtil.parseInetSocketAddress(getString("proxy.socks5"),
-                                           TorParams.DefaultProxyPort)
+        NetworkUtil.parseInetSocketAddress(
+          getString("proxy.socks5"),
+          TorParams.DefaultProxyPort
+        )
       } else {
-        new InetSocketAddress(InetAddress.getLoopbackAddress,
-                              if (useRandomPorts)
-                                TorAppConfig.randomSocks5Port
-                              else TorParams.DefaultProxyPort)
+        new InetSocketAddress(
+          InetAddress.getLoopbackAddress,
+          if (useRandomPorts)
+            TorAppConfig.randomSocks5Port
+          else TorParams.DefaultProxyPort
+        )
       }
       Some(
         Socks5ProxyParams(
@@ -75,13 +83,17 @@ case class TorAppConfig(
   lazy val torParams: Option[TorParams] = {
     if (getBoolean("tor.enabled")) {
       val address = if (torProvided) {
-        NetworkUtil.parseInetSocketAddress(getString("tor.control"),
-                                           TorParams.DefaultControlPort)
+        NetworkUtil.parseInetSocketAddress(
+          getString("tor.control"),
+          TorParams.DefaultControlPort
+        )
       } else {
-        new InetSocketAddress(InetAddress.getLoopbackAddress,
-                              if (useRandomPorts)
-                                TorAppConfig.randomControlPort
-                              else TorParams.DefaultControlPort)
+        new InetSocketAddress(
+          InetAddress.getLoopbackAddress,
+          if (useRandomPorts)
+            TorAppConfig.randomControlPort
+          else TorParams.DefaultControlPort
+        )
       }
 
       val auth = getStringOrNone("tor.password") match {
@@ -109,8 +121,8 @@ case class TorAppConfig(
     new TorClient()(ec, this)
   }
 
-  /** Ensures correct tables and other required information is in
-    * place for our node.
+  /** Ensures correct tables and other required information is in place for our
+    * node.
     */
   override def start(): Future[Unit] = {
     val f = if (torProvided) {
@@ -122,9 +134,9 @@ case class TorAppConfig(
         isStarted.set(true)
         logger.info(s"Starting Tor daemon")
         val start = System.currentTimeMillis()
-        //remove old tor log file so we accurately tell when
-        //the binary is started, if we don't remove this
-        //we could have that log line appear from previous runs
+        // remove old tor log file so we accurately tell when
+        // the binary is started, if we don't remove this
+        // we could have that log line appear from previous runs
         if (torLogFile.toFile.exists()) {
           torLogFile.toFile.delete()
         }
@@ -141,18 +153,21 @@ case class TorAppConfig(
           _ <- isBinaryFullyStarted()
         } yield {
           logger.info(
-            s"Tor daemon is fully started, it took=${System.currentTimeMillis() - start}ms")
+            s"Tor daemon is fully started, it took=${System.currentTimeMillis() - start}ms"
+          )
         }
       } else if (isStarted.get) {
         logger.debug(s"Tor daemon already started")
         Future.unit
       } else if (torRunning) {
         logger.warn(
-          s"Tor daemon was requested to start, but it is already running. Not starting tor")
+          s"Tor daemon was requested to start, but it is already running. Not starting tor"
+        )
         Future.unit
       } else {
         logger.warn(
-          s"Tor daemon was requested to start, but it is disabled in the configuration file. Not starting tor")
+          s"Tor daemon was requested to start, but it is disabled in the configuration file. Not starting tor"
+        )
         Future.unit
       }
     }
@@ -169,22 +184,23 @@ case class TorAppConfig(
     }
   }
 
-  /** Checks if the tor binary is started by looking for a log in the [[torLogFile]]
-    * The log line we are looking or is
+  /** Checks if the tor binary is started by looking for a log in the
+    * [[torLogFile]] The log line we are looking or is
     * {{{
     *     Bootstrapped 100% (done): Done
-    *  }}}
+    * }}}
     */
   private def isBinaryFullyStarted(): Future[Unit] = {
-    //tor can take at least 25 seconds to start at times
-    //see: https://github.com/bitcoin-s/bitcoin-s/pull/3558#issuecomment-899819698
+    // tor can take at least 25 seconds to start at times
+    // see: https://github.com/bitcoin-s/bitcoin-s/pull/3558#issuecomment-899819698
     AsyncUtil
       .retryUntilSatisfied(checkIfLogExists, 1.second, 120)
-      //execute started callbacks
+      // execute started callbacks
       .flatMap(_ => callBacks.executeOnTorStarted())
       .recover { case _: AsyncUtil.RpcRetryException =>
         throw new RuntimeException(
-          s"Could not start tor, please try again in a few minutes")
+          s"Could not start tor, please try again in a few minutes"
+        )
       }
   }
 
@@ -209,8 +225,10 @@ case class TorAppConfig(
         torParams match {
           case Some(params) => params.controlAddress
           case None =>
-            new InetSocketAddress(InetAddress.getLoopbackAddress,
-                                  TorParams.DefaultProxyPort)
+            new InetSocketAddress(
+              InetAddress.getLoopbackAddress,
+              TorParams.DefaultProxyPort
+            )
         }
     }
 
@@ -254,11 +272,12 @@ object TorAppConfig extends AppConfigFactory[TorAppConfig] {
 
   override val moduleName: String = "tor"
 
-  /** Constructs a tor configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a tor configuration from the default Bitcoin-S data directory
+    * and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): TorAppConfig =
+      ec: ExecutionContext
+  ): TorAppConfig =
     TorAppConfig(datadir, None, confs)
 
   lazy val randomSocks5Port: Int = ports.proxyPort

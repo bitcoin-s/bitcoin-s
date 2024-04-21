@@ -12,7 +12,8 @@ case class BitcoinSServerInfo(
     blockHash: DoubleSha256DigestBE,
     torStarted: Boolean,
     syncing: Boolean,
-    isInitialBlockDownload: Boolean) {
+    isInitialBlockDownload: Boolean
+) {
 
   lazy val toJson: Value = {
     Obj(
@@ -38,11 +39,13 @@ object BitcoinSServerInfo {
     val sync = obj(PicklerKeys.syncKey).bool
     val isIBD = obj(PicklerKeys.isInitialBlockDownload).bool
 
-    BitcoinSServerInfo(network = network,
-                       blockHeight = height,
-                       blockHash = blockHash,
-                       torStarted = torStarted,
-                       syncing = sync,
-                       isInitialBlockDownload = isIBD)
+    BitcoinSServerInfo(
+      network = network,
+      blockHeight = height,
+      blockHash = blockHash,
+      torStarted = torStarted,
+      syncing = sync,
+      isInitialBlockDownload = isIBD
+    )
   }
 }

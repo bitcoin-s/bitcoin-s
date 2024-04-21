@@ -57,8 +57,8 @@ sealed abstract class SingleXOnlyPubKeyExpression
   }
 }
 
-/** A trait that allows us to parameterize by [[PublicKey]] type.
-  * This is needed for re-using descriptors across [[ECPublicKey]] and [[XOnlyPubKey]]
+/** A trait that allows us to parameterize by [[PublicKey]] type. This is needed
+  * for re-using descriptors across [[ECPublicKey]] and [[XOnlyPubKey]]
   */
 sealed trait PubKeyTypeExpression[T <: PublicKey]
 
@@ -85,9 +85,8 @@ sealed abstract class PrivateXOnlyPublicKeyExpression
   override def key: ECPrivateKeyBytes
 }
 
-/** A private key descriptor expression
-  * Examples of what this data structure can represent
-  * 5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss
+/** A private key descriptor expression Examples of what this data structure can
+  * represent 5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss
   * L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1
   *
   * Its unclear to me at this point if private keys can have key origin
@@ -98,8 +97,8 @@ sealed abstract class PrivateXOnlyPublicKeyExpression
 case class RawPrivateECPublicKeyExpression(
     key: ECPrivateKeyBytes,
     network: NetworkParameters,
-    originOpt: Option[KeyOriginExpression])
-    extends PrivateECPublicKeyExpression
+    originOpt: Option[KeyOriginExpression]
+) extends PrivateECPublicKeyExpression
     with ECPublicKeyExpression {
 
   override def toString(): String = {
@@ -108,13 +107,13 @@ case class RawPrivateECPublicKeyExpression(
   }
 }
 
-/** A private key expression that produces an [[XOnlyPubKey]]
-  * Example: tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+/** A private key expression that produces an [[XOnlyPubKey]] Example:
+  * tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
   * @param raw
   */
 case class RawPrivateXOnlyPublicKeyExpression(
-    raw: RawPrivateECPublicKeyExpression)
-    extends PrivateXOnlyPublicKeyExpression
+    raw: RawPrivateECPublicKeyExpression
+) extends PrivateXOnlyPublicKeyExpression
     with XOnlyPublicKeyExpression {
   override val originOpt: Option[KeyOriginExpression] = raw.originOpt
   override val key: ECPrivateKeyBytes = raw.key
@@ -135,8 +134,8 @@ sealed abstract class PublicECPublicKeyExpression
   */
 case class RawPublicECPublicKeyExpression(
     key: ECPublicKeyBytes,
-    originOpt: Option[KeyOriginExpression])
-    extends PublicECPublicKeyExpression
+    originOpt: Option[KeyOriginExpression]
+) extends PublicECPublicKeyExpression
     with ECPublicKeyExpression {
 
   override def toString(): String = {
@@ -145,14 +144,13 @@ case class RawPublicECPublicKeyExpression(
   }
 }
 
-/** A single [[XOnlyPubKey]] in a descriptor
-  * Example:
+/** A single [[XOnlyPubKey]] in a descriptor Example:
   * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
   */
 case class RawPublicXOnlyPublicKeyExpression(
     originOpt: Option[KeyOriginExpression],
-    override val pubKey: XOnlyPubKey)
-    extends SingleXOnlyPubKeyExpression
+    override val pubKey: XOnlyPubKey
+) extends SingleXOnlyPubKeyExpression
     with XOnlyPublicKeyExpression {
 
   override def key: ECKeyBytes = pubKey.publicKey.toPublicKeyBytes()
@@ -162,8 +160,7 @@ case class RawPublicXOnlyPublicKeyExpression(
   }
 }
 
-/** Represents key expressions that are BIP32 keys
-  * Examples:
+/** Represents key expressions that are BIP32 keys Examples:
   * xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc
   * [deadbeef/0'/1'/2']xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/3/4/5
   * [deadbeef/0'/1'/2']xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc/3/4/5/\*
@@ -175,9 +172,9 @@ sealed abstract class ExtECPublicKeyExpression
 
   def pathOpt: Option[BIP32Path]
 
-  /** Outer Option represents if we use this key or derive children
-    * Inner option represents whether child keys are hardened or not
-    * if they are hardedned, return the specifi [[HardenedType]]
+  /** Outer Option represents if we use this key or derive children Inner option
+    * represents whether child keys are hardened or not if they are hardedned,
+    * return the specifi [[HardenedType]]
     */
   def childrenHardenedOpt: Option[Option[HardenedType]]
 
@@ -200,8 +197,8 @@ sealed abstract class ExtECPublicKeyExpression
 sealed abstract class ExtXOnlyPublicKeyExpression
     extends SingleXOnlyPubKeyExpression { _: XOnlyPublicKeyExpression =>
 
-  /** Since implementations are so similar, just piggy back off of the ExtECPublicKeyExpression
-    * implementation rather than duplicating everything
+  /** Since implementations are so similar, just piggy back off of the
+    * ExtECPublicKeyExpression implementation rather than duplicating everything
     */
   def ecPublicKeyExpression: ExtECPublicKeyExpression
 
@@ -226,8 +223,8 @@ case class XprvECPublicKeyExpression(
     override val extKey: ExtPrivateKey,
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
-    childrenHardenedOpt: Option[Option[HardenedType]])
-    extends ExtECPublicKeyExpression
+    childrenHardenedOpt: Option[Option[HardenedType]]
+) extends ExtECPublicKeyExpression
     with ECPublicKeyExpression {
 
   override val key: ECPrivateKeyBytes = {
@@ -245,7 +242,8 @@ case class XprvECPublicKeyExpression(
   override def deriveChild(idx: Int): ECPrivateKey = {
     require(
       childrenHardenedOpt.isDefined,
-      s"Cannot derive child keys from descriptor that does not allow children, got=${toString}")
+      s"Cannot derive child keys from descriptor that does not allow children, got=${toString}"
+    )
     val node =
       BIP32Node(index = idx, hardenedOpt = childrenHardenedOpt.get)
     val fullPath: BIP32Path = pathOpt match {
@@ -257,8 +255,8 @@ case class XprvECPublicKeyExpression(
 }
 
 case class XprvXOnlyPublicKeyExpression(
-    ecPublicKeyExpression: XprvECPublicKeyExpression)
-    extends ExtXOnlyPublicKeyExpression
+    ecPublicKeyExpression: XprvECPublicKeyExpression
+) extends ExtXOnlyPublicKeyExpression
     with XOnlyPublicKeyExpression {
 
   override val originOpt: Option[KeyOriginExpression] =
@@ -275,8 +273,8 @@ case class XpubECPublicKeyExpression(
     override val extKey: ExtPublicKey,
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
-    childrenHardenedOpt: Option[Option[HardenedType]])
-    extends ExtECPublicKeyExpression
+    childrenHardenedOpt: Option[Option[HardenedType]]
+) extends ExtECPublicKeyExpression
     with ECPublicKeyExpression {
 
   override val key: ECPublicKeyBytes = {
@@ -294,7 +292,8 @@ case class XpubECPublicKeyExpression(
   override def deriveChild(idx: Int): ECPublicKey = {
     require(
       childrenHardenedOpt.isDefined,
-      s"Cannot derive child keys from descriptor that does not allow children, got=${toString}")
+      s"Cannot derive child keys from descriptor that does not allow children, got=${toString}"
+    )
     val node = BIP32Node(index = idx, hardenedOpt = childrenHardenedOpt.get)
     val fullPath: BIP32Path = pathOpt match {
       case Some(p) => BIP32Path(p.path.appended(node))
@@ -311,8 +310,8 @@ case class XpubECPublicKeyExpression(
   * @param ecPublicKeyExpression
   */
 case class XpubXOnlyPublicKeyExpression(
-    ecPublicKeyExpression: ExtECPublicKeyExpression)
-    extends ExtXOnlyPublicKeyExpression
+    ecPublicKeyExpression: ExtECPublicKeyExpression
+) extends ExtXOnlyPublicKeyExpression
     with XOnlyPublicKeyExpression {
 
   override val originOpt: Option[KeyOriginExpression] =
@@ -321,10 +320,10 @@ case class XpubXOnlyPublicKeyExpression(
 
 case class MultisigKeyExpression(
     numSigsRequired: Int,
-    keyExpressions: Vector[SingleECPublicKeyExpression])
-    extends KeyExpression[ECPublicKey]
-    //cannot directly mixin ECPublicKeyExpression
-    //because we don't have a single pubKey to represent multisig
+    keyExpressions: Vector[SingleECPublicKeyExpression]
+) extends KeyExpression[ECPublicKey]
+    // cannot directly mixin ECPublicKeyExpression
+    // because we don't have a single pubKey to represent multisig
     with PubKeyTypeExpression[ECPublicKey] {
   override val originOpt = None
 
@@ -345,13 +344,11 @@ case class MultisigKeyExpression(
 }
 
 /** Example: {
-  *      pk(xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334/0),
-  *     {
-  *       {
-  *         pk(xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL),
-  *         pk(02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076)},pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
-  *       }
-  * }
+  * pk(xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334/0),
+  * { {
+  * pk(xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL),
+  * pk(02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076)},pk(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
+  * } }
   * @param scriptExpressions
   */
 sealed abstract class TapscriptTreeExpression extends DescriptorExpression {
@@ -360,11 +357,12 @@ sealed abstract class TapscriptTreeExpression extends DescriptorExpression {
   def tree: TapscriptTree
 }
 
-/** Branches in a [[TapscriptTreeExpression]]. This corresponds to [[TapBranch]] */
+/** Branches in a [[TapscriptTreeExpression]]. This corresponds to [[TapBranch]]
+  */
 case class TapscriptBranchExpression(
     left: TapscriptTreeExpression,
-    right: TapscriptTreeExpression)
-    extends TapscriptTreeExpression {
+    right: TapscriptTreeExpression
+) extends TapscriptTreeExpression {
 
   def leafs: Vector[TapscriptLeafExpression] = {
     left.leafs ++ right.leafs
@@ -405,15 +403,19 @@ object SingleECPublicKeyExpression
       val childrenHardenedOpt = iter.takeChildrenHardenedOpt()
       extKey match {
         case xprv: ExtPrivateKey =>
-          XprvECPublicKeyExpression(xprv,
-                                    keyOriginOpt,
-                                    pathOpt,
-                                    childrenHardenedOpt)
+          XprvECPublicKeyExpression(
+            xprv,
+            keyOriginOpt,
+            pathOpt,
+            childrenHardenedOpt
+          )
         case xpub: ExtPublicKey =>
-          XpubECPublicKeyExpression(xpub,
-                                    keyOriginOpt,
-                                    pathOpt,
-                                    childrenHardenedOpt)
+          XpubECPublicKeyExpression(
+            xpub,
+            keyOriginOpt,
+            pathOpt,
+            childrenHardenedOpt
+          )
       }
     } else {
       // needed to parse network info in case of WIF private key
@@ -424,9 +426,11 @@ object SingleECPublicKeyExpression
           val networkT = ECPrivateKeyUtil.parseNetworkFromWIF(cp)
           networkT match {
             case Success(network) =>
-              RawPrivateECPublicKeyExpression(key = priv,
-                                              network = network,
-                                              originOpt = keyOriginOpt)
+              RawPrivateECPublicKeyExpression(
+                key = priv,
+                network = network,
+                originOpt = keyOriginOpt
+              )
             case Failure(err) => throw err
           }
         case pub: ECPublicKeyBytes =>
@@ -446,7 +450,7 @@ object SingleXOnlyPubKeyExpression
       case rawPriv: RawPrivateECPublicKeyExpression =>
         RawPrivateXOnlyPublicKeyExpression(rawPriv)
       case _: RawPublicECPublicKeyExpression =>
-        //cannot convert correctly, so just re-parse
+        // cannot convert correctly, so just re-parse
         val iter = DescriptorIterator(string)
         iter.takeInternalPublicKeyExpression()
     }
@@ -459,7 +463,7 @@ object MultisigKeyExpression extends StringFactory[MultisigKeyExpression] {
     val (requiredSigsStr, keyExpressionsStr) = string.span(_ != ',')
 
     val split = keyExpressionsStr
-      .drop(1) //drop ','
+      .drop(1) // drop ','
       .split(',')
       .toVector
     val keyExpressions = split.map(SingleECPublicKeyExpression.fromString(_))
@@ -507,8 +511,7 @@ sealed trait ExpressionSource { _: ScriptExpression =>
   }
 }
 
-/** A script expression derived from a key expression
-  * Example:
+/** A script expression derived from a key expression Example:
   * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
   * tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
   * pkh([bd16bee5/2147483647']xpub69H7F5dQzmVd3vPuLKtcXJziMEQByuDidnX3YdwgtNsecY5HRGtAAQC5mXTt4dsv9RzyjgDjAQs9VGVV6ydYCHnprc9vvaA5YtqWyL6hyds/0)
@@ -519,8 +522,7 @@ sealed trait KeyExpressionScriptExpression[T <: PublicKey]
   override def source: KeyExpression[T]
 }
 
-/** A script expression nested inside of another script expression
-  * Example:
+/** A script expression nested inside of another script expression Example:
   * sh(wsh(pkh(03a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)))
   */
 sealed trait NestedScriptExpression extends ExpressionSource {
@@ -533,9 +535,7 @@ sealed trait TapscriptTreeExpressionSource extends ExpressionSource {
   override def source: TapscriptTreeExpression
 }
 
-/** Examples:
-  * raw(deadbeef)
-  * raw(a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87)
+/** Examples: raw(deadbeef) raw(a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87)
   */
 case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
     extends RawSPKScriptExpression {
@@ -612,8 +612,10 @@ case class P2SHExpression(source: ScriptExpression)
   override val scriptPubKey: P2SHScriptPubKey = {
     source.scriptPubKey match {
       case m: MultiSignatureScriptPubKey =>
-        require(m.requiredSigs <= 15,
-                s"P2SHExpressions required <= 15 sigs, got=${m.requiredSigs}")
+        require(
+          m.requiredSigs <= 15,
+          s"P2SHExpressions required <= 15 sigs, got=${m.requiredSigs}"
+        )
         P2SHScriptPubKey(m)
       case _ => P2SHScriptPubKey(source.scriptPubKey)
     }
@@ -621,8 +623,7 @@ case class P2SHExpression(source: ScriptExpression)
   }
 }
 
-/** A multisig expression
-  * Example:
+/** A multisig expression Example:
   * multi(1,L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1,5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss)
   * @param source
   */
@@ -637,7 +638,8 @@ case class MultisigExpression(source: MultisigKeyExpression)
 
   require(
     scriptPubKey.requiredSigs > 0,
-    s"Must have positive requiredSigs in MultisigScriptExpression, got=${scriptPubKey.requiredSigs}")
+    s"Must have positive requiredSigs in MultisigScriptExpression, got=${scriptPubKey.requiredSigs}"
+  )
 
   require(
     scriptPubKey.requiredSigs <= scriptPubKey.maxSigs,
@@ -645,8 +647,7 @@ case class MultisigExpression(source: MultisigKeyExpression)
   )
 }
 
-/** Multisig expressions with lexographically sorted public keys
-  * Example:
+/** Multisig expressions with lexographically sorted public keys Example:
   * sortedmulti(2,xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/\*,xpub68NZiKmJWnxxS6aaHmn81bvJeTESw724CRDs6HbuccFQN9Ku14VQrADWgqbhhTHBaohPX4CjNLf9fq9MYo6oDaPPLPxSb7gwQN3ih19Zm4Y/0/0/\*)
   */
 case class SortedMultisigExpression(source: MultisigKeyExpression)
@@ -661,15 +662,15 @@ case class SortedMultisigExpression(source: MultisigKeyExpression)
   }
   require(
     scriptPubKey.requiredSigs > 0,
-    s"Must have positive requiredSigs in MultisigScriptExpression, got=${scriptPubKey.requiredSigs}")
+    s"Must have positive requiredSigs in MultisigScriptExpression, got=${scriptPubKey.requiredSigs}"
+  )
   require(
     scriptPubKey.requiredSigs <= scriptPubKey.maxSigs,
     s"Required sigs greater than max sigs, got requiredSigs=${scriptPubKey.requiredSigs} maxSigs=${scriptPubKey.maxSigs}"
   )
 }
 
-/** An expression that can produce multiple types of scripts
-  * Example:
+/** An expression that can produce multiple types of scripts Example:
   * combo(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
   * combo([01234567]xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL)
   * @param source
@@ -677,8 +678,8 @@ case class SortedMultisigExpression(source: MultisigKeyExpression)
   */
 case class ComboExpression(
     source: SingleECPublicKeyExpression,
-    scriptType: ScriptType = ScriptType.PUBKEYHASH)
-    extends ScriptExpression
+    scriptType: ScriptType = ScriptType.PUBKEYHASH
+) extends ScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
   override val descriptorType: DescriptorType = DescriptorType.Combo
 
@@ -713,7 +714,7 @@ object ScriptExpressionECKey extends StringFactory[ScriptExpression] {
         P2WPKHExpression(iter.takeSingleECKeyExpression())
       case DescriptorType.WSH =>
         P2WSHExpression(iter.takeRawSPKScriptExpression())
-      case DescriptorType.SH  => P2SHExpression(iter.takeScriptExpressionECKey())
+      case DescriptorType.SH => P2SHExpression(iter.takeScriptExpressionECKey())
       case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
       case DescriptorType.PK =>
         P2PKScriptExpression(iter.takeSingleECKeyExpression())
@@ -725,7 +726,8 @@ object ScriptExpressionECKey extends StringFactory[ScriptExpression] {
         ComboExpression(iter.takeSingleECKeyExpression())
       case DescriptorType.TR =>
         sys.error(
-          s"Cannot create tapscript expression's with ECPublicKey, got=$string")
+          s"Cannot create tapscript expression's with ECPublicKey, got=$string"
+        )
     }
     expression
   }
@@ -747,7 +749,8 @@ object ScriptExpressionXOnlyKey extends StringFactory[ScriptExpression] {
       case x @ (DescriptorType.Combo | DescriptorType.TR | DescriptorType.SH |
           DescriptorType.WSH | DescriptorType.WPKH | DescriptorType.PKH) =>
         sys.error(
-          s"Cannot create tapscript descriptor for descriptorType=$x, got=$string")
+          s"Cannot create tapscript descriptor for descriptorType=$x, got=$string"
+        )
     }
     expression
   }
@@ -761,8 +764,7 @@ sealed abstract class TreeExpression extends ScriptExpression {
   override def scriptPubKey: TaprootScriptPubKey
 }
 
-/** A tapscript tree expression with ONLY the keypath.
-  * Example:
+/** A tapscript tree expression with ONLY the keypath. Example:
   * tr(L4rK1yDtCWekvXuE6oXD9jCYfFNV2cWRpVuPLBcCU2z8TrisoyY1)
   * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd)
   */
@@ -774,13 +776,13 @@ case class KeyPathOnlyTreeExpression(source: SingleXOnlyPubKeyExpression)
     TaprootScriptPubKey.fromInternalKey(source.pubKey)
 }
 
-/** Tapscript tree with BOTH keypath and script path cases.
-  * Example:  tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd,pk(669b8afcec803a0d323e9a17f3ea8e68e8abe5a278020a929adbec52421adbd0))
+/** Tapscript tree with BOTH keypath and script path cases. Example:
+  * tr(a34b99f22c790c4e36b2b3c2c35a36db06226e41c692fc82b8b56ac1c540c5bd,pk(669b8afcec803a0d323e9a17f3ea8e68e8abe5a278020a929adbec52421adbd0))
   */
 case class ScriptPathTreeExpression(
     keyPath: KeyPathOnlyTreeExpression,
-    source: TapscriptTreeExpression)
-    extends TreeExpression
+    source: TapscriptTreeExpression
+) extends TreeExpression
     with TapscriptTreeExpressionSource {
 
   override def scriptPubKey: TaprootScriptPubKey = {

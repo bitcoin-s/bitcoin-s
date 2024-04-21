@@ -230,10 +230,13 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       txs <- Future.sequence(
         block.transactions
           .filterNot(_.isCoinbase)
-          .map(tx => client.getTransaction(tx.txIdBE)))
+          .map(tx => client.getTransaction(tx.txIdBE))
+      )
 
-      prevFilter <- client.getBlockFilter(block.blockHeader.previousBlockHashBE,
-                                          FilterType.Basic)
+      prevFilter <- client.getBlockFilter(
+        block.blockHeader.previousBlockHashBE,
+        FilterType.Basic
+      )
     } yield {
       val pubKeys = txs.flatMap(_.hex.outputs.map(_.scriptPubKey)).toVector
       val filter = BlockFilter(block, pubKeys)
@@ -242,7 +245,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
         blockFilter.header == filter
           .getHeader(prevFilter.header.flip)
           .hash
-          .flip)
+          .flip
+      )
     }
   }
 }

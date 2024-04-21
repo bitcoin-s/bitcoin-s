@@ -17,7 +17,8 @@ case class CLightningInstanceLocal(
     listenBinding: URI,
     logFileOpt: Option[File],
     bitcoindAuthCredentials: PasswordBased,
-    bitcoindRpcUri: URI)
+    bitcoindRpcUri: URI
+)
 
 object CLightningInstanceLocal
     extends InstanceFactoryLocal[CLightningInstanceLocal, ActorSystem] {
@@ -36,8 +37,9 @@ object CLightningInstanceLocal
     }
   }
 
-  override def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile)(implicit
-      system: ActorSystem): CLightningInstanceLocal = {
+  override def fromConfigFile(
+      file: File = DEFAULT_CONF_FILE.toFile
+  )(implicit system: ActorSystem): CLightningInstanceLocal = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -46,8 +48,9 @@ object CLightningInstanceLocal
     fromConfig(config)
   }
 
-  override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile)(implicit
-      system: ActorSystem): CLightningInstanceLocal = {
+  override def fromDataDir(
+      dir: File = DEFAULT_DATADIR.toFile
+  )(implicit system: ActorSystem): CLightningInstanceLocal = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 

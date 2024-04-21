@@ -18,19 +18,25 @@ import scala.util.Try
   */
 class CryptoInterpreterTest extends BitcoinSJvmTest {
 
-  val stack = List(ScriptConstant(
-    "02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
+  val stack = List(
+    ScriptConstant(
+      "02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase
+    )
+  )
   val CI = CryptoInterpreter
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {
 
     val script = List(OP_HASH160)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = CI.opHash160(program)
 
     newProgram.stack.head must be(
-      ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase))
+      ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
+    )
     newProgram.script.size must be(0)
   }
 
@@ -38,8 +44,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List()
     val script = List(OP_HASH160)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val executedProgram: ExecutedScriptProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opHash160(program))
     executedProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -49,8 +57,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
   it must "fail to evaluate all OP codes when the script stack is empty" in {
     val script = List()
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     Try(CI.opHash160(program)).isFailure must be(true)
     Try(CI.opRipeMd160(program)).isFailure must be(true)
     Try(CI.opSha256(program)).isFailure must be(true)
@@ -67,11 +77,14 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(ScriptConstant(""))
     val script = List(OP_RIPEMD160)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = CI.opRipeMd160(program)
     newProgram.stack must be(
-      List(ScriptConstant("9c1185a5c5e9fc54612808977ee8f548b2258d31")))
+      List(ScriptConstant("9c1185a5c5e9fc54612808977ee8f548b2258d31"))
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -79,11 +92,14 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(ScriptConstant("ab"))
     val script = List(OP_SHA1)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = CI.opSha1(program)
     newProgram.stack.head must be(
-      ScriptConstant("fe83f217d464f6fdfa5b2b1f87fe3a1a47371196"))
+      ScriptConstant("fe83f217d464f6fdfa5b2b1f87fe3a1a47371196")
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -91,12 +107,18 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(ScriptConstant(""))
     val script = List(OP_SHA256)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = CI.opSha256(program)
     newProgram.stack must be(
-      List(ScriptConstant(
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")))
+      List(
+        ScriptConstant(
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        )
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -104,12 +126,18 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(ScriptConstant(""))
     val script = List(OP_HASH256)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val newProgram = CI.opHash256(program)
     newProgram.stack must be(
-      List(ScriptConstant(
-        "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")))
+      List(
+        ScriptConstant(
+          "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"
+        )
+      )
+    )
     newProgram.script.isEmpty must be(true)
   }
 
@@ -117,8 +145,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(OP_0, OP_0, OP_0)
     val script = List(OP_CHECKMULTISIG)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be(List(OP_TRUE))
@@ -129,8 +159,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(OP_0, OP_0, OP_0, OP_16, OP_16, OP_16)
     val script = List(OP_CHECKMULTISIG, OP_16, OP_16, OP_16, OP_16)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be(List(OP_TRUE, OP_16, OP_16, OP_16))
@@ -141,8 +173,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(ScriptNumber.zero, ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_CHECKMULTISIGVERIFY)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSigVerify(programNoFlags)
     newProgram.script.isEmpty must be(true)
@@ -154,8 +188,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     val stack = List(OP_0, OP_0, OP_0, OP_16, OP_16, OP_16)
     val script = List(OP_CHECKMULTISIGVERIFY, OP_16, OP_16, OP_16, OP_16)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSigVerify(programNoFlags)
     newProgram.stack must be(List(OP_16, OP_16, OP_16))
@@ -164,12 +200,14 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
   }
 
   it must "evaluate an OP_CHECKMULTISIG for" in {
-    //0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
+    // 0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
     val stack = List(OP_1, OP_0, OP_0, OP_0)
     val script = List(OP_CHECKMULTISIG)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be(List(OP_TRUE))
@@ -180,9 +218,11 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
   it must "mark a transaction invalid when the NULLDUMMY flag is set for a OP_CHECKMULTISIG operation & the scriptSig does not begin with OP_0" in {
     val flags = Seq(ScriptVerifyNullDummy)
     val scriptSig = ScriptSignature.fromAsm(Seq(OP_1))
-    val input = TransactionInput(EmptyTransactionOutPoint,
-                                 scriptSig,
-                                 TransactionConstants.sequence)
+    val input = TransactionInput(
+      EmptyTransactionOutPoint,
+      scriptSig,
+      TransactionConstants.sequence
+    )
     val empty = EmptyTransaction
     val tx =
       BaseTransaction(empty.version, Seq(input), empty.outputs, empty.lockTime)
@@ -190,7 +230,8 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
       transaction = tx,
       inputIndex = UInt32.zero,
       output = TransactionOutput(CurrencyUnits.zero, TestUtil.scriptPubKey),
-      flags = flags)
+      flags = flags
+    )
     val pre = PreExecutionScriptProgram(t)
     val baseProgram = pre.toExecutionInProgress
     val stack = Seq(OP_0, OP_0, OP_1)
@@ -205,18 +246,23 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
 
   it must "mark a transaction invalid when the DERSIG flag is set for a OP_CHECKSIG operaetion & the signature is not a strict der sig" in {
     val flags = Seq(ScriptVerifyDerSig)
-    //signature is from script_valid.json, it has a negative S value which makes it non strict der
+    // signature is from script_valid.json, it has a negative S value which makes it non strict der
     val stack = Seq(
       OP_0,
       ScriptConstant(
-        "302402107777777777777777777777777777777702108777777777777777777777777777777701"))
+        "302402107777777777777777777777777777777702108777777777777777777777777777777701"
+      )
+    )
     val script = Seq(OP_CHECKSIG)
     val program =
-      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
-                                                                   script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
     val programWithFlags = program.replaceFlags(flags)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
-      CI.opCheckSig(programWithFlags))
+      CI.opCheckSig(programWithFlags)
+    )
     newProgram.error must be(Some(ScriptErrorSigDer))
 
   }
@@ -228,7 +274,8 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
       .updateStackAndScript(stack, script)
       .updateOriginalScript(script)
     val newProgram = ScriptProgramTestUtil.toExecutionInProgressScriptProgram(
-      CI.opCodeSeparator(program))
+      CI.opCodeSeparator(program)
+    )
     newProgram.lastCodeSeparator must be(Some(0))
   }
 

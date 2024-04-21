@@ -17,7 +17,8 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       feeRate: FeeUnit,
       utxo1: CoinSelectorUtxo,
       utxo2: CoinSelectorUtxo,
-      utxo3: CoinSelectorUtxo) {
+      utxo3: CoinSelectorUtxo
+  ) {
 
     val utxoSet: Vector[CoinSelectorUtxo] = Vector(utxo1, utxo2, utxo3)
 
@@ -59,39 +60,50 @@ class CoinSelectorTest extends BitcoinSWalletTest {
 
   it must "accumulate largest outputs" in { fixture =>
     val selection =
-      CoinSelector.accumulateLargest(walletUtxos = fixture.utxoSet,
-                                     outputs = Vector(fixture.output),
-                                     feeRate = fixture.feeRate)
+      CoinSelector.accumulateLargest(
+        walletUtxos = fixture.utxoSet,
+        outputs = Vector(fixture.output),
+        feeRate = fixture.feeRate
+      )
 
     assert(selection == Vector(fixture.utxo2, fixture.utxo3))
   }
 
   it must "accumulate smallest outputs" in { fixture =>
     val selection =
-      CoinSelector.accumulateSmallestViable(walletUtxos = fixture.utxoSet,
-                                            outputs = Vector(fixture.output),
-                                            feeRate = fixture.feeRate)
+      CoinSelector.accumulateSmallestViable(
+        walletUtxos = fixture.utxoSet,
+        outputs = Vector(fixture.output),
+        feeRate = fixture.feeRate
+      )
 
     assert(selection == Vector(fixture.utxo1, fixture.utxo3, fixture.utxo2))
   }
 
   it must "accumulate outputs in order" in { fixture =>
-    val selection = CoinSelector.accumulate(walletUtxos = fixture.utxoSet,
-                                            outputs = Vector(fixture.output),
-                                            feeRate = fixture.feeRate)
+    val selection = CoinSelector.accumulate(
+      walletUtxos = fixture.utxoSet,
+      outputs = Vector(fixture.output),
+      feeRate = fixture.feeRate
+    )
 
     assert(selection == Vector(fixture.utxo1, fixture.utxo2))
   }
 
   it must "accumulate random outputs" in { fixture =>
-    val first = CoinSelector.randomSelection(walletUtxos = fixture.utxoSet,
-                                             outputs = Vector(fixture.output),
-                                             feeRate = fixture.feeRate)
+    val first = CoinSelector.randomSelection(
+      walletUtxos = fixture.utxoSet,
+      outputs = Vector(fixture.output),
+      feeRate = fixture.feeRate
+    )
 
     val selections = Vector.fill(20)(
-      CoinSelector.randomSelection(walletUtxos = fixture.utxoSet,
-                                   outputs = Vector(fixture.output),
-                                   feeRate = fixture.feeRate))
+      CoinSelector.randomSelection(
+        walletUtxos = fixture.utxoSet,
+        outputs = Vector(fixture.output),
+        feeRate = fixture.feeRate
+      )
+    )
 
     // it should not get the same thing every time
     assert(selections.exists(_ != first))
@@ -99,11 +111,12 @@ class CoinSelectorTest extends BitcoinSWalletTest {
 
   it must "select the least wasteful outputs" in { fixture =>
     val selection =
-      CoinSelector.selectByLeastWaste(walletUtxos = fixture.utxoSet,
-                                      outputs = Vector(fixture.output),
-                                      feeRate = fixture.feeRate,
-                                      longTermFeeRate =
-                                        SatoshisPerByte.fromLong(10))
+      CoinSelector.selectByLeastWaste(
+        walletUtxos = fixture.utxoSet,
+        outputs = Vector(fixture.output),
+        feeRate = fixture.feeRate,
+        longTermFeeRate = SatoshisPerByte.fromLong(10)
+      )
 
     // Need to sort as ordering will be different sometimes
     val sortedSelection = selection.sortBy(_.outPoint.hex)

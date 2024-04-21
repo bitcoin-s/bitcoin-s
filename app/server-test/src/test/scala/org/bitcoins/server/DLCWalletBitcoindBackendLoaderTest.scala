@@ -34,38 +34,41 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
   it must "track rescan state accurately" in { walletHolderWithLoader =>
     val loader = walletHolderWithLoader.loaderApi
     val bitcoind = walletHolderWithLoader.bitcoind
-    //need some blocks to make rescans last longer for the test case
+    // need some blocks to make rescans last longer for the test case
     val blocksF = bitcoind.generate(250)
 
     val loadedWalletF = loader.load(walletNameOpt = None, aesPasswordOpt = None)
 
     val walletConfigF = loadedWalletF.map(_._2)
 
-    //as a hack, set rescanning to true, so next time we load it starts a rescan
+    // as a hack, set rescanning to true, so next time we load it starts a rescan
     val setRescanF = for {
       _ <- blocksF
       walletConfig <- walletConfigF
-      descriptorDAO = WalletStateDescriptorDAO()(system.dispatcher,
-                                                 walletConfig)
+      descriptorDAO = WalletStateDescriptorDAO()(
+        system.dispatcher,
+        walletConfig
+      )
       set <- descriptorDAO.compareAndSetRescanning(false, true)
     } yield assert(set)
 
-    //now that we have set rescanning, we should see a rescan next time we load wallet
+    // now that we have set rescanning, we should see a rescan next time we load wallet
     for {
       _ <- setRescanF
       (loadWallet2, _, _) <- loader.load(
         walletNameOpt = None,
         aesPasswordOpt = None
-      ) //load wallet again
+      ) // load wallet again
       isRescanning <- loadWallet2.isRescanning()
       _ = assert(isRescanning)
       _ = assert(loader.isRescanStateDefined)
-      //wait until rescanning is done
+      // wait until rescanning is done
       _ <- AsyncUtil.retryUntilSatisfiedF(
         { () =>
           loadWallet2.isRescanning().map(isRescanning => isRescanning == false)
         },
-        1.second)
+        1.second
+      )
     } yield {
       assert(loader.isRescanStateEmpty)
     }

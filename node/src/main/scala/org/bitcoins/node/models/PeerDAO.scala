@@ -47,14 +47,16 @@ case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(ByteVector, Int)]): Query[PeerTable, PeerDb, Seq] = {
-    //from: https://stackoverflow.com/questions/26815913/how-to-do-or-filter-in-slick
+      ids: Vector[(ByteVector, Int)]
+  ): Query[PeerTable, PeerDb, Seq] = {
+    // from: https://stackoverflow.com/questions/26815913/how-to-do-or-filter-in-slick
     table.filter(r =>
       ids.map(i => r.address === i._1 && r.port === i._2).reduceLeft(_ || _))
   }
 
   override protected def findAll(
-      ts: Vector[PeerDb]): Query[Table[PeerDb], PeerDb, Seq] =
+      ts: Vector[PeerDb]
+  ): Query[Table[PeerDb], PeerDb, Seq] =
     findByPrimaryKeys(ts.map(t => (t.address, t.port)))
 
   def deleteByKey(address: String): Future[Int] = {
@@ -66,7 +68,8 @@ case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
   /** returns only non onion addresses if tor is disabled, all otherwise */
   def findAllWithTorFilter(torEnabled: Boolean): Future[Vector[PeerDb]] = {
     val q = table.filterIf(!torEnabled)(
-      _.networkId =!= AddrV2Message.TOR_V3_NETWORK_BYTE)
+      _.networkId =!= AddrV2Message.TOR_V3_NETWORK_BYTE
+    )
     safeDatabase.run(q.result).map(_.toVector)
   }
 
@@ -74,26 +77,33 @@ case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
       address: ByteVector,
       port: Int,
       networkId: Byte,
-      serviceIdentifier: ServiceIdentifier): Future[PeerDb] = {
+      serviceIdentifier: ServiceIdentifier
+  ): Future[PeerDb] = {
     val lastSeen: Instant = Instant.now
     val existingF = read((address, port))
     existingF.flatMap {
       case Some(value) =>
         upsert(
-          PeerDb(address,
-                 port,
-                 firstSeen = value.firstSeen,
-                 lastSeen = lastSeen,
-                 networkId = networkId,
-                 serviceBytes = serviceIdentifier.bytes))
+          PeerDb(
+            address,
+            port,
+            firstSeen = value.firstSeen,
+            lastSeen = lastSeen,
+            networkId = networkId,
+            serviceBytes = serviceIdentifier.bytes
+          )
+        )
       case None =>
         upsert(
-          PeerDb(address,
-                 port,
-                 firstSeen = Instant.now,
-                 lastSeen = lastSeen,
-                 networkId = networkId,
-                 serviceBytes = serviceIdentifier.bytes))
+          PeerDb(
+            address,
+            port,
+            firstSeen = Instant.now,
+            lastSeen = lastSeen,
+            networkId = networkId,
+            serviceBytes = serviceIdentifier.bytes
+          )
+        )
     }
   }
 
@@ -133,7 +143,8 @@ case class PeerDAO()(implicit appConfig: NodeAppConfig, ec: ExecutionContext)
     def * : ProvenShape[PeerDb] =
       (address, port, lastSeen, firstSeen, networkId, serviceBytes).<>(
         PeerDb.tupled,
-        PeerDb.unapply)
+        PeerDb.unapply
+      )
   }
 }
 

@@ -17,8 +17,8 @@ import scodec.bits.ByteVector
 
 import java.time.Instant
 
-/** This table contains all the meta information about a DLC.
-  * This includes various identifiers as well as state and a BIP 32 key path.
+/** This table contains all the meta information about a DLC. This includes
+  * various identifiers as well as state and a BIP 32 key path.
   */
 case class DLCDb(
     dlcId: Sha256Digest,
@@ -46,9 +46,11 @@ case class DLCDb(
   }
 
   def updateFundingOutPoint(outPoint: TransactionOutPoint): DLCDb = {
-    copy(fundingOutPointOpt = Some(outPoint),
-         fundingTxIdOpt = Some(outPoint.txIdBE),
-         lastUpdated = TimeUtil.now)
+    copy(
+      fundingOutPointOpt = Some(outPoint),
+      fundingTxIdOpt = Some(outPoint.txIdBE),
+      lastUpdated = TimeUtil.now
+    )
   }
 
   def updateClosingTxId(txId: DoubleSha256DigestBE): DLCDb = {

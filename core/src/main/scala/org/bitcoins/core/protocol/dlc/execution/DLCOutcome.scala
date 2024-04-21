@@ -11,10 +11,10 @@ case class ExecutedDLCOutcome(
     override val fundingTx: Transaction,
     cet: WitnessTransaction,
     outcome: OracleOutcome,
-    sigsUsed: Vector[OracleSignatures])
-    extends DLCOutcome
+    sigsUsed: Vector[OracleSignatures]
+) extends DLCOutcome
 
 case class RefundDLCOutcome(
     override val fundingTx: Transaction,
-    refundTx: WitnessTransaction)
-    extends DLCOutcome
+    refundTx: WitnessTransaction
+) extends DLCOutcome

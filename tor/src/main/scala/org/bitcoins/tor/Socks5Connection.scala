@@ -18,14 +18,16 @@ import scala.util.{Failure, Success, Try}
   *
   * Created by rorp
   *
-  * @param connection      underlying TcpConnection
-  * @param credentialsOpt optional username/password for authentication
+  * @param connection
+  *   underlying TcpConnection
+  * @param credentialsOpt
+  *   optional username/password for authentication
   */
 class Socks5Connection(
     connection: ActorRef,
     credentialsOpt: Option[Credentials],
-    target: Socks5Connect)
-    extends Actor
+    target: Socks5Connect
+) extends Actor
     with ActorLogging
     with BitcoinSLogger {
 
@@ -47,10 +49,14 @@ class Socks5Connection(
     if (parseGreetings(data, passwordAuth) == PasswordAuth) {
       context become authenticate
       val credentials = credentialsOpt.getOrElse(
-        throw Socks5Error("Credentials are not defined"))
+        throw Socks5Error("Credentials are not defined")
+      )
       connection ! Tcp.Write(
-        socks5PasswordAuthenticationRequest(credentials.username,
-                                            credentials.password))
+        socks5PasswordAuthenticationRequest(
+          credentials.username,
+          credentials.password
+        )
+      )
       connection ! Tcp.ResumeReading
     } else {
       context become connectionRequest
@@ -72,13 +78,15 @@ class Socks5Connection(
     connectedAddressT match {
       case Success(connectedAddress) =>
         logger.info(
-          s"Tor connection request succeeded. target=$target connectedAddress=$connectedAddress")
+          s"Tor connection request succeeded. target=$target connectedAddress=$connectedAddress"
+        )
         context become connected
         context.parent ! Socks5Connected(connectedAddress)
         isConnected = true
       case Failure(err) =>
         logger.error(
-          s"Tor connection request failed to $target errMsg=${err.toString}")
+          s"Tor connection request failed to $target errMsg=${err.toString}"
+        )
     }
 
   }
@@ -95,7 +103,7 @@ class Socks5Connection(
   override def unhandled(message: Any): Unit = message match {
     case Terminated(actor) if actor == connection => context stop self
     case _: Tcp.ConnectionClosed                  => context stop self
-    case _                                        => log.warning(s"unhandled message=$message")
+    case _ => log.warning(s"unhandled message=$message")
   }
 
   override def postStop(): Unit = {
@@ -113,8 +121,10 @@ object Socks5Connection extends BitcoinSLogger {
   def props(
       tcpConnection: ActorRef,
       credentials_opt: Option[Credentials],
-      command: Socks5Connect): Props = Props(
-    new Socks5Connection(tcpConnection, credentials_opt, command))
+      command: Socks5Connect
+  ): Props = Props(
+    new Socks5Connection(tcpConnection, credentials_opt, command)
+  )
 
   case class Socks5Connect(address: InetSocketAddress) extends Tcp.Command
 
@@ -133,20 +143,25 @@ object Socks5Connection extends BitcoinSLogger {
 
   def socks5PasswordAuthenticationRequest(
       username: String,
-      password: String): ByteString = {
+      password: String
+  ): ByteString = {
     val usernameBytes = ByteString(username)
     val passwordBytes = ByteString(password)
-    ByteString(0x01, // version of username/password authentication
-               usernameBytes.length.toByte) ++
+    ByteString(
+      0x01, // version of username/password authentication
+      usernameBytes.length.toByte
+    ) ++
       usernameBytes ++
       ByteString(passwordBytes.length.toByte) ++
       passwordBytes
   }
 
   def socks5ConnectionRequest(address: InetSocketAddress): ByteString = {
-    ByteString(0x05, // SOCKS version
-               0x01, // establish a TCP/IP stream connection
-               0x00) ++ // reserved
+    ByteString(
+      0x05, // SOCKS version
+      0x01, // establish a TCP/IP stream connection
+      0x00
+    ) ++ // reserved
       addressToByteString(address) ++
       portToByteString(address.getPort)
   }
@@ -164,12 +179,15 @@ object Socks5Connection extends BitcoinSLogger {
   }
 
   def addressToByteString(address: InetSocketAddress): ByteString = Option(
-    address.getAddress) match {
+    address.getAddress
+  ) match {
     case None =>
       // unresolved address, use SOCKS5 resolver
       val host = address.getHostString
-      ByteString(0x03, // Domain name
-                 host.length.toByte) ++
+      ByteString(
+        0x03, // Domain name
+        host.length.toByte
+      ) ++
         ByteString(host)
     case Some(inetAddress) =>
       inetAddressToByteString(inetAddress)
@@ -183,7 +201,8 @@ object Socks5Connection extends BitcoinSLogger {
       throw Socks5Error("Invalid SOCKS5 version")
     } else if (
       (!passwordAuth && data(1) != NoAuth) || (passwordAuth && data(
-        1) != PasswordAuth)
+        1
+      ) != PasswordAuth)
     ) {
       throw Socks5Error("Unsupported SOCKS5 auth method")
     } else {
@@ -243,15 +262,26 @@ object Socks5Connection extends BitcoinSLogger {
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
 
-  /** @param socket the peer we are connecting to
-    * @param source the source that produces ByteStrings we need to send to our peer
-    * @param sink the sink that receives messages from our peer and performs application specific logic
-    * @param mergeHubSink a way for socks5Handler to send messages to the socks5 proxy to complete the handshake
-    * @param credentialsOpt the credentials to authenticate the socks5 proxy.
+  /** @param socket
+    *   the peer we are connecting to
+    * @param source
+    *   the source that produces ByteStrings we need to send to our peer
+    * @param sink
+    *   the sink that receives messages from our peer and performs application
+    *   specific logic
+    * @param mergeHubSink
+    *   a way for socks5Handler to send messages to the socks5 proxy to complete
+    *   the handshake
+    * @param credentialsOpt
+    *   the credentials to authenticate the socks5 proxy.
     * @param mat
-    * @tparam MatSource the materialized value of the source given to us
-    * @tparam MatSink the materialized value of the sink given to us
-    * @return a running tcp connection along with the results of the materialize source and sink
+    * @tparam MatSource
+    *   the materialized value of the source given to us
+    * @tparam MatSink
+    *   the materialized value of the sink given to us
+    * @return
+    *   a running tcp connection along with the results of the materialize
+    *   source and sink
     */
   def socks5Handler[MatSource, MatSink](
       socket: InetSocketAddress,
@@ -259,41 +289,56 @@ object Socks5Connection extends BitcoinSLogger {
         ByteString,
         (
             Future[org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection],
-            MatSource)],
+            MatSource
+        )
+      ],
       sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
       mergeHubSink: Sink[ByteString, NotUsed],
-      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Future[(
-      (org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection, MatSource),
-      MatSink)] = {
+      credentialsOpt: Option[Credentials]
+  )(implicit mat: Materializer): Future[
+    (
+        (org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection, MatSource),
+        MatSink
+    )
+  ] = {
 
-    val flowState: Flow[
-      ByteString,
-      Either[ByteString, Socks5ConnectionState],
-      NotUsed] = {
+    val flowState: Flow[ByteString,
+                        Either[
+                          ByteString,
+                          Socks5ConnectionState
+                        ],
+                        NotUsed] = {
       Flow[ByteString]
         .statefulMap[Socks5ConnectionState,
-                     Either[ByteString, Socks5ConnectionState]](() =>
-          Socks5ConnectionState.Disconnected)(
+                     Either[
+                       ByteString,
+                       Socks5ConnectionState
+                     ]](() => Socks5ConnectionState.Disconnected)(
           { case (state, bytes) =>
             state match {
               case Socks5ConnectionState.Disconnected =>
                 if (
-                  parseGreetings(bytes,
-                                 credentialsOpt.isDefined) == PasswordAuth
+                  parseGreetings(
+                    bytes,
+                    credentialsOpt.isDefined
+                  ) == PasswordAuth
                 ) {
 
                   logger.debug(s"Authenticating socks5 proxy...")
                   credentialsOpt match {
                     case Some(c) =>
                       val authBytes =
-                        socks5PasswordAuthenticationRequest(c.username,
-                                                            c.password)
+                        socks5PasswordAuthenticationRequest(
+                          c.username,
+                          c.password
+                        )
                       Source.single(authBytes).runWith(mergeHubSink)
                       val state = Socks5ConnectionState.Authenticating
                       (state, Right(state))
                     case None =>
                       sys.error(
-                        s"Authentication required by socks5Proxy but we have no credentials")
+                        s"Authentication required by socks5Proxy but we have no credentials"
+                      )
                   }
 
                 } else {
@@ -311,7 +356,8 @@ object Socks5Connection extends BitcoinSLogger {
                     val connRequestBytes =
                       Socks5Connection.socks5ConnectionRequest(socket)
                     logger.debug(
-                      s"Writing socks5 connection request after auth")
+                      s"Writing socks5 connection request after auth"
+                    )
                     Source.single(connRequestBytes).runWith(mergeHubSink)
                     val state = Socks5ConnectionState.Greeted
                     (state, Right(state))
@@ -325,12 +371,14 @@ object Socks5Connection extends BitcoinSLogger {
                 connectedAddressT match {
                   case scala.util.Success(connectedAddress) =>
                     logger.info(
-                      s"Tor connection request succeeded. target=${socket} connectedAddress=$connectedAddress")
+                      s"Tor connection request succeeded. target=${socket} connectedAddress=$connectedAddress"
+                    )
                     val state = Socks5ConnectionState.Connected
                     (state, Right(state))
                   case scala.util.Failure(err) =>
                     sys.error(
-                      s"Tor connection request failed to target=${socket} errMsg=${err.toString}")
+                      s"Tor connection request failed to target=${socket} errMsg=${err.toString}"
+                    )
                 }
               case Socks5ConnectionState.Connected =>
                 (Socks5ConnectionState.Connected, Left(bytes))
@@ -346,7 +394,7 @@ object Socks5Connection extends BitcoinSLogger {
       .toMat(sink)(Keep.both)
       .run()
 
-    //send greeting to kick off stream
+    // send greeting to kick off stream
     tcpConnectionF.map { conn =>
       val passwordAuth = credentialsOpt.isDefined
       val greetingSource: Source[ByteString, NotUsed] = {

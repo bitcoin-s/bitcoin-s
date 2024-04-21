@@ -10,54 +10,54 @@ import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Properties
 
-/** This class represents a parsed `lnd.conf` file. It
-  * respects the different ways of writing options in
-  * `lnd.conf`: Raw options, network-prefixed options
-  * and options within network sections. It also tries to
-  * conform to the way lnd gives precedence to the
-  * different properties.
+/** This class represents a parsed `lnd.conf` file. It respects the different
+  * ways of writing options in `lnd.conf`: Raw options, network-prefixed options
+  * and options within network sections. It also tries to conform to the way lnd
+  * gives precedence to the different properties.
   *
-  * Not all options are exposed from this class. We only
-  * expose those that are of relevance when making RPC
-  * requests.
+  * Not all options are exposed from this class. We only expose those that are
+  * of relevance when making RPC requests.
   */
 case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     extends BitcoinSLogger {
 
-  //create datadir and config if it DNE on disk
+  // create datadir and config if it DNE on disk
   if (!datadir.exists()) {
     logger.debug(
-      s"datadir=${datadir.getAbsolutePath} does not exist, creating now")
+      s"datadir=${datadir.getAbsolutePath} does not exist, creating now"
+    )
     datadir.mkdirs()
     LndConfig.writeConfigToFile(this, datadir)
   }
 
   private val confFile = datadir.toPath.resolve("lnd.conf")
 
-  //create lnd.conf file in datadir if it does not exist
+  // create lnd.conf file in datadir if it does not exist
   if (!Files.exists(confFile)) {
     logger.debug(
-      s"lnd.conf in datadir=${datadir.getAbsolutePath} does not exist, creating now")
+      s"lnd.conf in datadir=${datadir.getAbsolutePath} does not exist, creating now"
+    )
     LndConfig.writeConfigToFile(this, datadir)
   }
 
-  /** Converts the config back to a string that can be written
-    * to file, and passed to `lnd`
+  /** Converts the config back to a string that can be written to file, and
+    * passed to `lnd`
     */
   lazy val toWriteableString: String = lines.mkString("\n")
 
-  /** Splits the provided lines into pairs of keys/values
-    * based on `=`, and then applies the provided
-    * `collect` function on those pairs
+  /** Splits the provided lines into pairs of keys/values based on `=`, and then
+    * applies the provided `collect` function on those pairs
     */
-  private def collectFrom(lines: Seq[String])(
-      collect: PartialFunction[(String, String), String]): Seq[String] = {
+  private def collectFrom(
+      lines: Seq[String]
+  )(collect: PartialFunction[(String, String), String]): Seq[String] = {
 
     val splittedPairs = {
       val splitLines = lines.map(
         _.split("=")
           .map(_.trim)
-          .toList)
+          .toList
+      )
 
       splitLines.collect { case h :: t :: _ =>
         h -> t
@@ -133,7 +133,8 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     val lines = newLine +: ourLines
     val newConfig = LndConfig(lines, datadir)
     logger.debug(
-      s"Appending new config with $key=$value to datadir=${datadir.getAbsolutePath}")
+      s"Appending new config with $key=$value to datadir=${datadir.getAbsolutePath}"
+    )
     LndConfig.writeConfigToFile(newConfig, datadir)
 
     newConfig
@@ -175,8 +176,8 @@ object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
   /** The empty `lnd` config */
   override lazy val empty: LndConfig = LndConfig("", DEFAULT_DATADIR)
 
-  /** Constructs a `lnd` config from the given string,
-    * by splitting it on newlines
+  /** Constructs a `lnd` config from the given string, by splitting it on
+    * newlines
     */
   override def apply(config: String, datadir: File): LndConfig =
     apply(config.split("\n").toList, datadir)
@@ -188,7 +189,8 @@ object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
   /** Reads the given file and construct a `lnd` config from it */
   override def apply(
       config: File,
-      datadir: File = DEFAULT_DATADIR): LndConfig = {
+      datadir: File = DEFAULT_DATADIR
+  ): LndConfig = {
     import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
@@ -207,9 +209,8 @@ object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
     apply(dir.toPath.resolve("lnd.conf"))
   }
 
-  /** If there is a `lnd.conf` in the default
-    * data directory, this is read. Otherwise, the
-    * default configuration is returned.
+  /** If there is a `lnd.conf` in the default data directory, this is read.
+    * Otherwise, the default configuration is returned.
     */
   override def fromDefaultDatadir: LndConfig = {
     if (DEFAULT_CONF_FILE.isFile) {
@@ -235,8 +236,8 @@ object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
     .resolve("lnd.conf")
     .toFile
 
-  /** Writes the config to the data directory within it, if it doesn't
-    * exist. Returns the written file.
+  /** Writes the config to the data directory within it, if it doesn't exist.
+    * Returns the written file.
     */
   override def writeConfigToFile(config: LndConfig, datadir: File): Path = {
 
@@ -247,7 +248,8 @@ object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
 
     if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE.toPath) {
       logger.warn(
-        s"We will not overwrite the existing lnd.conf in default datadir")
+        s"We will not overwrite the existing lnd.conf in default datadir"
+      )
     } else {
       Files.write(confFile, confStr.getBytes)
     }

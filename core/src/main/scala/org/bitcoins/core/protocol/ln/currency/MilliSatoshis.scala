@@ -8,10 +8,10 @@ import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode
 
-/** The common currency unit used in the
-  * LN protocol for updating HTLCs.
+/** The common currency unit used in the LN protocol for updating HTLCs.
   *
-  * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
+  * @see
+  *   [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
   */
 sealed abstract class MilliSatoshis
     extends NetworkElement
@@ -52,12 +52,12 @@ sealed abstract class MilliSatoshis
   }
 
   override def equals(obj: Any): Boolean = {
-    //needed for cases like
-    //1BTC == 100,000,000 satoshis should be true
-    //weirdly enough, this worked in scala version < 2.13.4
-    //but seems to be broken in 2.13.4 :/
-    //try removing this and running code, you should see
-    //failures in the 'lnurl' module
+    // needed for cases like
+    // 1BTC == 100,000,000 satoshis should be true
+    // weirdly enough, this worked in scala version < 2.13.4
+    // but seems to be broken in 2.13.4 :/
+    // try removing this and running code, you should see
+    // failures in the 'lnurl' module
     obj match {
       case ln: LnCurrencyUnit => toLnCurrencyUnit == ln
       case ms: MilliSatoshis  => this.toBigInt == ms.toBigInt
@@ -136,9 +136,9 @@ object MilliSatoshis {
     // we need to divide by 10 to get to msat
     val msatDec = pico / LnCurrencyUnits.MSAT_TO_PICO
 
-    //now we need to round, we are going to round the same way round
-    //outputs when publishing txs to the blockchain
-    //https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs
+    // now we need to round, we are going to round the same way round
+    // outputs when publishing txs to the blockchain
+    // https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs
 
     val rounded = msatDec.setScale(0, RoundingMode.DOWN)
 

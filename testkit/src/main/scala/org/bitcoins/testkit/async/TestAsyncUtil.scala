@@ -14,14 +14,17 @@ abstract class TestAsyncUtil extends AsyncUtil with Serializable {
       counter: Int,
       maxTries: Int,
       stackTrace: Array[StackTraceElement],
-      mode: RetryMode)(implicit ec: ExecutionContext): Future[Unit] = {
+      mode: RetryMode
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     val retryF = super
-      .retryUntilSatisfiedWithCounter(conditionF,
-                                      duration,
-                                      counter,
-                                      maxTries,
-                                      stackTrace,
-                                      mode)
+      .retryUntilSatisfiedWithCounter(
+        conditionF,
+        duration,
+        counter,
+        maxTries,
+        stackTrace,
+        mode
+      )
 
     TestAsyncUtil.transformRetryToTestFailure(retryF)
   }
@@ -29,14 +32,16 @@ abstract class TestAsyncUtil extends AsyncUtil with Serializable {
 
 object TestAsyncUtil extends TestAsyncUtil {
 
-  /** As opposed to the AsyncUtil in the rpc project, in the testkit, we can assume that
-    * TestAsyncUtil methods are being called from tests and as such, we want to trim the stack
-    * trace to exclude stack elements that occur before the beginning of a test.
-    * Additionally, we want to transform RpcRetryExceptions to TestFailedExceptions which
-    * conveniently mention the line that called the TestAsyncUtil method.
+  /** As opposed to the AsyncUtil in the rpc project, in the testkit, we can
+    * assume that TestAsyncUtil methods are being called from tests and as such,
+    * we want to trim the stack trace to exclude stack elements that occur
+    * before the beginning of a test. Additionally, we want to transform
+    * RpcRetryExceptions to TestFailedExceptions which conveniently mention the
+    * line that called the TestAsyncUtil method.
     */
-  def transformRetryToTestFailure[T](fut: Future[T])(implicit
-      ec: ExecutionContext): Future[T] = {
+  def transformRetryToTestFailure[T](
+      fut: Future[T]
+  )(implicit ec: ExecutionContext): Future[T] = {
     def transformRetry(err: Throwable): Throwable = {
       if (err.isInstanceOf[AsyncUtil.RpcRetryException]) {
         val retryErr = err.asInstanceOf[AsyncUtil.RpcRetryException]
@@ -48,11 +53,13 @@ object TestAsyncUtil extends TestAsyncUtil {
         val path = stackElement.getClassName
         val line = stackElement.getLineNumber
         val pos = org.scalactic.source.Position(file, path, line)
-        val newErr = new TestFailedException({ _: StackDepthException =>
-                                               Some(retryErr.message)
-                                             },
-                                             None,
-                                             pos)
+        val newErr = new TestFailedException(
+          { _: StackDepthException =>
+            Some(retryErr.message)
+          },
+          None,
+          pos
+        )
         newErr.setStackTrace(relevantStackTrace)
         newErr
       } else {
@@ -60,9 +67,11 @@ object TestAsyncUtil extends TestAsyncUtil {
       }
     }
 
-    fut.transform({ elem: T =>
-                    elem
-                  },
-                  transformRetry)
+    fut.transform(
+      { elem: T =>
+        elem
+      },
+      transformRetry
+    )
   }
 }

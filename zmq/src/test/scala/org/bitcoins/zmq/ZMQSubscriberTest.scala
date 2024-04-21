@@ -35,15 +35,15 @@ class ZMQSubscriberTest extends AsyncFlatSpec with BitcoinSLogger {
   }
 
   it must "connect to a regtest instance of a daemon and stream txs/blocks from it" in {
-    //note for this unit test to pass, you need to setup a bitcoind instance yourself
-    //and set the bitcoin.conf file to allow for
-    //zmq connections
-    //see: https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md
+    // note for this unit test to pass, you need to setup a bitcoind instance yourself
+    // and set the bitcoin.conf file to allow for
+    // zmq connections
+    // see: https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md
     val socket = new InetSocketAddress("127.0.0.1", 29000)
 
     val zmqSub =
       new ZMQSubscriber(socket, None, None, rawTxListener, rawBlockListener)
-    //stupid, doesn't test anything, for now. You need to look at log output to verify this is working
+    // stupid, doesn't test anything, for now. You need to look at log output to verify this is working
     // TODO: In the future this could use the testkit to verify the subscriber by calling generate(1)
     zmqSub.start()
     Thread.sleep(10000) // 10 seconds

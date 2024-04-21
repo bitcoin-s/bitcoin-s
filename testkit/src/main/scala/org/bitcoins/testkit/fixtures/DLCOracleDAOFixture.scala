@@ -11,7 +11,8 @@ import scala.concurrent.Future
 case class DLCOracleDAOs(
     rValueDAO: RValueDAO,
     eventDAO: EventDAO,
-    outcomeDAO: EventOutcomeDAO)
+    outcomeDAO: EventOutcomeDAO
+)
 
 trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 

@@ -9,7 +9,7 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 class ScriptPubKeyFactoryTest extends BitcoinSUnitTest {
 
   "ScriptPubKeyFactory" must "create a scriptPubKey from a sequences of bytes and hex and get the same thing" in {
-    //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+    // from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val rawScriptPubKey = TestUtil.rawP2PKHScriptPubKey
     val scriptPubKeyFromBytes =
       ScriptPubKey(BytesUtil.decodeHex(rawScriptPubKey))

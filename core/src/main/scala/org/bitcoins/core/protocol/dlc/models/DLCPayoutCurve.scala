@@ -14,15 +14,17 @@ import scala.util.{Failure, Success, Try}
 /** A DLC payout curve defined by piecewise interpolating points */
 case class DLCPayoutCurve(
     pieces: OrderedDLCPayoutCurvePieces,
-    serializationVersion: DLCSerializationVersion)
-    extends TLVSerializable[PayoutFunctionV0TLV] {
+    serializationVersion: DLCSerializationVersion
+) extends TLVSerializable[PayoutFunctionV0TLV] {
 
   val endpoints: Vector[OutcomePayoutPoint] = {
     pieces.toVector.map(_.leftEndpoint).:+(pieces.last.rightEndpoint)
   }
 
-  require(pieces.map(_.rightEndpoint) == endpoints.tail,
-          s"Endpoints must line up: $this")
+  require(
+    pieces.map(_.rightEndpoint) == endpoints.tail,
+    s"Endpoints must line up: $this"
+  )
 
   override def toTLV: PayoutFunctionV0TLV = {
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
@@ -61,7 +63,8 @@ case class DLCPayoutCurve(
   def getPayout(
       outcome: Long,
       rounding: RoundingIntervals,
-      totalCollateral: Satoshis): Satoshis = {
+      totalCollateral: Satoshis
+  ): Satoshis = {
     val Indexed(func, _) = componentFor(outcome)
     func(outcome, rounding, totalCollateral)
   }
@@ -74,7 +77,8 @@ case class DLCPayoutCurve(
   def apply(
       outcome: Long,
       rounding: RoundingIntervals,
-      totalCollateral: Satoshis): Satoshis =
+      totalCollateral: Satoshis
+  ): Satoshis =
     getPayout(outcome, rounding, totalCollateral)
 
   def flip(totalCollateral: Satoshis): DLCPayoutCurve = {
@@ -86,7 +90,8 @@ case class DLCPayoutCurve(
 
 object DLCPayoutCurve
     extends TLVDeserializable[PayoutFunctionV0TLV, DLCPayoutCurve](
-      PayoutFunctionV0TLV) {
+      PayoutFunctionV0TLV
+    ) {
 
   override def fromTLV(tlv: PayoutFunctionV0TLV): DLCPayoutCurve = {
     val pieces =
@@ -100,9 +105,12 @@ object DLCPayoutCurve
 
   def polynomialInterpolate(
       points: Vector[PiecewisePolynomialPoint],
-      serializationVersion: DLCSerializationVersion): DLCPayoutCurve = {
-    require(points.head.isEndpoint && points.last.isEndpoint,
-            s"First and last points must be endpoints: $points")
+      serializationVersion: DLCSerializationVersion
+  ): DLCPayoutCurve = {
+    require(
+      points.head.isEndpoint && points.last.isEndpoint,
+      s"First and last points must be endpoints: $points"
+    )
 
     val initMidpoints = Vector.empty[PiecewisePolynomialMidpoint]
     val initCurvePieces = Vector.empty[DLCPolynomialPayoutCurvePiece]
@@ -117,9 +125,11 @@ object DLCPayoutCurve
                 .+:(lastEndpoint)
                 .:+(endpoint)
               val points = all.map(_.toOutcomePayoutPoint)
-              (endpoint,
-               Vector.empty,
-               piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points)))
+              (
+                endpoint,
+                Vector.empty,
+                piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points))
+              )
           }
       }
 
@@ -129,7 +139,8 @@ object DLCPayoutCurve
 
   def fromPoints(
       points: Vector[TLVPoint],
-      serializationVersion: DLCSerializationVersion): DLCPayoutCurve = {
+      serializationVersion: DLCSerializationVersion
+  ): DLCPayoutCurve = {
 
     val pieceEndpoints = points.map { p =>
       PiecewisePolynomialEndpoint(p.outcome, p.value)
@@ -202,7 +213,8 @@ object PiecewisePolynomialPoint {
   def apply(
       outcome: Long,
       payout: BigDecimal,
-      isEndpoint: Boolean): PiecewisePolynomialPoint = {
+      isEndpoint: Boolean
+  ): PiecewisePolynomialPoint = {
     if (isEndpoint) {
       PiecewisePolynomialEndpoint(outcome, payout)
     } else {
@@ -213,7 +225,8 @@ object PiecewisePolynomialPoint {
   def apply(
       outcome: Long,
       payout: CurrencyUnit,
-      isEndpoint: Boolean): PiecewisePolynomialPoint = {
+      isEndpoint: Boolean
+  ): PiecewisePolynomialPoint = {
     PiecewisePolynomialPoint(outcome, payout.toBigDecimal, isEndpoint)
   }
 }
@@ -246,8 +259,10 @@ sealed trait DLCPayoutCurvePiece extends TLVSerializable[PayoutCurvePieceTLV] {
   def leftEndpoint: OutcomePayoutPoint
   def rightEndpoint: OutcomePayoutPoint
 
-  require(leftEndpoint.outcome < rightEndpoint.outcome,
-          s"Points must be ascending: $this")
+  require(
+    leftEndpoint.outcome < rightEndpoint.outcome,
+    s"Points must be ascending: $this"
+  )
 
   def apply(outcome: Long): Satoshis
 
@@ -258,7 +273,8 @@ sealed trait DLCPayoutCurvePiece extends TLVSerializable[PayoutCurvePieceTLV] {
   def apply(
       outcome: Long,
       rounding: RoundingIntervals,
-      totalCollateral: Satoshis): Satoshis = {
+      totalCollateral: Satoshis
+  ): Satoshis = {
     val rounded = rounding.round(outcome, apply(outcome)).toLong
     val modified = math.min(math.max(rounded, 0), totalCollateral.toLong)
 
@@ -270,7 +286,8 @@ sealed trait DLCPayoutCurvePiece extends TLVSerializable[PayoutCurvePieceTLV] {
     Satoshis(
       bd.setScale(6, RoundingMode.HALF_UP)
         .setScale(0, RoundingMode.FLOOR)
-        .toLongExact)
+        .toLongExact
+    )
   }
 
   def flip(totalCollateral: Satoshis): DLCPayoutCurvePiece
@@ -281,16 +298,21 @@ object DLCPayoutCurvePiece {
   def fromTLV(
       leftEndpoint: TLVPoint,
       curvePiece: PayoutCurvePieceTLV,
-      rightEndpoint: TLVPoint): DLCPayoutCurvePiece = {
+      rightEndpoint: TLVPoint
+  ): DLCPayoutCurvePiece = {
     curvePiece match {
       case polynomial: PolynomialPayoutCurvePieceTLV =>
-        DLCPolynomialPayoutCurvePiece.fromTLV(leftEndpoint,
-                                              polynomial,
-                                              rightEndpoint)
+        DLCPolynomialPayoutCurvePiece.fromTLV(
+          leftEndpoint,
+          polynomial,
+          rightEndpoint
+        )
       case hyperbola: HyperbolaPayoutCurvePieceTLV =>
-        DLCHyperbolaPayoutCurvePiece.fromTLV(leftEndpoint,
-                                             hyperbola,
-                                             rightEndpoint)
+        DLCHyperbolaPayoutCurvePiece.fromTLV(
+          leftEndpoint,
+          hyperbola,
+          rightEndpoint
+        )
     }
   }
 }
@@ -304,8 +326,8 @@ case class DLCHyperbolaPayoutCurvePiece(
     c: BigDecimal,
     d: BigDecimal,
     leftEndpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
-    extends DLCPayoutCurvePiece
+    rightEndpoint: OutcomePayoutPoint
+) extends DLCPayoutCurvePiece
     with TLVSerializable[HyperbolaPayoutCurvePieceTLV] {
   require(a * d != b * c, s"a*d cannot equal b*c: $this")
 
@@ -330,8 +352,10 @@ case class DLCHyperbolaPayoutCurvePiece(
     resultT match {
       case Success(result) => result
       case Failure(err) =>
-        throw new IllegalArgumentException(s"Illegal input outcome $outcome.",
-                                           err)
+        throw new IllegalArgumentException(
+          s"Illegal input outcome $outcome.",
+          err
+        )
     }
   }
 
@@ -367,7 +391,8 @@ object DLCHyperbolaPayoutCurvePiece {
   def fromTLV(
       leftEndpoint: TLVPoint,
       curvePiece: HyperbolaPayoutCurvePieceTLV,
-      rightEndpoint: TLVPoint): DLCHyperbolaPayoutCurvePiece = {
+      rightEndpoint: TLVPoint
+  ): DLCHyperbolaPayoutCurvePiece = {
     DLCHyperbolaPayoutCurvePiece(
       curvePiece.usePositivePiece,
       curvePiece.translateOutcome.toBigDecimal,
@@ -382,7 +407,9 @@ object DLCHyperbolaPayoutCurvePiece {
   }
 }
 
-/** A single piece of a larger piecewise function defined between left and right endpoints */
+/** A single piece of a larger piecewise function defined between left and right
+  * endpoints
+  */
 sealed trait DLCPolynomialPayoutCurvePiece
     extends DLCPayoutCurvePiece
     with TLVSerializable[PolynomialPayoutCurvePieceTLV] {
@@ -393,14 +420,20 @@ sealed trait DLCPolynomialPayoutCurvePiece
   }
 
   midpoints.headOption.foreach { firstMidpoint =>
-    require(leftEndpoint.outcome < firstMidpoint.outcome,
-            s"Points must be ascending: $this")
-    require(midpoints.init.zip(midpoints.tail).forall { case (m1, m2) =>
-              m1.outcome < m2.outcome
-            },
-            s"Points must be ascending: $this")
-    require(rightEndpoint.outcome > midpoints.last.outcome,
-            s"Points must be ascending: $this")
+    require(
+      leftEndpoint.outcome < firstMidpoint.outcome,
+      s"Points must be ascending: $this"
+    )
+    require(
+      midpoints.init.zip(midpoints.tail).forall { case (m1, m2) =>
+        m1.outcome < m2.outcome
+      },
+      s"Points must be ascending: $this"
+    )
+    require(
+      rightEndpoint.outcome > midpoints.last.outcome,
+      s"Points must be ascending: $this"
+    )
   }
 
   override def toTLV: PolynomialPayoutCurvePieceTLV = {
@@ -408,7 +441,8 @@ sealed trait DLCPolynomialPayoutCurvePiece
   }
 
   override def flip(
-      totalCollateral: Satoshis): DLCPolynomialPayoutCurvePiece = {
+      totalCollateral: Satoshis
+  ): DLCPolynomialPayoutCurvePiece = {
     val flippedPoints = points.map { point =>
       point.copy(payout = totalCollateral.toLong - point.payout)
     }
@@ -420,7 +454,8 @@ sealed trait DLCPolynomialPayoutCurvePiece
 object DLCPolynomialPayoutCurvePiece {
 
   def apply(
-      points: Vector[OutcomePayoutPoint]): DLCPolynomialPayoutCurvePiece = {
+      points: Vector[OutcomePayoutPoint]
+  ): DLCPolynomialPayoutCurvePiece = {
     points match {
       case Vector(left: OutcomePayoutPoint, right: OutcomePayoutPoint) =>
         if (left.payout == right.payout) {
@@ -428,14 +463,18 @@ object DLCPolynomialPayoutCurvePiece {
         } else {
           OutcomePayoutLine(left, right)
         }
-      case Vector(left: OutcomePayoutPoint,
-                  mid: OutcomePayoutPoint,
-                  right: OutcomePayoutPoint) =>
+      case Vector(
+            left: OutcomePayoutPoint,
+            mid: OutcomePayoutPoint,
+            right: OutcomePayoutPoint
+          ) =>
         OutcomePayoutQuadratic(left, mid, right)
-      case Vector(left: OutcomePayoutPoint,
-                  mid1: OutcomePayoutPoint,
-                  mid2: OutcomePayoutPoint,
-                  right: OutcomePayoutPoint) =>
+      case Vector(
+            left: OutcomePayoutPoint,
+            mid1: OutcomePayoutPoint,
+            mid2: OutcomePayoutPoint,
+            right: OutcomePayoutPoint
+          ) =>
         OutcomePayoutCubic(left, mid1, mid2, right)
       case _ => OutcomePayoutPolynomial(points)
     }
@@ -444,7 +483,8 @@ object DLCPolynomialPayoutCurvePiece {
   def fromTLV(
       leftEndpoint: TLVPoint,
       curvePiece: PolynomialPayoutCurvePieceTLV,
-      rightEndpoint: TLVPoint): DLCPolynomialPayoutCurvePiece = {
+      rightEndpoint: TLVPoint
+  ): DLCPolynomialPayoutCurvePiece = {
     val tlvPoints = curvePiece.midpoints.+:(leftEndpoint).:+(rightEndpoint)
     val points = tlvPoints.map(OutcomePayoutPoint.fromTLVPoint)
 
@@ -454,10 +494,12 @@ object DLCPolynomialPayoutCurvePiece {
 
 case class OutcomePayoutConstant(
     leftEndpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
-    extends DLCPolynomialPayoutCurvePiece {
-  require(leftEndpoint.payout == rightEndpoint.payout,
-          "Constant function must have same values on endpoints")
+    rightEndpoint: OutcomePayoutPoint
+) extends DLCPolynomialPayoutCurvePiece {
+  require(
+    leftEndpoint.payout == rightEndpoint.payout,
+    "Constant function must have same values on endpoints"
+  )
 
   override lazy val midpoints: Vector[OutcomePayoutPoint] = Vector.empty
 
@@ -465,11 +507,13 @@ case class OutcomePayoutConstant(
     bigDecimalSats(leftEndpoint.payout)
 }
 
-/** A Line between left and right endpoints defining a piece of a larger payout curve */
+/** A Line between left and right endpoints defining a piece of a larger payout
+  * curve
+  */
 case class OutcomePayoutLine(
     leftEndpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
-    extends DLCPolynomialPayoutCurvePiece {
+    rightEndpoint: OutcomePayoutPoint
+) extends DLCPolynomialPayoutCurvePiece {
   override lazy val midpoints: Vector[OutcomePayoutPoint] = Vector.empty
 
   lazy val slope: BigDecimal = {
@@ -484,20 +528,23 @@ case class OutcomePayoutLine(
   }
 }
 
-/** A quadratic between left and right endpoints defining a piece of a larger payout curve.
-  * A quadratic equation defines a parabola: https://en.wikipedia.org/wiki/Quadratic_function
+/** A quadratic between left and right endpoints defining a piece of a larger
+  * payout curve. A quadratic equation defines a parabola:
+  * https://en.wikipedia.org/wiki/Quadratic_function
   */
 case class OutcomePayoutQuadratic(
     leftEndpoint: OutcomePayoutPoint,
     midpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
-    extends DLCPolynomialPayoutCurvePiece {
+    rightEndpoint: OutcomePayoutPoint
+) extends DLCPolynomialPayoutCurvePiece {
   override lazy val midpoints: Vector[OutcomePayoutPoint] = Vector(midpoint)
 
   private lazy val (x01, x02, x12) =
-    (leftEndpoint.outcome - midpoint.outcome,
-     leftEndpoint.outcome - rightEndpoint.outcome,
-     midpoint.outcome - rightEndpoint.outcome)
+    (
+      leftEndpoint.outcome - midpoint.outcome,
+      leftEndpoint.outcome - rightEndpoint.outcome,
+      midpoint.outcome - rightEndpoint.outcome
+    )
 
   private lazy val (x10, x20, x21) = (-x01, -x02, -x12)
 
@@ -518,38 +565,46 @@ case class OutcomePayoutQuadratic(
   }
 }
 
-/** A cubic between left and right endpoints defining a piece of a larger payout curve */
+/** A cubic between left and right endpoints defining a piece of a larger payout
+  * curve
+  */
 case class OutcomePayoutCubic(
     leftEndpoint: OutcomePayoutPoint,
     leftMidpoint: OutcomePayoutPoint,
     rightMidpoint: OutcomePayoutPoint,
-    rightEndpoint: OutcomePayoutPoint)
-    extends DLCPolynomialPayoutCurvePiece {
+    rightEndpoint: OutcomePayoutPoint
+) extends DLCPolynomialPayoutCurvePiece {
 
   override lazy val midpoints: Vector[OutcomePayoutPoint] =
     Vector(leftMidpoint, rightMidpoint)
 
   private lazy val (x01, x02, x03, x12, x13, x23) =
-    (leftEndpoint.outcome - leftMidpoint.outcome,
-     leftEndpoint.outcome - rightMidpoint.outcome,
-     leftEndpoint.outcome - rightEndpoint.outcome,
-     leftMidpoint.outcome - rightMidpoint.outcome,
-     leftMidpoint.outcome - rightEndpoint.outcome,
-     rightMidpoint.outcome - rightEndpoint.outcome)
+    (
+      leftEndpoint.outcome - leftMidpoint.outcome,
+      leftEndpoint.outcome - rightMidpoint.outcome,
+      leftEndpoint.outcome - rightEndpoint.outcome,
+      leftMidpoint.outcome - rightMidpoint.outcome,
+      leftMidpoint.outcome - rightEndpoint.outcome,
+      rightMidpoint.outcome - rightEndpoint.outcome
+    )
 
   private lazy val (x10, x20, x30, x21, x31, x32) =
     (-x01, -x02, -x03, -x12, -x13, -x23)
 
-  private lazy val (y0, y1, y2, y3) = (leftEndpoint.payout,
-                                       leftMidpoint.payout,
-                                       rightMidpoint.payout,
-                                       rightEndpoint.payout)
+  private lazy val (y0, y1, y2, y3) = (
+    leftEndpoint.payout,
+    leftMidpoint.payout,
+    rightMidpoint.payout,
+    rightEndpoint.payout
+  )
 
   private lazy val (c0, c1, c2, c3) =
-    (y0 / (x01 * x02 * x03),
-     y1 / (x10 * x12 * x13),
-     y2 / (x20 * x21 * x23),
-     y3 / (x30 * x31 * x32))
+    (
+      y0 / (x01 * x02 * x03),
+      y1 / (x10 * x12 * x13),
+      y2 / (x20 * x21 * x23),
+      y3 / (x30 * x31 * x32)
+    )
 
   override def apply(outcome: Long): Satoshis = {
     val x0 = outcome - leftEndpoint.outcome
@@ -564,10 +619,12 @@ case class OutcomePayoutCubic(
   }
 }
 
-/** A polynomial interpolating points and defining a piece of a larger payout curve */
+/** A polynomial interpolating points and defining a piece of a larger payout
+  * curve
+  */
 case class OutcomePayoutPolynomial(
-    override val points: Vector[OutcomePayoutPoint])
-    extends DLCPolynomialPayoutCurvePiece {
+    override val points: Vector[OutcomePayoutPoint]
+) extends DLCPolynomialPayoutCurvePiece {
 
   override lazy val leftEndpoint: OutcomePayoutPoint =
     points.head

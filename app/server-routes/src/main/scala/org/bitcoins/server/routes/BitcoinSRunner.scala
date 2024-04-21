@@ -15,16 +15,17 @@ trait BitcoinSRunner[T] extends StartStopAsync[T] with BitcoinSLogger {
   // start everything!
   final def run(): Future[T] = {
 
-    //We need to set the system property before any logger instances
-    //are in instantiated. If we don't do this, we will not log to
-    //the correct location
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/2496
-    //System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
+    // We need to set the system property before any logger instances
+    // are in instantiated. If we don't do this, we will not log to
+    // the correct location
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/2496
+    // System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
 
     logger.info(
-      s"version=${EnvUtil.getVersion} jdkVersion=${EnvUtil.getJdkVersion}")
+      s"version=${EnvUtil.getVersion} jdkVersion=${EnvUtil.getJdkVersion}"
+    )
 
-    //logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
+    // logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
     val runner: Future[T] = start()
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)

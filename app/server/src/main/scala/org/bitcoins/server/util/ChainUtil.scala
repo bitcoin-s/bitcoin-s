@@ -12,8 +12,8 @@ object ChainUtil {
 
   def getBlockHeaderResult(
       hashes: Vector[DoubleSha256DigestBE],
-      chain: ChainApi)(implicit
-      ec: ExecutionContext): Future[Vector[GetBlockHeaderResult]] = {
+      chain: ChainApi
+  )(implicit ec: ExecutionContext): Future[Vector[GetBlockHeaderResult]] = {
     val headersF: Future[Vector[Option[BlockHeaderDb]]] =
       chain.getHeaders(hashes)
     val bestHeightF = chain.getBestBlockHeader().map(_.height)
@@ -30,7 +30,8 @@ object ChainUtil {
       headersWithConfs.map {
         case None =>
           sys.error(
-            s"Could not find block header or confirmations for the header ")
+            s"Could not find block header or confirmations for the header "
+          )
         case Some((header, confs)) =>
           val chainworkStr = {
             val bytes = ByteVector(header.chainWork.toByteArray)

@@ -17,7 +17,8 @@ import scala.concurrent.Future
 case class ChainRoutes(
     chain: ChainApi,
     network: BitcoinNetwork,
-    startedTorConfigF: Future[Unit])(implicit system: ActorSystem)
+    startedTorConfigF: Future[Unit]
+)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
@@ -59,8 +60,8 @@ case class ChainRoutes(
                 for {
                   results <- resultsF
                 } yield {
-                  val json = upickle.default.writeJs(results.head)(
-                    Picklers.getBlockHeaderResultPickler)
+                  val json = upickle.default
+                    .writeJs(results.head)(Picklers.getBlockHeaderResultPickler)
                   Server.httpSuccess(json)
                 }
             }

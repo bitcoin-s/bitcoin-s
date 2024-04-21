@@ -43,7 +43,8 @@ class HDPathTest extends BitcoinSUnitTest {
   it must "fail to make addresses with neagtives indices" in {
     forAll(HDGenerators.hdChain, NumberGenerator.negativeInts) { (chain, i) =>
       assertThrows[IllegalArgumentException](
-        HDAddress(chain = chain, index = i))
+        HDAddress(chain = chain, index = i)
+      )
     }
   }
 
@@ -71,8 +72,10 @@ class HDPathTest extends BitcoinSUnitTest {
   it must "correctly represent Bitcoin and Testnet coins" in {
     HDCoinType.fromInt(0) must be(HDCoinType.Bitcoin)
     HDCoinType.fromInt(1) must be(HDCoinType.Testnet)
-    forAll(NumberGenerator.ints.suchThat(i =>
-      !HDCoinType.all.map(_.toInt).contains(i))) { i =>
+    forAll(
+      NumberGenerator.ints.suchThat(i =>
+        !HDCoinType.all.map(_.toInt).contains(i))
+    ) { i =>
       HDCoinType.fromInt(i) must be(HDCoinType.UnknownCoinType(i))
       HDCoinType.fromKnown(i) must be(None)
     }
@@ -109,7 +112,8 @@ class HDPathTest extends BitcoinSUnitTest {
           assert(value == path.asInstanceOf[NestedSegWitHDPath])
       }
       resultOpt.getOrElse(
-        fail(s"$path did not have toString/fromString symmetry"))
+        fail(s"$path did not have toString/fromString symmetry")
+      )
     }
   }
 
@@ -183,7 +187,8 @@ class HDPathTest extends BitcoinSUnitTest {
         case Success(_) => fail()
         case Failure(exc) =>
           assert(
-            exc.getMessage.contains("address index child must not be hardened"))
+            exc.getMessage.contains("address index child must not be hardened")
+          )
       }
     }
   }
@@ -339,18 +344,20 @@ class HDPathTest extends BitcoinSUnitTest {
 
   // https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki#test-vectors
   it must "correctly parse the example from BIP84" in {
-    val words = Vector("abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "about")
+    val words = Vector(
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "about"
+    )
     val mnemonic = MnemonicCode.fromWords(words)
     val seed = BIP39Seed.fromMnemonic(mnemonic)
     val xpriv = seed.toExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
@@ -358,9 +365,11 @@ class HDPathTest extends BitcoinSUnitTest {
 
     assert(ExtPrivateKey.fromStringT("zprvAWgYBB").isFailure)
     val Success(expectedXpriv) = ExtPrivateKey.fromStringT(
-      "zprvAWgYBBk7JR8Gjrh4UJQ2uJdG1r3WNRRfURiABBE3RvMXYSrRJL62XuezvGdPvG6GFBZduosCc1YP5wixPox7zhZLfiUm8aunE96BBa4Kei5")
+      "zprvAWgYBBk7JR8Gjrh4UJQ2uJdG1r3WNRRfURiABBE3RvMXYSrRJL62XuezvGdPvG6GFBZduosCc1YP5wixPox7zhZLfiUm8aunE96BBa4Kei5"
+    )
     val Success(expectedXpub) = ExtPublicKey.fromStringT(
-      "zpub6jftahH18ngZxLmXaKw3GSZzZsszmt9WqedkyZdezFtWRFBZqsQH5hyUmb4pCEeZGmVfQuP5bedXTB8is6fTv19U1GQRyQUKQGUTzyHACMF")
+      "zpub6jftahH18ngZxLmXaKw3GSZzZsszmt9WqedkyZdezFtWRFBZqsQH5hyUmb4pCEeZGmVfQuP5bedXTB8is6fTv19U1GQRyQUKQGUTzyHACMF"
+    )
 
     assert(xpriv == expectedXpriv)
     assert(xpub == expectedXpub)
@@ -375,10 +384,12 @@ class HDPathTest extends BitcoinSUnitTest {
 
       val expectedPriv = ECPrivateKeyUtil
         .fromWIFToPrivateKey(
-          "KyZpNDKnfs94vbrwhJneDi77V6jF64PWPF8x5cdJb8ifgg2DUc9d")
+          "KyZpNDKnfs94vbrwhJneDi77V6jF64PWPF8x5cdJb8ifgg2DUc9d"
+        )
         .toPrivateKey
       val expectedPub = ECPublicKey(
-        hex"0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c")
+        hex"0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c"
+      )
       val expectedAddress =
         Bech32Address.fromString("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
 
@@ -397,10 +408,12 @@ class HDPathTest extends BitcoinSUnitTest {
 
       val expectedPriv = ECPrivateKeyUtil
         .fromWIFToPrivateKey(
-          "Kxpf5b8p3qX56DKEe5NqWbNUP9MnqoRFzZwHRtsFqhzuvUJsYZCy")
+          "Kxpf5b8p3qX56DKEe5NqWbNUP9MnqoRFzZwHRtsFqhzuvUJsYZCy"
+        )
         .toPrivateKey
       val expectedPub = ECPublicKey(
-        hex"03e775fd51f0dfb8cd865d9ff1cca2a158cf651fe997fdc9fee9c1d3b5e995ea77")
+        hex"03e775fd51f0dfb8cd865d9ff1cca2a158cf651fe997fdc9fee9c1d3b5e995ea77"
+      )
       val expectedAddress =
         Bech32Address.fromString("bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g")
 
@@ -419,10 +432,12 @@ class HDPathTest extends BitcoinSUnitTest {
 
       val expectedPriv = ECPrivateKeyUtil
         .fromWIFToPrivateKey(
-          "KxuoxufJL5csa1Wieb2kp29VNdn92Us8CoaUG3aGtPtcF3AzeXvF")
+          "KxuoxufJL5csa1Wieb2kp29VNdn92Us8CoaUG3aGtPtcF3AzeXvF"
+        )
         .toPrivateKey
       val expectedPub = ECPublicKey(
-        hex"03025324888e429ab8e3dbaf1f7802648b9cd01e9b418485c5fa4c1b9b5700e1a6")
+        hex"03025324888e429ab8e3dbaf1f7802648b9cd01e9b418485c5fa4c1b9b5700e1a6"
+      )
       val expectedAddress =
         Bech32Address.fromString("bc1q8c6fshw2dlwun7ekn9qwf37cu2rn755upcp6el")
 
@@ -480,7 +495,8 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "xpub6FR8LqriB4qyPvdtZwhHW2HQP4daR2qXsYAAsfaiF8DoFJJ5AqGCpiGM3kFC4Z9AZWnReXrzp2nzhp91myPjz96e3wrJoMvgnCyMBjKz8vJ")
+        "xpub6FR8LqriB4qyPvdtZwhHW2HQP4daR2qXsYAAsfaiF8DoFJJ5AqGCpiGM3kFC4Z9AZWnReXrzp2nzhp91myPjz96e3wrJoMvgnCyMBjKz8vJ"
+      )
       assert(xpub == expectedXpub)
     }
 
@@ -491,7 +507,8 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "tpubDFnks5gPtLoRfipk28gNhwcmiBjEQRLbRAkUEDdrb2ygzaxnF47Hy9wBHnKyb46QMRKLG7NsM8d3PzddAqEysaYw7YbcUtavNAZkwjM7aqi")
+        "tpubDFnks5gPtLoRfipk28gNhwcmiBjEQRLbRAkUEDdrb2ygzaxnF47Hy9wBHnKyb46QMRKLG7NsM8d3PzddAqEysaYw7YbcUtavNAZkwjM7aqi"
+      )
       assert(xpub == expectedXpub)
     }
 
@@ -502,19 +519,23 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = NestedSegWitHDPath.fromString("m/49'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "ypub6c6461WnUp9LoRskZCU3bHBJahDvtrPwCCo1WEtuhsrFGZ8Mn2YMNGab2tj5eujgsMx5U1BZz7hA1q87ZdVSXZdArxM9G5Y9iZchQFrov4q")
+        "ypub6c6461WnUp9LoRskZCU3bHBJahDvtrPwCCo1WEtuhsrFGZ8Mn2YMNGab2tj5eujgsMx5U1BZz7hA1q87ZdVSXZdArxM9G5Y9iZchQFrov4q"
+      )
       assert(xpub == expectedXpub)
     }
 
     // nested segwit testnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.NestedSegWitTestNet3Priv,
-                                    seed)
+        ExtPrivateKey.fromBIP39Seed(
+          ExtKeyVersion.NestedSegWitTestNet3Priv,
+          seed
+        )
       val path = NestedSegWitHDPath.fromString("m/49'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "upub5JkzsLq7t5yRQF7HDmKYkvoHtpe98NRwXki8NfKNBrLj49sSmPt6t1x2x4tjfH81EoUrU6oL9UGxUgfrgqqPLctmPbZSvSGCdfN7qyMHU7g")
+        "upub5JkzsLq7t5yRQF7HDmKYkvoHtpe98NRwXki8NfKNBrLj49sSmPt6t1x2x4tjfH81EoUrU6oL9UGxUgfrgqqPLctmPbZSvSGCdfN7qyMHU7g"
+      )
       assert(xpub == expectedXpub)
     }
 
@@ -525,7 +546,8 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "zpub6vibtacmZKTajuFATBMJPq629qFzaonkAHzWDBEgpHnuhDBozTVWxbF4zJ1Hm4tdkAMJTg9kUqizEz4JQXGkxyotn3MCxbT92mJ8XVcNN5E")
+        "zpub6vibtacmZKTajuFATBMJPq629qFzaonkAHzWDBEgpHnuhDBozTVWxbF4zJ1Hm4tdkAMJTg9kUqizEz4JQXGkxyotn3MCxbT92mJ8XVcNN5E"
+      )
       assert(xpub == expectedXpub)
     }
 
@@ -536,7 +558,8 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "vpub5dPYfuw6xbHfLiUh7kCoZUi1TxgCpKpkVqud5bf9JGHPUovtypqGULcWuUAwmSGx7bt5TmmWeCJnhqc3Xjchn35VJgZWcxBBws3Yy6zYa7G")
+        "vpub5dPYfuw6xbHfLiUh7kCoZUi1TxgCpKpkVqud5bf9JGHPUovtypqGULcWuUAwmSGx7bt5TmmWeCJnhqc3Xjchn35VJgZWcxBBws3Yy6zYa7G"
+      )
       assert(xpub == expectedXpub)
     }
 
@@ -547,7 +570,8 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = MultisigHDPath.fromString("m/45'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "xpub6GqDvL47MZ2baAovXNzG6UuZa7LR37JDG9Qt6nbns4L1q4owu8wnvkiZgTkYgbeyW6EmMjqe5B7TFKb8JvueU9T73pTW4RWf7gEoXFCqMKv")
+        "xpub6GqDvL47MZ2baAovXNzG6UuZa7LR37JDG9Qt6nbns4L1q4owu8wnvkiZgTkYgbeyW6EmMjqe5B7TFKb8JvueU9T73pTW4RWf7gEoXFCqMKv"
+      )
       assert(xpub == expectedXpub)
     }
 
@@ -558,7 +582,8 @@ class HDPathTest extends BitcoinSUnitTest {
       val path = MultisigHDPath.fromString("m/45'/0'/0'/0/0")
       val Success(xpub) = rootXpriv.deriveChildPubKey(path)
       val Success(expectedXpub) = ExtPublicKey.fromStringT(
-        "tpubDHCrSZso4pz3qxzmyZyMJQEvuES52VoGon1BTLewCy5uaMUeyMnt5CPPvVqLD6cDHzmfyKMWcGwVwW5jhnktMauQ7RCojxAthdqDHJNNVUx")
+        "tpubDHCrSZso4pz3qxzmyZyMJQEvuES52VoGon1BTLewCy5uaMUeyMnt5CPPvVqLD6cDHzmfyKMWcGwVwW5jhnktMauQ7RCojxAthdqDHJNNVUx"
+      )
       assert(xpub == expectedXpub)
     }
   }
@@ -568,18 +593,20 @@ class HDPathTest extends BitcoinSUnitTest {
   // implemented. Posted a SO question about this:
   // https://bitcoin.stackexchange.com/questions/87396/whats-the-magic-key-version-bytes-for-bip49
   it must "correctly parse the example from BIP49" in {
-    val words = Vector("abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "about")
+    val words = Vector(
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "about"
+    )
 
     val mnemonic = MnemonicCode.fromWords(words)
     val seed = BIP39Seed.fromMnemonic(mnemonic)
@@ -592,21 +619,25 @@ class HDPathTest extends BitcoinSUnitTest {
     // from bip49 pass
     val rootXpriv = seed.toExtPrivateKey(ExtKeyVersion.LegacyTestNet3Priv)
     val Success(expectedRootXpriv) = ExtPrivateKey.fromStringT(
-      "tprv8ZgxMBicQKsPe5YMU9gHen4Ez3ApihUfykaqUorj9t6FDqy3nP6eoXiAo2ssvpAjoLroQxHqr3R5nE3a5dU3DHTjTgJDd7zrbniJr6nrCzd")
+      "tprv8ZgxMBicQKsPe5YMU9gHen4Ez3ApihUfykaqUorj9t6FDqy3nP6eoXiAo2ssvpAjoLroQxHqr3R5nE3a5dU3DHTjTgJDd7zrbniJr6nrCzd"
+    )
 
     val path = NestedSegWitHDPath.fromString("m/49'/1'/0'/0/0")
 
     val firstAccount = path.account
     val accountXpriv = rootXpriv.deriveChildPrivKey(firstAccount)
     val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
-      "tprv8gRrNu65W2Msef2BdBSUgFdRTGzC8EwVXnV7UGS3faeXtuMVtGfEdidVeGbThs4ELEoayCAzZQ4uUji9DUiAs7erdVskqju7hrBcDvDsdbY")
+      "tprv8gRrNu65W2Msef2BdBSUgFdRTGzC8EwVXnV7UGS3faeXtuMVtGfEdidVeGbThs4ELEoayCAzZQ4uUji9DUiAs7erdVskqju7hrBcDvDsdbY"
+    )
     assert(expectedAccountXpriv == accountXpriv)
 
     val privkeyAtPath = rootXpriv.deriveChildPrivKey(path).key
     val expectedPrivkeyAtPath = ECPrivateKey(
-      hex"0xc9bdb49cfbaedca21c4b1f3a7803c34636b1d7dc55a717132443fc3f4c5867e8")
+      hex"0xc9bdb49cfbaedca21c4b1f3a7803c34636b1d7dc55a717132443fc3f4c5867e8"
+    )
     val expectedPubkeyAtPath = ECPublicKey(
-      hex"0x03a1af804ac108a8a51782198c2d034b28bf90c8803f5a53f76276fa69a4eae77f")
+      hex"0x03a1af804ac108a8a51782198c2d034b28bf90c8803f5a53f76276fa69a4eae77f"
+    )
     assert(expectedPrivkeyAtPath.publicKey == expectedPubkeyAtPath)
     assert(privkeyAtPath == expectedPrivkeyAtPath)
     assert(privkeyAtPath.publicKey == expectedPubkeyAtPath)
@@ -628,18 +659,20 @@ class HDPathTest extends BitcoinSUnitTest {
 
   // https://github.com/satoshilabs/slips/blob/master/slip-0132.md#bitcoin-test-vectors
   it must "pass the test vector from SLIP132" in {
-    val words = Vector("abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "abandon",
-                       "about")
+    val words = Vector(
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "about"
+    )
     val mnemonic = MnemonicCode.fromWords(words)
     val seed = BIP39Seed.fromMnemonic(mnemonic)
 
@@ -653,9 +686,11 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpub = accountXpriv.extPublicKey
 
       val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
-        "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb")
+        "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb"
+      )
       val Success(expectedAccountXpub) = ExtPublicKey.fromStringT(
-        "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj")
+        "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj"
+      )
 
       assert(expectedAccountXpriv == accountXpriv)
       assert(expectedAccountXpub == accountXpub)
@@ -672,9 +707,11 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpub = accountXpriv.extPublicKey
 
       val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
-        "yprvAHwhK6RbpuS3dgCYHM5jc2ZvEKd7Bi61u9FVhYMpgMSuZS613T1xxQeKTffhrHY79hZ5PsskBjcc6C2V7DrnsMsNaGDaWev3GLRQRgV7hxF")
+        "yprvAHwhK6RbpuS3dgCYHM5jc2ZvEKd7Bi61u9FVhYMpgMSuZS613T1xxQeKTffhrHY79hZ5PsskBjcc6C2V7DrnsMsNaGDaWev3GLRQRgV7hxF"
+      )
       val Success(expectedAccountXpub) = ExtPublicKey.fromStringT(
-        "ypub6Ww3ibxVfGzLrAH1PNcjyAWenMTbbAosGNB6VvmSEgytSER9azLDWCxoJwW7Ke7icmizBMXrzBx9979FfaHxHcrArf3zbeJJJUZPf663zsP")
+        "ypub6Ww3ibxVfGzLrAH1PNcjyAWenMTbbAosGNB6VvmSEgytSER9azLDWCxoJwW7Ke7icmizBMXrzBx9979FfaHxHcrArf3zbeJJJUZPf663zsP"
+      )
 
       assert(expectedAccountXpriv == accountXpriv)
       assert(expectedAccountXpub == accountXpub)
@@ -690,9 +727,11 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpub = accountXpriv.extPublicKey
 
       val Success(expectedAccountXpriv) = ExtPrivateKey.fromStringT(
-        "zprvAdG4iTXWBoARxkkzNpNh8r6Qag3irQB8PzEMkAFeTRXxHpbF9z4QgEvBRmfvqWvGp42t42nvgGpNgYSJA9iefm1yYNZKEm7z6qUWCroSQnE")
+        "zprvAdG4iTXWBoARxkkzNpNh8r6Qag3irQB8PzEMkAFeTRXxHpbF9z4QgEvBRmfvqWvGp42t42nvgGpNgYSJA9iefm1yYNZKEm7z6qUWCroSQnE"
+      )
       val Success(expectedAccountXpub) = ExtPublicKey.fromStringT(
-        "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs")
+        "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs"
+      )
 
       assert(expectedAccountXpriv == accountXpriv)
       assert(expectedAccountXpub == accountXpub)

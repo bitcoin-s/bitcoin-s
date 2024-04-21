@@ -19,7 +19,8 @@ object LnURLTag extends StringFactory[LnURLTag] {
 
   override def fromString(string: String): LnURLTag = {
     fromStringOpt(string).getOrElse(
-      sys.error(s"Could not find a LnURLTag for string $string"))
+      sys.error(s"Could not find a LnURLTag for string $string")
+    )
   }
 
   implicit val LnURLTagTagReads: Reads[LnURLTag] = (json: JsValue) =>
@@ -45,7 +46,8 @@ object SuccessActionTag extends StringFactory[SuccessActionTag] {
 
   override def fromString(string: String): SuccessActionTag = {
     fromStringOpt(string).getOrElse(
-      sys.error(s"Could not find a SuccessActionTag for string $string"))
+      sys.error(s"Could not find a SuccessActionTag for string $string")
+    )
   }
 
   implicit val SuccessActionTagReads: Reads[SuccessActionTag] =

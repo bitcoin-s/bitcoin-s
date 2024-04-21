@@ -36,7 +36,9 @@ class WitnessScriptPubKeySpec extends BitcoinSUnitTest {
       case (unassignedWitScriptPubKey, _) =>
         assert(
           UnassignedWitnessScriptPubKey(
-            unassignedWitScriptPubKey.hex) == unassignedWitScriptPubKey)
+            unassignedWitScriptPubKey.hex
+          ) == unassignedWitScriptPubKey
+        )
     }
   }
 
@@ -45,7 +47,9 @@ class WitnessScriptPubKeySpec extends BitcoinSUnitTest {
       case (unassignedWitScriptPubKey, _) =>
         assert(
           UnassignedWitnessScriptPubKey.fromAsm(
-            unassignedWitScriptPubKey.asm) == unassignedWitScriptPubKey)
+            unassignedWitScriptPubKey.asm
+          ) == unassignedWitScriptPubKey
+        )
     }
   }
 

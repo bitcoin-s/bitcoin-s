@@ -24,16 +24,19 @@ case class Intermediary(
     leafHashes: Option[Vector[Sha256Digest]],
     merkleRootOpt: Option[Sha256Digest],
     tweak: Sha256Digest,
-    tweakedPubkey: XOnlyPubKey)
+    tweakedPubkey: XOnlyPubKey
+)
 
 case class Expected(
     scriptPubKey: TaprootScriptPubKey,
-    bip350Address: Bech32mAddress)
+    bip350Address: Bech32mAddress
+)
 
 case class TaprootWalletTestCase(
     `given`: Given,
     intermediary: Intermediary,
-    expected: Expected)
+    expected: Expected
+)
 
 case class TaprootWalletTestCases(tests: Vector[TaprootWalletTestCase])
 
@@ -76,8 +79,10 @@ object TaprootWalletTestCase {
       Some(leaf)
     } else {
       val arr = `given`.arr
-      require(arr.length == 2,
-              s"tapscript is a binary tre, not ${arr.length} tree")
+      require(
+        arr.length == 2,
+        s"tapscript is a binary tre, not ${arr.length} tree"
+      )
       val result: Vector[Option[TapscriptTree]] =
         arr.map(parseScriptTree).toVector
       val branch = TapBranch(result(0).get, result(1).get)

@@ -22,16 +22,19 @@ class DLCMessageTest extends BitcoinSJvmTest {
 
   it must "not allow a DLCTimeout where the contract times out before it matures" in {
     assertThrows[IllegalArgumentException](
-      DLCTimeouts(BlockHeight(4), BlockHeight(2)))
+      DLCTimeouts(BlockHeight(4), BlockHeight(2))
+    )
     assertThrows[IllegalArgumentException](
-      DLCTimeouts(BlockTime(UInt32(4)), BlockTime(UInt32(2))))
+      DLCTimeouts(BlockTime(UInt32(4)), BlockTime(UInt32(2)))
+    )
   }
 
   val dummyPubKey: ECPublicKey = ECPublicKey.freshPublicKey
   val dummyPubKey2: ECPublicKey = ECPublicKey.freshPublicKey
 
   val dummyAddress: BitcoinAddress = BitcoinAddress(
-    "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+    "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+  )
 
   val dummyStr: String =
     "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7"
@@ -39,7 +42,8 @@ class DLCMessageTest extends BitcoinSJvmTest {
   val dummyOracle: EnumSingleOracleInfo = EnumSingleOracleInfo.dummyForKeys(
     ECPrivateKey.freshPrivateKey,
     ECPublicKey.freshPublicKey.schnorrNonce,
-    Vector(EnumOutcome(dummyStr)))
+    Vector(EnumOutcome(dummyStr))
+  )
 
   val dummySig: PartialSignature =
     PartialSignature(dummyPubKey, DummyECDigitalSignature)
@@ -58,7 +62,8 @@ class DLCMessageTest extends BitcoinSJvmTest {
         fundOutputSerialId = UInt64.max,
         feeRate = SatoshisPerVirtualByte.one,
         timeouts = DLCTimeouts(BlockHeight(1), BlockHeight(2))
-      ))
+      )
+    )
   }
 
   it must "not allow same change and fund output serial id for a DLCOffer" in {
@@ -75,7 +80,8 @@ class DLCMessageTest extends BitcoinSJvmTest {
         fundOutputSerialId = UInt64.one,
         feeRate = SatoshisPerVirtualByte.one,
         timeouts = DLCTimeouts(BlockHeight(1), BlockHeight(2))
-      ))
+      )
+    )
   }
 
   it must "not allow a negative collateral for a DLCAccept" in {
@@ -91,7 +97,10 @@ class DLCMessageTest extends BitcoinSJvmTest {
           Vector(
             EnumOracleOutcome(
               Vector(dummyOracle),
-              EnumOutcome(dummyStr)).sigPoint -> ECAdaptorSignature.dummy)),
+              EnumOutcome(dummyStr)
+            ).sigPoint -> ECAdaptorSignature.dummy
+          )
+        ),
         dummySig,
         DLCAccept.NoNegotiationFields,
         Sha256Digest.empty

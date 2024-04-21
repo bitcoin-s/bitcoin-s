@@ -23,7 +23,9 @@ class MultiSignatureScriptSignatureTest extends BitcoinSJvmTest {
       multiSigScriptSig =>
         assert(
           MultiSignatureScriptSignature(
-            multiSigScriptSig.hex) == multiSigScriptSig)
+            multiSigScriptSig.hex
+          ) == multiSigScriptSig
+        )
     }
   }
 }

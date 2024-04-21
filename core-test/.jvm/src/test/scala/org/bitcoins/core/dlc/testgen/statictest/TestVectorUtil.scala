@@ -24,9 +24,11 @@ object TestVectorUtil {
     Gen.choose(2, 100).flatMap { numOutcomes =>
       inputsGen.flatMap { offerInputs =>
         inputsGen.flatMap { acceptInputs =>
-          DLCTxGen.validTestInputsForInputs(offerInputs.toVector,
-                                            acceptInputs.toVector,
-                                            numOutcomes)
+          DLCTxGen.validTestInputsForInputs(
+            offerInputs.toVector,
+            acceptInputs.toVector,
+            numOutcomes
+          )
         }
       }
     }

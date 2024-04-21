@@ -20,8 +20,8 @@ import java.net.{URI, URL}
 import scala.concurrent._
 
 class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
-    system: ActorSystem)
-    extends BitcoinSLogger {
+    system: ActorSystem
+) extends BitcoinSLogger {
   implicit protected val ec: ExecutionContext = system.dispatcher
 
   private val http = Http(system)
@@ -30,7 +30,8 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
     val httpConnectionPoolSettings =
       Socks5ClientTransport.createConnectionPoolSettings(
         new URI(request.uri.toString),
-        proxyParams)
+        proxyParams
+      )
 
     http
       .singleRequest(request, settings = httpConnectionPoolSettings)
@@ -40,8 +41,9 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
       .map(payload => payload.decodeString(ByteString.UTF_8))
   }
 
-  private def sendRequestAndParse[T <: LnURLJsonModel](request: HttpRequest)(
-      implicit reads: Reads[T]): Future[T] = {
+  private def sendRequestAndParse[T <: LnURLJsonModel](
+      request: HttpRequest
+  )(implicit reads: Reads[T]): Future[T] = {
     val withAcceptHeader =
       request.addHeader(Accept(MediaTypes.`application/json`))
     sendRequest(withAcceptHeader)
@@ -53,10 +55,12 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
             json.validate[LnURLStatus] match {
               case JsSuccess(value, _) =>
                 throw new RuntimeException(
-                  value.reason.getOrElse("Error parsing response"))
+                  value.reason.getOrElse("Error parsing response")
+                )
               case JsError(_) =>
                 throw new RuntimeException(
-                  s"Error parsing json $str, got ${errors.mkString("\n")}")
+                  s"Error parsing json $str, got ${errors.mkString("\n")}"
+                )
             }
         }
       }
@@ -77,21 +81,24 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
   def getInvoice(
       pay: LnURLPayResponse,
       amount: LnCurrencyUnit,
-      extraParams: Map[String, String]): Future[LnInvoice] = {
+      extraParams: Map[String, String]
+  ): Future[LnInvoice] = {
     getInvoice(pay, amount.toMSat, extraParams)
   }
 
   def getInvoice(
       pay: LnURLPayResponse,
       amount: CurrencyUnit,
-      extraParams: Map[String, String]): Future[LnInvoice] = {
+      extraParams: Map[String, String]
+  ): Future[LnInvoice] = {
     getInvoice(pay, MilliSatoshis(amount), extraParams)
   }
 
   def getInvoice(
       pay: LnURLPayResponse,
       amount: MilliSatoshis,
-      extraParams: Map[String, String]): Future[LnInvoice] = {
+      extraParams: Map[String, String]
+  ): Future[LnInvoice] = {
     val symbol = if (pay.callback.toString.contains("?")) "&" else "?"
     val queryStringParams =
       extraParams.map(kv => s"${kv._1}=${kv._2}").mkString("&")
@@ -103,7 +110,8 @@ class LnURLClient(proxyParams: Option[Socks5ProxyParams])(implicit
 
   def doWithdrawal(
       withdraw: LnURLWithdrawResponse,
-      invoice: LnInvoice): Future[Boolean] = {
+      invoice: LnInvoice
+  ): Future[Boolean] = {
     val symbol = if (withdraw.callback.toString.contains("?")) "&" else "?"
     val url = s"${withdraw.callback}${symbol}k1=${withdraw.k1}&pr=$invoice"
     sendRequestAndParse[LnURLStatus](Get(url)).map(_.status.toUpperCase == "OK")

@@ -16,25 +16,30 @@ object TxoState extends StringFactory[TxoState] {
     */
   final case object ImmatureCoinbase extends ReceivedState
 
-  /** Means we have received funds to this utxo, and they have not been confirmed in a block */
+  /** Means we have received funds to this utxo, and they have not been
+    * confirmed in a block
+    */
   final case object BroadcastReceived extends ReceivedState
 
-  /** Means we have received funds to this utxo, and they have some confirmations but
-    * have not reached our confirmation threshold
+  /** Means we have received funds to this utxo, and they have some
+    * confirmations but have not reached our confirmation threshold
     */
   final case object PendingConfirmationsReceived extends ReceivedState
 
   /** Means we have received funds and they are fully confirmed for this utxo */
   final case object ConfirmedReceived extends ReceivedState
 
-  /** Means we have not spent this utxo yet, but will be used in a future transaction */
+  /** Means we have not spent this utxo yet, but will be used in a future
+    * transaction
+    */
   final case object Reserved extends SpentState
 
-  /** Means we have spent this utxo, and they have not been confirmed in a block */
+  /** Means we have spent this utxo, and they have not been confirmed in a block
+    */
   final case object BroadcastSpent extends SpentState
 
-  /** Means we have spent this utxo, and they have some confirmations but
-    * have not reached our confirmation threshold
+  /** Means we have spent this utxo, and they have some confirmations but have
+    * not reached our confirmation threshold
     */
   final case object PendingConfirmationsSpent extends SpentState
 
@@ -56,10 +61,12 @@ object TxoState extends StringFactory[TxoState] {
     Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
 
   val receivedStates: Set[TxoState] =
-    Set(PendingConfirmationsReceived,
-        ConfirmedReceived,
-        BroadcastReceived,
-        TxoState.ImmatureCoinbase)
+    Set(
+      PendingConfirmationsReceived,
+      ConfirmedReceived,
+      BroadcastReceived,
+      TxoState.ImmatureCoinbase
+    )
 
   val spentStates: Set[TxoState] =
     Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, BroadcastSpent)

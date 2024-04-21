@@ -11,8 +11,8 @@ case class OracleNoncePrimaryKey(announcementId: Long, index: Long)
 
 case class OracleNonceDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[OracleNonceDb, OracleNoncePrimaryKey]
+    override val appConfig: DLCAppConfig
+) extends CRUD[OracleNonceDb, OracleNoncePrimaryKey]
     with SlickUtil[OracleNonceDb, OracleNoncePrimaryKey] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
@@ -22,19 +22,19 @@ case class OracleNonceDAO()(implicit
     TableQuery[OracleNoncesTable]
 
   private lazy val announcementDataTable: slick.lifted.TableQuery[
-    OracleAnnouncementDataDAO#OracleAnnouncementsTable] = {
+    OracleAnnouncementDataDAO#OracleAnnouncementsTable
+  ] = {
     OracleAnnouncementDataDAO().table
   }
 
   override def createAll(
-      ts: Vector[OracleNonceDb]): Future[Vector[OracleNonceDb]] =
+      ts: Vector[OracleNonceDb]
+  ): Future[Vector[OracleNonceDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[OracleNoncePrimaryKey]): profile.api.Query[
-    profile.api.Table[OracleNonceDb],
-    OracleNonceDb,
-    Seq] = {
+      ids: Vector[OracleNoncePrimaryKey]
+  ): profile.api.Query[profile.api.Table[OracleNonceDb], OracleNonceDb, Seq] = {
 
     // is there a better way to do this?
     val starting = table.filterNot(_.announcementId === -1L)
@@ -48,40 +48,39 @@ case class OracleNonceDAO()(implicit
   }
 
   override protected def findByPrimaryKey(
-      id: OracleNoncePrimaryKey): profile.api.Query[
-    profile.api.Table[OracleNonceDb],
-    OracleNonceDb,
-    Seq] = {
+      id: OracleNoncePrimaryKey
+  ): profile.api.Query[profile.api.Table[OracleNonceDb], OracleNonceDb, Seq] = {
     table.filter(t =>
       t.announcementId === id.announcementId && t.index === id.index)
   }
 
   override def find(
-      t: OracleNonceDb): Query[Table[OracleNonceDb], OracleNonceDb, Seq] = {
+      t: OracleNonceDb
+  ): Query[Table[OracleNonceDb], OracleNonceDb, Seq] = {
     findByPrimaryKey(OracleNoncePrimaryKey(t.announcementId, t.index))
   }
 
-  override protected def findAll(ts: Vector[OracleNonceDb]): Query[
-    Table[OracleNonceDb],
-    OracleNonceDb,
-    Seq] =
+  override protected def findAll(
+      ts: Vector[OracleNonceDb]
+  ): Query[Table[OracleNonceDb], OracleNonceDb, Seq] =
     findByPrimaryKeys(
-      ts.map(t => OracleNoncePrimaryKey(t.announcementId, t.index)))
+      ts.map(t => OracleNoncePrimaryKey(t.announcementId, t.index))
+    )
 
   def findByNonce(nonce: SchnorrNonce): Future[Option[OracleNonceDb]] = {
     findByNonces(Vector(nonce)).map(_.headOption)
   }
 
-  def findByNoncesAction(nonces: Vector[SchnorrNonce]): DBIOAction[
-    Vector[OracleNonceDb],
-    NoStream,
-    Effect.Read] = {
+  def findByNoncesAction(
+      nonces: Vector[SchnorrNonce]
+  ): DBIOAction[Vector[OracleNonceDb], NoStream, Effect.Read] = {
     val query = table.filter(_.nonce.inSet(nonces))
     query.result.map(_.toVector)
   }
 
   def findByNonces(
-      nonces: Vector[SchnorrNonce]): Future[Vector[OracleNonceDb]] = {
+      nonces: Vector[SchnorrNonce]
+  ): Future[Vector[OracleNonceDb]] = {
     val action = findByNoncesAction(nonces)
     safeDatabase.runVec(action)
   }
@@ -91,14 +90,14 @@ case class OracleNonceDAO()(implicit
   }
 
   def findByAnnouncementIds(
-      ids: Vector[Long]): Future[Vector[OracleNonceDb]] = {
+      ids: Vector[Long]
+  ): Future[Vector[OracleNonceDb]] = {
     safeDatabase.run(findByAnnouncementIdsAction(ids))
   }
 
-  def findByAnnouncementIdsAction(ids: Vector[Long]): DBIOAction[
-    Vector[OracleNonceDb],
-    NoStream,
-    Effect.Read] = {
+  def findByAnnouncementIdsAction(
+      ids: Vector[Long]
+  ): DBIOAction[Vector[OracleNonceDb], NoStream, Effect.Read] = {
     table.filter(_.announcementId.inSet(ids)).result.map(_.toVector)
   }
 
@@ -110,7 +109,8 @@ case class OracleNonceDAO()(implicit
     def index: Rep[Long] = column("index")
 
     def announcementSignature: Rep[SchnorrDigitalSignature] = column(
-      "announcement_signature")
+      "announcement_signature"
+    )
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.Unique)
 
@@ -123,12 +123,16 @@ case class OracleNonceDAO()(implicit
         .<>(OracleNonceDb.tupled, OracleNonceDb.unapply)
 
     def pk: PrimaryKey =
-      primaryKey(name = "pk_oracle_nonces",
-                 sourceColumns = (announcementId, index))
+      primaryKey(
+        name = "pk_oracle_nonces",
+        sourceColumns = (announcementId, index)
+      )
 
     def fk =
-      foreignKey("fk_announcement_id",
-                 sourceColumns = announcementId,
-                 targetTableQuery = announcementDataTable)(_.id)
+      foreignKey(
+        "fk_announcement_id",
+        sourceColumns = announcementId,
+        targetTableQuery = announcementDataTable
+      )(_.id)
   }
 }

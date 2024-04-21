@@ -24,8 +24,8 @@ case class DumpTxOutSetResult(
     coins_written: Int,
     base_hash: DoubleSha256DigestBE,
     base_height: Int,
-    path: Path)
-    extends BlockchainResult
+    path: Path
+) extends BlockchainResult
 
 case class GetBlockResult(
     hash: DoubleSha256DigestBE,
@@ -45,8 +45,8 @@ case class GetBlockResult(
     difficulty: BigDecimal,
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
-    nextblockhash: Option[DoubleSha256DigestBE])
-    extends BlockchainResult
+    nextblockhash: Option[DoubleSha256DigestBE]
+) extends BlockchainResult
 
 abstract trait GetBlockWithTransactionsResult extends BlockchainResult {
   def hash: DoubleSha256DigestBE
@@ -87,8 +87,8 @@ case class GetBlockWithTransactionsResultV22(
     difficulty: BigDecimal,
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
-    nextblockhash: Option[DoubleSha256DigestBE])
-    extends GetBlockWithTransactionsResult
+    nextblockhash: Option[DoubleSha256DigestBE]
+) extends GetBlockWithTransactionsResult
 
 sealed trait GetBlockChainInfoResult extends BlockchainResult {
   def chain: NetworkParameters
@@ -121,8 +121,8 @@ case class GetBlockChainInfoResultPreV19(
     pruneheight: Option[Int],
     softforks: Vector[SoftforkPreV19],
     bip9_softforks: Map[String, Bip9SoftforkPreV19],
-    warnings: String)
-    extends GetBlockChainInfoResult
+    warnings: String
+) extends GetBlockChainInfoResult
 
 case class GetBlockChainInfoResultPostV19(
     chain: NetworkParameters,
@@ -138,8 +138,8 @@ case class GetBlockChainInfoResultPostV19(
     pruned: Boolean,
     pruneheight: Option[Int],
     softforks: Map[String, SoftforkPostV19],
-    warnings: String)
-    extends GetBlockChainInfoResult
+    warnings: String
+) extends GetBlockChainInfoResult
 
 // adds time field removes softforks field
 case class GetBlockChainInfoResultPostV23(
@@ -156,30 +156,30 @@ case class GetBlockChainInfoResultPostV23(
     size_on_disk: Long,
     pruned: Boolean,
     pruneheight: Option[Int],
-    warnings: String)
-    extends GetBlockChainInfoResult
+    warnings: String
+) extends GetBlockChainInfoResult
 
 case class SoftforkPreV19(
     id: String,
     version: Int,
     enforce: Option[Map[String, SoftforkProgressPreV19]],
-    reject: SoftforkProgressPreV19)
-    extends BlockchainResult
+    reject: SoftforkProgressPreV19
+) extends BlockchainResult
 
 case class SoftforkProgressPreV19(
     status: Option[Boolean],
     found: Option[Int],
     required: Option[Int],
-    window: Option[Int])
-    extends BlockchainResult
+    window: Option[Int]
+) extends BlockchainResult
 
 case class Bip9SoftforkPreV19(
     status: String,
     bit: Option[Int],
     startTime: Int,
     timeout: BigInt,
-    since: Int)
-    extends BlockchainResult
+    since: Int
+) extends BlockchainResult
 
 sealed trait SoftforkPostV19 extends BlockchainResult
 
@@ -194,8 +194,8 @@ case class Bip9SoftforkDetails(
     bit: Option[Int],
     start_time: Int,
     timeout: BigInt,
-    since: Int)
-    extends BlockchainResult
+    since: Int
+) extends BlockchainResult
 
 case class GetBlockHeaderResult(
     hash: DoubleSha256DigestBE,
@@ -211,8 +211,8 @@ case class GetBlockHeaderResult(
     difficulty: BigDecimal,
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
-    nextblockhash: Option[DoubleSha256DigestBE])
-    extends BlockchainResult {
+    nextblockhash: Option[DoubleSha256DigestBE]
+) extends BlockchainResult {
 
   lazy val blockHeaderDb: BlockHeaderDb = {
     val bytes = ByteVector.fromValidHex(chainwork).dropWhile(_ == 0x00).toArray
@@ -222,8 +222,8 @@ case class GetBlockHeaderResult(
 
   def blockHeader: BlockHeader = {
 
-    //prevblockhash is only empty if we have the genesis block
-    //we assume the prevhash of the gensis block is the empty hash
+    // prevblockhash is only empty if we have the genesis block
+    // we assume the prevhash of the gensis block is the empty hash
     val prevHash = {
       if (height == 0 && previousblockhash.isEmpty) {
         DoubleSha256DigestBE.empty
@@ -231,12 +231,14 @@ case class GetBlockHeaderResult(
         previousblockhash.get
       }
     }
-    BlockHeader(version = Int32(version),
-                previousBlockHash = prevHash.flip,
-                merkleRootHash = merkleroot.flip,
-                time = time,
-                nBits = bits,
-                nonce = nonce)
+    BlockHeader(
+      version = Int32(version),
+      previousBlockHash = prevHash.flip,
+      merkleRootHash = merkleroot.flip,
+      time = time,
+      nBits = bits,
+      nonce = nonce
+    )
   }
 }
 
@@ -244,8 +246,8 @@ case class ChainTip(
     height: Int,
     hash: DoubleSha256DigestBE,
     branchlen: Int,
-    status: String)
-    extends BlockchainResult
+    status: String
+) extends BlockchainResult
 
 case class GetChainTxStatsResult(
     time: UInt32,
@@ -254,8 +256,8 @@ case class GetChainTxStatsResult(
     window_final_block_height: Option[Int],
     window_tx_count: Option[Int],
     window_interval: Option[UInt32],
-    txrate: Option[BigDecimal])
-    extends BlockchainResult
+    txrate: Option[BigDecimal]
+) extends BlockchainResult
 
 sealed trait GetMemPoolResult extends BlockchainResult {
   def size: Int
@@ -284,8 +286,8 @@ case class GetMemPoolResultPreV19(
     ancestorfees: Option[Bitcoins],
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Vector[DoubleSha256DigestBE])
-    extends GetMemPoolResult
+    depends: Vector[DoubleSha256DigestBE]
+) extends GetMemPoolResult
 
 case class GetMemPoolResultPostV19(
     vsize: Int,
@@ -301,8 +303,8 @@ case class GetMemPoolResultPostV19(
     ancestorfees: Option[Bitcoins],
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Vector[DoubleSha256DigestBE])
-    extends GetMemPoolResult {
+    depends: Vector[DoubleSha256DigestBE]
+) extends GetMemPoolResult {
   override def size: Int = vsize
 }
 
@@ -317,8 +319,8 @@ case class GetMemPoolResultPostV23(
     ancestorsize: Int,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Vector[DoubleSha256DigestBE])
-    extends GetMemPoolResult {
+    depends: Vector[DoubleSha256DigestBE]
+) extends GetMemPoolResult {
   override def size: Int = vsize
 }
 
@@ -356,8 +358,8 @@ case class GetMemPoolEntryResultPreV19(
     ancestorfees: BitcoinFeeUnit,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Option[Vector[DoubleSha256DigestBE]])
-    extends GetMemPoolEntryResult
+    depends: Option[Vector[DoubleSha256DigestBE]]
+) extends GetMemPoolEntryResult
 
 case class GetMemPoolEntryResultPostV19(
     vsize: Int,
@@ -374,8 +376,8 @@ case class GetMemPoolEntryResultPostV19(
     ancestorfees: BitcoinFeeUnit,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Option[Vector[DoubleSha256DigestBE]])
-    extends GetMemPoolEntryResult {
+    depends: Option[Vector[DoubleSha256DigestBE]]
+) extends GetMemPoolEntryResult {
   override def size: Int = vsize
 }
 
@@ -390,8 +392,8 @@ case class GetMemPoolEntryResultPostV23(
     ancestorsize: Int,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Option[Vector[DoubleSha256DigestBE]])
-    extends GetMemPoolEntryResult {
+    depends: Option[Vector[DoubleSha256DigestBE]]
+) extends GetMemPoolEntryResult {
   override def size: Int = vsize
 }
 
@@ -401,8 +403,8 @@ case class GetMemPoolInfoResult(
     usage: Int,
     maxmempool: Int,
     mempoolminfee: BitcoinFeeUnit,
-    minrelaytxfee: Bitcoins)
-    extends BlockchainResult
+    minrelaytxfee: Bitcoins
+) extends BlockchainResult
 
 sealed abstract trait GetTxOutResult extends BlockchainResult {
   def bestblock: DoubleSha256DigestBE
@@ -417,8 +419,8 @@ case class GetTxOutResultV22(
     confirmations: Int,
     value: Bitcoins,
     scriptPubKey: RpcScriptPubKeyPostV22,
-    coinbase: Boolean)
-    extends GetTxOutResult
+    coinbase: Boolean
+) extends GetTxOutResult
 
 case class GetTxOutSetInfoResult(
     height: Int,
@@ -428,17 +430,18 @@ case class GetTxOutSetInfoResult(
     bogosize: Int,
     hash_serialized_2: DoubleSha256DigestBE,
     disk_size: Int,
-    total_amount: Bitcoins)
-    extends BlockchainResult
+    total_amount: Bitcoins
+) extends BlockchainResult
 
 case class GetBlockFilterResult(
     filter: GolombFilter,
-    header: DoubleSha256DigestBE)
-    extends BlockchainResult {
+    header: DoubleSha256DigestBE
+) extends BlockchainResult {
 
   def filterDb(
       height: Int,
-      blockHashBE: DoubleSha256DigestBE): CompactFilterDb = {
+      blockHashBE: DoubleSha256DigestBE
+  ): CompactFilterDb = {
     CompactFilterDbHelper.fromGolombFilter(filter, blockHashBE, height)
   }
 }
@@ -446,7 +449,8 @@ case class GetBlockFilterResult(
 case class GetTxSpendingPrevOutResult(
     txid: DoubleSha256DigestBE,
     vout: Int,
-    spendingtxid: Option[DoubleSha256DigestBE]) {
+    spendingtxid: Option[DoubleSha256DigestBE]
+) {
   def outpoint: TransactionOutPoint = TransactionOutPoint(txid, UInt32(vout))
 }
 

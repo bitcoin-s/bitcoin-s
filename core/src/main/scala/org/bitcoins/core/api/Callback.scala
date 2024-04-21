@@ -31,11 +31,13 @@ object Callback {
   def noop[T]: T => Future[Unit] = _ => Future.unit
 }
 
-/** Manages a set of callbacks, should be used to manage execution and logging if needed */
+/** Manages a set of callbacks, should be used to manage execution and logging
+  * if needed
+  */
 case class CallbackHandler[C, T <: Callback[C]](
     name: String,
-    override val wrapped: IndexedSeq[T])
-    extends SeqWrapper[T] {
+    override val wrapped: IndexedSeq[T]
+) extends SeqWrapper[T] {
 
   def ++(other: CallbackHandler[C, T]): CallbackHandler[C, T] = {
     if (name == CallbackHandler.emptyName) {
@@ -45,14 +47,18 @@ case class CallbackHandler[C, T <: Callback[C]](
     } else {
       require(
         name == other.name,
-        s"Cannot combine callback handlers with different names name=$name other.name=${other.name}")
+        s"Cannot combine callback handlers with different names name=$name other.name=${other.name}"
+      )
       CallbackHandler(name, wrapped ++ other.wrapped)
     }
   }
 
-  /** Executes the callbacks synchronously, if any fail, they are recovered by recoverFunc */
+  /** Executes the callbacks synchronously, if any fail, they are recovered by
+    * recoverFunc
+    */
   def execute(param: C, recoverFunc: Throwable => Unit = _ => ())(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      ec: ExecutionContext
+  ): Future[Unit] = {
     val executeFs = wrapped.map { callback =>
       // Need to wrap in another future so they are all started at once
       // and do not block each other

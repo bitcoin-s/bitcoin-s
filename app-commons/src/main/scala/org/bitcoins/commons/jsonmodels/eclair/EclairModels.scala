@@ -33,22 +33,27 @@ case class GetInfoResult(
     network: BitcoinNetwork,
     blockHeight: Long,
     publicAddresses: Seq[InetSocketAddress],
-    instanceId: UUID)
+    instanceId: UUID
+)
 
 case class PeerInfo(
     nodeId: NodeId,
     state: PeerState,
     address: Option[String],
-    channels: Int)
+    channels: Int
+)
 
 case class ChannelCommandResult(
-    results: scala.collection.Map[
-      Either[ShortChannelId, FundedChannelId],
-      State]
+    results: scala.collection.Map[Either[
+                                    ShortChannelId,
+                                    FundedChannelId
+                                  ],
+                                  State]
 )
 
 case class UpdateRelayFeeResult(
-    results: Map[Either[ShortChannelId, FundedChannelId], UpdateRelayFee])
+    results: Map[Either[ShortChannelId, FundedChannelId], UpdateRelayFee]
+)
 
 sealed trait UpdateRelayFee
 
@@ -57,8 +62,8 @@ object UpdateRelayFee {
   case class OK(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
-      feeProportionalMillionths: Long)
-      extends UpdateRelayFee
+      feeProportionalMillionths: Long
+  ) extends UpdateRelayFee
 
   case class Error(message: String) extends UpdateRelayFee
 }
@@ -84,12 +89,10 @@ object ChannelCommandResult extends StringFactory[State] {
     }
 }
 
-/** This is the data model returned by the RPC call
-  * `channels nodeId`. The content of the objects
-  * being returne differ based on whatever state
-  * the channel is in. The member of this abstract
-  * class are in eveyr channel state, whereas other
-  * channel states may have extra information.
+/** This is the data model returned by the RPC call `channels nodeId`. The
+  * content of the objects being returne differ based on whatever state the
+  * channel is in. The member of this abstract class are in eveyr channel state,
+  * whereas other channel states may have extra information.
   */
 sealed abstract class ChannelInfo {
   def nodeId: NodeId
@@ -111,8 +114,8 @@ case class BaseChannelInfo(
     state: ChannelState
 ) extends ChannelInfo
 
-/** This represents the case where the channel is
-  * in state `NORMAL` (i.e. an open channel)
+/** This represents the case where the channel is in state `NORMAL` (i.e. an
+  * open channel)
   */
 case class OpenChannelInfo(
     nodeId: NodeId,
@@ -129,7 +132,8 @@ case class UnknownFeature(bitIndex: Int)
 
 case class Features(
     activated: Set[ActivatedFeature],
-    unknown: Set[UnknownFeature])
+    unknown: Set[UnknownFeature]
+)
 
 case class NodeInfo(
     signature: ECDigitalSignature,
@@ -138,7 +142,8 @@ case class NodeInfo(
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    addresses: Vector[InetSocketAddress])
+    addresses: Vector[InetSocketAddress]
+)
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
@@ -154,7 +159,7 @@ case class NetworkFeesResult(
     txId: DoubleSha256DigestBE,
     fee: Satoshis,
     txType: String,
-    timestamp: Instant //milliseconds
+    timestamp: Instant // milliseconds
 )
 
 case class ChannelStats(
@@ -189,7 +194,8 @@ case class RealChannelId(status: String, realScid: ShortChannelId)
 case class ShortIds(
     real: RealChannelId,
     localAlias: String,
-    remoteAlias: String)
+    remoteAlias: String
+)
 
 case class UsableBalancesResult(
     remoteNodeId: NodeId,
@@ -210,7 +216,7 @@ object ReceivedPayment {
   case class Part(
       amount: MilliSatoshis,
       fromChannelId: FundedChannelId,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   )
 }
 
@@ -220,7 +226,7 @@ case class RelayedPayment(
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    timestamp: Instant //milliseconds
+    timestamp: Instant // milliseconds
 )
 
 case class SentPayment(
@@ -239,7 +245,7 @@ object SentPayment {
       amount: MilliSatoshis,
       feesPaid: MilliSatoshis,
       toChannelId: FundedChannelId,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   )
 }
 
@@ -249,13 +255,14 @@ case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,
     shortChannelId: ShortChannelId,
-    timestamp: Instant, //seconds
+    timestamp: Instant, // seconds
     channelFlags: ChannelFlags,
     cltvExpiryDelta: Int,
     htlcMinimumMsat: MilliSatoshis,
     feeProportionalMillionths: FeeProportionalMillionths,
     htlcMaximumMsat: Option[MilliSatoshis],
-    feeBaseMsat: MilliSatoshis)
+    feeBaseMsat: MilliSatoshis
+)
 
 case class ChannelResult(
     nodeId: NodeId,
@@ -263,7 +270,8 @@ case class ChannelResult(
     state: ChannelState,
     feeBaseMsat: Option[MilliSatoshis],
     feeProportionalMillionths: Option[FeeProportionalMillionths],
-    data: JsObject) {
+    data: JsObject
+) {
 
   lazy val shortChannelId: Option[ShortChannelId] =
     (data \ "shortIds" \ "real" \ "realScid").validate[ShortChannelId].asOpt
@@ -273,12 +281,13 @@ case class ChannelResult(
 
 case class InvoiceResult(
     prefix: LnHumanReadablePart,
-    timestamp: Instant, //seconds
+    timestamp: Instant, // seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
     paymentHash: Sha256Digest,
-    expiry: FiniteDuration)
+    expiry: FiniteDuration
+)
 
 case class PaymentId(value: UUID) {
   override def toString: String = value.toString
@@ -288,16 +297,17 @@ case class SendToRouteResult(paymentId: PaymentId, parentId: PaymentId)
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
-    timestamp: Instant, //seconds
+    timestamp: Instant, // seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
     paymentHash: Sha256Digest,
     paymentMetadata: String,
-    expiry: FiniteDuration, //seconds
+    expiry: FiniteDuration, // seconds
     minFinalCltvExpiry: Int,
     amount: Option[MilliSatoshis],
-    features: Features)
+    features: Features
+)
 
 sealed trait PaymentType
 
@@ -314,7 +324,7 @@ object PaymentType extends StringFactory[PaymentType] {
       case "SwapIn"      => SwapIn
       case "SwapOut"     => SwapOut
       case "placeholder" => Placeholder
-      case _             => throw new RuntimeException(s"Unknown payment type `$str`")
+      case _ => throw new RuntimeException(s"Unknown payment type `$str`")
     }
 
 }
@@ -328,16 +338,18 @@ case class OutgoingPayment(
     amount: MilliSatoshis,
     recipientAmount: MilliSatoshis,
     recipientNodeId: NodeId,
-    createdAt: Instant, //milliseconds
+    createdAt: Instant, // milliseconds
     paymentRequest: Option[PaymentRequest],
-    status: OutgoingPaymentStatus)
+    status: OutgoingPaymentStatus
+)
 
 case class IncomingPayment(
     paymentRequest: PaymentRequest,
     paymentPreimage: PaymentPreimage,
     paymentType: PaymentType,
-    createdAt: Instant, //milliseconds
-    status: IncomingPaymentStatus)
+    createdAt: Instant, // milliseconds
+    status: IncomingPaymentStatus
+)
 
 sealed trait IncomingPaymentStatus
 
@@ -349,7 +361,7 @@ object IncomingPaymentStatus {
 
   case class Received(
       amount: MilliSatoshis,
-      receivedAt: Instant //milliseconds
+      receivedAt: Instant // milliseconds
   ) extends IncomingPaymentStatus
 
 }
@@ -363,7 +375,7 @@ object OutgoingPaymentStatus {
       paymentPreimage: PaymentPreimage,
       feesPaid: MilliSatoshis,
       route: Seq[Hop],
-      completedAt: Instant //milliseconds
+      completedAt: Instant // milliseconds
   ) extends OutgoingPaymentStatus
 
   case class Failed(failures: Seq[PaymentFailure], completedAt: Instant)
@@ -373,7 +385,8 @@ object OutgoingPaymentStatus {
 case class PaymentFailure(
     failureType: PaymentFailure.Type,
     failureMessage: String,
-    failedRoute: Seq[Hop])
+    failedRoute: Seq[Hop]
+)
 
 object PaymentFailure {
   sealed trait Type
@@ -385,7 +398,8 @@ object PaymentFailure {
 case class Hop(
     nodeId: NodeId,
     nextNodeId: NodeId,
-    shortChannelId: Option[ShortChannelId])
+    shortChannelId: Option[ShortChannelId]
+)
 
 sealed trait WebSocketEvent
 
@@ -397,7 +411,7 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
       toChannelId: FundedChannelId,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   ) extends WebSocketEvent
 
   case class PaymentReceived(
@@ -442,7 +456,7 @@ object WebSocketEvent {
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   ) extends WebSocketEvent
 
 }
@@ -456,4 +470,5 @@ case class WalletTransaction(
     blockHash: DoubleSha256DigestBE,
     confirmations: Long,
     txid: DoubleSha256DigestBE,
-    timestamp: Long)
+    timestamp: Long
+)

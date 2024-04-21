@@ -13,38 +13,36 @@ import org.bitcoins.core.compat.JavaConverters._
 import scala.util.Properties
 import scala.util.matching.Regex
 
-/** Everything needed to configure functionality
-  * of bitcoin-s applications  is found in here.
+/** Everything needed to configure functionality of bitcoin-s applications is
+  * found in here.
   *
-  * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
-  *      for more information.
+  * @see
+  *   [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
+  *   for more information.
   */
 abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 
-  /** Starts this project.
-    * After this future resolves, all operations should be
+  /** Starts this project. After this future resolves, all operations should be
     * able to be performed correctly.
     *
-    * Starting may include creating database tables,
-    * making directories or files needed later or
-    * something else entirely.
+    * Starting may include creating database tables, making directories or files
+    * needed later or something else entirely.
     */
   override def start(): Future[Unit] = {
     Future.unit
   }
 
-  /** Sub members of AppConfig should override this type with
-    * the type of themselves, ensuring `withOverrides` return
-    * the correct type
+  /** Sub members of AppConfig should override this type with the type of
+    * themselves, ensuring `withOverrides` return the correct type
     */
   protected[bitcoins] type ConfigType <: AppConfig
 
   /** Constructor to make a new instance of this config type */
   protected[bitcoins] def newConfigOfType(
-      configOverrides: Vector[Config]): ConfigType
+      configOverrides: Vector[Config]
+  ): ConfigType
 
-  /** List of user-provided configs that should
-    * override defaults
+  /** List of user-provided configs that should override defaults
     */
   protected[bitcoins] def configOverrides: Vector[Config]
 
@@ -52,14 +50,11 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     withOverrides(Vector(configOverrides))
   }
 
-  /** This method returns a new `AppConfig`, where every
-    * key under `bitcoin-s` overrides the configuration
-    * picked up by other means (the `reference.conf`
-    * provided by bitcoin-s and the `application.conf`
-    * provided by the user). If you pass in configs with
-    * overlapping keys (e.g. several configs with the key
-    * `bitcoin-s.network`), the latter config overrides the
-    * first.
+  /** This method returns a new `AppConfig`, where every key under `bitcoin-s`
+    * overrides the configuration picked up by other means (the `reference.conf`
+    * provided by bitcoin-s and the `application.conf` provided by the user). If
+    * you pass in configs with overlapping keys (e.g. several configs with the
+    * key `bitcoin-s.network`), the latter config overrides the first.
     */
   def withOverrides(configOverrides: Vector[Config]): ConfigType = {
     val numOverrides = configOverrides.length
@@ -180,7 +175,8 @@ object AppConfig extends BitcoinSLogger {
   def getBaseConfig(
       baseDatadir: Path,
       configFileName: String,
-      configOverrides: Vector[Config]): Config = {
+      configOverrides: Vector[Config]
+  ): Config = {
     val configOptions =
       ConfigParseOptions
         .defaults()
@@ -195,7 +191,8 @@ object AppConfig extends BitcoinSLogger {
 
       val withDatadir =
         ConfigFactory.parseString(
-          s"bitcoin-s.datadir = ${safePathToString(baseDatadir)}")
+          s"bitcoin-s.datadir = ${safePathToString(baseDatadir)}"
+        )
       withDatadir.withFallback(config)
     }
 
@@ -237,8 +234,8 @@ object AppConfig extends BitcoinSLogger {
 
   /** The default data directory
     *
-    * TODO: use different directories on Windows and Mac,
-    * should probably mimic what Bitcoin Core does
+    * TODO: use different directories on Windows and Mac, should probably mimic
+    * what Bitcoin Core does
     */
   private[bitcoins] lazy val DEFAULT_BITCOIN_S_DATADIR: Path =
     Paths.get(Properties.userHome, ".bitcoin-s")
@@ -246,9 +243,8 @@ object AppConfig extends BitcoinSLogger {
   private[bitcoins] lazy val DEFAULT_BITCOIN_S_CONF_FILE: String =
     "bitcoin-s.conf"
 
-  /** Matches the default data directory location
-    * with a network appended,
-    * both with and without a trailing `/`
+  /** Matches the default data directory location with a network appended, both
+    * with and without a trailing `/`
     */
   private lazy val defaultDatadirRegex: Regex = {
     // Fix for windows
@@ -257,8 +253,8 @@ object AppConfig extends BitcoinSLogger {
     (home + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
   }
 
-  /** Throws if the encountered datadir is the default one. Useful
-    * in tests, to make sure you don't blow up important data.
+  /** Throws if the encountered datadir is the default one. Useful in tests, to
+    * make sure you don't blow up important data.
     */
   private[bitcoins] def throwIfDefaultDatadir(config: AppConfig): Unit = {
     val datadirStr = config.datadir.toString()

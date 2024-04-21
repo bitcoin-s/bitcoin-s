@@ -92,7 +92,8 @@ object ConsoleCli extends BitcoinSLogger {
               conf.copy(command = conf.command match {
                 case gbh: GetBlockHeader => gbh.copy(hash = hash)
                 case other               => other
-              }))),
+              }))
+        ),
       cmd("getmediantimepast")
         .action((_, conf) => conf.copy(command = GetMedianTimePast))
         .text(s"Get the median time past"),
@@ -109,16 +110,20 @@ object ConsoleCli extends BitcoinSLogger {
                 case decode: DecodeRawTransaction =>
                   decode.copy(tx = tx)
                 case other => other
-              }))),
+              }))
+        ),
       note(sys.props("line.separator") + "=== Wallet ==="),
       cmd("rescan")
         .action((_, conf) =>
           conf.copy(
-            command = Rescan(batchSize = Option.empty,
-                             startBlock = Option.empty,
-                             endBlock = Option.empty,
-                             force = false,
-                             ignoreCreationTime = false)))
+            command = Rescan(
+              batchSize = Option.empty,
+              startBlock = Option.empty,
+              endBlock = Option.empty,
+              force = false,
+              ignoreCreationTime = false
+            )
+          ))
         .text(s"Rescan for wallet UTXOs")
         .children(
           opt[Unit]("force")
@@ -148,8 +153,8 @@ object ConsoleCli extends BitcoinSLogger {
                   // Need to ignoreCreationTime so we try to call
                   // rescan with rescanNeutrinoWallet with a block
                   // and a creation time
-                  rescan.copy(startBlock = Option(start),
-                              ignoreCreationTime = true)
+                  rescan
+                    .copy(startBlock = Option(start), ignoreCreationTime = true)
                 case other => other
               })),
           opt[BlockStamp]("end")
@@ -162,7 +167,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           opt[Unit]("ignorecreationtime")
-            .text("Ignores the wallet creation date and will instead do a full rescan")
+            .text(
+              "Ignores the wallet creation date and will instead do a full rescan"
+            )
             .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
@@ -248,7 +255,8 @@ object ConsoleCli extends BitcoinSLogger {
       cmd("getspentaddresses")
         .action((_, conf) => conf.copy(command = GetSpentAddresses))
         .text(
-          "Returns list of all wallet addresses that have received funds and been spent"),
+          "Returns list of all wallet addresses that have received funds and been spent"
+        ),
       cmd("getfundedaddresses")
         .action((_, conf) => conf.copy(command = GetFundedAddresses))
         .text("Returns list of all wallet addresses that are holding funds"),
@@ -428,7 +436,8 @@ object ConsoleCli extends BitcoinSLogger {
       cmd("sendfromoutpoints")
         .action((_, conf) =>
           conf.copy(
-            command = SendFromOutPoints(Vector.empty, null, 0.bitcoin, None)))
+            command = SendFromOutPoints(Vector.empty, null, 0.bitcoin, None)
+          ))
         .text("Send money to the given address")
         .children(
           arg[Seq[TransactionOutPoint]]("outpoints")
@@ -472,7 +481,8 @@ object ConsoleCli extends BitcoinSLogger {
         .action((_, conf) =>
           conf.copy(command = SendWithAlgo(null, 0.bitcoin, None, null)))
         .text(
-          "Send money to the given address using a specific coin selection algo")
+          "Send money to the given address using a specific coin selection algo"
+        )
         .children(
           arg[BitcoinAddress]("address")
             .text("Address to send to")
@@ -536,7 +546,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("signpsbt")
         .action((_, conf) => conf.copy(command = SignPSBT(PSBT.empty)))
-        .text("Signs the PSBT's inputs with keys that are associated with the wallet")
+        .text(
+          "Signs the PSBT's inputs with keys that are associated with the wallet"
+        )
         .children(
           arg[PSBT]("psbt")
             .text("PSBT to sign")
@@ -585,7 +597,9 @@ object ConsoleCli extends BitcoinSLogger {
         .action((_, conf) =>
           conf.copy(command = BumpFeeCPFP(DoubleSha256DigestBE.empty,
                                           SatoshisPerVirtualByte.zero)))
-        .text("Bump the fee of the given transaction id with a child tx using the given fee rate")
+        .text(
+          "Bump the fee of the given transaction id with a child tx using the given fee rate"
+        )
         .children(
           arg[DoubleSha256DigestBE]("txid")
             .text("Id of transaction to bump fee")
@@ -649,11 +663,15 @@ object ConsoleCli extends BitcoinSLogger {
       cmd("lockunspent")
         .action((_, conf) =>
           conf.copy(command = LockUnspent(unlock = false, Vector.empty)))
-        .text("Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs." +
-          "\nIf no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.")
+        .text(
+          "Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs." +
+            "\nIf no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked."
+        )
         .children(
           arg[Boolean]("unlock")
-            .text("Whether to unlock (true) or lock (false) the specified transactions")
+            .text(
+              "Whether to unlock (true) or lock (false) the specified transactions"
+            )
             .required()
             .action((unlock, conf) =>
               conf.copy(command = conf.command match {
@@ -662,7 +680,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Vector[LockUnspentOutputParameter]]("transactions")
-            .text("The transaction outpoints to unlock/lock, empty to apply to all utxos")
+            .text(
+              "The transaction outpoints to unlock/lock, empty to apply to all utxos"
+            )
             .optional()
             .action((outputParam, conf) =>
               conf.copy(command = conf.command match {
@@ -849,7 +869,8 @@ object ConsoleCli extends BitcoinSLogger {
         .children(
           opt[String]("walletname")
             .text(
-              "Wallet's name (the default wallet will be loaded if omitted)")
+              "Wallet's name (the default wallet will be loaded if omitted)"
+            )
             .optional()
             .action((walletName, conf) =>
               conf.copy(command = conf.command match {
@@ -889,7 +910,8 @@ object ConsoleCli extends BitcoinSLogger {
                 case decode: DecodeContractInfo =>
                   decode.copy(contractInfo = contractInfo)
                 case other => other
-              }))),
+              }))
+        ),
       cmd("decodeoffer")
         .action((_, conf) => conf.copy(command = DecodeOffer(null)))
         .text("Decodes an offer message into json")
@@ -902,7 +924,8 @@ object ConsoleCli extends BitcoinSLogger {
                 case decode: DecodeOffer =>
                   decode.copy(offer = offer)
                 case other => other
-              }))),
+              }))
+        ),
       cmd("decodeannouncement")
         .action((_, conf) => conf.copy(command = DecodeAnnouncement(null)))
         .text("Decodes an oracle announcement message into json")
@@ -915,7 +938,8 @@ object ConsoleCli extends BitcoinSLogger {
                 case decode: DecodeAnnouncement =>
                   decode.copy(announcement = ann)
                 case other => other
-              }))),
+              }))
+        ),
       cmd("decodeattestments")
         .action((_, conf) => conf.copy(command = DecodeAttestments(null)))
         .text("Decodes an oracle attestments message into json")
@@ -928,21 +952,25 @@ object ConsoleCli extends BitcoinSLogger {
                 case decode: DecodeAttestments =>
                   decode.copy(sigs = attestments)
                 case other => other
-              }))),
+              }))
+        ),
       cmd("getdlchostaddress")
         .action((_, conf) => conf.copy(command = GetDLCHostAddress))
         .text("Returns the public listening address of the DLC Node"),
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
-            command = CreateDLCOffer(ContractInfoV0TLV.dummy,
-                                     Satoshis.zero,
-                                     None,
-                                     None,
-                                     UInt32.zero,
-                                     None,
-                                     None,
-                                     None)))
+            command = CreateDLCOffer(
+              ContractInfoV0TLV.dummy,
+              Satoshis.zero,
+              None,
+              None,
+              UInt32.zero,
+              None,
+              None,
+              None
+            )
+          ))
         .text("Creates a DLC offer that another party can accept")
         .children(
           arg[ContractInfoV0TLV]("contractInfo")
@@ -964,7 +992,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[SatoshisPerVirtualByte]("feerate")
-            .text("Fee rate for both funding and closing transactions, in sats/vbytes")
+            .text(
+              "Fee rate for both funding and closing transactions, in sats/vbytes"
+            )
             .optional()
             .action((feeRate, conf) =>
               conf.copy(command = conf.command match {
@@ -993,11 +1023,12 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("acceptdlc")
         .action((_, conf) =>
-          conf.copy(command =
-            AcceptDLC(null,
-                      InetSocketAddress.createUnresolved("localhost", 0),
-                      None,
-                      None)))
+          conf.copy(command = AcceptDLC(
+            null,
+            InetSocketAddress.createUnresolved("localhost", 0),
+            None,
+            None
+          )))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[LnMessage[DLCOfferTLV]]("offer")
@@ -1128,7 +1159,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("adddlcsigsandbroadcast")
         .action((_, conf) => conf.copy(command = AddDLCSigsAndBroadcast(null)))
-        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
+        .text(
+          "Adds DLC Signatures into the database and broadcasts the funding transaction"
+        )
         .children(
           arg[LnMessage[DLCSignTLV]]("sigs")
             .text("Hex encoded dlc sign message")
@@ -1144,7 +1177,9 @@ object ConsoleCli extends BitcoinSLogger {
         .action((_, conf) =>
           conf.copy(command =
             AddDLCSigsAndBroadcastFromFile(new File("").toPath)))
-        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
+        .text(
+          "Adds DLC Signatures into the database and broadcasts the funding transaction"
+        )
         .children(
           arg[Path]("path")
             .text("Path to dlc sign file")
@@ -1158,7 +1193,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("getdlcfundingtx")
         .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
-        .text("Returns the Funding Tx corresponding to the DLC with the given contractId")
+        .text(
+          "Returns the Funding Tx corresponding to the DLC with the given contractId"
+        )
         .children(
           arg[ByteVector]("contractId")
             .text("ContractId of the DLC")
@@ -1172,7 +1209,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("broadcastdlcfundingtx")
         .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
-        .text("Broadcasts the funding Tx corresponding to the DLC with the given contractId")
+        .text(
+          "Broadcasts the funding Tx corresponding to the DLC with the given contractId"
+        )
         .children(
           arg[ByteVector]("contractId")
             .text("ContractId of the DLC")
@@ -1270,7 +1309,8 @@ object ConsoleCli extends BitcoinSLogger {
               conf.copy(command = conf.command match {
                 case _: GetDLC => GetDLC(dlcId)
                 case other     => other
-              }))),
+              }))
+        ),
       cmd("contact-add")
         .action((_, conf) => conf.copy(command = ContactAdd.empty))
         .text("Add a contact to your DLC wallet")
@@ -1312,7 +1352,8 @@ object ConsoleCli extends BitcoinSLogger {
         .children(
           arg[InetSocketAddress]("address")
             .text(
-              "The address of the contact we want to remove from the wallet")
+              "The address of the contact we want to remove from the wallet"
+            )
             .required()
             .action((address, conf) =>
               conf.copy(command = conf.command match {
@@ -1323,7 +1364,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("createcontractinfo")
         .action((_, conf) => conf.copy(command = CreateContractInfo.empty))
-        .text("Create a contract info from an announcement, total collateral, and contract descriptor")
+        .text(
+          "Create a contract info from an announcement, total collateral, and contract descriptor"
+        )
         .children(
           arg[OracleAnnouncementTLV]("announcement")
             .text("The announcement we are creating a contract info for")
@@ -1335,7 +1378,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Satoshis]("totalCollateral")
-            .text("The total collateral in the DLC. This is your collateral + counterparty collateral")
+            .text(
+              "The total collateral in the DLC. This is your collateral + counterparty collateral"
+            )
             .required()
             .action((totalCollateral, conf) =>
               conf.copy(command = conf.command match {
@@ -1344,7 +1389,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[ContractDescriptorTLV]("contractDescriptor")
-            .text("The contract descriptor in the DLC. This is expected to be of format [[outcome1, payout1], [outcome2, payout2], ...]")
+            .text(
+              "The contract descriptor in the DLC. This is expected to be of format [[outcome1, payout1], [outcome2, payout2], ...]"
+            )
             .required()
             .action((contractDescriptor, conf) =>
               conf.copy(command = conf.command match {
@@ -1424,7 +1471,9 @@ object ConsoleCli extends BitcoinSLogger {
       note(sys.props("line.separator") + "=== PSBT ==="),
       cmd("decodepsbt")
         .action((_, conf) => conf.copy(command = DecodePSBT(PSBT.empty)))
-        .text("Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.")
+        .text(
+          "Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction."
+        )
         .children(
           arg[PSBT]("psbt")
             .text("PSBT serialized in hex or base64 format")
@@ -1434,10 +1483,13 @@ object ConsoleCli extends BitcoinSLogger {
                 case decode: DecodePSBT =>
                   decode.copy(psbt = psbt)
                 case other => other
-              }))),
+              }))
+        ),
       cmd("analyzepsbt")
         .action((_, conf) => conf.copy(command = AnalyzePSBT(PSBT.empty)))
-        .text("Analyzes and provides information about the current status of a PSBT and its inputs")
+        .text(
+          "Analyzes and provides information about the current status of a PSBT and its inputs"
+        )
         .children(
           arg[PSBT]("psbt")
             .text("PSBT serialized in hex or base64 format")
@@ -1549,7 +1601,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Date]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in ISO 8601 format")
+            .text(
+              "The earliest expected time an outcome will be signed, given in ISO 8601 format"
+            )
             .required()
             .action((date, conf) =>
               conf.copy(command = conf.command match {
@@ -1569,14 +1623,17 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("createnumericannouncement")
         .action((_, conf) =>
-          conf.copy(command = CreateNumericAnnouncement(eventName = "",
-                                                        maturationTime =
-                                                          new Date(),
-                                                        minValue = 0,
-                                                        maxValue = 0,
-                                                        unit = "",
-                                                        precision = 0)))
-        .text("Registers an oracle announcement that uses digit decomposition when signing the number")
+          conf.copy(command = CreateNumericAnnouncement(
+            eventName = "",
+            maturationTime = new Date(),
+            minValue = 0,
+            maxValue = 0,
+            unit = "",
+            precision = 0
+          )))
+        .text(
+          "Registers an oracle announcement that uses digit decomposition when signing the number"
+        )
         .children(
           arg[String]("name")
             .text("Name for this announcement")
@@ -1588,7 +1645,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Date]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in ISO 8601 format")
+            .text(
+              "The earliest expected time an outcome will be signed, given in ISO 8601 format"
+            )
             .required()
             .action((date, conf) =>
               conf.copy(command = conf.command match {
@@ -1623,9 +1682,11 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Int]("precision")
-            .text("The precision of the outcome representing the " +
-              "base exponent by which to multiply the number represented by " +
-              "the composition of the digits to obtain the actual outcome value.")
+            .text(
+              "The precision of the outcome representing the " +
+                "base exponent by which to multiply the number represented by " +
+                "the composition of the digits to obtain the actual outcome value."
+            )
             .action((precision, conf) =>
               conf.copy(command = conf.command match {
                 case createNumericEvent: CreateNumericAnnouncement =>
@@ -1635,14 +1696,18 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("createdigitdecompannouncement")
         .action((_, conf) =>
-          conf.copy(command = CreateDigitDecompAnnouncement("",
-                                                            Instant.MIN,
-                                                            0,
-                                                            isSigned = false,
-                                                            0,
-                                                            "",
-                                                            0)))
-        .text("Registers an oracle announcement that uses digit decomposition when signing the number")
+          conf.copy(command = CreateDigitDecompAnnouncement(
+            "",
+            Instant.MIN,
+            0,
+            isSigned = false,
+            0,
+            "",
+            0
+          )))
+        .text(
+          "Registers an oracle announcement that uses digit decomposition when signing the number"
+        )
         .children(
           arg[String]("name")
             .text("Name for this announcement")
@@ -1654,7 +1719,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Instant]("maturationtime")
-            .text("The earliest expected time an outcome will be signed, given in epoch second")
+            .text(
+              "The earliest expected time an outcome will be signed, given in epoch second"
+            )
             .required()
             .action((time, conf) =>
               conf.copy(command = conf.command match {
@@ -1696,9 +1763,11 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[Int]("precision")
-            .text("The precision of the outcome representing the " +
-              "base exponent by which to multiply the number represented by " +
-              "the composition of the digits to obtain the actual outcome value.")
+            .text(
+              "The precision of the outcome representing the " +
+                "base exponent by which to multiply the number represented by " +
+                "the composition of the digits to obtain the actual outcome value."
+            )
             .action((precision, conf) =>
               conf.copy(command = conf.command match {
                 case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
@@ -1708,7 +1777,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("deleteannouncement")
         .action((_, conf) => conf.copy(command = DeleteAnnouncement("")))
-        .text("Delete an announcement. WARNING: THIS CAN LEAD TO DLCs NOT SETTLING IF USERS HAVE BUILT DLCS OFF OF THIS ANNOUNCEMENT. USE WITH CARE.")
+        .text(
+          "Delete an announcement. WARNING: THIS CAN LEAD TO DLCs NOT SETTLING IF USERS HAVE BUILT DLCS OFF OF THIS ANNOUNCEMENT. USE WITH CARE."
+        )
         .children(
           arg[String]("eventName")
             .text("The event's name")
@@ -1722,7 +1793,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("deleteattestation")
         .action((_, conf) => conf.copy(command = DeleteAttestation("")))
-        .text("Delete an announcement. WARNING THIS CAN LEAD TO PRIVATE KEY LEAK IF YOU SIGN ANOTHER ATTESTATION AFTER DELETING A PREVIOUS ONE. USE WITH CARE.")
+        .text(
+          "Delete an announcement. WARNING THIS CAN LEAD TO PRIVATE KEY LEAK IF YOU SIGN ANOTHER ATTESTATION AFTER DELETING A PREVIOUS ONE. USE WITH CARE."
+        )
         .children(
           arg[String]("eventName")
             .text("The event's name")
@@ -1810,7 +1883,9 @@ object ConsoleCli extends BitcoinSLogger {
         ),
       cmd("signmessage")
         .action((_, conf) => conf.copy(command = SignMessage("")))
-        .text("Signs the SHA256 hash of the given string using the oracle's signing key")
+        .text(
+          "Signs the SHA256 hash of the given string using the oracle's signing key"
+        )
         .children(
           arg[String]("message")
             .text("Message to hash and sign")
@@ -1857,7 +1932,9 @@ object ConsoleCli extends BitcoinSLogger {
       cmd("createmultisig")
         .action((_, conf) =>
           conf.copy(command = CreateMultisig(0, Vector.empty, SegWit)))
-        .text("Creates a multi-signature address with n signature of m keys required.")
+        .text(
+          "Creates a multi-signature address with n signature of m keys required."
+        )
         .children(
           arg[Int]("nrequired")
             .text("The number of required signatures out of the n keys.")
@@ -1878,7 +1955,9 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               })),
           arg[AddressType]("address_type")
-            .text("The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"")
+            .text(
+              "The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\""
+            )
             .optional()
             .action((addrType, conf) =>
               conf.copy(command = conf.command match {
@@ -1894,7 +1973,8 @@ object ConsoleCli extends BitcoinSLogger {
         .action((_, conf) =>
           conf.copy(command = ZipDataDir(new File("").toPath)))
         .text(
-          "zips the bitcoin-s datadir and places the file at the given path")
+          "zips the bitcoin-s datadir and places the file at the given path"
+        )
         .children(
           arg[Path]("path")
             .text("Location of final zip file")
@@ -1904,7 +1984,8 @@ object ConsoleCli extends BitcoinSLogger {
                 case zipDataDir: ZipDataDir =>
                   zipDataDir.copy(path = path)
                 case other => other
-              }))),
+              }))
+        ),
       checkConfig {
         case Config(org.bitcoins.commons.rpc.CliCommand.NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1927,19 +2008,19 @@ object ConsoleCli extends BitcoinSLogger {
     Failure(new RuntimeException(message))
   }
 
-  /** Gets the given key from jsObj if it exists
-    * and is not null
+  /** Gets the given key from jsObj if it exists and is not null
     */
   private def getKey(
       key: String,
-      jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]]): Option[
-    ujson.Value] = {
-    jsObjT.toOption.flatMap(_.get(key).flatMap(result =>
-      if (result.isNull) None else Some(result)))
+      jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]]
+  ): Option[ujson.Value] = {
+    jsObjT.toOption.flatMap(
+      _.get(key).flatMap(result => if (result.isNull) None else Some(result))
+    )
   }
 
-  /** Converts a `ujson.Value` to String, making an
-    * effort to avoid preceding and trailing `"`s
+  /** Converts a `ujson.Value` to String, making an effort to avoid preceding
+    * and trailing `"`s
     */
   private def jsValueToString(value: ujson.Value): String = {
     value match {
@@ -1958,7 +2039,8 @@ object ConsoleCli extends BitcoinSLogger {
 
   def exec(
       command: org.bitcoins.commons.rpc.CliCommand,
-      config: Config): Try[String] = {
+      config: Config
+  ): Try[String] = {
 
     val requestParam = CliCommand.buildRequest(command)
     import sttp.client3._
@@ -1992,18 +2074,21 @@ object ConsoleCli extends BitcoinSLogger {
       case Right(response) => response
     }
     Iterator.apply()
-    val jsObjT: Try[
-      scala.collection.mutable.LinkedHashMap[String, ujson.Value]] = {
+    val jsObjT
+        : Try[scala.collection.mutable.LinkedHashMap[String, ujson.Value]] = {
       Try(ujson.read(rawBody).obj)
         .transform[scala.collection.mutable.LinkedHashMap[String, ujson.Value]](
           { case v: upickle.core.LinkedHashMap[String, ujson.Value] =>
             Success(
-              scala.collection.mutable.LinkedHashMap.from(v.iterator.toVector))
+              scala.collection.mutable.LinkedHashMap.from(v.iterator.toVector)
+            )
           },
           _ =>
             Success(
               scala.collection.mutable.LinkedHashMap[String, ujson.Value](
-                "error" -> Str(rawBody)))
+                "error" -> Str(rawBody)
+              )
+            )
         )
     }
 
@@ -2023,7 +2108,8 @@ object ConsoleCli extends BitcoinSLogger {
 
   case class RequestParam(
       method: String,
-      params: Seq[ujson.Value.Value] = Nil) {
+      params: Seq[ujson.Value.Value] = Nil
+  ) {
 
     lazy val toJsonMap: Map[String, ujson.Value] = {
       if (params.isEmpty)
@@ -2039,7 +2125,8 @@ case class Config(
       org.bitcoins.commons.rpc.CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
     rpcPortOpt: Option[Int] = None,
-    rpcPassword: String = "") {
+    rpcPassword: String = ""
+) {
 
   val rpcPort: Int = rpcPortOpt match {
     case Some(port) => port
@@ -2085,7 +2172,8 @@ object CliCommand {
       case ContactAdd(alias, address, memo) =>
         RequestParam(
           "contact-add",
-          Seq(up.writeJs(alias), up.writeJs(address), up.writeJs(memo)))
+          Seq(up.writeJs(alias), up.writeJs(address), up.writeJs(memo))
+        )
       case ContactsList =>
         RequestParam("contacts-list", Seq.empty)
       case ContactRemove(address) =>
@@ -2106,14 +2194,16 @@ object CliCommand {
       case GetDLCs => RequestParam("getdlcs")
       case GetDLC(dlcId) =>
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
-      case CreateDLCOffer(contractInfoTLV,
-                          collateral,
-                          feeRateOpt,
-                          locktimeOpt,
-                          refundLocktime,
-                          externalPayoutAddressOpt,
-                          externalChangeAddressOpt,
-                          peerAddressOpt) =>
+      case CreateDLCOffer(
+            contractInfoTLV,
+            collateral,
+            feeRateOpt,
+            locktimeOpt,
+            refundLocktime,
+            externalPayoutAddressOpt,
+            externalChangeAddressOpt,
+            peerAddressOpt
+          ) =>
         RequestParam(
           "createdlcoffer",
           Seq(
@@ -2127,27 +2217,41 @@ object CliCommand {
             up.writeJs(peerAddressOpt)
           )
         )
-      case AcceptDLC(offer,
-                     peerAddr,
-                     externalPayoutAddressOpt,
-                     externalChangeAddressOpt) =>
-        RequestParam("acceptdlc",
-                     Seq(up.writeJs(offer),
-                         up.writeJs(peerAddr),
-                         up.writeJs(externalPayoutAddressOpt),
-                         up.writeJs(externalChangeAddressOpt)))
-      case AcceptDLCOffer(offer,
-                          peerAddr,
-                          externalPayoutAddressOpt,
-                          externalChangeAddressOpt) =>
-        RequestParam("acceptdlcoffer",
-                     Seq(up.writeJs(offer),
-                         up.writeJs(peerAddr),
-                         up.writeJs(externalPayoutAddressOpt),
-                         up.writeJs(externalChangeAddressOpt)))
+      case AcceptDLC(
+            offer,
+            peerAddr,
+            externalPayoutAddressOpt,
+            externalChangeAddressOpt
+          ) =>
+        RequestParam(
+          "acceptdlc",
+          Seq(
+            up.writeJs(offer),
+            up.writeJs(peerAddr),
+            up.writeJs(externalPayoutAddressOpt),
+            up.writeJs(externalChangeAddressOpt)
+          )
+        )
+      case AcceptDLCOffer(
+            offer,
+            peerAddr,
+            externalPayoutAddressOpt,
+            externalChangeAddressOpt
+          ) =>
+        RequestParam(
+          "acceptdlcoffer",
+          Seq(
+            up.writeJs(offer),
+            up.writeJs(peerAddr),
+            up.writeJs(externalPayoutAddressOpt),
+            up.writeJs(externalChangeAddressOpt)
+          )
+        )
       case AcceptDLCOfferFromFile(path, dest) =>
-        RequestParam("acceptdlcofferfromfile",
-                     Seq(up.writeJs(path), up.writeJs(dest)))
+        RequestParam(
+          "acceptdlcofferfromfile",
+          Seq(up.writeJs(path), up.writeJs(dest))
+        )
       case SignDLC(accept) =>
         RequestParam("signdlc", Seq(up.writeJs(accept)))
       case SignDLCFromFile(path, dest) =>
@@ -2161,17 +2265,23 @@ object CliCommand {
       case AddDLCSigsAndBroadcastFromFile(path) =>
         RequestParam("adddlcsigsandbroadcastfromfile", Seq(up.writeJs(path)))
       case ExecuteDLC(contractId, oracleSigs, noBroadcast) =>
-        RequestParam("executedlc",
-                     Seq(up.writeJs(contractId),
-                         up.writeJs(oracleSigs),
-                         up.writeJs(noBroadcast)))
+        RequestParam(
+          "executedlc",
+          Seq(
+            up.writeJs(contractId),
+            up.writeJs(oracleSigs),
+            up.writeJs(noBroadcast)
+          )
+        )
       case GetDLCFundingTx(contractId) =>
         RequestParam("getdlcfundingtx", Seq(up.writeJs(contractId)))
       case BroadcastDLCFundingTx(contractId) =>
         RequestParam("broadcastdlcfundingtx", Seq(up.writeJs(contractId)))
       case ExecuteDLCRefund(contractId, noBroadcast) =>
-        RequestParam("executedlcrefund",
-                     Seq(up.writeJs(contractId), up.writeJs(noBroadcast)))
+        RequestParam(
+          "executedlcrefund",
+          Seq(up.writeJs(contractId), up.writeJs(noBroadcast))
+        )
       case CancelDLC(dlcId) =>
         RequestParam("canceldlc", Seq(up.writeJs(dlcId)))
       // Wallet
@@ -2188,11 +2298,15 @@ object CliCommand {
       case GetNewAddress(labelOpt) =>
         RequestParam("getnewaddress", Seq(up.writeJs(labelOpt)))
       case LockUnspent(unlock, outPoints) =>
-        RequestParam("lockunspent",
-                     Seq(up.writeJs(unlock), up.writeJs(outPoints)))
+        RequestParam(
+          "lockunspent",
+          Seq(up.writeJs(unlock), up.writeJs(outPoints))
+        )
       case LabelAddress(address, label) =>
-        RequestParam("labeladdress",
-                     Seq(up.writeJs(address), up.writeJs(label)))
+        RequestParam(
+          "labeladdress",
+          Seq(up.writeJs(address), up.writeJs(label))
+        )
       case GetAddressTags(address) =>
         RequestParam("getaddresstags", Seq(up.writeJs(address)))
       case GetAddressLabel(address) =>
@@ -2200,94 +2314,144 @@ object CliCommand {
       case GetAddressLabels =>
         RequestParam("getaddresslabels")
       case DropAddressLabel(address, label) =>
-        RequestParam("dropaddresslabel",
-                     Seq(up.writeJs(address), ujson.Str(label)))
+        RequestParam(
+          "dropaddresslabel",
+          Seq(up.writeJs(address), ujson.Str(label))
+        )
       case DropAddressLabels(address) =>
         RequestParam("dropaddresslabels", Seq(up.writeJs(address)))
-      case Rescan(addressBatchSize,
-                  startBlock,
-                  endBlock,
-                  force,
-                  ignoreCreationTime) =>
-        RequestParam("rescan",
-                     Seq(up.writeJs(addressBatchSize),
-                         up.writeJs(startBlock),
-                         up.writeJs(endBlock),
-                         up.writeJs(force),
-                         up.writeJs(ignoreCreationTime)))
+      case Rescan(
+            addressBatchSize,
+            startBlock,
+            endBlock,
+            force,
+            ignoreCreationTime
+          ) =>
+        RequestParam(
+          "rescan",
+          Seq(
+            up.writeJs(addressBatchSize),
+            up.writeJs(startBlock),
+            up.writeJs(endBlock),
+            up.writeJs(force),
+            up.writeJs(ignoreCreationTime)
+          )
+        )
 
       case GetTransaction(txId) =>
         RequestParam("gettransaction", Seq(up.writeJs(txId)))
 
-      case SendToAddress(address,
-                         bitcoins,
-                         satoshisPerVirtualByte,
-                         noBroadcast) =>
-        RequestParam("sendtoaddress",
-                     Seq(up.writeJs(address),
-                         up.writeJs(bitcoins),
-                         up.writeJs(satoshisPerVirtualByte),
-                         up.writeJs(noBroadcast)))
+      case SendToAddress(
+            address,
+            bitcoins,
+            satoshisPerVirtualByte,
+            noBroadcast
+          ) =>
+        RequestParam(
+          "sendtoaddress",
+          Seq(
+            up.writeJs(address),
+            up.writeJs(bitcoins),
+            up.writeJs(satoshisPerVirtualByte),
+            up.writeJs(noBroadcast)
+          )
+        )
       case SendFromOutPoints(outPoints, address, bitcoins, feeRateOpt) =>
-        RequestParam("sendfromoutpoints",
-                     Seq(up.writeJs(outPoints),
-                         up.writeJs(address),
-                         up.writeJs(bitcoins),
-                         up.writeJs(feeRateOpt)))
+        RequestParam(
+          "sendfromoutpoints",
+          Seq(
+            up.writeJs(outPoints),
+            up.writeJs(address),
+            up.writeJs(bitcoins),
+            up.writeJs(feeRateOpt)
+          )
+        )
       case SweepWallet(address, feeRateOpt) =>
-        RequestParam("sweepwallet",
-                     Seq(up.writeJs(address), up.writeJs(feeRateOpt)))
+        RequestParam(
+          "sweepwallet",
+          Seq(up.writeJs(address), up.writeJs(feeRateOpt))
+        )
       case SendWithAlgo(address, bitcoins, feeRateOpt, algo) =>
-        RequestParam("sendwithalgo",
-                     Seq(up.writeJs(address),
-                         up.writeJs(bitcoins),
-                         up.writeJs(feeRateOpt),
-                         up.writeJs(algo)))
+        RequestParam(
+          "sendwithalgo",
+          Seq(
+            up.writeJs(address),
+            up.writeJs(bitcoins),
+            up.writeJs(feeRateOpt),
+            up.writeJs(algo)
+          )
+        )
       case BumpFeeCPFP(txId, feeRate) =>
         RequestParam("bumpfeecpfp", Seq(up.writeJs(txId), up.writeJs(feeRate)))
       case BumpFeeRBF(txId, feeRate) =>
         RequestParam("bumpfeerbf", Seq(up.writeJs(txId), up.writeJs(feeRate)))
       case OpReturnCommit(message, hashMessage, satoshisPerVirtualByte) =>
-        RequestParam("opreturncommit",
-                     Seq(up.writeJs(message),
-                         up.writeJs(hashMessage),
-                         up.writeJs(satoshisPerVirtualByte)))
+        RequestParam(
+          "opreturncommit",
+          Seq(
+            up.writeJs(message),
+            up.writeJs(hashMessage),
+            up.writeJs(satoshisPerVirtualByte)
+          )
+        )
       case SignPSBT(psbt) =>
         RequestParam("signpsbt", Seq(up.writeJs(psbt)))
 
       case KeyManagerPassphraseChange(oldPassword, newPassword) =>
-        RequestParam("keymanagerpassphrasechange",
-                     Seq(up.writeJs(oldPassword), up.writeJs(newPassword)))
+        RequestParam(
+          "keymanagerpassphrasechange",
+          Seq(up.writeJs(oldPassword), up.writeJs(newPassword))
+        )
 
       case KeyManagerPassphraseSet(password) =>
         RequestParam("keymanagerpassphraseset", Seq(up.writeJs(password)))
 
       case ImportSeed(walletNameOpt, mnemonic, passwordOpt) =>
-        RequestParam("importseed",
-                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
-                         up.writeJs(mnemonic),
-                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
+        RequestParam(
+          "importseed",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            up.writeJs(mnemonic),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
 
       case ExportSeed(walletNameOpt, passwordOpt) =>
-        RequestParam("exportseed",
-                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
-                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
+        RequestParam(
+          "exportseed",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
 
       case MarkSeedAsBackedUp(walletNameOpt, passwordOpt) =>
-        RequestParam("markseedasbackedup",
-                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
-                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
+        RequestParam(
+          "markseedasbackedup",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
 
       case GetSeedBackupTime(walletNameOpt, passwordOpt) =>
-        RequestParam("getseedbackuptime",
-                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
-                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
+        RequestParam(
+          "getseedbackuptime",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
 
       case ImportXprv(walletNameOpt, xprv, passwordOpt) =>
-        RequestParam("importxprv",
-                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
-                         up.writeJs(xprv),
-                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
+        RequestParam(
+          "importxprv",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            up.writeJs(xprv),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
 
       case LoadWallet(walletNameOpt, passwordOpt, bip39PasswordOpt) =>
         RequestParam(
@@ -2352,42 +2516,53 @@ object CliCommand {
       case CreateEnumAnnouncement(label, time, outcomes) =>
         RequestParam(
           "createenumannouncement",
-          Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
-      case CreateNumericAnnouncement(eventName,
-                                     time,
-                                     minValue,
-                                     maxValue,
-                                     unit,
-                                     precision) =>
+          Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes))
+        )
+      case CreateNumericAnnouncement(
+            eventName,
+            time,
+            minValue,
+            maxValue,
+            unit,
+            precision
+          ) =>
         RequestParam(
           "createnumericannouncement",
-          Seq(up.writeJs(eventName),
-              up.writeJs(time),
-              up.writeJs(minValue),
-              up.writeJs(maxValue),
-              up.writeJs(unit),
-              up.writeJs(precision))
+          Seq(
+            up.writeJs(eventName),
+            up.writeJs(time),
+            up.writeJs(minValue),
+            up.writeJs(maxValue),
+            up.writeJs(unit),
+            up.writeJs(precision)
+          )
         )
-      case CreateDigitDecompAnnouncement(eventName,
-                                         time,
-                                         base,
-                                         isSigned,
-                                         numDigits,
-                                         unit,
-                                         precision) =>
+      case CreateDigitDecompAnnouncement(
+            eventName,
+            time,
+            base,
+            isSigned,
+            numDigits,
+            unit,
+            precision
+          ) =>
         RequestParam(
           "createdigitdecompannouncement",
-          Seq(up.writeJs(eventName),
-              up.writeJs(time),
-              up.writeJs(base),
-              up.writeJs(isSigned),
-              up.writeJs(numDigits),
-              up.writeJs(unit),
-              up.writeJs(precision))
+          Seq(
+            up.writeJs(eventName),
+            up.writeJs(time),
+            up.writeJs(base),
+            up.writeJs(isSigned),
+            up.writeJs(numDigits),
+            up.writeJs(unit),
+            up.writeJs(precision)
+          )
         )
       case SignEnum(eventName, outcome) =>
-        RequestParam("signenum",
-                     Seq(up.writeJs(eventName), up.writeJs(outcome)))
+        RequestParam(
+          "signenum",
+          Seq(up.writeJs(eventName), up.writeJs(outcome))
+        )
       case SignDigits(eventName, num) =>
         RequestParam("signdigits", Seq(up.writeJs(eventName), up.writeJs(num)))
       case GetSignatures(eventName) =>
@@ -2404,10 +2579,14 @@ object CliCommand {
         RequestParam("backuporacle", Seq(up.writeJs(dest)))
 
       case CreateMultisig(requiredKeys, keys, addressType) =>
-        RequestParam("createmultisig",
-                     Seq(up.writeJs(requiredKeys),
-                         up.writeJs(keys),
-                         up.writeJs(addressType)))
+        RequestParam(
+          "createmultisig",
+          Seq(
+            up.writeJs(requiredKeys),
+            up.writeJs(keys),
+            up.writeJs(addressType)
+          )
+        )
       case EstimateFee => RequestParam("estimatefee")
       case ZipDataDir(path) =>
         RequestParam("zipdatadir", Seq(up.writeJs(path)))
@@ -2417,9 +2596,11 @@ object CliCommand {
       case GetVersion =>
         RequestParam("getversion", Seq.empty)
       case CreateContractInfo(ann, totalCollateral, contractDescriptor) =>
-        val args = Seq(up.writeJs(ann),
-                       up.writeJs(totalCollateral),
-                       up.writeJs(contractDescriptor))
+        val args = Seq(
+          up.writeJs(ann),
+          up.writeJs(totalCollateral),
+          up.writeJs(contractDescriptor)
+        )
         RequestParam("createcontractinfo", args)
 
       case AddDLCOffer(offer, peer, message) =>
@@ -2472,8 +2653,8 @@ object CliCommand {
   case class AddDLCOffer(
       offer: LnMessage[DLCOfferTLV],
       peer: String,
-      message: String)
-      extends AppServerCliCommand
+      message: String
+  ) extends AppServerCliCommand
 
   case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
 
@@ -2528,8 +2709,8 @@ object CliCommand {
   case class CreateEnumAnnouncement(
       label: String,
       maturationTime: Date,
-      outcomes: Seq[String])
-      extends OracleServerCliCommand
+      outcomes: Seq[String]
+  ) extends OracleServerCliCommand
 
   case class CreateNumericAnnouncement(
       eventName: String,
@@ -2537,8 +2718,8 @@ object CliCommand {
       minValue: Long,
       maxValue: Long,
       unit: String,
-      precision: Int)
-      extends OracleServerCliCommand
+      precision: Int
+  ) extends OracleServerCliCommand
 
   case class CreateDigitDecompAnnouncement(
       eventName: String,
@@ -2547,8 +2728,8 @@ object CliCommand {
       isSigned: Boolean,
       numDigits: Int,
       unit: String,
-      precision: Int)
-      extends OracleServerCliCommand
+      precision: Int
+  ) extends OracleServerCliCommand
 
   case class SignEnum(eventName: String, outcome: String)
       extends OracleServerCliCommand

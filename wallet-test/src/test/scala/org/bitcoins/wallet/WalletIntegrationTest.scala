@@ -32,7 +32,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withNewWalletAndBitcoindCached(
         test = test,
-        bitcoind = bitcoind)(getFreshWalletAppConfig)
+        bitcoind = bitcoind
+      )(getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
@@ -149,15 +150,19 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       )
       // Safe to use utxos.head because we've already asserted that we only have our change output
       assert(
-        outgoingTx.get.actualFee + outgoingTx.get.sentAmount == outgoingTx.get.inputAmount - utxos.head.output.value)
+        outgoingTx.get.actualFee + outgoingTx.get.sentAmount == outgoingTx.get.inputAmount - utxos.head.output.value
+      )
 
       // change UTXO should be smaller than what we had, but still have money in it
       assert(balancePostSend > 0.sats)
       assert(balancePostSend < valueFromBitcoind)
       assert(
-        WalletTestUtil.isCloseEnough(balancePostSend,
-                                     valueFromBitcoind - valueToBitcoind,
-                                     delta = outgoingTx.get.actualFee))
+        WalletTestUtil.isCloseEnough(
+          balancePostSend,
+          valueFromBitcoind - valueToBitcoind,
+          delta = outgoingTx.get.actualFee
+        )
+      )
       assert(tx.confirmations.exists(_ > 0))
     }
   }
@@ -201,7 +206,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // After replacement tx is broadcast, old tx should be gone
       _ <- recoverToSucceededIf[InvalidAddressOrKey](
-        bitcoind.getRawTransaction(tx1.txIdBE))
+        bitcoind.getRawTransaction(tx1.txIdBE)
+      )
 
       // Check we didn't send extra to bitcoind
       bitcoindBal2 <- bitcoind.getUnconfirmedBalance
@@ -316,7 +322,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         // Assert we mined to our address
         coinbaseTx = block.transactions.head
         _ = assert(
-          coinbaseTx.outputs.exists(_.scriptPubKey == addr.scriptPubKey))
+          coinbaseTx.outputs.exists(_.scriptPubKey == addr.scriptPubKey)
+        )
 
         _ <- wallet.processBlock(block)
 
@@ -330,7 +337,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         // Attempt to spend utxo
         _ <- recoverToSucceededIf[RuntimeException](
-          wallet.sendToAddress(bitcoindAddr, valueToBitcoind, None))
+          wallet.sendToAddress(bitcoindAddr, valueToBitcoind, None)
+        )
 
         spendingTx = {
           val inputs = utxos.map { db =>
@@ -342,7 +350,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         }
 
         _ <- recoverToSucceededIf[RuntimeException](
-          wallet.processTransaction(spendingTx, None))
+          wallet.processTransaction(spendingTx, None)
+        )
 
         // Make coinbase mature
         _ <- bitcoind.generateToAddress(101, bitcoindAddr)

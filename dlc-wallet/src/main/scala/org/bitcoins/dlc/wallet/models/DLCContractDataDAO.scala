@@ -12,8 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCContractDataDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUD[DLCContractDataDb, Sha256Digest]
+    override val appConfig: DLCAppConfig
+) extends CRUD[DLCContractDataDb, Sha256Digest]
     with SlickUtil[DLCContractDataDb, Sha256Digest]
     with DLCIdDaoUtil[DLCContractDataDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -28,39 +28,41 @@ case class DLCContractDataDAO()(implicit
   }
 
   override def createAll(
-      ts: Vector[DLCContractDataDb]): Future[Vector[DLCContractDataDb]] =
+      ts: Vector[DLCContractDataDb]
+  ): Future[Vector[DLCContractDataDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
-    DLCContractDataTable,
-    DLCContractDataDb,
-    Seq] =
+  override def findByPrimaryKeys(
+      ids: Vector[Sha256Digest]
+  ): Query[DLCContractDataTable, DLCContractDataDb, Seq] =
     table.filter(_.dlcId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256Digest): Query[DLCContractDataTable, DLCContractDataDb, Seq] = {
+      id: Sha256Digest
+  ): Query[DLCContractDataTable, DLCContractDataDb, Seq] = {
     table
       .filter(_.dlcId === id)
   }
 
-  override def findAll(dlcs: Vector[DLCContractDataDb]): Query[
-    DLCContractDataTable,
-    DLCContractDataDb,
-    Seq] =
+  override def findAll(
+      dlcs: Vector[DLCContractDataDb]
+  ): Query[DLCContractDataTable, DLCContractDataDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
-    Vector[DLCContractDataDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdsAction(
+      dlcIds: Vector[Sha256Digest]
+  ): DBIOAction[Vector[
+                  DLCContractDataDb
+                ],
+                profile.api.NoStream,
+                profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(
+      dlcId: Sha256Digest
+  ): DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
@@ -73,10 +75,12 @@ case class DLCContractDataDAO()(implicit
     def oracleThreshold: Rep[Int] = column("oracle_threshold")
 
     def oracleParamsOpt: Rep[Option[OracleParamsV0TLV]] = column(
-      "oracle_params")
+      "oracle_params"
+    )
 
     def contractDescriptor: Rep[ContractDescriptorTLV] = column(
-      "contract_descriptor")
+      "contract_descriptor"
+    )
 
     def contractMaturity: Rep[BlockTimeStamp] = column("contract_maturity")
 
@@ -85,17 +89,21 @@ case class DLCContractDataDAO()(implicit
     def totalCollateral: Rep[CurrencyUnit] = column("total_collateral")
 
     def * : ProvenShape[DLCContractDataDb] =
-      (dlcId,
-       oracleThreshold,
-       oracleParamsOpt,
-       contractDescriptor,
-       contractMaturity,
-       contractTimeout,
-       totalCollateral).<>(DLCContractDataDb.tupled, DLCContractDataDb.unapply)
+      (
+        dlcId,
+        oracleThreshold,
+        oracleParamsOpt,
+        contractDescriptor,
+        contractMaturity,
+        contractTimeout,
+        totalCollateral
+      ).<>(DLCContractDataDb.tupled, DLCContractDataDb.unapply)
 
     def fk =
-      foreignKey("fk_dlc_id",
-                 sourceColumns = dlcId,
-                 targetTableQuery = dlcTable)(_.dlcId)
+      foreignKey(
+        "fk_dlc_id",
+        sourceColumns = dlcId,
+        targetTableQuery = dlcTable
+      )(_.dlcId)
   }
 }

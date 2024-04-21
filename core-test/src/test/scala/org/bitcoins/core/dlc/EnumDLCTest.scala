@@ -66,14 +66,17 @@ class EnumDLCTest extends BitcoinSJvmTest with DLCTest {
                   dlcOffer.offer.contractInfo.contracts.head,
                   outcomes,
                   outcomeIndex,
-                  paramsOpt = None)
+                  paramsOpt = None
+                )
 
-              assertCorrectSigDerivation(offerSetup = offerSetup,
-                                         dlcOffer = dlcOffer,
-                                         acceptSetup = acceptSetup,
-                                         dlcAccept = dlcAccept,
-                                         oracleSigs = sigs,
-                                         outcome = oracleOutcome)
+              assertCorrectSigDerivation(
+                offerSetup = offerSetup,
+                dlcOffer = dlcOffer,
+                acceptSetup = acceptSetup,
+                dlcAccept = dlcAccept,
+                oracleSigs = sigs,
+                outcome = oracleOutcome
+              )
           }
       }
     }

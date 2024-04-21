@@ -10,11 +10,13 @@ object MockNodeApi extends NodeApi {
   val mock: NodeApi = this
 
   override def broadcastTransactions(
-      transactions: Vector[Transaction]): Future[Unit] =
+      transactions: Vector[Transaction]
+  ): Future[Unit] =
     Future.unit
 
   override def downloadBlocks(
-      blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = Future.unit
+      blockHashes: Vector[DoubleSha256DigestBE]
+  ): Future[Unit] = Future.unit
 
   override def getConnectionCount: Future[Int] = Future.successful(0)
 

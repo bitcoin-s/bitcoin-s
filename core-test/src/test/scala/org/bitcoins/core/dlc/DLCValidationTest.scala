@@ -30,11 +30,13 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
     assert(
       offerClient.dlcTxSigner
         .completeFundingTx(badAcceptFundingSigs)
-        .isFailure)
+        .isFailure
+    )
     assert(
       acceptClient.dlcTxSigner
         .completeFundingTx(badOfferFundingSigs)
-        .isFailure)
+        .isFailure
+    )
 
     assert(offerVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
     assert(acceptVerifier.verifyRemoteFundingSigs(offerFundingSigs))
@@ -60,17 +62,26 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
     val acceptRefundSig = acceptClient.dlcTxSigner.signRefundTx
 
     outcomes.zipWithIndex.foreach { case (outcomeUncast, index) =>
-      val outcome = EnumOracleOutcome(Vector(
-                                        offerClient.offer.oracleInfos.head
-                                          .asInstanceOf[EnumSingleOracleInfo]),
-                                      outcomeUncast.asInstanceOf[EnumOutcome])
+      val outcome = EnumOracleOutcome(
+        Vector(
+          offerClient.offer.oracleInfos.head
+            .asInstanceOf[EnumSingleOracleInfo]
+        ),
+        outcomeUncast.asInstanceOf[EnumOutcome]
+      )
 
       assert(
-        offerVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
-                                   acceptCETSigs(outcome.sigPoint)))
+        offerVerifier.verifyCETSig(
+          Indexed(outcome.sigPoint, index),
+          acceptCETSigs(outcome.sigPoint)
+        )
+      )
       assert(
-        acceptVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
-                                    offerCETSigs(outcome.sigPoint)))
+        acceptVerifier.verifyCETSig(
+          Indexed(outcome.sigPoint, index),
+          offerCETSigs(outcome.sigPoint)
+        )
+      )
     }
     assert(offerVerifier.verifyRefundSig(acceptRefundSig))
     assert(offerVerifier.verifyRefundSig(offerRefundSig))
@@ -109,14 +120,17 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
         offerClient.dlcTxSigner.completeCET(
           oracleOutcome,
           badAcceptCETSigs(oracleOutcome.sigPoint),
-          Vector(oracleSig))
+          Vector(oracleSig)
+        )
       }
 
       assertThrows[RuntimeException] {
         acceptClient.dlcTxSigner
-          .completeCET(oracleOutcome,
-                       badOfferCETSigs(oracleOutcome.sigPoint),
-                       Vector(oracleSig))
+          .completeCET(
+            oracleOutcome,
+            badOfferCETSigs(oracleOutcome.sigPoint),
+            Vector(oracleSig)
+          )
       }
     }
 
@@ -129,24 +143,39 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
     }
 
     outcomes.zipWithIndex.foreach { case (outcomeUncast, index) =>
-      val outcome = EnumOracleOutcome(Vector(
-                                        offerClient.offer.oracleInfos.head
-                                          .asInstanceOf[EnumSingleOracleInfo]),
-                                      outcomeUncast.asInstanceOf[EnumOutcome])
+      val outcome = EnumOracleOutcome(
+        Vector(
+          offerClient.offer.oracleInfos.head
+            .asInstanceOf[EnumSingleOracleInfo]
+        ),
+        outcomeUncast.asInstanceOf[EnumOutcome]
+      )
 
       assert(
-        !offerVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
-                                    badAcceptCETSigs(outcome.sigPoint)))
+        !offerVerifier.verifyCETSig(
+          Indexed(outcome.sigPoint, index),
+          badAcceptCETSigs(outcome.sigPoint)
+        )
+      )
       assert(
-        !acceptVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
-                                     badOfferCETSigs(outcome.sigPoint)))
+        !acceptVerifier.verifyCETSig(
+          Indexed(outcome.sigPoint, index),
+          badOfferCETSigs(outcome.sigPoint)
+        )
+      )
 
       assert(
-        !offerVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
-                                    offerCETSigs(outcome.sigPoint)))
+        !offerVerifier.verifyCETSig(
+          Indexed(outcome.sigPoint, index),
+          offerCETSigs(outcome.sigPoint)
+        )
+      )
       assert(
-        !acceptVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
-                                     acceptCETSigs(outcome.sigPoint)))
+        !acceptVerifier.verifyCETSig(
+          Indexed(outcome.sigPoint, index),
+          acceptCETSigs(outcome.sigPoint)
+        )
+      )
     }
     assert(!offerVerifier.verifyRefundSig(badAcceptRefundSig))
     assert(!offerVerifier.verifyRefundSig(badOfferRefundSig))

@@ -37,11 +37,13 @@ object PSBTRole extends StringFactory[PSBTRole] {
     override def order: Int = 4
   }
 
-  val all: Vector[PSBTRole] = Vector(CreatorPSBTRole,
-                                     UpdaterPSBTRole,
-                                     SignerPSBTRole,
-                                     FinalizerPSBTRole,
-                                     ExtractorPSBTRole)
+  val all: Vector[PSBTRole] = Vector(
+    CreatorPSBTRole,
+    UpdaterPSBTRole,
+    SignerPSBTRole,
+    FinalizerPSBTRole,
+    ExtractorPSBTRole
+  )
 
   override def fromStringOpt(string: String): Option[PSBTRole] = {
     all.find(_.toString.toLowerCase == string.toLowerCase)

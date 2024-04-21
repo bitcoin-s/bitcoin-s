@@ -17,8 +17,8 @@ object EsploraJsonModels {
       confirmed: Boolean,
       block_height: Option[Long],
       block_hash: Option[DoubleSha256DigestBE],
-      block_time: Option[Long])
-      extends EsploraJsonModel
+      block_time: Option[Long]
+  ) extends EsploraJsonModel
 
   implicit val EsploraTransactionStatusReads: Reads[EsploraTransactionStatus] =
     Json.reads[EsploraTransactionStatus]
@@ -30,8 +30,8 @@ object EsploraJsonModels {
       size: Int,
       weight: Int,
       fee: Satoshis,
-      status: EsploraTransactionStatus)
-      extends EsploraJsonModel
+      status: EsploraTransactionStatus
+  ) extends EsploraJsonModel
 
   implicit val EsploraTransactionReads: Reads[EsploraTransaction] =
     Json.reads[EsploraTransaction]
@@ -40,8 +40,8 @@ object EsploraJsonModels {
       funded_txo_count: Int,
       funded_txo_sum: Satoshis,
       spent_txo_count: Int,
-      spent_txo_sum: Satoshis)
-      extends EsploraJsonModel
+      spent_txo_sum: Satoshis
+  ) extends EsploraJsonModel
 
   implicit val addressChainStatsReads: Reads[AddressChainStats] =
     Json.reads[AddressChainStats]
@@ -49,8 +49,8 @@ object EsploraJsonModels {
   case class AddressStats(
       address: BitcoinAddress,
       chain_stats: AddressChainStats,
-      mempool_stats: AddressChainStats)
-      extends EsploraJsonModel {
+      mempool_stats: AddressChainStats
+  ) extends EsploraJsonModel {
 
     val totalReceived: CurrencyUnit =
       chain_stats.funded_txo_sum + mempool_stats.funded_txo_sum

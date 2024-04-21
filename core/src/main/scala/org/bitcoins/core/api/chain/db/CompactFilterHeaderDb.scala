@@ -8,7 +8,8 @@ case class CompactFilterHeaderDb(
     filterHashBE: DoubleSha256DigestBE,
     previousFilterHeaderBE: DoubleSha256DigestBE,
     blockHashBE: DoubleSha256DigestBE,
-    height: Int) {
+    height: Int
+) {
 
   def filterHeader: FilterHeader =
     FilterHeader(filterHashBE.flip, previousFilterHeaderBE.flip)
@@ -23,7 +24,8 @@ object CompactFilterHeaderDbHelper {
   def fromFilterHeader(
       filterHeader: FilterHeader,
       blockHash: DoubleSha256DigestBE,
-      height: Int): CompactFilterHeaderDb =
+      height: Int
+  ): CompactFilterHeaderDb =
     CompactFilterHeaderDb(
       hashBE = filterHeader.hash.flip,
       filterHashBE = filterHeader.filterHash.flip,

@@ -30,8 +30,10 @@ trait LndUtils {
     TxOut(output.value.satoshis.toLong, output.scriptPubKey.asmBytes)
 
   implicit def txOutToTxOutput(txOut: TxOut): TransactionOutput =
-    TransactionOutput(Satoshis(txOut.value),
-                      ScriptPubKey.fromAsmBytes(txOut.pkScript))
+    TransactionOutput(
+      Satoshis(txOut.value),
+      ScriptPubKey.fromAsmBytes(txOut.pkScript)
+    )
 
   implicit def outpointToTxOutPoint(op: OutPoint): TransactionOutPoint =
     TransactionOutPoint(DoubleSha256DigestBE(op.txidStr), op.outputIndex)
@@ -42,35 +44,42 @@ trait LndUtils {
   // If other kinds of Iterables are needed, there's a fancy thing to do
   // that is done all over the Seq code using params and an implicit CanBuildFrom
   implicit def outputVecToTxOuts(
-      outputs: Vector[TransactionOutput]): Vector[TxOut] =
+      outputs: Vector[TransactionOutput]
+  ): Vector[TxOut] =
     outputs.map(outputToTxOut)
 
   implicit def outpointVecToTxOutPointVec(
-      ops: Vector[OutPoint]): Vector[TransactionOutPoint] =
+      ops: Vector[OutPoint]
+  ): Vector[TransactionOutPoint] =
     ops.map(outpointToTxOutPoint)
 
   implicit def txOutpointToOutpointVec(
-      ops: Vector[TransactionOutPoint]): Vector[OutPoint] =
+      ops: Vector[TransactionOutPoint]
+  ): Vector[OutPoint] =
     ops.map(txOutpointToOutpoint)
 
   implicit def byteStringVecToByteVecs(
-      byteStrings: Vector[ByteString]): Vector[ByteVector] =
+      byteStrings: Vector[ByteString]
+  ): Vector[ByteVector] =
     byteStrings.map(byteStringToByteVec)
 
   implicit def channelPointToOutpoint(
-      channelPoint: ChannelPoint): TransactionOutPoint = {
+      channelPoint: ChannelPoint
+  ): TransactionOutPoint = {
     val txIdBytes = channelPoint.fundingTxid.fundingTxidBytes.get
     TransactionOutPoint(DoubleSha256Digest(txIdBytes), channelPoint.outputIndex)
   }
 
   implicit def outPointToChannelPoint(
-      outPoint: TransactionOutPoint): ChannelPoint = {
+      outPoint: TransactionOutPoint
+  ): ChannelPoint = {
     val txId = FundingTxidBytes(outPoint.txIdBE.bytes)
     ChannelPoint(txId, outPoint.vout)
   }
 
   implicit def lndOutputDetailToOutputDetails(
-      detail: lnrpc.OutputDetail): OutputDetails = {
+      detail: lnrpc.OutputDetail
+  ): OutputDetails = {
     OutputDetails(
       addressOpt = BitcoinAddress.fromStringOpt(detail.address),
       spk = ScriptPubKey.fromAsmHex(detail.pkScript),
@@ -81,7 +90,8 @@ trait LndUtils {
   }
 
   implicit def LndTransactionToTxDetails(
-      details: lnrpc.Transaction): TxDetails = {
+      details: lnrpc.Transaction
+  ): TxDetails = {
     val blockHashOpt = if (details.blockHash.isEmpty) {
       None
     } else Some(DoubleSha256DigestBE(details.blockHash))

@@ -21,20 +21,24 @@ import scala.concurrent._
 import scala.util.control.NonFatal
 
 class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
-    implicit system: ActorSystem)
-    extends ChainQueryApi {
+    implicit system: ActorSystem
+) extends ChainQueryApi {
   implicit val ec: ExecutionContext = system.dispatcher
 
-  require(!site.isTor || site.isTor && proxyParams.isDefined,
-          "proxyParams must be defined for a tor esplora site")
+  require(
+    !site.isTor || site.isTor && proxyParams.isDefined,
+    "proxyParams must be defined for a tor esplora site"
+  )
 
   private val baseUrl = site.url
 
   private val httpClient: HttpExt = Http(system)
 
   private val httpConnectionPoolSettings =
-    Socks5ClientTransport.createConnectionPoolSettings(new URI(baseUrl),
-                                                       proxyParams)
+    Socks5ClientTransport.createConnectionPoolSettings(
+      new URI(baseUrl),
+      proxyParams
+    )
 
   private def sendRawRequest(request: HttpRequest): Future[ByteString] = {
     httpClient
@@ -49,15 +53,17 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
       .map(payload => payload.decodeString(ByteString.UTF_8))
   }
 
-  private def sendRequestAndParse[T](httpRequest: HttpRequest)(implicit
-      reads: Reads[T]): Future[T] = {
+  private def sendRequestAndParse[T](
+      httpRequest: HttpRequest
+  )(implicit reads: Reads[T]): Future[T] = {
     sendRequest(httpRequest).map { str =>
       val json = Json.parse(str)
       json.validate[T] match {
         case JsSuccess(value, _) => value
         case JsError(errors) =>
           throw new RuntimeException(
-            s"Error parsing json $json, ${errors.mkString("\n")}")
+            s"Error parsing json $json, ${errors.mkString("\n")}"
+          )
       }
     }
   }
@@ -70,7 +76,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
   }
 
   def getTransactionStatus(
-      txId: DoubleSha256DigestBE): Future[EsploraTransactionStatus] = {
+      txId: DoubleSha256DigestBE
+  ): Future[EsploraTransactionStatus] = {
     val url = baseUrl + s"/tx/${txId.hex}/status"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 
@@ -102,7 +109,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
   }
 
   def getAddressTxs(
-      addr: BitcoinAddress): Future[Vector[EsploraTransaction]] = {
+      addr: BitcoinAddress
+  ): Future[Vector[EsploraTransaction]] = {
     val url = baseUrl + s"/address/$addr/txs"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 
@@ -111,8 +119,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
 
   def getAddressTxs(
       addr: BitcoinAddress,
-      lastSeenTxId: DoubleSha256DigestBE): Future[
-    Vector[EsploraTransaction]] = {
+      lastSeenTxId: DoubleSha256DigestBE
+  ): Future[Vector[EsploraTransaction]] = {
     val url = baseUrl + s"/address/$addr/txs/chain/${lastSeenTxId.hex}"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 
@@ -120,7 +128,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
   }
 
   def getMempoolTxs(
-      addr: BitcoinAddress): Future[Vector[EsploraTransaction]] = {
+      addr: BitcoinAddress
+  ): Future[Vector[EsploraTransaction]] = {
     val url = baseUrl + s"/address/$addr/txs/mempool"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 
@@ -160,7 +169,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
 
   // -- ChainQueryApi --
   override def getBestHashBlockHeight()(implicit
-      _ec: ExecutionContext): Future[Int] = {
+      _ec: ExecutionContext
+  ): Future[Int] = {
     val url = baseUrl + s"/blocks/tip/height"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 
@@ -175,7 +185,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
   }
 
   override def getBlockHeight(
-      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[Int]] = {
     getBlock(blockHash)
       .map(_.height)
       .map(Some(_))
@@ -183,7 +194,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
   }
 
   override def getNumberOfConfirmations(
-      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[Int]] = {
     val tipF = getBestHashBlockHeight()
     val heightF = getBlockHeight(blockHash)
 
@@ -194,7 +206,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
   }
 
   override def getFilterCount(): Future[Int] = Future.failed(
-    new UnsupportedOperationException("Esplora does not support block filters"))
+    new UnsupportedOperationException("Esplora does not support block filters")
+  )
 
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = {
     blockStamp match {
@@ -205,16 +218,21 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
       case blockTime: BlockStamp.BlockTime =>
         Future.failed(
           new UnsupportedOperationException(
-            s"Not implemented for Esplora Client: $blockTime"))
+            s"Not implemented for Esplora Client: $blockTime"
+          )
+        )
     }
   }
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
+      endHeight: Int
+  ): Future[Vector[ChainQueryApi.FilterResponse]] =
     Future.failed(
       new UnsupportedOperationException(
-        "Esplora does not support block filters"))
+        "Esplora does not support block filters"
+      )
+    )
 
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     Future.successful(0)

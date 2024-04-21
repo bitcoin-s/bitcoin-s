@@ -21,12 +21,15 @@ class CallbackTest extends BitcoinSJvmTest {
       val runnable: Runnable = () => {
         if (!promise.isCompleted) {
           promise.failure(
-            new RuntimeException("2nd callback did not start before timeout"))
+            new RuntimeException("2nd callback did not start before timeout")
+          )
         }
       }
-      AsyncUtil.scheduler.scheduleOnce(testTimeout.toMillis,
-                                       TimeUnit.MILLISECONDS,
-                                       runnable)
+      AsyncUtil.scheduler.scheduleOnce(
+        testTimeout.toMillis,
+        TimeUnit.MILLISECONDS,
+        runnable
+      )
       promise.future.map(_ => ())
     }
 

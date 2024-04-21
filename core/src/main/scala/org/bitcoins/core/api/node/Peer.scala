@@ -26,13 +26,15 @@ object Peer {
 
   def fromSocket(
       socket: InetSocketAddress,
-      socks5ProxyParams: Option[Socks5ProxyParams]): Peer = {
+      socks5ProxyParams: Option[Socks5ProxyParams]
+  ): Peer = {
     Peer(socket, socks5ProxyParams = socks5ProxyParams)
   }
 
   def fromURI(
       uri: URI,
-      socks5ProxyParamsOpt: Option[Socks5ProxyParams]): Peer = {
+      socks5ProxyParamsOpt: Option[Socks5ProxyParams]
+  ): Peer = {
     val socket = new InetSocketAddress(uri.getHost, uri.getPort)
     fromSocket(socket, socks5ProxyParamsOpt)
   }

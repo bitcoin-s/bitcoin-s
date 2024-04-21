@@ -49,163 +49,186 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         assert(status.state == DLCState.Offered)
         assert(read[DLCStatus](write(status)) == status)
-        assert(read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+        assert(
+          read[DLCStatus](
+            write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          ) == status
+        )
     }
   }
 
   it must "have json symmetry in DLCStatus.Accepted" in {
-    forAllParallel(NumberGenerator.bool,
-                   TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector) {
-      case (isInit, offerTLV, contractId) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    forAllParallel(
+      NumberGenerator.bool,
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector
+    ) { case (isInit, offerTLV, contractId) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.totalCollateral
+      val totalCollateral = offer.contractInfo.totalCollateral
 
-        // random testnet address
-        val payoutAddress =
-          Some(
-            PayoutAddress(BitcoinAddress.fromString(
-                            "tb1q4ps6c9ewa7uca5v39fakykq9q6hpgjkxje8gve"),
-                          true))
-
-        val contact = Option.empty[String]
-
-        val status =
-          DLCStatus.Accepted(
-            Sha256Digest.empty,
-            isInit,
-            TimeUtil.now,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.collateral,
-            payoutAddress,
-            contact
+      // random testnet address
+      val payoutAddress =
+        Some(
+          PayoutAddress(
+            BitcoinAddress.fromString(
+              "tb1q4ps6c9ewa7uca5v39fakykq9q6hpgjkxje8gve"
+            ),
+            true
           )
+        )
 
-        assert(status.state == DLCState.Accepted)
-        assert(read[DLCStatus](write(status)) == status)
-        assert(read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+      val contact = Option.empty[String]
+
+      val status =
+        DLCStatus.Accepted(
+          Sha256Digest.empty,
+          isInit,
+          TimeUtil.now,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.collateral,
+          payoutAddress,
+          contact
+        )
+
+      assert(status.state == DLCState.Accepted)
+      assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 
   it must "have json symmetry in DLCStatus.Signed" in {
-    forAllParallel(NumberGenerator.bool,
-                   TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector,
-                   CryptoGenerators.doubleSha256DigestBE) {
-      case (isInit, offerTLV, contractId, txId) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    forAllParallel(
+      NumberGenerator.bool,
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector,
+      CryptoGenerators.doubleSha256DigestBE
+    ) { case (isInit, offerTLV, contractId, txId) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.totalCollateral
+      val totalCollateral = offer.contractInfo.totalCollateral
 
-        val payoutAddress = Option.empty[PayoutAddress]
+      val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Option.empty[String]
+      val contact = Option.empty[String]
 
-        val status =
-          DLCStatus.Signed(
-            Sha256Digest.empty,
-            isInit,
-            TimeUtil.now,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.collateral,
-            txId,
-            payoutAddress,
-            contact
-          )
+      val status =
+        DLCStatus.Signed(
+          Sha256Digest.empty,
+          isInit,
+          TimeUtil.now,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.collateral,
+          txId,
+          payoutAddress,
+          contact
+        )
 
-        assert(status.state == DLCState.Signed)
-        assert(read[DLCStatus](write(status)) == status)
-        assert(read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+      assert(status.state == DLCState.Signed)
+      assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 
   it must "have json symmetry in DLCStatus.Broadcasted" in {
-    forAllParallel(NumberGenerator.bool,
-                   TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector,
-                   CryptoGenerators.doubleSha256DigestBE) {
-      case (isInit, offerTLV, contractId, fundingTxId) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    forAllParallel(
+      NumberGenerator.bool,
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector,
+      CryptoGenerators.doubleSha256DigestBE
+    ) { case (isInit, offerTLV, contractId, fundingTxId) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.totalCollateral
+      val totalCollateral = offer.contractInfo.totalCollateral
 
-        val payoutAddress = Option.empty[PayoutAddress]
+      val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Option.empty[String]
+      val contact = Option.empty[String]
 
-        val status =
-          DLCStatus.Broadcasted(
-            Sha256Digest.empty,
-            isInit,
-            TimeUtil.now,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.collateral,
-            fundingTxId,
-            payoutAddress,
-            contact
-          )
+      val status =
+        DLCStatus.Broadcasted(
+          Sha256Digest.empty,
+          isInit,
+          TimeUtil.now,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.collateral,
+          fundingTxId,
+          payoutAddress,
+          contact
+        )
 
-        assert(status.state == DLCState.Broadcasted)
-        assert(read[DLCStatus](write(status)) == status)
-        assert(read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+      assert(status.state == DLCState.Broadcasted)
+      assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 
   it must "have json symmetry in DLCStatus.Confirmed" in {
-    forAllParallel(NumberGenerator.bool,
-                   TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector,
-                   CryptoGenerators.doubleSha256DigestBE) {
-      case (isInit, offerTLV, contractId, fundingTxId) =>
-        val offer = DLCOffer.fromTLV(offerTLV)
+    forAllParallel(
+      NumberGenerator.bool,
+      TLVGen.dlcOfferTLV,
+      NumberGenerator.bytevector,
+      CryptoGenerators.doubleSha256DigestBE
+    ) { case (isInit, offerTLV, contractId, fundingTxId) =>
+      val offer = DLCOffer.fromTLV(offerTLV)
 
-        val totalCollateral = offer.contractInfo.totalCollateral
+      val totalCollateral = offer.contractInfo.totalCollateral
 
-        val payoutAddress = Option.empty[PayoutAddress]
+      val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Option.empty[String]
+      val contact = Option.empty[String]
 
-        val status =
-          DLCStatus.Confirmed(
-            Sha256Digest.empty,
-            isInit,
-            TimeUtil.now,
-            offer.tempContractId,
-            contractId,
-            offer.contractInfo,
-            offer.timeouts,
-            offer.feeRate,
-            totalCollateral,
-            offer.collateral,
-            fundingTxId,
-            payoutAddress,
-            contact
-          )
+      val status =
+        DLCStatus.Confirmed(
+          Sha256Digest.empty,
+          isInit,
+          TimeUtil.now,
+          offer.tempContractId,
+          contractId,
+          offer.contractInfo,
+          offer.timeouts,
+          offer.feeRate,
+          totalCollateral,
+          offer.collateral,
+          fundingTxId,
+          payoutAddress,
+          contact
+        )
 
-        assert(status.state == DLCState.Confirmed)
-        assert(read[DLCStatus](write(status)) == status)
-        assert(read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+      assert(status.state == DLCState.Confirmed)
+      assert(read[DLCStatus](write(status)) == status)
+      assert(
+        read[DLCStatus](
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 
@@ -260,7 +283,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 
@@ -317,7 +342,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 
@@ -368,7 +395,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)) == status)
+          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+        ) == status
+      )
     }
   }
 }

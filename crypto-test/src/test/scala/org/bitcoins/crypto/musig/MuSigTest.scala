@@ -26,12 +26,15 @@ class MuSigTest extends BitcoinSCryptoTest {
           sign(noncePriv, aggMuSigNoncePub, privKey, msg, keySet)
 
         assert(
-          partialSigVerify(s,
-                           noncePub,
-                           aggMuSigNoncePub,
-                           pubKey.schnorrPublicKey,
-                           keySet,
-                           msg))
+          partialSigVerify(
+            s,
+            noncePub,
+            aggMuSigNoncePub,
+            pubKey.schnorrPublicKey,
+            keySet,
+            msg
+          )
+        )
 
         val sig = signAgg(Vector(s), aggNonce)
 
@@ -42,16 +45,19 @@ class MuSigTest extends BitcoinSCryptoTest {
         assert(
           aggPub.schnorrPublicKey == pubKey
             .multiply(keySet.keyAggCoef(pubKey.schnorrPublicKey))
-            .schnorrPublicKey)
+            .schnorrPublicKey
+        )
 
         assert(aggPub.schnorrPublicKey.verify(msg, sig))
     }
   }
 
   it should "work for two parties" in {
-    forAll(CryptoGenerators.privateKey,
-           CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32)) { case (priv1, priv2, msg) =>
+    forAll(
+      CryptoGenerators.privateKey,
+      CryptoGenerators.privateKey,
+      NumberGenerator.bytevector(32)
+    ) { case (priv1, priv2, msg) =>
       val pub1 = priv1.publicKey
       val noncePriv1: MuSigNoncePriv = MuSigNoncePriv.gen()
       val noncePub1: MuSigNoncePub = noncePriv1.toPublicNonces
@@ -68,19 +74,25 @@ class MuSigTest extends BitcoinSCryptoTest {
 
       assert(aggNonce1 == aggNonce2)
       assert(
-        partialSigVerify(s1,
-                         noncePub1,
-                         aggMuSigNoncePub,
-                         pub1.schnorrPublicKey,
-                         keySet,
-                         msg))
+        partialSigVerify(
+          s1,
+          noncePub1,
+          aggMuSigNoncePub,
+          pub1.schnorrPublicKey,
+          keySet,
+          msg
+        )
+      )
       assert(
-        partialSigVerify(s2,
-                         noncePub2,
-                         aggMuSigNoncePub,
-                         pub2.schnorrPublicKey,
-                         keySet,
-                         msg))
+        partialSigVerify(
+          s2,
+          noncePub2,
+          aggMuSigNoncePub,
+          pub2.schnorrPublicKey,
+          keySet,
+          msg
+        )
+      )
 
       val sig = signAgg(Vector(s1, s2), aggNonce1)
       val aggPub = keySet.aggPubKey
@@ -114,12 +126,14 @@ class MuSigTest extends BitcoinSCryptoTest {
       assert(partialSigs.map(_._1).forall(_ == partialSigs.head._1))
       // All partial sigs are valid
       assert(partialSigs.map(_._2).zipWithIndex.forall { case (s, i) =>
-        partialSigVerify(s,
-                         noncePubs(i),
-                         aggMuSigNoncePub,
-                         privKeys(i).schnorrPublicKey,
-                         keySet,
-                         msg)
+        partialSigVerify(
+          s,
+          noncePubs(i),
+          aggMuSigNoncePub,
+          privKeys(i).schnorrPublicKey,
+          keySet,
+          msg
+        )
       })
 
       val sig = signAgg(partialSigs.map(_._2), partialSigs.head._1)
@@ -138,9 +152,11 @@ class MuSigTest extends BitcoinSCryptoTest {
     val tweaksGen: Gen[Vector[MuSigTweak]] = Gen
       .choose[Int](0, 10)
       .flatMap(n =>
-        Gen.listOfN(n,
-                    CryptoGenerators.fieldElement.flatMap(x =>
-                      NumberGenerator.bool.map((x, _)))))
+        Gen.listOfN(
+          n,
+          CryptoGenerators.fieldElement.flatMap(x =>
+            NumberGenerator.bool.map((x, _)))
+        ))
       .map(_.toVector)
       .map(_.map { case (x, b) => MuSigTweak(x, b) })
 
@@ -165,12 +181,14 @@ class MuSigTest extends BitcoinSCryptoTest {
       assert(partialSigs.map(_._1).forall(_ == partialSigs.head._1))
       // All partial sigs are valid
       assert(partialSigs.map(_._2).zipWithIndex.forall { case (s, i) =>
-        partialSigVerify(s,
-                         noncePubs(i),
-                         aggMuSigNoncePub,
-                         privKeys(i).schnorrPublicKey,
-                         keySet,
-                         msg)
+        partialSigVerify(
+          s,
+          noncePubs(i),
+          aggMuSigNoncePub,
+          privKeys(i).schnorrPublicKey,
+          keySet,
+          msg
+        )
       })
 
       val sig = signAgg(partialSigs.map(_._2), aggMuSigNoncePub, keySet, msg)
@@ -200,34 +218,43 @@ class MuSigTest extends BitcoinSCryptoTest {
     assert(UnsortedKeySet(inputs).aggPubKey.schnorrPublicKey == expected(0))
     // Vector 2
     assert(
-      UnsortedKeySet(inputs.reverse).aggPubKey.schnorrPublicKey == expected(1))
+      UnsortedKeySet(inputs.reverse).aggPubKey.schnorrPublicKey == expected(1)
+    )
     // Vector 3
     assert(
       UnsortedKeySet(
-        Vector.fill(3)(inputs(0))).aggPubKey.schnorrPublicKey == expected(2))
+        Vector.fill(3)(inputs(0))
+      ).aggPubKey.schnorrPublicKey == expected(2)
+    )
     // Vector 4
     assert(
       UnsortedKeySet(
-        Vector(inputs(0),
-               inputs(0),
-               inputs(1),
-               inputs(1))).aggPubKey.schnorrPublicKey == expected(3))
+        Vector(inputs(0), inputs(0), inputs(1), inputs(1))
+      ).aggPubKey.schnorrPublicKey == expected(3)
+    )
 
     // The following errors must be handled by the caller as we can't even represent them
     // Vector 5
     assertThrows[IllegalArgumentException](
       SchnorrPublicKey.fromHex(
-        "0000000000000000000000000000000000000000000000000000000000000005"))
+        "0000000000000000000000000000000000000000000000000000000000000005"
+      )
+    )
     // Vector 6
     assertThrows[IllegalArgumentException](
       SchnorrPublicKey.fromHex(
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+      )
+    )
     // Vector 7
     assertThrows[IllegalArgumentException](
       MuSigTweak(
         FieldElement(
-          "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"),
-        isXOnlyT = true))
+          "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+        ),
+        isXOnlyT = true
+      )
+    )
     // Vector 8
     val schnorrG = CryptoParams.getG.schnorrPublicKey
     val keySetNoTweak = KeySet(schnorrG)
@@ -290,17 +317,23 @@ class MuSigTest extends BitcoinSCryptoTest {
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "04FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
-          "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"))
+          "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"
+      )
+    )
     // Vector 3
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
-          "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B831"))
+          "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B831"
+      )
+    )
     // Vector 4
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
-          "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+          "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+      )
+    )
 
     // Vector 5
     val g = CryptoParams.getG.toPoint
@@ -321,7 +354,8 @@ class MuSigTest extends BitcoinSCryptoTest {
 
     val privNonce = MuSigNoncePriv(
       "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61" ++
-        "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
+        "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7"
+    )
 
     val pubNonces = Vector(
       "0337C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
@@ -338,15 +372,18 @@ class MuSigTest extends BitcoinSCryptoTest {
 
     val aggNonce = MuSigNoncePub(
       "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
-        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
+        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
+    )
 
     assert(aggNonce == MuSigNoncePub.aggregate(pubNonces.take(3)))
 
     val sk = ECPrivateKey(
-      "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671")
+      "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671"
+    )
     val pk = sk.schnorrPublicKey
     val msg = ByteVector.fromValidHex(
-      "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF")
+      "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF"
+    )
 
     val expected = Vector(
       "68537CC5234E505BD14061F8DA9E90C220A181855FD8BDB7F127BB12403B4D3B",
@@ -378,75 +415,103 @@ class MuSigTest extends BitcoinSCryptoTest {
     // Vector 5, 17
     assertThrows[IllegalArgumentException](
       SchnorrPublicKey(
-        "0000000000000000000000000000000000000000000000000000000000000007"))
+        "0000000000000000000000000000000000000000000000000000000000000007"
+      )
+    )
     // Vector 6
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
-          "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"))
+          "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
+      )
+    )
     // Vector 7
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
-          "020000000000000000000000000000000000000000000000000000000000000009"))
+          "020000000000000000000000000000000000000000000000000000000000000009"
+      )
+    )
     // Vector 8
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
-          "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+          "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"
+      )
+    )
 
     // Verification test vectors
     // Vector 9
     assert(
-      partialSigVerify(expected(0),
-                       pubNonces.take(3),
-                       keySet1,
-                       msg,
-                       signerIndex = 0))
+      partialSigVerify(
+        expected(0),
+        pubNonces.take(3),
+        keySet1,
+        msg,
+        signerIndex = 0
+      )
+    )
     // Vector 10
     assert(
-      partialSigVerify(expected(1),
-                       Vector(pubNonces(1), pubNonces(0), pubNonces(2)),
-                       keySet2,
-                       msg,
-                       signerIndex = 1))
+      partialSigVerify(
+        expected(1),
+        Vector(pubNonces(1), pubNonces(0), pubNonces(2)),
+        keySet2,
+        msg,
+        signerIndex = 1
+      )
+    )
     // Vector 11
     assert(
-      partialSigVerify(expected(2),
-                       Vector(pubNonces(1), pubNonces(2), pubNonces(0)),
-                       keySet3,
-                       msg,
-                       signerIndex = 2))
+      partialSigVerify(
+        expected(2),
+        Vector(pubNonces(1), pubNonces(2), pubNonces(0)),
+        keySet3,
+        msg,
+        signerIndex = 2
+      )
+    )
 
     // Vector 12
     assert(
-      partialSigVerify(expected(3),
-                       Vector(pubNonces(0), pubNonces(3)),
-                       keySet4,
-                       msg,
-                       signerIndex = 0))
+      partialSigVerify(
+        expected(3),
+        Vector(pubNonces(0), pubNonces(3)),
+        keySet4,
+        msg,
+        signerIndex = 0
+      )
+    )
 
     // Vector 13
     val badSig = FieldElement(
-      "97AC833ADCB1AFA42EBF9E0725616F3C9A0D5B614F6FE283CEAAA37A8FFAF406")
+      "97AC833ADCB1AFA42EBF9E0725616F3C9A0D5B614F6FE283CEAAA37A8FFAF406"
+    )
     assert(!partialSigVerify(badSig, pubNonces, keySet1, msg, signerIndex = 0))
     // Vector 14
     assert(
-      !partialSigVerify(expected(0),
-                        pubNonces.take(3),
-                        keySet1,
-                        msg,
-                        signerIndex = 1))
+      !partialSigVerify(
+        expected(0),
+        pubNonces.take(3),
+        keySet1,
+        msg,
+        signerIndex = 1
+      )
+    )
     // The following errors must be handled by the caller as we can't even represent them
     // Vector 15
     assertThrows[IllegalArgumentException](
       FieldElement(
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"))
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+      )
+    )
     // Vector 16
     assertThrows[IllegalArgumentException](
       MuSigNoncePub(
         "020000000000000000000000000000000000000000000000000000000000000009" ++
-          pubNonces.head.bytes.drop(33).toHex))
+          pubNonces.head.bytes.drop(33).toHex
+      )
+    )
   }
 
   // https://github.com/jonasnick/bips/blob/musig2/bip-musig2/reference.py#L629
@@ -458,7 +523,8 @@ class MuSigTest extends BitcoinSCryptoTest {
 
     val secnonce = MuSigNoncePriv(
       "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61" ++
-        "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
+        "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7"
+    )
 
     val pnonce = Vector(
       "0337C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
@@ -471,12 +537,15 @@ class MuSigTest extends BitcoinSCryptoTest {
 
     val aggnonce = MuSigNoncePub(
       "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
-        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
+        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
+    )
 
     val sk = ECPrivateKey(
-      "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671")
+      "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671"
+    )
     val msg = ByteVector.fromValidHex(
-      "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF")
+      "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF"
+    )
 
     val tweaks = Vector(
       "E8F791FF9225A2AF0102AFFF4A9A723D9612A682A25EBE79802B263CDFCD83BB",
@@ -502,40 +571,51 @@ class MuSigTest extends BitcoinSCryptoTest {
     val keySet1 = keySet.withTweaks(tweaks1)
     assert(sign(secnonce, aggnonce, sk, msg, keySet1)._2 == expected(0))
     assert(
-      partialSigVerify(expected(0), pnonces, keySet1, msg, signerIndex = 2))
+      partialSigVerify(expected(0), pnonces, keySet1, msg, signerIndex = 2)
+    )
 
     // Vector 2
     val tweaks2 = Vector(MuSigTweak(tweaks(0), isXOnlyT = false))
     val keySet2 = keySet.withTweaks(tweaks2)
     assert(sign(secnonce, aggnonce, sk, msg, keySet2)._2 == expected(1))
     assert(
-      partialSigVerify(expected(1), pnonces, keySet2, msg, signerIndex = 2))
+      partialSigVerify(expected(1), pnonces, keySet2, msg, signerIndex = 2)
+    )
 
     // Vector 3
-    val tweaks3 = Vector(MuSigTweak(tweaks(0), isXOnlyT = false),
-                         MuSigTweak(tweaks(1), isXOnlyT = true))
+    val tweaks3 = Vector(
+      MuSigTweak(tweaks(0), isXOnlyT = false),
+      MuSigTweak(tweaks(1), isXOnlyT = true)
+    )
     val keySet3 = keySet.withTweaks(tweaks3)
     assert(sign(secnonce, aggnonce, sk, msg, keySet3)._2 == expected(2))
     assert(
-      partialSigVerify(expected(2), pnonces, keySet3, msg, signerIndex = 2))
+      partialSigVerify(expected(2), pnonces, keySet3, msg, signerIndex = 2)
+    )
 
     // Vector 4
-    val tweaks4 = Vector(MuSigTweak(tweaks(0), isXOnlyT = true),
-                         MuSigTweak(tweaks(1), isXOnlyT = false),
-                         MuSigTweak(tweaks(2), isXOnlyT = true),
-                         MuSigTweak(tweaks(3), isXOnlyT = false))
+    val tweaks4 = Vector(
+      MuSigTweak(tweaks(0), isXOnlyT = true),
+      MuSigTweak(tweaks(1), isXOnlyT = false),
+      MuSigTweak(tweaks(2), isXOnlyT = true),
+      MuSigTweak(tweaks(3), isXOnlyT = false)
+    )
     val keySet4 = keySet.withTweaks(tweaks4)
     assert(sign(secnonce, aggnonce, sk, msg, keySet4)._2 == expected(3))
     assert(
-      partialSigVerify(expected(3), pnonces, keySet4, msg, signerIndex = 2))
+      partialSigVerify(expected(3), pnonces, keySet4, msg, signerIndex = 2)
+    )
 
     // The following error must be handled by the caller as we can't even represent it
     // Vector 5
     assertThrows[IllegalArgumentException](
       MuSigTweak(
         FieldElement(
-          "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"),
-        isXOnlyT = false))
+          "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+        ),
+        isXOnlyT = false
+      )
+    )
   }
 
   // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L702
@@ -561,7 +641,8 @@ class MuSigTest extends BitcoinSCryptoTest {
     ).map(MuSigNoncePub.fromHex)
 
     val msg = ByteVector.fromValidHex(
-      "599C67EA410D005B9DA90817CF03ED3B1C868E4DA4EDF00A5880B0082C237869")
+      "599C67EA410D005B9DA90817CF03ED3B1C868E4DA4EDF00A5880B0082C237869"
+    )
 
     val tweaks = Vector(
       "B511DA492182A91B0FFB9A98020D55F260AE86D7ECBD0399C7383D59A5F2AF7C",
@@ -611,9 +692,11 @@ class MuSigTest extends BitcoinSCryptoTest {
     assert(keySet3.aggPubKey.schnorrPublicKey.verify(msg, sig3))
 
     // Vector 4
-    val tweaks4 = Vector(MuSigTweak(tweaks(0), isXOnlyT = true),
-                         MuSigTweak(tweaks(1), isXOnlyT = false),
-                         MuSigTweak(tweaks(2), isXOnlyT = true))
+    val tweaks4 = Vector(
+      MuSigTweak(tweaks(0), isXOnlyT = true),
+      MuSigTweak(tweaks(1), isXOnlyT = false),
+      MuSigTweak(tweaks(2), isXOnlyT = true)
+    )
     val keySet4 = UnsortedKeySet(Vector(pubKeys(0), pubKeys(3)), tweaks4)
     val sig4 = signAgg(psig.slice(6, 8), aggNonce(3), keySet4, msg)
     assert(sig4 == expected(3))
@@ -623,6 +706,8 @@ class MuSigTest extends BitcoinSCryptoTest {
     // Vector 5
     assertThrows[IllegalArgumentException](
       FieldElement(
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"))
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"
+      )
+    )
   }
 }

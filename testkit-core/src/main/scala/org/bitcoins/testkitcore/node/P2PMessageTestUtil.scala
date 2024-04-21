@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.transaction.Transaction
 
 abstract class P2PMessageTestUtil {
 
-  //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
-  //this tx has multiple inputs and outputs
+  // txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
+  // this tx has multiple inputs and outputs
   def rawTransaction =
     "01000000" +
       "02df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd040011b0000006a473044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26012102c114f376c98d12a0540c3a81ab99bb1c5234245c05e8239d09f48229f9ebf011ffffffff" +
@@ -24,15 +24,16 @@ abstract class P2PMessageTestUtil {
     "7c1101000000000000000000d805833655010000000000000000000000000000000000000000ffff0a940106479d010000000000000000000000000000000000ffff739259bb479d0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000"
   def versionMessage = VersionMessage(rawVersionMessage)
 
-  /** This is a raw network message indicating the version a node is using on the p2p network
-    * This has BOTH the header and the payload
+  /** This is a raw network message indicating the version a node is using on
+    * the p2p network This has BOTH the header and the payload
     * @return
     */
   def rawNetworkMessage =
     "0b11090776657273696f6e0000000000660000002f6743da721101000100000000000000e0165b5700000000010000000000000000000000000000000000ffffad1f27a8479d010000000000000000000000000000000000ffff00000000479d68dc32a9948d149b102f5361746f7368693a302e31312e322f7f440d0001"
   def networkMessage = NetworkMessage(rawNetworkMessage)
 
-  /** This is a get headers message taken from wireshark off of a node that sent the message
+  /** This is a get headers message taken from wireshark off of a node that sent
+    * the message
     * @return
     */
   def rawGetHeadersMsg =
@@ -42,19 +43,26 @@ abstract class P2PMessageTestUtil {
   val emptyBloomFilter: BloomFilter =
     BloomFilter(numElements = 1, falsePositiveRate = 1, flags = BloomUpdateAll)
 
-  /** These are the first 5 block headers on testnet, this does NOT include the genesis block header */
+  /** These are the first 5 block headers on testnet, this does NOT include the
+    * genesis block header
+    */
   lazy val firstFiveTestNetBlockHeaders: List[BlockHeader] = {
     List(
       BlockHeader(
-        "0100000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea330900000000bac8b0fa927c0ac8234287e33c5f74d38d354820e24756ad709d7038fc5f31f020e7494dffff001d03e4b672"),
+        "0100000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea330900000000bac8b0fa927c0ac8234287e33c5f74d38d354820e24756ad709d7038fc5f31f020e7494dffff001d03e4b672"
+      ),
       BlockHeader(
-        "0100000006128e87be8b1b4dea47a7247d5528d2702c96826c7a648497e773b800000000e241352e3bec0a95a6217e10c3abb54adfa05abb12c126695595580fb92e222032e7494dffff001d00d23534"),
+        "0100000006128e87be8b1b4dea47a7247d5528d2702c96826c7a648497e773b800000000e241352e3bec0a95a6217e10c3abb54adfa05abb12c126695595580fb92e222032e7494dffff001d00d23534"
+      ),
       BlockHeader(
-        "0100000020782a005255b657696ea057d5b98f34defcf75196f64f6eeac8026c0000000041ba5afc532aae03151b8aa87b65e1594f97504a768e010c98c0add79216247186e7494dffff001d058dc2b6"),
+        "0100000020782a005255b657696ea057d5b98f34defcf75196f64f6eeac8026c0000000041ba5afc532aae03151b8aa87b65e1594f97504a768e010c98c0add79216247186e7494dffff001d058dc2b6"
+      ),
       BlockHeader(
-        "0100000010befdc16d281e40ecec65b7c9976ddc8fd9bc9752da5827276e898b000000004c976d5776dda2da30d96ee810cd97d23ba852414990d64c4c720f977e651f2daae7494dffff001d02a97640"),
+        "0100000010befdc16d281e40ecec65b7c9976ddc8fd9bc9752da5827276e898b000000004c976d5776dda2da30d96ee810cd97d23ba852414990d64c4c720f977e651f2daae7494dffff001d02a97640"
+      ),
       BlockHeader(
-        "01000000dde5b648f594fdd2ec1c4083762dd13b197bb1381e74b1fff90a5d8b00000000b3c6c6c1118c3b6abaa17c5aa74ee279089ad34dc3cec3640522737541cb016818e8494dffff001d02da84c0")
+        "01000000dde5b648f594fdd2ec1c4083762dd13b197bb1381e74b1fff90a5d8b00000000b3c6c6c1118c3b6abaa17c5aa74ee279089ad34dc3cec3640522737541cb016818e8494dffff001d02da84c0"
+      )
     )
   }
 }

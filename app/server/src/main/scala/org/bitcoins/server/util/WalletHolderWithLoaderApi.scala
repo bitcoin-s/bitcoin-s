@@ -15,12 +15,12 @@ sealed trait WalletHolderWithLoaderApi {
 
 case class WalletHolderWithNeutrinoLoaderApi(
     walletHolder: WalletHolder,
-    loaderApi: DLCWalletNeutrinoBackendLoader)
-    extends WalletHolderWithLoaderApi
+    loaderApi: DLCWalletNeutrinoBackendLoader
+) extends WalletHolderWithLoaderApi
 
 case class WalletHolderWithBitcoindLoaderApi(
     walletHolder: WalletHolder,
-    loaderApi: DLCWalletBitcoindBackendLoader)
-    extends WalletHolderWithLoaderApi {
+    loaderApi: DLCWalletBitcoindBackendLoader
+) extends WalletHolderWithLoaderApi {
   val bitcoind: BitcoindRpcClient = loaderApi.bitcoind
 }

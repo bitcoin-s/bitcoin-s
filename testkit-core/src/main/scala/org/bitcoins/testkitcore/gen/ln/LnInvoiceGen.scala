@@ -10,7 +10,8 @@ import org.scalacheck.Gen
 
 sealed abstract class LnInvoiceGen {
 
-  /** Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+  /** Generates a
+    * [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * that does not contain a amount
     * @return
     */
@@ -20,14 +21,17 @@ sealed abstract class LnInvoiceGen {
     }
   }
 
-  /** Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+  /** Generates a
+    * [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * with an amount encoded
     */
   def lnHrpAmt: Gen[LnHumanReadablePart] = {
     ChainParamsGenerator.lnNetworkParams.flatMap { lnParam =>
       LnCurrencyUnitGen.realisticLnInvoice.map { lcu =>
-        LnHumanReadablePart.fromParamsAmount(network = lnParam,
-                                             amount = Some(lcu))
+        LnHumanReadablePart.fromParamsAmount(
+          network = lnParam,
+          amount = Some(lcu)
+        )
       }
     }
   }
@@ -64,8 +68,8 @@ sealed abstract class LnInvoiceGen {
     }
   }
 
-  def descriptionOrDescriptionHashTag: Gen[
-    Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag]] = {
+  def descriptionOrDescriptionHashTag
+      : Gen[Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag]] = {
     if (scala.util.Random.nextBoolean()) {
       descriptionTag.map(Left(_))
     } else {
@@ -123,7 +127,7 @@ sealed abstract class LnInvoiceGen {
       paymentHash <- paymentHashTag
       descOrHashTag <- descriptionOrDescriptionHashTag
       secret <- Gen.option(secret)
-      //optional fields
+      // optional fields
       expiryTime <- Gen.option(expiryTime)
       cltvExpiry <- Gen.option(cltvExpiry)
       fallbackAddress <- Gen.option(fallbackAddress)
@@ -146,7 +150,7 @@ sealed abstract class LnInvoiceGen {
       paymentHash <- paymentHashTag
       descOrHashTag <- descriptionOrDescriptionHashTag
       secret <- secret
-      //optional fields
+      // optional fields
       expiryTime <- expiryTime
       cltvExpiry <- cltvExpiry
       fallbackAddress <- fallbackAddress
@@ -188,7 +192,7 @@ sealed abstract class LnInvoiceGen {
   def lnInvoice(privateKey: ECPrivateKey): Gen[LnInvoice] = {
     for {
       hrp <- lnHrp
-      //timestamp is 35 bits according to BOLT11
+      // timestamp is 35 bits according to BOLT11
       timestamp <- invoiceTimestamp
       nodeIdOpt <- Gen.option(NodeId(privateKey.publicKey))
       tags <- taggedFields(nodeIdOpt)
@@ -200,10 +204,12 @@ sealed abstract class LnInvoiceGen {
         privateKey = privateKey
       )
 
-      LnInvoice(hrp = hrp,
-                timestamp = timestamp,
-                lnTags = tags,
-                signature = signature)
+      LnInvoice(
+        hrp = hrp,
+        timestamp = timestamp,
+        lnTags = tags,
+        signature = signature
+      )
     }
   }
 
@@ -211,7 +217,7 @@ sealed abstract class LnInvoiceGen {
     for {
       privateKey <- CryptoGenerators.privateKey
       hrp <- lnHrp
-      //timestamp is 35 bits according to BOLT11
+      // timestamp is 35 bits according to BOLT11
       timestamp <- invoiceTimestamp
     } yield {
       val signature = LnInvoice.buildLnInvoiceSignature(
@@ -221,10 +227,12 @@ sealed abstract class LnInvoiceGen {
         privateKey = privateKey
       )
 
-      LnInvoice(hrp = hrp,
-                timestamp = timestamp,
-                lnTags = tags,
-                signature = signature)
+      LnInvoice(
+        hrp = hrp,
+        timestamp = timestamp,
+        lnTags = tags,
+        signature = signature
+      )
     }
   }
 

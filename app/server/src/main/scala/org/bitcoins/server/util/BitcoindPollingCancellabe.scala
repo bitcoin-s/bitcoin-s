@@ -5,8 +5,8 @@ import org.bitcoins.commons.util.BitcoinSLogger
 
 case class BitcoindPollingCancellable(
     blockPollingCancellable: Cancellable,
-    mempoolPollingCancelable: Cancellable)
-    extends Cancellable
+    mempoolPollingCancelable: Cancellable
+) extends Cancellable
     with BitcoinSLogger {
 
   override def cancel(): Boolean = {
@@ -22,5 +22,6 @@ object BitcoindPollingCancellabe {
 
   val none: BitcoindPollingCancellable = BitcoindPollingCancellable(
     Cancellable.alreadyCancelled,
-    Cancellable.alreadyCancelled)
+    Cancellable.alreadyCancelled
+  )
 }

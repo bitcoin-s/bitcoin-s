@@ -26,9 +26,12 @@ class Bech32mTest extends BitcoinSUnitTest {
   }
 
   it must "serialization symmetry" in {
-    forAll(ScriptGenerators.witnessScriptPubKey.suchThat(
-             _._1.witnessVersion != WitnessVersion0),
-           ChainParamsGenerator.networkParams) { case ((witSPK, _), network) =>
+    forAll(
+      ScriptGenerators.witnessScriptPubKey.suchThat(
+        _._1.witnessVersion != WitnessVersion0
+      ),
+      ChainParamsGenerator.networkParams
+    ) { case ((witSPK, _), network) =>
       val addr = Bech32mAddress(witSPK, network)
       val spk = Bech32mAddress.fromStringToWitSPK(addr.value)
       spk == Success(witSPK)
@@ -39,7 +42,7 @@ class Bech32mTest extends BitcoinSUnitTest {
     forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
-      //should fail because we we switched the case of a random char
+      // should fail because we we switched the case of a random char
       val actual = Bech32mAddress.fromStringT(replaced)
       actual.isFailure
     }
@@ -52,14 +55,18 @@ class Bech32mTest extends BitcoinSUnitTest {
       Bech32
         .splitToHrpAndData(
           "an83characterlonghumanreadablepartthatcontainsthetheexcludedcharactersbioandnumber11sg7hg6",
-          Bech32m)
-        .isSuccess)
+          Bech32m
+        )
+        .isSuccess
+    )
     assert(
       Bech32
         .splitToHrpAndData(
           "11llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllludsr8",
-          Bech32m)
-        .isSuccess)
+          Bech32m
+        )
+        .isSuccess
+    )
     assert(Bech32.splitToHrpAndData("?1v759aa", Bech32m).isSuccess)
   }
 
@@ -68,8 +75,10 @@ class Bech32mTest extends BitcoinSUnitTest {
       Bech32
         .splitToHrpAndData(
           "an84characterslonghumanreadablepartthatcontainsthetheexcludedcharactersbioandnumber11d6pts4",
-          Bech32m)
-        .isFailure)
+          Bech32m
+        )
+        .isFailure
+    )
     assert(Bech32.splitToHrpAndData("qyrz8wqd2c9m", Bech32m).isFailure)
     assert(Bech32.splitToHrpAndData("1qyrz8wqd2c9m", Bech32m).isFailure)
     assert(Bech32.splitToHrpAndData("y1b0jsk6g", Bech32m).isFailure)
@@ -86,94 +95,131 @@ class Bech32mTest extends BitcoinSUnitTest {
       Bech32mAddress
         .fromString("BC1PW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KJ9WKRU")
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "5114751e76e8199196d454941c45d1b3a323f1433bd6"))
+        "5114751e76e8199196d454941c45d1b3a323f1433bd6"
+      )
+    )
     assert(
       Bech32mAddress
         .fromString(
-          "tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q98lawz")
+          "tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q98lawz"
+        )
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "51201863143c14c5166804bd19203356da136c985678cd4d27a1b8c6329604903262"))
+        "51201863143c14c5166804bd19203356da136c985678cd4d27a1b8c6329604903262"
+      )
+    )
     assert(
       Bech32mAddress
         .fromString(
-          "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y")
+          "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y"
+        )
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "5128751e76e8199196d454941c45d1b3a323f1433bd6751e76e8199196d454941c45d1b3a323f1433bd6"))
+        "5128751e76e8199196d454941c45d1b3a323f1433bd6751e76e8199196d454941c45d1b3a323f1433bd6"
+      )
+    )
     assert(
       Bech32mAddress
         .fromString("BC1SW50QGDZ25J")
-        .scriptPubKey == WitnessScriptPubKey.fromAsmHex("6002751e"))
+        .scriptPubKey == WitnessScriptPubKey.fromAsmHex("6002751e")
+    )
     assert(
       Bech32mAddress
         .fromString("bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs")
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "5210751e76e8199196d454941c45d1b3a323"))
+        "5210751e76e8199196d454941c45d1b3a323"
+      )
+    )
     assert(
       Bech32mAddress
         .fromString(
-          "tb1gqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsescs2hvq")
+          "tb1gqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsescs2hvq"
+        )
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "5820000000c4a5cad46221b2a187905e5266362b99d5e91c6ce24d165dab93e86433"))
+        "5820000000c4a5cad46221b2a187905e5266362b99d5e91c6ce24d165dab93e86433"
+      )
+    )
     assert(
       Bech32mAddress
         .fromString(
-          "tb1pqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesf3hn0c")
+          "tb1pqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesf3hn0c"
+        )
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "5120000000c4a5cad46221b2a187905e5266362b99d5e91c6ce24d165dab93e86433"))
+        "5120000000c4a5cad46221b2a187905e5266362b99d5e91c6ce24d165dab93e86433"
+      )
+    )
     assert(
       Bech32mAddress
         .fromString(
-          "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0")
+          "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0"
+        )
         .scriptPubKey == WitnessScriptPubKey.fromAsmHex(
-        "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"))
+        "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+      )
+    )
   }
 
   it must "fail to read invalid bech32m addresses" in {
     assert(
       Bech32mAddress
         .fromStringT(
-          "tc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vq5zuyut")
-        .isFailure)
+          "tc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vq5zuyut"
+        )
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT(
-          "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqh2y7hd")
-        .isFailure)
+          "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqh2y7hd"
+        )
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT(
-          "tb1z0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqglt7rf")
-        .isFailure)
+          "tb1z0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqglt7rf"
+        )
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT(
-          "BC1S0XLXVLHEMJA6C4DQV22UAPCTQUPFHLXM9H8Z3K2E72Q4K9HCZ7VQ54WELL")
-        .isFailure)
+          "BC1S0XLXVLHEMJA6C4DQV22UAPCTQUPFHLXM9H8Z3K2E72Q4K9HCZ7VQ54WELL"
+        )
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT(
-          "bc1p38j9r5y49hruaue7wxjce0updqjuyyx0kh56v8s25huc6995vvpql3jow4")
-        .isFailure)
+          "bc1p38j9r5y49hruaue7wxjce0updqjuyyx0kh56v8s25huc6995vvpql3jow4"
+        )
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT(
-          "BC130XLXVLHEMJA6C4DQV22UAPCTQUPFHLXM9H8Z3K2E72Q4K9HCZ7VQ7ZWS8R")
-        .isFailure)
+          "BC130XLXVLHEMJA6C4DQV22UAPCTQUPFHLXM9H8Z3K2E72Q4K9HCZ7VQ7ZWS8R"
+        )
+        .isFailure
+    )
     assert(Bech32mAddress.fromStringT("bc1pw5dgrnzv").isFailure)
     assert(
       Bech32mAddress
         .fromStringT(
-          "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7v8n0nx0muaewav253zgeav")
-        .isFailure)
+          "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7v8n0nx0muaewav253zgeav"
+        )
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT("BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P")
-        .isFailure)
+        .isFailure
+    )
     assert(
       Bech32mAddress
         .fromStringT(
-          "tb1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vq47Zagq")
-        .isFailure)
+          "tb1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vq47Zagq"
+        )
+        .isFailure
+    )
     assert(Bech32mAddress.fromStringT("bc1gmk9yu").isFailure)
   }
 
@@ -185,8 +231,10 @@ class Bech32mTest extends BitcoinSUnitTest {
   }
 
   it must "fail to read a segwitV0 spk as a bech32m address" in {
-    forAll(ScriptGenerators.witnessScriptPubKeyV0,
-           ChainParamsGenerator.networkParams) { case (witSpkV0, np) =>
+    forAll(
+      ScriptGenerators.witnessScriptPubKeyV0,
+      ChainParamsGenerator.networkParams
+    ) { case (witSpkV0, np) =>
       assert(Bech32mAddress.fromScriptPubKeyT(witSpkV0._1, np).isFailure)
     }
   }
@@ -202,14 +250,17 @@ class Bech32mTest extends BitcoinSUnitTest {
     assert(
       !Bech32mAddress
         .fromString(
-          "bc1pvkpqgqe7g6sl4rxwhpqp8nlz6dmv5uk47k2nr9yhh9ds32ny49cqdcghmx")
-        .isStandard)
+          "bc1pvkpqgqe7g6sl4rxwhpqp8nlz6dmv5uk47k2nr9yhh9ds32ny49cqdcghmx"
+        )
+        .isStandard
+    )
 
     // segwit v2 address
     assert(
       !Bech32mAddress
         .fromString("bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs")
-        .isStandard)
+        .isStandard
+    )
   }
 
   it must "checksum must not work if we modify a char" in {
@@ -220,7 +271,7 @@ class Bech32mTest extends BitcoinSUnitTest {
       val (f, l) = old.splitAt(idx)
       val replacementChar = pickReplacementChar(l.head)
       val replaced = s"$f$replacementChar${l.tail}"
-      //should fail because we replaced a char in the addr, so checksum invalid
+      // should fail because we replaced a char in the addr, so checksum invalid
       assert(Bech32mAddress.fromStringT(replaced).isFailure)
     }
   }
@@ -229,7 +280,7 @@ class Bech32mTest extends BitcoinSUnitTest {
     forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
-      //should fail because we we switched the case of a random char
+      // should fail because we we switched the case of a random char
       val actual = Bech32mAddress.fromStringT(replaced)
       assert(actual.isFailure)
     }
@@ -239,7 +290,7 @@ class Bech32mTest extends BitcoinSUnitTest {
   private def pickReplacementChar(oldChar: Char): Char = {
     val rand = Math.abs(Random.nextInt())
     val newChar = Bech32.charset(rand % Bech32.charset.size)
-    //make sure we don't pick the same char we are replacing in the bech32m address
+    // make sure we don't pick the same char we are replacing in the bech32m address
     if (oldChar == newChar) pickReplacementChar(oldChar)
     else newChar
   }

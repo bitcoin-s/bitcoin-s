@@ -5,20 +5,17 @@ import play.api.libs.json._
 
 import scala.sys.process._
 
-/** This program connects to a running Trezor, and gets
-  * xpubs and addresses from legacy, segwit and nested
-  * segwit accounts for mainnet. The intention here was
-  * to also do this for testnet, but for some reason
-  * my emulator refuses to work when specifying a
-  * testnet BIP32 path. Something to look into in the
+/** This program connects to a running Trezor, and gets xpubs and addresses from
+  * legacy, segwit and nested segwit accounts for mainnet. The intention here
+  * was to also do this for testnet, but for some reason my emulator refuses to
+  * work when specifying a testnet BIP32 path. Something to look into in the
   * future.
   *
-  * To replicate this:
-  * 1) Boot up a Trezor emulator (https://github.com/trezor/trezor-firmware/blob/master/core/docs/emulator.md)
-  * 2) Run Trezor bridge (instructions in link above)
-  * 3) Go to trezor.io/start, restore wallet from seed
-  * 4) Leave emulator open
-  * 5) Run this program. Result gets printed to stdout.
+  * To replicate this: 1) Boot up a Trezor emulator
+  * (https://github.com/trezor/trezor-firmware/blob/master/core/docs/emulator.md)
+  * 2) Run Trezor bridge (instructions in link above) 3) Go to trezor.io/start,
+  * restore wallet from seed 4) Leave emulator open 5) Run this program. Result
+  * gets printed to stdout.
   */
 object GetAddresses extends App {
 
@@ -47,7 +44,7 @@ object GetAddresses extends App {
         case HDPurposes.Legacy       => "legacy"
         case HDPurposes.NestedSegWit => "p2sh-segwit"
         case HDPurposes.SegWit       => "segwit"
-        case other                   => throw new RuntimeException(s"Unexpected purpose $other")
+        case other => throw new RuntimeException(s"Unexpected purpose $other")
       }
 
     val trezorPathType =
@@ -55,7 +52,7 @@ object GetAddresses extends App {
         case HDPurposes.Legacy       => "address"
         case HDPurposes.NestedSegWit => "p2shsegwit"
         case HDPurposes.SegWit       => "segwit"
-        case other                   => throw new RuntimeException(s"Unexpected purpose $other")
+        case other => throw new RuntimeException(s"Unexpected purpose $other")
       }
 
     val xpubCmd =

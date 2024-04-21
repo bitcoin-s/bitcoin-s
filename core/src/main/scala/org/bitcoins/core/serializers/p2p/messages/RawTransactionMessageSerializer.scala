@@ -5,8 +5,10 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
-/** Responsible for serializing and deserializing TransactionMessage network objects
-  * @see https://bitcoin.org/en/developer-reference#tx
+/** Responsible for serializing and deserializing TransactionMessage network
+  * objects
+  * @see
+  *   https://bitcoin.org/en/developer-reference#tx
   */
 trait RawTransactionMessageSerializer
     extends RawBitcoinSerializer[TransactionMessage] {

@@ -42,7 +42,8 @@ object ControlMessageGenerator {
 
   /** Generates a random [[org.bitcoins.core.p2p.VersionMessage VersionMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#version]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#version]]
     */
   def versionMessage: Gen[VersionMessage] =
     for {
@@ -77,7 +78,8 @@ object ControlMessageGenerator {
 
   /** Generates a [[org.bitcoins.core.p2p.PingMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#ping]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#ping]]
     */
   def pingMessage: Gen[PingMessage] =
     for {
@@ -86,7 +88,8 @@ object ControlMessageGenerator {
 
   /** Generates a [[org.bitcoins.core.p2p.PongMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#pong]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#pong]]
     */
   def pongMessage: Gen[PongMessage] =
     for {
@@ -101,7 +104,8 @@ object ControlMessageGenerator {
 
   /** Generates a random [[org.bitcoins.core.p2p.ProtocolVersion]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#protocol-versions]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#protocol-versions]]
     */
   def protocolVersion: Gen[ProtocolVersion] =
     for {
@@ -110,11 +114,12 @@ object ControlMessageGenerator {
 
   /** Generates a [[org.bitcoins.core.p2p.ServiceIdentifier]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#version]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#version]]
     */
   def serviceIdentifier: Gen[ServiceIdentifier] =
     for {
-      //service identifiers can only be NodeNetwork or UnnamedService
+      // service identifiers can only be NodeNetwork or UnnamedService
       randomNum <- Gen.choose(0, 1)
     } yield ServiceIdentifier(randomNum)
 
@@ -122,7 +127,8 @@ object ControlMessageGenerator {
 
   /** Creates a [[org.bitcoins.core.p2p.FilterLoadMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#filterload]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#filterload]]
     */
   def filterLoadMessage: Gen[FilterLoadMessage] =
     for {
@@ -130,14 +136,17 @@ object ControlMessageGenerator {
       hashFuncs <- Gen.choose(0, 50)
       tweak <- NumberGenerator.uInt32s
       flags <- BloomFilterGenerator.bloomFlag
-    } yield FilterLoadMessage(ByteVector(filter),
-                              UInt32(hashFuncs),
-                              tweak,
-                              flags)
+    } yield FilterLoadMessage(
+      ByteVector(filter),
+      UInt32(hashFuncs),
+      tweak,
+      flags
+    )
 
   /** Creates a [[org.bitcoins.core.p2p.FilterAddMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#filteradd]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#filteradd]]
     */
   def filterAddMessage: Gen[FilterAddMessage] =
     for {
@@ -147,7 +156,8 @@ object ControlMessageGenerator {
 
   /** Creates a [[org.bitcoins.core.p2p.RejectMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#reject]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#reject]]
     */
   def rejectMessage: Gen[RejectMessage] =
     for {

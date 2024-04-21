@@ -35,7 +35,8 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
       assert(dir.isDirectory)
       assert(dir.getPath().startsWith(scala.util.Properties.tmpDir))
       assert(
-        dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf")))
+        dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf"))
+      )
       FileUtil.deleteTmpDir(dir)
       assert(!dir.exists)
   }
@@ -63,15 +64,18 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
       val allClients = nodes.toVector
       for {
         heightPreGeneration <- first.getBlockCount()
-        _ <- BitcoindRpcTestUtil.generateAllAndSync(allClients,
-                                                    blocks = blocksToGenerate)
+        _ <- BitcoindRpcTestUtil.generateAllAndSync(
+          allClients,
+          blocks = blocksToGenerate
+        )
         firstHash <- first.getBestBlockHash()
         secondHash <- second.getBestBlockHash()
         heightPostGeneration <- first.getBlockCount()
       } yield {
         assert(firstHash == secondHash)
         assert(
-          heightPostGeneration - heightPreGeneration == blocksToGenerate * allClients.length)
+          heightPostGeneration - heightPreGeneration == blocksToGenerate * allClients.length
+        )
       }
   }
 
@@ -82,10 +86,12 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
         address <- second.getNewAddress
         txid <- first.sendToAddress(address, Bitcoins.one)
         hashes <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
-        vout <- BitcoindRpcTestUtil.findOutput(first,
-                                               txid,
-                                               Bitcoins.one,
-                                               Some(hashes.head))
+        vout <- BitcoindRpcTestUtil.findOutput(
+          first,
+          txid,
+          Bitcoins.one,
+          Some(hashes.head)
+        )
         tx <- first.getRawTransaction(txid, Some(hashes.head))
       } yield {
         assert(tx.vout(vout.toInt).value == Bitcoins.one)

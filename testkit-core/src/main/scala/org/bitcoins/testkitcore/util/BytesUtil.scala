@@ -44,12 +44,13 @@ object BytesUtil {
           case Some((sig, index)) =>
             P2WSHWitnessV0(
               EmptyScriptPubKey,
-              p2wsh.stack.updated(index,
-                                  flipBit(ECDigitalSignature(sig)).bytes))
+              p2wsh.stack.updated(index, flipBit(ECDigitalSignature(sig)).bytes)
+            )
           case None =>
             P2WSHWitnessV0(
               EmptyScriptPubKey,
-              p2wsh.stack.updated(0, flipAtIndex(p2wsh.stack.head, 0)))
+              p2wsh.stack.updated(0, flipAtIndex(p2wsh.stack.head, 0))
+            )
         }
     }
   }
@@ -62,7 +63,8 @@ object BytesUtil {
 
   def flipBit(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature): (CETSignatures, PartialSignature) = {
+      refundSig: PartialSignature
+  ): (CETSignatures, PartialSignature) = {
     val badOutcomeSigs = cetSigs.outcomeSigs.map { case (outcome, sig) =>
       outcome -> flipBit(sig)
     }

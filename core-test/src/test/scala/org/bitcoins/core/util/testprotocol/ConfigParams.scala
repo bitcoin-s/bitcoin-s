@@ -6,7 +6,8 @@ import upickle.default._
 case class ConfigParams(
     addrTypeOrIsCompressed: Either[String, Boolean],
     isPrivKey: Boolean,
-    isTestNet: Boolean)
+    isTestNet: Boolean
+)
 
 object ConfigParams {
   val addrTypeKey = "addrType"

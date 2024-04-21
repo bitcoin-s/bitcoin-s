@@ -10,8 +10,8 @@ import org.bitcoins.core.script.{
   */
 trait ScriptProgramTestUtil {
 
-  /** Matches a [[StartedScriptProgram]] to an [[ExecutedScriptProgram]] or else throws an exception
-    * useful for testing purposes.
+  /** Matches a [[StartedScriptProgram]] to an [[ExecutedScriptProgram]] or else
+    * throws an exception useful for testing purposes.
     */
   def toExecutedScriptProgram(p: StartedScriptProgram): ExecutedScriptProgram =
     p match {
@@ -20,14 +20,18 @@ trait ScriptProgramTestUtil {
         throw new RuntimeException("Should be an executed script program")
     }
 
-  /** Matches a [[StartedScriptProgram]] to a [[ExecutionInProgressScriptProgram]] or else throws an exception. */
+  /** Matches a [[StartedScriptProgram]] to a
+    * [[ExecutionInProgressScriptProgram]] or else throws an exception.
+    */
   def toExecutionInProgressScriptProgram(
-      p: StartedScriptProgram): ExecutionInProgressScriptProgram =
+      p: StartedScriptProgram
+  ): ExecutionInProgressScriptProgram =
     p match {
       case e: ExecutionInProgressScriptProgram => e
       case _: ExecutedScriptProgram =>
         throw new RuntimeException(
-          "Must be an execution in progress script program")
+          "Must be an execution in progress script program"
+        )
     }
 }
 

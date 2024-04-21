@@ -57,14 +57,16 @@ class SignerTest extends BitcoinSUnitTest {
       p2wpkh.hashType
     )
     assertThrows[UnsupportedOperationException](
-      BitcoinSigner.sign(spendingInfo, tx, isDummySignature = false))
+      BitcoinSigner.sign(spendingInfo, tx, isDummySignature = false)
+    )
   }
 
   it should "fail to sign a P2SH UTXO" in {
     val p2sh = GenUtil.sample(CreditingTxGen.p2shOutput)
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     assertThrows[IllegalArgumentException](
-      BitcoinSigner.sign(p2sh, tx, isDummySignature = false))
+      BitcoinSigner.sign(p2sh, tx, isDummySignature = false)
+    )
   }
 
   it should "fail if there are inconsistent P2WPKH spending infos" in {
@@ -95,10 +97,12 @@ class SignerTest extends BitcoinSUnitTest {
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
         val unsignedTx =
-          StandardNonInteractiveFinalizer.txFrom(destinations,
-                                                 creditingTxsInfos,
-                                                 fee,
-                                                 changeSPK)
+          StandardNonInteractiveFinalizer.txFrom(
+            destinations,
+            creditingTxsInfos,
+            fee,
+            changeSPK
+          )
 
         val signedTx =
           RawTxSigner.sign(unsignedTx, creditingTxsInfos.toVector, fee)
@@ -109,9 +113,11 @@ class SignerTest extends BitcoinSUnitTest {
           singleInfosVec.map { singleInfos =>
             singleInfos.map { singleInfo =>
               val keyAndSig =
-                BitcoinSigner.signSingle(singleInfo,
-                                         unsignedTx,
-                                         isDummySignature = false)
+                BitcoinSigner.signSingle(
+                  singleInfo,
+                  unsignedTx,
+                  isDummySignature = false
+                )
 
               keyAndSig.signature
             }
@@ -138,7 +144,8 @@ class SignerTest extends BitcoinSUnitTest {
                 case EmptyScriptWitness      => Vector.empty
                 case taprootWitness: TaprootWitness =>
                   throw new UnsupportedOperationException(
-                    s"Taproot not supported, got=$taprootWitness")
+                    s"Taproot not supported, got=$taprootWitness"
+                  )
               }
             }
 
@@ -156,10 +163,12 @@ class SignerTest extends BitcoinSUnitTest {
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
         val spendingTx = StandardNonInteractiveFinalizer
-          .txFrom(outputs = destinations,
-                  utxos = creditingTxsInfo,
-                  feeRate = fee,
-                  changeSPK = changeSPK)
+          .txFrom(
+            outputs = destinations,
+            utxos = creditingTxsInfo,
+            feeRate = fee,
+            changeSPK = changeSPK
+          )
 
         val prevOutMap =
           PreviousOutputMap.fromScriptSignatureParams(creditingTxsInfo)
@@ -169,17 +178,20 @@ class SignerTest extends BitcoinSUnitTest {
             signInfo.signers.map { signer =>
               val txSignatureComponent =
                 TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
-              @nowarn val oldSig = BitcoinSigner.doSign(txSignatureComponent,
-                                                        signer.sign,
-                                                        signInfo.hashType,
-                                                        isDummySignature =
-                                                          false)
+              @nowarn val oldSig = BitcoinSigner.doSign(
+                txSignatureComponent,
+                signer.sign,
+                signInfo.hashType,
+                isDummySignature = false
+              )
 
-              val newSig = BitcoinSigner.doSign(spendingTx,
-                                                signInfo,
-                                                signer.sign,
-                                                signInfo.hashType,
-                                                isDummySignature = false)
+              val newSig = BitcoinSigner.doSign(
+                spendingTx,
+                signInfo,
+                signer.sign,
+                signInfo.hashType,
+                isDummySignature = false
+              )
 
               (oldSig.r == newSig.r) &&
               (oldSig.s == newSig.s) &&
@@ -193,20 +205,23 @@ class SignerTest extends BitcoinSUnitTest {
 
   def inputIndex(
       spendingInfo: InputSigningInfo[InputInfo],
-      tx: Transaction): Int = {
+      tx: Transaction
+  ): Int = {
     tx.inputs.zipWithIndex
       .find(_._1.previousOutput == spendingInfo.outPoint) match {
       case Some((_, index)) => index
       case None =>
         throw new IllegalArgumentException(
-          "Transaction did not contain expected input.")
+          "Transaction did not contain expected input."
+        )
     }
   }
 
   def createProgram(
       tx: Transaction,
       idx: Int,
-      utxo: InputSigningInfo[InputInfo]): PreExecutionScriptProgram = {
+      utxo: InputSigningInfo[InputInfo]
+  ): PreExecutionScriptProgram = {
     val output = utxo.output
 
     val spk = output.scriptPubKey
@@ -216,10 +231,12 @@ class SignerTest extends BitcoinSUnitTest {
     val txSigComponent = spk match {
       case witSPK: WitnessScriptPubKeyV0 =>
         val o = TransactionOutput(amount, witSPK)
-        WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
-                                 UInt32(idx),
-                                 o,
-                                 Policy.standardFlags)
+        WitnessTxSigComponentRaw(
+          tx.asInstanceOf[WitnessTransaction],
+          UInt32(idx),
+          o,
+          Policy.standardFlags
+        )
       case _: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey => ???
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
@@ -235,11 +252,12 @@ class SignerTest extends BitcoinSUnitTest {
         p2shScriptSig.redeemScript match {
 
           case _: WitnessScriptPubKey =>
-            WitnessTxSigComponentP2SH(transaction =
-                                        tx.asInstanceOf[WitnessTransaction],
-                                      inputIndex = UInt32(idx),
-                                      output = output,
-                                      flags = Policy.standardFlags)
+            WitnessTxSigComponentP2SH(
+              transaction = tx.asInstanceOf[WitnessTransaction],
+              inputIndex = UInt32(idx),
+              output = output,
+              flags = Policy.standardFlags
+            )
 
           case _ =>
             BaseTxSigComponent(tx, UInt32(idx), output, Policy.standardFlags)
@@ -251,7 +269,8 @@ class SignerTest extends BitcoinSUnitTest {
 
   def verifyScripts(
       tx: Transaction,
-      utxos: Vector[InputSigningInfo[InputInfo]]): Boolean = {
+      utxos: Vector[InputSigningInfo[InputInfo]]
+  ): Boolean = {
     val programs: Vector[PreExecutionScriptProgram] =
       tx.inputs.zipWithIndex.toVector.map {
         case (input: TransactionInput, idx: Int) =>
@@ -262,51 +281,55 @@ class SignerTest extends BitcoinSUnitTest {
   }
 
   it must "sign p2wsh inputs correctly when provided no witness data" in {
-    forAll(CreditingTxGen.inputsAndOutputs(CreditingTxGen.p2wshOutputs),
-           ScriptGenerators.scriptPubKey) {
-      case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
-        val fee = SatoshisPerVirtualByte(Satoshis(100))
+    forAll(
+      CreditingTxGen.inputsAndOutputs(CreditingTxGen.p2wshOutputs),
+      ScriptGenerators.scriptPubKey
+    ) { case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
+      val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        val unsignedTx =
-          StandardNonInteractiveFinalizer.txFrom(destinations,
-                                                 creditingTxsInfos,
-                                                 fee,
-                                                 changeSPK)
+      val unsignedTx =
+        StandardNonInteractiveFinalizer.txFrom(
+          destinations,
+          creditingTxsInfos,
+          fee,
+          changeSPK
+        )
 
-        val singleSigs: Vector[Vector[PartialSignature]] = {
-          val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
-            creditingTxsInfos.toVector.map(_.toSingles)
-          singleInfosVec.map { singleInfos =>
-            singleInfos.map { singleInfo =>
-              val wtx =
-                WitnessTransaction(unsignedTx.version,
-                                   unsignedTx.inputs,
-                                   unsignedTx.outputs,
-                                   unsignedTx.lockTime,
-                                   EmptyWitness.fromInputs(unsignedTx.inputs))
-              BitcoinSigner.signSingle(singleInfo,
-                                       wtx,
-                                       isDummySignature = false)
+      val singleSigs: Vector[Vector[PartialSignature]] = {
+        val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
+          creditingTxsInfos.toVector.map(_.toSingles)
+        singleInfosVec.map { singleInfos =>
+          singleInfos.map { singleInfo =>
+            val wtx =
+              WitnessTransaction(
+                unsignedTx.version,
+                unsignedTx.inputs,
+                unsignedTx.outputs,
+                unsignedTx.lockTime,
+                EmptyWitness.fromInputs(unsignedTx.inputs)
+              )
+            BitcoinSigner.signSingle(singleInfo, wtx, isDummySignature = false)
 
-            }
           }
         }
+      }
 
-        val psbt =
-          creditingTxsInfos.foldLeft(PSBT.fromUnsignedTx(unsignedTx)) {
-            (psbt, spendInfo) =>
-              val idx = inputIndex(spendInfo, unsignedTx)
-              psbt
-                .addUTXOToInput(spendInfo.prevTransaction, idx)
-                .addScriptWitnessToInput(
-                  InputInfo.getScriptWitness(spendInfo.inputInfo).get,
-                  idx)
-                .addSignatures(singleSigs(idx), idx)
-          }
+      val psbt =
+        creditingTxsInfos.foldLeft(PSBT.fromUnsignedTx(unsignedTx)) {
+          (psbt, spendInfo) =>
+            val idx = inputIndex(spendInfo, unsignedTx)
+            psbt
+              .addUTXOToInput(spendInfo.prevTransaction, idx)
+              .addScriptWitnessToInput(
+                InputInfo.getScriptWitness(spendInfo.inputInfo).get,
+                idx
+              )
+              .addSignatures(singleSigs(idx), idx)
+        }
 
-        val signedTx = psbt.finalizePSBT.get.extractTransactionAndValidate
+      val signedTx = psbt.finalizePSBT.get.extractTransactionAndValidate
 
-        assert(verifyScripts(signedTx.get, creditingTxsInfos.toVector))
+      assert(verifyScripts(signedTx.get, creditingTxsInfos.toVector))
     }
   }
 }

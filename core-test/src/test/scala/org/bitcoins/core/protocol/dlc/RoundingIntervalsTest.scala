@@ -33,7 +33,8 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
         IntervalStart(50, 5),
         IntervalStart(100, 10),
         IntervalStart(1000, 100)
-      ))
+      )
+    )
 
     assert(roundingInterval.round(15, Satoshis(12345)) == Satoshis(12345))
 
@@ -81,7 +82,8 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
         IntervalStart(50, 5),
         IntervalStart(100, 10),
         IntervalStart(1000, 100)
-      ))
+      )
+    )
 
     assert(roundingInterval.round(15, Satoshis(-12345)) == Satoshis(-12345))
 
@@ -136,7 +138,8 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
         IntervalStart(14, 3),
         IntervalStart(15, 7),
         IntervalStart(16, 1)
-      ))
+      )
+    )
     val roundingIntervals2 = RoundingIntervals(
       Vector(
         IntervalStart(1, 2),
@@ -145,7 +148,8 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
         IntervalStart(5, 2),
         IntervalStart(6, 3),
         IntervalStart(11, 5)
-      ))
+      )
+    )
     val expected = RoundingIntervals(
       Vector(
         IntervalStart(2, 2),
@@ -161,7 +165,8 @@ class RoundingIntervalsTest extends BitcoinSUnitTest {
         IntervalStart(14, 3),
         IntervalStart(15, 5),
         IntervalStart(16, 1)
-      ))
+      )
+    )
 
     assert(roundingIntervals1.minRoundingWith(roundingIntervals2) == expected)
   }

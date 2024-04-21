@@ -43,7 +43,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
     } yield {
       assert(
         tx.outputs.contains(
-          TransactionOutput(amountToSend, testAddress.scriptPubKey)))
+          TransactionOutput(amountToSend, testAddress.scriptPubKey)
+        )
+      )
     }
   }
 
@@ -110,12 +112,15 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   def testOpReturnCommitment(
       wallet: Wallet,
-      hashMessage: Boolean): Future[Assertion] = {
+      hashMessage: Boolean
+  ): Future[Assertion] = {
     val message = "ben was here"
     for {
-      tx <- wallet.makeOpReturnCommitment(message = message,
-                                          hashMessage = hashMessage,
-                                          feeRateOpt = None)
+      tx <- wallet.makeOpReturnCommitment(
+        message = message,
+        hashMessage = hashMessage,
+        feeRateOpt = None
+      )
 
       outgoingTxDbOpt <- wallet.outgoingTxDAO.read(tx.txIdBE)
     } yield {
@@ -130,9 +135,11 @@ class WalletSendingTest extends BitcoinSWalletTest {
       }
 
       val expectedAsm =
-        Seq(OP_RETURN,
-            BytesToPushOntoStack(messageBytes.size),
-            ScriptConstant(messageBytes))
+        Seq(
+          OP_RETURN,
+          BytesToPushOntoStack(messageBytes.size),
+          ScriptConstant(messageBytes)
+        )
 
       assert(opReturnOutput.scriptPubKey.asm == expectedAsm)
 
@@ -142,7 +149,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
       assert(outgoingTxDb.sentAmount == 0.satoshis)
       val changeOutput = tx.outputs.find(_.value > 0.satoshis).get
       assert(
-        outgoingTxDb.actualFee + changeOutput.value == outgoingTxDb.inputAmount)
+        outgoingTxDb.actualFee + changeOutput.value == outgoingTxDb.inputAmount
+      )
     }
   }
 
@@ -162,16 +170,19 @@ class WalletSendingTest extends BitcoinSWalletTest {
         wallet.makeOpReturnCommitment(
           "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
           hashMessage = false,
-          None)
+          None
+        )
       }
   }
 
   it should "fail to send to a different network address" in { fundedWallet =>
     val wallet = fundedWallet.wallet
     val sendToAddressesF =
-      wallet.sendToAddress(BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
-                           Satoshis(1000),
-                           None)
+      wallet.sendToAddress(
+        BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"),
+        Satoshis(1000),
+        None
+      )
 
     recoverToSucceededIf[IllegalArgumentException] {
       sendToAddressesF
@@ -203,15 +214,19 @@ class WalletSendingTest extends BitcoinSWalletTest {
       outPoints = allOutPoints.drop(allOutPoints.size / 2)
       tx <- wallet.sendFromOutPoints(outPoints, testAddress, amountToSend, None)
     } yield {
-      assert(outPoints.forall(outPoint =>
-               tx.inputs.exists(_.previousOutput == outPoint)),
-             "Every outpoint was not included included")
+      assert(
+        outPoints.forall(outPoint =>
+          tx.inputs.exists(_.previousOutput == outPoint)),
+        "Every outpoint was not included included"
+      )
       assert(tx.inputs.size == outPoints.size, "An extra input was added")
 
       val expectedOutput =
         TransactionOutput(amountToSend, testAddress.scriptPubKey)
-      assert(tx.outputs.contains(expectedOutput),
-             "Did not contain expected output")
+      assert(
+        tx.outputs.contains(expectedOutput),
+        "Did not contain expected output"
+      )
     }
   }
 
@@ -226,9 +241,11 @@ class WalletSendingTest extends BitcoinSWalletTest {
     } yield {
       val expectedFeeRate =
         wallet.feeRateApi.asInstanceOf[RandomFeeProvider].lastFeeRate.get
-      assert(outPoints.forall(outPoint =>
-               tx.inputs.exists(_.previousOutput == outPoint)),
-             "Every outpoint was not included included")
+      assert(
+        outPoints.forall(outPoint =>
+          tx.inputs.exists(_.previousOutput == outPoint)),
+        "Every outpoint was not included included"
+      )
       assert(tx.inputs.size == outPoints.size, "An extra input was added")
 
       val inputAmount = utxos.map(_.output.value).sum
@@ -275,7 +292,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
         utxos
           .map(_.outPoint)
           .forall(outPoint => tx.inputs.exists(_.previousOutput == outPoint)),
-        "Every outpoint was not included included")
+        "Every outpoint was not included included"
+      )
       assert(tx.inputs.size == utxos.size, "An extra input was added")
 
       val inputAmount = utxos.map(_.output.value).sum
@@ -359,9 +377,11 @@ class WalletSendingTest extends BitcoinSWalletTest {
       utxo <- wallet.listUtxos().map(_.head)
 
       // Create tx not signaling RBF
-      input = TransactionInput(utxo.outPoint,
-                               EmptyScriptSignature,
-                               TransactionConstants.disableRBFSequence)
+      input = TransactionInput(
+        utxo.outPoint,
+        EmptyScriptSignature,
+        TransactionConstants.disableRBFSequence
+      )
       output =
         TransactionOutput(utxo.output.value - Satoshis(500), addr.scriptPubKey)
       tx =
@@ -435,7 +455,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     recoverToSucceededIf[RuntimeException](
-      wallet.bumpFeeCPFP(EmptyTransaction.txIdBE, SatoshisPerByte.one))
+      wallet.bumpFeeCPFP(EmptyTransaction.txIdBE, SatoshisPerByte.one)
+    )
   }
 
   it should "fail to send from outpoints when already spent" in {
@@ -451,16 +472,20 @@ class WalletSendingTest extends BitcoinSWalletTest {
           .copyWithState(TxoState.PendingConfirmationsSpent)
         _ <- wallet.spendingInfoDAO.update(spent)
         test <- recoverToSucceededIf[IllegalArgumentException](
-          wallet.sendFromOutPoints(allUtxos.map(_.outPoint),
-                                   testAddress,
-                                   amountToSend,
-                                   None))
+          wallet.sendFromOutPoints(
+            allUtxos.map(_.outPoint),
+            testAddress,
+            amountToSend,
+            None
+          )
+        )
       } yield test
   }
 
   def testSendWithAlgo(
       wallet: Wallet,
-      algo: CoinSelectionAlgo): Future[Assertion] = {
+      algo: CoinSelectionAlgo
+  ): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
@@ -479,8 +504,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
       val expectedOutput =
         TransactionOutput(amountToSend, testAddress.scriptPubKey)
-      assert(tx.outputs.contains(expectedOutput),
-             "Did not contain expected output")
+      assert(
+        tx.outputs.contains(expectedOutput),
+        "Did not contain expected output"
+      )
     }
   }
 
@@ -489,8 +516,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
   }
 
   it should "correctly send with accumulate smallest" in { fundedWallet =>
-    testSendWithAlgo(fundedWallet.wallet,
-                     CoinSelectionAlgo.AccumulateSmallestViable)
+    testSendWithAlgo(
+      fundedWallet.wallet,
+      CoinSelectionAlgo.AccumulateSmallestViable
+    )
   }
 
   it should "correctly send with standard accumulate" in { fundedWallet =>
@@ -499,7 +528,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it must "it must not double spend utxos used to fund other txs in the wallet" in {
     fundedWallet =>
-      //i expected an error saying insufficient balance
+      // i expected an error saying insufficient balance
 
       val addr1F = fundedWallet.wallet.getNewAddress()
       val addr2F = fundedWallet.wallet.getNewAddress()
@@ -513,10 +542,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
           500000
         ) // for fee, fee rates are random so we might need a lot
 
-        //build these transactions in parallel intentionally
+        // build these transactions in parallel intentionally
         tx1F = fundedWallet.wallet.sendToAddress(addr1, amt, None)
         tx2F = fundedWallet.wallet.sendToAddress(addr2, amt, None)
-        //one of these should fail because we don't have enough money
+        // one of these should fail because we don't have enough money
         _ <- tx1F
         _ <- tx2F
       } yield ()
@@ -525,8 +554,11 @@ class WalletSendingTest extends BitcoinSWalletTest {
         recoverToExceptionIf[RuntimeException](failedTx)
 
       exnF.map(err =>
-        assert(err.getMessage.contains(
-          "Not enough value in given outputs to make transaction spending 599500000 sats plus fees")))
+        assert(
+          err.getMessage.contains(
+            "Not enough value in given outputs to make transaction spending 599500000 sats plus fees"
+          )
+        ))
 
   }
 }

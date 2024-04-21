@@ -164,10 +164,12 @@ class LndRpcClientTest extends LndFixture {
       cltvExpiryDelta = UInt32.zero
     )
 
-    val invoice = Invoice("memo",
-                          value = 100000,
-                          expiry = 1000,
-                          routeHints = Vector(RouteHint(Vector(hopHint))))
+    val invoice = Invoice(
+      "memo",
+      value = 100000,
+      expiry = 1000,
+      routeHints = Vector(RouteHint(Vector(hopHint)))
+    )
 
     for {
       res <- lnd.addInvoice(invoice)

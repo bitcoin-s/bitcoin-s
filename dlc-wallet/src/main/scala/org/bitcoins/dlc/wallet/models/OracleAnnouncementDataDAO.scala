@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class OracleAnnouncementDataDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCAppConfig)
-    extends CRUDAutoInc[OracleAnnouncementDataDb] {
+    override val appConfig: DLCAppConfig
+) extends CRUDAutoInc[OracleAnnouncementDataDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -21,15 +21,16 @@ case class OracleAnnouncementDataDAO()(implicit
     TableQuery[OracleAnnouncementsTable]
 
   def findByPublicKey(
-      publicKey: SchnorrPublicKey): Future[Vector[OracleAnnouncementDataDb]] = {
+      publicKey: SchnorrPublicKey
+  ): Future[Vector[OracleAnnouncementDataDb]] = {
     val query = table.filter(_.publicKey === publicKey)
 
     safeDatabase.runVec(query.result)
   }
 
   def findByAnnouncementSignatures(
-      signatures: Vector[SchnorrDigitalSignature]): Future[
-    Vector[OracleAnnouncementDataDb]] = {
+      signatures: Vector[SchnorrDigitalSignature]
+  ): Future[Vector[OracleAnnouncementDataDb]] = {
     val query = table.filter(_.announcementSignature.inSet(signatures))
 
     safeDatabase
@@ -40,10 +41,9 @@ case class OracleAnnouncementDataDAO()(implicit
     safeDatabase.run(findByIdsAction(ids))
   }
 
-  def findByIdsAction(ids: Vector[Long]): DBIOAction[
-    Vector[OracleAnnouncementDataDb],
-    NoStream,
-    Effect.Read] = {
+  def findByIdsAction(
+      ids: Vector[Long]
+  ): DBIOAction[Vector[OracleAnnouncementDataDb], NoStream, Effect.Read] = {
     table.filter(_.id.inSet(ids)).result.map(_.toVector)
   }
 
@@ -55,10 +55,12 @@ case class OracleAnnouncementDataDAO()(implicit
       extends TableAutoInc[OracleAnnouncementDataDb](
         tag,
         schemaName,
-        "oracle_announcement_data") {
+        "oracle_announcement_data"
+      ) {
 
     def announcementSignature: Rep[SchnorrDigitalSignature] = column(
-      "announcement_signature")
+      "announcement_signature"
+    )
 
     def publicKey: Rep[SchnorrPublicKey] = column("pub_key")
 
@@ -71,13 +73,15 @@ case class OracleAnnouncementDataDAO()(implicit
     def eventMaturity: Rep[UInt32] = column("event_maturity")
 
     override def * : ProvenShape[OracleAnnouncementDataDb] =
-      (id.?,
-       announcementSignature,
-       publicKey,
-       signingPublicKey,
-       eventId,
-       eventDescriptor,
-       eventMaturity)
+      (
+        id.?,
+        announcementSignature,
+        publicKey,
+        signingPublicKey,
+        eventId,
+        eventDescriptor,
+        eventMaturity
+      )
         .<>(OracleAnnouncementDataDb.tupled, OracleAnnouncementDataDb.unapply)
   }
 }

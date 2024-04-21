@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class AccountDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: WalletAppConfig)
-    extends CRUD[AccountDb, (HDCoin, Int)]
+    override val appConfig: WalletAppConfig
+) extends CRUD[AccountDb, (HDCoin, Int)]
     with SlickUtil[AccountDb, (HDCoin, Int)] {
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -24,7 +24,8 @@ case class AccountDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(HDCoin, Int)]): Query[AccountTable, AccountDb, Seq] = {
+      ids: Vector[(HDCoin, Int)]
+  ): Query[AccountTable, AccountDb, Seq] = {
     val queries = ids.map(findByPrimaryKey(_))
 
     if (queries.isEmpty) {
@@ -39,7 +40,8 @@ case class AccountDAO()(implicit
   }
 
   override def findByPrimaryKey(
-      id: (HDCoin, Int)): Query[AccountTable, AccountDb, Seq] = {
+      id: (HDCoin, Int)
+  ): Query[AccountTable, AccountDb, Seq] = {
     val (coin, index) = id
     table
       .filter(_.coinType === coin.coinType)
@@ -48,14 +50,15 @@ case class AccountDAO()(implicit
   }
 
   override def findAll(
-      accounts: Vector[AccountDb]): Query[AccountTable, AccountDb, Seq] =
+      accounts: Vector[AccountDb]
+  ): Query[AccountTable, AccountDb, Seq] =
     findByPrimaryKeys(
-      accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
+      accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index))
+    )
 
-  def findByAccountAction(account: HDAccount): DBIOAction[
-    Option[AccountDb],
-    NoStream,
-    Effect.Read] = {
+  def findByAccountAction(
+      account: HDAccount
+  ): DBIOAction[Option[AccountDb], NoStream, Effect.Read] = {
     val q = table
       .filter(_.coinType === account.coin.coinType)
       .filter(_.purpose === account.purpose)
@@ -67,9 +70,10 @@ case class AccountDAO()(implicit
       case Vector() =>
         None
       case accounts: Vector[AccountDb] =>
-        //yikes, we should not have more the one account per coin type/purpose
+        // yikes, we should not have more the one account per coin type/purpose
         throw new RuntimeException(
-          s"More than one account per account=${account}, got=${accounts}")
+          s"More than one account per account=${account}, got=${accounts}"
+        )
     }
   }
 
@@ -98,10 +102,13 @@ case class AccountDAO()(implicit
 
     private val toTuple: AccountDb => Option[AccountTuple] = account =>
       Some(
-        (account.hdAccount.purpose,
-         account.xpub,
-         account.hdAccount.coin.coinType,
-         account.hdAccount.index))
+        (
+          account.hdAccount.purpose,
+          account.xpub,
+          account.hdAccount.coin.coinType,
+          account.hdAccount.index
+        )
+      )
 
     def * : ProvenShape[AccountDb] =
       (purpose, xpub, coinType, index).<>(fromTuple, toTuple)

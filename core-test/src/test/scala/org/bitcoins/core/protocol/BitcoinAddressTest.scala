@@ -81,14 +81,14 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
   }
 
   it must "encode a pubKeyHash to an address" in {
-    //from https://stackoverflow.com/questions/19233053/hashing-from-a-public-key-to-a-bitcoin-address-in-php
+    // from https://stackoverflow.com/questions/19233053/hashing-from-a-public-key-to-a-bitcoin-address-in-php
     val hash = Sha256Hash160Digest("010966776006953d5567439e5e39f86a0d273bee")
     val address = Address("16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM")
     P2PKHAddress(hash, MainNet) must be(address)
   }
 
   it must "encode a scriptPubKey to an address" in {
-    //redeemScript from https://en.bitcoin.it/wiki/Pay_to_script_hash
+    // redeemScript from https://en.bitcoin.it/wiki/Pay_to_script_hash
     val hex =
       "455141042f90074d7a5bf30c72cf3a8dfd1381bdbd30407010e878f3a11269d5f74a58788505cdca22ea6eab7cfb40dc0e07aba200424ab0d79122a653ad0c7ec9896bdf51ae"
     val scriptPubKey = ScriptPubKey(hex)
@@ -103,7 +103,8 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
 
   it must "fail to create a bech32 address from an invalid ScriptPubKey" in {
     assert(
-      Bech32Address.fromScriptPubKeyT(EmptyScriptPubKey, RegTest).isFailure)
+      Bech32Address.fromScriptPubKeyT(EmptyScriptPubKey, RegTest).isFailure
+    )
   }
 
   it must "create an address from a P2PKHScriptPubKey" in {
@@ -132,18 +133,21 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
   it must "get the same p2sh address no matter what factory function we use" in {
     forAll(ScriptGenerators.randomNonP2SHScriptPubKey) {
       case (scriptPubKey, _) =>
-        //we should get the same address no matter which factory function we use
+        // we should get the same address no matter which factory function we use
         val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
         assert(
-          P2SHAddress(scriptPubKey, TestNet3) == P2SHAddress(p2shScriptPubKey,
-                                                             TestNet3))
+          P2SHAddress(scriptPubKey, TestNet3) == P2SHAddress(
+            p2shScriptPubKey,
+            TestNet3
+          )
+        )
     }
   }
 
   it must "All p2sh addresses created from factory functions must be valid" in {
     forAll(ScriptGenerators.randomNonP2SHScriptPubKey) {
       case (scriptPubKey, _) =>
-        //we should get the same address no matter which factory function we use
+        // we should get the same address no matter which factory function we use
         val addr = P2SHAddress(scriptPubKey, TestNet3)
         assert(P2SHAddress.isValid(addr.toString))
     }

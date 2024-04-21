@@ -11,8 +11,8 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 class RawFilterLoadMessageSerializerTest extends BitcoinSUnitTest {
 
   "RawFilterLoadMessageSerializer" must "deserialize and serialize a filter load message" in {
-    //example from the bitcoin developer reference
-    //https://bitcoin.org/en/developer-reference#filterload
+    // example from the bitcoin developer reference
+    // https://bitcoin.org/en/developer-reference#filterload
     val hex = "02b50f0b0000000000000000"
 
     val filterLoadMsg = RawFilterLoadMessageSerializer.read(hex)

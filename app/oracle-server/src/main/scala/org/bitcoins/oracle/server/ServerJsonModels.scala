@@ -30,7 +30,9 @@ object SignMessage extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"
+          )
+        )
     }
   }
 }
@@ -38,7 +40,8 @@ object SignMessage extends ServerJsonModels {
 case class CreateAnnouncement(
     label: String,
     maturationTime: Instant,
-    outcomes: Vector[String])
+    outcomes: Vector[String]
+)
 
 object CreateAnnouncement extends ServerJsonModels {
 
@@ -54,11 +57,14 @@ object CreateAnnouncement extends ServerJsonModels {
         }
       case Nil =>
         Failure(
-          new IllegalArgumentException("Missing label and outcome arguments"))
+          new IllegalArgumentException("Missing label and outcome arguments")
+        )
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 2"
+          )
+        )
     }
   }
 }
@@ -69,7 +75,8 @@ case class CreateNumericAnnouncement(
     minValue: Long,
     maxValue: Long,
     unit: String,
-    precision: Int)
+    precision: Int
+)
 
 object CreateNumericAnnouncement extends ServerJsonModels {
 
@@ -84,20 +91,27 @@ object CreateNumericAnnouncement extends ServerJsonModels {
           val unit = unitJs.str
           val precision = precisionJs.num.toInt
 
-          CreateNumericAnnouncement(label,
-                                    maturationTime,
-                                    minValue,
-                                    maxValue,
-                                    unit,
-                                    precision)
+          CreateNumericAnnouncement(
+            label,
+            maturationTime,
+            minValue,
+            maxValue,
+            unit,
+            precision
+          )
         }
       case Nil =>
-        Failure(new IllegalArgumentException(
-          "Missing label, maturationTime, minValue, maxValue, units, and precision arguments"))
+        Failure(
+          new IllegalArgumentException(
+            "Missing label, maturationTime, minValue, maxValue, units, and precision arguments"
+          )
+        )
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 6"))
+            s"Bad number of arguments: ${other.length}. Expected: 6"
+          )
+        )
     }
   }
 }
@@ -109,7 +123,8 @@ case class CreateDigitDecompAnnouncement(
     isSigned: Boolean,
     numDigits: Int,
     unit: String,
-    precision: Int)
+    precision: Int
+)
 
 object CreateDigitDecompAnnouncement extends ServerJsonModels {
 
@@ -126,21 +141,28 @@ object CreateDigitDecompAnnouncement extends ServerJsonModels {
           val unit = unitJs.str
           val precision = precisionJs.num.toInt
 
-          CreateDigitDecompAnnouncement(label,
-                                        maturationTime,
-                                        base,
-                                        isSigned,
-                                        numDigits,
-                                        unit,
-                                        precision)
+          CreateDigitDecompAnnouncement(
+            label,
+            maturationTime,
+            base,
+            isSigned,
+            numDigits,
+            unit,
+            precision
+          )
         }
       case Nil =>
-        Failure(new IllegalArgumentException(
-          "Missing label, maturationTime, base, isSigned, numDigits, units, and precision arguments"))
+        Failure(
+          new IllegalArgumentException(
+            "Missing label, maturationTime, base, isSigned, numDigits, units, and precision arguments"
+          )
+        )
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 7"))
+            s"Bad number of arguments: ${other.length}. Expected: 7"
+          )
+        )
     }
   }
 }
@@ -160,11 +182,15 @@ object SignEnum extends ServerJsonModels {
       case Nil =>
         Failure(
           new IllegalArgumentException(
-            "Missing oracle event tlv and outcome arguments"))
+            "Missing oracle event tlv and outcome arguments"
+          )
+        )
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 2"
+          )
+        )
     }
   }
 }
@@ -182,7 +208,8 @@ object SignDigits extends ServerJsonModels {
             case str: Str => str.value.toDouble
             case _: Value =>
               throw new IllegalArgumentException(
-                s"Unable to parse $numJs as a number")
+                s"Unable to parse $numJs as a number"
+              )
           }
 
           SignDigits(nameJs.str, num.toLong)
@@ -190,11 +217,15 @@ object SignDigits extends ServerJsonModels {
       case Nil =>
         Failure(
           new IllegalArgumentException(
-            "Missing oracle event tlv and num arguments"))
+            "Missing oracle event tlv and num arguments"
+          )
+        )
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 2"
+          )
+        )
     }
   }
 }
@@ -204,8 +235,10 @@ case class GetAnnouncement(eventName: String)
 object GetAnnouncement extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetAnnouncement] = {
-    require(jsArr.arr.size == 1,
-            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+    require(
+      jsArr.arr.size == 1,
+      s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1"
+    )
     Try {
       GetAnnouncement(jsArr.arr.head.str)
     }
@@ -214,7 +247,8 @@ object GetAnnouncement extends ServerJsonModels {
 
 case class KeyManagerPassphraseChange(
     oldPassword: AesPassword,
-    newPassword: AesPassword)
+    newPassword: AesPassword
+)
 
 object KeyManagerPassphraseChange extends ServerJsonModels {
 
@@ -230,11 +264,15 @@ object KeyManagerPassphraseChange extends ServerJsonModels {
       case Nil =>
         Failure(
           new IllegalArgumentException(
-            "Missing old password and new password arguments"))
+            "Missing old password and new password arguments"
+          )
+        )
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 2"
+          )
+        )
     }
   }
 }
@@ -256,7 +294,9 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"
+          )
+        )
     }
   }
 }
@@ -276,8 +316,11 @@ object DeleteAnnouncement
       case Vector() =>
         Failure(new IllegalArgumentException(s"Missing event name argument"))
       case other =>
-        Failure(new IllegalArgumentException(
-          s"Bad number of arguments to deleteannouncement, got=${other.length} expected: 1"))
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments to deleteannouncement, got=${other.length} expected: 1"
+          )
+        )
     }
   }
 
@@ -303,7 +346,9 @@ object DeleteAttestation
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"
+          )
+        )
     }
   }
 
@@ -341,7 +386,8 @@ trait ServerJsonModels {
     LockUnspentOutputParameter.fromJson(js)
 
   def jsToLockUnspentOutputParameters(
-      js: Value): Seq[LockUnspentOutputParameter] = {
+      js: Value
+  ): Seq[LockUnspentOutputParameter] = {
     js.arr.foldLeft(Seq.empty[LockUnspentOutputParameter])((seq, outPoint) =>
       seq :+ jsToLockUnspentOutputParameter(outPoint))
   }

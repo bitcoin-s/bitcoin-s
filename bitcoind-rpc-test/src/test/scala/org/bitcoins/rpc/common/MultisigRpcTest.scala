@@ -15,8 +15,10 @@ class MultisigRpcTest extends BitcoindRpcTest {
     BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt = Some(instance),
-                                                 clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(
+      instanceOpt = Some(instance),
+      clientAccum = clientAccum
+    )
 
   behavior of "MultisigRpc"
 
@@ -29,9 +31,11 @@ class MultisigRpcTest extends BitcoindRpcTest {
 
     for {
       client <- clientF
-      _ <- client.createMultiSig(2,
-                                 Vector(pubKey1, pubKey2),
-                                 AddressType.Bech32)
+      _ <- client.createMultiSig(
+        2,
+        Vector(pubKey1, pubKey2),
+        AddressType.Bech32
+      )
     } yield succeed
   }
 

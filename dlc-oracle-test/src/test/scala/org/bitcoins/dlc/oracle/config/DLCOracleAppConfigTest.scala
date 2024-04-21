@@ -36,26 +36,26 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         dlcOracle.publicKey
       }
 
-      //stop old oracle
+      // stop old oracle
       val stoppedF = for {
         _ <- startedF
         _ <- dlcOracleAppConfig.stop()
       } yield ()
 
-      //move the seed file to a new datadir
+      // move the seed file to a new datadir
       val newDatadir = BitcoinSTestAppConfig.tmpDir()
       val newSeedPath = newDatadir
         .resolve("seeds")
         .resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
 
-      //create seed directory
+      // create seed directory
       Files.createDirectories(newSeedPath.getParent)
       val copyF = startedF.map { _ =>
-        //copy seed file to new directory
+        // copy seed file to new directory
         Files.copy(seedFile, newSeedPath)
       }
 
-      //start the new app config from the new datadir
+      // start the new app config from the new datadir
       val appConfig = DLCOracleAppConfig
         .fromDatadir(newDatadir)
 
@@ -80,7 +80,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
       val seedFile = dlcOracleAppConfig.seedPath
       val startedF = dlcOracleAppConfig.start()
 
-      //stop old oracle
+      // stop old oracle
       val stoppedF = for {
         _ <- startedF
         _ <- dlcOracleAppConfig.stop()
@@ -89,7 +89,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
       val deletedF = for {
         _ <- stoppedF
       } yield {
-        //delete the seed so we start with a new seed
+        // delete the seed so we start with a new seed
         Files.delete(seedFile)
       }
 
@@ -98,7 +98,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         _ <- dlcOracleAppConfig.start()
       } yield ()
 
-      //start it again and except an exception
+      // start it again and except an exception
       recoverToSucceededIf[RuntimeException] {
         start2F
       }

@@ -9,10 +9,9 @@ import org.bitcoins.testkit.node.fixture.{
 }
 
 /** Creates
-  * 1. a funded bitcoind wallet
-  * 2. a funded bitcoin-s wallet
-  * 3. a chain handler with the appropriate tables created
-  * 4. a neutrino node that is connected to the bitcoin instance -- but not started!
+  *   1. a funded bitcoind wallet 2. a funded bitcoin-s wallet 3. a chain
+  *      handler with the appropriate tables created 4. a neutrino node that is
+  *      connected to the bitcoin instance -- but not started!
   */
 trait NodeFundedWalletBitcoind {
   def node: Node
@@ -26,10 +25,11 @@ trait NodeFundedWalletBitcoind {
 case class NeutrinoNodeFundedWalletBitcoind(
     node: NeutrinoNode,
     wallet: NeutrinoHDWalletApi,
-    bitcoindRpc: BitcoindRpcClient)
-    extends NodeFundedWalletBitcoind {
+    bitcoindRpc: BitcoindRpcClient
+) extends NodeFundedWalletBitcoind {
 
-  override def toNodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind = {
+  override def toNodeConnectedWithBitcoind
+      : NeutrinoNodeConnectedWithBitcoind = {
     NeutrinoNodeConnectedWithBitcoind(node, bitcoindRpc)
   }
 }

@@ -9,7 +9,7 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
   */
 class RawRejectMessageSerializerTest extends BitcoinSUnitTest {
 
-  //https://bitcoin.org/en/developer-reference#reject
+  // https://bitcoin.org/en/developer-reference#reject
   val hex =
     "02" + "7478" + "12" + "15" + "6261642d74786e732d696e707574732d7370656e74" +
       "394715fcab51093be7bfca5a31005972947baf86a31017939575fb2354222821"
@@ -22,7 +22,8 @@ class RawRejectMessageSerializerTest extends BitcoinSUnitTest {
     rejectMsg.reasonSize must be(CompactSizeUInt(UInt64(21)))
     rejectMsg.reason must be("bad-txns-inputs-spent")
     BytesUtil.encodeHex(rejectMsg.extra) must be(
-      "394715fcab51093be7bfca5a31005972947baf86a31017939575fb2354222821")
+      "394715fcab51093be7bfca5a31005972947baf86a31017939575fb2354222821"
+    )
   }
 
   it must "read then write a reject message" in {

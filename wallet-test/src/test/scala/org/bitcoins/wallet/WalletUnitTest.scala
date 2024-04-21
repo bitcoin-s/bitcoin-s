@@ -59,7 +59,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "know what the last address index is" in { wallet =>
     def getMostRecent(
         hdAccount: HDAccount,
-        chain: HDChainType): Future[AddressDb] = {
+        chain: HDChainType
+    ): Future[AddressDb] = {
       val recentOptFut: Future[Option[AddressDb]] = chain match {
         case Change =>
           wallet.addressDAO.findMostRecentChange(hdAccount)
@@ -76,7 +77,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
     def assertIndexIs(
         hdAccount: HDAccount,
         chain: HDChainType,
-        addrIndex: Int): Future[Assertion] = {
+        addrIndex: Int
+    ): Future[Assertion] = {
       getMostRecent(hdAccount, chain) map { addr =>
         assert(addr.path.address.index == addrIndex)
       }
@@ -90,7 +92,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       */
     def testChain(
         hdAccount: HDAccount,
-        chain: HDChainType): Future[Assertion] = {
+        chain: HDChainType
+    ): Future[Assertion] = {
       val getAddrFunc: () => Future[BitcoinAddress] = chain match {
         case Change   => wallet.getNewChangeAddress _
         case External => wallet.getNewAddress _
@@ -106,7 +109,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
           addrF.map {
             case Some(addr) =>
               fail(
-                s"Found ${addr.address} $chain address although there was no previous addreses generated")
+                s"Found ${addr.address} $chain address although there was no previous addreses generated"
+              )
             case None =>
           }
         }
@@ -130,21 +134,27 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "match block filters" in { wallet: Wallet =>
     for {
       height <- wallet.chainQueryApi.getFilterCount()
-      filtersResponse <- chainQueryApi.getFiltersBetweenHeights(startHeight = 0,
-                                                                endHeight =
-                                                                  height)
+      filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
+        startHeight = 0,
+        endHeight = height
+      )
       matched <- wallet.findMatches(
         filters = filtersResponse,
         scripts = Vector(
           // this is a random address which is included into the test block
-          BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").scriptPubKey),
+          BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").scriptPubKey
+        ),
         parallelismLevel = 1
       )
     } yield {
       assert(
         Vector(
-          BlockMatchingResponse(blockHash = MockChainQueryApi.testBlockHash,
-                                blockHeight = 1)) == matched)
+          BlockMatchingResponse(
+            blockHash = MockChainQueryApi.testBlockHash,
+            blockHeight = 1
+          )
+        ) == matched
+      )
     }
   }
 
@@ -168,27 +178,30 @@ class WalletUnitTest extends BitcoinSWalletTest {
         Wallet
           .initialize(wallet, bip39PasswordOpt)
           .flatMap { _ =>
-            //use a BIP39 password to make the key-managers different
+            // use a BIP39 password to make the key-managers different
             Wallet.initialize(
               wallet,
-              Some("random-password-to-make-key-managers-different"))
+              Some("random-password-to-make-key-managers-different")
+            )
           }
       }
   }
 
   it must "be able to detect different master xpubs on wallet startup" in {
     wallet: Wallet =>
-      //create new config with different entropy
-      //to make the keymanagers differetn
+      // create new config with different entropy
+      // to make the keymanagers differetn
       val config = ConfigFactory.parseString(
-        s"bitcoin-s.keymanager.entropy=${CryptoUtil.randomBytes(16).toHex}")
+        s"bitcoin-s.keymanager.entropy=${CryptoUtil.randomBytes(16).toHex}"
+      )
       val uniqueEntropyWalletConfig = wallet.walletConfig.withOverrides(config)
       val startedF = uniqueEntropyWalletConfig.start()
       val walletDiffKeyManagerF: Future[Wallet] = for {
         _ <- startedF
       } yield {
         Wallet(wallet.nodeApi, wallet.chainQueryApi, wallet.feeRateApi)(
-          uniqueEntropyWalletConfig)
+          uniqueEntropyWalletConfig
+        )
       }
 
       recoverToSucceededIf[IllegalArgumentException] {
@@ -221,7 +234,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       assert(signed != psbt)
       assert(
         signed.inputMaps.head.partialSignatures
-          .exists(_.pubKey.toPublicKey == walletKey))
+          .exists(_.pubKey.toPublicKey == walletKey)
+      )
     }
   }
 
@@ -244,7 +258,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
         assert(signed != psbt)
         assert(
           signed.inputMaps.head.partialSignatures
-            .exists(_.pubKey.toPublicKey == walletKey))
+            .exists(_.pubKey.toPublicKey == walletKey)
+        )
       }
   }
 
@@ -267,7 +282,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
         assert(signed != psbt)
         assert(
           signed.inputMaps.head.partialSignatures
-            .exists(_.pubKey.toPublicKey == walletKey))
+            .exists(_.pubKey.toPublicKey == walletKey)
+        )
       }
   }
 
@@ -291,7 +307,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
         assert(signed != psbt)
         assert(
           signed.inputMaps.head.partialSignatures
-            .exists(_.pubKey.toPublicKey == walletKey))
+            .exists(_.pubKey.toPublicKey == walletKey)
+        )
       }
   }
 
@@ -325,24 +342,24 @@ class WalletUnitTest extends BitcoinSWalletTest {
       for {
         isEmpty <- wallet.isEmpty()
         _ = assert(isEmpty)
-        //manually override the seeds creation time
+        // manually override the seeds creation time
         seedPath = wallet.walletConfig.kmConf.seedPath
         mnemonic = WalletStorage
           .decryptSeedFromDisk(seedPath = seedPath, passphraseOpt = None)
           .getOrElse(sys.error(s"failed to decrypt seed for unit test"))
           .asInstanceOf[DecryptedMnemonic]
         _ = {
-          //delete old seed file because we do not allow overwriting a seed file
+          // delete old seed file because we do not allow overwriting a seed file
           Files.delete(wallet.walletConfig.seedPath)
         }
         modifiedMnemonic = mnemonic.copy(creationTime =
-          Instant.now.minusSeconds(60 * 60 + 1)) //1 hour and 1 minute
+          Instant.now.minusSeconds(60 * 60 + 1)) // 1 hour and 1 minute
 
         _ = WalletStorage.writeSeedToDisk(seedPath, modifiedMnemonic)
-        //delete old wallet database
+        // delete old wallet database
         _ = {
           if (pgEnabled) {
-            //cannot delete database file if using postgres
+            // cannot delete database file if using postgres
             ()
           } else {
             val path = wallet.walletConfig.datadir
@@ -353,10 +370,11 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         }
         _ = wallet.walletConfig.migrate()
-        //initialize it
+        // initialize it
         initOldWallet <- Wallet.initialize(
           wallet = wallet,
-          bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt)
+          bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
+        )
         isOldWalletEmpty <- initOldWallet.isEmpty()
       } yield assert(!isOldWalletEmpty)
 

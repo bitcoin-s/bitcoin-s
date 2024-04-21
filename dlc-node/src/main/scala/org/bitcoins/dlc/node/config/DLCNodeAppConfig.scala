@@ -17,12 +17,14 @@ import scala.concurrent._
 
 /** Configuration for the Bitcoin-S wallet
   *
-  * @param directory The data directory of the wallet
-  * @param conf      Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the wallet
+  * @param conf
+  *   Optional sequence of configuration overrides
   */
 case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
-    implicit ec: ExecutionContext)
-    extends AppConfig
+    implicit ec: ExecutionContext
+) extends AppConfig
     with CallbackConfig[DLCNodeCallbacks] {
 
   override protected[bitcoins] def moduleName: String =
@@ -31,7 +33,8 @@ case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = DLCNodeAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Vector[Config]): DLCNodeAppConfig =
+      configs: Vector[Config]
+  ): DLCNodeAppConfig =
     DLCNodeAppConfig(baseDatadir, configs)
 
   override def start(): Future[Unit] = {
@@ -66,8 +69,9 @@ case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     }
   }
 
-  def createDLCNode(dlcWallet: DLCWalletApi)(implicit
-      system: ActorSystem): DLCNode = {
+  def createDLCNode(
+      dlcWallet: DLCWalletApi
+  )(implicit system: ActorSystem): DLCNode = {
     DLCNode(dlcWallet)(system, this)
   }
 }
@@ -76,6 +80,7 @@ object DLCNodeAppConfig extends AppConfigFactory[DLCNodeAppConfig] {
   override val moduleName: String = "dlcnode"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): DLCNodeAppConfig =
+      ec: ExecutionContext
+  ): DLCNodeAppConfig =
     DLCNodeAppConfig(datadir, confs)
 }

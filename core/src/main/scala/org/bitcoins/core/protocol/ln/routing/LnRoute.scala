@@ -13,8 +13,8 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 
-/** Indicates a node to route through with specific options on the Lightning Network
-  * For more details on these settings please see
+/** Indicates a node to route through with specific options on the Lightning
+  * Network For more details on these settings please see
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection BOLT2]]
   */
 case class LnRoute(
@@ -22,8 +22,8 @@ case class LnRoute(
     shortChannelID: ShortChannelId,
     feeBaseMsat: FeeBaseMSat,
     feePropMilli: FeeProportionalMillionths,
-    cltvExpiryDelta: Short)
-    extends NetworkElement {
+    cltvExpiryDelta: Short
+) extends NetworkElement {
 
   override def bytes: ByteVector = {
 
@@ -54,7 +54,8 @@ object LnRoute {
 
     require(
       bytes.length >= TOTAL_LEN,
-      s"ByteVector must at least of length $TOTAL_LEN, got ${bytes.length}")
+      s"ByteVector must at least of length $TOTAL_LEN, got ${bytes.length}"
+    )
 
     val (pubKeyBytes, rest0) = bytes.splitAt(PUBKEY_LEN)
     val pubKey = ECPublicKey.fromBytes(pubKeyBytes)
@@ -79,10 +80,12 @@ object LnRoute {
     val cltvExpiryDelta =
       new BigInteger(cltvExpiryDeltaBytes.toArray).shortValue()
 
-    LnRoute(pubKey,
-            shortChannelId,
-            feeBaseMSat,
-            feeProportionalMillionths,
-            cltvExpiryDelta)
+    LnRoute(
+      pubKey,
+      shortChannelId,
+      feeBaseMSat,
+      feeProportionalMillionths,
+      cltvExpiryDelta
+    )
   }
 }

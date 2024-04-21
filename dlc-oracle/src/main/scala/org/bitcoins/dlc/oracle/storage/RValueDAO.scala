@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class RValueDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCOracleAppConfig)
-    extends CRUD[RValueDb, SchnorrNonce]
+    override val appConfig: DLCOracleAppConfig
+) extends CRUD[RValueDb, SchnorrNonce]
     with SlickUtil[RValueDb, SchnorrNonce] {
 
   import profile.api._
@@ -27,11 +27,13 @@ case class RValueDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[SchnorrNonce]): Query[RValueTable, RValueDb, Seq] =
+      ids: Vector[SchnorrNonce]
+  ): Query[RValueTable, RValueDb, Seq] =
     table.filter(_.nonce.inSet(ids))
 
   override protected def findAll(
-      ts: Vector[RValueDb]): Query[RValueTable, RValueDb, Seq] =
+      ts: Vector[RValueDb]
+  ): Query[RValueTable, RValueDb, Seq] =
     findByPrimaryKeys(ts.map(_.nonce))
 
   def findByNonce(nonce: SchnorrNonce): Future[Option[RValueDb]] = {

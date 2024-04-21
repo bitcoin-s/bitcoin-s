@@ -4,8 +4,7 @@ import org.bitcoins.core.config._
 
 /** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Coin_type BIP44]],
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
-  * and
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]] and
   * [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
   * coin type.
   */
@@ -13,8 +12,9 @@ sealed trait HDCoinType {
   def toInt: Int
 }
 
-/** @see [[https://github.com/satoshilabs/slips/blob/master/slip-0044.md SLIP-0044]]
-  *     central registry of coin types
+/** @see
+  *   [[https://github.com/satoshilabs/slips/blob/master/slip-0044.md SLIP-0044]]
+  *   central registry of coin types
   */
 object HDCoinType {
 
@@ -45,8 +45,10 @@ object HDCoinType {
   }
 
   def fromNode(node: BIP32Node): HDCoinType = {
-    require(node.hardened,
-            s"Cannot construct HDCoinType from un-hardened node: $node")
+    require(
+      node.hardened,
+      s"Cannot construct HDCoinType from un-hardened node: $node"
+    )
 
     fromInt(node.index)
   }

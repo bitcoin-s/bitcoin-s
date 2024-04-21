@@ -34,13 +34,15 @@ class DLCFeeTestVectorTest extends BitcoinSJvmTest {
       acceptChangeSPKLen <- Gen.oneOf(22, 34)
       feeRate <- FeeUnitGen.satsPerVirtualByte
     } yield {
-      DLCFeeTestVector(offerInputs.toVector,
-                       offerPayoutSPKLen,
-                       offerChangeSPKLen,
-                       acceptInputs.toVector,
-                       acceptPayoutSPKLen,
-                       acceptChangeSPKLen,
-                       feeRate)
+      DLCFeeTestVector(
+        offerInputs.toVector,
+        offerPayoutSPKLen,
+        offerChangeSPKLen,
+        acceptInputs.toVector,
+        acceptPayoutSPKLen,
+        acceptChangeSPKLen,
+        feeRate
+      )
     }
 
     forAll(gen) { feeTest =>

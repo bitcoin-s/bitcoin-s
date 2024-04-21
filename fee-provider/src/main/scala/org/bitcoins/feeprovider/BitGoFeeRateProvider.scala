@@ -11,12 +11,13 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 import scala.util.{Failure, Success, Try}
 
 /** Fetches fee rate from BitGo's API
-  * @see [[https://www.bitgo.com/api/v2/#operation/v2.tx.getfeeestimate]]
+  * @see
+  *   [[https://www.bitgo.com/api/v2/#operation/v2.tx.getfeeestimate]]
   */
 case class BitGoFeeRateProvider(
     blockTargetOpt: Option[Int],
-    proxyParams: Option[Socks5ProxyParams])(implicit
-    override val system: ActorSystem)
+    proxyParams: Option[Socks5ProxyParams]
+)(implicit override val system: ActorSystem)
     extends CachedHttpFeeRateProvider[SatoshisPerKiloByte] {
 
   override val uri: Uri = Uri("https://www.bitgo.com/api/v2/btc/tx/fee")
@@ -35,13 +36,16 @@ case class BitGoFeeRateProvider(
       case JsError(error) =>
         Failure(
           new RuntimeException(
-            s"Unexpected error when parsing response $str: $error"))
+            s"Unexpected error when parsing response $str: $error"
+          )
+        )
     }
   }
 
   private def extractFeerate(
       feeRanges: Map[Int, SatoshisPerKiloByte],
-      blockTarget: Int): SatoshisPerKiloByte = {
+      blockTarget: Int
+  ): SatoshisPerKiloByte = {
     // first we keep only fee ranges with a max block delay below the limit
     val belowLimit = feeRanges.filter(_._1 <= blockTarget)
     // out of all the remaining fee ranges, we select the one with the minimum higher bound
@@ -53,8 +57,8 @@ object BitGoFeeRateProvider extends FeeProviderFactory[BitGoFeeRateProvider] {
 
   override def fromBlockTarget(
       blocks: Int,
-      proxyParams: Option[Socks5ProxyParams])(implicit
-      system: ActorSystem): BitGoFeeRateProvider = {
+      proxyParams: Option[Socks5ProxyParams]
+  )(implicit system: ActorSystem): BitGoFeeRateProvider = {
     BitGoFeeRateProvider(Some(blocks), proxyParams)
   }
 }

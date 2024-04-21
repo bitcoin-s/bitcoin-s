@@ -23,10 +23,12 @@ trait MiningRpc { self: Client with BlockchainRpc =>
   def generateToAddress(
       blocks: Int,
       address: BitcoinAddress,
-      maxTries: Int = 1000000): Future[Vector[DoubleSha256DigestBE]] = {
+      maxTries: Int = 1000000
+  ): Future[Vector[DoubleSha256DigestBE]] = {
     val hashesF = bitcoindCall[Vector[DoubleSha256DigestBE]](
       "generatetoaddress",
-      List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
+      List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries))
+    )
 
     for {
       hashes <- hashesF
@@ -41,15 +43,17 @@ trait MiningRpc { self: Client with BlockchainRpc =>
     val txsJs = JsArray(transactions.map(t => JsString(t.hex)))
     val hashesF = bitcoindCall[GenerateBlockResult](
       "generateblock",
-      List(JsString(address.toString), txsJs)).map(_.hash)
+      List(JsString(address.toString), txsJs)
+    ).map(_.hash)
     for {
       hash <- hashesF
       _ <- syncWithValidationInterfaceQueue()
     } yield hash
   }
 
-  def getBlockTemplate(request: Option[RpcOpts.BlockTemplateRequest] =
-    None): Future[GetBlockTemplateResult] = {
+  def getBlockTemplate(
+      request: Option[RpcOpts.BlockTemplateRequest] = None
+  ): Future[GetBlockTemplateResult] = {
     val params =
       if (request.isEmpty) {
         List.empty
@@ -61,9 +65,12 @@ trait MiningRpc { self: Client with BlockchainRpc =>
 
   def getNetworkHashPS(
       blocks: Int = 120,
-      height: Int = -1): Future[BigDecimal] = {
-    bitcoindCall[BigDecimal]("getnetworkhashps",
-                             List(JsNumber(blocks), JsNumber(height)))
+      height: Int = -1
+  ): Future[BigDecimal] = {
+    bitcoindCall[BigDecimal](
+      "getnetworkhashps",
+      List(JsNumber(blocks), JsNumber(height))
+    )
   }
 
   def getMiningInfo: Future[GetMiningInfoResult] = {
@@ -72,15 +79,18 @@ trait MiningRpc { self: Client with BlockchainRpc =>
 
   def prioritiseTransaction(
       txid: DoubleSha256DigestBE,
-      feeDelta: Satoshis): Future[Boolean] = {
+      feeDelta: Satoshis
+  ): Future[Boolean] = {
     bitcoindCall[Boolean](
       "prioritisetransaction",
-      List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
+      List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong))
+    )
   }
 
   def prioritiseTransaction(
       txid: DoubleSha256Digest,
-      feeDelta: Satoshis): Future[Boolean] = {
+      feeDelta: Satoshis
+  ): Future[Boolean] = {
     prioritiseTransaction(txid.flip, feeDelta)
   }
 }

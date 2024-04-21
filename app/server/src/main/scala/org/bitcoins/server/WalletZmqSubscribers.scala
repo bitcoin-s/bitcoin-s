@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 case class WalletZmqSubscribers(
     rawTxSubscriberOpt: Option[ZMQSubscriber],
-    rawBlockSubscriberOpt: Option[ZMQSubscriber])
-    extends StartStop[Unit] {
+    rawBlockSubscriberOpt: Option[ZMQSubscriber]
+) extends StartStop[Unit] {
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
 
   override def start(): Unit = {

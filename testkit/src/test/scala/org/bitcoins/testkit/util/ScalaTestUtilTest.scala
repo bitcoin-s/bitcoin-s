@@ -19,7 +19,7 @@ class ScalaTestUtilTest extends BitcoinSUnitTest {
 
   def futureFail =
     Future {
-      //sleep for awhile and then eventually fail
+      // sleep for awhile and then eventually fail
       Thread.sleep(1000)
       f
     }

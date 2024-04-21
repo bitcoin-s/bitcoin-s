@@ -2,9 +2,8 @@ package org.bitcoins.core.script.flag
 
 import org.bitcoins.crypto.StringFactory
 
-/** Created by chris on 3/23/16.
-  * Trait used to create a script flag used to evaluate scripts in a
-  * certain way
+/** Created by chris on 3/23/16. Trait used to create a script flag used to
+  * evaluate scripts in a certain way
   */
 trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
 
@@ -44,12 +43,12 @@ trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
   override def fromString(str: String): ScriptFlag = {
     fromStringOpt(str) match {
       case Some(flag) => flag
-      case None       => sys.error(s"Could not find ScriptFlag for string=${str}")
+      case None => sys.error(s"Could not find ScriptFlag for string=${str}")
     }
   }
 
-  /** Parses the given list into[[ScriptFlag]]s
-    * the strings that do not match a [[ScriptFlag]] are discarded.
+  /** Parses the given list into[[ScriptFlag]]s the strings that do not match a
+    * [[ScriptFlag]] are discarded.
     */
   def fromList(list: Seq[String]): Seq[ScriptFlag] = {
     list.flatMap(fromStringOpt(_))

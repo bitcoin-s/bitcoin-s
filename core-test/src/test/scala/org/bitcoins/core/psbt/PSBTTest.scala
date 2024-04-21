@@ -47,7 +47,8 @@ class PSBTTest extends BitcoinSUnitTest {
       val oppositeOutputs =
         outputs.zip(newOutputs).map { case (map, pruned) =>
           OutputPSBTMap(
-            map.elements.filterNot(e => pruned.elements.contains(e)))
+            map.elements.filterNot(e => pruned.elements.contains(e))
+          )
         }
 
       val psbt2 = PSBT(oppositeGlobal, oppositeInputs, oppositeOutputs)
@@ -70,8 +71,10 @@ class PSBTTest extends BitcoinSUnitTest {
               .addUTXOToInput(utxo.prevTransaction, index)
               .addSigHashTypeToInput(utxo.hashType, index)
 
-            (InputInfo.getRedeemScript(utxo.inputInfo),
-             InputInfo.getScriptWitness(utxo.inputInfo)) match {
+            (
+              InputInfo.getRedeemScript(utxo.inputInfo),
+              InputInfo.getScriptWitness(utxo.inputInfo)
+            ) match {
               case (Some(redeemScript), Some(scriptWitness)) =>
                 partUpdatedPsbt
                   .addRedeemOrWitnessScriptToInput(redeemScript, index)
@@ -101,9 +104,11 @@ class PSBTTest extends BitcoinSUnitTest {
       val signedPSBT = infos.foldLeft(psbtNoSigs) {
         case (unsignedPSBT, (index, info)) =>
           info.toSingles.foldLeft(unsignedPSBT) { (psbtToSign, singleInfo) =>
-            psbtToSign.sign(index,
-                            singleInfo.signer,
-                            singleInfo.conditionalPath)
+            psbtToSign.sign(
+              index,
+              singleInfo.signer,
+              singleInfo.conditionalPath
+            )
           }
       }
       val finalizedPsbtT = signedPSBT.finalizePSBT
@@ -150,34 +155,37 @@ class PSBTTest extends BitcoinSUnitTest {
   }
 
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
-    forAll(CreditingTxGen.inputsAndOutputs(),
-           ScriptGenerators.scriptPubKey,
-           ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), (changeSPK, _), _) =>
-        val crediting =
-          creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
-        val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
-        val maxFee = crediting - spending
-        val fee = GenUtil.sample(FeeUnitGen.feeUnit(maxFee))
+    forAll(
+      CreditingTxGen.inputsAndOutputs(),
+      ScriptGenerators.scriptPubKey,
+      ChainParamsGenerator.bitcoinNetworkParams
+    ) { case ((creditingTxsInfo, destinations), (changeSPK, _), _) =>
+      val crediting =
+        creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+      val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
+      val maxFee = crediting - spending
+      val fee = GenUtil.sample(FeeUnitGen.feeUnit(maxFee))
 
-        val (psbt, _, _) =
-          PSBTGenerators.psbtAndBuilderFromInputs(finalized = false,
-                                                  creditingTxsInfo =
-                                                    creditingTxsInfo,
-                                                  destinations = destinations,
-                                                  changeSPK = changeSPK,
-                                                  fee = fee)
-        val (expected, _, _) =
-          PSBTGenerators.psbtAndBuilderFromInputs(finalized = true,
-                                                  creditingTxsInfo =
-                                                    creditingTxsInfo,
-                                                  destinations = destinations,
-                                                  changeSPK = changeSPK,
-                                                  fee = fee)
+      val (psbt, _, _) =
+        PSBTGenerators.psbtAndBuilderFromInputs(
+          finalized = false,
+          creditingTxsInfo = creditingTxsInfo,
+          destinations = destinations,
+          changeSPK = changeSPK,
+          fee = fee
+        )
+      val (expected, _, _) =
+        PSBTGenerators.psbtAndBuilderFromInputs(
+          finalized = true,
+          creditingTxsInfo = creditingTxsInfo,
+          destinations = destinations,
+          changeSPK = changeSPK,
+          fee = fee
+        )
 
-        val finalizedPsbtOpt = psbt.finalizePSBT
-        assert(finalizedPsbtOpt.isSuccess, psbt.hex)
-        assert(finalizedPsbtOpt.get == expected)
+      val finalizedPsbtOpt = psbt.finalizePSBT
+      assert(finalizedPsbtOpt.isSuccess, psbt.hex)
+      assert(finalizedPsbtOpt.get == expected)
     }
   }
 

@@ -26,8 +26,10 @@ class BlockFilterTest extends BitcoinSUnitTest {
     def runTest(): org.scalatest.Assertion = {
       val constructedFilter = BlockFilter(block, prevOutputScripts)
 
-      assert(constructedFilter.encodedData.bytes == filter.encodedData.bytes,
-             clue)
+      assert(
+        constructedFilter.encodedData.bytes == filter.encodedData.bytes,
+        clue
+      )
 
       val matcher = new BinarySearchFilterMatcher(filter)
       val constructedMatcher = new BinarySearchFilterMatcher(constructedFilter)
@@ -42,7 +44,7 @@ class BlockFilterTest extends BitcoinSUnitTest {
 
   object Bip158TestCase {
 
-    //["Block Height,Block Hash,Block,[Prev Output Scripts for Block],Previous Basic Header,Basic Filter,Basic Header,Notes"]
+    // ["Block Height,Block Hash,Block,[Prev Output Scripts for Block],Previous Basic Header,Basic Filter,Basic Header,Notes"]
     def fromArr(array: Arr): Bip158TestCase = {
       val parseResult = for {
         height <- array(0).numOpt.map(_.toInt)
@@ -64,14 +66,16 @@ class BlockFilterTest extends BitcoinSUnitTest {
         header <- array(6).strOpt.map(DoubleSha256DigestBE.fromHex)
 
         notes <- array(7).strOpt
-      } yield Bip158TestCase(height,
-                             blockHash,
-                             block,
-                             scripts,
-                             prevHeader,
-                             filter,
-                             header,
-                             notes)
+      } yield Bip158TestCase(
+        height,
+        blockHash,
+        block,
+        scripts,
+        prevHeader,
+        filter,
+        header,
+        notes
+      )
 
       parseResult.get
     }

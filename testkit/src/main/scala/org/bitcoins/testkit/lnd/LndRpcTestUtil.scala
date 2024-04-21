@@ -42,9 +42,9 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   /** Makes a best effort to get a 0.21 bitcoind instance
     */
   def startedBitcoindRpcClient(
-      instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
-      actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
-    //need to do something with the Vector.newBuilder presumably?
+      instanceOpt: Option[BitcoindInstanceLocal] = None
+  )(implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+    // need to do something with the Vector.newBuilder presumably?
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt, Vector.newBuilder)
   }
 
@@ -53,18 +53,21 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      bitcoindV: BitcoindVersion = BitcoindVersion.newest)(implicit
-      system: ActorSystem): BitcoindInstanceLocal = {
-    BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
-                                    port = port,
-                                    rpcPort = rpcPort,
-                                    zmqConfig = zmqConfig)
+      bitcoindV: BitcoindVersion = BitcoindVersion.newest
+  )(implicit system: ActorSystem): BitcoindInstanceLocal = {
+    BitcoindRpcTestUtil.getInstance(
+      bitcoindVersion = bitcoindV,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig
+    )
   }
 
   def commonConfig(
       bitcoindInstance: BitcoindInstance,
       port: Int = RpcUtil.randomPort,
-      rpcPort: Int = RpcUtil.randomPort): String = {
+      rpcPort: Int = RpcUtil.randomPort
+  ): String = {
     val rawTx = bitcoindInstance.zmqConfig.rawTx.get
     val rawBlock = bitcoindInstance.zmqConfig.rawBlock.get
     s"""
@@ -88,11 +91,11 @@ trait LndRpcTestUtil extends BitcoinSLogger {
        |externalip=127.0.0.1
        |maxpendingchannels=10
        |bitcoind.rpcuser = ${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .username}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .username}
        |bitcoind.rpcpass = ${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .password}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .password}
        |bitcoind.rpchost = 127.0.0.1:${bitcoindInstance.rpcUri.getPort}
        |bitcoind.zmqpubrawtx = tcp://127.0.0.1:${rawTx.getPort}
        |bitcoind.zmqpubrawblock = tcp://127.0.0.1:${rawBlock.getPort}
@@ -101,13 +104,14 @@ trait LndRpcTestUtil extends BitcoinSLogger {
 
   def lndDataDir(
       bitcoindRpcClient: BitcoindRpcClient,
-      isCannonical: Boolean): File = {
+      isCannonical: Boolean
+  ): File = {
     val bitcoindInstance = bitcoindRpcClient.instance
     if (isCannonical) {
-      //assumes that the ${HOME}/.lnd/lnd.conf file is created AND a bitcoind instance is running
+      // assumes that the ${HOME}/.lnd/lnd.conf file is created AND a bitcoind instance is running
       cannonicalDatadir
     } else {
-      //creates a random lnd datadir, but still assumes that a bitcoind instance is running right now
+      // creates a random lnd datadir, but still assumes that a bitcoind instance is running right now
       val datadir = randomLndDatadir()
       datadir.mkdirs()
       logger.trace(s"Creating temp lnd dir ${datadir.getAbsolutePath}")
@@ -122,30 +126,36 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  def lndInstance(bitcoindRpc: BitcoindRpcClient)(implicit
-      system: ActorSystem): LndInstanceLocal = {
+  def lndInstance(
+      bitcoindRpc: BitcoindRpcClient
+  )(implicit system: ActorSystem): LndInstanceLocal = {
     val datadir = lndDataDir(bitcoindRpc, isCannonical = false)
     lndInstance(datadir)
   }
 
-  def lndInstance(datadir: File)(implicit
-      system: ActorSystem): LndInstanceLocal = {
+  def lndInstance(
+      datadir: File
+  )(implicit system: ActorSystem): LndInstanceLocal = {
     LndInstanceLocal.fromDataDir(datadir)
   }
 
-  /** Returns a `Future` that is completed when both lnd and bitcoind have the same block height
-    * Fails the future if they are not synchronized within the given timeout.
+  /** Returns a `Future` that is completed when both lnd and bitcoind have the
+    * same block height Fails the future if they are not synchronized within the
+    * given timeout.
     */
   def awaitLndInSync(lnd: LndRpcClient, bitcoind: BitcoindRpcClient)(implicit
-      system: ActorSystem): Future[Unit] = {
+      system: ActorSystem
+  ): Future[Unit] = {
     import system.dispatcher
-    TestAsyncUtil.retryUntilSatisfiedF(conditionF =
-                                         () => clientInSync(lnd, bitcoind),
-                                       interval = 1.seconds)
+    TestAsyncUtil.retryUntilSatisfiedF(
+      conditionF = () => clientInSync(lnd, bitcoind),
+      interval = 1.seconds
+    )
   }
 
   private def clientInSync(client: LndRpcClient, bitcoind: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): Future[Boolean] =
+      implicit ec: ExecutionContext
+  ): Future[Boolean] =
     for {
       blockCount <- bitcoind.getBlockCount()
       info <- client.getInfo
@@ -153,8 +163,9 @@ trait LndRpcTestUtil extends BitcoinSLogger {
 
   /** Shuts down an lnd daemon and the bitcoind daemon it is associated with
     */
-  def shutdown(lndRpcClient: LndRpcClient)(implicit
-      system: ActorSystem): Future[Unit] = {
+  def shutdown(
+      lndRpcClient: LndRpcClient
+  )(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     val shutdownF = for {
       bitcoindRpc <- startedBitcoindRpcClient()
@@ -165,14 +176,16 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     }
     shutdownF.failed.foreach { err: Throwable =>
       logger.info(
-        s"Killed a bitcoind instance, but could not find an lnd process to kill")
+        s"Killed a bitcoind instance, but could not find an lnd process to kill"
+      )
       throw err
     }
     shutdownF
   }
 
   def connectLNNodes(client: LndRpcClient, otherClient: LndRpcClient)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      ec: ExecutionContext
+  ): Future[Unit] = {
     val infoF = otherClient.getInfo
     val nodeIdF = client.getInfo.map(_.identityPubkey)
     val connectionF: Future[Unit] = infoF.flatMap { info =>
@@ -182,8 +195,10 @@ trait LndRpcTestUtil extends BitcoinSLogger {
           otherClient.getInfo.map(info => new URI(info.uris.head))
       }
       uriF.flatMap(uri =>
-        client.connectPeer(NodeId(info.identityPubkey),
-                           new InetSocketAddress(uri.getHost, uri.getPort)))
+        client.connectPeer(
+          NodeId(info.identityPubkey),
+          new InetSocketAddress(uri.getHost, uri.getPort)
+        ))
     }
 
     def isConnected: Future[Boolean] = {
@@ -195,9 +210,10 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     }
 
     logger.debug(s"Awaiting connection between clients")
-    val connected = TestAsyncUtil.retryUntilSatisfiedF(conditionF =
-                                                         () => isConnected,
-                                                       interval = 1.second)
+    val connected = TestAsyncUtil.retryUntilSatisfiedF(
+      conditionF = () => isConnected,
+      interval = 1.second
+    )
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 
@@ -207,8 +223,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   def fundLNNodes(
       bitcoind: BitcoindRpcClient,
       client: LndRpcClient,
-      otherClient: LndRpcClient)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      otherClient: LndRpcClient
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       addrA <- client.getNewAddress
       addrB <- otherClient.getNewAddress
@@ -224,8 +240,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   def createNodePair(
       bitcoind: BitcoindRpcClient,
       channelSize: CurrencyUnit = DEFAULT_CHANNEL_AMT,
-      channelPushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2))(implicit
-      ec: ExecutionContext): Future[(LndRpcClient, LndRpcClient)] = {
+      channelPushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2)
+  )(implicit ec: ExecutionContext): Future[(LndRpcClient, LndRpcClient)] = {
 
     val actorSystemA =
       ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
@@ -265,11 +281,13 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       _ <- AsyncUtil.awaitConditionF(() => isSynced)
       _ <- AsyncUtil.awaitConditionF(() => isFunded)
 
-      _ <- openChannel(bitcoind = bitcoind,
-                       n1 = client,
-                       n2 = otherClient,
-                       amt = channelSize,
-                       pushAmt = channelPushAmt)
+      _ <- openChannel(
+        bitcoind = bitcoind,
+        n1 = client,
+        n2 = otherClient,
+        amt = channelSize,
+        pushAmt = channelPushAmt
+      )
 
       _ <- TestAsyncUtil.nonBlockingSleep(2.seconds)
     } yield (client, otherClient)
@@ -283,8 +301,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       n1: LndRpcClient,
       n2: LndRpcClient,
       amt: CurrencyUnit = DEFAULT_CHANNEL_AMT,
-      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2))(implicit
-      ec: ExecutionContext): Future[TransactionOutPoint] = {
+      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2)
+  )(implicit ec: ExecutionContext): Future[TransactionOutPoint] = {
 
     val n1NodeIdF = n1.nodeId
     val n2NodeIdF = n2.nodeId
@@ -296,13 +314,15 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     val fundedChannelIdF =
       nodeIdsF.flatMap { case (nodeId1, nodeId2) =>
         logger.debug(
-          s"Opening a channel from $nodeId1 -> $nodeId2 with amount $amt")
-        n1.openChannel(nodeId = nodeId2,
-                       fundingAmount = amt,
-                       pushAmt = pushAmt,
-                       satPerVByte = SatoshisPerVirtualByte.fromLong(10),
-                       privateChannel = false)
-          .map(_.get)
+          s"Opening a channel from $nodeId1 -> $nodeId2 with amount $amt"
+        )
+        n1.openChannel(
+          nodeId = nodeId2,
+          fundingAmount = amt,
+          pushAmt = pushAmt,
+          satPerVByte = SatoshisPerVirtualByte.fromLong(10),
+          privateChannel = false
+        ).map(_.get)
       }
 
     val genF = for {
@@ -325,7 +345,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     openedF.flatMap { _ =>
       nodeIdsF.map { case (nodeId1, nodeId2) =>
         logger.debug(
-          s"Channel successfully opened $nodeId1 -> $nodeId2 with amount $amt")
+          s"Channel successfully opened $nodeId1 -> $nodeId2 with amount $amt"
+        )
       }
     }
 
@@ -334,8 +355,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
 
   private def awaitUntilChannelActive(
       client: LndRpcClient,
-      outPoint: TransactionOutPoint)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      outPoint: TransactionOutPoint
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     def isActive: Future[Boolean] = {
       client.findChannel(outPoint).map {
         case None          => false
@@ -343,8 +364,10 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isActive,
-                                       interval = 1.seconds)
+    TestAsyncUtil.retryUntilSatisfiedF(
+      conditionF = () => isActive,
+      interval = 1.seconds
+    )
   }
 }
 

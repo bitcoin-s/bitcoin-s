@@ -39,8 +39,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     pw.close()
   }
 
-  /** Tests that the client can call the isStartedF method
-    * without throwing and then start
+  /** Tests that the client can call the isStartedF method without throwing and
+    * then start
     */
   private def testClientStart(client: BitcoindRpcClient): Future[Assertion] =
     synchronized {
@@ -71,7 +71,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val instance = BitcoindInstanceLocal.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
-        .isInstanceOf[BitcoindAuthCredentials.CookieBased])
+        .isInstanceOf[BitcoindAuthCredentials.CookieBased]
+    )
 
     val cli = BitcoindRpcClient.withActorSystem(instance)
     testClientStart(cli)
@@ -91,7 +92,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val instance = BitcoindInstanceLocal.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
-        .isInstanceOf[BitcoindAuthCredentials.PasswordBased])
+        .isInstanceOf[BitcoindAuthCredentials.PasswordBased]
+    )
     testClientStart(BitcoindRpcClient.withActorSystem(instance))
   }
 
@@ -116,8 +118,10 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val authCredentials =
-      BitcoindAuthCredentials.PasswordBased(username = "bitcoin-s",
-                                            password = "strong_password")
+      BitcoindAuthCredentials.PasswordBased(
+        username = "bitcoin-s",
+        password = "strong_password"
+      )
     val instance =
       BitcoindInstanceLocal(
         network = RegTest,
@@ -167,8 +171,10 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
     val authCredentials =
-      BitcoindAuthCredentials.PasswordBased(username = "bitcoin-s",
-                                            password = "strong_password")
+      BitcoindAuthCredentials.PasswordBased(
+        username = "bitcoin-s",
+        password = "strong_password"
+      )
     val instance =
       BitcoindInstanceLocal(
         network = RegTest,

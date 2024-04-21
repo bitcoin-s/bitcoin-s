@@ -40,8 +40,10 @@ class BigSizeUIntTest extends BitcoinSUnitTest {
     val tests = read[Vector[DecodeTestVector]](BigSizeJsonTestVectors.decode)
     tests.foreach { test =>
       if (test.value.nonEmpty) {
-        assert(BigSizeUInt(test.bytes).num == UInt64(BigInt(test.value)),
-               test.name)
+        assert(
+          BigSizeUInt(test.bytes).num == UInt64(BigInt(test.value)),
+          test.name
+        )
       } else {
         Try {
           assertThrows[IllegalArgumentException] {
@@ -60,14 +62,14 @@ object BigSizeJsonTestVectors {
 
   case class EncodeTestVector(name: String, value: BigInt, bytes: ByteVector)
 
-  implicit
-  val encodeTestVectorR: Reader[EncodeTestVector] = reader[Value].map { value =>
-    val obj = value.obj
-    val name = obj("name").str
-    val num = BigInt(obj("value").str)
-    val bytes = ByteVector.fromValidHex(obj("bytes").str)
+  implicit val encodeTestVectorR: Reader[EncodeTestVector] = reader[Value].map {
+    value =>
+      val obj = value.obj
+      val name = obj("name").str
+      val num = BigInt(obj("value").str)
+      val bytes = ByteVector.fromValidHex(obj("bytes").str)
 
-    EncodeTestVector(name, num, bytes)
+      EncodeTestVector(name, num, bytes)
   }
 
   val encode: String = """[
@@ -117,17 +119,18 @@ object BigSizeJsonTestVectors {
       name: String,
       value: String,
       bytes: ByteVector,
-      expectedErrorOpt: Option[String])
+      expectedErrorOpt: Option[String]
+  )
 
-  implicit
-  val decodeTestVectorR: Reader[DecodeTestVector] = reader[Value].map { value =>
-    val obj = value.obj
-    val name = obj("name").str
-    val num = obj("value").str
-    val bytes = ByteVector.fromValidHex(obj("bytes").str)
-    val expectedErrorOpt = Try(obj("exp_error").str).toOption
+  implicit val decodeTestVectorR: Reader[DecodeTestVector] = reader[Value].map {
+    value =>
+      val obj = value.obj
+      val name = obj("name").str
+      val num = obj("value").str
+      val bytes = ByteVector.fromValidHex(obj("bytes").str)
+      val expectedErrorOpt = Try(obj("exp_error").str).toOption
 
-    DecodeTestVector(name, num, bytes, expectedErrorOpt)
+      DecodeTestVector(name, num, bytes, expectedErrorOpt)
   }
 
   val decode: String = """[

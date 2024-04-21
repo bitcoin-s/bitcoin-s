@@ -21,8 +21,10 @@ class BitcoinSServerMainBitcoindTorTest
     config: BitcoinSAppConfig =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
-      val cliConfig = Config(rpcPortOpt = Some(config.rpcPort),
-                             rpcPassword = config.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(config.rpcPort),
+        rpcPassword = config.rpcPassword
+      )
 
       for {
         _ <- torF
@@ -33,7 +35,7 @@ class BitcoinSServerMainBitcoindTorTest
         addr = exec(GetNewAddress(labelOpt = None), cliConfig)
         blockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
         _ <- AsyncUtil.nonBlockingSleep(1.second)
-        _ <- server.stop() //stop to free all resources
+        _ <- server.stop() // stop to free all resources
       } yield {
         assert(info.isSuccess)
         assert(balance.isSuccess)

@@ -11,7 +11,8 @@ class SpendingInfoDbSerializerTest extends BitcoinSUnitTest {
   it must "be symmetrical" in {
     val original = TransactionTestUtil.spendingInfoDb
     val json = upickle.default.writeJs[SpendingInfoDb](original)(
-      Picklers.spendingInfoDbPickler)
+      Picklers.spendingInfoDbPickler
+    )
 
     val parsed = upickle.default.read(json)(Picklers.spendingInfoDbPickler)
 

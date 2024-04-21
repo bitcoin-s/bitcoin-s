@@ -101,7 +101,8 @@ case object OP_MAX extends ArithmeticOperation {
   override val opCode: Int = 164
 }
 
-/** Returns 1 if x is within the specified range (left-inclusive), 0 otherwise. */
+/** Returns 1 if x is within the specified range (left-inclusive), 0 otherwise.
+  */
 case object OP_WITHIN extends ArithmeticOperation {
   override val opCode: Int = 165
 }

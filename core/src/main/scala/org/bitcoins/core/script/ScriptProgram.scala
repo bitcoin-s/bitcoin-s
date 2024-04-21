@@ -40,8 +40,9 @@ sealed trait ScriptProgram {
   /** The alternative stack is used in some Script op codes. */
   def altStack: List[ScriptToken]
 
-  /** [[org.bitcoins.core.script.flag.ScriptFlag ScriptFlag]] that are run with the script.
-    * These flags indicate special conditions that a script needs to be run with.
+  /** [[org.bitcoins.core.script.flag.ScriptFlag ScriptFlag]] that are run with
+    * the script. These flags indicate special conditions that a script needs to
+    * be run with.
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31]]
     * @return
     */
@@ -54,10 +55,13 @@ sealed trait ScriptProgram {
   /** Returns true if the stack top is false */
   def stackTopIsFalse: Boolean = !stackTopIsTrue
 
-  /** Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a given
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
-    * @param error the error that the program hit while being executed in the script interpreter
-    * @return the ExecutedScriptProgram with the given error set inside of the trait
+  /** Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a
+    * given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
+    * @param error
+    *   the error that the program hit while being executed in the script
+    *   interpreter
+    * @return
+    *   the ExecutedScriptProgram with the given error set inside of the trait
     */
   def failExecution(error: ScriptError): ExecutedScriptProgram
 
@@ -82,7 +86,9 @@ sealed trait ScriptProgram {
     }
   }
 
-  /** Calculates the leaf hash if we have a tapscript, else returns None if we don't have a tapscript */
+  /** Calculates the leaf hash if we have a tapscript, else returns None if we
+    * don't have a tapscript
+    */
   def tapLeafHashOpt: Option[Sha256Digest] = {
     getTapscriptOpt.map { sp =>
       val leaf = TapLeaf(TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT, sp.script)
@@ -107,8 +113,8 @@ case class PreExecutionScriptProgram(
     script: List[ScriptToken],
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
-    flags: Seq[ScriptFlag])
-    extends ScriptProgram {
+    flags: Seq[ScriptFlag]
+) extends ScriptProgram {
 
   def startingValidationWeight: Option[Long] = txSignatureComponent match {
     case _: BaseTxSigComponent | _: WitnessTxSigComponentRaw |
@@ -150,13 +156,15 @@ case class PreExecutionScriptProgram(
   }
 
   def updateOriginalScript(
-      tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+      tokens: Seq[ScriptToken]
+  ): PreExecutionScriptProgram = {
     this.copy(originalScript = tokens.toList)
   }
 
   def updateStackAndScript(
       stackTokens: Seq[ScriptToken],
-      scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+      scriptTokens: Seq[ScriptToken]
+  ): PreExecutionScriptProgram = {
     val updatedStack = this.updateStack(stackTokens)
     val updatedScript = updatedStack.updateScript(scriptTokens)
     require(updatedStack.stack == stackTokens)
@@ -182,23 +190,31 @@ object PreExecutionScriptProgram {
 /** This represents any ScriptProgram that is not PreExecution */
 sealed trait StartedScriptProgram extends ScriptProgram {
 
-  /** The index of the last code separator WITH push operations in the original script */
+  /** The index of the last code separator WITH push operations in the original
+    * script
+    */
   def lastCodeSeparator: Option[Int]
 
   def taprootSerializationOptions: TaprootSerializationOptions
 }
 
-/** Implements the counting required for O(1) handling of conditionals in Bitcoin Script.
-  * @see [[https://github.com/bitcoin/bitcoin/pull/16902]]
+/** Implements the counting required for O(1) handling of conditionals in
+  * Bitcoin Script.
+  * @see
+  *   [[https://github.com/bitcoin/bitcoin/pull/16902]]
   *
-  * @param trueCount The depth of OP_IFs/OP_NOTIFs we've entered on the true condition before the first false.
-  * @param falseAndIgnoreCount The depth of OP_IFs/OP_NOTIFs we've entered after and including the first false condition.
-  *                            Every OP_IF/OP_NOTIF adds to trueCount or falseAndIgnoreCount.
-  *                           OP_ELSE has an effect only when falseAndIgnoreCount == 0 or 1, in which case it moves
-  *                           1 from trueCount to falseAndIgnoreCount or vice versa.
-  *                           OP_ENDIF subtracts one from either falseAndIgnoreCount or trueCount if falseAndIgnoreCount == 0.
-  *                           trueCount + falseAndIgnoreCount represents the current depth in the conditional tree.
-  *                           falseAndIgnoreCount == 0 represents whether operations should be executed.
+  * @param trueCount
+  *   The depth of OP_IFs/OP_NOTIFs we've entered on the true condition before
+  *   the first false.
+  * @param falseAndIgnoreCount
+  *   The depth of OP_IFs/OP_NOTIFs we've entered after and including the first
+  *   false condition. Every OP_IF/OP_NOTIF adds to trueCount or
+  *   falseAndIgnoreCount. OP_ELSE has an effect only when falseAndIgnoreCount
+  *   \== 0 or 1, in which case it moves 1 from trueCount to falseAndIgnoreCount
+  *   or vice versa. OP_ENDIF subtracts one from either falseAndIgnoreCount or
+  *   trueCount if falseAndIgnoreCount == 0. trueCount + falseAndIgnoreCount
+  *   represents the current depth in the conditional tree. falseAndIgnoreCount
+  *   \== 0 represents whether operations should be executed.
   */
 case class ConditionalCounter(trueCount: Int, falseAndIgnoreCount: Int) {
   require(trueCount >= 0, "Should have failed as unbalanced")
@@ -220,8 +236,8 @@ case class ConditionalCounter(trueCount: Int, falseAndIgnoreCount: Int) {
     trueCount + falseAndIgnoreCount
   }
 
-  /** Should be called for every OP_IF and OP_NOTIF with whether the first (true)
-    * or second (false) branch should be taken.
+  /** Should be called for every OP_IF and OP_NOTIF with whether the first
+    * (true) or second (false) branch should be taken.
     */
   def addCondition(condition: Boolean): ConditionalCounter = {
     if (!noFalseEncountered || !condition) {
@@ -265,11 +281,15 @@ object ConditionalCounter {
     ConditionalCounter(trueCount = 0, falseAndIgnoreCount = 0)
 }
 
-/** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
-  * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
+/** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is
+  * currently being evaluated by the
+  * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *
-  * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
-  * @param conditionalCounter Keeps track of where we are within a conditional tree.
+  * @param lastCodeSeparator
+  *   The index of the last
+  *   [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
+  * @param conditionalCounter
+  *   Keeps track of where we are within a conditional tree.
   */
 case class ExecutionInProgressScriptProgram(
     txSignatureComponent: TxSigComponent,
@@ -281,8 +301,8 @@ case class ExecutionInProgressScriptProgram(
     lastCodeSeparator: Option[Int],
     codeSeparatorTapscriptIdx: Option[Int],
     validationWeightRemaining: Option[Long],
-    conditionalCounter: ConditionalCounter)
-    extends StartedScriptProgram {
+    conditionalCounter: ConditionalCounter
+) extends StartedScriptProgram {
 
   def toExecutedProgram: ExecutedScriptProgram = {
     val errorOpt = if (conditionalCounter.totalDepth > 0) {
@@ -309,7 +329,8 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def replaceFlags(
-      newFlags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
+      newFlags: Seq[ScriptFlag]
+  ): ExecutionInProgressScriptProgram = {
     this.copy(flags = newFlags)
   }
 
@@ -321,7 +342,8 @@ case class ExecutionInProgressScriptProgram(
   /** ScriptInterpreter should look at the script head only if this is true.
     *
     * Note that OP_IF, OP_NOTIF, OP_ELSE, and OP_ENDIF must be executed even if
-    * isInExecutionBranch is false as they must modify the states of trueCount and falseAndIgnoreCount.
+    * isInExecutionBranch is false as they must modify the states of trueCount
+    * and falseAndIgnoreCount.
     */
   def shouldExecuteNextOperation: Boolean = {
     script.headOption match {
@@ -331,8 +353,8 @@ case class ExecutionInProgressScriptProgram(
     }
   }
 
-  /** Should be called for every OP_IF and OP_NOTIF with whether the first (true)
-    * or second (false) branch should be taken.
+  /** Should be called for every OP_IF and OP_NOTIF with whether the first
+    * (true) or second (false) branch should be taken.
     */
   def addCondition(condition: Boolean): ExecutionInProgressScriptProgram = {
     this.copy(conditionalCounter = conditionalCounter.addCondition(condition))
@@ -356,7 +378,8 @@ case class ExecutionInProgressScriptProgram(
     }
   }
 
-  /** Removes the flags on the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+  /** Removes the flags on the given
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
     *
     * @return
     */
@@ -365,40 +388,47 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def updateStack(
-      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]
+  ): ExecutionInProgressScriptProgram = {
     this.copy(stack = tokens.toList)
   }
 
   def updateAltStack(
-      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]
+  ): ExecutionInProgressScriptProgram = {
     this.copy(altStack = tokens.toList)
   }
 
   def updateScript(
-      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]
+  ): ExecutionInProgressScriptProgram = {
     this.copy(script = tokens.toList)
   }
 
   def updateStackAndScript(
       stack: Seq[ScriptToken],
-      script: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+      script: Seq[ScriptToken]
+  ): ExecutionInProgressScriptProgram = {
     this
       .updateStack(stack)
       .updateScript(script)
   }
 
   def updateOriginalScript(
-      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]
+  ): ExecutionInProgressScriptProgram = {
     this.copy(originalScript = tokens.toList)
   }
 
   def updateLastCodeSeparator(
-      newLastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
+      newLastCodeSeparator: Int
+  ): ExecutionInProgressScriptProgram = {
     this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
 
   def updateTapscriptCodeSeparatorIdx(
-      newIdx: Int): ExecutionInProgressScriptProgram = {
+      newIdx: Int
+  ): ExecutionInProgressScriptProgram = {
     this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
   }
 
@@ -407,18 +437,23 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def taprootSerializationOptions: TaprootSerializationOptions = {
-    TaprootSerializationOptions(tapLeafHashOpt,
-                                getAnnexHashOpt,
-                                codeSeparatorTapscriptIdx.map(UInt32(_)))
+    TaprootSerializationOptions(
+      tapLeafHashOpt,
+      getAnnexHashOpt,
+      codeSeparatorTapscriptIdx.map(UInt32(_))
+    )
   }
 }
 
-/** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
-  * evaluated completely by the
+/** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has
+  * been evaluated completely by the
   * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *
-  * @param error Indicates if the [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] has
-  *              encountered a [[org.bitcoins.core.script.result.ScriptError ScriptError]] in its execution.
+  * @param error
+  *   Indicates if the [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+  *   has encountered a
+  *   [[org.bitcoins.core.script.result.ScriptError ScriptError]] in its
+  *   execution.
   */
 case class ExecutedScriptProgram(
     txSignatureComponent: TxSigComponent,
@@ -429,13 +464,15 @@ case class ExecutedScriptProgram(
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
     codeSeparatorTapscriptIdx: Option[Int],
-    error: Option[ScriptError])
-    extends StartedScriptProgram {
+    error: Option[ScriptError]
+) extends StartedScriptProgram {
 
   def taprootSerializationOptions: TaprootSerializationOptions = {
-    TaprootSerializationOptions(tapLeafHashOpt,
-                                getAnnexHashOpt,
-                                codeSeparatorTapscriptIdx.map(UInt32(_)))
+    TaprootSerializationOptions(
+      tapLeafHashOpt,
+      getAnnexHashOpt,
+      codeSeparatorTapscriptIdx.map(UInt32(_))
+    )
   }
 
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {

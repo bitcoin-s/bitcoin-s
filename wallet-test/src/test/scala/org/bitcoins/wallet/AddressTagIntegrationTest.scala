@@ -43,7 +43,8 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       addr <- wallet.getNewAddress()
       taggedAddr <- wallet.getNewAddress(Vector(exampleTag))
       txId <- bitcoind.sendMany(
-        Map(addr -> valueFromBitcoind, taggedAddr -> valueFromBitcoind))
+        Map(addr -> valueFromBitcoind, taggedAddr -> valueFromBitcoind)
+      )
       tx <- bitcoind.getRawTransactionRaw(txId)
 
       // before processing TX, wallet should be completely empty
@@ -84,10 +85,12 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       rawTxHelper <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
-          .fundRawTransaction(destinations = Vector(output),
-                              feeRate = feeRate,
-                              fromTagOpt = Some(exampleTag),
-                              markAsReserved = true)
+          .fundRawTransaction(
+            destinations = Vector(output),
+            feeRate = feeRate,
+            fromTagOpt = Some(exampleTag),
+            markAsReserved = true
+          )
       }
       signedTx = rawTxHelper.signedTx
       _ <- wallet.processTransaction(signedTx, None)
@@ -99,7 +102,8 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       // One change one external
       assert(utxos.size == 2)
       assert(
-        utxos.exists(_.privKeyPath.chain.chainType == HDChainType.External))
+        utxos.exists(_.privKeyPath.chain.chainType == HDChainType.External)
+      )
       assert(utxos.exists(_.privKeyPath.chain.chainType == HDChainType.Change))
 
       // untagged balance should be untouched
@@ -112,15 +116,18 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       val feePaid =
         utxoInfos.map(_.output.value).sum - signedTx.outputs.map(_.value).sum
       assert(
-        WalletTestUtil.isCloseEnough(tagBalancePostSend,
-                                     valueFromBitcoind - valueToBitcoind,
-                                     delta = feePaid))
+        WalletTestUtil.isCloseEnough(
+          tagBalancePostSend,
+          valueFromBitcoind - valueToBitcoind,
+          delta = feePaid
+        )
+      )
     }
   }
 
   it must "process a tagged tx correctly when we broadcast it and receive it in a block" in {
     walletWithBitcoind =>
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
       val WalletWithBitcoindRpc(wallet, bitcoind, _) = walletWithBitcoind
 
       val bitcoindAddrF = bitcoind.getNewAddress
@@ -132,10 +139,12 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         tx <- bitcoind.getRawTransaction(txid)
         _ <- wallet.processTransaction(tx.hex, None)
         taggedAddress <- taggedAddrF
-        tx <- wallet.sendToAddress(taggedAddress,
-                                   Satoshis(100000),
-                                   SatoshisPerVirtualByte.one,
-                                   Vector(exampleTag))
+        tx <- wallet.sendToAddress(
+          taggedAddress,
+          Satoshis(100000),
+          SatoshisPerVirtualByte.one,
+          Vector(exampleTag)
+        )
         _ <- wallet.processTransaction(tx, None)
         _ <- bitcoind.sendRawTransaction(tx)
         bitcoindAddr <- bitcoindAddrF

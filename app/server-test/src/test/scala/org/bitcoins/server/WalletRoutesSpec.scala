@@ -40,10 +40,12 @@ class WalletRoutesSpec
   val feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
 
   val walletLoader: DLCWalletNeutrinoBackendLoader =
-    DLCWalletNeutrinoBackendLoader(walletHolder,
-                                   mockChainApi,
-                                   mockNode,
-                                   feeRateApi)
+    DLCWalletNeutrinoBackendLoader(
+      walletHolder,
+      mockChainApi,
+      mockNode,
+      feeRateApi
+    )
 
   val walletRoutes: WalletRoutes =
     WalletRoutes(walletLoader)(system, conf.walletConf)
@@ -101,7 +103,8 @@ class WalletRoutesSpec
       )
 
       (mockWalletApi.findDLCByTemporaryContractId: Sha256Digest => Future[
-        Option[DLCStatus]])
+        Option[DLCStatus]
+      ])
         .expects(tempContractId)
         .returning(Future.successful(Some(status)))
       (mockWalletApi.getDLCOffer: Sha256Digest => Future[Option[DLCOffer]])
@@ -110,7 +113,8 @@ class WalletRoutesSpec
 
       val route =
         walletRoutes.handleCommand(
-          ServerCommand("getdlcoffer", ujson.Arr(tempContractId.hex)))
+          ServerCommand("getdlcoffer", ujson.Arr(tempContractId.hex))
+        )
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
@@ -127,23 +131,28 @@ class WalletRoutesSpec
         LnMessage(TLVGen.dlcAcceptTLV(offer.toTLV).sampleSome)
       val acceptTLV = DLCAccept.fromTLV(dummyAcceptLnMsg.tlv, offer)
       (mockWalletApi
-        .acceptDLCOffer(_: DLCOfferTLV,
-                        _: Option[InetSocketAddress],
-                        _: Option[BitcoinAddress],
-                        _: Option[BitcoinAddress]))
+        .acceptDLCOffer(
+          _: DLCOfferTLV,
+          _: Option[InetSocketAddress],
+          _: Option[BitcoinAddress],
+          _: Option[BitcoinAddress]
+        ))
         .expects(expectedTlv, None, None, None)
         .returning(Future.successful(acceptTLV))
 
       val cmd = ServerCommand(
         "acceptdlcoffer",
-        ujson.Arr(ujson.Str(tlv), ujson.Null, ujson.Null, ujson.Null))
+        ujson.Arr(ujson.Str(tlv), ujson.Null, ujson.Null, ujson.Null)
+      )
       val route = walletRoutes.handleCommand(cmd)
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
           responseAs[
-            String] == s"""{"result":"${dummyAcceptLnMsg.hex}","error":null}""")
+            String
+          ] == s"""{"result":"${dummyAcceptLnMsg.hex}","error":null}"""
+        )
       }
     }
   }

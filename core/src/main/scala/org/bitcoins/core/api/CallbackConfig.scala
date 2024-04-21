@@ -6,7 +6,8 @@ import org.bitcoins.core.util.Mutable
 trait CallbackConfig[T <: ModuleCallbacks[T]] {
 
   private[this] val atomicCallbacks: Mutable[T] = new Mutable(
-    callbackFactory.empty)
+    callbackFactory.empty
+  )
 
   def isCallbackEmpty: Boolean =
     atomicCallbacks.atomicGet == callbackFactory.empty

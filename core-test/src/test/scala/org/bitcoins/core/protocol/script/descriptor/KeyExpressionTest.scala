@@ -70,7 +70,7 @@ class KeyExpressionTest extends BitcoinSUnitTest {
     val str6 =
       "[deadbeef/0'/1'/2']xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/3/4/5/*"
 
-    //in the BIP380 test vectors, but cannot produce valid keys due to hardened derivations
+    // in the BIP380 test vectors, but cannot produce valid keys due to hardened derivations
 //    val str7 =
 //      "xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/3'/4'/5'/*"
 
@@ -87,9 +87,9 @@ class KeyExpressionTest extends BitcoinSUnitTest {
     assert(KeyExpression.fromString(str4).toString == str4)
     assert(KeyExpression.fromString(str5).toString == str5)
     assert(KeyExpression.fromString(str6).toString == str6)
-    //assert(KeyExpression.fromString(str7).toString == str7)
-    //assert(KeyExpression.fromString(str8).toString == str8)
-    //assert(KeyExpression.fromString(str9).toString == str9)
+    // assert(KeyExpression.fromString(str7).toString == str7)
+    // assert(KeyExpression.fromString(str8).toString == str8)
+    // assert(KeyExpression.fromString(str9).toString == str9)
   }
 
   it must "fail invalid key expressions in BIP380" in {

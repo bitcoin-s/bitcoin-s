@@ -10,8 +10,10 @@ import org.scalatest.FutureOutcome
 class DisconnectedPeerTest extends NodeUnitTest {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
-                                                              Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      () => pgUrl(),
+      Vector.empty
+    )
 
   override type FixtureParam = NeutrinoNode
 

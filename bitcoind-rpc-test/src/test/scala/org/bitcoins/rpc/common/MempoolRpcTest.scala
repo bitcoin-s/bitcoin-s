@@ -132,17 +132,21 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       for {
         _ <- client.generate(1)
         address1 <- client.getNewAddress
-        txid1 <- BitcoindRpcTestUtil.fundMemPoolTransaction(client,
-                                                            address1,
-                                                            Bitcoins(2))
+        txid1 <- BitcoindRpcTestUtil.fundMemPoolTransaction(
+          client,
+          address1,
+          Bitcoins(2)
+        )
         mempool <- client.getRawMemPool
         address2 <- client.getNewAddress
 
         createdTx <- {
           val input: TransactionInput =
-            TransactionInput(TransactionOutPoint(txid1.flip, UInt32.zero),
-                             ScriptSignature.empty,
-                             UInt32.max - UInt32.one)
+            TransactionInput(
+              TransactionOutPoint(txid1.flip, UInt32.zero),
+              ScriptSignature.empty,
+              UInt32.max - UInt32.one
+            )
           client
             .createRawTransaction(Vector(input), Map(address2 -> Bitcoins.one))
         }

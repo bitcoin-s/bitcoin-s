@@ -28,8 +28,10 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   def getBlock(headerHash: DoubleSha256DigestBE): Future[GetBlockResult] = {
     val isJsonObject = JsNumber(1)
-    bitcoindCall[GetBlockResult]("getblock",
-                                 List(JsString(headerHash.hex), isJsonObject))
+    bitcoindCall[GetBlockResult](
+      "getblock",
+      List(JsString(headerHash.hex), isJsonObject)
+    )
   }
 
   def getBlock(headerHash: DoubleSha256Digest): Future[GetBlockResult] = {
@@ -54,21 +56,27 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def getBlockHeader(
-      headerHash: DoubleSha256DigestBE): Future[GetBlockHeaderResult] = {
+      headerHash: DoubleSha256DigestBE
+  ): Future[GetBlockHeaderResult] = {
     bitcoindCall[GetBlockHeaderResult](
       "getblockheader",
-      List(JsString(headerHash.hex), JsBoolean(true)))
+      List(JsString(headerHash.hex), JsBoolean(true))
+    )
   }
 
   def getBlockHeader(
-      headerHash: DoubleSha256Digest): Future[GetBlockHeaderResult] = {
+      headerHash: DoubleSha256Digest
+  ): Future[GetBlockHeaderResult] = {
     getBlockHeader(headerHash.flip)
   }
 
   def getBlockHeaderRaw(
-      headerHash: DoubleSha256DigestBE): Future[BlockHeader] = {
-    bitcoindCall[BlockHeader]("getblockheader",
-                              List(JsString(headerHash.hex), JsBoolean(false)))
+      headerHash: DoubleSha256DigestBE
+  ): Future[BlockHeader] = {
+    bitcoindCall[BlockHeader](
+      "getblockheader",
+      List(JsString(headerHash.hex), JsBoolean(false))
+    )
   }
 
   def getBlockHeaderRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
@@ -83,19 +91,22 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     getBlockRaw(headerHash.flip)
   }
 
-  def getBlockWithTransactions(headerHash: DoubleSha256DigestBE): Future[
-    GetBlockWithTransactionsResultV22] = {
+  def getBlockWithTransactions(
+      headerHash: DoubleSha256DigestBE
+  ): Future[GetBlockWithTransactionsResultV22] = {
     val isVerboseJsonObject = JsNumber(2)
     self.version.flatMap { case V22 | V23 | V24 | Unknown =>
       bitcoindCall[GetBlockWithTransactionsResultV22](
         "getblock",
-        List(JsString(headerHash.hex), isVerboseJsonObject))
+        List(JsString(headerHash.hex), isVerboseJsonObject)
+      )
     }
 
   }
 
-  def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[
-    GetBlockWithTransactionsResult] = {
+  def getBlockWithTransactions(
+      headerHash: DoubleSha256Digest
+  ): Future[GetBlockWithTransactionsResult] = {
     getBlockWithTransactions(headerHash.flip)
   }
 
@@ -108,8 +119,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   private def getChainTxStats(
       blocks: Option[Int],
-      blockHash: Option[DoubleSha256DigestBE]): Future[
-    GetChainTxStatsResult] = {
+      blockHash: Option[DoubleSha256DigestBE]
+  ): Future[GetChainTxStatsResult] = {
     val params =
       if (blocks.isEmpty) {
         List.empty
@@ -126,12 +137,14 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   def getChainTxStats(
       blocks: Int,
-      blockHash: DoubleSha256DigestBE): Future[GetChainTxStatsResult] =
+      blockHash: DoubleSha256DigestBE
+  ): Future[GetChainTxStatsResult] =
     getChainTxStats(Some(blocks), Some(blockHash))
 
   def getChainTxStats(
       blocks: Int,
-      blockHash: DoubleSha256Digest): Future[GetChainTxStatsResult] =
+      blockHash: DoubleSha256Digest
+  ): Future[GetChainTxStatsResult] =
     getChainTxStats(Some(blocks), Some(blockHash.flip))
 
   def getDifficulty: Future[BigDecimal] = {
@@ -151,70 +164,84 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   def listSinceBlock(
       headerHash: Option[DoubleSha256DigestBE] = None,
       confirmations: Int = 1,
-      includeWatchOnly: Boolean = false): Future[ListSinceBlockResult] = {
+      includeWatchOnly: Boolean = false
+  ): Future[ListSinceBlockResult] = {
     val params =
       if (headerHash.isEmpty) {
         List.empty
       } else {
-        List(JsString(headerHash.get.hex),
-             JsNumber(confirmations),
-             JsBoolean(includeWatchOnly))
+        List(
+          JsString(headerHash.get.hex),
+          JsNumber(confirmations),
+          JsBoolean(includeWatchOnly)
+        )
       }
     bitcoindCall[ListSinceBlockResult]("listsinceblock", params)
   }
 
   def listSinceBlock(
-      headerHash: DoubleSha256DigestBE): Future[ListSinceBlockResult] =
+      headerHash: DoubleSha256DigestBE
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash))
 
   def listSinceBlock(
       headerHash: DoubleSha256DigestBE,
-      confirmations: Int): Future[ListSinceBlockResult] =
+      confirmations: Int
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash), confirmations)
 
   def listSinceBlock(
       headerHash: DoubleSha256DigestBE,
-      includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
+      includeWatchOnly: Boolean
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash), includeWatchOnly = includeWatchOnly)
 
   def listSinceBlock(
       headerHash: DoubleSha256DigestBE,
       confirmations: Int,
-      includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
+      includeWatchOnly: Boolean
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash), confirmations, includeWatchOnly)
 
   def listSinceBlock(
-      headerHash: DoubleSha256Digest): Future[ListSinceBlockResult] =
+      headerHash: DoubleSha256Digest
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash.flip))
 
   def listSinceBlock(
       headerHash: DoubleSha256Digest,
-      confirmations: Int): Future[ListSinceBlockResult] =
+      confirmations: Int
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash.flip), confirmations)
 
   def listSinceBlock(
       headerHash: DoubleSha256Digest,
-      includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
+      includeWatchOnly: Boolean
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash.flip), includeWatchOnly = includeWatchOnly)
 
   def listSinceBlock(
       headerHash: DoubleSha256Digest,
       confirmations: Int,
-      includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
+      includeWatchOnly: Boolean
+  ): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash.flip), confirmations, includeWatchOnly)
 
   def listTransactions(
       account: String = "*",
       count: Int = 10,
       skip: Int = 0,
-      includeWatchOnly: Boolean = false): Future[
-    Vector[ListTransactionsResult]] = {
+      includeWatchOnly: Boolean = false
+  ): Future[Vector[ListTransactionsResult]] = {
     bitcoindCall[Vector[ListTransactionsResult]](
       "listtransactions",
-      List(JsString(account),
-           JsNumber(count),
-           JsNumber(skip),
-           JsBoolean(includeWatchOnly)))
+      List(
+        JsString(account),
+        JsNumber(count),
+        JsNumber(skip),
+        JsBoolean(includeWatchOnly)
+      )
+    )
   }
 
   def pruneBlockChain(height: Int): Future[Int] = {
@@ -226,7 +253,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   private def rescanBlockChain(
       start: Option[Int],
-      stop: Option[Int]): Future[RescanBlockChainResult] = {
+      stop: Option[Int]
+  ): Future[RescanBlockChainResult] = {
     val params =
       if (start.isEmpty) {
         List.empty
@@ -253,46 +281,55 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def verifyChain(level: Int = 3, blocks: Int = 6): Future[Boolean] = {
-    bitcoindCall[Boolean]("verifychain",
-                          List(JsNumber(level), JsNumber(blocks)))
+    bitcoindCall[Boolean](
+      "verifychain",
+      List(JsNumber(level), JsNumber(blocks))
+    )
   }
 
-  /** Waits for the validation interface queue to catch up on everything that was there when we entered this function
-    * @see [[https://github.com/bitcoin/bitcoin/issues/27085]]
+  /** Waits for the validation interface queue to catch up on everything that
+    * was there when we entered this function
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/issues/27085]]
     * @return
     */
   def syncWithValidationInterfaceQueue(): Future[Unit] = {
     bitcoindCall[Unit](command = "syncwithvalidationinterfacequeue", List.empty)
   }
 
-  /** This is needed because we need the block hash to create a GolombFilter.
-    * We use an intermediary data type to hold our data so we can add the block hash
-    * we were given after the RPC call
+  /** This is needed because we need the block hash to create a GolombFilter. We
+    * use an intermediary data type to hold our data so we can add the block
+    * hash we were given after the RPC call
     */
   private case class TempBlockFilterResult(
       filter: String,
-      header: DoubleSha256DigestBE)
+      header: DoubleSha256DigestBE
+  )
 
-  implicit
-  private val tempBlockFilterResultReads: Reads[TempBlockFilterResult] =
+  implicit private val tempBlockFilterResultReads
+      : Reads[TempBlockFilterResult] =
     Json.reads[TempBlockFilterResult]
 
   def getBlockFilter(
       blockhash: DoubleSha256DigestBE,
-      filtertype: FilterType): Future[GetBlockFilterResult] = {
+      filtertype: FilterType
+  ): Future[GetBlockFilterResult] = {
     bitcoindCall[TempBlockFilterResult](
       "getblockfilter",
-      List(JsString(blockhash.hex), JsString(filtertype.toString.toLowerCase)))
+      List(JsString(blockhash.hex), JsString(filtertype.toString.toLowerCase))
+    )
       .map { tempBlockFilterResult =>
         GetBlockFilterResult(
           BlockFilter.fromHex(tempBlockFilterResult.filter, blockhash.flip),
-          tempBlockFilterResult.header)
+          tempBlockFilterResult.header
+        )
       }
   }
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
+      endHeight: Int
+  ): Future[Vector[ChainQueryApi.FilterResponse]] = {
     val allHeights = startHeight.to(endHeight)
 
     def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
@@ -307,9 +344,11 @@ trait BlockchainRpc extends ChainApi { self: Client =>
       Future.sequence(filterFs)
     }
 
-    FutureUtil.batchAndSyncExecute(elements = allHeights.toVector,
-                                   f = f,
-                                   batchSize = FutureUtil.getParallelism)
+    FutureUtil.batchAndSyncExecute(
+      elements = allHeights.toVector,
+      f = f,
+      batchSize = FutureUtil.getParallelism
+    )
   }
 
   override def getFilterCount(): Future[Int] = getBlockCount()
@@ -324,8 +363,9 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     } yield fhOpt
   }
 
-  override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
-    Option[CompactFilterHeaderDb]] = {
+  override def getFilterHeader(
+      blockHash: DoubleSha256DigestBE
+  ): Future[Option[CompactFilterHeaderDb]] = {
     for {
       blockHeaderOpt <- getHeader(blockHash)
       (filterOpt, prevFilterOpt) <- blockHeaderOpt match {
@@ -342,18 +382,20 @@ trait BlockchainRpc extends ChainApi { self: Client =>
           val c = CompactFilterHeaderDbHelper.fromFilterHeader(
             filterHeader = fh,
             blockHash = blockHash,
-            height = filter.height)
+            height = filter.height
+          )
           Some(c)
         case (Some(filter), None) =>
-          //must be genesis filter
+          // must be genesis filter
           val fh = FilterHeader(filter.hashBE, DoubleSha256DigestBE.empty)
           val c = CompactFilterHeaderDbHelper.fromFilterHeader(
             filterHeader = fh,
             blockHash = blockHash,
-            height = filter.height)
+            height = filter.height
+          )
           Some(c)
         case (None, Some(_)) =>
-          //could find previous filter, but couldn't find compact filter?
+          // could find previous filter, but couldn't find compact filter?
           None
         case (None, None) => None
       }
@@ -361,7 +403,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   override def getFilterHeadersAtHeight(
-      height: Int): Future[Vector[CompactFilterHeaderDb]] = {
+      height: Int
+  ): Future[Vector[CompactFilterHeaderDb]] = {
     getBlockHash(height)
       .flatMap { blockHashBE =>
         getFilterHeader(blockHashBE)
@@ -370,7 +413,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   override def getFilter(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
+      hash: DoubleSha256DigestBE
+  ): Future[Option[CompactFilterDb]] = {
     for {
       header <- getBlockHeader(hash)
       filter <- getBlockFilter(hash, FilterType.Basic)
@@ -378,7 +422,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   override def getFiltersAtHeight(
-      height: Int): Future[Vector[CompactFilterDb]] = {
+      height: Int
+  ): Future[Vector[CompactFilterDb]] = {
     for {
       hash <- getBlockHash(height)
       filter <- getBlockFilter(hash, FilterType.Basic)

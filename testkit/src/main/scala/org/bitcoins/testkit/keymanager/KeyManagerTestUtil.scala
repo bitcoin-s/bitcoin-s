@@ -25,9 +25,11 @@ object KeyManagerTestUtil {
 
   def createKeyManagerParams(): KeyManagerParams = {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
-    KeyManagerParams(seedPath = seedPath,
-                     purpose = Gen.oneOf(HDPurposes.all).sample.get,
-                     network = Gen.oneOf(Networks.knownNetworks).sample.get)
+    KeyManagerParams(
+      seedPath = seedPath,
+      purpose = Gen.oneOf(HDPurposes.all).sample.get,
+      network = Gen.oneOf(Networks.knownNetworks).sample.get
+    )
   }
 
   def bip39PasswordOpt: Option[String] = {

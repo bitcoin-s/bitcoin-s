@@ -27,7 +27,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withNewWalletAndBitcoindCached(test, bitcoind)(
-        getFreshWalletAppConfig)
+        getFreshWalletAppConfig
+      )
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
@@ -91,7 +92,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // note: 100 because the very first coinbase utxo is now confirmed
       assert(coinbaseUtxos.size == 100)
-      //block reward is still 50 bitcoin per block
+      // block reward is still 50 bitcoin per block
       assert(balance == Bitcoins(50))
       assert(confirmedUtxos.length == 1)
     }
@@ -109,7 +110,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       addr <- wallet.getNewAddress()
       hashes <- bitcoind.generateToAddress(102, addr)
       filters <- FutureUtil.sequentially(hashes)(
-        bitcoind.getBlockFilter(_, FilterType.Basic))
+        bitcoind.getBlockFilter(_, FilterType.Basic)
+      )
       filtersWithBlockHash = hashes.zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
       coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
@@ -127,9 +129,9 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       // note: 100 because the very first coinbase utxo is now confirmed
       assert(coinbaseUtxos.size == 100)
 
-      //note: This is 50 bitcoins because the block reward on regtest
-      //is now 25 bitcoin per block due to blocks being mined
-      //in prior test cases in this test suite.
+      // note: This is 50 bitcoins because the block reward on regtest
+      // is now 25 bitcoin per block due to blocks being mined
+      // in prior test cases in this test suite.
       assert(balance == Bitcoins(50))
       assert(confirmedUtxos.length == 2)
     }
@@ -162,19 +164,25 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
         ._2
 
       input =
-        TransactionInput(TransactionOutPoint(recvTx.txId, UInt32(index)),
-                         EmptyScriptSignature,
-                         UInt32.max)
+        TransactionInput(
+          TransactionOutPoint(recvTx.txId, UInt32(index)),
+          EmptyScriptSignature,
+          UInt32.max
+        )
       output0 =
-        TransactionOutput(recvAmount - sendAmount - Satoshis(500),
-                          changeAddr.scriptPubKey)
+        TransactionOutput(
+          recvAmount - sendAmount - Satoshis(500),
+          changeAddr.scriptPubKey
+        )
       output1 =
         TransactionOutput(sendAmount, bitcoindAddr.scriptPubKey)
 
-      unsignedTx = BaseTransaction(Int32.two,
-                                   Vector(input),
-                                   Vector(output0, output1),
-                                   UInt32.zero)
+      unsignedTx = BaseTransaction(
+        Int32.two,
+        Vector(input),
+        Vector(output0, output1),
+        UInt32.zero
+      )
 
       addrDb <- wallet.getAddressInfo(recvAddr).map(_.get)
       path = addrDb.path
@@ -183,10 +191,12 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
         .read((coin, path.accountIdx))
         .map(_.get)
 
-      bip32Path = LegacyHDPath(path.coinType,
-                               path.accountIdx,
-                               path.chainType,
-                               path.address.index)
+      bip32Path = LegacyHDPath(
+        path.coinType,
+        path.accountIdx,
+        path.chainType,
+        path.address.index
+      )
 
       psbt = PSBT
         .fromUnsignedTx(unsignedTx)
@@ -195,7 +205,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       signed <- wallet.signPSBT(psbt)
       tx <- Future.fromTry(
-        signed.finalizePSBT.flatMap(_.extractTransactionAndValidate))
+        signed.finalizePSBT.flatMap(_.extractTransactionAndValidate)
+      )
 
       _ <- bitcoind.sendRawTransaction(tx)
       hash <- bitcoind.generateToAddress(1, bitcoindAddr).map(_.head)

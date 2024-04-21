@@ -93,9 +93,9 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   it must "covert from a ln currency unit -> millisatoshis -> lnCurrencyUnit" in {
     forAll(LnCurrencyUnitGen.positivePicoBitcoin) { pb =>
       val underlying = pb.toBigInt
-      //we lose the last digit of precision converting
-      //PicoBitcoins -> MilliSatoshis
-      //this is the expected answer
+      // we lose the last digit of precision converting
+      // PicoBitcoins -> MilliSatoshis
+      // this is the expected answer
       val expected = (underlying / 10) * 10
       val expectedPico = PicoBitcoins(expected)
 

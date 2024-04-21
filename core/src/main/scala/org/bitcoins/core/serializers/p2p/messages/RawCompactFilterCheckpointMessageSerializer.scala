@@ -7,7 +7,8 @@ import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157 ]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157]]
   */
 object RawCompactFilterCheckpointMessageSerializer
     extends RawBitcoinSerializer[CompactFilterCheckPointMessage] {
@@ -25,7 +26,8 @@ object RawCompactFilterCheckpointMessageSerializer
         afterStopHash,
         { bytes =>
           DoubleSha256Digest.fromBytes(bytes.take(32))
-        })
+        }
+      )
 
     require(
       headers.length == filterHeadersLength.toInt,
@@ -39,10 +41,12 @@ object RawCompactFilterCheckpointMessageSerializer
     val filterType = message.filterType.bytes
     val stopHash = message.stopHash.bytes
     val filterHeaders =
-      RawSerializerHelper.writeCmpctSizeUInt(message.filterHeaders,
-                                             { fh: DoubleSha256Digest =>
-                                               fh.bytes
-                                             })
+      RawSerializerHelper.writeCmpctSizeUInt(
+        message.filterHeaders,
+        { fh: DoubleSha256Digest =>
+          fh.bytes
+        }
+      )
     filterType ++ stopHash ++ filterHeaders
   }
 }

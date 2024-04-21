@@ -56,19 +56,26 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   val sink: Sink[Message, Future[Seq[WsNotification[_]]]] = Flow[Message]
     .map {
       case message: TextMessage.Strict =>
-        //we should be able to parse the address message
+        // we should be able to parse the address message
         val text = message.text
         val dlcNodeNotificationOpt: Option[DLCNodeNotification[_]] = Try(
           upickle.default.read[DLCNodeNotification[_]](text)(
-            WsPicklers.dlcNodeNotificationPickler)).toOption
+            WsPicklers.dlcNodeNotificationPickler
+          )
+        ).toOption
         val walletNotificationOpt: Option[WalletNotification[_]] = Try(
           upickle.default.read[WalletNotification[_]](text)(
-            WsPicklers.walletNotificationPickler)).toOption
+            WsPicklers.walletNotificationPickler
+          )
+        ).toOption
         val chainNotificationOpt: Option[ChainNotification[_]] = Try(
           upickle.default.read[ChainNotification[_]](text)(
-            WsPicklers.chainNotificationPickler)).toOption
+            WsPicklers.chainNotificationPickler
+          )
+        ).toOption
         walletNotificationOpt.getOrElse(
-          chainNotificationOpt.getOrElse(dlcNodeNotificationOpt.get))
+          chainNotificationOpt.getOrElse(dlcNodeNotificationOpt.get)
+        )
       case msg =>
         fail(s"Unexpected msg type received in the sink, msg=$msg")
     }
@@ -76,19 +83,27 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   def buildReq(
       conf: BitcoinSAppConfig,
-      rpcPassword: Option[String] = None): WebSocketRequest = {
+      rpcPassword: Option[String] = None
+  ): WebSocketRequest = {
     val headers: Vector[HttpHeader] = Vector(
       Authorization(
-        BasicHttpCredentials("bitcoins",
-                             rpcPassword.getOrElse(conf.rpcPassword))))
-    WebSocketRequest(s"ws://localhost:${conf.wsPort}/events",
-                     extraHeaders = headers)
+        BasicHttpCredentials(
+          "bitcoins",
+          rpcPassword.getOrElse(conf.rpcPassword)
+        )
+      )
+    )
+    WebSocketRequest(
+      s"ws://localhost:${conf.wsPort}/events",
+      extraHeaders = headers
+    )
   }
 
   val websocketFlow: Flow[
     Message,
     Message,
-    (Future[Seq[WsNotification[_]]], Promise[Option[Message]])] = {
+    (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+  ] = {
     Flow
       .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
   }
@@ -133,26 +148,32 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     } yield {
       assert(response.response.status == StatusCodes.Unauthorized)
 
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                             rpcPassword = "wrong password")
+      val cliConfig = Config(
+        rpcPortOpt = Some(server.conf.rpcPort),
+        rpcPassword = "wrong password"
+      )
       val cliResponse = exec(GetNewAddress(labelOpt = None), cliConfig)
 
       assert(cliResponse.isFailure)
       assert(
-        cliResponse.failed.get.getMessage == "The supplied authentication is invalid")
+        cliResponse.failed.get.getMessage == "The supplied authentication is invalid"
+      )
     }
   }
 
   it must "receive updates when an address is generated" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                             rpcPassword = server.conf.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(server.conf.rpcPort),
+        rpcPassword = server.conf.rpcPassword
+      )
 
       val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+      ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -171,20 +192,24 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         notifications <- walletNotificationsF
       } yield {
         assert(
-          notifications.exists(_ == NewAddressNotification(expectedAddress)))
+          notifications.exists(_ == NewAddressNotification(expectedAddress))
+        )
       }
   }
 
   it must "receive updates when a transaction is broadcast" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                             rpcPassword = server.conf.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(server.conf.rpcPort),
+        rpcPassword = server.conf.rpcPassword
+      )
 
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+      ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -196,11 +221,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
       for {
         address <- addressF
-        cmd = SendToAddress(destination = address,
-                            amount = Bitcoins.one,
-                            satoshisPerVirtualByte =
-                              Some(SatoshisPerVirtualByte.one),
-                            noBroadcast = false)
+        cmd = SendToAddress(
+          destination = address,
+          amount = Bitcoins.one,
+          satoshisPerVirtualByte = Some(SatoshisPerVirtualByte.one),
+          noBroadcast = false
+        )
         txIdStr = ConsoleCli.exec(cmd, cliConfig)
         expectedTxId = DoubleSha256DigestBE.fromHex(txIdStr.get)
         getTxCmd = GetTransaction(expectedTxId)
@@ -217,13 +243,16 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "receive updates when a transaction is processed" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                             rpcPassword = server.conf.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(server.conf.rpcPort),
+        rpcPassword = server.conf.rpcPassword
+      )
 
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+      ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -235,11 +264,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
       for {
         address <- addressF
-        cmd = SendToAddress(destination = address,
-                            amount = Bitcoins.one,
-                            satoshisPerVirtualByte =
-                              Some(SatoshisPerVirtualByte.one),
-                            noBroadcast = false)
+        cmd = SendToAddress(
+          destination = address,
+          amount = Bitcoins.one,
+          satoshisPerVirtualByte = Some(SatoshisPerVirtualByte.one),
+          noBroadcast = false
+        )
         txIdStr = ConsoleCli.exec(cmd, cliConfig)
         expectedTxId = DoubleSha256DigestBE.fromHex(txIdStr.get)
         getTxCmd = GetTransaction(expectedTxId)
@@ -255,13 +285,16 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   it must "receive updates when a block is processed" in { serverWithBitcoind =>
     val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
-    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                           rpcPassword = server.conf.rpcPassword)
+    val cliConfig = Config(
+      rpcPortOpt = Some(server.conf.rpcPort),
+      rpcPassword = server.conf.rpcPassword
+    )
 
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+    ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -271,20 +304,22 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
     val addressF = bitcoind.getNewAddress
     val timeout =
-      15.seconds //any way we can remove this timeout and just check?
+      15.seconds // any way we can remove this timeout and just check?
     for {
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
       cmd = GetBlockHeader(hash = hashes.head)
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
-        Picklers.getBlockHeaderResultPickler)
+        Picklers.getBlockHeaderResultPickler
+      )
       _ <- PekkoUtil.nonBlockingSleep(timeout)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
       val count = notifications.count(
-        _ == BlockProcessedNotification(getBlockHeaderResult))
+        _ == BlockProcessedNotification(getBlockHeaderResult)
+      )
       assert(count == 1, s"count=$count")
     }
   }
@@ -292,13 +327,16 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "get notifications for reserving and unreserving utxos" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                             rpcPassword = server.conf.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(server.conf.rpcPort),
+        rpcPassword = server.conf.rpcPassword
+      )
 
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+      ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -306,11 +344,11 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val notificationsF: Future[Seq[WsNotification[_]]] = tuple._2._1
       val promise = tuple._2._2
 
-      //lock all utxos
+      // lock all utxos
       val lockCmd = LockUnspent(unlock = false, Vector.empty)
       ConsoleCli.exec(lockCmd, cliConfig)
 
-      //unlock all utxos
+      // unlock all utxos
       val unlockCmd = LockUnspent(unlock = true, Vector.empty)
       ConsoleCli.exec(unlockCmd, cliConfig)
 
@@ -319,7 +357,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
-        //should have two notifications for locking and then unlocking the utxos
+        // should have two notifications for locking and then unlocking the utxos
         assert(notifications.count(_.`type` == WalletWsType.ReservedUtxos) == 2)
       }
   }
@@ -327,13 +365,16 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "receive updates when an offer is added and removed" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                             rpcPassword = server.conf.rpcPassword)
+      val cliConfig = Config(
+        rpcPortOpt = Some(server.conf.rpcPort),
+        rpcPassword = server.conf.rpcPassword
+      )
 
       val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+      ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -348,7 +389,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       ConsoleCli
         .exec(
           CliCommand.AddDLCOffer(offer = offer, message = "msg", peer = "uri"),
-          cliConfig)
+          cliConfig
+        )
         .get
 
       ConsoleCli
@@ -376,23 +418,28 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   it must "receive updates when a rescan is complete" in { serverWithBitcoind =>
     val ServerWithBitcoind(_, server) = serverWithBitcoind
-    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                           rpcPassword = server.conf.rpcPassword)
+    val cliConfig = Config(
+      rpcPortOpt = Some(server.conf.rpcPort),
+      rpcPassword = server.conf.rpcPassword
+    )
 
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+    ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
-    val cmd = Rescan(batchSize = None,
-                     startBlock = None,
-                     endBlock = None,
-                     force = true,
-                     ignoreCreationTime = false)
+    val cmd = Rescan(
+      batchSize = None,
+      startBlock = None,
+      endBlock = None,
+      force = true,
+      ignoreCreationTime = false
+    )
     val _ = ConsoleCli.exec(cmd, cliConfig)
     for {
       _ <- PekkoUtil.nonBlockingSleep(10.second)
@@ -410,7 +457,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+    ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -434,7 +482,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+    ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -453,13 +502,16 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   it must "receive dlc node updates" in { serverWithBitcoind =>
     val ServerWithBitcoind(_, server) = serverWithBitcoind
-    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
-                           rpcPassword = server.conf.rpcPassword)
+    val cliConfig = Config(
+      rpcPortOpt = Some(server.conf.rpcPort),
+      rpcPassword = server.conf.rpcPassword
+    )
 
     val req = buildReq(server.conf)
     val notificationsF: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+    ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -474,10 +526,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       InetSocketAddress.createUnresolved("127.0.0.1", NetworkUtil.randomPort())
 
     val acceptMsg = {
-      AcceptDLC(offer = offer,
-                externalPayoutAddressOpt = None,
-                externalChangeAddressOpt = None,
-                peerAddr = peerAddr)
+      AcceptDLC(
+        offer = offer,
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None,
+        peerAddr = peerAddr
+      )
     }
     for {
       _ <- setupF
@@ -488,13 +542,16 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     } yield {
       assert(notifications.exists(_ == DLCNodeConnectionInitiated(peerAddr)))
       assert(notifications.exists(_ == DLCNodeConnectionFailed(peerAddr)))
-      assert(notifications.exists(n =>
-        n match {
-          case DLCAcceptFailed((id, error)) =>
-            id == offer.tlv.tempContractId && error.startsWith(
-              "Connection refused")
-          case _ => false
-        }))
+      assert(
+        notifications.exists(n =>
+          n match {
+            case DLCAcceptFailed((id, error)) =>
+              id == offer.tlv.tempContractId && error.startsWith(
+                "Connection refused"
+              )
+            case _ => false
+          })
+      )
     }
   }
 

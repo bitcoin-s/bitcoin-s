@@ -40,8 +40,8 @@ case class GetBlockTemplateResult(
     weightlimit: Int,
     curtime: UInt32,
     bits: String, // What should this be?
-    height: Int)
-    extends OtherResult
+    height: Int
+) extends OtherResult
 
 case class BlockTransaction(
     data: Transaction,
@@ -51,8 +51,8 @@ case class BlockTransaction(
     fee: Satoshis,
     sigops: Int,
     weight: Int,
-    required: Option[Boolean])
-    extends OtherResult
+    required: Option[Boolean]
+) extends OtherResult
 
 case class GetMiningInfoResult(
     blocks: Int,
@@ -62,8 +62,8 @@ case class GetMiningInfoResult(
     networkhashps: BigDecimal,
     pooledtx: Int,
     chain: String,
-    warnings: String)
-    extends OtherResult
+    warnings: String
+) extends OtherResult
 
 case class GetMemoryInfoResult(locked: MemoryManager) extends OtherResult
 
@@ -75,14 +75,12 @@ case class MemoryManager(
     total: Int,
     locked: Int,
     chunks_used: Int,
-    chunks_free: Int)
-    extends OtherResult
+    chunks_free: Int
+) extends OtherResult
 
-/** @note This is defined as a trait
-  *       and not just a raw case class
-  *       (as is done in other RPC return
-  *       values) in order to make it possible
-  *       to deprecate fields.
+/** @note
+  *   This is defined as a trait and not just a raw case class (as is done in
+  *   other RPC return values) in order to make it possible to deprecate fields.
   */
 trait ValidateAddressResult {
 
@@ -149,14 +147,14 @@ case class ValidateAddressResultImpl(
     hdmasterkeyid: Option[Sha256Hash160Digest],
     ischange: Option[Boolean],
     solvable: Option[Boolean],
-    desc: Option[String])
-    extends ValidateAddressResult
+    desc: Option[String]
+) extends ValidateAddressResult
 
 case class EstimateSmartFeeResult(
     feerate: Option[BitcoinFeeUnit],
     errors: Option[Vector[String]],
-    blocks: Int)
-    extends OtherResult
+    blocks: Int
+) extends OtherResult
 
 case class TestMempoolAcceptResult(
     txid: DoubleSha256DigestBE,
@@ -164,17 +162,12 @@ case class TestMempoolAcceptResult(
     rejectReason: Option[String]
 )
 
-/** sealed trait TestMempoolAcceptResult {
-  *  def txid: DoubleSha256DigestBE
-  *  def allowed: Boolean
-  *  def rejectReason: Option[String]
-  * }
+/** sealed trait TestMempoolAcceptResult { def txid: DoubleSha256DigestBE def
+  * allowed: Boolean def rejectReason: Option[String] }
   *
-  * case class TestMempoolAcceptResultPreV22(
-  *    txid: DoubleSha256DigestBE,
-  *    allowed: Boolean,
-  *    rejectReason: Option[String]
-  * ) extends TestMempoolAcceptResult
+  * case class TestMempoolAcceptResultPreV22( txid: DoubleSha256DigestBE,
+  * allowed: Boolean, rejectReason: Option[String] ) extends
+  * TestMempoolAcceptResult
   */
 
 case class FeeInfoTwo(

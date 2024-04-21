@@ -153,7 +153,8 @@ class UInt16Test extends BitcoinSUnitTest {
         if (bigInt1 * bigInt2 <= UInt16.max.toInt) {
           assert(
             num1 * num2 ==
-              UInt16(num1.toInt * num2.toInt))
+              UInt16(num1.toInt * num2.toInt)
+          )
         } else {
           assert(Try(num1 * num2).isFailure)
         }

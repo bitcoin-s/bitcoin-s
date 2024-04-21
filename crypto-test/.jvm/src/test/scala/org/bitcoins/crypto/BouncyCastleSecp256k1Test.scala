@@ -49,7 +49,8 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
 
   it must "decompress edge case keys the same" in {
     val pubKeyBytes = ByteVector.fromValidHex(
-      "03fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c")
+      "03fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c"
+    )
     testCompatibility(_.decompressed(pubKeyBytes))
   }
 
@@ -67,17 +68,21 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
   }
 
   it must "compute signatures with entropy the same" in {
-    forAll(CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) { case (privKey, bytes, entropy) =>
+    forAll(
+      CryptoGenerators.privateKey,
+      NumberGenerator.bytevector(32),
+      NumberGenerator.bytevector(32)
+    ) { case (privKey, bytes, entropy) =>
       testCompatibility(_.signWithEntropy(privKey, bytes, entropy))
     }
   }
 
   it must "verify signatures the same" in {
-    forAll(CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32),
-           CryptoGenerators.digitalSignature) { case (privKey, bytes, badSig) =>
+    forAll(
+      CryptoGenerators.privateKey,
+      NumberGenerator.bytevector(32),
+      CryptoGenerators.digitalSignature
+    ) { case (privKey, bytes, badSig) =>
       val sig = privKey.sign(bytes)
       val pubKey = privKey.publicKey
 
@@ -87,64 +92,74 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
   }
 
   it must "compute schnorr signatures the same" in {
-    forAll(CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) { case (privKey, bytes, auxRand) =>
+    forAll(
+      CryptoGenerators.privateKey,
+      NumberGenerator.bytevector(32),
+      NumberGenerator.bytevector(32)
+    ) { case (privKey, bytes, auxRand) =>
       testCompatibility(_.schnorrSign(bytes, privKey, auxRand))
     }
   }
 
   it must "compute schnorr signature for fixed nonce the same" in {
-    forAll(CryptoGenerators.privateKey,
-           CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32)) { case (privKey, nonceKey, bytes) =>
+    forAll(
+      CryptoGenerators.privateKey,
+      CryptoGenerators.privateKey,
+      NumberGenerator.bytevector(32)
+    ) { case (privKey, nonceKey, bytes) =>
       testCompatibility(_.schnorrSignWithNonce(bytes, privKey, nonceKey))
     }
   }
 
   it must "validate schnorr signatures the same" in {
-    forAll(CryptoGenerators.privateKey,
-           NumberGenerator.bytevector(32),
-           CryptoGenerators.schnorrDigitalSignature) {
-      case (privKey, bytes, badSig) =>
-        val sig = privKey.schnorrSign(bytes)
-        val pubKey = privKey.schnorrPublicKey
+    forAll(
+      CryptoGenerators.privateKey,
+      NumberGenerator.bytevector(32),
+      CryptoGenerators.schnorrDigitalSignature
+    ) { case (privKey, bytes, badSig) =>
+      val sig = privKey.schnorrSign(bytes)
+      val pubKey = privKey.schnorrPublicKey
 
-        testCompatibility(_.schnorrVerify(bytes, pubKey, sig))
-        testCompatibility(_.schnorrVerify(bytes, pubKey, badSig))
+      testCompatibility(_.schnorrVerify(bytes, pubKey, sig))
+      testCompatibility(_.schnorrVerify(bytes, pubKey, badSig))
     }
   }
 
   it must "compute schnorr signature points the same" in {
-    forAll(CryptoGenerators.schnorrPublicKey,
-           CryptoGenerators.schnorrNonce,
-           NumberGenerator.bytevector(32)) { case (pubKey, nonce, bytes) =>
+    forAll(
+      CryptoGenerators.schnorrPublicKey,
+      CryptoGenerators.schnorrNonce,
+      NumberGenerator.bytevector(32)
+    ) { case (pubKey, nonce, bytes) =>
       testCompatibility(
-        _.schnorrComputeSigPoint(bytes, nonce, pubKey, compressed = true))
+        _.schnorrComputeSigPoint(bytes, nonce, pubKey, compressed = true)
+      )
     }
   }
 
   it must "compute adaptor signatures the same" in {
-    forAll(CryptoGenerators.privateKey,
-           CryptoGenerators.publicKey,
-           NumberGenerator.bytevector(32),
-           NumberGenerator.bytevector(32)) {
-      case (privKey, adaptor, msg, auxRand) =>
-        testCompatibility(_.adaptorSign(privKey, adaptor, msg, auxRand))
+    forAll(
+      CryptoGenerators.privateKey,
+      CryptoGenerators.publicKey,
+      NumberGenerator.bytevector(32),
+      NumberGenerator.bytevector(32)
+    ) { case (privKey, adaptor, msg, auxRand) =>
+      testCompatibility(_.adaptorSign(privKey, adaptor, msg, auxRand))
     }
   }
 
   it must "verify adaptor signatures the same" in {
-    forAll(CryptoGenerators.privateKey,
-           CryptoGenerators.publicKey,
-           NumberGenerator.bytevector(32),
-           CryptoGenerators.adaptorSignature) {
-      case (privKey, adaptor, msg, badSig) =>
-        val sig = privKey.adaptorSign(adaptor, msg)
-        val pubKey = privKey.publicKey
+    forAll(
+      CryptoGenerators.privateKey,
+      CryptoGenerators.publicKey,
+      NumberGenerator.bytevector(32),
+      CryptoGenerators.adaptorSignature
+    ) { case (privKey, adaptor, msg, badSig) =>
+      val sig = privKey.adaptorSign(adaptor, msg)
+      val pubKey = privKey.publicKey
 
-        testCompatibility(_.adaptorVerify(sig, pubKey, msg, adaptor))
-        testCompatibility(_.adaptorVerify(badSig, pubKey, msg, adaptor))
+      testCompatibility(_.adaptorVerify(sig, pubKey, msg, adaptor))
+      testCompatibility(_.adaptorVerify(badSig, pubKey, msg, adaptor))
     }
   }
 

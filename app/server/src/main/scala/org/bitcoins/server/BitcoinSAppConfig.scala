@@ -27,18 +27,20 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-/** A unified config class for all submodules of Bitcoin-S
-  * that accepts configuration. Thanks to implicit definitions
-  * in this case class' companion object an instance
-  * of this class can be passed in anywhere a wallet,
-  * chain or node config is required.
+/** A unified config class for all submodules of Bitcoin-S that accepts
+  * configuration. Thanks to implicit definitions in this case class' companion
+  * object an instance of this class can be passed in anywhere a wallet, chain
+  * or node config is required.
   *
-  * @param directory The data directory of this app configuration
-  * @param confs A sequence of optional configuration overrides
+  * @param directory
+  *   The data directory of this app configuration
+  * @param confs
+  *   A sequence of optional configuration overrides
   */
 case class BitcoinSAppConfig(
     baseDatadir: Path,
-    configOverrides: Vector[Config])(implicit system: ActorSystem)
+    configOverrides: Vector[Config]
+)(implicit system: ActorSystem)
     extends StartStopAsync[AppConfigMarker]
     with BitcoinSLogger {
   import system.dispatcher
@@ -73,8 +75,8 @@ case class BitcoinSAppConfig(
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[StartedBitcoinSAppConfig] = {
     val start = TimeUtil.currentEpochMs
-    //configurations that don't depend on tor startup
-    //start these in parallel as an optimization
+    // configurations that don't depend on tor startup
+    // start these in parallel as an optimization
     val nonTorConfigs = Vector(kmConf, chainConf, walletConf, dlcConf)
 
     val torConfig = torConf.start()
@@ -84,10 +86,10 @@ case class BitcoinSAppConfig(
     val dbConfigsDependentOnTor: Vector[DbManagement] =
       Vector(nodeConf)
 
-    //run migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
-    //since we don't require tor dependent configs
-    //to be fully started before completing the Future returned by this
-    //method, we need to run them on their own
+    // run migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
+    // since we don't require tor dependent configs
+    // to be fully started before completing the Future returned by this
+    // method, we need to run them on their own
     val migrateTorDependentDbConfigsF =
       Future.traverse(dbConfigsDependentOnTor)(dbConfig =>
         Future(dbConfig.migrate()))
@@ -109,7 +111,8 @@ case class BitcoinSAppConfig(
       _ <- startedNonTorConfigsF
     } yield {
       logger.info(
-        s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
+        s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms"
+      )
       StartedBitcoinSAppConfig(startedTorDependentConfigsF.map(_ => ()))
     }
   }
@@ -132,9 +135,11 @@ case class BitcoinSAppConfig(
   /** The underlying config the result of our fields derive from */
   lazy val config: Config = {
     val finalConfig =
-      AppConfig.getBaseConfig(baseDatadir = baseDatadir,
-                              DEFAULT_BITCOIN_S_CONF_FILE,
-                              configOverrides)
+      AppConfig.getBaseConfig(
+        baseDatadir = baseDatadir,
+        DEFAULT_BITCOIN_S_CONF_FILE,
+        configOverrides
+      )
     val resolved = finalConfig.resolve()
 
     resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
@@ -146,8 +151,8 @@ case class BitcoinSAppConfig(
 
   def wsPort: Int = config.getIntOrElse("bitcoin-s.server.wsport", 19999)
 
-  /** How long until we forcefully terminate connections to the server
-    * when shutting down the server
+  /** How long until we forcefully terminate connections to the server when
+    * shutting down the server
     */
   def terminationDeadline: FiniteDuration = {
     val opt = config.getDurationOpt("bitcoin-s.server.termination-deadline")
@@ -157,9 +162,10 @@ case class BitcoinSAppConfig(
           new FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS)
         } else {
           sys.error(
-            s"Can only have a finite duration for termination deadline, got=$duration")
+            s"Can only have a finite duration for termination deadline, got=$duration"
+          )
         }
-      case None => 5.seconds //5 seconds by default
+      case None => 5.seconds // 5 seconds by default
     }
   }
 
@@ -190,13 +196,14 @@ case class BitcoinSAppConfig(
   }
 }
 
-/** Implicit conversions that allow a unified configuration
-  * to be passed in wherever a specializes one is required
+/** Implicit conversions that allow a unified configuration to be passed in
+  * wherever a specializes one is required
   */
 object BitcoinSAppConfig extends BitcoinSLogger {
 
-  def fromConfig(config: Config)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
+  def fromConfig(
+      config: Config
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
     BitcoinSAppConfig(configDataDir, Vector(config))
   }
@@ -206,33 +213,36 @@ object BitcoinSAppConfig extends BitcoinSLogger {
   }
 
   def fromDatadir(datadir: Path, confs: Config*)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
+      system: ActorSystem
+  ): BitcoinSAppConfig = {
     BitcoinSAppConfig(datadir, confs.toVector)
   }
 
   def fromDatadirWithServerArgs(
       datadir: Path,
-      serverArgsParser: ServerArgParser)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
+      serverArgsParser: ServerArgParser
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     fromDatadir(datadir, serverArgsParser.toConfig)
   }
 
-  /** Constructs an app configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs an app configuration from the default Bitcoin-S data directory
+    * and given list of configuration overrides.
     */
   def fromDefaultDatadir(confs: Config*)(implicit
-      system: ActorSystem): BitcoinSAppConfig =
+      system: ActorSystem
+  ): BitcoinSAppConfig =
     BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs.toVector)
 
-  def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
-      implicit system: ActorSystem): BitcoinSAppConfig = {
+  def fromDefaultDatadirWithBundleConf(
+      confs: Vector[Config] = Vector.empty
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     fromDatadirWithBundleConf(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs)
   }
 
   def fromDatadirWithBundleConf(
       datadir: Path,
-      confs: Vector[Config] = Vector.empty)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
+      confs: Vector[Config] = Vector.empty
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val baseConf: BitcoinSAppConfig =
       fromDatadir(datadir, confs: _*)
 
@@ -250,22 +260,20 @@ object BitcoinSAppConfig extends BitcoinSLogger {
   }
 
   /** Resolve BitcoinSAppConfig in the following order of precedence
-    * 1. Server args
-    * 2. bitcoin-s-bundle.conf
-    * 3. bitcoin-s.conf
-    * 4. application.conf
-    * 5. reference.conf
+    *   1. Server args 2. bitcoin-s-bundle.conf 3. bitcoin-s.conf 4.
+    *      application.conf 5. reference.conf
     */
   def fromDatadirWithBundleConfWithServerArgs(
       datadir: Path,
-      serverArgParser: ServerArgParser)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
+      serverArgParser: ServerArgParser
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     fromDatadirWithBundleConf(datadir, Vector(serverArgParser.toConfig))
   }
 
   /** Creates a BitcoinSAppConfig the the given daemon args to a server */
-  def fromDefaultDatadirWithServerArgs(serverArgParser: ServerArgParser)(
-      implicit system: ActorSystem): BitcoinSAppConfig = {
+  def fromDefaultDatadirWithServerArgs(
+      serverArgParser: ServerArgParser
+  )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val config = serverArgParser.toConfig
     fromConfig(config)
   }

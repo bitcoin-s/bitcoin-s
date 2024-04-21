@@ -10,8 +10,7 @@ object ListUtil {
       (y, idxY) <- xs.zipWithIndex if idxX < idxY
     } yield (x, y)
 
-  /** Generates a vector of vectors "rotating" the head element
-    * over `xs`.
+  /** Generates a vector of vectors "rotating" the head element over `xs`.
     *
     * {{{
     *   > slideFirst(Vector(1, 2, 3))

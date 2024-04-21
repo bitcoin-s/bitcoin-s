@@ -18,12 +18,14 @@ trait NodeRpc { self: Client =>
 
   private def logging(
       include: Option[Vector[String]],
-      exclude: Option[Vector[String]]): Future[Map[String, Boolean]] = {
-    val params = List(Json.toJson(include.getOrElse(Vector.empty)),
-                      Json.toJson(exclude.getOrElse(Vector.empty)))
+      exclude: Option[Vector[String]]
+  ): Future[Map[String, Boolean]] = {
+    val params = List(
+      Json.toJson(include.getOrElse(Vector.empty)),
+      Json.toJson(exclude.getOrElse(Vector.empty))
+    )
 
-    /** Bitcoin Core v0.16 returns a map of 1/0s,
-      * v0.17 returns proper booleans
+    /** Bitcoin Core v0.16 returns a map of 1/0s, v0.17 returns proper booleans
       */
     object IntOrBoolReads extends Reads[Boolean] {
       override def reads(json: JsValue): JsResult[Boolean] =
@@ -51,7 +53,8 @@ trait NodeRpc { self: Client =>
 
   def logging(
       include: Vector[String] = Vector.empty,
-      exclude: Vector[String] = Vector.empty): Future[Map[String, Boolean]] = {
+      exclude: Vector[String] = Vector.empty
+  ): Future[Map[String, Boolean]] = {
     val inc = if (include.nonEmpty) Some(include) else None
     val exc = if (exclude.nonEmpty) Some(exclude) else None
     logging(inc, exc)

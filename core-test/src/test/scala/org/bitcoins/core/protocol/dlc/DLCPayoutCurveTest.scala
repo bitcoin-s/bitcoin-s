@@ -43,8 +43,10 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
 
   it should "agree on lines and degree 1 polynomials" in {
     forAll(nPoints(2), Gen.listOfN(1000, numGen)) {
-      case (Vector(point1: OutcomePayoutPoint, point2: OutcomePayoutPoint),
-            outcomes) =>
+      case (
+            Vector(point1: OutcomePayoutPoint, point2: OutcomePayoutPoint),
+            outcomes
+          ) =>
         val line = OutcomePayoutLine(point1, point2)
         val polyDegOne = OutcomePayoutPolynomial(Vector(point1, point2))
 
@@ -88,10 +90,14 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
 
   it should "agree on quadratics and degree 2 polynomials" in {
     forAll(nPoints(3), Gen.listOfN(1000, numGen)) {
-      case (Vector(point1: OutcomePayoutPoint,
-                   point2: OutcomePayoutPoint,
-                   point3: OutcomePayoutPoint),
-            outcomes) =>
+      case (
+            Vector(
+              point1: OutcomePayoutPoint,
+              point2: OutcomePayoutPoint,
+              point3: OutcomePayoutPoint
+            ),
+            outcomes
+          ) =>
         val parabola = OutcomePayoutQuadratic(point1, point2, point3)
         val polyDegTwo =
           OutcomePayoutPolynomial(Vector(point1, point2, point3))
@@ -165,11 +171,15 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
 
   it should "agree on cubics and degree 3 polynomials" in {
     forAll(nPoints(4), Gen.listOfN(1000, numGen)) {
-      case (Vector(point1: OutcomePayoutPoint,
-                   point2: OutcomePayoutPoint,
-                   point3: OutcomePayoutPoint,
-                   point4: OutcomePayoutPoint),
-            outcomes) =>
+      case (
+            Vector(
+              point1: OutcomePayoutPoint,
+              point2: OutcomePayoutPoint,
+              point3: OutcomePayoutPoint,
+              point4: OutcomePayoutPoint
+            ),
+            outcomes
+          ) =>
         val cubic = OutcomePayoutCubic(point1, point2, point3, point4)
         val polyDegThree =
           OutcomePayoutPolynomial(Vector(point1, point2, point3, point4))
@@ -193,12 +203,14 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
       (nums(0), nums(1), nums(2), nums(3))
     }
 
-    forAll(intGen,
-           intGen,
-           intGen,
-           intGen,
-           Gen.listOfN(1000, numGen),
-           fourNums) { case (a, b, c, d, outcomes, (x1, x2, x3, x4)) =>
+    forAll(
+      intGen,
+      intGen,
+      intGen,
+      intGen,
+      Gen.listOfN(1000, numGen),
+      fourNums
+    ) { case (a, b, c, d, outcomes, (x1, x2, x3, x4)) =>
       def expectedPayout(outcome: BigDecimal): Satoshis = {
         val value =
           a * outcome * outcome * outcome + b * outcome * outcome + c * outcome + d
@@ -283,30 +295,33 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
   }
 
   it should "agree on hyperbolas and y = d/x + translatePayout" in {
-    forAll(intGen.suchThat(_ > 0),
-           intGen,
-           Gen.listOfN(1000, numGen.suchThat(_ > 0))) {
-      case (d, translatePayout, outcomes) =>
-        def expectedPayout(outcome: BigDecimal): Satoshis = {
-          val value = d / outcome + translatePayout
-          val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
-          Satoshis(rounded)
-        }
+    forAll(
+      intGen.suchThat(_ > 0),
+      intGen,
+      Gen.listOfN(1000, numGen.suchThat(_ > 0))
+    ) { case (d, translatePayout, outcomes) =>
+      def expectedPayout(outcome: BigDecimal): Satoshis = {
+        val value = d / outcome + translatePayout
+        val rounded = value.setScale(0, RoundingMode.FLOOR).toLongExact
+        Satoshis(rounded)
+      }
 
-        val hyperbola =
-          DLCHyperbolaPayoutCurvePiece(usePositivePiece = true,
-                                       translateOutcome = 0,
-                                       translatePayout,
-                                       a = 1,
-                                       b = 0,
-                                       c = 0,
-                                       d,
-                                       OutcomePayoutPoint(0, 0),
-                                       OutcomePayoutPoint(Long.MaxValue, 0))
+      val hyperbola =
+        DLCHyperbolaPayoutCurvePiece(
+          usePositivePiece = true,
+          translateOutcome = 0,
+          translatePayout,
+          a = 1,
+          b = 0,
+          c = 0,
+          d,
+          OutcomePayoutPoint(0, 0),
+          OutcomePayoutPoint(Long.MaxValue, 0)
+        )
 
-        outcomes.foreach { outcome =>
-          assert(hyperbola(outcome) == expectedPayout(outcome))
-        }
+      outcomes.foreach { outcome =>
+        assert(hyperbola(outcome) == expectedPayout(outcome))
+      }
     }
   }
 
@@ -315,27 +330,38 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     val point1 = PiecewisePolynomialEndpoint(10, Satoshis(100))
 
     val line =
-      DLCPayoutCurve.polynomialInterpolate(Vector(point0, point1),
-                                           serializationVersion =
-                                             DLCSerializationVersion.Beta)
+      DLCPayoutCurve.polynomialInterpolate(
+        Vector(point0, point1),
+        serializationVersion = DLCSerializationVersion.Beta
+      )
     val lineFunc = line.pieces
     assert(
-      lineFunc == Vector(OutcomePayoutLine(point0.toOutcomePayoutPoint,
-                                           point1.toOutcomePayoutPoint)))
+      lineFunc == Vector(
+        OutcomePayoutLine(
+          point0.toOutcomePayoutPoint,
+          point1.toOutcomePayoutPoint
+        )
+      )
+    )
 
     val point2 = PiecewisePolynomialMidpoint(20, Satoshis.zero)
     val point3 = PiecewisePolynomialEndpoint(30, Satoshis(300))
 
     val quad =
-      DLCPayoutCurve.polynomialInterpolate(Vector(point1, point2, point3),
-                                           serializationVersion =
-                                             DLCSerializationVersion.Beta)
+      DLCPayoutCurve.polynomialInterpolate(
+        Vector(point1, point2, point3),
+        serializationVersion = DLCSerializationVersion.Beta
+      )
     val quadFunc = quad.pieces
     assert(
       quadFunc == Vector(
-        OutcomePayoutQuadratic(point1.toOutcomePayoutPoint,
-                               point2.toOutcomePayoutPoint,
-                               point3.toOutcomePayoutPoint)))
+        OutcomePayoutQuadratic(
+          point1.toOutcomePayoutPoint,
+          point2.toOutcomePayoutPoint,
+          point3.toOutcomePayoutPoint
+        )
+      )
+    )
 
     val point4 = PiecewisePolynomialMidpoint(40, Satoshis(600))
     val point5 = PiecewisePolynomialMidpoint(50, Satoshis(500))
@@ -343,20 +369,26 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     val cubicPoints = Vector(point3, point4, point5, point6)
 
     val cubic =
-      DLCPayoutCurve.polynomialInterpolate(cubicPoints,
-                                           serializationVersion =
-                                             DLCSerializationVersion.Beta)
+      DLCPayoutCurve.polynomialInterpolate(
+        cubicPoints,
+        serializationVersion = DLCSerializationVersion.Beta
+      )
     val cubicFunc = cubic.pieces
     assert(
       cubicFunc == Vector(
-        OutcomePayoutCubic(point3.toOutcomePayoutPoint,
-                           point4.toOutcomePayoutPoint,
-                           point5.toOutcomePayoutPoint,
-                           point6.toOutcomePayoutPoint)))
+        OutcomePayoutCubic(
+          point3.toOutcomePayoutPoint,
+          point4.toOutcomePayoutPoint,
+          point5.toOutcomePayoutPoint,
+          point6.toOutcomePayoutPoint
+        )
+      )
+    )
 
     val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(point0, point1, point2, point3, point4, point5, point6),
-      serializationVersion = DLCSerializationVersion.Beta)
+      serializationVersion = DLCSerializationVersion.Beta
+    )
     val allFuncs = func.pieces
     assert(allFuncs == lineFunc ++ quadFunc ++ cubicFunc)
 

@@ -94,7 +94,8 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       val attempt = Try {
         MnemonicCode.fromEntropy(
           // to provide a bitvector of bad length, but correct entropy multiple
-          e.take(MnemonicCode.ENTROPY_MULTIPLE))
+          e.take(MnemonicCode.ENTROPY_MULTIPLE)
+        )
       }
       assert(attempt.isFailure)
       val exc = attempt
@@ -126,21 +127,23 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
   }
 
   it must "fail on a seed phrase with bad checksum" in {
-    val correctSeed = Vector("phone",
-                             "dilemma",
-                             "early",
-                             "never",
-                             "test",
-                             "surge",
-                             "ecology",
-                             "rail",
-                             "medal",
-                             "benefit",
-                             "mystery",
-                             "toward",
-                             "lounge",
-                             "candy",
-                             "syrup")
+    val correctSeed = Vector(
+      "phone",
+      "dilemma",
+      "early",
+      "never",
+      "test",
+      "surge",
+      "ecology",
+      "rail",
+      "medal",
+      "benefit",
+      "mystery",
+      "toward",
+      "lounge",
+      "candy",
+      "syrup"
+    )
 
     val newLastWord = "satoshi"
     val fromWordsT = Try {
@@ -184,13 +187,15 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       entropy: String,
       words: String,
       seed: String,
-      xpriv: String)
+      xpriv: String
+  )
 
   private case class TrezorTestVector(
       entropy: ByteVector,
       expectedWords: Vector[String],
       expectedSeed: BIP39Seed,
-      expectedXPriv: ExtPrivateKey)
+      expectedXPriv: ExtPrivateKey
+  )
 
   private def testTrezorVector(
       vector: TrezorTestVector
@@ -248,21 +253,23 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
   }
 
   it must "not serialize a MnemonicCode toString" in {
-    val correctSeed = Vector("phone",
-                             "dilemma",
-                             "early",
-                             "never",
-                             "test",
-                             "surge",
-                             "ecology",
-                             "rail",
-                             "medal",
-                             "benefit",
-                             "mystery",
-                             "toward",
-                             "lounge",
-                             "candy",
-                             "syrup")
+    val correctSeed = Vector(
+      "phone",
+      "dilemma",
+      "early",
+      "never",
+      "test",
+      "surge",
+      "ecology",
+      "rail",
+      "medal",
+      "benefit",
+      "mystery",
+      "toward",
+      "lounge",
+      "candy",
+      "syrup"
+    )
 
     val mnemonicCode = MnemonicCode.fromWords(correctSeed)
 

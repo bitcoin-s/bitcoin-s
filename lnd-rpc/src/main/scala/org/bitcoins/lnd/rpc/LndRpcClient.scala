@@ -59,19 +59,22 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.Try
 
-/** @param binaryOpt Path to lnd executable
+/** @param binaryOpt
+  *   Path to lnd executable
   */
 class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
-    implicit val system: ActorSystem)
-    extends NativeProcessFactory
+    implicit val system: ActorSystem
+) extends NativeProcessFactory
     with LndUtils
     with LndRouterClient
     with StartStopAsync[LndRpcClient]
     with BitcoinSLogger {
   instance match {
     case _: LndInstanceLocal =>
-      require(binaryOpt.isDefined,
-              s"Binary must be defined with a local instance of lnd")
+      require(
+        binaryOpt.isDefined,
+        s"Binary must be defined with a local instance of lnd"
+      )
     case _: LndInstanceRemote => ()
   }
 
@@ -94,7 +97,9 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
           case Some(cert) =>
             Some(
               new ByteArrayInputStream(
-                cert.getBytes(java.nio.charset.StandardCharsets.UTF_8.name)))
+                cert.getBytes(java.nio.charset.StandardCharsets.UTF_8.name)
+              )
+            )
           case None => None
         }
     }
@@ -152,7 +157,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val versionerClient: VersionerClient = VersionerClient(clientSettings)
 
   lazy val chainClient: ChainNotifierClient = ChainNotifierClient(
-    clientSettings)
+    clientSettings
+  )
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
@@ -169,8 +175,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
     for {
       seed <- genSeed()
-      req = InitWalletRequest(walletPassword = passwordByteStr,
-                              cipherSeedMnemonic = seed.cipherSeedMnemonic)
+      req = InitWalletRequest(
+        walletPassword = passwordByteStr,
+        cipherSeedMnemonic = seed.cipherSeedMnemonic
+      )
       res <- unlocker.initWallet(req).map(_.adminMacaroon)
     } yield res
   }
@@ -230,7 +238,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def addInvoice(
       memo: String,
       value: Satoshis,
-      expiry: Long): Future[AddInvoiceResult] = {
+      expiry: Long
+  ): Future[AddInvoiceResult] = {
     val invoice: Invoice =
       Invoice(memo = memo, value = value.toLong, expiry = expiry)
 
@@ -240,11 +249,14 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def addInvoice(
       descriptionHash: Sha256Digest,
       value: Satoshis,
-      expiry: Long): Future[AddInvoiceResult] = {
+      expiry: Long
+  ): Future[AddInvoiceResult] = {
     val invoice: Invoice =
-      Invoice(value = value.toLong,
-              expiry = expiry,
-              descriptionHash = descriptionHash.bytes)
+      Invoice(
+        value = value.toLong,
+        expiry = expiry,
+        descriptionHash = descriptionHash.bytes
+      )
 
     addInvoice(invoice)
   }
@@ -252,7 +264,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def addInvoice(
       memo: String,
       value: MilliSatoshis,
-      expiry: Long): Future[AddInvoiceResult] = {
+      expiry: Long
+  ): Future[AddInvoiceResult] = {
     val invoice: Invoice =
       Invoice(memo = memo, valueMsat = value.toLong, expiry = expiry)
 
@@ -262,11 +275,14 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def addInvoice(
       descriptionHash: Sha256Digest,
       value: MilliSatoshis,
-      expiry: Long): Future[AddInvoiceResult] = {
+      expiry: Long
+  ): Future[AddInvoiceResult] = {
     val invoice: Invoice =
-      Invoice(valueMsat = value.toLong,
-              expiry = expiry,
-              descriptionHash = descriptionHash.bytes)
+      Invoice(
+        valueMsat = value.toLong,
+        expiry = expiry,
+        descriptionHash = descriptionHash.bytes
+      )
 
     addInvoice(invoice)
   }
@@ -350,11 +366,13 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
         val spkBytes = ByteVector.fromValidHex(utxo.pkScript)
 
-        UTXOResult(BitcoinAddress.fromString(utxo.address),
-                   Satoshis(utxo.amountSat),
-                   ScriptPubKey.fromAsmBytes(spkBytes),
-                   outPointOpt,
-                   utxo.confirmations)
+        UTXOResult(
+          BitcoinAddress.fromString(utxo.address),
+          Satoshis(utxo.amountSat),
+          ScriptPubKey.fromAsmBytes(spkBytes),
+          outPointOpt,
+          utxo.confirmations
+        )
 
       })
   }
@@ -371,7 +389,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def connectPeer(
       nodeId: NodeId,
       addr: InetSocketAddress,
-      permanent: Boolean): Future[Unit] = {
+      permanent: Boolean
+  ): Future[Unit] = {
     val lnAddr: LightningAddress =
       LightningAddress(nodeId.hex, s"${addr.getHostName}:${addr.getPort}")
 
@@ -409,7 +428,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       nodeId: NodeId,
       fundingAmount: CurrencyUnit,
       satPerVByte: SatoshisPerVirtualByte,
-      privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
+      privateChannel: Boolean
+  ): Future[Option[TransactionOutPoint]] = {
     val request = OpenChannelRequest(
       nodePubkey = nodeId.bytes,
       localFundingAmount = fundingAmount.satoshis.toLong,
@@ -425,7 +445,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       fundingAmount: CurrencyUnit,
       pushAmt: CurrencyUnit,
       satPerVByte: SatoshisPerVirtualByte,
-      privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
+      privateChannel: Boolean
+  ): Future[Option[TransactionOutPoint]] = {
     val request = OpenChannelRequest(
       nodePubkey = nodeId.bytes,
       localFundingAmount = fundingAmount.satoshis.toLong,
@@ -438,7 +459,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def openChannel(
-      request: OpenChannelRequest): Future[Option[TransactionOutPoint]] = {
+      request: OpenChannelRequest
+  ): Future[Option[TransactionOutPoint]] = {
     logger.trace("lnd calling openchannel")
 
     lnd
@@ -456,25 +478,31 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def closeChannel(
       outPoint: TransactionOutPoint,
       force: Boolean,
-      feeRate: SatoshisPerVirtualByte): Future[DoubleSha256DigestBE] = {
+      feeRate: SatoshisPerVirtualByte
+  ): Future[DoubleSha256DigestBE] = {
     val channelPoint =
       ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
 
     closeChannel(
-      CloseChannelRequest(channelPoint = Some(channelPoint),
-                          force = force,
-                          satPerVbyte = UInt64(feeRate.toLong)))
+      CloseChannelRequest(
+        channelPoint = Some(channelPoint),
+        force = force,
+        satPerVbyte = UInt64(feeRate.toLong)
+      )
+    )
   }
 
   def closeChannel(
-      outPoint: TransactionOutPoint): Future[DoubleSha256DigestBE] = {
+      outPoint: TransactionOutPoint
+  ): Future[DoubleSha256DigestBE] = {
     val channelPoint =
       ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
     closeChannel(CloseChannelRequest(Some(channelPoint)))
   }
 
   def closeChannel(
-      request: CloseChannelRequest): Future[DoubleSha256DigestBE] = {
+      request: CloseChannelRequest
+  ): Future[DoubleSha256DigestBE] = {
     logger.trace("lnd calling closechannel")
 
     lnd
@@ -498,12 +526,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def abandonChannel(
       outPoint: TransactionOutPoint,
-      pendingFundingShimOnly: Boolean): Future[Unit] = {
+      pendingFundingShimOnly: Boolean
+  ): Future[Unit] = {
     val channelPoint: ChannelPoint = outPoint
     val request =
-      AbandonChannelRequest(Some(channelPoint),
-                            pendingFundingShimOnly = pendingFundingShimOnly,
-                            iKnowWhatIAmDoing = true)
+      AbandonChannelRequest(
+        Some(channelPoint),
+        pendingFundingShimOnly = pendingFundingShimOnly,
+        iKnowWhatIAmDoing = true
+      )
 
     abandonChannel(request)
   }
@@ -514,8 +545,9 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     lnd.abandonChannel(request).map(_ => ())
   }
 
-  def listChannels(request: ListChannelsRequest =
-    ListChannelsRequest()): Future[Vector[Channel]] = {
+  def listChannels(
+      request: ListChannelsRequest = ListChannelsRequest()
+  ): Future[Vector[Channel]] = {
     logger.trace("lnd calling listchannels")
 
     lnd
@@ -530,10 +562,12 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def findChannel(
-      channelPoint: TransactionOutPoint): Future[Option[Channel]] = {
+      channelPoint: TransactionOutPoint
+  ): Future[Option[Channel]] = {
     listChannels().map { channels =>
       channels.find(
-        _.channelPoint == s"${channelPoint.txId.hex}:${channelPoint.vout.toLong}")
+        _.channelPoint == s"${channelPoint.txId.hex}:${channelPoint.vout.toLong}"
+      )
     }
   }
 
@@ -549,9 +583,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     lnd
       .walletBalance(WalletBalanceRequest())
       .map { bals =>
-        WalletBalances(balance = Satoshis(bals.totalBalance),
-                       unconfirmedBalance = Satoshis(bals.unconfirmedBalance),
-                       confirmedBalance = Satoshis(bals.confirmedBalance))
+        WalletBalances(
+          balance = Satoshis(bals.totalBalance),
+          unconfirmedBalance = Satoshis(bals.unconfirmedBalance),
+          confirmedBalance = Satoshis(bals.confirmedBalance)
+        )
       }
   }
 
@@ -567,24 +603,31 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
           remoteBalance =
             Satoshis(bals.remoteBalance.map(_.sat).getOrElse(UInt64.zero)),
           unsettledLocalBalance = Satoshis(
-            bals.unsettledLocalBalance.map(_.sat).getOrElse(UInt64.zero)),
+            bals.unsettledLocalBalance.map(_.sat).getOrElse(UInt64.zero)
+          ),
           unsettledRemoteBalance = Satoshis(
-            bals.unsettledRemoteBalance.map(_.sat).getOrElse(UInt64.zero)),
+            bals.unsettledRemoteBalance.map(_.sat).getOrElse(UInt64.zero)
+          ),
           pendingOpenLocalBalance = Satoshis(
-            bals.pendingOpenLocalBalance.map(_.sat).getOrElse(UInt64.zero)),
+            bals.pendingOpenLocalBalance.map(_.sat).getOrElse(UInt64.zero)
+          ),
           pendingOpenRemoteBalance = Satoshis(
-            bals.pendingOpenRemoteBalance.map(_.sat).getOrElse(UInt64.zero))
+            bals.pendingOpenRemoteBalance.map(_.sat).getOrElse(UInt64.zero)
+          )
         )
       }
   }
 
   def sendPayment(
       invoice: LnInvoice,
-      timeout: FiniteDuration): Future[Payment] = {
+      timeout: FiniteDuration
+  ): Future[Payment] = {
     val request: SendPaymentRequest =
-      SendPaymentRequest(paymentRequest = invoice.toString,
-                         timeoutSeconds = timeout.toSeconds.toInt,
-                         noInflightUpdates = true)
+      SendPaymentRequest(
+        paymentRequest = invoice.toString,
+        timeoutSeconds = timeout.toSeconds.toInt,
+        noInflightUpdates = true
+      )
 
     sendPayment(request)
   }
@@ -592,12 +635,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def sendPayment(
       invoice: LnInvoice,
       feeLimit: Satoshis,
-      timeout: FiniteDuration): Future[Payment] = {
+      timeout: FiniteDuration
+  ): Future[Payment] = {
     val request: SendPaymentRequest =
-      SendPaymentRequest(paymentRequest = invoice.toString,
-                         timeoutSeconds = timeout.toSeconds.toInt,
-                         feeLimitSat = feeLimit.toLong,
-                         noInflightUpdates = true)
+      SendPaymentRequest(
+        paymentRequest = invoice.toString,
+        timeoutSeconds = timeout.toSeconds.toInt,
+        feeLimitSat = feeLimit.toLong,
+        noInflightUpdates = true
+      )
 
     sendPayment(request)
   }
@@ -605,12 +651,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def sendPayment(
       nodeId: NodeId,
       amount: CurrencyUnit,
-      timeout: FiniteDuration): Future[Payment] = {
+      timeout: FiniteDuration
+  ): Future[Payment] = {
     val request: SendPaymentRequest =
-      SendPaymentRequest(dest = nodeId.bytes,
-                         amt = amount.satoshis.toLong,
-                         timeoutSeconds = timeout.toSeconds.toInt,
-                         noInflightUpdates = true)
+      SendPaymentRequest(
+        dest = nodeId.bytes,
+        amt = amount.satoshis.toLong,
+        timeoutSeconds = timeout.toSeconds.toInt,
+        noInflightUpdates = true
+      )
 
     sendPayment(request)
   }
@@ -627,18 +676,22 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def sendOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: SatoshisPerVirtualByte,
-      spendUnconfirmed: Boolean): Future[Tx] = {
+      spendUnconfirmed: Boolean
+  ): Future[Tx] = {
     sendOutputs(outputs, feeRate.toSatoshisPerKW, spendUnconfirmed)
   }
 
   def sendOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: SatoshisPerKW,
-      spendUnconfirmed: Boolean): Future[Tx] = {
+      spendUnconfirmed: Boolean
+  ): Future[Tx] = {
 
-    val request = SendOutputsRequest(satPerKw = feeRate.toLong,
-                                     outputs = outputs,
-                                     spendUnconfirmed = spendUnconfirmed)
+    val request = SendOutputsRequest(
+      satPerKw = feeRate.toLong,
+      outputs = outputs,
+      spendUnconfirmed = spendUnconfirmed
+    )
     sendOutputs(request)
   }
 
@@ -654,16 +707,19 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       inputs: Vector[TransactionOutPoint],
       outputs: Map[BitcoinAddress, CurrencyUnit],
       feeRate: SatoshisPerVirtualByte,
-      spendUnconfirmed: Boolean): Future[PSBT] = {
+      spendUnconfirmed: Boolean
+  ): Future[PSBT] = {
     val outputMap = outputs.map { case (addr, amt) =>
       addr.toString -> amt.satoshis.toUInt64
     }
     val template = TxTemplate(inputs, outputMap)
     val rawTemplate = FundPsbtRequest.Template.Raw(template)
     val fees = SatPerVbyte(UInt64(feeRate.toLong))
-    val request = FundPsbtRequest(template = rawTemplate,
-                                  fees = fees,
-                                  spendUnconfirmed = spendUnconfirmed)
+    val request = FundPsbtRequest(
+      template = rawTemplate,
+      fees = fees,
+      spendUnconfirmed = spendUnconfirmed
+    )
 
     fundPSBT(request)
   }
@@ -673,17 +729,20 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       outputs: Map[BitcoinAddress, CurrencyUnit],
       feeRate: SatoshisPerVirtualByte,
       account: String,
-      spendUnconfirmed: Boolean): Future[PSBT] = {
+      spendUnconfirmed: Boolean
+  ): Future[PSBT] = {
     val outputMap = outputs.map { case (addr, amt) =>
       addr.toString -> amt.satoshis.toUInt64
     }
     val template = TxTemplate(inputs, outputMap)
     val rawTemplate = FundPsbtRequest.Template.Raw(template)
     val fees = SatPerVbyte(UInt64(feeRate.toLong))
-    val request = FundPsbtRequest(template = rawTemplate,
-                                  fees = fees,
-                                  account = account,
-                                  spendUnconfirmed = spendUnconfirmed)
+    val request = FundPsbtRequest(
+      template = rawTemplate,
+      fees = fees,
+      account = account,
+      spendUnconfirmed = spendUnconfirmed
+    )
 
     fundPSBT(request)
   }
@@ -692,13 +751,16 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       psbt: PSBT,
       feeRate: SatoshisPerVirtualByte,
       account: String,
-      spendUnconfirmed: Boolean): Future[PSBT] = {
+      spendUnconfirmed: Boolean
+  ): Future[PSBT] = {
     val template = Psbt(psbt.bytes)
     val fees = SatPerVbyte(UInt64(feeRate.toLong))
-    val request = FundPsbtRequest(template = template,
-                                  fees = fees,
-                                  account = account,
-                                  spendUnconfirmed = spendUnconfirmed)
+    val request = FundPsbtRequest(
+      template = template,
+      fees = fees,
+      account = account,
+      spendUnconfirmed = spendUnconfirmed
+    )
 
     fundPSBT(request)
   }
@@ -706,12 +768,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def fundPSBT(
       psbt: PSBT,
       feeRate: SatoshisPerVirtualByte,
-      spendUnconfirmed: Boolean): Future[PSBT] = {
+      spendUnconfirmed: Boolean
+  ): Future[PSBT] = {
     val template = Psbt(psbt.bytes)
     val fees = SatPerVbyte(UInt64(feeRate.toLong))
-    val request = FundPsbtRequest(template = template,
-                                  fees = fees,
-                                  spendUnconfirmed = spendUnconfirmed)
+    val request = FundPsbtRequest(
+      template = template,
+      fees = fees,
+      spendUnconfirmed = spendUnconfirmed
+    )
 
     fundPSBT(request)
   }
@@ -765,13 +830,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       hashType: HashType,
       output: TransactionOutput,
       signMethod: SignMethod,
-      prevOuts: Vector[TransactionOutput]): Future[
-    (ScriptSignature, ScriptWitness)] = {
+      prevOuts: Vector[TransactionOutput]
+  ): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
-      SignDescriptor(output = Some(output),
-                     sighash = UInt32(hashType.num),
-                     inputIndex = inputIdx,
-                     signMethod = signMethod)
+      SignDescriptor(
+        output = Some(output),
+        sighash = UInt32(hashType.num),
+        inputIndex = inputIdx,
+        signMethod = signMethod
+      )
 
     val request: SignReq =
       SignReq(tx.bytes, Vector(signDescriptor), prevOuts)
@@ -783,12 +850,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       tx: Tx,
       inputIdx: Int,
       output: TransactionOutput,
-      signMethod: SignMethod): Future[(ScriptSignature, ScriptWitness)] = {
+      signMethod: SignMethod
+  ): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
-      SignDescriptor(output = Some(output),
-                     sighash = UInt32(HashType.sigHashAll.num),
-                     inputIndex = inputIdx,
-                     signMethod = signMethod)
+      SignDescriptor(
+        output = Some(output),
+        sighash = UInt32(HashType.sigHashAll.num),
+        inputIndex = inputIdx,
+        signMethod = signMethod
+      )
 
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)
   }
@@ -796,19 +866,22 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def computeInputScript(
       tx: Tx,
       inputIdx: Int,
-      output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
+      output: TransactionOutput
+  ): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
-      SignDescriptor(output = Some(output),
-                     sighash = UInt32(HashType.sigHashAll.num),
-                     inputIndex = inputIdx)
+      SignDescriptor(
+        output = Some(output),
+        sighash = UInt32(HashType.sigHashAll.num),
+        inputIndex = inputIdx
+      )
 
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)
   }
 
   def computeInputScript(
       tx: Tx,
-      signDescriptors: Vector[SignDescriptor]): Future[
-    Vector[(ScriptSignature, ScriptWitness)]] = {
+      signDescriptors: Vector[SignDescriptor]
+  ): Future[Vector[(ScriptSignature, ScriptWitness)]] = {
     val request: SignReq =
       SignReq(tx.bytes, signDescriptors)
 
@@ -816,7 +889,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def computeInputScript(
-      request: SignReq): Future[Vector[(ScriptSignature, ScriptWitness)]] = {
+      request: SignReq
+  ): Future[Vector[(ScriptSignature, ScriptWitness)]] = {
     logger.trace("lnd calling computeinputscript")
 
     signer.computeInputScript(request).map { res =>
@@ -848,22 +922,28 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def leaseOutput(
       outpoint: TransactionOutPoint,
-      leaseSeconds: Long): Future[UInt64] = {
+      leaseSeconds: Long
+  ): Future[UInt64] = {
     val outPoint =
       OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout)
 
-    val request = LeaseOutputRequest(id = LndRpcClient.leaseId,
-                                     outpoint = Some(outPoint),
-                                     expirationSeconds = UInt64(leaseSeconds))
+    val request = LeaseOutputRequest(
+      id = LndRpcClient.leaseId,
+      outpoint = Some(outPoint),
+      expirationSeconds = UInt64(leaseSeconds)
+    )
 
     leaseOutput(request)
   }
 
-  /** LeaseOutput locks an output to the given ID, preventing it from being available for any future coin selection attempts.
-    * The absolute time of the lock's expiration is returned.
-    * The expiration of the lock can be extended by successive invocations of this RPC.
-    * @param request LeaseOutputRequest
-    * @return Unix timestamp for when the lease expires
+  /** LeaseOutput locks an output to the given ID, preventing it from being
+    * available for any future coin selection attempts. The absolute time of the
+    * lock's expiration is returned. The expiration of the lock can be extended
+    * by successive invocations of this RPC.
+    * @param request
+    *   LeaseOutputRequest
+    * @return
+    *   Unix timestamp for when the lease expires
     */
   def leaseOutput(request: LeaseOutputRequest): Future[UInt64] = {
     logger.trace("lnd calling leaseoutput")
@@ -889,7 +969,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def sendCustomMessage(
       peer: NodeId,
-      lnMessage: LnMessage[TLV]): Future[Unit] = {
+      lnMessage: LnMessage[TLV]
+  ): Future[Unit] = {
     sendCustomMessage(peer, lnMessage.tlv)
   }
 
@@ -900,11 +981,14 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def sendCustomMessage(
       peer: NodeId,
       tpe: BigSizeUInt,
-      data: ByteVector): Future[Unit] = {
+      data: ByteVector
+  ): Future[Unit] = {
     val request =
-      SendCustomMessageRequest(peer = peer.bytes,
-                               `type` = UInt32(tpe.toBigInt),
-                               data = data)
+      SendCustomMessageRequest(
+        peer = peer.bytes,
+        `type` = UInt32(tpe.toBigInt),
+        data = data
+      )
     sendCustomMessage(request)
   }
 
@@ -926,7 +1010,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   /** Broadcasts the given transaction
-    * @return None if no error, otherwise the error string
+    * @return
+    *   None if no error, otherwise the error string
     */
   def publishTransaction(tx: Tx): Future[Option[String]] = {
     logger.trace("lnd calling publishtransaction")
@@ -956,12 +1041,14 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def getTransactions(
       startHeight: Int,
-      endHeight: Int): Future[Vector[TxDetails]] = {
+      endHeight: Int
+  ): Future[Vector[TxDetails]] = {
     getTransactions(GetTransactionsRequest(startHeight, endHeight))
   }
 
   def getTransactions(
-      request: GetTransactionsRequest): Future[Vector[TxDetails]] = {
+      request: GetTransactionsRequest
+  ): Future[Vector[TxDetails]] = {
     logger.trace("lnd calling gettransactions")
 
     lnd
@@ -972,15 +1059,20 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def subscribeTxConfirmation(
       script: ScriptPubKey,
       requiredConfs: Int,
-      heightHint: Int): Future[ConfDetails] = {
-    require(heightHint > 0,
-            s"heightHint must be greater than 0, got $heightHint")
+      heightHint: Int
+  ): Future[ConfDetails] = {
+    require(
+      heightHint > 0,
+      s"heightHint must be greater than 0, got $heightHint"
+    )
 
     val request =
-      ConfRequest(txid = DoubleSha256Digest.empty.bytes,
-                  script = script.asmBytes,
-                  numConfs = UInt32(requiredConfs),
-                  heightHint = UInt32(heightHint))
+      ConfRequest(
+        txid = DoubleSha256Digest.empty.bytes,
+        script = script.asmBytes,
+        numConfs = UInt32(requiredConfs),
+        heightHint = UInt32(heightHint)
+      )
 
     registerConfirmationsNotification(request)
       .filter(_.event.isConf)
@@ -992,15 +1084,20 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       txId: DoubleSha256Digest,
       script: ScriptPubKey,
       requiredConfs: Int,
-      heightHint: Int): Future[ConfDetails] = {
-    require(heightHint > 0,
-            s"heightHint must be greater than 0, got $heightHint")
+      heightHint: Int
+  ): Future[ConfDetails] = {
+    require(
+      heightHint > 0,
+      s"heightHint must be greater than 0, got $heightHint"
+    )
 
     val request =
-      ConfRequest(txid = txId.bytes,
-                  script = script.asmBytes,
-                  numConfs = UInt32(requiredConfs),
-                  heightHint = UInt32(heightHint))
+      ConfRequest(
+        txid = txId.bytes,
+        script = script.asmBytes,
+        numConfs = UInt32(requiredConfs),
+        heightHint = UInt32(heightHint)
+      )
 
     registerConfirmationsNotification(request)
       .filter(_.event.isConf)
@@ -1009,7 +1106,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def registerConfirmationsNotification(
-      request: ConfRequest): Source[ConfEvent, NotUsed] = {
+      request: ConfRequest
+  ): Source[ConfEvent, NotUsed] = {
     logger.trace("lnd calling RegisterConfirmationsNtfn")
 
     chainClient.registerConfirmationsNtfn(request)
@@ -1018,7 +1116,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def monitorInvoice(
       rHash: PaymentHashTag,
       interval: FiniteDuration = 1.second,
-      maxAttempts: Int = 60): Future[Invoice] = {
+      maxAttempts: Int = 60
+  ): Future[Invoice] = {
     val p: Promise[Invoice] = Promise[Invoice]()
     val attempts = new AtomicInteger(0)
     val runnable = new Runnable() {
@@ -1026,17 +1125,17 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       def run(): Unit = {
         val receivedInfoF = lookupInvoice(rHash)
 
-        //register callback that publishes a payment to our actor system's
-        //event stream,
+        // register callback that publishes a payment to our actor system's
+        // event stream,
         receivedInfoF.foreach { info: Invoice =>
           if (info.state.isSettled) {
-            //invoice has been paid, let's publish to event stream
-            //so subscribers so the even stream can see that a payment
-            //was received
-            //we need to create a `PaymentSucceeded`
+            // invoice has been paid, let's publish to event stream
+            // so subscribers so the even stream can see that a payment
+            // was received
+            // we need to create a `PaymentSucceeded`
             system.eventStream.publish(info)
 
-            //complete the promise so the runnable will be canceled
+            // complete the promise so the runnable will be canceled
             p.success(info)
           } else if (attempts.incrementAndGet() >= maxAttempts) {
             // too many tries to get info about a payment
@@ -1045,7 +1144,9 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
             p.failure(
               new RuntimeException(
                 s"LndApi.monitorInvoice() [$instance] too many attempts: ${attempts
-                  .get()} for invoice=${rHash.hash.hex}"))
+                    .get()} for invoice=${rHash.hash.hex}"
+              )
+            )
           }
         }
       }
@@ -1066,7 +1167,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   /** Boolean check to verify the state of the client
-    * @return Future Boolean representing if client has started
+    * @return
+    *   Future Boolean representing if client has started
     */
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
@@ -1092,9 +1194,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     p.future
   }
 
-  /** Returns a Future LndRpcClient if able to shut down
-    * Lnd instance, inherits from the StartStop trait
-    * @return A future LndRpcClient that is stopped
+  /** Returns a Future LndRpcClient if able to shut down Lnd instance, inherits
+    * from the StartStop trait
+    * @return
+    *   A future LndRpcClient that is stopped
     */
   override def stop(): Future[LndRpcClient] = {
     logger.trace("lnd calling stop daemon")
@@ -1125,8 +1228,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
 object LndRpcClient {
 
-  /** Lease id should be unique per application
-    * this is the sha256 of "lnd bitcoin-s"
+  /** Lease id should be unique per application this is the sha256 of "lnd
+    * bitcoin-s"
     */
   val leaseId: ByteString =
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
@@ -1137,26 +1240,27 @@ object LndRpcClient {
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"
 
-  /** THe name we use to create actor systems. We use this to know which
-    * actor systems to shut down on node shutdown
+  /** THe name we use to create actor systems. We use this to know which actor
+    * systems to shut down on node shutdown
     */
   private[lnd] val ActorSystemName = "lnd-rpc-client-created-by-bitcoin-s"
 
-  /** Creates an RPC client from the given instance,
-    * together with the given actor system. This is for
-    * advanced users, where you need fine grained control
-    * over the RPC client.
+  /** Creates an RPC client from the given instance, together with the given
+    * actor system. This is for advanced users, where you need fine grained
+    * control over the RPC client.
     */
   def apply(
       instance: LndInstance,
-      binary: Option[File] = None): LndRpcClient = {
+      binary: Option[File] = None
+  ): LndRpcClient = {
     implicit val system: ActorSystem = ActorSystem.create(ActorSystemName)
     withActorSystem(instance, binary)
   }
 
-  /** Constructs a RPC client from the given datadir, or
-    * the default datadir if no directory is provided
+  /** Constructs a RPC client from the given datadir, or the default datadir if
+    * no directory is provided
     */
   def withActorSystem(instance: LndInstance, binary: Option[File] = None)(
-      implicit system: ActorSystem) = new LndRpcClient(instance, binary)
+      implicit system: ActorSystem
+  ) = new LndRpcClient(instance, binary)
 }

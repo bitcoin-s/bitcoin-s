@@ -35,17 +35,17 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class ScriptInterpreter {
 
-  /** Currently bitcoin core limits the maximum number of non-push operations per script
-    * to 201
+  /** Currently bitcoin core limits the maximum number of non-push operations
+    * per script to 201
     */
   private lazy val MAX_SCRIPT_OPS = 201
 
   /** We cannot push an element larger than 520 bytes onto the stack */
   val MAX_PUSH_SIZE: Int = 520
 
-  /** Runs an entire script though our script programming language and
-    * returns a [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
-    * indicating if the script was valid, or if not what error it encountered
+  /** Runs an entire script though our script programming language and returns a
+    * [[org.bitcoins.core.script.result.ScriptResult ScriptResult]] indicating
+    * if the script was valid, or if not what error it encountered
     */
   def run(program: PreExecutionScriptProgram): ScriptResult = {
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
@@ -103,7 +103,8 @@ sealed abstract class ScriptInterpreter {
   }
 
   private def programFlagsViolated(
-      program: PreExecutionScriptProgram): Option[ScriptError] = {
+      program: PreExecutionScriptProgram
+  ): Option[ScriptError] = {
     val scriptSig = program.txSignatureComponent.scriptSignature
     val flags = program.flags
     val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
@@ -125,17 +126,18 @@ sealed abstract class ScriptInterpreter {
 
   private def evaluateExecutedScriptProgram(
       program: PreExecutionScriptProgram,
-      executedProgram: ExecutedScriptProgram): ScriptResult = {
+      executedProgram: ExecutedScriptProgram
+  ): ScriptResult = {
     executedProgram.error match {
       case Some(err) => err
       case None =>
         if (hasUnexpectedWitness(program)) {
-          //note: the 'program' value we pass above is intentional, we need to check the original program
-          //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
+          // note: the 'program' value we pass above is intentional, we need to check the original program
+          // as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
           ScriptErrorWitnessUnexpected
         } else if (executedProgram.stackTopIsTrue) {
           if (program.flags.contains(ScriptVerifyCleanStack)) {
-            //require that the stack after execution has exactly one element on it
+            // require that the stack after execution has exactly one element on it
             if (executedProgram.stack.size == 1) {
               ScriptOk
             } else {
@@ -150,22 +152,26 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
-  /** Runs the given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and
-    * return if that script was valid or not
+  /** Runs the given
+    * [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]]
+    * and return if that script was valid or not
     */
   def runVerify(p: PreExecutionScriptProgram): Boolean = {
     ScriptInterpreter.run(p) == ScriptOk
   }
 
-  /** Every given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and returns
-    * it's [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
+  /** Every given
+    * [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]]
+    * and returns it's
+    * [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
     */
   def runAll(programs: Seq[PreExecutionScriptProgram]): Seq[ScriptResult] = {
     programs.map(p => ScriptInterpreter.run(p))
   }
 
-  /** Runs all the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] and return
-    * if it is valid or not
+  /** Runs all the given
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] and return if it
+    * is valid or not
     */
   def runAllVerify(programs: Seq[PreExecutionScriptProgram]): Boolean = {
     !programs.exists(p => ScriptInterpreter.run(p) != ScriptOk)
@@ -175,7 +181,8 @@ sealed abstract class ScriptInterpreter {
       transaction: Transaction,
       inputIndex: Long,
       outputMap: PreviousOutputMap,
-      prevOut: TransactionOutput): Boolean = {
+      prevOut: TransactionOutput
+  ): Boolean = {
     val sigComponent = TxSigComponent(
       transaction,
       UInt32(inputIndex),
@@ -188,10 +195,12 @@ sealed abstract class ScriptInterpreter {
 
   def verifyTransaction(
       transaction: Transaction,
-      outputMap: PreviousOutputMap): Boolean = {
+      outputMap: PreviousOutputMap
+  ): Boolean = {
     require(
       transaction.inputs.size == outputMap.size,
-      s"There must be a prevOut for every input in the transaction, got ${outputMap.size}")
+      s"There must be a prevOut for every input in the transaction, got ${outputMap.size}"
+    )
 
     outputMap.zipWithIndex.forall { case ((_, prevOut), index) =>
       verifyInputScript(transaction, index, outputMap, prevOut)
@@ -201,7 +210,8 @@ sealed abstract class ScriptInterpreter {
   /** Helper function to actually run a p2sh script */
   private def runP2SH(
       p: ExecutedScriptProgram,
-      s: ScriptPubKey): ExecutedScriptProgram = {
+      s: ScriptPubKey
+  ): ExecutedScriptProgram = {
 
     val p2shRedeemScriptProgram = PreExecutionScriptProgram(
       txSignatureComponent = p.txSignatureComponent,
@@ -215,23 +225,29 @@ sealed abstract class ScriptInterpreter {
     /*ScriptProgram(p.txSignatureComponent, stack.tail,s.asm)*/
     if (
       ScriptFlagUtil.requirePushOnly(
-        p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil
+        p2shRedeemScriptProgram.flags
+      ) && !BitcoinScriptUtil
         .isPushOnly(s.asm)
     ) {
       p2shRedeemScriptProgram.failExecution(ScriptErrorSigPushOnly)
     } else executeProgram(p2shRedeemScriptProgram)
   }
 
-  /** P2SH scripts are unique in their evaluation, first the scriptSignature must be added to the stack, next the
-    * p2sh scriptPubKey must be run to make sure the serialized redeem script hashes to the value found in the p2sh
-    * scriptPubKey, then finally the serialized redeemScript is decoded and run with the arguments in the p2sh script signature
-    * a p2sh script returns true if both of those intermediate steps evaluate to true
+  /** P2SH scripts are unique in their evaluation, first the scriptSignature
+    * must be added to the stack, next the p2sh scriptPubKey must be run to make
+    * sure the serialized redeem script hashes to the value found in the p2sh
+    * scriptPubKey, then finally the serialized redeemScript is decoded and run
+    * with the arguments in the p2sh script signature a p2sh script returns true
+    * if both of those intermediate steps evaluate to true
     *
-    * @param scriptPubKeyExecutedProgram the program with the script signature pushed onto the stack
-    * @return the executed program
+    * @param scriptPubKeyExecutedProgram
+    *   the program with the script signature pushed onto the stack
+    * @return
+    *   the executed program
     */
   private def executeP2shScript(
-      scriptPubKeyExecutedProgram: ExecutedScriptProgram): ExecutedScriptProgram = {
+      scriptPubKeyExecutedProgram: ExecutedScriptProgram
+  ): ExecutedScriptProgram = {
     val flags = scriptPubKeyExecutedProgram.flags
 
     val segwitEnabled = ScriptFlagUtil.segWitEnabled(flags)
@@ -239,8 +255,8 @@ sealed abstract class ScriptInterpreter {
     val scriptSig =
       scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
     val scriptSigAsm: Seq[ScriptToken] = scriptSig.asm
-    //need to check if the scriptSig is push only as required by bitcoin core
-    //https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1419
+    // need to check if the scriptSig is push only as required by bitcoin core
+    // https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1419
     if (!BitcoinScriptUtil.isPushOnly(scriptSigAsm)) {
       scriptPubKeyExecutedProgram.failExecution(ScriptErrorSigPushOnly)
     } else if (scriptPubKeyExecutedProgram.error.isDefined) {
@@ -248,7 +264,7 @@ sealed abstract class ScriptInterpreter {
     } else {
       if (scriptPubKeyExecutedProgram.stackTopIsTrue) {
 
-        //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
+        // we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
         val stack = scriptPubKeyExecutedProgram.stack
 
         val redeemScriptBytes = stack.head.bytes
@@ -263,8 +279,8 @@ sealed abstract class ScriptInterpreter {
             val wtxSigP2SH = scriptPubKeyExecutedProgram.txSignatureComponent
               .asInstanceOf[WitnessTxSigComponentP2SH]
 
-            //for the p2sh(p2wpkh) case
-            //https://github.com/bitcoin/bitcoin/blob/78dae8caccd82cfbfd76557f1fb7d7557c7b5edb/src/script/interpreter.cpp#L1437
+            // for the p2sh(p2wpkh) case
+            // https://github.com/bitcoin/bitcoin/blob/78dae8caccd82cfbfd76557f1fb7d7557c7b5edb/src/script/interpreter.cpp#L1437
 
             val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
@@ -281,9 +297,10 @@ sealed abstract class ScriptInterpreter {
               executeSegWitScript(scriptPubKeyExecutedProgram, p2wpkh).get
             } else if (segwitEnabled) {
               scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessMalleatedP2SH)
+                ScriptErrorWitnessMalleatedP2SH
+              )
             } else {
-              //segwit not enabled, treat as old spk
+              // segwit not enabled, treat as old spk
               runP2SH(scriptPubKeyExecutedProgram, p2wpkh)
             }
 
@@ -299,15 +316,16 @@ sealed abstract class ScriptInterpreter {
             if (segwitEnabled && isExpectedScriptBytes) {
               // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
               // reintroduce malleability.
-              //TODO: remove .get here
+              // TODO: remove .get here
               executeSegWitScript(scriptPubKeyExecutedProgram, p2wsh).get
             } else if (
               segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)
             ) {
               scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessMalleatedP2SH)
+                ScriptErrorWitnessMalleatedP2SH
+              )
             } else {
-              //treat the segwit scriptpubkey as any other redeem script
+              // treat the segwit scriptpubkey as any other redeem script
               runP2SH(scriptPubKeyExecutedProgram, p2wsh)
             }
           case _: TaprootScriptPubKey =>
@@ -315,9 +333,10 @@ sealed abstract class ScriptInterpreter {
               flags.exists(_ == ScriptVerifyDiscourageUpgradableWitnessProgram)
             if (hasUpgradeableFlag) {
               scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorDiscourageUpgradeableWitnessProgram)
+                ScriptErrorDiscourageUpgradeableWitnessProgram
+              )
             } else {
-              //trivially passes
+              // trivially passes
               scriptPubKeyExecutedProgram
             }
           case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey |
@@ -334,21 +353,24 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
-  /** Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
+  /** Runs a segwit script through our interpreter, mimics this functionality in
+    * bitcoin core:
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
-    * @param scriptPubKeyExecutedProgram the program with the
-    *                                    [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] executed
+    * @param scriptPubKeyExecutedProgram
+    *   the program with the
+    *   [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] executed
     */
   private def executeSegWitScript(
       scriptPubKeyExecutedProgram: ExecutedScriptProgram,
-      witnessScriptPubKey: WitnessScriptPubKey): Try[ExecutedScriptProgram] = {
+      witnessScriptPubKey: WitnessScriptPubKey
+  ): Try[ExecutedScriptProgram] = {
     scriptPubKeyExecutedProgram.txSignatureComponent match {
       case w: WitnessTxSigComponent =>
         val scriptSig =
           scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val witness = w.witness
-        //scriptsig must be empty if we have raw p2wsh
-        //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
+        // scriptsig must be empty if we have raw p2wsh
+        // if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
         (scriptSig, w.scriptPubKey) match {
           case (EmptyScriptSignature, _) | (_, _: P2SHScriptPubKey) =>
             verifyWitnessProgram(
@@ -360,7 +382,8 @@ sealed abstract class ScriptInterpreter {
           case (_, _) =>
             Success(
               scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessMalleated)
+                ScriptErrorWitnessMalleated
+              )
             )
         }
       case b: BaseTxSigComponent =>
@@ -387,41 +410,50 @@ sealed abstract class ScriptInterpreter {
           case (_, _) =>
             Success(
               scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessMalleated))
+                ScriptErrorWitnessMalleated
+              )
+            )
         }
       case _: WitnessTxSigComponentRebuilt =>
-        Failure(new IllegalArgumentException(
-          "Cannot have a rebuild witness tx sig component here, the witness tx sigcomponent is rebuilt in verifyWitnessProgram"))
+        Failure(
+          new IllegalArgumentException(
+            "Cannot have a rebuild witness tx sig component here, the witness tx sigcomponent is rebuilt in verifyWitnessProgram"
+          )
+        )
     }
   }
 
   /** Helper function to run the post segwit execution checks */
   private def postSegWitProgramChecks(
-      evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
+      evaluated: ExecutedScriptProgram
+  ): ExecutedScriptProgram = {
     if (evaluated.error.isDefined) evaluated
     else if (evaluated.stack.size != 1) {
       // Scripts inside witness implicitly require cleanstack behaviour
-      //https://github.com/bitcoin/bitcoin/blob/561a7d30478b82f5d46dcf0f16e864a9608004f4/src/script/interpreter.cpp#L1464
+      // https://github.com/bitcoin/bitcoin/blob/561a7d30478b82f5d46dcf0f16e864a9608004f4/src/script/interpreter.cpp#L1464
       evaluated.failExecution(ScriptErrorCleanStack)
     } else if (evaluated.stackTopIsFalse)
       evaluated.failExecution(ScriptErrorEvalFalse)
     else evaluated
   }
 
-  /** Rebuilds a [[WitnessVersion1]] witness program for execution in the script interpreter */
+  /** Rebuilds a [[WitnessVersion1]] witness program for execution in the script
+    * interpreter
+    */
   private def rebuildV1(
       witness: TaprootWitness,
-      witnessSPK: WitnessScriptPubKey): Either[
-    ScriptError,
-    (Seq[ScriptToken], ScriptPubKey)] = {
-    require(witnessSPK.isInstanceOf[TaprootScriptPubKey],
-            s"WitnessScriptPubKey must be a taproot spk, got=${witnessSPK}")
+      witnessSPK: WitnessScriptPubKey
+  ): Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] = {
+    require(
+      witnessSPK.isInstanceOf[TaprootScriptPubKey],
+      s"WitnessScriptPubKey must be a taproot spk, got=${witnessSPK}"
+    )
     val taprootSPK = witnessSPK.asInstanceOf[TaprootScriptPubKey]
     val program = witnessSPK.witnessProgram
     val programBytes = BytesUtil.toByteVector(program)
     programBytes.size match {
       case 32 =>
-        //valid p2tr
+        // valid p2tr
         if (witness.stack.isEmpty) {
           Left(ScriptErrorWitnessProgramWitnessEmpty)
         } else {
@@ -439,28 +471,30 @@ sealed abstract class ScriptInterpreter {
           }
         }
       case _ =>
-        //witness version 1 progarms need to be 32 bytes in size
+        // witness version 1 progarms need to be 32 bytes in size
         Left(ScriptErrorWitnessProgramWrongLength)
     }
   }
 
-  /** Verifies a segregated witness program by running it through the interpreter
+  /** Verifies a segregated witness program by running it through the
+    * interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]
     */
   private def verifyWitnessProgram(
       scriptWitness: ScriptWitness,
       witnessSPK: WitnessScriptPubKey,
       wTxSigComponent: WitnessTxSigComponent,
-      scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
-    ExecutedScriptProgram] = {
+      scriptPubKeyExecutedProgram: ExecutedScriptProgram
+  ): Try[ExecutedScriptProgram] = {
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(
-        evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
+        evaluated: ExecutedScriptProgram
+    ): ExecutedScriptProgram = {
       if (evaluated.error.isDefined) evaluated
       else if (evaluated.stack.size != 1) {
         // Scripts inside witness implicitly require cleanstack behaviour
-        //https://github.com/bitcoin/bitcoin/blob/561a7d30478b82f5d46dcf0f16e864a9608004f4/src/script/interpreter.cpp#L1464
+        // https://github.com/bitcoin/bitcoin/blob/561a7d30478b82f5d46dcf0f16e864a9608004f4/src/script/interpreter.cpp#L1464
         evaluated.failExecution(ScriptErrorCleanStack)
       } else if (evaluated.stackTopIsFalse)
         evaluated.failExecution(ScriptErrorEvalFalse)
@@ -469,14 +503,13 @@ sealed abstract class ScriptInterpreter {
 
     def rebuildV0(
         witness: ScriptWitness,
-        witnessSPKV0: WitnessScriptPubKey): Either[
-      ScriptError,
-      (Seq[ScriptToken], ScriptPubKey)] = {
+        witnessSPKV0: WitnessScriptPubKey
+    ): Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] = {
       val program = witnessSPKV0.witnessProgram
       val programBytes = BytesUtil.toByteVector(program)
       programBytes.size match {
         case 20 =>
-          //p2wpkh
+          // p2wpkh
           if (witness.stack.size != 2) {
             Left(ScriptErrorWitnessProgramMisMatch)
           } else {
@@ -486,7 +519,7 @@ sealed abstract class ScriptInterpreter {
             } yield r
           }
         case 32 =>
-          //p2wsh
+          // p2wsh
           if (scriptWitness.stack.isEmpty)
             Left(ScriptErrorWitnessProgramWitnessEmpty)
           else {
@@ -497,7 +530,7 @@ sealed abstract class ScriptInterpreter {
             }
           }
         case _ =>
-          //witness version 0 programs need to be 20 bytes or 32 bytes in size
+          // witness version 0 programs need to be 20 bytes or 32 bytes in size
           Left(ScriptErrorWitnessProgramWrongLength)
       }
     }
@@ -516,13 +549,14 @@ sealed abstract class ScriptInterpreter {
               val newWTxSigComponent =
                 rebuildWTxSigComponent(wTxSigComponent, scriptPubKey)
               val newProgram = newWTxSigComponent.map { comp =>
-                PreExecutionScriptProgram(txSignatureComponent = comp,
-                                          stack = stack.toList,
-                                          script = scriptPubKey.asm.toList,
-                                          originalScript =
-                                            scriptPubKey.asm.toList,
-                                          altStack = Nil,
-                                          flags = comp.flags)
+                PreExecutionScriptProgram(
+                  txSignatureComponent = comp,
+                  stack = stack.toList,
+                  script = scriptPubKey.asm.toList,
+                  originalScript = scriptPubKey.asm.toList,
+                  altStack = Nil,
+                  flags = comp.flags
+                )
               }
               val evaluated = newProgram.map(executeProgram)
               evaluated.map(e => postSegWitProgramChecks(e))
@@ -545,7 +579,8 @@ sealed abstract class ScriptInterpreter {
       case trSPK: TaprootScriptPubKey =>
         require(
           scriptWitness.isInstanceOf[TaprootWitness],
-          s"witness must be taproot witness for witness version 1 script execution, got=$scriptWitness")
+          s"witness must be taproot witness for witness version 1 script execution, got=$scriptWitness"
+        )
         val taprootWitness = scriptWitness.asInstanceOf[TaprootWitness]
         val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
           rebuildV1(taprootWitness, witnessSPK)
@@ -575,8 +610,8 @@ sealed abstract class ScriptInterpreter {
         }
       case u: UnassignedWitnessScriptPubKey =>
         if (u.asm.contains(OP_0)) {
-          //cannot have an v0 unassigned witness as according to BIP141
-          //a witness v0 script must be 20 bytes or 32 bytes
+          // cannot have an v0 unassigned witness as according to BIP141
+          // a witness v0 script must be 20 bytes or 32 bytes
           val program = ExecutedScriptProgram(
             txSignatureComponent = wTxSigComponent,
             stack = Nil,
@@ -606,7 +641,8 @@ sealed abstract class ScriptInterpreter {
   }
 
   /** Checks if there is an opcode defined as OP_SUCCESSx in BIP342
-    * @see https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#specification
+    * @see
+    *   https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#specification
     */
   private def containsOpSuccess(asm: Vector[ScriptToken]): Boolean = {
     asm.exists {
@@ -622,8 +658,8 @@ sealed abstract class ScriptInterpreter {
       rebuiltSPK: ScriptPubKey,
       stack: Vector[ScriptToken],
       wTxSigComponent: WitnessTxSigComponent,
-      scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
-    ExecutedScriptProgram] = {
+      scriptPubKeyExecutedProgram: ExecutedScriptProgram
+  ): Try[ExecutedScriptProgram] = {
     val sigVersion = scriptPubKeyExecutedProgram.txSignatureComponent.sigVersion
     if (ScriptFlagUtil.taprootEnabled(scriptPubKeyExecutedProgram.flags)) {
       val containsOPSuccess = containsOpSuccess(rebuiltSPK.asm.toVector)
@@ -636,11 +672,12 @@ sealed abstract class ScriptInterpreter {
             val program = checkSchnorrSignature(
               keypath,
               taprootSPK.pubKey.schnorrPublicKey,
-              program = scriptPubKeyExecutedProgram)
+              program = scriptPubKeyExecutedProgram
+            )
             Success(program)
           case _: TaprootUnknownPath =>
-            //is this right? I believe to maintain softfork compatibility we
-            //just succeed?
+            // is this right? I believe to maintain softfork compatibility we
+            // just succeed?
             Success(scriptPubKeyExecutedProgram)
           case taprootScriptPath: TaprootScriptPath =>
             require(
@@ -652,41 +689,46 @@ sealed abstract class ScriptInterpreter {
               wTxSigComponent.asInstanceOf[TaprootTxSigComponent]
             val controlBlock = taprootScriptPath.controlBlock
             val script = taprootScriptPath.script
-            //execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
+            // execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
             val leaf = TapLeaf(controlBlock.leafVersion, script)
             val tapLeafHash = TaprootScriptPath.computeTapleafHash(leaf)
             val isValidTaprootCommitment =
               TaprootScriptPath.verifyTaprootCommitment(
                 controlBlock = controlBlock,
                 program = taprootSPK,
-                tapLeafHash = tapLeafHash)
+                tapLeafHash = tapLeafHash
+              )
             if (!isValidTaprootCommitment) {
               val p = scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessProgramMisMatch)
+                ScriptErrorWitnessProgramMisMatch
+              )
               Success(p)
             } else {
               val isDiscouragedTaprootVersion =
                 scriptPubKeyExecutedProgram.flags.exists(
-                  _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
+                  _ == ScriptVerifyDiscourageUpgradableTaprootVersion
+                )
               if (controlBlock.isTapLeafMask) {
-                //drop the control block & script in the witness
+                // drop the control block & script in the witness
                 val stackNoControlBlockOrScript = {
                   if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
-                    //if we have an annex we need to drop
-                    //annex,control block, script
+                    // if we have an annex we need to drop
+                    // annex,control block, script
                     stack.tail.tail.tail
                   } else {
-                    //else just drop control block, script
+                    // else just drop control block, script
                     stack.tail.tail
                   }
                 }
                 if (
                   stackNoControlBlockOrScript.exists(
-                    _.bytes.length > MAX_PUSH_SIZE)
+                    _.bytes.length > MAX_PUSH_SIZE
+                  )
                 ) {
                   val fail =
                     scriptPubKeyExecutedProgram.failExecution(
-                      ScriptErrorPushSize)
+                      ScriptErrorPushSize
+                    )
                   Success(fail)
                 } else {
                   val newProgram = PreExecutionScriptProgram(
@@ -703,25 +745,26 @@ sealed abstract class ScriptInterpreter {
                 }
               } else if (isDiscouragedTaprootVersion) {
                 val p = scriptPubKeyExecutedProgram.failExecution(
-                  ScriptErrorDiscourageUpgradableTaprootVersion)
+                  ScriptErrorDiscourageUpgradableTaprootVersion
+                )
                 Success(p)
               } else {
-                //is this right? I believe to maintain softfork compatibility we
-                //just succeed?
+                // is this right? I believe to maintain softfork compatibility we
+                // just succeed?
                 Success(scriptPubKeyExecutedProgram)
               }
             }
         }
       }
     } else {
-      //if taproot flag not set trivially pass
+      // if taproot flag not set trivially pass
       Success(scriptPubKeyExecutedProgram)
     }
   }
 
   private def handleOpSuccess(
-      scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
-    ExecutedScriptProgram] = {
+      scriptPubKeyExecutedProgram: ExecutedScriptProgram
+  ): Try[ExecutedScriptProgram] = {
     val discourageOpSuccess =
       ScriptFlagUtil.discourageOpSuccess(scriptPubKeyExecutedProgram.flags)
     val p = if (discourageOpSuccess) {
@@ -733,17 +776,20 @@ sealed abstract class ScriptInterpreter {
   }
 
   /** Similar to the check schnorr signature method in bitcoin core
-    * @see https://github.com/bitcoin/bitcoin/blob/b71d37da2c8c8d2a9cef020731767a6929db54b4/src/script/interpreter.cpp#L1673
+    * @see
+    *   https://github.com/bitcoin/bitcoin/blob/b71d37da2c8c8d2a9cef020731767a6929db54b4/src/script/interpreter.cpp#L1673
     */
   private def checkSchnorrSignature(
       witness: TaprootKeyPath,
       pubKey: SchnorrPublicKey,
-      program: ExecutedScriptProgram): ExecutedScriptProgram = {
+      program: ExecutedScriptProgram
+  ): ExecutedScriptProgram = {
     val scriptResult = TransactionSignatureChecker.checkSchnorrSignature(
       program.txSignatureComponent,
       pubKey,
       witness,
-      program.taprootSerializationOptions)
+      program.taprootSerializationOptions
+    )
     scriptResult match {
       case ScriptOk =>
         // Set stack to OP_TRUE so we don't fail
@@ -755,7 +801,8 @@ sealed abstract class ScriptInterpreter {
 
   /** Executes a PreExecutionScriptProgram */
   private def executeProgram(
-      program: PreExecutionScriptProgram): ExecutedScriptProgram = {
+      program: PreExecutionScriptProgram
+  ): ExecutedScriptProgram = {
     val scriptByteVector = BytesUtil.toByteVector(program.script)
     val sigVersion = program.txSignatureComponent.sigVersion
     val isTaprootSigVersion =
@@ -768,12 +815,13 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
-  /** Finalizes an ExecutesScriptProgram by counting Script Ops
-    * and giving the ScriptProgram an error if there were too many.
+  /** Finalizes an ExecutesScriptProgram by counting Script Ops and giving the
+    * ScriptProgram an error if there were too many.
     */
   @tailrec
   private def completeProgramExecution(
-      program: ExecutedScriptProgram): ExecutedScriptProgram = {
+      program: ExecutedScriptProgram
+  ): ExecutedScriptProgram = {
     val countedOps = program.originalScript
       .count(BitcoinScriptUtil.countsTowardsScriptOpLimit)
     val sigVersion = program.txSignatureComponent.sigVersion
@@ -803,13 +851,17 @@ sealed abstract class ScriptInterpreter {
 
   /** The execution loop for a script
     *
-    * @param program the program whose script needs to be evaluated
-    * @return program the final state of the program after being evaluated by the interpreter
+    * @param program
+    *   the program whose script needs to be evaluated
+    * @return
+    *   program the final state of the program after being evaluated by the
+    *   interpreter
     */
   @tailrec
   private def loop(
       program: ExecutionInProgressScriptProgram,
-      opCount: Int): ExecutedScriptProgram = {
+      opCount: Int
+  ): ExecutedScriptProgram = {
     val scriptByteVector = BytesUtil.toByteVector(program.script)
     val sigVersion = program.txSignatureComponent.sigVersion
     val isTaprootSigVersion =
@@ -820,33 +872,33 @@ sealed abstract class ScriptInterpreter {
       completeProgramExecution(program.failExecution(ScriptErrorScriptSize))
     } else {
       val (nextProgram, nextOpCount) = program.script match {
-        //if at any time we see that the program is not valid
-        //cease script execution
+        // if at any time we see that the program is not valid
+        // cease script execution
         case _ if program.script.intersect(badOpCodes).nonEmpty =>
           (program.failExecution(ScriptErrorBadOpCode), opCount)
-        //disabled operations
+        // disabled operations
         case _
             if program.script
               .intersect(disabledOpCodes)
               .nonEmpty =>
           (program.failExecution(ScriptErrorDisabledOpCode), opCount)
-        //program cannot contain a push operation > 520 bytes
+        // program cannot contain a push operation > 520 bytes
         case _
-            if program.script.exists(token =>
-              token.bytes.size > MAX_PUSH_SIZE) =>
+            if program.script
+              .exists(token => token.bytes.size > MAX_PUSH_SIZE) =>
           (program.failExecution(ScriptErrorPushSize), opCount)
-        //program stack size cannot be greater than 1000 elements
+        // program stack size cannot be greater than 1000 elements
         case _ if (program.stack.size + program.altStack.size) > 1000 =>
           (program.failExecution(ScriptErrorStackSize), opCount)
 
-        //no more script operations to run, return whether the program is valid and the final state of the program
+        // no more script operations to run, return whether the program is valid and the final state of the program
         case Nil =>
           (program.toExecutedProgram, opCount)
 
         case _ if !program.shouldExecuteNextOperation =>
           (program.updateScript(program.script.tail), opCount)
 
-        //stack operations
+        // stack operations
         case OP_DUP :: _ =>
           val programOrError = StackInterpreter.opDup(program)
           val newOpCount =
@@ -961,7 +1013,7 @@ sealed abstract class ScriptInterpreter {
             calcOpCount(opCount, OP_2SWAP)
           (programOrError, newOpCount)
 
-        //arithmetic operations
+        // arithmetic operations
         case OP_ADD :: _ =>
           val programOrError = ArithmeticInterpreter.opAdd(program)
           val newOpCount =
@@ -1083,7 +1135,7 @@ sealed abstract class ScriptInterpreter {
             calcOpCount(opCount, OP_WITHIN)
           (programOrError, newOpCount)
 
-        //bitwise operations
+        // bitwise operations
         case OP_EQUAL :: _ =>
           val programOrError = BitwiseInterpreter.opEqual(program)
           val newOpCount =
@@ -1107,7 +1159,8 @@ sealed abstract class ScriptInterpreter {
           val programOrError =
             program.updateStackAndScript(
               ScriptNumber(scriptNumberOp.toLong) :: program.stack,
-              t)
+              t
+            )
           val newOpCount =
             calcOpCount(opCount, scriptNumberOp)
           (programOrError, newOpCount)
@@ -1151,7 +1204,7 @@ sealed abstract class ScriptInterpreter {
             calcOpCount(opCount, x)
           (programOrError, newOpCount)
 
-        //control operations
+        // control operations
         case OP_IF :: _ =>
           val programOrError = ControlOperationsInterpreter.opIf(program)
           val newOpCount =
@@ -1188,7 +1241,7 @@ sealed abstract class ScriptInterpreter {
             calcOpCount(opCount, OP_VERIFY)
           (programOrError, newOpCount)
 
-        //crypto operations
+        // crypto operations
         case OP_HASH160 :: _ =>
           val programOrError = CryptoInterpreter.opHash160(program)
           val newOpCount =
@@ -1245,7 +1298,7 @@ sealed abstract class ScriptInterpreter {
         case OP_CHECKMULTISIG :: _ =>
           CryptoInterpreter.opCheckMultiSig(program) match {
             case newProgram: ExecutedScriptProgram =>
-              //script was marked invalid for other reasons, don't need to update the opcount
+              // script was marked invalid for other reasons, don't need to update the opcount
               (newProgram, opCount)
             case newProgram: ExecutionInProgressScriptProgram =>
               val programOrError = newProgram
@@ -1259,7 +1312,7 @@ sealed abstract class ScriptInterpreter {
         case OP_CHECKMULTISIGVERIFY :: _ =>
           CryptoInterpreter.opCheckMultiSigVerify(program) match {
             case newProgram: ExecutedScriptProgram =>
-              //script was marked invalid for other reasons, don't need to update the opcount
+              // script was marked invalid for other reasons, don't need to update the opcount
               (newProgram, opCount)
             case newProgram: ExecutionInProgressScriptProgram =>
               val programOrError = newProgram
@@ -1270,19 +1323,21 @@ sealed abstract class ScriptInterpreter {
               (programOrError, newOpCount)
 
           }
-        //reserved operations
+        // reserved operations
         case OP_NOP :: t =>
-          //script discourage upgradeable flag does not apply to a OP_NOP
+          // script discourage upgradeable flag does not apply to a OP_NOP
           val programOrError = program.updateScript(t)
           val newOpCount =
             calcOpCount(opCount, OP_NOP)
           (programOrError, newOpCount)
 
-        //if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
+        // if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
         case (nop: NOP) :: _
             if ScriptFlagUtil.discourageUpgradableNOPs(program.flags) =>
-          (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
-           calcOpCount(opCount, nop))
+          (
+            program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
+            calcOpCount(opCount, nop)
+          )
         case (nop: NOP) :: t =>
           val programOrError = program.updateScript(t)
           val newOpCount =
@@ -1290,31 +1345,41 @@ sealed abstract class ScriptInterpreter {
           (programOrError, newOpCount)
 
         case OP_RESERVED :: _ =>
-          (program.failExecution(ScriptErrorBadOpCode),
-           calcOpCount(opCount, OP_RESERVED))
+          (
+            program.failExecution(ScriptErrorBadOpCode),
+            calcOpCount(opCount, OP_RESERVED)
+          )
         case OP_VER :: _ =>
-          (program.failExecution(ScriptErrorBadOpCode),
-           calcOpCount(opCount, OP_VER))
+          (
+            program.failExecution(ScriptErrorBadOpCode),
+            calcOpCount(opCount, OP_VER)
+          )
         case OP_RESERVED1 :: _ =>
-          (program.failExecution(ScriptErrorBadOpCode),
-           calcOpCount(opCount, OP_RESERVED1))
+          (
+            program.failExecution(ScriptErrorBadOpCode),
+            calcOpCount(opCount, OP_RESERVED1)
+          )
         case OP_RESERVED2 :: _ =>
-          (program.failExecution(ScriptErrorBadOpCode),
-           calcOpCount(opCount, OP_RESERVED2))
+          (
+            program.failExecution(ScriptErrorBadOpCode),
+            calcOpCount(opCount, OP_RESERVED2)
+          )
 
         case (reservedOperation: ReservedOperation) :: _ =>
-          (program.failExecution(ScriptErrorBadOpCode),
-           calcOpCount(opCount, reservedOperation))
-        //splice operations
+          (
+            program.failExecution(ScriptErrorBadOpCode),
+            calcOpCount(opCount, reservedOperation)
+          )
+        // splice operations
         case OP_SIZE :: _ =>
           val programOrError = SpliceInterpreter.opSize(program)
           val newOpCount =
             calcOpCount(opCount, OP_SIZE)
           (programOrError, newOpCount)
 
-        //locktime operations
+        // locktime operations
         case OP_CHECKLOCKTIMEVERIFY :: _ =>
-          //check if CLTV is enforced yet
+          // check if CLTV is enforced yet
           if (ScriptFlagUtil.checkLockTimeVerifyEnabled(program.flags)) {
             val programOrError =
               LockTimeInterpreter.opCheckLockTimeVerify(program)
@@ -1322,11 +1387,13 @@ sealed abstract class ScriptInterpreter {
               calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY)
             (programOrError, newOpCount)
 
-          } //if not, check to see if we should discourage p
+          } // if not, check to see if we should discourage p
           else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
-            (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
-             calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
-          } //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
+            (
+              program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
+              calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY)
+            )
+          } // in this case, just reat OP_CLTV just like a NOP and remove it from the stack
           else {
             val programOrError = program.updateScript(program.script.tail)
             val newOpCount =
@@ -1335,7 +1402,7 @@ sealed abstract class ScriptInterpreter {
           }
 
         case OP_CHECKSEQUENCEVERIFY :: _ =>
-          //check if CLTV is enforced yet
+          // check if CLTV is enforced yet
           if (ScriptFlagUtil.checkSequenceVerifyEnabled(program.flags)) {
             val programOrError =
               LockTimeInterpreter.opCheckSequenceVerify(program)
@@ -1343,11 +1410,13 @@ sealed abstract class ScriptInterpreter {
               calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY)
             (programOrError, newOpCount)
 
-          } //if not, check to see if we should discourage p
+          } // if not, check to see if we should discourage p
           else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
-            (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
-             calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
-          } //in this case, just read OP_CSV just like a NOP and remove it from the stack
+            (
+              program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
+              calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY)
+            )
+          } // in this case, just read OP_CSV just like a NOP and remove it from the stack
           else {
             val programOrError = program.updateScript(program.script.tail)
             val newOpCount =
@@ -1366,7 +1435,8 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
-  /** Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
+  /** Checks the validity of a transaction in accordance to bitcoin core's
+    * CheckTransaction function
     * https://github.com/bitcoin/bitcoin/blob/f7a21dae5dbf71d5bc00485215e84e6f2b309d0a/src/main.cpp#L939.
     */
   def checkTransaction(transaction: Transaction): Boolean = {
@@ -1394,12 +1464,14 @@ sealed abstract class ScriptInterpreter {
     allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 
-  /** Determines if the given currency unit is within the valid range for the system */
+  /** Determines if the given currency unit is within the valid range for the
+    * system
+    */
   def validMoneyRange(currencyUnit: CurrencyUnit): Boolean = {
     currencyUnit >= CurrencyUnits.zero && currencyUnit <= Consensus.maxMoney
   }
 
-  /**  Calculates the new op count after the execution of the given
+  /** Calculates the new op count after the execution of the given
     * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]
     */
   private def calcOpCount(oldOpCount: Int, token: ScriptToken): Int =
@@ -1435,31 +1507,39 @@ sealed abstract class ScriptInterpreter {
 
   /** Helper function used to rebuild a
     * [[org.bitcoins.core.crypto.WitnessTxSigComponentRebuilt WitnessTxSigComponentRebuilt]]
-    * this converts a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
-    * into it's corresponding [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+    * this converts a
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
+    * into it's corresponding
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     */
   private def rebuildWTxSigComponent(
       old: WitnessTxSigComponent,
-      rebuildScriptPubKey: ScriptPubKey): Try[WitnessTxSigComponentRebuilt] = {
+      rebuildScriptPubKey: ScriptPubKey
+  ): Try[WitnessTxSigComponentRebuilt] = {
     val updatedOutput = TransactionOutput(old.output.value, rebuildScriptPubKey)
     old match {
       case wTxSigComponentRaw: WitnessTxSigComponentRaw =>
         Success(
-          WitnessTxSigComponentRebuilt(old.transaction,
-                                       old.inputIndex,
-                                       updatedOutput,
-                                       wTxSigComponentRaw.scriptPubKey,
-                                       old.flags))
+          WitnessTxSigComponentRebuilt(
+            old.transaction,
+            old.inputIndex,
+            updatedOutput,
+            wTxSigComponentRaw.scriptPubKey,
+            old.flags
+          )
+        )
       case wTxSigComponentP2SH: WitnessTxSigComponentP2SH =>
         wTxSigComponentP2SH.witnessScriptPubKey.map {
           wit: WitnessScriptPubKey =>
             val updatedOutput =
               TransactionOutput(old.output.value, rebuildScriptPubKey)
-            WitnessTxSigComponentRebuilt(old.transaction,
-                                         old.inputIndex,
-                                         updatedOutput,
-                                         wit,
-                                         old.flags)
+            WitnessTxSigComponentRebuilt(
+              old.transaction,
+              old.inputIndex,
+              updatedOutput,
+              wit,
+              old.flags
+            )
         }
 
       case _: TaprootTxSigComponent =>
@@ -1469,7 +1549,8 @@ sealed abstract class ScriptInterpreter {
 
   /** Logic to evaluate a witnesss version that has not been assigned yet */
   private def evaluateUnassignedWitness(
-      txSigComponent: TxSigComponent): Try[ExecutedScriptProgram] = {
+      txSigComponent: TxSigComponent
+  ): Try[ExecutedScriptProgram] = {
     val flags = txSigComponent.flags
     val discourageUpgradableWitnessVersion =
       ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
@@ -1487,8 +1568,8 @@ sealed abstract class ScriptInterpreter {
       )
       Success(executed)
     } else {
-      //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
-      //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
+      // if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
+      // see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
       val inProgress = PreExecutionScriptProgram(
         txSignatureComponent = txSigComponent,
         stack = List(OP_TRUE),
@@ -1506,22 +1587,24 @@ sealed abstract class ScriptInterpreter {
 object ScriptInterpreter extends ScriptInterpreter {
 
   val bip341DisabledOpCodes = {
-    Vector(OP_CAT,
-           OP_SUBSTR,
-           OP_LEFT,
-           OP_RIGHT,
-           OP_INVERT,
-           OP_AND,
-           OP_OR,
-           OP_XOR,
-           OP_RESERVED1,
-           OP_RESERVED2,
-           OP_2MUL,
-           OP_2DIV,
-           OP_MUL,
-           OP_DIV,
-           OP_MOD,
-           OP_LSHIFT,
-           OP_RSHIFT)
+    Vector(
+      OP_CAT,
+      OP_SUBSTR,
+      OP_LEFT,
+      OP_RIGHT,
+      OP_INVERT,
+      OP_AND,
+      OP_OR,
+      OP_XOR,
+      OP_RESERVED1,
+      OP_RESERVED2,
+      OP_2MUL,
+      OP_2DIV,
+      OP_MUL,
+      OP_DIV,
+      OP_MOD,
+      OP_LSHIFT,
+      OP_RSHIFT
+    )
   }
 }

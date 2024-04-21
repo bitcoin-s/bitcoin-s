@@ -18,10 +18,13 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
   def registerIncomingDLCOffer(
       offerTLV: DLCOfferTLV,
       peerOpt: Option[String],
-      message: Option[String]): Future[Sha256Digest] = {
-    val dbo = IncomingDLCOfferDbHelper.fromTLV(offerTLV = offerTLV,
-                                               peer = peerOpt,
-                                               message = message)
+      message: Option[String]
+  ): Future[Sha256Digest] = {
+    val dbo = IncomingDLCOfferDbHelper.fromTLV(
+      offerTLV = offerTLV,
+      peer = peerOpt,
+      message = message
+    )
     val contactDbOpt = peerOpt.map(DLCContactDbHelper.fromPeerAddress)
     for {
       added <- dlcWalletDAOs.incomingDLCOfferDAO.create(dbo)
@@ -46,7 +49,8 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
   }
 
   def findIncomingDLCOffer(
-      offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]] = {
+      offerHash: Sha256Digest
+  ): Future[Option[IncomingDLCOfferDb]] = {
     dlcWalletDAOs.incomingDLCOfferDAO.find(offerHash)
   }
 
@@ -70,7 +74,8 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
 
   override def addDLCContactMapping(
       dlcId: Sha256Digest,
-      contcatId: InetSocketAddress): Future[Unit] = {
+      contcatId: InetSocketAddress
+  ): Future[Unit] = {
     dlcDAO
       .updateDLCContactMapping(dlcId, contcatId)
   }

@@ -21,12 +21,15 @@ class AddressTagDAOTest extends WalletDAOFixture {
   behavior of "AddressTagDAO"
 
   val exampleTag: UnknownAddressTag =
-    UnknownAddressTag(UnknownAddressTagName("Example"),
-                      UnknownAddressTagType("ExampleTagType"))
+    UnknownAddressTag(
+      UnknownAddressTagName("Example"),
+      UnknownAddressTagType("ExampleTagType")
+    )
 
   def testInsertionFailure(
       daos: FixtureParam,
-      tag: AddressTag): Future[Assertion] = {
+      tag: AddressTag
+  ): Future[Assertion] = {
     val tagDAO = daos.addressTagDAO
     val addr = TestUtil.testBitcoinAddress
     val tagDb = AddressTagDb(addr, tag.tagName, tag.tagType)
@@ -102,8 +105,10 @@ class AddressTagDAOTest extends WalletDAOFixture {
           AddressTagDb(createdAddress.address, exampleTag)
         addressTagDAO.create(tagDb)
       }
-      dropped <- addressTagDAO.dropByAddressAndName(createdAddress.address,
-                                                    createdAddressTag.tagName)
+      dropped <- addressTagDAO.dropByAddressAndName(
+        createdAddress.address,
+        createdAddressTag.tagName
+      )
     } yield {
       assert(dropped == 1)
     }

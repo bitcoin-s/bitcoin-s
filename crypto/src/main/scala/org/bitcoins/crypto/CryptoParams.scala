@@ -4,8 +4,8 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 
-/** Created by chris on 3/29/16.
-  * This trait represents all of the default parameters for our elliptic curve
+/** Created by chris on 3/29/16. This trait represents all of the default
+  * parameters for our elliptic curve
   */
 sealed abstract class CryptoParams {
 

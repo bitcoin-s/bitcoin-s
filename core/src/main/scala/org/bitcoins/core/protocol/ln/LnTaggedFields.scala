@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-/** An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
+/** An aggregation of all the individual tagged fields in a
+  * [[org.bitcoins.core.protocol.ln.LnInvoice]]
   */
 sealed abstract class LnTaggedFields
     extends SeqWrapper[LnTag]
@@ -22,8 +23,10 @@ sealed abstract class LnTaggedFields
       descriptionHash.nonEmpty,
     "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice."
   )
-  require(!(description.nonEmpty && descriptionHash.nonEmpty),
-          "Cannot have both description and description hash")
+  require(
+    !(description.nonEmpty && descriptionHash.nonEmpty),
+    "Cannot have both description and description hash"
+  )
 
   def tags: Vector[LnTag]
 
@@ -96,11 +99,11 @@ object LnTaggedFields {
       cltvExpiry: Option[LnTag.MinFinalCltvExpiry] = None,
       fallbackAddress: Option[LnTag.FallbackAddressTag] = None,
       routingInfo: Option[LnTag.RoutingInfo] = None,
-      features: Option[LnTag.FeaturesTag] = None): LnTaggedFields = {
+      features: Option[LnTag.FeaturesTag] = None
+  ): LnTaggedFields = {
 
-    val (description, descriptionHash): (
-        Option[LnTag.DescriptionTag],
-        Option[LnTag.DescriptionHashTag]) = {
+    val (description, descriptionHash)
+        : (Option[LnTag.DescriptionTag], Option[LnTag.DescriptionHashTag]) = {
 
       descriptionOrHash match {
         case Left(description) =>
@@ -110,26 +113,30 @@ object LnTaggedFields {
       }
     }
 
-    val tags = Vector(Some(paymentHash),
-                      description,
-                      nodeId,
-                      descriptionHash,
-                      expiryTime,
-                      cltvExpiry,
-                      fallbackAddress,
-                      routingInfo,
-                      features,
-                      secret).flatten
+    val tags = Vector(
+      Some(paymentHash),
+      description,
+      nodeId,
+      descriptionHash,
+      expiryTime,
+      cltvExpiry,
+      fallbackAddress,
+      routingInfo,
+      features,
+      secret
+    ).flatten
     InvoiceTagImpl(tags)
   }
 
   def apply(tags: Vector[LnTag]): LnTaggedFields = InvoiceTagImpl(tags)
 
-  /** This is intended to parse all of the [[org.bitcoins.core.protocol.ln.LnTaggedFields LnTaggedFields]]
-    * from the tagged part of the ln invoice. This should only be called
-    * if other information has already been remove from the invoice
-    * like the [[LnHumanReadablePart]]
-    * @param u5s payload of the tagged fields in the invoice
+  /** This is intended to parse all of the
+    * [[org.bitcoins.core.protocol.ln.LnTaggedFields LnTaggedFields]] from the
+    * tagged part of the ln invoice. This should only be called if other
+    * information has already been remove from the invoice like the
+    * [[LnHumanReadablePart]]
+    * @param u5s
+    *   payload of the tagged fields in the invoice
     * @return
     */
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
@@ -140,14 +147,15 @@ object LnTaggedFields {
           val prefix = LnTagPrefix
             .fromUInt5(h)
             .getOrElse(
-              throw new RuntimeException("Unknown LN invoice tag prefix"))
+              throw new RuntimeException("Unknown LN invoice tag prefix")
+            )
 
-          //next two 5 bit increments are data_length
+          // next two 5 bit increments are data_length
           val dataLengthU5s = List(h1, h2)
 
           val dataLength = LnUtil.decodeDataLength(dataLengthU5s)
 
-          //t is the actual possible payload
+          // t is the actual possible payload
           val payload: Vector[UInt5] = t.take(dataLength.toInt)
 
           val tag = LnTag.fromLnTagPrefix(prefix, payload)
@@ -157,7 +165,8 @@ object LnTaggedFields {
           loop(newRemaining, fields :+ tag)
         case _ +: _ | _ +: _ +: _ =>
           throw new IllegalArgumentException(
-            "Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
+            "Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse"
+          )
         case _: Vector[_] =>
           fields
       }

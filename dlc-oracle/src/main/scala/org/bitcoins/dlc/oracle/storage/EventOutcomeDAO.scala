@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class EventOutcomeDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCOracleAppConfig)
-    extends CRUD[EventOutcomeDb, (SchnorrNonce, String)]
+    override val appConfig: DLCOracleAppConfig
+) extends CRUD[EventOutcomeDb, (SchnorrNonce, String)]
     with SlickUtil[EventOutcomeDb, (SchnorrNonce, String)] {
 
   import profile.api._
@@ -28,19 +28,20 @@ case class EventOutcomeDAO()(implicit
     EventDAO().table
 
   override def createAll(
-      ts: Vector[EventOutcomeDb]): Future[Vector[EventOutcomeDb]] =
+      ts: Vector[EventOutcomeDb]
+  ): Future[Vector[EventOutcomeDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(ids: Vector[
-    (SchnorrNonce, String)]): Query[EventOutcomeTable, EventOutcomeDb, Seq] =
+  override protected def findByPrimaryKeys(
+      ids: Vector[(SchnorrNonce, String)]
+  ): Query[EventOutcomeTable, EventOutcomeDb, Seq] =
     table
       .filter(_.nonce.inSet(ids.map(_._1)))
       .filter(_.message.inSet(ids.map(_._2)))
 
-  override protected def findAll(ts: Vector[EventOutcomeDb]): Query[
-    EventOutcomeTable,
-    EventOutcomeDb,
-    Seq] = {
+  override protected def findAll(
+      ts: Vector[EventOutcomeDb]
+  ): Query[EventOutcomeTable, EventOutcomeDb, Seq] = {
     val ids = ts.map(t => (t.nonce, t.message))
     findByPrimaryKeys(ids)
   }
@@ -50,14 +51,16 @@ case class EventOutcomeDAO()(implicit
   }
 
   def findByNonces(
-      nonces: Vector[SchnorrNonce]): Future[Vector[EventOutcomeDb]] = {
+      nonces: Vector[SchnorrNonce]
+  ): Future[Vector[EventOutcomeDb]] = {
     val action = table.filter(_.nonce.inSet(nonces)).result
     safeDatabase.runVec(action)
   }
 
   def find(
       nonce: SchnorrNonce,
-      hash: ByteVector): Future[Option[EventOutcomeDb]] = {
+      hash: ByteVector
+  ): Future[Option[EventOutcomeDb]] = {
     val query =
       table.filter(item => item.nonce === nonce && item.hashedMessage === hash)
 
@@ -74,13 +77,17 @@ case class EventOutcomeDAO()(implicit
     def hashedMessage: Rep[ByteVector] = column("hashed_message")
 
     def * : ProvenShape[EventOutcomeDb] =
-      (nonce, message, hashedMessage).<>(EventOutcomeDb.tupled,
-                                         EventOutcomeDb.unapply)
+      (nonce, message, hashedMessage).<>(
+        EventOutcomeDb.tupled,
+        EventOutcomeDb.unapply
+      )
 
     def fk: ForeignKeyQuery[_, EventDb] = {
-      foreignKey("fk_nonce",
-                 sourceColumns = nonce,
-                 targetTableQuery = eventTable)(_.nonce)
+      foreignKey(
+        "fk_nonce",
+        sourceColumns = nonce,
+        targetTableQuery = eventTable
+      )(_.nonce)
     }
   }
 }

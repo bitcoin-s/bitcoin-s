@@ -43,7 +43,8 @@ object RpcOpts {
       lockUnspents: Boolean = false,
       reverseChangeKey: Boolean = true,
       feeRate: Option[Bitcoins] = None,
-      subtractFeeFromOutputs: Option[Vector[Int]])
+      subtractFeeFromOutputs: Option[Vector[Int]]
+  )
 
   sealed abstract class FeeEstimationMode
 
@@ -75,8 +76,9 @@ object RpcOpts {
     }
   }
 
-  implicit val fundRawTransactionOptionsWrites: Writes[
-    FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
+  implicit val fundRawTransactionOptionsWrites
+      : Writes[FundRawTransactionOptions] =
+    Json.writes[FundRawTransactionOptions]
 
   case class SignRawTransactionOutputParameter(
       txid: DoubleSha256DigestBE,
@@ -84,10 +86,11 @@ object RpcOpts {
       scriptPubKey: ScriptPubKey,
       redeemScript: Option[ScriptPubKey] = None,
       witnessScript: Option[WitnessScriptPubKey] = None,
-      amount: Option[Bitcoins] = None)
+      amount: Option[Bitcoins] = None
+  )
 
-  implicit val signRawTransactionOutputParameterWrites: Writes[
-    SignRawTransactionOutputParameter] =
+  implicit val signRawTransactionOutputParameterWrites
+      : Writes[SignRawTransactionOutputParameter] =
     Json.writes[SignRawTransactionOutputParameter]
 
   object SignRawTransactionOutputParameter {
@@ -97,7 +100,8 @@ object RpcOpts {
         scriptPubKey: ScriptPubKey,
         redeemScript: Option[ScriptPubKey] = None,
         witnessScript: Option[WitnessScriptPubKey] = None,
-        amount: Option[Bitcoins] = None): SignRawTransactionOutputParameter = {
+        amount: Option[Bitcoins] = None
+    ): SignRawTransactionOutputParameter = {
       SignRawTransactionOutputParameter(
         txid = transactionInput.previousOutput.txIdBE,
         vout = transactionInput.previousOutput.vout.toInt,
@@ -117,7 +121,8 @@ object RpcOpts {
       keys: Option[Vector[ECPrivateKeyBytes]] = None,
       internal: Option[Boolean] = None,
       watchonly: Option[Boolean] = None,
-      label: Option[String] = None)
+      label: Option[String] = None
+  )
 
   case class ImportMultiAddress(address: BitcoinAddress)
 
@@ -140,7 +145,8 @@ object RpcOpts {
   object LockUnspentOutputParameter {
 
     def fromOutPoint(
-        outPoint: TransactionOutPoint): LockUnspentOutputParameter = {
+        outPoint: TransactionOutPoint
+    ): LockUnspentOutputParameter = {
       LockUnspentOutputParameter(outPoint.txIdBE, outPoint.vout.toInt)
     }
 
@@ -216,7 +222,9 @@ object RpcOpts {
     override def fromString(string: String): AddressType = {
       fromStringOpt(string).getOrElse(
         throw new IllegalArgumentException(
-          s"Could not find AddressType for string: $string"))
+          s"Could not find AddressType for string: $string"
+        )
+      )
     }
   }
 
@@ -236,7 +244,8 @@ object RpcOpts {
   case class BlockTemplateRequest(
       mode: String,
       capabilities: Vector[String],
-      rules: Vector[String])
+      rules: Vector[String]
+  )
 
   implicit val blockTemplateRequest: Writes[BlockTemplateRequest] =
     Json.writes[BlockTemplateRequest]

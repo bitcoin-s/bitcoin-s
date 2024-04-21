@@ -16,7 +16,9 @@ class InetAddressJVMTest extends BitcoinSUnitTest {
     forAll(P2PGenerator.inetAddress) { inet =>
       assert(
         NetworkIpAddress.writeAddress(
-          JvmAddress.getByAddress(inet.getAddress).getAddress) == inet.bytes)
+          JvmAddress.getByAddress(inet.getAddress).getAddress
+        ) == inet.bytes
+      )
     }
   }
 
@@ -25,7 +27,8 @@ class InetAddressJVMTest extends BitcoinSUnitTest {
       assert(
         JvmAddress
           .getByAddress(inet.ipv4Bytes.toArray)
-          .getAddress sameElements inet.ipv4Bytes.toArray)
+          .getAddress sameElements inet.ipv4Bytes.toArray
+      )
     }
   }
 }

@@ -18,8 +18,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(),
-                                                              Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      () => pgUrl(),
+      Vector.empty
+    )
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
@@ -28,7 +30,8 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
       bitcoind <- cachedBitcoindWithFundsF
       outcome <- withNeutrinoNodeUnstarted(test, bitcoind)(
         system,
-        getFreshConfig).toFuture
+        getFreshConfig
+      ).toFuture
     } yield outcome
 
     new FutureOutcome(f)
@@ -44,14 +47,18 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
         getSmallHealthCheckNeutrinoNode(nodeConnectedWithBitcoind.node, timeout)
       for {
         started <- startedF
-        _ <- NodeTestUtil.awaitConnectionCount(node = started,
-                                               expectedConnectionCount = 1)
-        //let sync occur so we aren't receiving blockchain data over the network
+        _ <- NodeTestUtil.awaitConnectionCount(
+          node = started,
+          expectedConnectionCount = 1
+        )
+        // let sync occur so we aren't receiving blockchain data over the network
         _ <- NodeTestUtil.awaitAllSync(started, bitcoind)
-        //wait until there is a timeout for inactivity
+        // wait until there is a timeout for inactivity
         _ <- AsyncUtil.nonBlockingSleep(timeout)
-        _ <- NodeTestUtil.awaitConnectionCount(node = started,
-                                               expectedConnectionCount = 0)
+        _ <- NodeTestUtil.awaitConnectionCount(
+          node = started,
+          expectedConnectionCount = 0
+        )
         _ <- started.stop()
         _ <- started.nodeConfig.stop()
       } yield {
@@ -61,7 +68,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   it must "reconnect a peer when inactivity checks run and we have 0 peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/5162
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/5162
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val timeout = 5.second
       val startedF =
@@ -69,13 +76,13 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
       for {
         started <- startedF
         _ <- NodeTestUtil.awaitConnectionCount(started, 1)
-        //explicitly disconnect it
+        // explicitly disconnect it
         bitcoindPeer <- NodeTestUtil.getBitcoindPeer(bitcoind)
         _ <- started.peerManager.disconnectPeer(bitcoindPeer)
-        //wait until we have zero connections
+        // wait until we have zero connections
         _ <- NodeTestUtil.awaitConnectionCount(started, 0)
 
-        //wait until there is a timeout for inactivity
+        // wait until there is a timeout for inactivity
         _ <- NodeTestUtil.awaitConnectionCount(started, 1)
         _ <- started.peerManager.isConnected(bitcoindPeer)
         _ <- started.stop()
@@ -87,10 +94,11 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   private def getSmallHealthCheckNeutrinoNode(
       initNode: NeutrinoNode,
-      timeout: FiniteDuration): Future[NeutrinoNode] = {
+      timeout: FiniteDuration
+  ): Future[NeutrinoNode] = {
 
-    //make a custom config, set the inactivity timeout very low
-    //so we will disconnect our peer organically
+    // make a custom config, set the inactivity timeout very low
+    // so we will disconnect our peer organically
     val str =
       s"""
          |bitcoin-s.node.health-check-interval = ${timeout.toString()}

@@ -13,11 +13,13 @@ import scala.concurrent.Future
 /** Helper class to start a eclair client with the given binary */
 case class EclairRpcTestClient(
     override val binary: Path,
-    bitcoindRpcClientOpt: Option[BitcoindRpcClient])(implicit
-    system: ActorSystem)
+    bitcoindRpcClientOpt: Option[BitcoindRpcClient]
+)(implicit system: ActorSystem)
     extends RpcBinaryUtil[EclairRpcClient] {
-  require(Files.exists(binary),
-          s"Path did not exist! got=${binary.toAbsolutePath.toString}")
+  require(
+    Files.exists(binary),
+    s"Path did not exist! got=${binary.toAbsolutePath.toString}"
+  )
   import system.dispatcher
 
   private lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
@@ -40,7 +42,7 @@ case class EclairRpcTestClient(
   }
 
   override def start(): Future[EclairRpcClient] = {
-    //should we start bitcoind rpc client here too?
+    // should we start bitcoind rpc client here too?
     for {
       rpcClient <- eclairRpcClientF
       started <- rpcClient.start()
@@ -48,7 +50,7 @@ case class EclairRpcTestClient(
   }
 
   override def stop(): Future[EclairRpcClient] = {
-    //should we stop bitcoind rpc client here too?
+    // should we stop bitcoind rpc client here too?
     for {
       rpcClient <- eclairRpcClientF
       stopped <- rpcClient.stop()
@@ -65,12 +67,14 @@ object EclairRpcTestClient extends SbtBinaryFactory {
   def fromSbtDownloadOpt(
       eclairVersionOpt: Option[String],
       eclairCommitOpt: Option[String],
-      bitcoindRpcClientOpt: Option[BitcoindRpcClient])(implicit
-      system: ActorSystem): Option[EclairRpcTestClient] = {
+      bitcoindRpcClientOpt: Option[BitcoindRpcClient]
+  )(implicit system: ActorSystem): Option[EclairRpcTestClient] = {
     val fileOpt =
-      getBinary(eclairVersionOpt = eclairVersionOpt,
-                eclairCommitOpt = eclairCommitOpt,
-                binaryDirectory = sbtBinaryDirectory)
+      getBinary(
+        eclairVersionOpt = eclairVersionOpt,
+        eclairCommitOpt = eclairCommitOpt,
+        binaryDirectory = sbtBinaryDirectory
+      )
 
     fileOpt.map(f =>
       EclairRpcTestClient(binary = f.toPath, bitcoindRpcClientOpt))
@@ -79,12 +83,13 @@ object EclairRpcTestClient extends SbtBinaryFactory {
   def fromSbtDownload(
       eclairVersionOpt: Option[String],
       eclairCommitOpt: Option[String],
-      bitcoindRpcClientOpt: Option[BitcoindRpcClient])(implicit
-      system: ActorSystem): EclairRpcTestClient = {
-    val eclairOpt = fromSbtDownloadOpt(eclairVersionOpt = eclairCommitOpt,
-                                       eclairCommitOpt = eclairCommitOpt,
-                                       bitcoindRpcClientOpt =
-                                         bitcoindRpcClientOpt)
+      bitcoindRpcClientOpt: Option[BitcoindRpcClient]
+  )(implicit system: ActorSystem): EclairRpcTestClient = {
+    val eclairOpt = fromSbtDownloadOpt(
+      eclairVersionOpt = eclairCommitOpt,
+      eclairCommitOpt = eclairCommitOpt,
+      bitcoindRpcClientOpt = bitcoindRpcClientOpt
+    )
     eclairOpt match {
       case Some(client) => client
       case None =>
@@ -92,7 +97,8 @@ object EclairRpcTestClient extends SbtBinaryFactory {
           s"Could not find eclair that was downloaded by sbt " +
             s"with version=$eclairVersionOpt " +
             s"commit=$eclairCommitOpt at " +
-            s"path=${sbtBinaryDirectory.toAbsolutePath.toString}")
+            s"path=${sbtBinaryDirectory.toAbsolutePath.toString}"
+        )
     }
   }
 
@@ -100,17 +106,20 @@ object EclairRpcTestClient extends SbtBinaryFactory {
   def getBinary(
       eclairVersionOpt: Option[String],
       eclairCommitOpt: Option[String],
-      binaryDirectory: Path): Option[File] = {
+      binaryDirectory: Path
+  ): Option[File] = {
     val path = binaryDirectory
       .resolve(eclairVersionOpt.getOrElse(EclairRpcClient.version))
       .resolve(
-        s"eclair-node-${EclairRpcClient.version}-${eclairCommitOpt.getOrElse(EclairRpcClient.commit)}")
+        s"eclair-node-${EclairRpcClient.version}-${eclairCommitOpt.getOrElse(EclairRpcClient.commit)}"
+      )
       .resolve("bin")
       .resolve(
         if (sys.props("os.name").toLowerCase.contains("windows"))
           "eclair-node.bat"
         else
-          "eclair-node.sh")
+          "eclair-node.sh"
+      )
 
     if (Files.exists(path)) {
       Some(path.toFile)

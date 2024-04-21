@@ -16,7 +16,7 @@ class WalletSyncTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val wallet = param.wallet
     val bitcoind = param.bitcoind
     val genesisBlockHashF = bitcoind.getBlockHash(0)
-    //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+    // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
     val getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind)
 
     val getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind)
@@ -25,11 +25,13 @@ class WalletSyncTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val syncedWalletF = {
       for {
         genesisBlockHash <- genesisBlockHashF
-        synced <- WalletSync.syncFullBlocks(wallet,
-                                            getBlockHeaderFunc,
-                                            getBestBlockHashFunc,
-                                            getBlockFunc,
-                                            genesisBlockHash)
+        synced <- WalletSync.syncFullBlocks(
+          wallet,
+          getBlockHeaderFunc,
+          getBestBlockHashFunc,
+          getBlockFunc,
+          genesisBlockHash
+        )
       } yield synced
     }
 

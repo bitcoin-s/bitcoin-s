@@ -49,12 +49,14 @@ case class UTXORecord(
         )
 
       case (path: LegacyHDPath, None, None) =>
-        LegacySpendingInfo(outPoint = outpoint,
-                           output = TransactionOutput(value, scriptPubKey),
-                           privKeyPath = path,
-                           id = id,
-                           state = state,
-                           spendingTxIdOpt = spendingTxIdOpt)
+        LegacySpendingInfo(
+          outPoint = outpoint,
+          output = TransactionOutput(value, scriptPubKey),
+          privKeyPath = path,
+          id = id,
+          state = state,
+          spendingTxIdOpt = spendingTxIdOpt
+        )
 
       case (path: NestedSegWitHDPath, Some(redeemScript), Some(scriptWitness))
           if WitnessScriptPubKey.isValidAsm(redeemScript.asm) =>
@@ -71,7 +73,8 @@ case class UTXORecord(
 
       case _ =>
         throw new IllegalArgumentException(
-          s"Could not construct SpendingInfoDb from bad record: $this.")
+          s"Could not construct SpendingInfoDb from bad record: $this."
+        )
     }
 }
 
@@ -79,7 +82,8 @@ object UTXORecord {
 
   def fromSpendingInfoDb(
       spendingInfoDb: SpendingInfoDb,
-      scriptPubKeyId: Long): UTXORecord =
+      scriptPubKeyId: Long
+  ): UTXORecord =
     UTXORecord(
       spendingInfoDb.outPoint,
       spendingInfoDb.state, // state

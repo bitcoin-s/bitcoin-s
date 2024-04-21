@@ -30,7 +30,8 @@ trait TestVectorGen[T <: TestVector, Input] {
 
   def writeTestVectorsToFile(
       vecs: Vector[T],
-      file: File = defaultTestFile): Unit = {
+      file: File = defaultTestFile
+  ): Unit = {
     val arr = JsArray(vecs.map(_.toJson))
     writeToFile(arr, file)
   }
@@ -106,20 +107,24 @@ trait TestVectorGen[T <: TestVector, Input] {
             } else {
               Future.failed(
                 new RuntimeException(
-                  s"Was unable to delete ${defaultTestFile.getAbsolutePath}"))
+                  s"Was unable to delete ${defaultTestFile.getAbsolutePath}"
+                )
+              )
             }
           }
         }
       case JsError(err) =>
         Future.failed(
-          new IllegalArgumentException(s"Could not read json from file: $err"))
+          new IllegalArgumentException(s"Could not read json from file: $err")
+        )
     }
   }
 
   def generateTestVectors(): Future[Vector[T]]
 
   def generateAndWriteTestVectors(
-      file: File = defaultTestFile): Future[Unit] = {
+      file: File = defaultTestFile
+  ): Future[Unit] = {
     generateTestVectors().map { testVectors =>
       writeTestVectorsToFile(testVectors, file)
     }

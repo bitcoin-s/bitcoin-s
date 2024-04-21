@@ -28,20 +28,29 @@ class LnMessageTest extends BitcoinSUnitTest {
   }
 
   "InitMessage" must "parse correctly" in {
-    assert(Try(LnMessage(
-      "001000022200000302aaa2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f")).isSuccess)
+    assert(
+      Try(
+        LnMessage(
+          "001000022200000302aaa2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f"
+        )
+      ).isSuccess
+    )
   }
 
-  /** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#appendix-c-message-extension */
+  /** @see
+    *   https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#appendix-c-message-extension
+    */
   "InitMessage" must "pass static test vectors" in {
     assert(Try(LnMessageFactory(InitTLV)(hex"001000000000")).isSuccess)
     assert(
-      Try(LnMessageFactory(InitTLV)(hex"00100000000001012a030104")).isSuccess)
+      Try(LnMessageFactory(InitTLV)(hex"00100000000001012a030104")).isSuccess
+    )
 
     assert(Try(LnMessageFactory(InitTLV)(hex"00100000000001")).isFailure)
     assert(Try(LnMessageFactory(InitTLV)(hex"001000000000ca012a")).isFailure)
     assert(
-      Try(LnMessageFactory(InitTLV)(hex"001000000000010101010102")).isFailure)
+      Try(LnMessageFactory(InitTLV)(hex"001000000000010101010102")).isFailure
+    )
   }
 
   "ErrorMessage" must "have serialization symmetry" in {
@@ -65,7 +74,9 @@ class LnMessageTest extends BitcoinSUnitTest {
   "PongMessage" must "parse correctly" in {
     assert(
       LnMessage("001300020000") == LnMessage(
-        PongTLV.forIgnored(ByteVector.fromValidHex("0000"))))
+        PongTLV.forIgnored(ByteVector.fromValidHex("0000"))
+      )
+    )
   }
 
   "DLCOfferMessage" must "have serialization symmetry" in {

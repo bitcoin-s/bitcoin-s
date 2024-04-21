@@ -21,9 +21,9 @@ sealed trait NumericDLCOutcomeType extends DLCOutcomeType
 
 /** An outcome from a multi-nonce unsigned numeric event type.
   *
-  * If digits.length is less than the the total number of digits to be
-  * signed by the oracle then this outcome represents all outcomes prefixed
-  * by the given digits.
+  * If digits.length is less than the the total number of digits to be signed by
+  * the oracle then this outcome represents all outcomes prefixed by the given
+  * digits.
   *
   * I.e. the Vector[Int] is always the most significant digits.
   */
@@ -36,9 +36,9 @@ case class UnsignedNumericOutcome(digits: Vector[Int])
 
 /** An outcome from a multi-nonce signed numeric event type.
   *
-  * If digits.length is less than the the total number of digits to be
-  * signed by the oracle then this outcome represents all outcomes prefixed
-  * by the given digits.
+  * If digits.length is less than the the total number of digits to be signed by
+  * the oracle then this outcome represents all outcomes prefixed by the given
+  * digits.
   *
   * I.e. the Vector[Int] is always the most significant digits.
   */

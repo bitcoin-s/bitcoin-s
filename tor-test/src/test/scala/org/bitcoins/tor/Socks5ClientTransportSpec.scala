@@ -24,14 +24,16 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
     ClientConnectionSettings(system).withTransport(socks5ClientTransport)
 
   val settings = ConnectionPoolSettings(system).withConnectionSettings(
-    clientConnectionSettings)
+    clientConnectionSettings
+  )
 
   it should "handle clear net addresses" in {
     assume(TorUtil.torEnabled, "TOR environment variable is not set")
     for {
       response <- Http().singleRequest(
         HttpRequest(uri = "http://blockstream.info/"),
-        settings = settings)
+        settings = settings
+      )
     } yield {
       // should redirect to the HTTPS endpoint
       assert(response.status.intValue() == 301)
@@ -39,7 +41,8 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
         response.headers
           .find(_.lowercaseName() == "location")
           .map(_.value())
-          .contains("https://blockstream.info/"))
+          .contains("https://blockstream.info/")
+      )
     }
   }
 
@@ -49,7 +52,8 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
       response <- Http().singleRequest(
         HttpRequest(uri =
           "http://explorerzydxu5ecjrkwceayqybizmpjjznk5izmitf2modhcusuqlid.onion/"),
-        settings = settings)
+        settings = settings
+      )
       html <- response.entity.dataBytes
         .runFold(ByteString(""))(_ ++ _)
         .map(x => x.utf8String)

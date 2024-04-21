@@ -30,15 +30,18 @@ trait DLCWalletApi { self: WalletApi =>
       refundLT: UInt32,
       peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
-    createDLCOffer(contractInfo,
-                   collateral,
-                   feeRateOpt,
-                   refundLT,
-                   peerAddressOpt,
-                   externalPayoutAddressOpt,
-                   externalChangeAddressOpt)
+    createDLCOffer(
+      contractInfo,
+      collateral,
+      feeRateOpt,
+      refundLT,
+      peerAddressOpt,
+      externalPayoutAddressOpt,
+      externalChangeAddressOpt
+    )
   }
 
   def createDLCOffer(
@@ -49,16 +52,19 @@ trait DLCWalletApi { self: WalletApi =>
       refundLT: UInt32,
       peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
-    createDLCOffer(contractInfo,
-                   collateral,
-                   feeRateOpt,
-                   locktime,
-                   refundLT,
-                   peerAddressOpt,
-                   externalPayoutAddressOpt,
-                   externalChangeAddressOpt)
+    createDLCOffer(
+      contractInfo,
+      collateral,
+      feeRateOpt,
+      locktime,
+      refundLT,
+      peerAddressOpt,
+      externalPayoutAddressOpt,
+      externalChangeAddressOpt
+    )
   }
 
   def createDLCOffer(
@@ -68,7 +74,8 @@ trait DLCWalletApi { self: WalletApi =>
       refundLT: UInt32,
       peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer]
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[DLCOffer]
 
   def createDLCOffer(
       contractInfo: ContractInfo,
@@ -78,24 +85,29 @@ trait DLCWalletApi { self: WalletApi =>
       refundLT: UInt32,
       peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer]
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[DLCOffer]
 
   def acceptDLCOffer(
       dlcOfferTLV: DLCOfferTLV,
       peerAddress: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
-    acceptDLCOffer(DLCOffer.fromTLV(dlcOfferTLV),
-                   peerAddress,
-                   externalPayoutAddressOpt,
-                   externalChangeAddressOpt)
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[DLCAccept] = {
+    acceptDLCOffer(
+      DLCOffer.fromTLV(dlcOfferTLV),
+      peerAddress,
+      externalPayoutAddressOpt,
+      externalChangeAddressOpt
+    )
   }
 
   def acceptDLCOffer(
       dlcOffer: DLCOffer,
       peerAddress: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept]
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[DLCAccept]
 
   def signDLC(acceptTLV: DLCAcceptTLV): Future[DLCSign]
 
@@ -109,29 +121,43 @@ trait DLCWalletApi { self: WalletApi =>
 
   def broadcastDLCFundingTx(contractId: ByteVector): Future[Transaction]
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
-      oracleSig: OracleAttestmentTLV): Future[Option[Transaction]] =
+      oracleSig: OracleAttestmentTLV
+  ): Future[Option[Transaction]] =
     executeDLC(contractId, Vector(oracleSig))
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
-      oracleSigs: Seq[OracleAttestmentTLV]): Future[Option[Transaction]]
+      oracleSigs: Seq[OracleAttestmentTLV]
+  ): Future[Option[Transaction]]
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
-      oracleSig: OracleSignatures): Future[Option[Transaction]] =
+      oracleSig: OracleSignatures
+  ): Future[Option[Transaction]] =
     executeDLC(contractId, Vector(oracleSig))
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
-      oracleSigs: Vector[OracleSignatures]): Future[Option[Transaction]]
+      oracleSigs: Vector[OracleSignatures]
+  ): Future[Option[Transaction]]
 
-  /** Creates the refund transaction for the given contractId, does not broadcast it */
+  /** Creates the refund transaction for the given contractId, does not
+    * broadcast it
+    */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]
 
   /** Fetches all DLCs with the given set of states */
@@ -142,7 +168,8 @@ trait DLCWalletApi { self: WalletApi =>
   def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]]
 
   def findDLCByTemporaryContractId(
-      tempContractId: Sha256Digest): Future[Option[DLCStatus]]
+      tempContractId: Sha256Digest
+  ): Future[Option[DLCStatus]]
 
   def cancelDLC(dlcId: Sha256Digest): Future[Unit]
 
@@ -154,14 +181,16 @@ trait DLCWalletApi { self: WalletApi =>
   def registerIncomingDLCOffer(
       offerTLV: DLCOfferTLV,
       peer: Option[String],
-      message: Option[String]): Future[Sha256Digest]
+      message: Option[String]
+  ): Future[Sha256Digest]
 
   def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]]
 
   def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit]
 
   def findIncomingDLCOffer(
-      offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]]
+      offerHash: Sha256Digest
+  ): Future[Option[IncomingDLCOfferDb]]
 
   def listDLCContacts(): Future[Vector[DLCContactDb]]
 
@@ -173,7 +202,8 @@ trait DLCWalletApi { self: WalletApi =>
 
   def addDLCContactMapping(
       dlcId: Sha256Digest,
-      contactId: InetSocketAddress): Future[Unit]
+      contactId: InetSocketAddress
+  ): Future[Unit]
 
   def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit]
 

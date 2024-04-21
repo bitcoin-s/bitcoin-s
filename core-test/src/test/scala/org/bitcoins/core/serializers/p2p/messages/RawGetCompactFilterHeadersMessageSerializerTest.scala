@@ -20,7 +20,9 @@ class RawGetCompactFilterHeadersMessageSerializerTest extends BitcoinSUnitTest {
     assert(message.startHeight.toInt == 2000)
     assert(
       message.stopHash == DoubleSha256Digest.fromHex(
-        "6f0ee334fbba823804e14042c33bc5dfa5126e5076d8dcff02d4a045f266f427"))
+        "6f0ee334fbba823804e14042c33bc5dfa5126e5076d8dcff02d4a045f266f427"
+      )
+    )
   }
 
   it must "have serialization symmetry" in {
@@ -35,12 +37,15 @@ class RawGetCompactFilterHeadersMessageSerializerTest extends BitcoinSUnitTest {
     val anotherMessage = GetCompactFilterHeadersMessage(
       0x0180,
       DoubleSha256Digest.fromHex(
-        "8000000000000000000000000000000000000000000000000000000000000001"))
+        "8000000000000000000000000000000000000000000000000000000000000001"
+      )
+    )
 
     val anotherBytes = anotherMessage.bytes
 
     assert(
-      anotherMessage == GetCompactFilterHeadersMessage.fromBytes(anotherBytes))
+      anotherMessage == GetCompactFilterHeadersMessage.fromBytes(anotherBytes)
+    )
   }
 
 }

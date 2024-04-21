@@ -36,9 +36,11 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
   val announcements: Vector[OracleAnnouncementTLV] =
     privateKeys.zip(kValues).map { case (priv, kValue) =>
       OracleAnnouncementV0TLV
-        .dummyForEventsAndKeys(priv,
-                               kValue.schnorrNonce,
-                               outcomes.map(EnumOutcome))
+        .dummyForEventsAndKeys(
+          priv,
+          kValue.schnorrNonce,
+          outcomes.map(EnumOutcome)
+        )
     }
 
   val threshold = 3
@@ -78,10 +80,12 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
 
       val hash = CryptoUtil.sha256DLCAttestation(initiatorWinStr).bytes
       val initiatorWinSig = priv.schnorrSignWithNonce(hash, kValue)
-      OracleAttestmentV0TLV(eventId,
-                            priv.schnorrPublicKey,
-                            OrderedSchnorrSignatures(initiatorWinSig).toVector,
-                            Vector(initiatorWinStr))
+      OracleAttestmentV0TLV(
+        eventId,
+        priv.schnorrPublicKey,
+        OrderedSchnorrSignatures(initiatorWinSig).toVector,
+        Vector(initiatorWinStr)
+      )
     }
 
     val recipientWinSigs = privateKeys.zip(kValues).map { case (priv, kValue) =>
@@ -99,15 +103,19 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
 
       val hash = CryptoUtil.sha256DLCAttestation(recipientWinStr).bytes
       val recipientWinSig = priv.schnorrSignWithNonce(hash, kValue)
-      OracleAttestmentV0TLV(eventId,
-                            priv.schnorrPublicKey,
-                            OrderedSchnorrSignatures(recipientWinSig).toVector,
-                            Vector(recipientWinStr))
+      OracleAttestmentV0TLV(
+        eventId,
+        priv.schnorrPublicKey,
+        OrderedSchnorrSignatures(recipientWinSig).toVector,
+        Vector(recipientWinStr)
+      )
     }
 
     // Shuffle to make sure ordering doesn't matter
-    (Random.shuffle(initiatorWinSigs).take(sigsToTake),
-     Random.shuffle(recipientWinSigs).take(sigsToTake))
+    (
+      Random.shuffle(initiatorWinSigs).take(sigsToTake),
+      Random.shuffle(recipientWinSigs).take(sigsToTake)
+    )
   }
 
   it must "execute as the initiator" in { wallets =>
@@ -118,10 +126,12 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = true,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = true,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -158,10 +168,12 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       func = (wallet: DLCWallet) =>
         wallet.executeDLC(contractId, sig).map(_.get)
 
-      result <- dlcExecutionTest(wallets = wallets,
-                                 asInitiator = false,
-                                 func = func,
-                                 expectedOutputs = 1)
+      result <- dlcExecutionTest(
+        wallets = wallets,
+        asInitiator = false,
+        func = func,
+        expectedOutputs = 1
+      )
 
       _ = assert(result)
 
@@ -192,7 +204,8 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
 
   private def verifyingMatchingOracleSigs(
       statusA: Claimed,
-      statusB: RemoteClaimed): Boolean = {
+      statusB: RemoteClaimed
+  ): Boolean = {
     val aggR = statusA.oracleSigs
       .map(_.rx.publicKey)
       .reduce(_.add(_))

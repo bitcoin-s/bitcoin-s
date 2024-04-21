@@ -19,25 +19,30 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** RPC calls related to wallet management
-  * functionality in bitcoind
+/** RPC calls related to wallet management functionality in bitcoind
   */
 trait WalletRpc { self: Client =>
 
   def backupWallet(
       destination: String,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit]("backupwallet",
-                       List(JsString(destination)),
-                       uriExtensionOpt = walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String] = None
+  ): Future[Unit] = {
+    bitcoindCall[Unit](
+      "backupwallet",
+      List(JsString(destination)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def encryptWallet(
       passphrase: String,
-      walletNameOpt: Option[String] = None): Future[String] = {
-    bitcoindCall[String]("encryptwallet",
-                         List(JsString(passphrase)),
-                         uriExtensionOpt = walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String] = None
+  ): Future[String] = {
+    bitcoindCall[String](
+      "encryptwallet",
+      List(JsString(passphrase)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def getBalance: Future[Bitcoins] = {
@@ -45,18 +50,22 @@ trait WalletRpc { self: Client =>
   }
 
   def getBalance(walletName: String): Future[Bitcoins] = {
-    bitcoindCall[Bitcoins]("getbalance",
-                           uriExtensionOpt = Some(walletExtension(walletName)))
+    bitcoindCall[Bitcoins](
+      "getbalance",
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 
   def getReceivedByAddress(
       address: BitcoinAddress,
       minConfirmations: Int = 1,
-      walletNameOpt: Option[String] = None): Future[Bitcoins] = {
+      walletNameOpt: Option[String] = None
+  ): Future[Bitcoins] = {
     bitcoindCall[Bitcoins](
       "getreceivedbyaddress",
       List(JsString(address.toString), JsNumber(minConfirmations)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def getUnconfirmedBalance: Future[Bitcoins] = {
@@ -64,21 +73,25 @@ trait WalletRpc { self: Client =>
   }
 
   def getUnconfirmedBalance(walletName: String): Future[Bitcoins] = {
-    bitcoindCall[Bitcoins]("getunconfirmedbalance",
-                           uriExtensionOpt = Some(walletExtension(walletName)))
+    bitcoindCall[Bitcoins](
+      "getunconfirmedbalance",
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 
   private def getNewAddressInternal(
       accountOrLabel: String = "",
       addressType: Option[AddressType],
-      walletNameOpt: Option[String] = None): Future[BitcoinAddress] = {
+      walletNameOpt: Option[String] = None
+  ): Future[BitcoinAddress] = {
     val params =
       List(JsString(accountOrLabel)) ++ addressType.map(Json.toJson(_)).toList
 
     bitcoindCall[BitcoinAddress](
       "getnewaddress",
       params,
-      uriExtensionOpt = walletNameOpt.map(walletExtension)).map(addr =>
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    ).map(addr =>
       BitcoinAddress.fromScriptPubKey(addr.scriptPubKey, instance.network))
   }
 
@@ -96,22 +109,26 @@ trait WalletRpc { self: Client =>
 
   def getNewAddress(
       accountOrLabel: String,
-      addressType: AddressType): Future[BitcoinAddress] =
+      addressType: AddressType
+  ): Future[BitcoinAddress] =
     getNewAddressInternal(accountOrLabel, Some(addressType))
 
   def getNewAddress(
       accountOrLabel: String,
       addressType: AddressType,
-      walletName: String): Future[BitcoinAddress] =
+      walletName: String
+  ): Future[BitcoinAddress] =
     getNewAddressInternal(accountOrLabel, Some(addressType), Some(walletName))
 
   private def getRawChangeAddressInternal(
       addressType: Option[AddressType],
-      walletNameOpt: Option[String] = None): Future[BitcoinAddress] = {
-    bitcoindCall[BitcoinAddress]("getrawchangeaddress",
-                                 addressType.map(Json.toJson(_)).toList,
-                                 uriExtensionOpt =
-                                   walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String] = None
+  ): Future[BitcoinAddress] = {
+    bitcoindCall[BitcoinAddress](
+      "getrawchangeaddress",
+      addressType.map(Json.toJson(_)).toList,
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def getRawChangeAddress: Future[BitcoinAddress] =
@@ -125,17 +142,20 @@ trait WalletRpc { self: Client =>
 
   def getRawChangeAddress(
       addressType: AddressType,
-      walletName: String): Future[BitcoinAddress] =
+      walletName: String
+  ): Future[BitcoinAddress] =
     getRawChangeAddressInternal(Some(addressType), Some(walletName))
 
   private def getWalletInfo(
-      walletName: Option[String]): Future[GetWalletInfoResult] = {
+      walletName: Option[String]
+  ): Future[GetWalletInfoResult] = {
     self.version.flatMap {
       case BitcoindVersion.V22 | BitcoindVersion.V23 | BitcoindVersion.V24 |
           BitcoindVersion.Unknown =>
         bitcoindCall[GetWalletInfoResultPostV22](
           "getwalletinfo",
-          uriExtensionOpt = walletName.map(walletExtension))
+          uriExtensionOpt = walletName.map(walletExtension)
+        )
     }
   }
 
@@ -151,39 +171,48 @@ trait WalletRpc { self: Client =>
     */
   def keyPoolRefill(
       keyPoolSize: Int = 100,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit]("keypoolrefill",
-                       List(JsNumber(keyPoolSize)),
-                       uriExtensionOpt = walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String] = None
+  ): Future[Unit] = {
+    bitcoindCall[Unit](
+      "keypoolrefill",
+      List(JsNumber(keyPoolSize)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def importMulti(
       requests: Vector[RpcOpts.ImportMultiRequest],
       rescan: Boolean = true,
-      walletNameOpt: Option[String] = None): Future[
-    Vector[ImportMultiResult]] = {
+      walletNameOpt: Option[String] = None
+  ): Future[Vector[ImportMultiResult]] = {
     bitcoindCall[Vector[ImportMultiResult]](
       "importmulti",
       List(Json.toJson(requests), JsObject(Map("rescan" -> JsBoolean(rescan)))),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def importPrunedFunds(
       transaction: Transaction,
       txOutProof: MerkleBlock,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
+      walletNameOpt: Option[String] = None
+  ): Future[Unit] = {
     bitcoindCall[Unit](
       "importprunedfunds",
       List(JsString(transaction.hex), JsString(txOutProof.hex)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def removePrunedFunds(
       txid: DoubleSha256DigestBE,
-      walletNameOpt: Option[String]): Future[Unit] = {
-    bitcoindCall[Unit]("removeprunedfunds",
-                       List(JsString(txid.hex)),
-                       uriExtensionOpt = walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String]
+  ): Future[Unit] = {
+    bitcoindCall[Unit](
+      "removeprunedfunds",
+      List(JsString(txid.hex)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def removePrunedFunds(txid: DoubleSha256DigestBE): Future[Unit] = {
@@ -196,7 +225,8 @@ trait WalletRpc { self: Client =>
 
   def removePrunedFunds(
       txid: DoubleSha256Digest,
-      walletNameOpt: Option[String]): Future[Unit] = {
+      walletNameOpt: Option[String]
+  ): Future[Unit] = {
     removePrunedFunds(txid.flip, walletNameOpt)
   }
 
@@ -205,22 +235,27 @@ trait WalletRpc { self: Client =>
   }
 
   def listAddressGroupings(
-      walletName: String): Future[Vector[Vector[RpcAddress]]] = {
+      walletName: String
+  ): Future[Vector[Vector[RpcAddress]]] = {
     bitcoindCall[Vector[Vector[RpcAddress]]](
       "listaddressgroupings",
-      uriExtensionOpt = Some(walletExtension(walletName)))
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 
   def listReceivedByAddress(
       confirmations: Int = 1,
       includeEmpty: Boolean = false,
       includeWatchOnly: Boolean = false,
-      walletNameOpt: Option[String] = None): Future[Vector[ReceivedAddress]] = {
+      walletNameOpt: Option[String] = None
+  ): Future[Vector[ReceivedAddress]] = {
     bitcoindCall[Vector[ReceivedAddress]](
       "listreceivedbyaddress",
-      List(JsNumber(confirmations),
-           JsBoolean(includeEmpty),
-           JsBoolean(includeWatchOnly)),
+      List(
+        JsNumber(confirmations),
+        JsBoolean(includeEmpty),
+        JsBoolean(includeWatchOnly)
+      ),
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     )
   }
@@ -247,7 +282,8 @@ trait WalletRpc { self: Client =>
     bitcoindCall[SetWalletFlagResult](
       "setwalletflag",
       List(JsString(flag.toString), Json.toJson(value)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def getBalances: Future[GetBalancesResult] = {
@@ -255,18 +291,22 @@ trait WalletRpc { self: Client =>
   }
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {
-    bitcoindCall[GetBalancesResult]("getbalances",
-                                    uriExtensionOpt =
-                                      Some(walletExtension(walletName)))
+    bitcoindCall[GetBalancesResult](
+      "getbalances",
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 
   // TODO: Should be BitcoinFeeUnit
   def setTxFee(
       feePerKB: Bitcoins,
-      walletNameOpt: Option[String] = None): Future[Boolean] = {
-    bitcoindCall[Boolean]("settxfee",
-                          List(JsNumber(feePerKB.toBigDecimal)),
-                          uriExtensionOpt = walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String] = None
+  ): Future[Boolean] = {
+    bitcoindCall[Boolean](
+      "settxfee",
+      List(JsNumber(feePerKB.toBigDecimal)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def walletLock(): Future[Unit] = {
@@ -274,46 +314,57 @@ trait WalletRpc { self: Client =>
   }
 
   def walletLock(walletName: String): Future[Unit] = {
-    bitcoindCall[Unit]("walletlock",
-                       uriExtensionOpt = Some(walletExtension(walletName)))
+    bitcoindCall[Unit](
+      "walletlock",
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 
   def walletPassphrase(
       passphrase: String,
       seconds: Int,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
-    bitcoindCall[Unit]("walletpassphrase",
-                       List(JsString(passphrase), JsNumber(seconds)),
-                       uriExtensionOpt = walletNameOpt.map(walletExtension))
+      walletNameOpt: Option[String] = None
+  ): Future[Unit] = {
+    bitcoindCall[Unit](
+      "walletpassphrase",
+      List(JsString(passphrase), JsNumber(seconds)),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def walletPassphraseChange(
       currentPassphrase: String,
       newPassphrase: String,
-      walletNameOpt: Option[String] = None): Future[Unit] = {
+      walletNameOpt: Option[String] = None
+  ): Future[Unit] = {
     bitcoindCall[Unit](
       "walletpassphrasechange",
       List(JsString(currentPassphrase), JsString(newPassphrase)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def signRawTransactionWithWallet(
       transaction: Transaction,
-      walletNameOpt: Option[String]): Future[
-    SignRawTransactionWithWalletResult] = {
+      walletNameOpt: Option[String]
+  ): Future[SignRawTransactionWithWalletResult] = {
     bitcoindCall[SignRawTransactionWithWalletResult](
       "signrawtransactionwithwallet",
       List(JsString(transaction.hex)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension))
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def signRawTransactionWithWallet(
-      transaction: Transaction): Future[SignRawTransactionWithWalletResult] = {
+      transaction: Transaction
+  ): Future[SignRawTransactionWithWalletResult] = {
     signRawTransactionWithWallet(transaction, None)
   }
 
-  /** @param blank Not available to versions before v19
-    * @param passphrase Not available to versions before v19
+  /** @param blank
+    *   Not available to versions before v19
+    * @param passphrase
+    *   Not available to versions before v19
     * @return
     */
   def createWallet(
@@ -322,43 +373,51 @@ trait WalletRpc { self: Client =>
       blank: Boolean = false,
       passphrase: String = "",
       avoidReuse: Boolean = false,
-      descriptors: Boolean = false): Future[CreateWalletResult] =
+      descriptors: Boolean = false
+  ): Future[CreateWalletResult] =
     self.version.flatMap {
       case V24 | V23 | V22 =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
-          List(JsString(walletName),
-               JsBoolean(disablePrivateKeys),
-               JsBoolean(blank),
-               JsString(passphrase),
-               JsBoolean(avoidReuse),
-               JsBoolean(descriptors))
+          List(
+            JsString(walletName),
+            JsBoolean(disablePrivateKeys),
+            JsBoolean(blank),
+            JsString(passphrase),
+            JsBoolean(avoidReuse),
+            JsBoolean(descriptors)
+          )
         )
       case Unknown =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
-          List(JsString(walletName),
-               JsBoolean(disablePrivateKeys),
-               JsBoolean(blank),
-               JsString(passphrase),
-               JsBoolean(avoidReuse))
+          List(
+            JsString(walletName),
+            JsBoolean(disablePrivateKeys),
+            JsBoolean(blank),
+            JsString(passphrase),
+            JsBoolean(avoidReuse)
+          )
         )
     }
 
   def getAddressInfo(
       address: BitcoinAddress,
-      walletNameOpt: Option[String] = None): Future[AddressInfoResult] = {
+      walletNameOpt: Option[String] = None
+  ): Future[AddressInfoResult] = {
     self.version.flatMap {
       case Unknown =>
         bitcoindCall[AddressInfoResultPostV18](
           "getaddressinfo",
           List(JsString(address.value)),
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
+          uriExtensionOpt = walletNameOpt.map(walletExtension)
+        )
       case V24 | V23 | V22 | Unknown =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),
-          uriExtensionOpt = walletNameOpt.map(walletExtension))
+          uriExtensionOpt = walletNameOpt.map(walletExtension)
+        )
     }
   }
 
@@ -367,7 +426,8 @@ trait WalletRpc { self: Client =>
       minconf: Int = 1,
       comment: String = "",
       subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty,
-      walletNameOpt: Option[String] = None): Future[DoubleSha256DigestBE] = {
+      walletNameOpt: Option[String] = None
+  ): Future[DoubleSha256DigestBE] = {
     val jsonOutputs: JsValue = Json.toJson {
       amounts.map { case (addr, curr) =>
         addr -> Bitcoins(curr.satoshis)
@@ -375,11 +435,13 @@ trait WalletRpc { self: Client =>
     }
     bitcoindCall[DoubleSha256DigestBE](
       "sendmany",
-      List(JsString(""),
-           jsonOutputs,
-           JsNumber(minconf),
-           JsString(comment),
-           Json.toJson(subtractFeeFrom)),
+      List(
+        JsString(""),
+        jsonOutputs,
+        JsNumber(minconf),
+        JsString(comment),
+        Json.toJson(subtractFeeFrom)
+      ),
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     )
   }
@@ -390,14 +452,17 @@ trait WalletRpc { self: Client =>
       localComment: String = "",
       toComment: String = "",
       subractFeeFromAmount: Boolean = false,
-      walletNameOpt: Option[String] = None): Future[DoubleSha256DigestBE] = {
+      walletNameOpt: Option[String] = None
+  ): Future[DoubleSha256DigestBE] = {
     bitcoindCall[DoubleSha256DigestBE](
       "sendtoaddress",
-      List(Json.toJson(address),
-           Json.toJson(Bitcoins(amount.satoshis)),
-           JsString(localComment),
-           JsString(toComment),
-           JsBoolean(subractFeeFromAmount)),
+      List(
+        Json.toJson(address),
+        Json.toJson(Bitcoins(amount.satoshis)),
+        JsString(localComment),
+        JsString(toComment),
+        JsBoolean(subractFeeFromAmount)
+      ),
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     )
   }
@@ -406,7 +471,8 @@ trait WalletRpc { self: Client =>
       psbt: PSBT,
       sign: Boolean = true,
       sigHashType: HashType = HashType.sigHashAll,
-      walletNameOpt: Option[String] = None): Future[WalletProcessPsbtResult] = {
+      walletNameOpt: Option[String] = None
+  ): Future[WalletProcessPsbtResult] = {
     bitcoindCall[WalletProcessPsbtResult](
       "walletprocesspsbt",
       List(JsString(psbt.base64), JsBoolean(sign), Json.toJson(sigHashType)),
@@ -428,34 +494,39 @@ trait WalletRpc { self: Client =>
       }
     bitcoindCall[WalletCreateFundedPsbtResult](
       "walletcreatefundedpsbt",
-      List(Json.toJson(inputs),
-           jsonOutputs,
-           JsNumber(locktime),
-           Json.toJson(options),
-           Json.toJson(bip32derivs)),
+      List(
+        Json.toJson(inputs),
+        jsonOutputs,
+        JsNumber(locktime),
+        Json.toJson(options),
+        Json.toJson(bip32derivs)
+      ),
       uriExtensionOpt = walletNameOpt.map(walletExtension)
     )
   }
 
   /** $signRawTx
     *
-    * This RPC call signs the raw transaction with keys found in
-    * the Bitcoin Core wallet.
+    * This RPC call signs the raw transaction with keys found in the Bitcoin
+    * Core wallet.
     */
   def signRawTransactionWithWallet(
       transaction: Transaction,
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter],
       sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
-    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
-                                           List(JsString(transaction.hex),
-                                                Json.toJson(utxoDeps),
-                                                Json.toJson(sigHash)))
+    bitcoindCall[SignRawTransactionResult](
+      "signrawtransactionwithwallet",
+      List(
+        JsString(transaction.hex),
+        Json.toJson(utxoDeps),
+        Json.toJson(sigHash)
+      )
+    )
 
   /** $signRawTx
     *
-    * This RPC call signs the raw transaction with keys provided
-    * manually.
+    * This RPC call signs the raw transaction with keys provided manually.
     */
   def signRawTransactionWithKey(
       transaction: Transaction,
@@ -464,9 +535,13 @@ trait WalletRpc { self: Client =>
         Vector.empty,
       sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
-    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey",
-                                           List(JsString(transaction.hex),
-                                                Json.toJson(keys),
-                                                Json.toJson(utxoDeps),
-                                                Json.toJson(sigHash)))
+    bitcoindCall[SignRawTransactionResult](
+      "signrawtransactionwithkey",
+      List(
+        JsString(transaction.hex),
+        Json.toJson(keys),
+        Json.toJson(utxoDeps),
+        Json.toJson(sigHash)
+      )
+    )
 }

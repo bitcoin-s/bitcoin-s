@@ -17,8 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class EventDAO()(implicit
     override val ec: ExecutionContext,
-    override val appConfig: DLCOracleAppConfig)
-    extends CRUD[EventDb, SchnorrNonce]
+    override val appConfig: DLCOracleAppConfig
+) extends CRUD[EventDb, SchnorrNonce]
     with SlickUtil[EventDb, SchnorrNonce] {
 
   import profile.api._
@@ -36,11 +36,13 @@ case class EventDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[SchnorrNonce]): Query[EventTable, EventDb, Seq] =
+      ids: Vector[SchnorrNonce]
+  ): Query[EventTable, EventDb, Seq] =
     table.filter(_.nonce.inSet(ids))
 
   override protected def findAll(
-      ts: Vector[EventDb]): Query[EventTable, EventDb, Seq] =
+      ts: Vector[EventDb]
+  ): Query[EventTable, EventDb, Seq] =
     findByPrimaryKeys(ts.map(_.nonce))
 
   def getPendingEvents: Future[Vector[EventDb]] = {
@@ -62,14 +64,16 @@ case class EventDAO()(implicit
   }
 
   def findByEventDescriptor(
-      descriptorTLV: EventDescriptorTLV): Future[Vector[EventDb]] = {
+      descriptorTLV: EventDescriptorTLV
+  ): Future[Vector[EventDb]] = {
     val query = table.filter(_.eventDescriptorTLV === descriptorTLV)
 
     safeDatabase.runVec(query.result)
   }
 
   def findByOracleEventTLV(
-      oracleEvent: OracleEventTLV): Future[Vector[EventDb]] = {
+      oracleEvent: OracleEventTLV
+  ): Future[Vector[EventDb]] = {
     val query = oracleEvent match {
       case v0: OracleEventV0TLV =>
         table.filter(_.nonce.inSet(v0.nonces))
@@ -111,28 +115,34 @@ case class EventDAO()(implicit
       column("event_descriptor_tlv")
 
     def * : ProvenShape[EventDb] =
-      (nonce,
-       pubkey,
-       nonceIndex,
-       eventName,
-       numOutcomes,
-       signingVersion,
-       maturationTime,
-       attestationOpt,
-       outcomeOpt,
-       announcementSignature,
-       eventDescriptorTLV).<>(EventDb.tupled, EventDb.unapply)
+      (
+        nonce,
+        pubkey,
+        nonceIndex,
+        eventName,
+        numOutcomes,
+        signingVersion,
+        maturationTime,
+        attestationOpt,
+        outcomeOpt,
+        announcementSignature,
+        eventDescriptorTLV
+      ).<>(EventDb.tupled, EventDb.unapply)
 
     def fk: ForeignKeyQuery[_, RValueDb] = {
-      foreignKey("fk_nonce",
-                 sourceColumns = nonce,
-                 targetTableQuery = rValueTable)(_.nonce)
+      foreignKey(
+        "fk_nonce",
+        sourceColumns = nonce,
+        targetTableQuery = rValueTable
+      )(_.nonce)
     }
 
     def fkLabel: ForeignKeyQuery[_, RValueDb] = {
-      foreignKey("fk_label",
-                 sourceColumns = eventName,
-                 targetTableQuery = rValueTable)(_.eventName)
+      foreignKey(
+        "fk_label",
+        sourceColumns = eventName,
+        targetTableQuery = rValueTable
+      )(_.eventName)
     }
   }
 }

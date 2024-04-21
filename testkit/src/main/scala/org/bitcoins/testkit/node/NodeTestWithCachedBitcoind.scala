@@ -23,28 +23,34 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.Future
 
 /** Test trait for using a bitcoin-s [[Node]] that requires a cached bitcoind.
-  * The cached bitcoind will be share across tests in the test suite that extends
-  * this trait.
+  * The cached bitcoind will be share across tests in the test suite that
+  * extends this trait.
   */
 trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
   _: CachedBitcoind[_] =>
 
   def withNeutrinoNodeConnectedToBitcoindCached(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient)(implicit
+      bitcoind: BitcoindRpcClient
+  )(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      appConfig: BitcoinSAppConfig
+  ): FutureOutcome = {
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         peer <- NodeUnitTest.createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNode(peer, None)(system,
-                                                            appConfig.chainConf,
-                                                            appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(peer, None)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf
+        )
         started <- node.start()
-        _ <- NodeTestUtil.awaitConnectionCount(node = node,
-                                               expectedConnectionCount = 1)
+        _ <- NodeTestUtil.awaitConnectionCount(
+          node = node,
+          expectedConnectionCount = 1
+        )
       } yield NeutrinoNodeConnectedWithBitcoind(started, bitcoind)
     }
 
@@ -52,72 +58,86 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoind =>
         NodeUnitTest.destroyNode(x.node, appConfig)
-      })(test)
+      }
+    )(test)
   }
 
   def withNeutrinoNodeUnstarted(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient)(implicit
+      bitcoind: BitcoindRpcClient
+  )(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      appConfig: BitcoinSAppConfig
+  ): FutureOutcome = {
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
           system,
           appConfig.chainConf,
-          appConfig.nodeConf)
+          appConfig.nodeConf
+        )
       } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoind =>
         tearDownNode(x.node, appConfig)
-      })(test)
+      }
+    )(test)
   }
 
   def withNeutrinoNodeConnectedToBitcoinds(
       test: OneArgAsyncTest,
-      bitcoinds: Vector[BitcoindRpcClient])(implicit
+      bitcoinds: Vector[BitcoindRpcClient]
+  )(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+      appConfig: BitcoinSAppConfig
+  ): FutureOutcome = {
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds, None)(
           system,
           appConfig.chainConf,
-          appConfig.nodeConf)
+          appConfig.nodeConf
+        )
         startedNode <- node.start()
-        _ <- NodeTestUtil.awaitConnectionCount(node = node,
-                                               expectedConnectionCount = 1)
+        _ <- NodeTestUtil.awaitConnectionCount(
+          node = node,
+          expectedConnectionCount = 1
+        )
       } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoinds =>
         tearDownNode(x.node, appConfig)
-      })(test)
+      }
+    )(test)
   }
 
   def withUnsyncedNeutrinoNodeConnectedToBitcoinds(
       test: OneArgAsyncTest,
-      bitcoinds: Vector[BitcoindRpcClient])(implicit
+      bitcoinds: Vector[BitcoindRpcClient]
+  )(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+      appConfig: BitcoinSAppConfig
+  ): FutureOutcome = {
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds, None)(
           system,
           appConfig.chainConf,
-          appConfig.nodeConf)
+          appConfig.nodeConf
+        )
         startedNode <- node.start()
         _ <- NodeTestUtil.awaitConnectionCount(node, bitcoinds.size)
       } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
@@ -126,23 +146,27 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoinds =>
         tearDownNode(x.node, appConfig)
-      })(test)
+      }
+    )(test)
   }
 
   def withUnsyncedNeutrinoNodeConnectedToBitcoind(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient)(implicit
+      bitcoind: BitcoindRpcClient
+  )(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      appConfig: BitcoinSAppConfig
+  ): FutureOutcome = {
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
           system,
           appConfig.chainConf,
-          appConfig.nodeConf)
+          appConfig.nodeConf
+        )
         startedNode <- node.start()
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)
       } yield NeutrinoNodeConnectedWithBitcoind(startedNode, bitcoind)
@@ -151,21 +175,25 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       build = nodeWithBitcoindBuilder,
       { x: NeutrinoNodeConnectedWithBitcoind =>
         tearDownNode(x.node, appConfig)
-      })(test)
+      }
+    )(test)
   }
 
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       bitcoind: BitcoindRpcClient,
-      walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
+      walletCallbacks: WalletCallbacks = WalletCallbacks.empty
+  )(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): FutureOutcome = {
+      appConfig: BitcoinSAppConfig
+  ): FutureOutcome = {
     makeDependentFixture[NeutrinoNodeFundedWalletBitcoind](
       build = () =>
         NodeUnitTest
           .createNeutrinoNodeFundedWalletFromBitcoind(
             bitcoind,
-            walletCallbacks = walletCallbacks)(system, appConfig),
+            walletCallbacks = walletCallbacks
+          )(system, appConfig),
       { x: NeutrinoNodeFundedWalletBitcoind =>
         tearDownNodeWithBitcoind(x, appConfig)
       }
@@ -174,7 +202,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
   def withBitcoindPeer(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient): FutureOutcome = {
+      bitcoind: BitcoindRpcClient
+  ): FutureOutcome = {
     makeDependentFixture[Peer](
       () => NodeTestUtil.getBitcoindPeer(bitcoind),
       _ => Future.unit
@@ -183,7 +212,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
   private def tearDownNodeWithBitcoind(
       nodeWithBitcoind: NodeFundedWalletBitcoind,
-      appConfig: BitcoinSAppConfig): Future[Unit] = {
+      appConfig: BitcoinSAppConfig
+  ): Future[Unit] = {
     val node = nodeWithBitcoind.node
     val destroyNodeF = tearDownNode(node, appConfig)
     val destroyWalletF =
@@ -197,11 +227,12 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
   private def tearDownNode(
       node: Node,
-      appConfig: BitcoinSAppConfig): Future[Unit] = {
+      appConfig: BitcoinSAppConfig
+  ): Future[Unit] = {
     val destroyNodeF = NodeUnitTest.destroyNode(node, appConfig)
     for {
       _ <- destroyNodeF
-      //need to stop chainAppConfig too since this is a test
+      // need to stop chainAppConfig too since this is a test
       _ <- node.chainAppConfig.stop()
     } yield ()
   }

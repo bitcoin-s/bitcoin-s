@@ -30,15 +30,16 @@ case class MultiSigResultPostV20(
     address: BitcoinAddress,
     redeemScript: ScriptPubKey,
     descriptor: String,
-    warnings: Option[String]) //available in v23
+    warnings: Option[String]
+) //available in v23
     extends MultiSigResult
 
 case class BumpFeeResult(
     txid: DoubleSha256DigestBE,
     origfee: Bitcoins,
     fee: Bitcoins, // TODO: Should be BitcoinFeeUnit
-    errors: Vector[String])
-    extends WalletResult
+    errors: Vector[String]
+) extends WalletResult
 
 case class GetTransactionResult(
     amount: Bitcoins,
@@ -56,14 +57,14 @@ case class GetTransactionResult(
     comment: Option[String],
     to: Option[String],
     details: Vector[TransactionDetails],
-    hex: Transaction)
-    extends WalletResult
+    hex: Transaction
+) extends WalletResult
 
 case class SetWalletFlagResult(
     flag_name: String,
     flag_state: Boolean,
-    warnings: Option[String])
-    extends WalletResult
+    warnings: Option[String]
+) extends WalletResult
 
 case class GetBalancesResult(mine: BalanceInfo, watchonly: Option[BalanceInfo])
     extends WalletResult
@@ -71,7 +72,8 @@ case class GetBalancesResult(mine: BalanceInfo, watchonly: Option[BalanceInfo])
 case class BalanceInfo(
     trusted: Bitcoins,
     untrusted_pending: Bitcoins,
-    immature: Bitcoins)
+    immature: Bitcoins
+)
 
 case class TransactionDetails(
     involvesWatchonly: Option[Boolean],
@@ -81,8 +83,8 @@ case class TransactionDetails(
     amount: Bitcoins,
     vout: Int,
     fee: Option[Bitcoins],
-    abandoned: Option[Boolean])
-    extends WalletResult
+    abandoned: Option[Boolean]
+) extends WalletResult
 
 sealed trait GetWalletInfoResult extends WalletResult {
   def walletname: String
@@ -114,8 +116,8 @@ case class GetWalletInfoResultPostV22(
     hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int],
     private_keys_enabled: Boolean,
-    descriptors: Boolean)
-    extends GetWalletInfoResult
+    descriptors: Boolean
+) extends GetWalletInfoResult
 
 case class ImportMultiResult(success: Boolean, error: Option[ImportMultiError])
     extends WalletResult
@@ -125,15 +127,15 @@ case class ImportMultiError(code: Int, message: String) extends WalletResult
 case class RpcAddress(
     address: BitcoinAddress,
     balance: Bitcoins,
-    account: Option[String])
-    extends WalletResult
+    account: Option[String]
+) extends WalletResult
 
 case class RpcAccount(
     involvesWatchonly: Boolean,
     account: String,
     amount: Bitcoins,
-    confirmations: Int)
-    extends WalletResult
+    confirmations: Int
+) extends WalletResult
 case class LoadWalletResult(name: String, warning: String) extends WalletResult
 
 case class RescanBlockChainResult(start_height: Int, stop_height: Int)
@@ -146,28 +148,28 @@ case class ReceivedAddress(
     amount: Bitcoins,
     confirmations: Int,
     label: String,
-    txids: Vector[DoubleSha256DigestBE])
-    extends WalletResult
+    txids: Vector[DoubleSha256DigestBE]
+) extends WalletResult
 
 case class ReceivedAccount(
     involvesWatchonly: Option[Boolean],
     account: String,
     amount: Bitcoins,
     confirmations: Int,
-    lable: Option[String])
-    extends WalletResult
+    lable: Option[String]
+) extends WalletResult
 
 case class ReceivedLabel(
     involvesWatchonly: Option[Boolean],
     amount: Bitcoins,
     confirmations: Int,
-    label: String)
-    extends WalletResult
+    label: String
+) extends WalletResult
 
 case class ListSinceBlockResult(
     transactions: Vector[Payment],
-    lastblock: DoubleSha256DigestBE)
-    extends WalletResult
+    lastblock: DoubleSha256DigestBE
+) extends WalletResult
 
 case class Payment(
     involvesWatchonly: Option[Boolean],
@@ -188,8 +190,8 @@ case class Payment(
     timereceived: UInt32,
     bip125_replaceable: String,
     comment: Option[String],
-    to: Option[String])
-    extends WalletResult
+    to: Option[String]
+) extends WalletResult
 
 case class ListTransactionsResult(
     account: Option[String],
@@ -214,8 +216,8 @@ case class ListTransactionsResult(
     to: Option[String],
     otheraccount: Option[String],
     bip125_replaceable: String,
-    abandoned: Option[Boolean])
-    extends WalletResult
+    abandoned: Option[Boolean]
+) extends WalletResult
 
 case class UnspentOutput(
     txid: DoubleSha256DigestBE,
@@ -228,8 +230,8 @@ case class UnspentOutput(
     confirmations: Int,
     spendable: Boolean,
     solvable: Boolean,
-    reused: Option[Boolean])
-    extends WalletResult
+    reused: Option[Boolean]
+) extends WalletResult
 
 sealed trait AddressInfoResult extends WalletResult {
   def address: BitcoinAddress
@@ -274,8 +276,8 @@ case class AddressInfoResultPreV18(
     hdkeypath: Option[BIP32Path],
     hdseedid: Option[RipeMd160Digest],
     hdmasterkeyid: Option[RipeMd160Digest],
-    labels: Vector[LabelResult])
-    extends AddressInfoResult
+    labels: Vector[LabelResult]
+) extends AddressInfoResult
 
 // The split into two case classes is to deal with the 22 param limit for case classes
 case class AddressInfoResultPostV18(
@@ -297,8 +299,8 @@ case class AddressInfoResultPostV18(
     hdkeypath: Option[BIP32Path],
     hdseedid: Option[RipeMd160Digest],
     hdmasterfingerprint: Option[String],
-    labels: Vector[LabelResult])
-    extends AddressInfoResult {
+    labels: Vector[LabelResult]
+) extends AddressInfoResult {
   override def ismine: Boolean = isProps.ismine
   def solvable: Boolean = isProps.solvable
   override def iswatchonly: Boolean = isProps.iswatchonly
@@ -315,7 +317,8 @@ object AddressInfoResultPostV18 {
       iswatchonly: Boolean,
       isscript: Boolean,
       iswitness: Boolean,
-      iscompressed: Option[Boolean])
+      iscompressed: Option[Boolean]
+  )
 
   case class AddressInfoResultPostV18WithoutIsProps(
       address: BitcoinAddress,
@@ -335,11 +338,13 @@ object AddressInfoResultPostV18 {
       hdkeypath: Option[BIP32Path],
       hdseedid: Option[RipeMd160Digest],
       hdmasterfingerprint: Option[String],
-      labels: Vector[LabelResult])
+      labels: Vector[LabelResult]
+  )
 
   def apply(
       info: AddressInfoResultPostV18WithoutIsProps,
-      isProps: AddressInfoIsProps): AddressInfoResultPostV18 = {
+      isProps: AddressInfoIsProps
+  ): AddressInfoResultPostV18 = {
     AddressInfoResultPostV18(
       address = info.address,
       scriptPubKey = info.scriptPubKey,
@@ -401,7 +406,8 @@ object AddressInfoResultPostV21 {
       iswatchonly: Boolean,
       isscript: Boolean,
       iswitness: Boolean,
-      iscompressed: Option[Boolean])
+      iscompressed: Option[Boolean]
+  )
 
   case class AddressInfoResultPostV21WithoutIsProps(
       address: BitcoinAddress,
@@ -420,11 +426,13 @@ object AddressInfoResultPostV21 {
       hdkeypath: Option[BIP32Path],
       hdseedid: Option[RipeMd160Digest],
       hdmasterfingerprint: Option[String],
-      labels: Vector[String])
+      labels: Vector[String]
+  )
 
   def apply(
       info: AddressInfoResultPostV21WithoutIsProps,
-      isProps: AddressInfoIsProps): AddressInfoResultPostV21 = {
+      isProps: AddressInfoIsProps
+  ): AddressInfoResultPostV21 = {
     AddressInfoResultPostV21(
       address = info.address,
       scriptPubKey = info.scriptPubKey,
@@ -474,8 +482,8 @@ case class EmbeddedResult(
     witness_program: Option[String],
     pubkey: ECPublicKey,
     address: BitcoinAddress,
-    scriptPubKey: ScriptPubKey)
-    extends WalletResult
+    scriptPubKey: ScriptPubKey
+) extends WalletResult
 
 case class LabelResult(name: String, purpose: LabelPurpose) extends WalletResult
 
@@ -494,5 +502,5 @@ final case class CreateWalletResult(
 
 case class ImportDescriptorResult(
     success: Boolean,
-    warnings: Option[Vector[String]])
-    extends WalletResult
+    warnings: Option[Vector[String]]
+) extends WalletResult

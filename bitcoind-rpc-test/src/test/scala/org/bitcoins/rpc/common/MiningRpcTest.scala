@@ -56,12 +56,15 @@ class MiningRpcTest extends BitcoindRpcTest {
           TransactionInput(
             TransactionOutPoint(output.txid.flip, UInt32(output.vout)),
             ScriptSignature.empty,
-            UInt32.max - UInt32(2))
+            UInt32.max - UInt32(2)
+          )
         val inputs = Vector(input)
 
         val outputs =
-          Map(address -> Bitcoins(0.5),
-              changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55))
+          Map(
+            address -> Bitcoins(0.5),
+            changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55)
+          )
 
         client.createRawTransaction(inputs, outputs)
       }
@@ -97,7 +100,9 @@ class MiningRpcTest extends BitcoindRpcTest {
       foundBlocks.foreach { case found: GetBlockWithTransactionsResultV22 =>
         assert(
           found.tx.exists(
-            _.vout.exists(_.scriptPubKey.address == Some(address))))
+            _.vout.exists(_.scriptPubKey.address == Some(address))
+          )
+        )
       }
       succeed
     }

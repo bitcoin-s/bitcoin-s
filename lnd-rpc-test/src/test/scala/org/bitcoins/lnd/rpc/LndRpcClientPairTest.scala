@@ -53,11 +53,19 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       .channelAcceptor(source)
       .mapAsyncUnordered(1) { req =>
         if (req.pushAmt == UInt64.zero) {
-          queue.offer(ChannelAcceptResponse(error = "give me money",
-                                            pendingChanId = req.pendingChanId))
+          queue.offer(
+            ChannelAcceptResponse(
+              error = "give me money",
+              pendingChanId = req.pendingChanId
+            )
+          )
         } else {
-          queue.offer(ChannelAcceptResponse(accept = true,
-                                            pendingChanId = req.pendingChanId))
+          queue.offer(
+            ChannelAcceptResponse(
+              accept = true,
+              pendingChanId = req.pendingChanId
+            )
+          )
         }
       }
       .runWith(Sink.ignore)
@@ -66,17 +74,22 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       nodeId <- lndA.nodeId
       // reject channel with no push amount
       _ <- recoverToSucceededIf[Exception](
-        lndB.openChannel(nodeId = nodeId,
-                         fundingAmount = Satoshis(50000),
-                         satPerVByte = SatoshisPerVirtualByte.one,
-                         privateChannel = false))
+        lndB.openChannel(
+          nodeId = nodeId,
+          fundingAmount = Satoshis(50000),
+          satPerVByte = SatoshisPerVirtualByte.one,
+          privateChannel = false
+        )
+      )
 
       // accept channel with push amount
-      outpointOpt <- lndB.openChannel(nodeId = nodeId,
-                                      fundingAmount = Satoshis(50000),
-                                      pushAmt = Satoshis(10),
-                                      satPerVByte = SatoshisPerVirtualByte.one,
-                                      privateChannel = false)
+      outpointOpt <- lndB.openChannel(
+        nodeId = nodeId,
+        fundingAmount = Satoshis(50000),
+        pushAmt = Satoshis(10),
+        satPerVByte = SatoshisPerVirtualByte.one,
+        privateChannel = false
+      )
 
       pendingA <- lndA.listPendingChannels()
       pendingB <- lndB.listPendingChannels()
@@ -87,10 +100,14 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
 
       assert(
         pendingA.pendingOpenChannels.exists(
-          _.channel.get.channelPoint == expectedOutpoint))
+          _.channel.get.channelPoint == expectedOutpoint
+        )
+      )
       assert(
         pendingB.pendingOpenChannels.exists(
-          _.channel.get.channelPoint == expectedOutpoint))
+          _.channel.get.channelPoint == expectedOutpoint
+        )
+      )
     }
   }
 
@@ -102,7 +119,8 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       channel = channels.head
 
       (txIdStr, voutStr) = channel.channelPoint.splitAt(
-        channel.channelPoint.indexOf(":"))
+        channel.channelPoint.indexOf(":")
+      )
       txId = DoubleSha256DigestBE(txIdStr)
       vout = UInt32(voutStr.tail.toLong)
       channelPoint = TransactionOutPoint(txId, vout)
@@ -127,15 +145,19 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       utxo <- lnd.listUnspent.map(_.head)
       prevOut = TransactionOutput(utxo.amount, utxo.spk)
 
-      input = TransactionInput(utxo.outPointOpt.get,
-                               EmptyScriptSignature,
-                               TransactionConstants.sequence)
+      input = TransactionInput(
+        utxo.outPointOpt.get,
+        EmptyScriptSignature,
+        TransactionConstants.sequence
+      )
       output = TransactionOutput(Bitcoins(0.5), bitcoindAddr.scriptPubKey)
 
-      unsigned = BaseTransaction(Int32.two,
-                                 Vector(input),
-                                 Vector(output),
-                                 UInt32.zero)
+      unsigned = BaseTransaction(
+        Int32.two,
+        Vector(input),
+        Vector(output),
+        UInt32.zero
+      )
 
       (scriptSig, wit) <- lnd.computeInputScript(unsigned, 0, prevOut)
     } yield {
@@ -160,19 +182,26 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
 
       bitcoindAddr <- bitcoind.getNewAddress
       utxo <- lnd.listUnspent.map(
-        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get)
+        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get
+      )
       prevOut = TransactionOutput(utxo.amount, utxo.spk)
 
-      input = TransactionInput(utxo.outPointOpt.get,
-                               EmptyScriptSignature,
-                               TransactionConstants.sequence)
-      output = TransactionOutput(utxo.amount - Satoshis(1_000),
-                                 bitcoindAddr.scriptPubKey)
+      input = TransactionInput(
+        utxo.outPointOpt.get,
+        EmptyScriptSignature,
+        TransactionConstants.sequence
+      )
+      output = TransactionOutput(
+        utxo.amount - Satoshis(1_000),
+        bitcoindAddr.scriptPubKey
+      )
 
-      unsigned = BaseTransaction(Int32.two,
-                                 Vector(input),
-                                 Vector(output),
-                                 UInt32.zero)
+      unsigned = BaseTransaction(
+        Int32.two,
+        Vector(input),
+        Vector(output),
+        UInt32.zero
+      )
 
       (script, wit) <- lnd.computeInputScript(
         tx = unsigned,
@@ -206,26 +235,36 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       bitcoindAddr <- bitcoind.getNewAddress
 
       utxo <- lnd.listUnspent.map(
-        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get)
+        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get
+      )
       prevOut = TransactionOutput(utxo.amount, utxo.spk)
-      input = TransactionInput(utxo.outPointOpt.get,
-                               EmptyScriptSignature,
-                               TransactionConstants.sequence)
+      input = TransactionInput(
+        utxo.outPointOpt.get,
+        EmptyScriptSignature,
+        TransactionConstants.sequence
+      )
 
       utxo2 <- lnd2.listUnspent.map(
-        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get)
+        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get
+      )
       prevOut2 = TransactionOutput(utxo2.amount, utxo2.spk)
-      input2 = TransactionInput(utxo2.outPointOpt.get,
-                                EmptyScriptSignature,
-                                TransactionConstants.sequence)
+      input2 = TransactionInput(
+        utxo2.outPointOpt.get,
+        EmptyScriptSignature,
+        TransactionConstants.sequence
+      )
 
-      output = TransactionOutput(utxo.amount + utxo2.amount - Satoshis(1_000),
-                                 bitcoindAddr.scriptPubKey)
+      output = TransactionOutput(
+        utxo.amount + utxo2.amount - Satoshis(1_000),
+        bitcoindAddr.scriptPubKey
+      )
 
-      unsigned = BaseTransaction(Int32.two,
-                                 Vector(input, input2),
-                                 Vector(output),
-                                 UInt32.zero)
+      unsigned = BaseTransaction(
+        Int32.two,
+        Vector(input, input2),
+        Vector(output),
+        UInt32.zero
+      )
 
       (scriptSig, wit) <- lnd.computeInputScript(
         tx = unsigned,
@@ -305,10 +344,12 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       tx <- lndA.sendOutputs(Vector(output), feeRate, spendUnconfirmed = false)
       _ <- lndA.publishTransaction(tx)
       height <- bitcoind.getBlockCount()
-      confirmedF = lndB.subscribeTxConfirmation(txId = tx.txId,
-                                                script = addr.scriptPubKey,
-                                                requiredConfs = 6,
-                                                heightHint = height)
+      confirmedF = lndB.subscribeTxConfirmation(
+        txId = tx.txId,
+        script = addr.scriptPubKey,
+        requiredConfs = 6,
+        heightHint = height
+      )
       _ <- bitcoind.generate(6)
 
       // await so if this fails the test doesn't hang forever
@@ -342,15 +383,19 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
 
     val spk = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
     val output = TransactionOutput(Satoshis(10000), spk)
-    val unsignedTx = BaseTransaction(version = Int32.one,
-                                     inputs = Vector.empty,
-                                     outputs = Vector(output),
-                                     lockTime = UInt32.zero)
+    val unsignedTx = BaseTransaction(
+      version = Int32.one,
+      inputs = Vector.empty,
+      outputs = Vector(output),
+      lockTime = UInt32.zero
+    )
 
     for {
-      unsignedPsbt <- lnd.fundPSBT(PSBT.fromUnsignedTx(unsignedTx),
-                                   SatoshisPerVirtualByte.one,
-                                   spendUnconfirmed = true)
+      unsignedPsbt <- lnd.fundPSBT(
+        PSBT.fromUnsignedTx(unsignedTx),
+        SatoshisPerVirtualByte.one,
+        spendUnconfirmed = true
+      )
       signed <- lnd.finalizePSBT(unsignedPsbt)
       transaction <- Future.fromTry(signed.extractTransactionAndValidate)
       errorOpt <- lnd.publishTransaction(transaction)
@@ -365,21 +410,26 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       val messageBytes = ByteVector(message.getBytes)
 
       val asm = OP_RETURN +: BitcoinScriptUtil.calculatePushOp(
-        messageBytes) :+ ScriptConstant.fromBytes(messageBytes)
+        messageBytes
+      ) :+ ScriptConstant.fromBytes(messageBytes)
 
       ScriptPubKey(asm.toVector)
     }
 
     val output = TransactionOutput(Satoshis.zero, spk)
-    val unsignedTx = BaseTransaction(version = Int32.one,
-                                     inputs = Vector.empty,
-                                     outputs = Vector(output),
-                                     lockTime = UInt32.zero)
+    val unsignedTx = BaseTransaction(
+      version = Int32.one,
+      inputs = Vector.empty,
+      outputs = Vector(output),
+      lockTime = UInt32.zero
+    )
 
     for {
-      unsignedPsbt <- lnd.fundPSBT(PSBT.fromUnsignedTx(unsignedTx),
-                                   SatoshisPerVirtualByte.one,
-                                   spendUnconfirmed = true)
+      unsignedPsbt <- lnd.fundPSBT(
+        PSBT.fromUnsignedTx(unsignedTx),
+        SatoshisPerVirtualByte.one,
+        spendUnconfirmed = true
+      )
       signed <- lnd.finalizePSBT(unsignedPsbt)
       transaction <- Future.fromTry(signed.extractTransactionAndValidate)
       errorOpt <- lnd.publishTransaction(transaction)
