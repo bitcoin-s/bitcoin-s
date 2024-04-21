@@ -1,59 +1,49 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 import org.bitcoins.rpc.BitcoindException.MiscError
+import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedNewest
 
-class NodeRpcTest extends BitcoindRpcTest {
+import scala.concurrent.duration._
 
-  lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+class NodeRpcTest extends BitcoindFixturesFundedCachedNewest {
 
   behavior of "NodeRpc"
 
-  it should "be able to abort a rescan of the blockchain" in {
-    clientF.flatMap { client =>
-      // generate some extra blocks so rescan isn't too quick
-      client.getNewAddress
-        .flatMap(client.generateToAddress(3000, _))
-        .flatMap { _ =>
-          val rescanFailedF =
-            recoverToSucceededIf[MiscError](client.rescanBlockChain())
-          system.scheduler.scheduleOnce(100.millis) {
-            client.abortRescan()
-            ()
-          }
-          rescanFailedF
+  it should "be able to abort a rescan of the blockchain" in { case client =>
+    // generate some extra blocks so rescan isn't too quick
+    client.getNewAddress
+      .flatMap(client.generateToAddress(3000, _))
+      .flatMap { _ =>
+        val rescanFailedF =
+          recoverToSucceededIf[MiscError](client.rescanBlockChain())
+        system.scheduler.scheduleOnce(100.millis) {
+          client.abortRescan()
+          ()
         }
-    }
+        rescanFailedF
+      }
   }
 
-  it should "be able to ping" in {
+  it should "be able to ping" in { case client =>
     for {
-      client <- clientF
       _ <- client.ping()
     } yield succeed
   }
 
   it should "be able to get and set the logging configuration" in {
-    for {
-      client <- clientF
-      info <- client.logging
-      infoNoQt <- client.logging(exclude = Vector("qt"))
-    } yield {
-      info.keySet.foreach(category => assert(info(category)))
-      assert(!infoNoQt("qt"))
-    }
+    case client =>
+      for {
+        info <- client.logging
+        infoNoQt <- client.logging(exclude = Vector("qt"))
+      } yield {
+        info.keySet.foreach(category => assert(info(category)))
+        assert(!infoNoQt("qt"))
+      }
   }
 
-  it should "be able to get the memory info" in {
+  it should "be able to get the memory info" in { case client =>
     for {
-      client <- clientF
       info <- client.getMemoryInfo
     } yield {
       assert(info.locked.used > 0)
@@ -64,16 +54,14 @@ class NodeRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the client's uptime" in {
+  it should "be able to get the client's uptime" in { case client =>
     for {
-      client <- clientF
       time <- client.uptime
     } yield assert(time > UInt32(0))
   }
 
-  it should "be able to get help from bitcoind" in {
+  it should "be able to get help from bitcoind" in { case client =>
     for {
-      client <- clientF
       genHelp <- client.help()
       helpHelp <- client.help("help")
     } yield {

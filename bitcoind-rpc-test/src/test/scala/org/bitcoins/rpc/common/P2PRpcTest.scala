@@ -3,31 +3,27 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.jsonmodels.bitcoind.GetNodeAddressesResultPostV22
 
 import java.net.URI
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
-  AddNodeArgument,
-  SetBanCommand
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{AddNodeArgument, SetBanCommand}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairNewest, BitcoindRpcTestUtil}
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
 
-class P2PRpcTest extends BitcoindRpcTest {
+class P2PRpcTest extends BitcoindFixturesCachedPairNewest {
 
-  lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
-
-  lazy val clientPairF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum)
+//  lazy val clientF: Future[BitcoindRpcClient] =
+//    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+//
+//  lazy val clientPairF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
+//    BitcoindRpcTestUtil.createNodePair(clientAccum)
 
   behavior of "P2PRpcTest"
 
-  it should "be able to get the added node info" in {
+  it should "be able to get the added node info" in { case nodePair =>
+    val (freshClient, otherFreshClient) = (nodePair.node1, nodePair.node2)
     for {
-
-      (freshClient, otherFreshClient) <- clientPairF
       info <- freshClient.getAddedNodeInfo
     } yield {
       assert(info.length == 1)
@@ -36,9 +32,9 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the network info" in {
+  it should "be able to get the network info" in { case nodePair =>
+    val freshClient = nodePair.node1
     for {
-      (freshClient, _) <- clientPairF
       info <- freshClient.getNetworkInfo
     } yield {
       assert(info.networkactive)
@@ -48,9 +44,9 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   }
 
-  it should "be able to get network statistics" in {
+  it should "be able to get network statistics" in {case nodePair =>
+    val connectedClient = nodePair.node1
     for {
-      (connectedClient, _) <- clientPairF
       stats <- connectedClient.getNetTotals
     } yield {
       assert(stats.timemillis.toBigInt > 0)
@@ -81,9 +77,9 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   }
 
-  it should "be able to get the difficulty on the network" in {
+  it should "be able to get the difficulty on the network" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      client <- clientF
       difficulty <- client.getDifficulty
     } yield {
       assert(difficulty > 0)
@@ -91,9 +87,9 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to deactivate and activate the network" in {
+  it should "be able to deactivate and activate the network" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      client <- clientF
       _ <- client.setNetworkActive(false)
       firstInfo <- client.getNetworkInfo
       _ <- client.setNetworkActive(true)
@@ -104,11 +100,9 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to clear banned subnets" in {
+  it should "be able to clear banned subnets" in { case nodePair =>
+    val client1 = nodePair.node1
     for {
-
-      (client1, _) <-
-        BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
       _ <- client1.setBan(URI.create("http://127.0.0.1"), SetBanCommand.Add)
       _ <- client1.setBan(URI.create("http://127.0.0.2"), SetBanCommand.Add)
       list <- client1.listBanned
@@ -120,7 +114,7 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to add and remove a node" in {
+  it should "be able to add and remove a node" in { case _ =>
     for {
       (freshClient, otherFreshClient) <-
         BitcoindRpcTestUtil
@@ -142,7 +136,7 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to add and disconnect a node" in {
+  it should "be able to add and disconnect a node" in { case _ =>
     for {
       (freshClient, otherFreshClient) <-
         BitcoindRpcTestUtil
@@ -162,7 +156,7 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the connection count" in {
+  it should "be able to get the connection count" in { case _ =>
     for {
       (freshClient, otherFreshClient) <-
         BitcoindRpcTestUtil
@@ -178,7 +172,7 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to submit a new block" in {
+  it should "be able to submit a new block" in { case _ =>
     for {
       (client1, client2) <-
         BitcoindRpcTestUtil.createUnconnectedNodePair(clientAccum = clientAccum)
@@ -199,10 +193,10 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "take a network input and output addresses of same network" in {
+  it should "take a network input and output addresses of same network" in { case nodePair =>
     val networkOption = Vector("ipv4", "ipv6", "onion", "i2p")
+    val client = nodePair.node1
     for {
-      (client, _) <- clientPairF
       _ <- Future.traverse(networkOption) { networkType =>
         val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] =
           client.getNodeAddresses(networkType, 10)
@@ -217,9 +211,9 @@ class P2PRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "return a network address" in {
+  it should "return a network address" in { case nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientPairF
       resultVec <- client.getNodeAddresses()
     } yield {
       resultVec.foreach { result =>
