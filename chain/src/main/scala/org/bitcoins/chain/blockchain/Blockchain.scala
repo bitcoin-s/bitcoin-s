@@ -9,6 +9,9 @@ case class Blockchain(headers: Vector[BlockHeaderDb]) extends BaseBlockChain {
       headers: scala.collection.immutable.Seq[BlockHeaderDb]) =
     Blockchain.fromHeaders(headers)
 
+  override def find(p: BlockHeaderDb => Boolean): Option[BlockHeaderDb] =
+    headers.find(p)
+
 }
 
 object Blockchain extends BaseBlockChainCompObject {

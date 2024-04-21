@@ -6,16 +6,20 @@ import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 
-/** Created by chris on 11/10/16.
-  * The version of the [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]],
-  * this indicates how a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] is rebuilt.
+/** Created by chris on 11/10/16. The version of the
+  * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]],
+  * this indicates how a
+  * [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] is
+  * rebuilt.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
   */
 sealed trait WitnessVersion {
 
-  /** Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
-    * Either returns the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
-    * it needs to be executed against or the [[ScriptError]] that was encountered when
+  /** Rebuilds the full script from the given witness and
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] Either
+    * returns the
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] it needs
+    * to be executed against or the [[ScriptError]] that was encountered when
     * building the rebuild the scriptpubkey from the witness
     */
   def rebuild(
@@ -35,15 +39,15 @@ case object WitnessVersion0 extends WitnessVersion {
     val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 20 =>
-        //p2wpkh
+        // p2wpkh
         val hash = Sha256Hash160Digest(programBytes)
         Right(P2PKHScriptPubKey(hash))
       case 32 =>
-        //p2wsh
+        // p2wsh
         if (scriptWitness.stack.isEmpty) {
           Left(ScriptErrorWitnessProgramWitnessEmpty)
         } else {
-          //need to check if the hashes match
+          // need to check if the hashes match
           val stackTop = scriptWitness.stack.head
           val stackHash = CryptoUtil.sha256(stackTop)
           val witnessHash = Sha256Digest(witnessProgram.head.bytes)
@@ -57,7 +61,7 @@ case object WitnessVersion0 extends WitnessVersion {
           }
         }
       case _ =>
-        //witness version 0 programs need to be 20 bytes or 32 bytes in size
+        // witness version 0 programs need to be 20 bytes or 32 bytes in size
         Left(ScriptErrorWitnessProgramWrongLength)
     }
   }
@@ -77,7 +81,7 @@ case object WitnessVersion1 extends WitnessVersion {
     val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 32 =>
-        //p2tr
+        // p2tr
         if (scriptWitness.stack.isEmpty) {
           Left(ScriptErrorWitnessProgramWitnessEmpty)
         } else {
@@ -96,12 +100,12 @@ case object WitnessVersion1 extends WitnessVersion {
           rebuiltSPK
         }
       case _ =>
-        //witness version 1 programs need to be 32 bytes in size
-        //this is technically wrong as this is dependent on a policy flag
-        //this should only error when the DISCOURAGE_UPGRADABLE_WITNESS policy flag is set
-        //else it should succeed as to maintain future soft fork compatability
-        //this will get addressed on a future PR as I implement test cases
-        //in the interpreter
+        // witness version 1 programs need to be 32 bytes in size
+        // this is technically wrong as this is dependent on a policy flag
+        // this should only error when the DISCOURAGE_UPGRADABLE_WITNESS policy flag is set
+        // else it should succeed as to maintain future soft fork compatability
+        // this will get addressed on a future PR as I implement test cases
+        // in the interpreter
         Left(ScriptErrorDiscourageUpgradeableWitnessProgram)
     }
   }
@@ -109,7 +113,9 @@ case object WitnessVersion1 extends WitnessVersion {
   override val version: OP_1.type = OP_1
 }
 
-/** The witness version that represents all witnesses that have not been allocated yet */
+/** The witness version that represents all witnesses that have not been
+  * allocated yet
+  */
 case class UnassignedWitness(version: ScriptNumberOperation)
     extends WitnessVersion {
   require(

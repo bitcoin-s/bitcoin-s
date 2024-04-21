@@ -10,12 +10,14 @@ import scodec.bits.ByteVector
 import java.math.BigInteger
 import java.security.SecureRandom
 
-/** Entirely copied from [[org.bouncycastle.crypto.signers.HMacDSAKCalculator HMacDSAKCalculator]]
-  * with an added entropy parameter as well as two lines added adding the entropy to the hash.
+/** Entirely copied from
+  * [[org.bouncycastle.crypto.signers.HMacDSAKCalculator HMacDSAKCalculator]]
+  * with an added entropy parameter as well as two lines added adding the
+  * entropy to the hash.
   *
-  * For a reference in secp256k1, see nonce_function_rfc6979 in secp256k1.c
-  * For a description of the altered part, see RFC 6979 section 3.2d
-  * here [[https://tools.ietf.org/html/rfc6979#section-3.2]]
+  * For a reference in secp256k1, see nonce_function_rfc6979 in secp256k1.c For
+  * a description of the altered part, see RFC 6979 section 3.2d here
+  * [[https://tools.ietf.org/html/rfc6979#section-3.2]]
   *
   * The added lines are marked below with comments.
   */

@@ -26,9 +26,8 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
-/** Created by chris on 2/16/16.
-  * Responsible for checking digital signatures on inputs against their respective
-  * public keys
+/** Created by chris on 2/16/16. Responsible for checking digital signatures on
+  * inputs against their respective public keys
   */
 trait TransactionSignatureChecker {
 
@@ -66,7 +65,8 @@ trait TransactionSignatureChecker {
   /** @param txSigComponent
     * @param schnorrSignature
     * @param pubKey
-    * @see https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1695
+    * @see
+    *   https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1695
     * @return
     */
   def checkSchnorrSignature(
@@ -97,7 +97,7 @@ trait TransactionSignatureChecker {
       s"SigVerison must be Taproot or Tapscript, got=${txSigComponent.sigVersion}"
     )
 
-    //bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
+    // bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
     val validHashType = checkTaprootHashType(hashType)
     if (!validHashType) {
       ScriptErrorSchnorrSigHashType
@@ -124,24 +124,32 @@ trait TransactionSignatureChecker {
     validTaprootHashTypes.contains(hashType.byte)
   }
 
-  /** Checks the signature of a scriptSig in the spending transaction against the
-    * given scriptPubKey & explicitly given public key
-    * This is useful for instances of non standard scriptSigs
+  /** Checks the signature of a scriptSig in the spending transaction against
+    * the given scriptPubKey & explicitly given public key This is useful for
+    * instances of non standard scriptSigs
     *
-    * @param txSignatureComponent the relevant transaction information for signature checking
-    * @param script the current script state inside the interpreter - this is needed in the case of OP_CODESEPARATORS
-    * @param pubKey the public key the signature is being checked against
-    * @param signature the signature which is being checked against the transaction & the public key
-    * @param flags the script flags used to check validity of the signature
-    * @return a boolean indicating if the signature is valid or not
+    * @param txSignatureComponent
+    *   the relevant transaction information for signature checking
+    * @param script
+    *   the current script state inside the interpreter - this is needed in the
+    *   case of OP_CODESEPARATORS
+    * @param pubKey
+    *   the public key the signature is being checked against
+    * @param signature
+    *   the signature which is being checked against the transaction & the
+    *   public key
+    * @param flags
+    *   the script flags used to check validity of the signature
+    * @return
+    *   a boolean indicating if the signature is valid or not
     */
   def checkSignature(
       txSignatureComponent: TxSigComponent,
       script: Seq[ScriptToken],
       pubKey: ECPublicKeyBytes,
       signature: ECDigitalSignature,
-      flags: Seq[ScriptFlag] =
-        Policy.standardFlags): TransactionSignatureCheckerResult = {
+      flags: Seq[ScriptFlag] = Policy.standardFlags)
+      : TransactionSignatureCheckerResult = {
     txSignatureComponent.sigVersion match {
       case SigVersionTapscript | SigVersionTaprootKeySpend =>
         sys.error(
@@ -249,12 +257,22 @@ trait TransactionSignatureChecker {
   /** This is a helper function to check digital signatures against public keys
     * if the signature does not match this public key, check it against the next
     * public key in the sequence
-    * @param txSignatureComponent the tx signature component that contains all relevant transaction information
-    * @param script the script state this is needed in case there is an OP_CODESEPARATOR inside the script
-    * @param sigs the signatures that are being checked for validity
-    * @param pubKeys the public keys which are needed to verify that the signatures are correct
-    * @param flags the script verify flags which are rules to verify the signatures
-    * @return a boolean indicating if all of the signatures are valid against the given public keys
+    * @param txSignatureComponent
+    *   the tx signature component that contains all relevant transaction
+    *   information
+    * @param script
+    *   the script state this is needed in case there is an OP_CODESEPARATOR
+    *   inside the script
+    * @param sigs
+    *   the signatures that are being checked for validity
+    * @param pubKeys
+    *   the public keys which are needed to verify that the signatures are
+    *   correct
+    * @param flags
+    *   the script verify flags which are rules to verify the signatures
+    * @return
+    *   a boolean indicating if all of the signatures are valid against the
+    *   given public keys
     */
   @tailrec
   final def multiSignatureEvaluator(
@@ -267,13 +285,13 @@ trait TransactionSignatureChecker {
     require(requiredSigs >= 0,
             s"requiredSigs cannot be negative, got $requiredSigs")
     if (sigs.size > pubKeys.size) {
-      //this is how bitcoin core treats this. If there are ever any more
-      //signatures than public keys remaining we immediately return
-      //false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
+      // this is how bitcoin core treats this. If there are ever any more
+      // signatures than public keys remaining we immediately return
+      // false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
       nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
     } else if (requiredSigs > sigs.size) {
-      //for the case when we do not have enough sigs left to check to meet the required signature threshold
-      //https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
+      // for the case when we do not have enough sigs left to check to meet the required signature threshold
+      // https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
       nullFailCheck(sigs, SignatureValidationErrorSignatureCount, flags)
     } else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
@@ -290,9 +308,9 @@ trait TransactionSignatureChecker {
                                   requiredSigs - 1)
         case SignatureValidationErrorIncorrectSignatures |
             SignatureValidationErrorNullFail =>
-          //notice we pattern match on 'SignatureValidationErrorNullFail' here, this is because
-          //'checkSignature' may return that result, but we need to continue evaluating the signatures
-          //in the multisig script, we don't check for nullfail until evaluation the OP_CHECKMULTSIG is completely done
+          // notice we pattern match on 'SignatureValidationErrorNullFail' here, this is because
+          // 'checkSignature' may return that result, but we need to continue evaluating the signatures
+          // in the multisig script, we don't check for nullfail until evaluation the OP_CHECKMULTSIG is completely done
           multiSignatureEvaluator(txSignatureComponent,
                                   script,
                                   sigs,
@@ -308,15 +326,16 @@ trait TransactionSignatureChecker {
           nullFailCheck(sigs, x, flags)
       }
     } else if (sigs.isEmpty) {
-      //means that we have checked all of the sigs against the public keys
-      //validation succeeds
+      // means that we have checked all of the sigs against the public keys
+      // validation succeeds
       SignatureValidationSuccess
     } else
       nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
 
   }
 
-  /** If the NULLFAIL flag is set as defined in BIP146, it checks to make sure all failed signatures were an empty byte vector
+  /** If the NULLFAIL flag is set as defined in BIP146, it checks to make sure
+    * all failed signatures were an empty byte vector
     * [[https://github.com/bitcoin/bips/blob/master/bip-0146.mediawiki#NULLFAIL]]
     */
   private def nullFailCheck(
@@ -325,7 +344,7 @@ trait TransactionSignatureChecker {
       flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
     val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
     if (nullFailEnabled && !result.isValid && sigs.exists(_.bytes.nonEmpty)) {
-      //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
+      // we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
       SignatureValidationErrorNullFail
     } else result
   }
@@ -336,7 +355,7 @@ trait TransactionSignatureChecker {
       flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
     val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
     if (nullFailEnabled && !result.isValid && sigs.exists(_.bytes.nonEmpty)) {
-      //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
+      // we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
       SignatureValidationErrorNullFail
     } else result
   }

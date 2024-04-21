@@ -18,27 +18,32 @@ import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 import scala.annotation.tailrec
 import scala.concurrent._
 
-/** Chain Handler is meant to be the reference implementation
-  * of [[ChainApi ChainApi]], this is the entry point in to the
-  * chain project.
+/** Chain Handler is meant to be the reference implementation of
+  * [[ChainApi ChainApi]], this is the entry point in to the chain project.
   *
-  * This implementation of [[ChainApi]] reads all values directly from the database. If you want an optimized version
-  * that caches headers locally please see [[ChainHandlerCached]]
+  * This implementation of [[ChainApi]] reads all values directly from the
+  * database. If you want an optimized version that caches headers locally
+  * please see [[ChainHandlerCached]]
   *
-  * @param blockHeaderDAO block header DB
-  * @param filterHeaderDAO filter header DB
-  * @param filterDAO filter DB
-  * @param blockFilterCheckpoints compact filter checkpoints for filter header verification in form of a map (block header hash -> filter header hash)
-  * @param chainConfig config file
+  * @param blockHeaderDAO
+  *   block header DB
+  * @param filterHeaderDAO
+  *   filter header DB
+  * @param filterDAO
+  *   filter DB
+  * @param blockFilterCheckpoints
+  *   compact filter checkpoints for filter header verification in form of a map
+  *   (block header hash -> filter header hash)
+  * @param chainConfig
+  *   config file
   */
 class ChainHandler(
     val blockHeaderDAO: BlockHeaderDAO,
     val filterHeaderDAO: CompactFilterHeaderDAO,
     val filterDAO: CompactFilterDAO,
     val stateDAO: ChainStateDescriptorDAO,
-    val blockFilterCheckpoints: Map[
-      DoubleSha256DigestBE,
-      DoubleSha256DigestBE])(implicit
+    val blockFilterCheckpoints: Map[DoubleSha256DigestBE,
+                                    DoubleSha256DigestBE])(implicit
     val chainConfig: ChainAppConfig,
     executionContext: ExecutionContext)
     extends ChainApi
@@ -56,7 +61,7 @@ class ChainHandler(
       chains: Vector[Blockchain]): BlockHeaderDb = {
     logger.trace(
       s"Finding best block hash out of chains.length=${chains.length}")
-    //https://bitcoin.org/en/glossary/block-chain
+    // https://bitcoin.org/en/glossary/block-chain
     val groupedChains = chains.groupBy(_.tip.chainWork)
     val maxWork = groupedChains.keys.max
     val chainsByWork = groupedChains(maxWork)
@@ -75,9 +80,9 @@ class ChainHandler(
           .mkString(", ")
         logger.warn(
           s"We have multiple competing blockchains with same work, selecting by time: $tips")
-        //since we have same chainwork, just take the oldest tip
-        //as that's "more likely" to have been propagated first
-        //and had more miners building on top of it
+        // since we have same chainwork, just take the oldest tip
+        // as that's "more likely" to have been propagated first
+        // and had more miners building on top of it
         chainsByWork.minBy(_.tip.time).tip
       }
     }
@@ -100,8 +105,8 @@ class ChainHandler(
     getHeaders(Vector(hash)).map(_.head)
   }
 
-  override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
-    Vector[Option[BlockHeaderDb]]] = {
+  override def getHeaders(hashes: Vector[DoubleSha256DigestBE])
+      : Future[Vector[Option[BlockHeaderDb]]] = {
     blockHeaderDAO.findByHashes(hashes)
   }
 
@@ -113,7 +118,7 @@ class ChainHandler(
     } else {
       val headersWeAlreadyHave = blockchains.flatMap(_.headers)
 
-      //if we already have the header don't process it again
+      // if we already have the header don't process it again
       val filteredHeaders = headers.filterNot(h =>
         headersWeAlreadyHave.exists(_.hashBE == h.hashBE))
 
@@ -136,9 +141,9 @@ class ChainHandler(
       }
 
       if (headersToBeCreated.isEmpty) {
-        //this means we are given zero headers that were valid.
-        //Return a failure in this case to avoid issue 2365
-        //https://github.com/bitcoin-s/bitcoin-s/issues/2365
+        // this means we are given zero headers that were valid.
+        // Return a failure in this case to avoid issue 2365
+        // https://github.com/bitcoin-s/bitcoin-s/issues/2365
         Future.failed(InvalidBlockHeader(
           s"Failed to connect any headers to our internal chain state, failures=$blockchainUpdates"))
       } else {
@@ -212,7 +217,7 @@ class ChainHandler(
         }
       }
     } else if (prevStopHash == stopHash) {
-      //means are are in sync
+      // means are are in sync
       Future.successful(None)
     } else {
       val candidateStartHeadersF = getImmediateChildren(prevStopHash)
@@ -258,8 +263,9 @@ class ChainHandler(
     }
   }
 
-  /** Retrieves a [[FilterSyncMarker]] respecting the batchSize parameter. If the stopBlockHeader is not within the batchSize parameter
-    * we walk backwards until we find a header within the batchSize limit
+  /** Retrieves a [[FilterSyncMarker]] respecting the batchSize parameter. If
+    * the stopBlockHeader is not within the batchSize parameter we walk
+    * backwards until we find a header within the batchSize limit
     */
   private def getFilterSyncStopHash(
       candidateStartHeader: BlockHeaderDb,
@@ -271,10 +277,10 @@ class ChainHandler(
     val stopHeaderWithinBatchSizeF = if (isInBatchSize) {
       Future.successful(stopBlockHeader)
     } else {
-      //as an optimization only fetch the last blockheader
-      //within candidateStartHeight + batchSize , we don't have a way to guarantee
-      //this hash ultimately ends up connected to stopBlockHeaderDb though
-      //we have to assume its buried under enough work a reorg is unlikely
+      // as an optimization only fetch the last blockheader
+      // within candidateStartHeight + batchSize , we don't have a way to guarantee
+      // this hash ultimately ends up connected to stopBlockHeaderDb though
+      // we have to assume its buried under enough work a reorg is unlikely
       getHeadersAtHeight(candidateStartHeader.height + batchSize)
         .map(_.head)
     }
@@ -318,7 +324,8 @@ class ChainHandler(
   }
 
   /** Finds the next stop hash for a filter sync marker.
-    * @param candidateStartHeader the first block header whose height will be used in the FilterSyncMarker
+    * @param candidateStartHeader
+    *   the first block header whose height will be used in the FilterSyncMarker
     */
   private def findNextHeader(
       candidateStartHeader: BlockHeaderDb,
@@ -361,8 +368,8 @@ class ChainHandler(
       prevBlockHeaderHashBE: DoubleSha256DigestBE,
       stopBlockHeaderHashBE: DoubleSha256DigestBE): Boolean = {
     if (prevBlockHeaderHashBE == DoubleSha256DigestBE.empty) {
-      //carve out here in the case of genesis header,
-      //blockchains don't contain a block header with hash 0x000..0000
+      // carve out here in the case of genesis header,
+      // blockchains don't contain a block header with hash 0x000..0000
       blockchain.exists(_.hashBE == stopBlockHeaderHashBE)
     } else {
       val hasHash1 =
@@ -399,8 +406,11 @@ class ChainHandler(
     } yield fsmOpt
   }
 
-  /** @param stopBlockHeaderDb the block header we are stopping, we walk the blockchain backwards from this blockheader
-    * @param candidateStartHeadersOpt possible start headers that connect with [[stopBlockHeaderDb]]
+  /** @param stopBlockHeaderDb
+    *   the block header we are stopping, we walk the blockchain backwards from
+    *   this blockheader
+    * @param candidateStartHeadersOpt
+    *   possible start headers that connect with [[stopBlockHeaderDb]]
     * @param batchSize
     * @return
     */
@@ -419,11 +429,11 @@ class ChainHandler(
                 case Some(filter) =>
                   getHeadersAtHeight(filter.height + 1).flatMap { headers =>
                     if (headers.isEmpty) {
-                      //if we have no headers at height + 1
-                      //we must be in a reorg scenario
+                      // if we have no headers at height + 1
+                      // we must be in a reorg scenario
                       getHeadersAtHeight(filter.height)
                     } else {
-                      //remove the bestFilter's block header
+                      // remove the bestFilter's block header
                       val filtered =
                         headers.filter(_.hashBE != filter.blockHashBE)
                       Future.successful(filtered)
@@ -457,12 +467,12 @@ class ChainHandler(
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
-    //find filter headers we have seen before
+    // find filter headers we have seen before
     val duplicateFilterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
       filterHeaderDAO.findByHashes(filterHeaders.map(_.hash.flip))
     }
 
-    //only add new filter headers to our database
+    // only add new filter headers to our database
     val newFilterHeadersF = for {
       duplicates <- duplicateFilterHeadersF
     } yield {
@@ -521,12 +531,12 @@ class ChainHandler(
   /** @inheritdoc */
   override def processFilters(
       messages: Vector[CompactFilterMessage]): Future[ChainApi] = {
-    //find filters we have seen before
+    // find filters we have seen before
     val duplicateFiltersF: Future[Vector[CompactFilterDb]] = {
       filterDAO.findByBlockHashes(messages.map(_.blockHash.flip))
     }
 
-    //only add new filters to our database
+    // only add new filters to our database
     val newFiltersF = for {
       duplicates <- duplicateFiltersF
     } yield messages.filterNot(f =>
@@ -534,7 +544,7 @@ class ChainHandler(
 
     logger.debug(
       s"processFilters: len=${messages.length} messages.blockHash=${messages
-        .map(_.blockHash.flip)}")
+          .map(_.blockHash.flip)}")
     val filterHeadersF = {
       for {
         newFilters <- newFiltersF
@@ -543,8 +553,8 @@ class ChainHandler(
       } yield filterHeaders
     }
 
-    val filtersByBlockHashF: Future[
-      Map[DoubleSha256DigestBE, CompactFilterMessage]] = {
+    val filtersByBlockHashF
+        : Future[Map[DoubleSha256DigestBE, CompactFilterMessage]] = {
       for {
         newFilters <- newFiltersF
         result = newFilters.groupBy(_.blockHash.flip).map {
@@ -595,8 +605,8 @@ class ChainHandler(
     }
   }
 
-  /** Verifies if the previous headers exist either in the batch [[filterHeaders]]
-    * or in the database, throws if it doesn't
+  /** Verifies if the previous headers exist either in the batch
+    * [[filterHeaders]] or in the database, throws if it doesn't
     */
   def verifyFilterHeaders(
       filterHeaders: Vector[CompactFilterHeaderDb]): Future[Unit] = {
@@ -657,9 +667,8 @@ class ChainHandler(
 
   private def findFilterDbFromMessage(
       filterHeader: CompactFilterHeaderDb,
-      messagesByBlockHash: Map[
-        DoubleSha256DigestBE,
-        CompactFilterMessage]): CompactFilterDb = {
+      messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage])
+      : CompactFilterDb = {
     messagesByBlockHash.get(filterHeader.blockHashBE) match {
       case Some(message) =>
         val filterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
@@ -730,9 +739,8 @@ class ChainHandler(
       height: Int): Future[Vector[CompactFilterHeaderDb]] =
     filterHeaderDAO.getAtHeight(height)
 
-  protected def getBestFilterHeaderWithChains(
-      blockchains: Vector[Blockchain]): Future[
-    Option[CompactFilterHeaderDb]] = {
+  protected def getBestFilterHeaderWithChains(blockchains: Vector[Blockchain])
+      : Future[Option[CompactFilterHeaderDb]] = {
     val bestFilterHeadersInChain: Future[Option[CompactFilterHeaderDb]] = {
       val bestChainOpt = blockchains.maxByOption(_.tip.chainWork)
       bestChainOpt match {
@@ -771,24 +779,25 @@ class ChainHandler(
   }
 
   /** This method retrieves the best [[CompactFilterHeaderDb]] from the database
-    * without any blockchain context, and then uses the [[CompactFilterHeaderDb.blockHashBE]]
-    * to query our block headers database looking for a filter header that is in the best chain
+    * without any blockchain context, and then uses the
+    * [[CompactFilterHeaderDb.blockHashBE]] to query our block headers database
+    * looking for a filter header that is in the best chain
     * @return
     */
-  private def bestFilterHeaderSearch(): Future[
-    Option[CompactFilterHeaderDb]] = {
+  private def bestFilterHeaderSearch()
+      : Future[Option[CompactFilterHeaderDb]] = {
     val bestFilterHeaderOptF = filterHeaderDAO.getBestFilterHeader
 
-    //get best blockchain around our latest filter header
+    // get best blockchain around our latest filter header
     val blockchainOptF: Future[Option[Blockchain]] = {
       for {
         bestFilterHeaderOpt <- bestFilterHeaderOptF
         blockchains <- {
           bestFilterHeaderOpt match {
             case Some(bestFilterHeader) =>
-              //get blockchains from our current best filter header to
-              //the next POW of interval, this should be enough to determine
-              //what is the best chain!
+              // get blockchains from our current best filter header to
+              // the next POW of interval, this should be enough to determine
+              // what is the best chain!
               blockHeaderDAO.getBlockchainsBetweenHeights(
                 from =
                   bestFilterHeader.height - chainConfig.chain.difficultyChangeInterval,
@@ -957,8 +966,8 @@ class ChainHandler(
             prevWork
           case None =>
             // this should be the case where the accum is
-            //empty, so this header is the last one we have
-            //stored in the database
+            // empty, so this header is the last one we have
+            // stored in the database
             lastHeaderWithWorkInDb.chainWork
         }
       }
@@ -985,9 +994,9 @@ class ChainHandler(
     headersToCalcF
   }
 
-  /** Creates [[numBatches]] of requests to the database fetching [[batchSize]] headers
-    * starting at [[batchStartHeight]]. These are executed in parallel. After all are fetched
-    * we join them into one future and return it.
+  /** Creates [[numBatches]] of requests to the database fetching [[batchSize]]
+    * headers starting at [[batchStartHeight]]. These are executed in parallel.
+    * After all are fetched we join them into one future and return it.
     */
   private def batchAndGetBlockchains(
       batchSize: Int,
@@ -1047,15 +1056,15 @@ class ChainHandler(
           }
         }
 
-        //unfortunately on sqlite there is a bottle neck here
-        //sqlite allows you to read in parallel but only write
-        //sequentially https://stackoverflow.com/a/23350768/967713
-        //so while it looks like we are executing in parallel
-        //in reality there is only one thread that can write to the db
-        //at a single time
+        // unfortunately on sqlite there is a bottle neck here
+        // sqlite allows you to read in parallel but only write
+        // sequentially https://stackoverflow.com/a/23350768/967713
+        // so while it looks like we are executing in parallel
+        // in reality there is only one thread that can write to the db
+        // at a single time
         _ =
           logger.trace(s"Upserting from height=${headersWithWork.headOption.map(
-            _.height)} to height=${headersWithWork.lastOption.map(_.height)}")
+              _.height)} to height=${headersWithWork.lastOption.map(_.height)}")
         _ <- FutureUtil.batchExecute(
           headersWithWork,
           blockHeaderDAO.upsertAll,
@@ -1064,7 +1073,7 @@ class ChainHandler(
         )
         _ = logger.trace(
           s"Done upserting from height=${headersWithWork.headOption.map(
-            _.height)} to height=${headersWithWork.lastOption.map(_.height)}")
+              _.height)} to height=${headersWithWork.lastOption.map(_.height)}")
         next <- runRecalculateChainWork(maxHeight, headersWithWork.last)
       } yield {
         next
@@ -1163,10 +1172,8 @@ class ChainHandler(
     val nMedianTimeSpan = 11
 
     @tailrec
-    def getNTopHeaders(
-        n: Int,
-        acc: Vector[Future[Option[BlockHeaderDb]]]): Vector[
-      Future[Option[BlockHeaderDb]]] = {
+    def getNTopHeaders(n: Int, acc: Vector[Future[Option[BlockHeaderDb]]])
+        : Vector[Future[Option[BlockHeaderDb]]] = {
       if (n == 1)
         acc
       else {
@@ -1200,7 +1207,7 @@ class ChainHandler(
       case Some(ibd) =>
         ibd.isIBDRunning
       case None =>
-        //if we do not have the state descriptor in the database, default to true on IBD
+        // if we do not have the state descriptor in the database, default to true on IBD
         true
     }
   }
@@ -1211,7 +1218,7 @@ class ChainHandler(
       isSyncing <- isSyncingF
       _ <- {
         if (isSyncing == value) {
-          //do nothing as we are already at this state
+          // do nothing as we are already at this state
           Future.unit
         } else {
           updateSyncingAndExecuteCallback(value)
@@ -1235,7 +1242,7 @@ class ChainHandler(
       isIBDOpt <- isIBDF
       _ <- {
         if (isIBDOpt.isDefined && isIBDOpt.get.isIBDRunning == value) {
-          //do nothing as we are already at this state
+          // do nothing as we are already at this state
           Future.unit
         } else if (isIBDOpt.isDefined && !isIBDOpt.get.isIBDRunning && value) {
           logger.warn(
@@ -1286,11 +1293,13 @@ object ChainHandler {
 
   def fromChainHandlerCached(cached: ChainHandlerCached)(implicit
       ec: ExecutionContext): ChainHandler = {
-    new ChainHandler(blockHeaderDAO = cached.blockHeaderDAO,
-                     filterHeaderDAO = cached.filterHeaderDAO,
-                     filterDAO = cached.filterDAO,
-                     stateDAO = cached.stateDAO,
-                     blockFilterCheckpoints = Map.empty)(cached.chainConfig, ec)
+    new ChainHandler(
+      blockHeaderDAO = cached.blockHeaderDAO,
+      filterHeaderDAO = cached.filterHeaderDAO,
+      filterDAO = cached.filterDAO,
+      stateDAO = cached.stateDAO,
+      blockFilterCheckpoints = Map.empty
+    )(cached.chainConfig, ec)
   }
 
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
@@ -1339,7 +1348,9 @@ object ChainHandler {
                               stateDAO = stateDAO)
   }
 
-  /** Converts a [[ChainHandler]] to [[ChainHandlerCached]] by calling [[BlockHeaderDAO.getBlockchains()]] */
+  /** Converts a [[ChainHandler]] to [[ChainHandlerCached]] by calling
+    * [[BlockHeaderDAO.getBlockchains()]]
+    */
   def toChainHandlerCached(chainHandler: ChainHandler)(implicit
       ec: ExecutionContext): Future[ChainHandlerCached] = {
     val blockchainsF = chainHandler.blockHeaderDAO.getBlockchains()

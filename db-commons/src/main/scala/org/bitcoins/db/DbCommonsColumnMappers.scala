@@ -81,8 +81,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
     }
 
-  implicit val doubleSha256DigestBEMapper: BaseColumnType[
-    DoubleSha256DigestBE] =
+  implicit val doubleSha256DigestBEMapper
+      : BaseColumnType[DoubleSha256DigestBE] =
     MappedColumnType.base[DoubleSha256DigestBE, String](
       _.hex,
       DoubleSha256DigestBE.fromHex
@@ -155,7 +155,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       tcomap = UInt8(_)
     )
 
-  /** Responsible for mapping a [[org.bitcoins.core.number.UInt32 UInt32]] to a long in Slick, and vice versa */
+  /** Responsible for mapping a [[org.bitcoins.core.number.UInt32 UInt32]] to a
+    * long in Slick, and vice versa
+    */
   implicit val uInt32Mapper: BaseColumnType[UInt32] =
     MappedColumnType.base[UInt32, Long](
       tmap = _.toLong,
@@ -166,7 +168,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[Int32, Long](tmap = _.toLong, tcomap = Int32(_))
   }
 
-  /** Responsible for mapping a [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] to hex in Slick, and vice versa */
+  /** Responsible for mapping a
+    * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]]
+    * to hex in Slick, and vice versa
+    */
   implicit val transactionOutputMapper: BaseColumnType[TransactionOutput] = {
     MappedColumnType.base[TransactionOutput, String](
       _.hex,
@@ -192,8 +197,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     padded.toHex
   }
 
-  implicit val transactionOutPointMapper: BaseColumnType[
-    TransactionOutPoint] = {
+  implicit val transactionOutPointMapper
+      : BaseColumnType[TransactionOutPoint] = {
     MappedColumnType
       .base[TransactionOutPoint, String](_.hex, TransactionOutPoint(_))
   }
@@ -308,8 +313,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[ContractInfoV0TLV, String](_.hex, ContractInfoV0TLV.fromHex)
   }
 
-  implicit val contractDescriptorTLVMapper: BaseColumnType[
-    ContractDescriptorTLV] = {
+  implicit val contractDescriptorTLVMapper
+      : BaseColumnType[ContractDescriptorTLV] = {
     MappedColumnType
       .base[ContractDescriptorTLV, String](_.hex, ContractDescriptorTLV.fromHex)
   }
@@ -319,8 +324,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[OracleParamsV0TLV, String](_.hex, OracleParamsV0TLV.fromHex)
   }
 
-  implicit val negotiationFieldsTLVMapper: BaseColumnType[
-    NegotiationFieldsTLV] = {
+  implicit val negotiationFieldsTLVMapper
+      : BaseColumnType[NegotiationFieldsTLV] = {
     MappedColumnType
       .base[NegotiationFieldsTLV, String](_.hex, NegotiationFieldsTLV.fromHex)
   }
@@ -353,8 +358,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     )
   }
 
-  implicit val dlcOutcomeTypeVecMapper: BaseColumnType[
-    Vector[DLCOutcomeType]] = {
+  implicit val dlcOutcomeTypeVecMapper
+      : BaseColumnType[Vector[DLCOutcomeType]] = {
     val enumStr = "Enum:"
     val unsignedNumStr = "Unsigned:"
 
@@ -390,8 +395,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     )
   }
 
-  implicit val singleOracleInfoVecMapper: BaseColumnType[
-    Vector[SingleOracleInfo]] =
+  implicit val singleOracleInfoVecMapper
+      : BaseColumnType[Vector[SingleOracleInfo]] =
     MappedColumnType.base[Vector[SingleOracleInfo], String](
       _.map(_.announcement.hex).mkString("|"),
       str => {
@@ -423,8 +428,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
           else InputPSBTMap(hex ++ "00").partialSignatures)
   }
 
-  implicit val satoshisPerVirtualByteMapper: BaseColumnType[
-    SatoshisPerVirtualByte] = {
+  implicit val satoshisPerVirtualByteMapper
+      : BaseColumnType[SatoshisPerVirtualByte] = {
     MappedColumnType
       .base[SatoshisPerVirtualByte, String](
         _.currencyUnit.hex,
@@ -436,15 +441,15 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[BitcoinNetwork, String](_.name, BitcoinNetworks.fromString)
   }
 
-  implicit val schnorrDigitalSignatureMapper: BaseColumnType[
-    SchnorrDigitalSignature] = {
+  implicit val schnorrDigitalSignatureMapper
+      : BaseColumnType[SchnorrDigitalSignature] = {
     MappedColumnType.base[SchnorrDigitalSignature, String](
       _.hex,
       SchnorrDigitalSignature.fromHex)
   }
 
-  implicit val schnorrDigitalSignatureVecMapper: BaseColumnType[
-    Vector[SchnorrDigitalSignature]] = {
+  implicit val schnorrDigitalSignatureVecMapper
+      : BaseColumnType[Vector[SchnorrDigitalSignature]] = {
     MappedColumnType.base[Vector[SchnorrDigitalSignature], String](
       _.foldLeft("")(_ ++ _.hex),
       _.toArray
@@ -455,14 +460,14 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     )
   }
 
-  implicit val walletStateDescriptorTypeMapper: BaseColumnType[
-    WalletStateDescriptorType] =
+  implicit val walletStateDescriptorTypeMapper
+      : BaseColumnType[WalletStateDescriptorType] =
     MappedColumnType.base[WalletStateDescriptorType, String](
       _.toString,
       WalletStateDescriptorType.fromString)
 
-  implicit val walletStateDescriptorMapper: BaseColumnType[
-    WalletStateDescriptor] =
+  implicit val walletStateDescriptorMapper
+      : BaseColumnType[WalletStateDescriptor] =
     MappedColumnType.base[WalletStateDescriptor, String](
       _.toString,
       WalletStateDescriptor.fromString)
@@ -507,8 +512,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
                                                     ExtKeyPubVersion.fromHex)
   }
 
-  implicit val dlcSerializationVersion: BaseColumnType[
-    DLCSerializationVersion] = {
+  implicit val dlcSerializationVersion
+      : BaseColumnType[DLCSerializationVersion] = {
     MappedColumnType.base[DLCSerializationVersion, String](
       _.toString,
       DLCSerializationVersion.fromString)
@@ -540,8 +545,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val MilliSatoshisMapper: BaseColumnType[MilliSatoshis] =
     MappedColumnType.base[MilliSatoshis, Long](_.toLong, MilliSatoshis.apply(_))
 
-  implicit val nodeStateDescriptorTypeMapper: BaseColumnType[
-    NodeStateDescriptorType] =
+  implicit val nodeStateDescriptorTypeMapper
+      : BaseColumnType[NodeStateDescriptorType] =
     MappedColumnType.base[NodeStateDescriptorType, String](
       _.toString,
       NodeStateDescriptorType.fromString)

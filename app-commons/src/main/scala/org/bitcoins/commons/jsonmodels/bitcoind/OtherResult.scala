@@ -78,11 +78,9 @@ case class MemoryManager(
     chunks_free: Int)
     extends OtherResult
 
-/** @note This is defined as a trait
-  *       and not just a raw case class
-  *       (as is done in other RPC return
-  *       values) in order to make it possible
-  *       to deprecate fields.
+/** @note
+  *   This is defined as a trait and not just a raw case class (as is done in
+  *   other RPC return values) in order to make it possible to deprecate fields.
   */
 trait ValidateAddressResult {
 
@@ -164,17 +162,12 @@ case class TestMempoolAcceptResult(
     rejectReason: Option[String]
 )
 
-/** sealed trait TestMempoolAcceptResult {
-  *  def txid: DoubleSha256DigestBE
-  *  def allowed: Boolean
-  *  def rejectReason: Option[String]
-  * }
+/** sealed trait TestMempoolAcceptResult { def txid: DoubleSha256DigestBE def
+  * allowed: Boolean def rejectReason: Option[String] }
   *
-  * case class TestMempoolAcceptResultPreV22(
-  *    txid: DoubleSha256DigestBE,
-  *    allowed: Boolean,
-  *    rejectReason: Option[String]
-  * ) extends TestMempoolAcceptResult
+  * case class TestMempoolAcceptResultPreV22( txid: DoubleSha256DigestBE,
+  * allowed: Boolean, rejectReason: Option[String] ) extends
+  * TestMempoolAcceptResult
   */
 
 case class FeeInfoTwo(

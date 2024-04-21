@@ -3,7 +3,9 @@ package org.bitcoins.core.protocol.script.descriptor
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.StringFactory
 
-/** @see [[https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md#features]] */
+/** @see
+  *   [[https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md#features]]
+  */
 sealed abstract class DescriptorType
 
 sealed abstract class ScriptDescriptorType extends DescriptorType {
@@ -58,7 +60,7 @@ object DescriptorType extends StringFactory[DescriptorType] {
   }
 
   case object Combo extends ScriptDescriptorType {
-    //this is wrong, combo doesn't have a specific script type?
+    // this is wrong, combo doesn't have a specific script type?
     override val scriptType: ScriptType = ScriptType.PUBKEYHASH
     override val toString: String = "combo"
   }

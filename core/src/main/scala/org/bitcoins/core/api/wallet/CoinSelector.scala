@@ -10,7 +10,9 @@ import scala.annotation.tailrec
 import scala.util.{Random, Try}
 import org.bitcoins.core.currency.currencyUnitOrdering
 
-/** Implements algorithms for selecting from a UTXO set to spend to an output set at a given fee rate. */
+/** Implements algorithms for selecting from a UTXO set to spend to an output
+  * set at a given fee rate.
+  */
 trait CoinSelector {
 
   /** Randomly selects utxos until it has enough to fund the desired amount,
@@ -25,8 +27,9 @@ trait CoinSelector {
     accumulate(randomUtxos, outputs, feeRate)
   }
 
-  /** Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
-    * below their fees. Better for high fee environments than accumulateSmallestViable.
+  /** Greedily selects from walletUtxos starting with the largest outputs,
+    * skipping outputs with values below their fees. Better for high fee
+    * environments than accumulateSmallestViable.
     */
   def accumulateLargest(
       walletUtxos: Vector[CoinSelectorUtxo],
@@ -38,10 +41,12 @@ trait CoinSelector {
     accumulate(sortedUtxos, outputs, feeRate)
   }
 
-  /** Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
-    * below their fees. Good for low fee environments to consolidate UTXOs.
+  /** Greedily selects from walletUtxos starting with the smallest outputs,
+    * skipping outputs with values below their fees. Good for low fee
+    * environments to consolidate UTXOs.
     *
-    * Has the potential privacy breach of connecting a ton of UTXOs to one address.
+    * Has the potential privacy breach of connecting a ton of UTXOs to one
+    * address.
     */
   def accumulateSmallestViable(
       walletUtxos: Vector[CoinSelectorUtxo],
@@ -52,7 +57,9 @@ trait CoinSelector {
     accumulate(sortedUtxos, outputs, feeRate)
   }
 
-  /** Greedily selects from walletUtxos in order, skipping outputs with values below their fees */
+  /** Greedily selects from walletUtxos in order, skipping outputs with values
+    * below their fees
+    */
   def accumulate(
       walletUtxos: Vector[CoinSelectorUtxo],
       outputs: Vector[TransactionOutput],
@@ -111,7 +118,9 @@ trait CoinSelector {
 
 object CoinSelector extends CoinSelector {
 
-  /** Cribbed from [[https://github.com/bitcoinjs/coinselect/blob/master/utils.js]] */
+  /** Cribbed from
+    * [[https://github.com/bitcoinjs/coinselect/blob/master/utils.js]]
+    */
   def approximateUtxoSize(utxo: CoinSelectorUtxo): Long = {
     val inputBase: Long = 32 + 4 + 1 + 4
     val scriptSize: Long = utxo.redeemScriptOpt match {
@@ -121,9 +130,9 @@ object CoinSelector extends CoinSelector {
           case Some(script) => script.bytes.length
           case None =>
             utxo.prevOut.scriptPubKey match {
-              case _: NonWitnessScriptPubKey        => 107 // P2PKH
-              case _: WitnessScriptPubKeyV0         => 107 // P2WPKH
-              case _: TaprootScriptPubKey           => 64 // Single Schnorr signature
+              case _: NonWitnessScriptPubKey => 107 // P2PKH
+              case _: WitnessScriptPubKeyV0  => 107 // P2WPKH
+              case _: TaprootScriptPubKey    => 64 // Single Schnorr signature
               case _: UnassignedWitnessScriptPubKey => 0 // unknown
             }
         }
@@ -181,8 +190,8 @@ object CoinSelector extends CoinSelector {
       totalSpent: CurrencyUnit,
       selection: Vector[CoinSelectorUtxo])
 
-  implicit
-  private val coinSelectionResultsOrder: Ordering[CoinSelectionResults] = {
+  implicit private val coinSelectionResultsOrder
+      : Ordering[CoinSelectionResults] = {
     case (a: CoinSelectionResults, b: CoinSelectionResults) =>
       if (a.waste == b.waste) {
         a.selection.size.compare(b.selection.size)
@@ -228,21 +237,29 @@ object CoinSelector extends CoinSelector {
     results.min.selection
   }
 
-  /** Compute the waste for this result given the cost of change
-    * and the opportunity cost of spending these inputs now vs in the future.
-    * If change exists, waste = changeCost + inputs * (effective_feerate - long_term_feerate)
-    * If no change, waste = excess + inputs * (effective_feerate - long_term_feerate)
-    * where excess = totalEffectiveValue - target
-    * change_cost = effective_feerate * change_output_size + long_term_feerate * change_spend_size
+  /** Compute the waste for this result given the cost of change and the
+    * opportunity cost of spending these inputs now vs in the future. If change
+    * exists, waste = changeCost + inputs * (effective_feerate -
+    * long_term_feerate) If no change, waste = excess + inputs *
+    * (effective_feerate - long_term_feerate) where excess = totalEffectiveValue
+    * \- target change_cost = effective_feerate * change_output_size +
+    * long_term_feerate * change_spend_size
     *
     * Copied from
-    * @see https://github.com/achow101/bitcoin/blob/4f5ad43b1e05cd7b403f87aae4c4d42e5aea810b/src/wallet/coinselection.cpp#L345
+    * @see
+    *   https://github.com/achow101/bitcoin/blob/4f5ad43b1e05cd7b403f87aae4c4d42e5aea810b/src/wallet/coinselection.cpp#L345
     *
-    * @param utxos The selected inputs
-    * @param changeCostOpt The cost of creating change and spending it in the future. None if there is no change.
-    * @param target The amount targeted by the coin selection algorithm.
-    * @param longTermFeeRate The expected average fee rate used over the long term
-    * @return The waste
+    * @param utxos
+    *   The selected inputs
+    * @param changeCostOpt
+    *   The cost of creating change and spending it in the future. None if there
+    *   is no change.
+    * @param target
+    *   The amount targeted by the coin selection algorithm.
+    * @param longTermFeeRate
+    *   The expected average fee rate used over the long term
+    * @return
+    *   The waste
     */
   def calculateSelectionWaste(
       utxos: Vector[CoinSelectorUtxo],

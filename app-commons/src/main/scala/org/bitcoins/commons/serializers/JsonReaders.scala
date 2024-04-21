@@ -51,8 +51,8 @@ import scala.util.{Failure, Success, Try}
 
 object JsonReaders {
 
-  /** Tries to prase the provided JSON into a map with keys of
-    * type `K` and values of type `V`
+  /** Tries to prase the provided JSON into a map with keys of type `K` and
+    * values of type `V`
     */
   def mapReads[K, V](js: JsValue)(implicit
       readsK: Reads[K],
@@ -63,9 +63,9 @@ object JsonReaders {
           JsString(key).validate[K] -> value.validate[V]
         }
 
-      val allErrors: scala.collection.Seq[(
-          JsPath,
-          scala.collection.Seq[JsonValidationError])] =
+      val allErrors
+          : scala.collection.Seq[(JsPath,
+                                  scala.collection.Seq[JsonValidationError])] =
         jsResults.collect {
           case (JsError(keyErrors), _)   => keyErrors
           case (_, JsError(valueErrors)) => valueErrors
@@ -786,8 +786,8 @@ object JsonReaders {
       }
   }
 
-  implicit val feeProportionalMillionthsReads: Reads[
-    FeeProportionalMillionths] = Reads { case js =>
+  implicit val feeProportionalMillionthsReads
+      : Reads[FeeProportionalMillionths] = Reads { case js =>
     SerializerUtil.processJsNumberBigInt(FeeProportionalMillionths.fromBigInt)(
       js)
   }
@@ -1136,13 +1136,13 @@ object JsonReaders {
   implicit val sendToRouteResultReads: Reads[SendToRouteResult] =
     Json.reads[SendToRouteResult]
 
-  //don't make this implicit so we don't accidentally read the wrong time unit
+  // don't make this implicit so we don't accidentally read the wrong time unit
   val finiteDurationReadsMilliseconds: Reads[FiniteDuration] =
     Reads { js =>
       SerializerUtil.processJsNumberBigInt(_.longValue.millis)(js)
     }
 
-  //don't make this implicit so we don't accidentally read the wrong time unit
+  // don't make this implicit so we don't accidentally read the wrong time unit
   val finiteDurationReadsSeconds: Reads[FiniteDuration] = Reads { js =>
     SerializerUtil.processJsNumberBigInt(_.longValue.seconds)(js)
   }
@@ -1425,8 +1425,8 @@ object JsonReaders {
                                             timestamp)
     }
 
-  implicit val paymentReceivedEventPartReads: Reads[
-    WebSocketEvent.PaymentReceived.Part] = Reads { js =>
+  implicit val paymentReceivedEventPartReads
+      : Reads[WebSocketEvent.PaymentReceived.Part] = Reads { js =>
     for {
       amount <- (js \ "amount").validate[MilliSatoshis]
       fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
@@ -1437,8 +1437,8 @@ object JsonReaders {
                                                 timestamp)
   }
 
-  implicit val paymentReceivedEventReads: Reads[
-    WebSocketEvent.PaymentReceived] = Reads { js =>
+  implicit val paymentReceivedEventReads
+      : Reads[WebSocketEvent.PaymentReceived] = Reads { js =>
     for {
       paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
       parts <- (js \ "parts")
@@ -1460,8 +1460,8 @@ object JsonReaders {
                                            timestamp)
     }
 
-  implicit val paymentSentEventPartReads: Reads[
-    WebSocketEvent.PaymentSent.Part] = Reads { js =>
+  implicit val paymentSentEventPartReads
+      : Reads[WebSocketEvent.PaymentSent.Part] = Reads { js =>
     for {
       id <- (js \ "id").validate[PaymentId]
       amount <- (js \ "amount").validate[MilliSatoshis]
@@ -1490,8 +1490,8 @@ object JsonReaders {
                                          parts)
     }
 
-  implicit val paymentSettlingOnchainEventReads: Reads[
-    WebSocketEvent.PaymentSettlingOnchain] = Reads { js =>
+  implicit val paymentSettlingOnchainEventReads
+      : Reads[WebSocketEvent.PaymentSettlingOnchain] = Reads { js =>
     for {
       amount <- (js \ "amount").validate[MilliSatoshis]
       paymentHash <- (js \ "paymentHash").validate[Sha256Digest]

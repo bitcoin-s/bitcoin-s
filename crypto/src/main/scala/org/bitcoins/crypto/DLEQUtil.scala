@@ -8,21 +8,12 @@ import scodec.bits.ByteVector
   * Note that the naming is not entirely consistent between the specification
   * and this file in hopes of making this code more readable.
   *
-  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * The naming in this file more closely matches the naming in the secp256k1-zkp
+  * implementation:
   * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
   *
-  * Legend:
-  * x <> fe
-  * X <> p1/point
-  * y <> adaptorSecret
-  * Y <> adaptorPoint/adaptor
-  * Z <> p2/tweakedPoint
-  * a <> k
-  * A_G <> r1
-  * A_Y <> r2
-  * b <> e
-  * c <> s
-  * proof <> (e, s)
+  * Legend: x <> fe X <> p1/point y <> adaptorSecret Y <> adaptorPoint/adaptor Z
+  * <> p2/tweakedPoint a <> k A_G <> r1 A_Y <> r2 b <> e c <> s proof <> (e, s)
   */
 object DLEQUtil {
 
@@ -71,9 +62,10 @@ object DLEQUtil {
       .bytes
   }
 
-  /** Proves that the DLOG_G(R') = DLOG_Y(R) (= fe)
-    * For a full description, see https://cs.nyu.edu/courses/spring07/G22.3220-001/lec3.pdf
-    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
+  /** Proves that the DLOG_G(R') = DLOG_Y(R) (= fe) For a full description, see
+    * https://cs.nyu.edu/courses/spring07/G22.3220-001/lec3.pdf
+    * @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
     */
   def dleqProve(
       fe: FieldElement,
@@ -113,7 +105,8 @@ object DLEQUtil {
   }
 
   /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2
-    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#verifying
+    * @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#verifying
     */
   def dleqVerify(
       s: FieldElement,

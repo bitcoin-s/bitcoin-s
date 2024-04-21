@@ -1,19 +1,23 @@
 package org.bitcoins.core.hd
 
-/** This is a field that is used in conjunction with BIP44 to indicate
-  * what the purpose of this [[org.bitcoins.core.crypto.ExtKey ExtKey]] is.
+/** This is a field that is used in conjunction with BIP44 to indicate what the
+  * purpose of this [[org.bitcoins.core.crypto.ExtKey ExtKey]] is.
   *
-  * This has been used for deploying keychains that are compatible with
-  * raw segwit, p2sh wrapped segwit, and raw scripts.
+  * This has been used for deploying keychains that are compatible with raw
+  * segwit, p2sh wrapped segwit, and raw scripts.
   *
-  * Format:
-  * m / purpose'
+  * Format: m / purpose'
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki BIP43]]
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Purpose BIP44]]
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0045.mediawiki#Purpose BIP45]]
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki BIP43]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Purpose BIP44]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0045.mediawiki#Purpose BIP45]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
   */
 case class HDPurpose(constant: Int) extends BIP32Path {
 

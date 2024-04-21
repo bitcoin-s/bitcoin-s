@@ -9,7 +9,8 @@ import org.bitcoins.crypto.{ECPrivateKey, PublicKey, StringFactory}
 
 import scala.util.Try
 
-/** @see [[https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md]]
+/** @see
+  *   [[https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md]]
   */
 sealed abstract class Descriptor {
 
@@ -142,11 +143,11 @@ sealed abstract class DescriptorFactory[
         s"Incorrect type for descriptor, got=$t expected=$descriptorType")
     } else {
       val (payload, checksum) = iter.current.span(_ != '#')
-      val expressionIter = DescriptorIterator(payload.dropRight(1)) //drop ')'
+      val expressionIter = DescriptorIterator(payload.dropRight(1)) // drop ')'
       val expression = parseValidExpression(expressionIter)
-      //now check for a valid checksum
+      // now check for a valid checksum
       val checksumOpt =
-        if (checksum.nonEmpty) Some(checksum.tail) else None //drop '#'
+        if (checksum.nonEmpty) Some(checksum.tail) else None // drop '#'
       val isValidChecksum = Descriptor.isValidChecksum(
         createDescriptor(expression, None),
         checksumOpt)
@@ -164,10 +165,9 @@ sealed abstract class DescriptorFactory[
 }
 
 object RawDescriptor
-    extends DescriptorFactory[
-      RawDescriptor,
-      RawScriptExpression,
-      DescriptorType.Raw.type] {
+    extends DescriptorFactory[RawDescriptor,
+                              RawScriptExpression,
+                              DescriptorType.Raw.type] {
 
   override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
 
@@ -185,10 +185,9 @@ object RawDescriptor
 }
 
 object P2WPKHDescriptor
-    extends DescriptorFactory[
-      P2WPKHDescriptor,
-      P2WPKHExpression,
-      DescriptorType.WPKH.type] {
+    extends DescriptorFactory[P2WPKHDescriptor,
+                              P2WPKHExpression,
+                              DescriptorType.WPKH.type] {
   override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
 
   override def parseValidExpression(
@@ -218,10 +217,9 @@ object P2WPKHDescriptor
 }
 
 object P2WSHDescriptor
-    extends DescriptorFactory[
-      P2WSHDescriptor,
-      P2WSHExpression,
-      DescriptorType.WSH.type] {
+    extends DescriptorFactory[P2WSHDescriptor,
+                              P2WSHExpression,
+                              DescriptorType.WSH.type] {
   override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
 
   override protected def parseValidExpression(
@@ -238,10 +236,9 @@ object P2WSHDescriptor
 }
 
 object P2PKDescriptor
-    extends DescriptorFactory[
-      P2PKDescriptor[PublicKey],
-      P2PKScriptExpression[PublicKey],
-      DescriptorType.PK.type] {
+    extends DescriptorFactory[P2PKDescriptor[PublicKey],
+                              P2PKScriptExpression[PublicKey],
+                              DescriptorType.PK.type] {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
 
   override protected def parseValidExpression(
@@ -258,10 +255,9 @@ object P2PKDescriptor
 }
 
 object P2PKHDescriptor
-    extends DescriptorFactory[
-      P2PKHDescriptor,
-      P2PKHScriptExpression,
-      DescriptorType.PKH.type] {
+    extends DescriptorFactory[P2PKHDescriptor,
+                              P2PKHScriptExpression,
+                              DescriptorType.PKH.type] {
   override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
 
   override protected def parseValidExpression(
@@ -278,10 +274,9 @@ object P2PKHDescriptor
 }
 
 object MultisigDescriptor
-    extends DescriptorFactory[
-      MultisigDescriptor,
-      MultisigExpression,
-      DescriptorType.Multi.type] {
+    extends DescriptorFactory[MultisigDescriptor,
+                              MultisigExpression,
+                              DescriptorType.Multi.type] {
   override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
 
   override protected def parseValidExpression(
@@ -298,10 +293,9 @@ object MultisigDescriptor
 }
 
 object SortedMultisigDescriptor
-    extends DescriptorFactory[
-      SortedMultisigDescriptor,
-      SortedMultisigExpression,
-      DescriptorType.SortedMulti.type] {
+    extends DescriptorFactory[SortedMultisigDescriptor,
+                              SortedMultisigExpression,
+                              DescriptorType.SortedMulti.type] {
 
   override val descriptorType: DescriptorType.SortedMulti.type =
     DescriptorType.SortedMulti
@@ -320,10 +314,9 @@ object SortedMultisigDescriptor
 }
 
 object P2SHDescriptor
-    extends DescriptorFactory[
-      P2SHDescriptor,
-      P2SHExpression,
-      DescriptorType.SH.type] {
+    extends DescriptorFactory[P2SHDescriptor,
+                              P2SHExpression,
+                              DescriptorType.SH.type] {
   override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
 
   override protected def parseValidExpression(
@@ -343,10 +336,9 @@ object P2SHDescriptor
 }
 
 object ComboDescriptor
-    extends DescriptorFactory[
-      ComboDescriptor,
-      ComboExpression,
-      DescriptorType.Combo.type] {
+    extends DescriptorFactory[ComboDescriptor,
+                              ComboExpression,
+                              DescriptorType.Combo.type] {
   override val descriptorType: DescriptorType.Combo.type = DescriptorType.Combo
 
   override protected def parseValidExpression(
@@ -364,10 +356,9 @@ object ComboDescriptor
 }
 
 object TaprootDescriptor
-    extends DescriptorFactory[
-      TaprootDescriptor,
-      TreeExpression,
-      DescriptorType.TR.type] {
+    extends DescriptorFactory[TaprootDescriptor,
+                              TreeExpression,
+                              DescriptorType.TR.type] {
   override val descriptorType: DescriptorType.TR.type = DescriptorType.TR
 
   override protected def parseValidExpression(
@@ -385,12 +376,10 @@ object TaprootDescriptor
 
 object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
 
-  private val map: Map[
-    DescriptorType,
-    DescriptorFactory[
-      _ <: ScriptDescriptor,
-      _ <: ScriptExpression,
-      _ <: DescriptorType]] = {
+  private val map: Map[DescriptorType,
+                       DescriptorFactory[? <: ScriptDescriptor,
+                                         ? <: ScriptExpression,
+                                         ? <: DescriptorType]] = {
     Map(
       DescriptorType.Raw -> RawDescriptor,
       DescriptorType.WPKH -> P2WPKHDescriptor,
@@ -441,7 +430,8 @@ object Descriptor extends StringFactory[Descriptor] {
   }
 
   /** Implements checksum algorithm specified by BIP380 for descriptors
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
     */
   def createChecksum(string: String): String = {
     require(!string.exists(_ == '#'),
@@ -480,7 +470,7 @@ object Descriptor extends StringFactory[Descriptor] {
 
     val builder = new StringBuilder(8)
     0.until(8).foreach { j =>
-      //ret[j] = CHECKSUM_CHARSET[(c >> (5 * (7 - j))) & 31]
+      // ret[j] = CHECKSUM_CHARSET[(c >> (5 * (7 - j))) & 31]
       val idx = (c.toLong >> (5 * (7 - j))) & 31
       val char = Bech32.charset(idx.toInt)
       builder.append(char)
@@ -497,7 +487,7 @@ object Descriptor extends StringFactory[Descriptor] {
       descriptor: Descriptor,
       checksumOpt: Option[String]): Boolean = {
     checksumOpt match {
-      case None => true //trivially true if we have no checksum
+      case None => true // trivially true if we have no checksum
       case Some(checksum) =>
         val t = Try(createChecksum(descriptor.toString))
         if (t.isFailure) false
@@ -506,8 +496,10 @@ object Descriptor extends StringFactory[Descriptor] {
   }
 
   /** Implement polynomial algorithm for descriptors
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
-    * @see [[https://github.com/bitcoin/bitcoin/blob/d1e9a02126634f9e2ca0b916b69b173a8646524d/src/script/descriptor.cpp#L90]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/d1e9a02126634f9e2ca0b916b69b173a8646524d/src/script/descriptor.cpp#L90]]
     */
   private def polyMod(c: UInt64, idx: Int): UInt64 = {
     var res = c

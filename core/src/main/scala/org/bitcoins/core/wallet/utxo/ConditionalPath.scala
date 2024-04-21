@@ -8,9 +8,10 @@ import scala.annotation.tailrec
   * then the remaining over-specified path will be ignored.
   *
   * For example, if you wanted to spend a ConditionalScriptPubKey(P2PK1, P2PK2)
-  * (which looks like OP_IF <P2PK1> OP_ELSE <P2PK2> OP_ENDIF) with the P2PK1 case,
-  * then you would construct a ConditionalSpendingInfo using nonNestedTrue as your
-  * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use nonNestedFalse.
+  * (which looks like OP_IF <P2PK1> OP_ELSE <P2PK2> OP_ENDIF) with the P2PK1
+  * case, then you would construct a ConditionalSpendingInfo using nonNestedTrue
+  * as your ConditionalPath. Otherwise if you wanted to use P2PK2 you would use
+  * nonNestedFalse.
   */
 sealed trait ConditionalPath {
   def headOption: Option[Boolean]

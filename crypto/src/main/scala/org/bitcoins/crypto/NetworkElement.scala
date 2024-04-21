@@ -2,9 +2,8 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-/** Created by chris on 1/14/16.
-  * This represents a element that can be serialized to
-  * be sent over the network
+/** Created by chris on 1/14/16. This represents a element that can be
+  * serialized to be sent over the network
   */
 trait NetworkElement extends Any {
 

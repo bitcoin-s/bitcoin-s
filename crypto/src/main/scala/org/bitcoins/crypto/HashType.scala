@@ -141,14 +141,14 @@ object HashType extends Factory[HashType] {
   /** The default [[SIGHASH_ALL]] value */
   val sigHashAll = SIGHASH_ALL(sigHashAllByte)
 
-  /** The default num for [[SIGHASH_ANYONECANPAY]]
-    * We need this for serialization of [[HashType]]
-    * flags inside of [[org.bitcoins.core.crypto.TransactionSignatureSerializer]]
+  /** The default num for [[SIGHASH_ANYONECANPAY]] We need this for
+    * serialization of [[HashType]] flags inside of
+    * [[org.bitcoins.core.crypto.TransactionSignatureSerializer]]
     *
     * Have to be careful using this value, since native scala numbers are signed
     * We need this because this serializes to 0x00000080 instead of 0xffffff80
-    * If we try to use Int(sigHashAnyoneCanPayByte) we will get the latter serialization
-    * because all native scala numbers are signed
+    * If we try to use Int(sigHashAnyoneCanPayByte) we will get the latter
+    * serialization because all native scala numbers are signed
     */
   val sigHashAnyoneCanPayNum = 0x80
 
@@ -193,8 +193,8 @@ object HashType extends Factory[HashType] {
   val sigHashSingleAnyoneCanPay = SIGHASH_SINGLE_ANYONECANPAY(
     sigHashSingleAnyoneCanPayNum)
 
-  /** Checks if the given digital signature has a valid hash type
-    * Mimics this functionality inside of Bitcoin Core
+  /** Checks if the given digital signature has a valid hash type Mimics this
+    * functionality inside of Bitcoin Core
     * https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L186
     */
   def isDefinedHashtypeSignature(sig: ECDigitalSignature): Boolean = {
@@ -206,8 +206,8 @@ case object SIGHASH_DEFAULT extends HashType {
   override val num: Int = HashType.sigHashDefaultByte
 }
 
-/** defaultValue is the underlying value of the HashType. The last byte of a signature determines the HashType.
-  * https://en.bitcoin.it/wiki/OP_CHECKSIG
+/** defaultValue is the underlying value of the HashType. The last byte of a
+  * signature determines the HashType. https://en.bitcoin.it/wiki/OP_CHECKSIG
   */
 case class SIGHASH_ALL(override val num: Int) extends HashType {
   require(

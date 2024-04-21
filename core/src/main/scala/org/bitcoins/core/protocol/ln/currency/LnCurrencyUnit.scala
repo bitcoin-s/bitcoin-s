@@ -25,12 +25,12 @@ sealed abstract class LnCurrencyUnit
     toPicoBitcoinValue == ln.toPicoBitcoinValue
 
   override def equals(obj: Any): Boolean = {
-    //needed for cases like
-    //1BTC == 100,000,000 satoshis should be true
-    //weirdly enough, this worked in scala version < 2.13.4
-    //but seems to be broken in 2.13.4 :/
-    //try removing this and running code, you should see
-    //failures in the 'lnurl' module
+    // needed for cases like
+    // 1BTC == 100,000,000 satoshis should be true
+    // weirdly enough, this worked in scala version < 2.13.4
+    // but seems to be broken in 2.13.4 :/
+    // try removing this and running code, you should see
+    // failures in the 'lnurl' module
     obj match {
       case ln: LnCurrencyUnit => toPicoBitcoinValue == ln.toPicoBitcoinValue
       case ms: MilliSatoshis  => toMSat == ms
@@ -95,10 +95,9 @@ sealed abstract class LnCurrencyUnit
 
   def toMSat: MilliSatoshis = MilliSatoshis.fromPico(toPicoBitcoins)
 
-  /** This returns the string encoding defined in BOLT11
-    * For instance, 100
-    * [[org.bitcoins.core.protocol.ln.currency.PicoBitcoins PicoBitcoins]]
-    * would appear as "100p"
+  /** This returns the string encoding defined in BOLT11 For instance, 100
+    * [[org.bitcoins.core.protocol.ln.currency.PicoBitcoins PicoBitcoins]] would
+    * appear as "100p"
     */
   def toEncodedString: String = {
     toBigInt.toString + character.toString
@@ -246,8 +245,8 @@ object LnCurrencyUnits {
   }
 
   def fromMSat(msat: MilliSatoshis): PicoBitcoins = {
-    //msat are technically 10^-11
-    //while pico are 10^-12, so we need to convert
+    // msat are technically 10^-11
+    // while pico are 10^-12, so we need to convert
     val underlying = msat.toBigInt * MSAT_TO_PICO
     PicoBitcoins(underlying)
   }

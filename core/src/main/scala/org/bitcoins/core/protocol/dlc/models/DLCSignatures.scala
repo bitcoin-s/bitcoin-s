@@ -15,8 +15,8 @@ case class FundingSignatures(
 
   require(sigs.nonEmpty, s"FundingSignatures.sigs cannot be empty")
 
-  override protected def wrapped: Vector[
-    (TransactionOutPoint, ScriptWitnessV0)] = sigs
+  override protected def wrapped
+      : Vector[(TransactionOutPoint, ScriptWitnessV0)] = sigs
 
   def get(outPoint: TransactionOutPoint): Option[ScriptWitnessV0] = {
     sigs.find(_._1 == outPoint).map(_._2)

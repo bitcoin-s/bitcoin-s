@@ -47,7 +47,7 @@ case class CompactFilterDAO()(implicit
     def hashIndex = index("cfilters_hash_index", hash)
 
     override def * = {
-      (hash, filterType, bytes, height, blockHash).<>(CompactFilterDb.tupled,
+      (hash, filterType, bytes, height, blockHash).<>(CompactFilterDb.apply,
                                                       CompactFilterDb.unapply)
     }
   }
@@ -56,8 +56,8 @@ case class CompactFilterDAO()(implicit
     TableQuery[CompactFilterTable]
   }
 
-  private lazy val blockHeaderTable: profile.api.TableQuery[
-    BlockHeaderDAO#BlockHeaderTable] = {
+  private lazy val blockHeaderTable
+      : profile.api.TableQuery[BlockHeaderDAO#BlockHeaderTable] = {
     BlockHeaderDAO().table
   }
 
@@ -67,18 +67,13 @@ case class CompactFilterDAO()(implicit
   }
 
   /** Finds the rows that correlate to the given primary keys */
-  override protected def findByPrimaryKeys(
-      ids: Vector[DoubleSha256DigestBE]): Query[
-    Table[CompactFilterDb],
-    CompactFilterDb,
-    Seq] = {
+  override protected def findByPrimaryKeys(ids: Vector[DoubleSha256DigestBE])
+      : Query[Table[CompactFilterDb], CompactFilterDb, Seq] = {
     table.filter(_.blockHash.inSet(ids))
   }
 
-  override protected def findAll(ts: Vector[CompactFilterDb]): Query[
-    Table[CompactFilterDb],
-    CompactFilterDb,
-    Seq] = {
+  override protected def findAll(ts: Vector[CompactFilterDb])
+      : Query[Table[CompactFilterDb], CompactFilterDb, Seq] = {
     findByPrimaryKeys(ts.map(_.blockHashBE))
   }
 
@@ -99,10 +94,10 @@ case class CompactFilterDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  private def getAtHeightQuery(height: Int): profile.StreamingProfileAction[
-    Seq[CompactFilterDb],
-    CompactFilterDb,
-    Effect.Read] = {
+  private def getAtHeightQuery(
+      height: Int): profile.StreamingProfileAction[Seq[CompactFilterDb],
+                                                   CompactFilterDb,
+                                                   Effect.Read] = {
     table.filter(_.height === height).result
   }
 
@@ -113,10 +108,8 @@ case class CompactFilterDAO()(implicit
     result
   }
 
-  private val maxHeightQuery: profile.ProfileAction[
-    Int,
-    NoStream,
-    Effect.Read] = {
+  private val maxHeightQuery
+      : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
@@ -129,10 +122,9 @@ case class CompactFilterDAO()(implicit
 
   private def getBetweenHeightsQuery(
       from: Int,
-      to: Int): profile.StreamingProfileAction[
-    Seq[CompactFilterDb],
-    CompactFilterDb,
-    Effect.Read] = {
+      to: Int): profile.StreamingProfileAction[Seq[CompactFilterDb],
+                                               CompactFilterDb,
+                                               Effect.Read] = {
     table
       .filter(header => header.height >= from && header.height <= to)
       .sortBy(_.height)
@@ -144,8 +136,8 @@ case class CompactFilterDAO()(implicit
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
       .sortBy(_._1.height.desc)
-      //just take the last 2016 headers, if we have a reorg larger than
-      //this we will not be able to retrieve that header
+      // just take the last 2016 headers, if we have a reorg larger than
+      // this we will not be able to retrieve that header
       .take(appConfig.chain.difficultyChangeInterval)
 
     val maxQuery = join.map(_._2.chainWork).max
@@ -162,10 +154,8 @@ case class CompactFilterDAO()(implicit
     safeDatabase.run(bestFilterQuery).map(_.headOption)
   }
 
-  private val bestFilterHeightQuery: DBIOAction[
-    Option[Int],
-    NoStream,
-    Effect.Read] = {
+  private val bestFilterHeightQuery
+      : DBIOAction[Option[Int], NoStream, Effect.Read] = {
     table.map(_.height).max.result
   }
 

@@ -22,7 +22,8 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
 
   /** Checks if this signature is encoded to DER correctly
     * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
-    * @return boolean representing if the signature is a valid
+    * @return
+    *   boolean representing if the signature is a valid
     */
   def isDEREncoded: Boolean = CryptoUtil.isDEREncoded(this)
 
@@ -31,9 +32,10 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     */
   def isStrictEncoded: Boolean = CryptoUtil.isValidSignatureEncoding(this)
 
-  /** Decodes the digital signature into it's r and s points
-    * throws an exception if the given sequence of bytes is not a DER encoded signature
-    * @return the (r,s) values for the elliptic curve digital signature
+  /** Decodes the digital signature into it's r and s points throws an exception
+    * if the given sequence of bytes is not a DER encoded signature
+    * @return
+    *   the (r,s) values for the elliptic curve digital signature
     */
   lazy val decodeSignature: (BigInt, BigInt) =
     CryptoUtil.decodeSignature(this)
@@ -43,9 +45,8 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     decodeSignature._1
   }
 
-  /** If we need to do serialization with the
-    * r value, you should use this. It will pad
-    * the byte vector so we have exactly 32 bytes
+  /** If we need to do serialization with the r value, you should use this. It
+    * will pad the byte vector so we have exactly 32 bytes
     * @return
     */
   def rBytes: ByteVector = {
@@ -54,9 +55,8 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     padded
   }
 
-  /** If we need to do serialization with the
-    * s value, you should use this. It will pad
-    * the byte vector so we have exactly 32 bytes
+  /** If we need to do serialization with the s value, you should use this. It
+    * will pad the byte vector so we have exactly 32 bytes
     * @return
     */
   def s: BigInt = {
@@ -69,9 +69,8 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     padded
   }
 
-  /** Creates a ByteVector with only
-    * the 32byte r value and 32 byte s value
-    * in the vector
+  /** Creates a ByteVector with only the 32byte r value and 32 byte s value in
+    * the vector
     */
   def toRawRS: ByteVector = {
     rBytes ++ sBytes
@@ -102,10 +101,9 @@ case object EmptyDigitalSignature extends ECDigitalSignature {
   override def s: BigInt = r
 }
 
-/** The point of this case object is to help with fee estimation
-  * an average [[ECDigitalSignature]] is 72 bytes in size
-  * Technically this number can vary, 72 bytes is the most
-  * likely though according to
+/** The point of this case object is to help with fee estimation an average
+  * [[ECDigitalSignature]] is 72 bytes in size Technically this number can vary,
+  * 72 bytes is the most likely though according to
   * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
   */
 case object DummyECDigitalSignature extends ECDigitalSignature {
@@ -114,9 +112,9 @@ case object DummyECDigitalSignature extends ECDigitalSignature {
   override def s: BigInt = r
 }
 
-/** The point of this case object is to help with fee estimation
-  * when using low r signing. Technically this number can vary,
-  * 71 bytes is the most likely when using low r signing
+/** The point of this case object is to help with fee estimation when using low
+  * r signing. Technically this number can vary, 71 bytes is the most likely
+  * when using low r signing
   */
 case object LowRDummyECDigitalSignature extends ECDigitalSignature {
   override val bytes: ByteVector = ByteVector(Array.fill(71)(0.toByte))
@@ -130,7 +128,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
       extends ECDigitalSignature
 
   override def fromBytes(bytes: ByteVector): ECDigitalSignature = {
-    //this represents the empty signature
+    // this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
     else if (bytes.size == 0)
       EmptyDigitalSignature
@@ -139,17 +137,18 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     else if (bytes == LowRDummyECDigitalSignature.bytes)
       LowRDummyECDigitalSignature
     else {
-      //make sure the signature follows BIP62's low-s value
-      //https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
-      //bitcoinj implementation
-      //https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
+      // make sure the signature follows BIP62's low-s value
+      // https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+      // bitcoinj implementation
+      // https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
       ECDigitalSignatureImpl(bytes)
     }
   }
 
   /** Reads a (DER encoded) ECDigitalSignature from the front of a ByteVector
     * This method is also useful if you want to parse a ecdsa digital signature
-    * but remove the [[HashType]] that the bitcoin protocol appends to the end of a signature
+    * but remove the [[HashType]] that the bitcoin protocol appends to the end
+    * of a signature
     */
   def fromFrontOfBytes(bytes: ByteVector): ECDigitalSignature = {
     val sigWithExtra = fromBytes(bytes)
@@ -161,7 +160,9 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     sig
   }
 
-  /** Reads a (DER encoded with sighash) ECDigitalSignature from the front of a ByteVector */
+  /** Reads a (DER encoded with sighash) ECDigitalSignature from the front of a
+    * ByteVector
+    */
   def fromFrontOfBytesWithSigHash(bytes: ByteVector): ECDigitalSignature = {
     val sigWithoutSigHash = fromFrontOfBytes(bytes)
     ECDigitalSignature(
@@ -173,12 +174,15 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   def apply(r: BigInt, s: BigInt, hashType: HashType): ECDigitalSignature =
     fromRS(r, s, hashType)
 
-  /** Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
-    * The ECDigitalSignature object complies with strict der encoding as per BIP62
-    * note: That the hash type for the signature CANNOT be added to the digital signature
+  /** Takes in the r and s component of a digital signature and gives back a
+    * ECDigitalSignature object The ECDigitalSignature object complies with
+    * strict der encoding as per BIP62 note: That the hash type for the
+    * signature CANNOT be added to the digital signature
     *
-    * @param r the r component of the digital signature
-    * @param s the s component of the digital signature
+    * @param r
+    *   the r component of the digital signature
+    * @param s
+    *   the s component of the digital signature
     * @return
     */
   def fromRS(r: BigInt, s: BigInt): ECDigitalSignature = {
@@ -198,22 +202,24 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     fromBytes(bytes)
   }
 
-  /** Takes in the r and s component of a digital signature along with a HashType and gives
-    * back a ECDigitalSignature object
-    * The ECDigitalSignature object complies with strict der encoding as per BIP62
-    * note: That the hash type for the signature CANNOT be added to the digital signature
+  /** Takes in the r and s component of a digital signature along with a
+    * HashType and gives back a ECDigitalSignature object The ECDigitalSignature
+    * object complies with strict der encoding as per BIP62 note: That the hash
+    * type for the signature CANNOT be added to the digital signature
     *
-    * @param r the r component of the digital signature
-    * @param s the s component of the digital signature
-    * @param hashType The HashType byte to append
+    * @param r
+    *   the r component of the digital signature
+    * @param s
+    *   the s component of the digital signature
+    * @param hashType
+    *   The HashType byte to append
     * @return
     */
   def fromRS(r: BigInt, s: BigInt, hashType: HashType): ECDigitalSignature = {
     fromRS(r, s).appendHashType(hashType)
   }
 
-  /** Reads a 64 byte bytevector and assumes
-    * the first 32 bytes in the R value,
+  /** Reads a 64 byte bytevector and assumes the first 32 bytes in the R value,
     * the second 32 is the value
     */
   def fromRS(byteVector: ByteVector): ECDigitalSignature = {
@@ -225,16 +231,14 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     fromRS(r, s)
   }
 
-  /** Reads a 64 byte bytevector and assumes
-    * the first 32 bytes in the R value,
+  /** Reads a 64 byte bytevector and assumes the first 32 bytes in the R value,
     * the second 32 is the value
     */
   def fromRS(byteVector: ByteVector, hashType: HashType): ECDigitalSignature = {
     fromRS(byteVector).appendHashType(hashType)
   }
 
-  /** Reads a 64 byte bytevector and assumes
-    * the first 32 bytes in the R value,
+  /** Reads a 64 byte bytevector and assumes the first 32 bytes in the R value,
     * the second 32 is the value
     */
   def fromRS(hex: String): ECDigitalSignature = {
@@ -242,17 +246,15 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     fromRS(bytes)
   }
 
-  /** Reads a 64 byte bytevector and assumes
-    * the first 32 bytes in the R value,
+  /** Reads a 64 byte bytevector and assumes the first 32 bytes in the R value,
     * the second 32 is the value
     */
   def fromRS(hex: String, hashType: HashType): ECDigitalSignature = {
     fromRS(hex).appendHashType(hashType)
   }
 
-  /** Minimally encoded zero signature
-    * This will NOT be 64 bytes in length, it will be much less
-    * due to the DER encoding
+  /** Minimally encoded zero signature This will NOT be 64 bytes in length, it
+    * will be much less due to the DER encoding
     */
   val minimalEncodedZeroSig: ECDigitalSignature = fromRS(0, 0)
 }

@@ -7,7 +7,8 @@ import scodec.bits.ByteVector
 
 /** This indicates the type of the object that has been hashed for an inventory
   *
-  * @see https://bitcoin.org/en/developer-reference#data-messages
+  * @see
+  *   https://bitcoin.org/en/developer-reference#data-messages
   */
 sealed trait TypeIdentifier extends NetworkElement {
   def num: UInt32
@@ -30,17 +31,17 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
     override val num = UInt32(3)
   }
 
-  /** The hash is of a block header; identical to `MsgBlock`. When used in
-    * a `getdata` message, this indicates the response should be a `cmpctblock`
+  /** The hash is of a block header; identical to `MsgBlock`. When used in a
+    * `getdata` message, this indicates the response should be a `cmpctblock`
     * message. Only for use in `getdata` messages.
     */
   case object MsgCompactBlock extends TypeIdentifier {
     val num: UInt32 = UInt32(4)
   }
 
-  /** The hash is a TXID. When used in a `getdata` message, this indicates
-    * the response should be a transaction message, if the witness structure
-    * is nonempty, the witness serialization will be used. Only for use in
+  /** The hash is a TXID. When used in a `getdata` message, this indicates the
+    * response should be a transaction message, if the witness structure is
+    * nonempty, the witness serialization will be used. Only for use in
     * `getdata` messages.
     */
   case object MsgWitnessTx extends TypeIdentifier {
@@ -48,10 +49,10 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
     val num: UInt32 = MsgTx.num | MsgWitnessFlag
   }
 
-  /** The hash is of a block header; identical to `MsgBlock`. When
-    * used in a `getdata` message, this indicates the response should
-    * be a block message with transactions that have a witness using
-    * witness serialization. Only for use in `getdata` messages.
+  /** The hash is of a block header; identical to `MsgBlock`. When used in a
+    * `getdata` message, this indicates the response should be a block message
+    * with transactions that have a witness using witness serialization. Only
+    * for use in `getdata` messages.
     */
   case object MsgWitnessBlock extends TypeIdentifier {
     val num: UInt32 = MsgBlock.num | MsgWitnessFlag
@@ -73,8 +74,8 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
 
   /** from the docs at https://bitcoin.org/en/developer-reference#data-messages
     * These (witness block and tx) are the same as their respective type
-    * identifier but with their 30th bit set to indicate witness.
-    * For example MSG_WITNESS_TX = 0x01000040.
+    * identifier but with their 30th bit set to indicate witness. For example
+    * MSG_WITNESS_TX = 0x01000040.
     */
   private val MsgWitnessFlag = UInt32(1 << 30)
 

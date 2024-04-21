@@ -97,7 +97,8 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
 
   /** The purpose constant from BIP43
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki#purpose BIP43]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki#purpose BIP43]]
     */
   def PURPOSE: Int
 

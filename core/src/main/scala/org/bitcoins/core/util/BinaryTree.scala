@@ -27,8 +27,8 @@ trait BinaryTree[T] {
       case Empty      => None
     }
 
-  /** Creates a sequence with only the leaf values
-    * evaluates as depth first from left to right.
+  /** Creates a sequence with only the leaf values evaluates as depth first from
+    * left to right.
     */
   def toSeqLeafValues: Seq[T] = {
     @tailrec
@@ -72,24 +72,28 @@ trait BinaryTree[T] {
     loop(tree, List())
   }
 
-  /** Checks if the [[org.bitcoins.core.util.BinaryTree BinaryTree]] contains a certain element. */
+  /** Checks if the [[org.bitcoins.core.util.BinaryTree BinaryTree]] contains a
+    * certain element.
+    */
   def contains[T](t: T)(f: T => Boolean = (x: T) => x == t)(implicit
       tree: BinaryTree[T] = this): Boolean =
     findFirstDFS(t)(f)(tree).isDefined
 
   def count[T](t: T): Int = toSeq.count(_ == t)
 
-  /** Inserts an element into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]].
-    * If it cannot insert it because the branches are not empty,
-    * it throws a [[scala.RuntimeException RuntimeException]].
+  /** Inserts an element into one of the two branches in a
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. If it cannot insert it
+    * because the branches are not empty, it throws a
+    * [[scala.RuntimeException RuntimeException]].
     */
   def insert[T](t: T)(implicit tree: BinaryTree[T] = this): BinaryTree[T] = {
     insert(Leaf(t))(tree)
   }
 
-  /** Inserts a tree into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]]
-    * If it cannot insert it because the branches are not empty,
-    * it throws a [[scala.RuntimeException RuntimeException]].
+  /** Inserts a tree into one of the two branches in a
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]] If it cannot insert it
+    * because the branches are not empty, it throws a
+    * [[scala.RuntimeException RuntimeException]].
     */
   def insert[T](subTree: BinaryTree[T])(implicit
       parentTree: BinaryTree[T]): BinaryTree[T] =
@@ -107,7 +111,7 @@ trait BinaryTree[T] {
   /** Removes the subTree from the parentTree. */
   def remove[T](subTree: BinaryTree[T])(
       parentTree: BinaryTree[T] = this): BinaryTree[T] = {
-    //TODO: Optimize into a tail recursive function
+    // TODO: Optimize into a tail recursive function
     parentTree match {
       case Empty => Empty.asInstanceOf[BinaryTree[T]]
       case l: Leaf[T] =>
@@ -121,7 +125,7 @@ trait BinaryTree[T] {
   /** Replaces all instances of the original tree with the replacement tree. */
   def replace[T](originalTree: BinaryTree[T], replacementTree: BinaryTree[T])(
       implicit parentTree: BinaryTree[T] = this): BinaryTree[T] = {
-    //TODO: Optimize this into a tail recursive function
+    // TODO: Optimize this into a tail recursive function
     parentTree match {
       case Empty      => if (originalTree == Empty) replacementTree else Empty
       case l: Leaf[T] => if (l == originalTree) replacementTree else l

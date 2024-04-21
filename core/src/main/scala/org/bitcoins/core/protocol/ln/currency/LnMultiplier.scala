@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol.ln.currency
 
-/** Used by [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]]
-  * to scale between values
+/** Used by
+  * [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] to
+  * scale between values
   */
 sealed abstract class LnMultiplier {
   val multiplier: BigDecimal

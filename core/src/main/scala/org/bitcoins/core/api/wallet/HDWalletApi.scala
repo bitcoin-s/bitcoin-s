@@ -25,7 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   * This wallet API is BIP44 compliant.
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
 trait HDWalletApi extends WalletApi {
 
@@ -64,7 +65,8 @@ trait HDWalletApi extends WalletApi {
   }
 
   /** Fetches the default account from the DB
-    * @return Future[AccountDb]
+    * @return
+    *   Future[AccountDb]
     */
   def getDefaultAccount(): Future[AccountDb]
 
@@ -463,9 +465,8 @@ trait HDWalletApi extends WalletApi {
 
   def clearUtxos(account: HDAccount): Future[HDWalletApi]
 
-  /** Gets the address associated with the pubkey at
-    * the resulting `BIP32Path` determined by the
-    * default account and the given chainType and addressIndex
+  /** Gets the address associated with the pubkey at the resulting `BIP32Path`
+    * determined by the default account and the given chainType and addressIndex
     */
   def getAddress(chainType: HDChainType, addressIndex: Int)(implicit
       ec: ExecutionContext): Future[AddressDb] = {
@@ -475,9 +476,8 @@ trait HDWalletApi extends WalletApi {
     } yield address
   }
 
-  /** Gets the address associated with the pubkey at
-    * the resulting `BIP32Path` determined the given
-    * account, chainType, and addressIndex
+  /** Gets the address associated with the pubkey at the resulting `BIP32Path`
+    * determined the given account, chainType, and addressIndex
     */
   def getAddress(
       account: AccountDb,
@@ -488,7 +488,8 @@ trait HDWalletApi extends WalletApi {
 
   /** Lists all wallet accounts with the given type
     * @param purpose
-    * @return [[Future[Vector[AccountDb]]
+    * @return
+    *   [[Future[Vector[AccountDb]]
     */
   def listAccounts(purpose: HDPurpose)(implicit
       ec: ExecutionContext): Future[Vector[AccountDb]] =
@@ -496,11 +497,11 @@ trait HDWalletApi extends WalletApi {
 
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
-  /** Tries to create a new account in this wallet. Fails if the
-    * most recent account has no transaction history, as per
-    * BIP44
+  /** Tries to create a new account in this wallet. Fails if the most recent
+    * account has no transaction history, as per BIP44
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
   def createNewAccount(
       hdAccount: HDAccount,
@@ -512,6 +513,6 @@ trait HDWalletApi extends WalletApi {
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
 }

@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 
 /** This trait is responsible for the serialization and deserialization of
   * getblocks messages in on the p2p network
-  * @see https://bitcoin.org/en/developer-reference#getblocks
+  * @see
+  *   https://bitcoin.org/en/developer-reference#getblocks
   */
 trait RawGetBlocksMessageSerializer
     extends RawBitcoinSerializer[GetBlocksMessage] {
@@ -35,17 +36,20 @@ trait RawGetBlocksMessageSerializer
       getBlocksMessage.stopHash.bytes
   }
 
-  /** Helper function to parse block headers from a sequence of bytes
-    * Hashes are 32 bytes
-    * @param bytes the bytes which need to be parsed into BlockHeader hashes
-    * @param compactSizeUInt the p2p network object used to indicate how many block header hashes there are
-    * @return the sequence of hashes and the remaining bytes that need to be parsed
+  /** Helper function to parse block headers from a sequence of bytes Hashes are
+    * 32 bytes
+    * @param bytes
+    *   the bytes which need to be parsed into BlockHeader hashes
+    * @param compactSizeUInt
+    *   the p2p network object used to indicate how many block header hashes
+    *   there are
+    * @return
+    *   the sequence of hashes and the remaining bytes that need to be parsed
     */
   private def parseBlockHeaders(
       bytes: ByteVector,
-      compactSizeUInt: CompactSizeUInt): (
-      List[DoubleSha256Digest],
-      ByteVector) = {
+      compactSizeUInt: CompactSizeUInt)
+      : (List[DoubleSha256Digest], ByteVector) = {
     @tailrec
     def loop(
         remainingHeaders: Long,

@@ -18,7 +18,9 @@ sealed trait ScriptToken extends NetworkElement {
   /** The byte representation of this [[ScriptToken]]. */
   def bytes: ByteVector
 
-  /** The conversion from the byte representation of a [[ScriptToken]] to a number. */
+  /** The conversion from the byte representation of a [[ScriptToken]] to a
+    * number.
+    */
   def toLong: Long = ScriptNumberUtil.toLong(bytes)
 }
 
@@ -36,7 +38,8 @@ trait ScriptOperation extends ScriptToken {
 /** A constant in the Script language for instance as String or a number. */
 sealed abstract class ScriptConstant extends ScriptToken {
 
-  /** Returns if the [[ScriptConstant]] is encoded in the shortest possible way. */
+  /** Returns if the [[ScriptConstant]] is encoded in the shortest possible way.
+    */
   def isShortestEncoding: Boolean = BitcoinScriptUtil.isShortestEncoding(this)
 }
 
@@ -75,8 +78,9 @@ sealed abstract class ScriptNumber
   def |(that: ScriptNumber): ScriptNumber =
     ScriptNumber(underlying | that.underlying)
 
-  /** This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
-    * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
+  /** This equality just checks that the underlying scala numbers are
+    * equivalent, NOT if the numbers are bitwise equivalent in Script. For
+    * instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
     * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false.
     */
   def numEqual(that: ScriptNumber): Boolean = underlying == that.underlying
@@ -115,12 +119,12 @@ object ScriptNumber
   override def fromBytes(bytes: ByteVector) = {
     if (bytes.isEmpty) zero
     else if (BitcoinScriptUtil.isShortestEncoding(bytes)) {
-      //if it's the shortest encoding possible, use our cache
+      // if it's the shortest encoding possible, use our cache
       checkCached(ScriptNumberUtil.toLong(bytes))
     } else {
-      //else we need to preserve the byte level encoding
-      //as Script at the consensus level does not
-      //enforce minimal encoding of numbers
+      // else we need to preserve the byte level encoding
+      // as Script at the consensus level does not
+      // enforce minimal encoding of numbers
       ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
     }
   }
@@ -132,13 +136,13 @@ object ScriptNumber
       Failure(new IllegalArgumentException(
         s"The given hex was not the shortest encoding for the script number: ${bytes.toHex}"))
     } else if (requireMinimal) {
-      //our cache contains minimal encoded script numbers
-      //so we can check our cache to try and avoid allocating
+      // our cache contains minimal encoded script numbers
+      // so we can check our cache to try and avoid allocating
       val number = ScriptNumberUtil.toLong(bytes)
       Success(checkCached(number))
     } else {
-      //if minimal encoding is not required, unfortunately we need to
-      //store the byte representation that came off the wire.
+      // if minimal encoding is not required, unfortunately we need to
+      // store the byte representation that came off the wire.
       Try(fromBytes(bytes))
     }
   }
@@ -162,8 +166,8 @@ object ScriptNumber
     ScriptNumberImpl(long)
   }
 
-  /** Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
-    * [[ScriptNumberImpl]] case class.
+  /** Companion object for [[ScriptNumberImpl]] that gives us access to more
+    * constructor types for the [[ScriptNumberImpl]] case class.
     */
   private object ScriptNumberImpl {
 
@@ -191,7 +195,8 @@ case object OP_PUSHDATA1 extends ScriptOperation {
   def max = 255
 }
 
-/** The next two bytes contain the number of bytes to be pushed onto the stack. */
+/** The next two bytes contain the number of bytes to be pushed onto the stack.
+  */
 case object OP_PUSHDATA2 extends ScriptOperation {
   override val opCode: Int = 77
 
@@ -199,7 +204,8 @@ case object OP_PUSHDATA2 extends ScriptOperation {
   def max = 65535
 }
 
-/** The next four bytes contain the number of bytes to be pushed onto the stack. */
+/** The next four bytes contain the number of bytes to be pushed onto the stack.
+  */
 case object OP_PUSHDATA4 extends ScriptOperation {
   override val opCode: Int = 78
 
@@ -207,16 +213,17 @@ case object OP_PUSHDATA4 extends ScriptOperation {
   def max = 4294967295L
 }
 
-/** Represents a [[ScriptNumberOperation]] where the the number in the operation is pushed onto the stack
-  * i.e. OP_0 would be push 0 onto the stack, OP_1 would be push 1 onto the stack.
+/** Represents a [[ScriptNumberOperation]] where the the number in the operation
+  * is pushed onto the stack i.e. OP_0 would be push 0 onto the stack, OP_1
+  * would be push 1 onto the stack.
   */
 sealed abstract class ScriptNumberOperation
     extends ScriptNumber
     with ScriptOperation {
   override def hex = opCode.toHexString
 
-  /** This is required so that OP_TRUE == OP_1 and
-    * OP_FALSE == OP_0 will both be true
+  /** This is required so that OP_TRUE == OP_1 and OP_FALSE == OP_0 will both be
+    * true
     */
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -228,7 +235,9 @@ sealed abstract class ScriptNumberOperation
   }
 }
 
-/** An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.) */
+/** An empty array of bytes is pushed onto the stack. (This is not a no-op: an
+  * item is added to the stack.)
+  */
 case object OP_0 extends ScriptNumberOperation {
   override val opCode: Int = 0
 
@@ -237,7 +246,9 @@ case object OP_0 extends ScriptNumberOperation {
   override val underlying: Long = 0
 }
 
-/** An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.) */
+/** An empty array of bytes is pushed onto the stack. (This is not a no-op: an
+  * item is added to the stack.)
+  */
 case object OP_FALSE extends ScriptNumberOperation {
   override val opCode = OP_0.opCode
 

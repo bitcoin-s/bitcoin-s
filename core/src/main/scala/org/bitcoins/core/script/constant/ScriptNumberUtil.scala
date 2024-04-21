@@ -3,36 +3,37 @@ package org.bitcoins.core.script.constant
 import org.bitcoins.core.util.BytesUtil
 import scodec.bits.ByteVector
 
-/** Created by chris on 6/5/16.
-  * Numbers in script are unique in the fact that they don't follow a conventional signed numbering system
-  * such as ones complement or twos complement. The bitcoin protocol uses little endian notation which means the most
-  * significant bit indicates the sign on the number we are interpreting. The rest of the bits are used to determine
-  * what that number is. See this irc log for more info
+/** Created by chris on 6/5/16. Numbers in script are unique in the fact that
+  * they don't follow a conventional signed numbering system such as ones
+  * complement or twos complement. The bitcoin protocol uses little endian
+  * notation which means the most significant bit indicates the sign on the
+  * number we are interpreting. The rest of the bits are used to determine what
+  * that number is. See this irc log for more info
   * https://botbot.me/freenode/bitcoin-core-dev/2016-06-06/?tz=America/Chicago
   */
 trait ScriptNumberUtil {
 
-  /** Takes a hex number and converts it into a signed number
-    * used in the bitcoin script's numbering system.
-    * This function interprets the bytes as little endian numbers
-    * This should only be used for numbers inside of Script
+  /** Takes a hex number and converts it into a signed number used in the
+    * bitcoin script's numbering system. This function interprets the bytes as
+    * little endian numbers This should only be used for numbers inside of
+    * Script
     *
     * @param hex
     * @return
     */
   def toLong(hex: String): Long = toLong(BytesUtil.decodeHex(hex))
 
-  /** Takes in a hex string and converts it into a signed number
-    * This function interprets the bytes as little endian numbers
-    * This should only be used for numbers inside of Script
+  /** Takes in a hex string and converts it into a signed number This function
+    * interprets the bytes as little endian numbers This should only be used for
+    * numbers inside of Script
     *
     * @param hex
     * @return
     */
   def toInt(hex: String): Int = toInt(BytesUtil.decodeHex(hex))
 
-  /** Takes in a sequence of bytes and converts it into a signed number
-    * This should only be used for numbers inside of Script
+  /** Takes in a sequence of bytes and converts it into a signed number This
+    * should only be used for numbers inside of Script
     *
     * @param bytes
     * @return
@@ -43,10 +44,10 @@ trait ScriptNumberUtil {
     toLong(bytes).toInt
   }
 
-  /** Takes a sequence of bytes and converts it in to signed number inside of bitcoin
-    * script's numbering system
-    * This function interprets the bytes as little endian numbers
-    * This should only be used for numbers inside of Script
+  /** Takes a sequence of bytes and converts it in to signed number inside of
+    * bitcoin script's numbering system This function interprets the bytes as
+    * little endian numbers This should only be used for numbers inside of
+    * Script
     *
     * @param bytes
     * @return
@@ -54,14 +55,14 @@ trait ScriptNumberUtil {
   def toLong(bytes: ByteVector): Long = {
     val reversedBytes = bytes.reverse
     if (bytes.size == 1 && bytes.head == -128) {
-      //the case for negative zero
+      // the case for negative zero
       0
     } else if (isPositive(bytes)) {
       if (firstByteAllZeros(reversedBytes) && reversedBytes.size > 1) {
         parseLong(reversedBytes.slice(1, reversedBytes.size))
       } else parseLong(reversedBytes)
     } else {
-      //remove the sign bit
+      // remove the sign bit
       val removedSignBit = changeSignBitToPositive(reversedBytes)
       if (firstByteAllZeros(removedSignBit))
         -parseLong(removedSignBit.slice(1, removedSignBit.size))
@@ -103,7 +104,8 @@ trait ScriptNumberUtil {
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
-  /** Converts a long number to the representation of number inside of Bitcoin script's number system
+  /** Converts a long number to the representation of number inside of Bitcoin
+    * script's number system
     *
     * @param long
     * @return
@@ -120,7 +122,7 @@ trait ScriptNumberUtil {
       bytes.reverse
     } else {
       val bytes = toByteVec(long.abs)
-      //add sign bit
+      // add sign bit
       val negativeNumberBytes = changeSignBitToNegative(bytes)
       negativeNumberBytes.reverse
     }
@@ -157,10 +159,10 @@ trait ScriptNumberUtil {
   def firstByteAllZeros(hex: String): Boolean =
     firstByteAllZeros(BytesUtil.decodeHex(hex))
 
-  /** Checks if the two given [[ScriptNumber numbers]] are equivalent to zero
-    * in Script. Unfortunatey Script is one's complement which means we have
-    * things like negative zero, and also there isn't an enforcement of a
-    * minimal representation of zero, which means 0x00 = 0x0000 = 0x0000000.. == OP_0
+  /** Checks if the two given [[ScriptNumber numbers]] are equivalent to zero in
+    * Script. Unfortunatey Script is one's complement which means we have things
+    * like negative zero, and also there isn't an enforcement of a minimal
+    * representation of zero, which means 0x00 = 0x0000 = 0x0000000.. == OP_0
     */
   def isZero(x: ScriptNumber): Boolean = {
     val xIsFalse = x == ScriptNumber.zero || x == OP_0

@@ -14,7 +14,7 @@ sealed abstract class RawScriptWitnessParser
     extends RawBitcoinSerializer[ScriptWitness] {
 
   override def read(bytes: ByteVector): ScriptWitness = {
-    //first byte is the number of stack items
+    // first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.byteSize.toInt)
     @tailrec
@@ -35,7 +35,7 @@ sealed abstract class RawScriptWitnessParser
              remainingStackItems - UInt64.one)
       }
     }
-    //note there is no 'reversing' the accum, in bitcoin-s we assume the top of the stack is the 'head' element in the sequence
+    // note there is no 'reversing' the accum, in bitcoin-s we assume the top of the stack is the 'head' element in the sequence
     val stack = loop(stackBytes, Nil, stackSize.num)
     val witness = ScriptWitness(stack)
     witness

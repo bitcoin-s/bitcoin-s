@@ -44,18 +44,23 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
   /** Returns the maximum payout the offerer could win from this contract */
   def maxOffererPayout: Satoshis
 
-  /** Computes the CET set and their corresponding payouts using CETCalculator. */
+  /** Computes the CET set and their corresponding payouts using CETCalculator.
+    */
   def allOutcomesAndPayouts: Vector[(OracleOutcome, Satoshis)]
 
   /** Corresponds with this DLC's CET set */
   lazy val allOutcomes: Vector[OracleOutcome] =
     allOutcomesAndPayouts.map(_._1)
 
-  /** Maps adpator points to their corresponding OracleOutcomes (which correspond to CETs) */
+  /** Maps adpator points to their corresponding OracleOutcomes (which
+    * correspond to CETs)
+    */
   lazy val sigPointMap: Map[ECPublicKey, OracleOutcome] =
     adaptorPoints.zip(allOutcomes).toMap
 
-  /** Map OracleOutcomes (which correspond to CETs) to their adpator point and payouts */
+  /** Map OracleOutcomes (which correspond to CETs) to their adpator point and
+    * payouts
+    */
   lazy val outcomeMap: Map[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)] = {
     val builder =
       HashMap.newBuilder[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]
@@ -77,7 +82,8 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
   lazy val adaptorPointsIndexed: Vector[Indexed[ECPublicKey]] = Indexed(
     adaptorPoints)
 
-  /** Checks if the given OracleSignatures exactly match the given OracleOutcome.
+  /** Checks if the given OracleSignatures exactly match the given
+    * OracleOutcome.
     *
     * Warning: This will return false if too many OracleSignatures are given.
     *
@@ -105,7 +111,8 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
     }
   }
 
-  /** Searches all possible outcomes for one which corresponds to the given signatures.
+  /** Searches all possible outcomes for one which corresponds to the given
+    * signatures.
     *
     * Warning: This will return false if too many OracleSignatures are given.
     */
@@ -139,10 +146,12 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
     (offerOutcome, acceptOutcome)
   }
 
-  /** A ContractInfo can be constructed by the offerer, but it will not contain new
-    * information which alters the DLC's contract which is received in the accept message.
+  /** A ContractInfo can be constructed by the offerer, but it will not contain
+    * new information which alters the DLC's contract which is received in the
+    * accept message.
     *
-    * Specifically if the total collateral changes or negotiation fields are relevant.
+    * Specifically if the total collateral changes or negotiation fields are
+    * relevant.
     *
     * In these cases, this function should be called to update the ContractInfo.
     */
@@ -153,8 +162,8 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
   def serializationVersion: DLCSerializationVersion = {
     contractDescriptors.head match {
       case _: EnumContractDescriptor =>
-        //enum contracts weren't broken by
-        //https://github.com/bitcoin-s/bitcoin-s/pull/3854
+        // enum contracts weren't broken by
+        // https://github.com/bitcoin-s/bitcoin-s/pull/3854
         DLCSerializationVersion.Beta
       case n: NumericContractDescriptor =>
         n.outcomeValueFunc.serializationVersion
@@ -175,14 +184,15 @@ object ContractInfo
 
 /** Fully determines a DLC up to public keys and funding UTXOs to be used.
   *
-  * Contains all contract and oracle information and provides an external
-  * facing interface which should be used in place of directly accessing
+  * Contains all contract and oracle information and provides an external facing
+  * interface which should be used in place of directly accessing
   * ContractDescriptors or OracleInfos whenever possible to make future
   * refactoring simpler and to make the code more modular.
   *
-  * This class also contains lazy vals for all expensive computations
-  * done regarding CETs during DLC setup and execution.
-  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/a8876ed28ed33d5f7d5104f01aa2a8d80d128460/Messaging.md#the-contract_info-type
+  * This class also contains lazy vals for all expensive computations done
+  * regarding CETs during DLC setup and execution.
+  * @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/a8876ed28ed33d5f7d5104f01aa2a8d80d128460/Messaging.md#the-contract_info-type
   */
 case class SingleContractInfo(
     override val totalCollateral: Satoshis,
@@ -419,7 +429,8 @@ case class DisjointUnionContractInfo(contracts: Vector[SingleContractInfo])
   /** @inheritdoc */
   override def updateOnAccept(
       newTotalCollateral: Satoshis,
-      negotiationFields: DLCAccept.NegotiationFields): DisjointUnionContractInfo = {
+      negotiationFields: DLCAccept.NegotiationFields)
+      : DisjointUnionContractInfo = {
     negotiationFields match {
       case DLCAccept.NegotiationFieldsV2(nestedNegotiationFields) =>
         require(

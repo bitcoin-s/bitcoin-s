@@ -6,8 +6,8 @@ import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
-/** Created by chris on 12/26/15.
-  * Algebraic data type that represents a transaction input
+/** Created by chris on 12/26/15. Algebraic data type that represents a
+  * transaction input
   */
 sealed abstract class TransactionInput extends NetworkElement {
 
@@ -24,8 +24,8 @@ case object EmptyTransactionInput extends TransactionInput {
   override def sequence = TransactionConstants.sequence
 }
 
-/** This represents a coinbase input - these always have a EmptyTransactionOutPoint
-  * and arbitrary data inside the script signature
+/** This represents a coinbase input - these always have a
+  * EmptyTransactionOutPoint and arbitrary data inside the script signature
   */
 sealed abstract class CoinbaseInput extends TransactionInput {
   override def previousOutput = EmptyTransactionOutPoint
@@ -40,8 +40,9 @@ object TransactionInput extends Factory[TransactionInput] {
       extends TransactionInput
   def empty: TransactionInput = EmptyTransactionInput
 
-  /** Generates a transaction input from the provided txid and output index.
-    * A script signature can also be provided, this defaults to an empty signature.
+  /** Generates a transaction input from the provided txid and output index. A
+    * script signature can also be provided, this defaults to an empty
+    * signature.
     */
   def fromTxidAndVout(
       txid: DoubleSha256DigestBE,
@@ -78,8 +79,11 @@ object CoinbaseInput {
       extends CoinbaseInput
 
   /** Creates a coinbase input - coinbase inputs always have an empty outpoint
-    * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs
-    * @return the coinbase input
+    * @param scriptSignature
+    *   this can contain anything, miners use this to signify support for
+    *   various protocol BIPs
+    * @return
+    *   the coinbase input
     */
   def apply(
       scriptSignature: ScriptSignature,

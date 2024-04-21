@@ -7,13 +7,15 @@ import org.bitcoins.core.script.constant.ScriptOperation
   */
 sealed trait StackOperation extends ScriptOperation
 
-/** Puts the input onto the top of the alt stack. Removes it from the main stack.
+/** Puts the input onto the top of the alt stack. Removes it from the main
+  * stack.
   */
 case object OP_TOALTSTACK extends StackOperation {
   override val opCode: Int = 107
 }
 
-/** Puts the input onto the top of the main stack. Removes it from the alt stack.
+/** Puts the input onto the top of the main stack. Removes it from the alt
+  * stack.
   */
 case object OP_FROMALTSTACK extends StackOperation {
   override val opCode: Int = 108
@@ -37,7 +39,7 @@ case object OP_DROP extends StackOperation {
   override val opCode: Int = 117
 }
 
-/**  Duplicates the top stack item.
+/** Duplicates the top stack item.
   */
 case object OP_DUP extends StackOperation {
   override val opCode: Int = 118
@@ -49,7 +51,7 @@ case object OP_NIP extends StackOperation {
   override val opCode: Int = 119
 }
 
-/**  Copies the second-to-top stack item to the top.
+/** Copies the second-to-top stack item to the top.
   */
 case object OP_OVER extends StackOperation {
   override val opCode: Int = 120
@@ -73,19 +75,20 @@ case object OP_ROT extends StackOperation {
   override val opCode: Int = 123
 }
 
-/**  The top two items on the stack are swapped.
+/** The top two items on the stack are swapped.
   */
 case object OP_SWAP extends StackOperation {
   override val opCode: Int = 124
 }
 
-/** The item at the top of the stack is copied and inserted before the second-to-top item.
+/** The item at the top of the stack is copied and inserted before the
+  * second-to-top item.
   */
 case object OP_TUCK extends StackOperation {
   override val opCode: Int = 125
 }
 
-/**  Removes the top two stack items.
+/** Removes the top two stack items.
   */
 case object OP_2DROP extends StackOperation {
   override val opCode: Int = 109
@@ -115,7 +118,7 @@ case object OP_2ROT extends StackOperation {
   override val opCode: Int = 113
 }
 
-/**  Swaps the top two pairs of items.
+/** Swaps the top two pairs of items.
   */
 case object OP_2SWAP extends StackOperation {
   override val opCode: Int = 114

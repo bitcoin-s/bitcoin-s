@@ -8,7 +8,8 @@ object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
 
   /** The purpose constant from BIP84
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
     */
   override val PURPOSE = 84
 

@@ -23,12 +23,15 @@ import java.nio.file.Files
 import java.time.Instant
 import scala.util.{Failure, Success, Try}
 
-/** This is a key manager implementation meant to represent an in memory
-  * BIP39 key manager
+/** This is a key manager implementation meant to represent an in memory BIP39
+  * key manager
   *
-  * @param rootExtPrivKey the root seed used for this wallet
-  * @param kmParams the parameters used to generate the right keychain
-  * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
+  * @param rootExtPrivKey
+  *   the root seed used for this wallet
+  * @param kmParams
+  *   the parameters used to generate the right keychain
+  * @see
+  *   https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
 class BIP39KeyManager(
     private val rootExtPrivKey: ExtPrivateKey,
@@ -42,14 +45,14 @@ class BIP39KeyManager(
     other match {
       case bip39Km: BIP39KeyManager =>
         getRootXPub == bip39Km.getRootXPub &&
-          kmParams == bip39Km.kmParams &&
-          creationTime.getEpochSecond == bip39Km.creationTime.getEpochSecond
+        kmParams == bip39Km.kmParams &&
+        creationTime.getEpochSecond == bip39Km.creationTime.getEpochSecond
       case _ =>
         other.equals(this)
     }
 
-  /** Converts a non-sensitive DB representation of a UTXO into
-    * a signable (and sensitive) real-world UTXO
+  /** Converts a non-sensitive DB representation of a UTXO into a signable (and
+    * sensitive) real-world UTXO
     */
   def toSign(privKeyPath: HDPath): AdaptorSign = {
     val xpriv =
@@ -92,9 +95,8 @@ object BIP39KeyManager
       aesPasswordOpt: Option[AesPassword],
       entropy: BitVector,
       bip39PasswordOpt: Option[String],
-      kmParams: KeyManagerParams): Either[
-    KeyManagerInitializeError,
-    BIP39KeyManager] = {
+      kmParams: KeyManagerParams)
+      : Either[KeyManagerInitializeError, BIP39KeyManager] = {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=$seedPath")
 
@@ -172,7 +174,7 @@ object BIP39KeyManager
       }
     }
 
-    //verify we can unlock it for a sanity check
+    // verify we can unlock it for a sanity check
     val unlocked = BIP39LockedKeyManager.unlock(passphraseOpt = aesPasswordOpt,
                                                 bip39PasswordOpt =
                                                   bip39PasswordOpt,
@@ -210,9 +212,8 @@ object BIP39KeyManager
   def fromParams(
       kmParams: KeyManagerParams,
       passwordOpt: Option[AesPassword],
-      bip39PasswordOpt: Option[String]): Either[
-    ReadMnemonicError,
-    BIP39KeyManager] = {
+      bip39PasswordOpt: Option[String])
+      : Either[ReadMnemonicError, BIP39KeyManager] = {
     val mnemonicCodeE =
       WalletStorage.decryptSeedFromDisk(kmParams.seedPath, passwordOpt)
 

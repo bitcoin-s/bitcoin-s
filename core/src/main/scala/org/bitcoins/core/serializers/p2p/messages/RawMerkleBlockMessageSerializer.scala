@@ -6,7 +6,8 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
 /** Responsible for serialization and deserialization of MerkleBlockMessages
-  * @see https://bitcoin.org/en/developer-reference#merkleblock
+  * @see
+  *   https://bitcoin.org/en/developer-reference#merkleblock
   */
 trait RawMerkleBlockMessageSerializer
     extends RawBitcoinSerializer[MerkleBlockMessage] {

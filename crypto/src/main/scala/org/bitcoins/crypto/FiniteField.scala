@@ -112,8 +112,9 @@ abstract class FiniteFieldObject[F <: FiniteFieldMember[F]](
     apply(neg)
   }
 
-  /** Computes the inverse (mod fieldOrder) of the input using the Euclidean Algorithm (log time)
-    * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
+  /** Computes the inverse (mod fieldOrder) of the input using the Euclidean
+    * Algorithm (log time) Cribbed from
+    * [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
     */
   def computeInverse(fe: F): F = {
     val inv = fe.toBigInteger.modInverse(fieldOrder)

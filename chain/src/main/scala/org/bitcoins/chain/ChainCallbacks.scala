@@ -12,17 +12,15 @@ trait ChainCallbacks
     extends ModuleCallbacks[ChainCallbacks]
     with BitcoinSLogger {
 
-  def onBlockHeaderConnected: CallbackHandler[
-    Vector[(Int, BlockHeader)],
-    OnBlockHeaderConnected]
+  def onBlockHeaderConnected
+      : CallbackHandler[Vector[(Int, BlockHeader)], OnBlockHeaderConnected]
 
-  def onCompactFilterHeaderConnected: CallbackHandler[
-    Vector[CompactFilterHeaderDb],
-    OnCompactFilterHeaderConnected]
+  def onCompactFilterHeaderConnected
+      : CallbackHandler[Vector[CompactFilterHeaderDb],
+                        OnCompactFilterHeaderConnected]
 
-  def onCompactFilterConnected: CallbackHandler[
-    Vector[CompactFilterDb],
-    OnCompactFilterConnected]
+  def onCompactFilterConnected
+      : CallbackHandler[Vector[CompactFilterDb], OnCompactFilterConnected]
 
   def onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged]
 
@@ -86,15 +84,13 @@ trait OnSyncFlagChanged extends Callback[Boolean]
 object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
 
   private case class ChainCallbacksImpl(
-      onBlockHeaderConnected: CallbackHandler[
-        Vector[(Int, BlockHeader)],
-        OnBlockHeaderConnected],
+      onBlockHeaderConnected: CallbackHandler[Vector[(Int, BlockHeader)],
+                                              OnBlockHeaderConnected],
       onCompactFilterHeaderConnected: CallbackHandler[
         Vector[CompactFilterHeaderDb],
         OnCompactFilterHeaderConnected],
-      onCompactFilterConnected: CallbackHandler[
-        Vector[CompactFilterDb],
-        OnCompactFilterConnected],
+      onCompactFilterConnected: CallbackHandler[Vector[CompactFilterDb],
+                                                OnCompactFilterConnected],
       onSyncFlagChanged: CallbackHandler[Boolean, OnSyncFlagChanged])
       extends ChainCallbacks {
 
@@ -134,8 +130,8 @@ object ChainCallbacks extends CallbackFactory[ChainCallbacks] {
       onCompactFilterHeaderConnected: Vector[OnCompactFilterHeaderConnected] =
         Vector.empty,
       onCompactFilterConnected: Vector[OnCompactFilterConnected] = Vector.empty,
-      onSyncFlagChanged: Vector[OnSyncFlagChanged] =
-        Vector.empty): ChainCallbacks =
+      onSyncFlagChanged: Vector[OnSyncFlagChanged] = Vector.empty)
+      : ChainCallbacks =
     ChainCallbacksImpl(
       onBlockHeaderConnected =
         CallbackHandler[Vector[(Int, BlockHeader)], OnBlockHeaderConnected](

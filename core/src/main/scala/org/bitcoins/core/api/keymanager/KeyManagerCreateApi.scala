@@ -11,16 +11,13 @@ import scodec.bits.BitVector
 trait KeyManagerCreateApi
 
 /** @define initialize
-  *                    Initializes the wallet, generating a wallet seed.
-  *                    This seed should be displayed to the user, so they
-  *                    can write it down. They should also be prompted
-  *                    to confirm at least parts of the code.
+  *   Initializes the wallet, generating a wallet seed. This seed should be
+  *   displayed to the user, so they can write it down. They should also be
+  *   prompted to confirm at least parts of the code.
   * @define initializeWithEnt
-  *                           Initializes the with a user-provided seed,
-  *                           generating a wallet seed.
-  *                           This seed should be displayed to the user, so they
-  *                           can write it down. They should also be prompted
-  *                           to confirm at least parts of the code.
+  *   Initializes the with a user-provided seed, generating a wallet seed. This
+  *   seed should be displayed to the user, so they can write it down. They
+  *   should also be prompted to confirm at least parts of the code.
   */
 trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
     extends KeyManagerCreateApi {
@@ -44,7 +41,8 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
       bip39PasswordOpt: Option[String],
       kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
 
-  /** Helper method to initialize a [[KeyManagerApi KeyManager]] with a [[MnemonicCode MnemonicCode]]
+  /** Helper method to initialize a [[KeyManagerApi KeyManager]] with a
+    * [[MnemonicCode MnemonicCode]]
     *
     * @param mnemonicCode
     * @param kmParams

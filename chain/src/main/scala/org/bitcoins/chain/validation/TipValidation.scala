@@ -9,18 +9,20 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.NumberUtil
 
-/** Responsible for checking if we can connect two
-  * block headers together on the blockchain. The checks
-  * things like proof of work difficulty, if it
+/** Responsible for checking if we can connect two block headers together on the
+  * blockchain. The checks things like proof of work difficulty, if it
   * references the previous block header correctly etc.
   */
 sealed abstract class TipValidation extends ChainVerificationLogger {
 
-  /** Checks if the given header can be connected to the current tip
-    * This is the method where a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] is transformed into a
-    * [[org.bitcoins.chain.models.BlockHeaderDb BlockHeaderDb]]. What this really means is that a height is
-    * assigned to a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] after all these
-    * validation checks occur
+  /** Checks if the given header can be connected to the current tip This is the
+    * method where a
+    * [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] is
+    * transformed into a
+    * [[org.bitcoins.chain.models.BlockHeaderDb BlockHeaderDb]]. What this
+    * really means is that a height is assigned to a
+    * [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] after
+    * all these validation checks occur
     */
   def checkNewTip(newPotentialTip: BlockHeader, blockchain: Blockchain)(implicit
       conf: ChainAppConfig): TipUpdateResult = {
@@ -38,7 +40,7 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
           s"Failed to connect tip=${header.hashBE.hex} to current chain")
         TipUpdateResult.BadPreviousBlockHash(newPotentialTip)
       } else if (header.nBits != expectedWork) {
-        //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L19
+        // https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L19
         TipUpdateResult.BadPOW(newPotentialTip)
       } else if (isBadNonce(newPotentialTip)) {
         TipUpdateResult.BadNonce(newPotentialTip)
@@ -56,7 +58,9 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     connectTipResult
   }
 
-  /** Logs the result of [[org.bitcoins.chain.validation.TipValidation.checkNewTip() checkNewTip]] */
+  /** Logs the result of
+    * [[org.bitcoins.chain.validation.TipValidation.checkNewTip() checkNewTip]]
+    */
   private def logTipResult(
       connectTipResult: TipUpdateResult,
       currentTip: BlockHeaderDb): Unit = {
@@ -73,14 +77,15 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     ()
   }
 
-  /** Checks if the given header hashes to meet the POW requirements for
-    * this block (determined by lookinng at the `nBits` field).
+  /** Checks if the given header hashes to meet the POW requirements for this
+    * block (determined by lookinng at the `nBits` field).
     *
-    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74 pow.cpp]]
-    *      in Bitcoin Core
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74 pow.cpp]]
+    *   in Bitcoin Core
     */
   def isBadNonce(header: BlockHeader): Boolean = {
-    //convert hash into a big integer
+    // convert hash into a big integer
     val headerWork = BigInt(1, header.hashBE.bytes.toArray)
     if (headerWork <= 0 || NumberUtil.isNBitsOverflow(nBits = header.nBits)) {
       true

@@ -7,18 +7,24 @@ import org.bitcoins.crypto.{CryptoUtil, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /** Represents a message header on the peer-to-peer network
-  * @see https://bitcoin.org/en/developer-reference#message-headers
+  * @see
+  *   https://bitcoin.org/en/developer-reference#message-headers
   *
-  * @param network Each network has magic bytes indicating the originating network;
-  *                   used to seek to next message when stream state is unknown.
-  * @param commandName ASCII string which identifies what message type is contained in the payload.
-  *                       Followed by nulls (0x00) to pad out byte count; for example: version\0\0\0\0\0.
-  * @param payloadSize Number of bytes in payload. The current maximum number of bytes (MAX_SIZE) allowed in the payload
-  *                    by Bitcoin Core is 32 MiB—messages with a payload size larger than this will be dropped or rejected.
-  * @param checksum Added in protocol version 209.
-  *                 First 4 bytes of SHA256(SHA256(payload)) in internal byte order.
-  *                 If payload is empty, as in verack and getaddr messages,
-  *                 the checksum is always 0x5df6e0e2 (SHA256(SHA256(""))).
+  * @param network
+  *   Each network has magic bytes indicating the originating network; used to
+  *   seek to next message when stream state is unknown.
+  * @param commandName
+  *   ASCII string which identifies what message type is contained in the
+  *   payload. Followed by nulls (0x00) to pad out byte count; for example:
+  *   version\0\0\0\0\0.
+  * @param payloadSize
+  *   Number of bytes in payload. The current maximum number of bytes (MAX_SIZE)
+  *   allowed in the payload by Bitcoin Core is 32 MiB—messages with a payload
+  *   size larger than this will be dropped or rejected.
+  * @param checksum
+  *   Added in protocol version 209. First 4 bytes of SHA256(SHA256(payload)) in
+  *   internal byte order. If payload is empty, as in verack and getaddr
+  *   messages, the checksum is always 0x5df6e0e2 (SHA256(SHA256(""))).
   */
 case class NetworkHeader(
     network: NetworkParameters,
@@ -40,9 +46,14 @@ object NetworkHeader extends Factory[NetworkHeader] {
   override def fromBytes(bytes: ByteVector): NetworkHeader =
     RawNetworkHeaderSerializer.read(bytes)
 
-  /** Creates a network header from it's [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] and [[NetworkPayload]]
-    * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] object that indicates what network the payload needs to be sent on
-    * @param payload the payload object that needs to be sent on the network
+  /** Creates a network header from it's
+    * [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] and
+    * [[NetworkPayload]]
+    * @param network
+    *   the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
+    *   object that indicates what network the payload needs to be sent on
+    * @param payload
+    *   the payload object that needs to be sent on the network
     */
   def apply(
       network: NetworkParameters,

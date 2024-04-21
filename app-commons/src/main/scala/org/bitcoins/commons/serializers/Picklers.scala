@@ -80,12 +80,12 @@ object Picklers {
   implicit val schnorrNoncePickler: ReadWriter[SchnorrNonce] =
     readwriter[String].bimap(_.hex, SchnorrNonce.fromHex)
 
-  implicit val enumEventDescriptorPickler: ReadWriter[
-    EnumEventDescriptorV0TLV] =
+  implicit val enumEventDescriptorPickler
+      : ReadWriter[EnumEventDescriptorV0TLV] =
     readwriter[String].bimap(_.hex, EnumEventDescriptorV0TLV.fromHex)
 
-  implicit val digitDecompEventDescriptorPickler: ReadWriter[
-    DigitDecompositionEventDescriptorV0TLV] =
+  implicit val digitDecompEventDescriptorPickler
+      : ReadWriter[DigitDecompositionEventDescriptorV0TLV] =
     readwriter[String].bimap(_.hex,
                              DigitDecompositionEventDescriptorV0TLV.fromHex)
 
@@ -116,8 +116,8 @@ object Picklers {
   implicit val uInt32Pickler: ReadWriter[UInt32] =
     readwriter[Long].bimap(_.toLong, long => UInt32(long))
 
-  implicit val satoshisPerVirtualBytePickler: ReadWriter[
-    SatoshisPerVirtualByte] =
+  implicit val satoshisPerVirtualBytePickler
+      : ReadWriter[SatoshisPerVirtualByte] =
     readwriter[Long]
       .bimap(_.toLong, long => SatoshisPerVirtualByte(Satoshis(long)))
 
@@ -133,8 +133,8 @@ object Picklers {
   implicit val contractInfoTLVPickler: ReadWriter[ContractInfoV0TLV] =
     readwriter[String].bimap(_.hex, ContractInfoV0TLV.fromHex)
 
-  implicit val schnorrDigitalSignaturePickler: ReadWriter[
-    SchnorrDigitalSignature] =
+  implicit val schnorrDigitalSignaturePickler
+      : ReadWriter[SchnorrDigitalSignature] =
     readwriter[String].bimap(_.hex, SchnorrDigitalSignature.fromHex)
 
   implicit val partialSignaturePickler: ReadWriter[PartialSignature] =
@@ -456,8 +456,8 @@ object Picklers {
     readwriter[ujson.Obj].bimap(writeSignTLV, readSignTLV)
   }
 
-  implicit val lnMessageDLCAcceptTLVPickler: ReadWriter[
-    LnMessage[DLCAcceptTLV]] =
+  implicit val lnMessageDLCAcceptTLVPickler
+      : ReadWriter[LnMessage[DLCAcceptTLV]] =
     readwriter[String].bimap(_.hex, LnMessageFactory(DLCAcceptTLV).fromHex)
 
   implicit val lnMessageDLCSignTLVPickler: ReadWriter[LnMessage[DLCSignTLV]] =
@@ -488,8 +488,8 @@ object Picklers {
   implicit val addressLabelTagPickler: ReadWriter[AddressLabelTag] =
     readwriter[String].bimap(_.name, AddressLabelTag.apply)
 
-  implicit val lockUnspentOutputParameterPickler: ReadWriter[
-    LockUnspentOutputParameter] =
+  implicit val lockUnspentOutputParameterPickler
+      : ReadWriter[LockUnspentOutputParameter] =
     readwriter[Value].bimap(_.toJson, LockUnspentOutputParameter.fromJson)
 
   // can't make implicit because it will overlap with ones needed for cli
@@ -591,8 +591,8 @@ object Picklers {
     }
   }
 
-  implicit val hyperbolaPayoutCurvePieceTLVWriter: Writer[
-    HyperbolaPayoutCurvePieceTLV] = {
+  implicit val hyperbolaPayoutCurvePieceTLVWriter
+      : Writer[HyperbolaPayoutCurvePieceTLV] = {
     writer[Obj].comap { piece =>
       Obj(
         PicklerKeys.usePositivePiece -> Bool(piece.usePositivePiece),
@@ -612,7 +612,7 @@ object Picklers {
   implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] = {
     def endpoint(json: Value, isEndpoint: Boolean): Value = json match {
       case obj: Obj =>
-        //drop old value on the floor if there is one
+        // drop old value on the floor if there is one
         obj.value.put(PicklerKeys.isEndpointKey, Bool(isEndpoint))
         Obj(obj.value)
       case v: Value => v
@@ -852,8 +852,8 @@ object Picklers {
       )
     }
 
-  implicit val acceptedComputingAdaptorSigsW: Writer[
-    AcceptedComputingAdaptorSigs] = writer[Obj].comap { accepted =>
+  implicit val acceptedComputingAdaptorSigsW
+      : Writer[AcceptedComputingAdaptorSigs] = writer[Obj].comap { accepted =>
     import accepted._
     Obj(
       "state" -> Str(statusString),

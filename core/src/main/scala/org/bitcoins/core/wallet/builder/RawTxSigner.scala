@@ -11,39 +11,40 @@ import org.bitcoins.core.wallet.utxo.{
   UnassignedSegwitNativeInputInfo
 }
 
-/** Transactions that have been finalized by a RawTxFinalizer are passed as inputs
-  * to a sign function here in order to generate fully signed transactions.
+/** Transactions that have been finalized by a RawTxFinalizer are passed as
+  * inputs to a sign function here in order to generate fully signed
+  * transactions.
   *
   * In the future sign methods specific to multi-party protocols will be added
-  * here to support PSBT and signed transaction construction between multiple parties.
+  * here to support PSBT and signed transaction construction between multiple
+  * parties.
   */
 object RawTxSigner {
 
-  val emptyInvariant: (
-      Vector[ScriptSignatureParams[InputInfo]],
-      Transaction) => Boolean = (_, _) => true
+  val emptyInvariant
+      : (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean =
+    (_, _) => true
 
-  def feeInvariant(expectedFeeRate: FeeUnit): (
-      Vector[ScriptSignatureParams[InputInfo]],
-      Transaction) => Boolean =
+  def feeInvariant(expectedFeeRate: FeeUnit)
+      : (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean =
     addFeeRateInvariant(expectedFeeRate, emptyInvariant)
 
   private def addFeeRateInvariant(
       expectedFeeRate: FeeUnit,
       userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean): (
-      Vector[ScriptSignatureParams[InputInfo]],
-      Transaction) => Boolean = { (utxoInfos, signedTx) =>
-    {
-      userInvariants(utxoInfos, signedTx) &&
-      TxUtil
-        .sanityChecks(isSigned = true,
-                      inputInfos = utxoInfos.map(_.inputInfo),
-                      expectedFeeRate = expectedFeeRate,
-                      tx = signedTx)
-        .isSuccess
-    }
+          Transaction) => Boolean)
+      : (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean = {
+    (utxoInfos, signedTx) =>
+      {
+        userInvariants(utxoInfos, signedTx) &&
+        TxUtil
+          .sanityChecks(isSigned = true,
+                        inputInfos = utxoInfos.map(_.inputInfo),
+                        expectedFeeRate = expectedFeeRate,
+                        tx = signedTx)
+          .isSuccess
+      }
   }
 
   def sign(

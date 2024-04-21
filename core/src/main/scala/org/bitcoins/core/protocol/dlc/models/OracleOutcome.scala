@@ -8,20 +8,23 @@ import org.bitcoins.core.protocol.tlv.{
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.crypto.{ECPublicKey, SchnorrNonce}
 
-/** OracleOutcomes are in one-to-one correspondence with Contract
-  * Execution Transactions (CETs) and are defined by a set of oracles
-  * needed to execute with a given CET, representing a certain outcome
-  * and using a certain signature point (aka adaptor point).
+/** OracleOutcomes are in one-to-one correspondence with Contract Execution
+  * Transactions (CETs) and are defined by a set of oracles needed to execute
+  * with a given CET, representing a certain outcome and using a certain
+  * signature point (aka adaptor point).
   */
 sealed trait OracleOutcome {
 
-  /** The oracles whose signatures are needed for execution with this outcome. */
+  /** The oracles whose signatures are needed for execution with this outcome.
+    */
   def oracles: Vector[SingleOracleInfo]
 
-  /** The DLCOutcomeType this OracleOutcome corresponds to (from a payout perspective).
+  /** The DLCOutcomeType this OracleOutcome corresponds to (from a payout
+    * perspective).
     *
-    * Note that for the case of multi-oracle numeric outcomes with bounded differences
-    * allowed between oracles, this corresponds to the primary oracle's outcome.
+    * Note that for the case of multi-oracle numeric outcomes with bounded
+    * differences allowed between oracles, this corresponds to the primary
+    * oracle's outcome.
     */
   def outcome: DLCOutcomeType
 
@@ -29,7 +32,9 @@ sealed trait OracleOutcome {
 
   protected def computeSigPoint: ECPublicKey
 
-  /** The adaptor point used to encrypt the signatures for this corresponding CET. */
+  /** The adaptor point used to encrypt the signatures for this corresponding
+    * CET.
+    */
   lazy val sigPoint: ECPublicKey = {
     computeSigPoint
   }
@@ -38,8 +43,8 @@ sealed trait OracleOutcome {
   def aggregateNonce: SchnorrNonce
 }
 
-/** Corresponds to a CET in an Enumerated Outcome DLC where some set of `threshold`
-  * oracles have signed a given EnumOutcome.
+/** Corresponds to a CET in an Enumerated Outcome DLC where some set of
+  * `threshold` oracles have signed a given EnumOutcome.
   */
 case class EnumOracleOutcome(
     oracles: Vector[EnumSingleOracleInfo],
@@ -65,8 +70,9 @@ case class EnumOracleOutcome(
 /** Corresponds to a CET in an Numeric Outcome DLC where some set of `threshold`
   * oracles have each signed some NumericOutcome.
   */
-case class NumericOracleOutcome(override val oraclesAndOutcomes: Vector[
-  (NumericSingleOracleInfo, UnsignedNumericOutcome)])
+case class NumericOracleOutcome(
+    override val oraclesAndOutcomes: Vector[(NumericSingleOracleInfo,
+                                             UnsignedNumericOutcome)])
     extends OracleOutcome {
 
   override def oracles: Vector[NumericSingleOracleInfo] = {

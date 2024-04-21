@@ -8,7 +8,8 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 
 /** Serializes and deserializes inventory objects on the peer-to-peer network
-  * @see https://bitcoin.org/en/developer-reference#inv
+  * @see
+  *   https://bitcoin.org/en/developer-reference#inv
   */
 trait RawInventoryMessageSerializer
     extends RawBitcoinSerializer[InventoryMessage] {
@@ -31,10 +32,14 @@ trait RawInventoryMessageSerializer
     inventoryMessage.inventoryCount.bytes ++ msgBytes
   }
 
-  /** Parses the sequence of bytes into a sequence of inventories inside of the inventory message
-    * @param bytes the bytes that need to be parsed into Inventories
-    * @param requiredInventories the num of inventories inside this sequence of bytes
-    * @return the sequence of inventories and the remaining bytes
+  /** Parses the sequence of bytes into a sequence of inventories inside of the
+    * inventory message
+    * @param bytes
+    *   the bytes that need to be parsed into Inventories
+    * @param requiredInventories
+    *   the num of inventories inside this sequence of bytes
+    * @return
+    *   the sequence of inventories and the remaining bytes
     */
   private def parseInventories(
       bytes: ByteVector,

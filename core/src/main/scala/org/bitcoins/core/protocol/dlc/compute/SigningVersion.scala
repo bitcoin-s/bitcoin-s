@@ -60,7 +60,9 @@ object SigningVersion extends StringFactory[SigningVersion] {
     }
   }
 
-  /** V0 DLC Oracle singing algo, specified in https://github.com/discreetlogcontracts/dlcspecs/pull/113 */
+  /** V0 DLC Oracle singing algo, specified in
+    * https://github.com/discreetlogcontracts/dlcspecs/pull/113
+    */
   case object DLCOracleV0SigningVersion extends SigningVersion {
 
     override def calcNonceTweak(

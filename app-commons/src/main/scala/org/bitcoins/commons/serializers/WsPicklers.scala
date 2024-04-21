@@ -72,7 +72,8 @@ object WsPicklers {
       notification: ChainNotification[?]): ujson.Obj = {
     val payloadJson: ujson.Value = notification match {
       case BlockProcessedNotification(block) =>
-        upickle.default.writeJs(block)(using Picklers.getBlockHeaderResultPickler)
+        upickle.default.writeJs(block)(
+          using Picklers.getBlockHeaderResultPickler)
       case CompactFilterHeaderProcessedNotification(filterHeader) =>
         upickle.default.writeJs(filterHeader)(
           using Picklers.compactFilterHeaderPickler)
@@ -96,17 +97,20 @@ object WsPicklers {
     typeObj match {
       case ChainWsType.BlockProcessed =>
         val block =
-          upickle.default.read(payloadObj)(using Picklers.getBlockHeaderResultPickler)
+          upickle.default.read(payloadObj)(
+            using Picklers.getBlockHeaderResultPickler)
         BlockProcessedNotification(block)
       case ChainWsType.CompactFilterHeaderProcessed =>
         val filterheader =
-          upickle.default.read(payloadObj)(using Picklers.compactFilterHeaderPickler)
+          upickle.default.read(payloadObj)(
+            using Picklers.compactFilterHeaderPickler)
 
         CompactFilterHeaderProcessedNotification(filterheader)
 
       case ChainWsType.CompactFilterProcessed =>
         val filter =
-          upickle.default.read(payloadObj)(using Picklers.compactFilterDbPickler)
+          upickle.default.read(payloadObj)(
+            using Picklers.compactFilterDbPickler)
         CompactFilterProcessedNotification(filter)
       case ChainWsType.SyncFlagChanged =>
         val syncing = payloadObj.bool
@@ -151,10 +155,12 @@ object WsPicklers {
     val payloadObj = obj(PicklerKeys.payloadKey)
     typeObj match {
       case WalletWsType.TxBroadcast =>
-        val tx = upickle.default.read(payloadObj)(using Picklers.transactionPickler)
+        val tx =
+          upickle.default.read(payloadObj)(using Picklers.transactionPickler)
         TxBroadcastNotification(tx)
       case WalletWsType.TxProcessed =>
-        val tx = upickle.default.read(payloadObj)(using Picklers.transactionPickler)
+        val tx =
+          upickle.default.read(payloadObj)(using Picklers.transactionPickler)
         TxProcessedNotification(tx)
       case WalletWsType.NewAddress =>
         val address =
@@ -169,14 +175,16 @@ object WsPicklers {
         val status = upickle.default.read(payloadObj)(using Picklers.dlcStatusR)
         DLCStateChangeNotification(status)
       case WalletWsType.DLCOfferAdd =>
-        val offerDb = upickle.default.read(payloadObj)(using Picklers.dlcOfferAddR)
+        val offerDb =
+          upickle.default.read(payloadObj)(using Picklers.dlcOfferAddR)
         DLCOfferAddNotification(offerDb)
       case WalletWsType.DLCOfferRemove =>
         val offerHash =
           upickle.default.read(payloadObj)(using Picklers.dlcOfferRemoveR)
         DLCOfferRemoveNotification(offerHash)
       case WalletWsType.RescanComplete =>
-        val complete = upickle.default.read(payloadObj)(using Picklers.rescanComplete)
+        val complete =
+          upickle.default.read(payloadObj)(using Picklers.rescanComplete)
         complete
       case WalletWsType.FeeRateChange =>
         FeeRateChange(upickle.default.read(payloadObj)(using Picklers.feeUnit))
@@ -313,8 +321,8 @@ object WsPicklers {
     )
   }
 
-  implicit val dlcNodeNotificationPickler: ReadWriter[
-    DLCNodeNotification[?]] = {
+  implicit val dlcNodeNotificationPickler
+      : ReadWriter[DLCNodeNotification[?]] = {
     readwriter[ujson.Obj]
       .bimap(writeDLCNodeNotification, readDLCNodeNotification)
   }
@@ -334,8 +342,8 @@ object WsPicklers {
     )
   }
 
-  implicit val compactFilterHeaderProcessedPickler: ReadWriter[
-    CompactFilterHeaderProcessedNotification] = {
+  implicit val compactFilterHeaderProcessedPickler
+      : ReadWriter[CompactFilterHeaderProcessedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_)
@@ -343,16 +351,16 @@ object WsPicklers {
     )
   }
 
-  implicit val compactFilterProcessedPickler: ReadWriter[
-    CompactFilterProcessedNotification] = {
+  implicit val compactFilterProcessedPickler
+      : ReadWriter[CompactFilterProcessedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_).asInstanceOf[CompactFilterProcessedNotification]
     )
   }
 
-  implicit val syncFlagChangedPickler: ReadWriter[
-    SyncFlagChangedNotification] = {
+  implicit val syncFlagChangedPickler
+      : ReadWriter[SyncFlagChangedNotification] = {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_).asInstanceOf[SyncFlagChangedNotification]
@@ -377,30 +385,30 @@ object WsPicklers {
       readWalletNotification(_).asInstanceOf[DLCOfferRemoveNotification])
   }
 
-  implicit val torStartedPickler: ReadWriter[
-    TorNotification.TorStartedNotification.type] = {
+  implicit val torStartedPickler
+      : ReadWriter[TorNotification.TorStartedNotification.type] = {
     readwriter[ujson.Obj].bimap(
       writeTorNotification(_),
       readTorNotification(_)
         .asInstanceOf[TorNotification.TorStartedNotification.type])
   }
 
-  implicit val dlcNodeConnectionInitiatedPickler: ReadWriter[
-    DLCNodeConnectionInitiated] = {
+  implicit val dlcNodeConnectionInitiatedPickler
+      : ReadWriter[DLCNodeConnectionInitiated] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
       readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionInitiated])
   }
 
-  implicit val dlcNodeConnectionFailedPickler: ReadWriter[
-    DLCNodeConnectionFailed] = {
+  implicit val dlcNodeConnectionFailedPickler
+      : ReadWriter[DLCNodeConnectionFailed] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
       readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionFailed])
   }
 
-  implicit val dlcNodeConnectionEstablishedPickler: ReadWriter[
-    DLCNodeConnectionEstablished] = {
+  implicit val dlcNodeConnectionEstablishedPickler
+      : ReadWriter[DLCNodeConnectionEstablished] = {
     readwriter[ujson.Obj].bimap(
       writeDLCNodeNotification(_),
       readDLCNodeNotification(_).asInstanceOf[DLCNodeConnectionEstablished])

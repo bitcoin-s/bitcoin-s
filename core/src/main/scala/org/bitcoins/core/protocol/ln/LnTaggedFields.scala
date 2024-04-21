@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-/** An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
+/** An aggregation of all the individual tagged fields in a
+  * [[org.bitcoins.core.protocol.ln.LnInvoice]]
   */
 sealed abstract class LnTaggedFields
     extends SeqWrapper[LnTag]
@@ -98,9 +99,8 @@ object LnTaggedFields {
       routingInfo: Option[LnTag.RoutingInfo] = None,
       features: Option[LnTag.FeaturesTag] = None): LnTaggedFields = {
 
-    val (description, descriptionHash): (
-        Option[LnTag.DescriptionTag],
-        Option[LnTag.DescriptionHashTag]) = {
+    val (description, descriptionHash)
+        : (Option[LnTag.DescriptionTag], Option[LnTag.DescriptionHashTag]) = {
 
       descriptionOrHash match {
         case Left(description) =>
@@ -125,11 +125,13 @@ object LnTaggedFields {
 
   def apply(tags: Vector[LnTag]): LnTaggedFields = InvoiceTagImpl(tags)
 
-  /** This is intended to parse all of the [[org.bitcoins.core.protocol.ln.LnTaggedFields LnTaggedFields]]
-    * from the tagged part of the ln invoice. This should only be called
-    * if other information has already been remove from the invoice
-    * like the [[LnHumanReadablePart]]
-    * @param u5s payload of the tagged fields in the invoice
+  /** This is intended to parse all of the
+    * [[org.bitcoins.core.protocol.ln.LnTaggedFields LnTaggedFields]] from the
+    * tagged part of the ln invoice. This should only be called if other
+    * information has already been remove from the invoice like the
+    * [[LnHumanReadablePart]]
+    * @param u5s
+    *   payload of the tagged fields in the invoice
     * @return
     */
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
@@ -142,12 +144,12 @@ object LnTaggedFields {
             .getOrElse(
               throw new RuntimeException("Unknown LN invoice tag prefix"))
 
-          //next two 5 bit increments are data_length
+          // next two 5 bit increments are data_length
           val dataLengthU5s = List(h1, h2)
 
           val dataLength = LnUtil.decodeDataLength(dataLengthU5s)
 
-          //t is the actual possible payload
+          // t is the actual possible payload
           val payload: Vector[UInt5] = t.take(dataLength.toInt)
 
           val tag = LnTag.fromLnTagPrefix(prefix, payload)

@@ -8,13 +8,16 @@ import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 /** There exists 2 different kinds of bech32 encodings: bech32 & bech32m
-  * @see https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
-  * @see https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
+  * @see
+  *   https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+  * @see
+  *   https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
   */
 sealed abstract class Bech32Encoding {
 
   /** The constant that is XORed into the checksum
-    * @see https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki#bech32m
+    * @see
+    *   https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki#bech32m
     */
   def constant: Int
 }
@@ -30,8 +33,8 @@ object Bech32Encoding {
   }
 }
 
-/** A abstract class representing basic utility functions of Bech32
-  * For more information on Bech32 please see BIP173
+/** A abstract class representing basic utility functions of Bech32 For more
+  * information on Bech32 please see BIP173
   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
   */
 sealed abstract class Bech32 {
@@ -48,12 +51,12 @@ sealed abstract class Bech32 {
     val z = UInt5.zero
     val polymod: Long =
       polyMod(u5s ++ Array(z, z, z, z, z, z)) ^ encoding.constant
-    //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
+    // [(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
 
     val result: Vector[UInt5] = 0
       .until(6)
       .map { i =>
-        //((polymod >> five * (five - u)) & UInt8(31.toShort))
+        // ((polymod >> five * (five - u)) & UInt8(31.toShort))
         UInt5((polymod >> 5 * (5 - i)) & 31)
       }
       .toVector
@@ -81,10 +84,10 @@ sealed abstract class Bech32 {
     var chk: Long = 1
     bytes.foreach { v =>
       val b = chk >> 25
-      //chk = (chk & 0x1ffffff) << 5 ^ v
+      // chk = (chk & 0x1ffffff) << 5 ^ v
       chk = (chk & 0x1ffffff) << 5 ^ v.toLong
       0.until(5).foreach { (i: Int) =>
-        //chk ^= GEN[i] if ((b >> i) & 1) else 0
+        // chk ^= GEN[i] if ((b >> i) & 1) else 0
         if (((b >> i) & 1) == 1) {
           chk = chk ^ generators(i)
         }
@@ -134,7 +137,9 @@ sealed abstract class Bech32 {
     }
   }
 
-  /** Checks the validity of the HRP against bech32 and the given [[StringFactory]] */
+  /** Checks the validity of the HRP against bech32 and the given
+    * [[StringFactory]]
+    */
   def checkHrpValidity[T <: Bech32HumanReadablePart](
       hrp: String,
       factory: StringFactory[T]): Try[T] = {
@@ -144,8 +149,8 @@ sealed abstract class Bech32 {
 
   def isInHrpRange(char: Char): Boolean = char >= 33 && char <= 126
 
-  /** Takes in the data portion of a bech32 address and decodes it to a byte array
-    * It also checks the validity of the data portion according to BIP173
+  /** Takes in the data portion of a bech32 address and decodes it to a byte
+    * array It also checks the validity of the data portion according to BIP173
     */
   def checkDataValidity(data: String): Try[Vector[UInt5]] = {
     @tailrec
@@ -184,16 +189,14 @@ sealed abstract class Bech32 {
     payload
   }
 
-  /** Converts a byte vector to 5bit vector
-    * and then serializes to bech32
+  /** Converts a byte vector to 5bit vector and then serializes to bech32
     */
   def encode8bitToString(bytes: ByteVector): String = {
     val vec = UInt8.toUInt8s(bytes)
     encode8bitToString(vec)
   }
 
-  /** Converts a byte vector to 5bit vector
-    * and then serializes to bech32
+  /** Converts a byte vector to 5bit vector and then serializes to bech32
     */
   def encode8bitToString(bytes: Vector[UInt8]): String = {
     val b = from8bitTo5bit(bytes)
@@ -223,12 +226,13 @@ sealed abstract class Bech32 {
     NumberUtil.convertUInt5sToUInt8(b, pad)
   }
 
-  /** Validate a Bech32 string, and determine HRP and data.
-    * Fails if HRP is not LN or BTC compatible.
+  /** Validate a Bech32 string, and determine HRP and data. Fails if HRP is not
+    * LN or BTC compatible.
     *
-    * @see Mimics
-    *      [[https://github.com/sipa/bech32/blob/master/ref/python/segwit_addr.py#L62 this function]]
-    *      by Sipa
+    * @see
+    *   Mimics
+    *   [[https://github.com/sipa/bech32/blob/master/ref/python/segwit_addr.py#L62 this function]]
+    *   by Sipa
     */
   def splitToHrpAndData(
       bech32: String,
@@ -326,12 +330,14 @@ object Bech32 extends Bech32 {
    * See [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
    * for more
    */
-  val charset: Vector[Char] = Vector('q', 'p', 'z', 'r', 'y', '9', 'x', '8',
-    'g', 'f', '2', 't', 'v', 'd', 'w', '0', 's', '3', 'j', 'n', '5', '4', 'k',
-    'h', 'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
+  val charset: Vector[Char] =
+    Vector('q', 'p', 'z', 'r', 'y', '9', 'x', '8', 'g', 'f', '2', 't', 'v', 'd',
+           'w', '0', 's', '3', 'j', 'n', '5', '4', 'k', 'h', 'c', 'e', '6', 'm',
+           'u', 'a', '7', 'l')
 
   /** The Bech32 character set for decoding.
-    * @see https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/bech32.cpp#L33
+    * @see
+    *   https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/bech32.cpp#L33
     */
   val charsetReversed: Vector[Int] = Vector(
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -350,6 +356,8 @@ abstract class Bech32HumanReadablePart {
 
   def chars: String
 
-  /** Expands this HRP into a vector of UInt5s, in accordance with the Bech32 spec */
+  /** Expands this HRP into a vector of UInt5s, in accordance with the Bech32
+    * spec
+    */
   def expand: Vector[UInt5] = Bech32.hrpExpand(chars)
 }

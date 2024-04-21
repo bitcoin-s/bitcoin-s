@@ -10,34 +10,35 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 
 import scala.util.{Failure, Random, Success, Try}
 
-/** This trait is responsible for converting RawTxBuilderResults into
-  * finalized (unsigned) transactions. This process usually includes
-  * such things as computation on inputs and outputs to generate
-  * things like change outputs, or to reorder inputs or outputs.
+/** This trait is responsible for converting RawTxBuilderResults into finalized
+  * (unsigned) transactions. This process usually includes such things as
+  * computation on inputs and outputs to generate things like change outputs, or
+  * to reorder inputs or outputs.
   *
-  * Once a transaction is done being finalized, its txid/wtxid should
-  * not change as the RawTxSigner's only responsibility is adding signature
-  * data not included in the txid/wtxid.
+  * Once a transaction is done being finalized, its txid/wtxid should not change
+  * as the RawTxSigner's only responsibility is adding signature data not
+  * included in the txid/wtxid.
   *
-  * RawTxFinalizer may (but is not required to) generate witness data
-  * other than signatures (i.e. public keys for P2WPKH and redeem scripts
-  * for P2WSH). RawTxFinalizer may not otherwise populate any other kind
-  * of script signature or witness data.
+  * RawTxFinalizer may (but is not required to) generate witness data other than
+  * signatures (i.e. public keys for P2WPKH and redeem scripts for P2WSH).
+  * RawTxFinalizer may not otherwise populate any other kind of script signature
+  * or witness data.
   *
-  * RawTxFinalizers are compose-able through the andThen method which will
-  * turn the first RawTxFinalizer's finalized transaction into a RawTxBuilderResult
-  * by taking that transactions inputs (in order), outputs (in order), locktime and
-  * version and this RawTxBuilderResult is then given to the second RawTxFinalizer.
+  * RawTxFinalizers are compose-able through the andThen method which will turn
+  * the first RawTxFinalizer's finalized transaction into a RawTxBuilderResult
+  * by taking that transactions inputs (in order), outputs (in order), locktime
+  * and version and this RawTxBuilderResult is then given to the second
+  * RawTxFinalizer.
   */
 trait RawTxFinalizer {
 
   /** Constructs a finalized (unsigned) transaction */
   def buildTx(txBuilderResult: RawTxBuilderResult): Transaction
 
-  /** The result of buildTx is converted into a RawTxBuilderResult
-    * by taking that transactions inputs (in order), outputs (in order),
-    * locktime and version and this RawTxBuilderResult is then passed to
-    * the other RawTxFinalizer's buildTx
+  /** The result of buildTx is converted into a RawTxBuilderResult by taking
+    * that transactions inputs (in order), outputs (in order), locktime and
+    * version and this RawTxBuilderResult is then passed to the other
+    * RawTxFinalizer's buildTx
     */
   def andThen(other: RawTxFinalizer): RawTxFinalizer = {
     // this.buildTx above gets shadowed below, so this allows us to call it
@@ -61,8 +62,8 @@ abstract class FinalizerFactory[T <: RawTxFinalizer] {
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
-      defaultSequence: UInt32 = Policy.sequence): RawTxBuilderWithFinalizer[
-    T] = {
+      defaultSequence: UInt32 = Policy.sequence)
+      : RawTxBuilderWithFinalizer[T] = {
     val inputs = InputUtil.calcSequenceForInputs(utxos, defaultSequence)
     val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
@@ -111,8 +112,8 @@ object RawFinalizerFactory extends FinalizerFactory[RawFinalizer.type] {
       lockTime: UInt32,
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
-      defaultSequence: UInt32 = Policy.sequence): RawTxBuilderWithFinalizer[
-    RawFinalizer.type] = {
+      defaultSequence: UInt32 = Policy.sequence)
+      : RawTxBuilderWithFinalizer[RawFinalizer.type] = {
     val inputs = InputUtil.calcSequenceForInputs(utxos, defaultSequence)
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
     val finalizer =
@@ -134,8 +135,8 @@ object RawFinalizerFactory extends FinalizerFactory[RawFinalizer.type] {
   }
 }
 
-/** A simple finalizer that only removes outputs beneath the dust
-  * threshold and does nothing else
+/** A simple finalizer that only removes outputs beneath the dust threshold and
+  * does nothing else
   */
 case object FilterDustFinalizer extends RawTxFinalizer {
 
@@ -192,19 +193,19 @@ case class SanityCheckFinalizer(
 
 object SanityCheckFinalizer {
 
-  /** Checks that a finalized transaction contains the expected
-    * inputs and scriptpubkeys.
+  /** Checks that a finalized transaction contains the expected inputs and
+    * scriptpubkeys.
     *
-    * Note that it is not responsible for checking output values
-    * or that change isn't dropped (as it can be dust). That is
-    * covered by TxUtil.sanityChecks above
+    * Note that it is not responsible for checking output values or that change
+    * isn't dropped (as it can be dust). That is covered by TxUtil.sanityChecks
+    * above
     */
   def sanityDestinationChecks(
       expectedOutPoints: Vector[TransactionOutPoint],
       expectedOutputSPKs: Vector[ScriptPubKey],
       changeSPKs: Vector[ScriptPubKey],
       finalizedTx: Transaction): Try[Unit] = {
-    //make sure we send coins to the appropriate destinations
+    // make sure we send coins to the appropriate destinations
     val finalizedSPKs = finalizedTx.outputs.map(_.scriptPubKey)
     val isMissingDestination =
       !expectedOutputSPKs.forall(finalizedSPKs.contains)
@@ -228,8 +229,8 @@ object SanityCheckFinalizer {
   }
 }
 
-/** A finalizer which performs fee estimation and adds a
-  * change output resulting in the expected fee.
+/** A finalizer which performs fee estimation and adds a change output resulting
+  * in the expected fee.
   */
 case class ChangeFinalizer(
     inputInfos: Vector[InputInfo],
@@ -268,13 +269,12 @@ case class ChangeFinalizer(
   }
 }
 
-/** A finalizer which adds only the witness data included in the
-  * wtxid (pubkey in P2WPKH and redeem script in p2sh).
+/** A finalizer which adds only the witness data included in the wtxid (pubkey
+  * in P2WPKH and redeem script in p2sh).
   *
-  * Note that when used in composition with other finalizers,
-  * if AddWitnessDataFinalizer is not last then its effects
-  * will be reversed since witness data is not currently kept
-  * between finalizers during composition.
+  * Note that when used in composition with other finalizers, if
+  * AddWitnessDataFinalizer is not last then its effects will be reversed since
+  * witness data is not currently kept between finalizers during composition.
   */
 case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
     extends RawTxFinalizer {
@@ -301,9 +301,9 @@ case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
   }
 }
 
-/** A finalizer which adds a change output, performs sanity checks,
-  * and adds non-signature witness data. This is the standard
-  * non-interactive finalizer within the Bitcoin-S wallet.
+/** A finalizer which adds a change output, performs sanity checks, and adds
+  * non-signature witness data. This is the standard non-interactive finalizer
+  * within the Bitcoin-S wallet.
   */
 case class StandardNonInteractiveFinalizer(
     inputInfos: Vector[InputInfo],
@@ -340,9 +340,9 @@ object StandardNonInteractiveFinalizer
   }
 }
 
-/** A finalizer which adds a change output, performs sanity checks,
-  * shuffles inputs and outputs, and adds non-signature witness data.
-  * This is the standard non-interactive finalizer within the Bitcoin-S wallet.
+/** A finalizer which adds a change output, performs sanity checks, shuffles
+  * inputs and outputs, and adds non-signature witness data. This is the
+  * standard non-interactive finalizer within the Bitcoin-S wallet.
   */
 case class ShufflingNonInteractiveFinalizer(
     inputInfos: Vector[InputInfo],
@@ -385,12 +385,11 @@ object ShufflingNonInteractiveFinalizer
   }
 }
 
-/** Adds a an amount to the output with the given ScriptPubKey
-  * and subtracts that amount in equal proportions from the specified
-  * change ScriptPubKeys.
+/** Adds a an amount to the output with the given ScriptPubKey and subtracts
+  * that amount in equal proportions from the specified change ScriptPubKeys.
   *
-  * This can be useful when you want to account for a future spending
-  * fee in this transaction to get nice output values on the spending tx.
+  * This can be useful when you want to account for a future spending fee in
+  * this transaction to get nice output values on the spending tx.
   */
 case class AddFutureFeeFinalizer(
     spk: ScriptPubKey,
@@ -437,10 +436,10 @@ case class AddFutureFeeFinalizer(
   }
 }
 
-/** Subtracts the given fee from the output with the given ScriptPubKey.
-  * This can be useful if you are constructing a transaction without
-  * considering fees and have some after-the-fact external formula for
-  * computing fees and they need the removed.
+/** Subtracts the given fee from the output with the given ScriptPubKey. This
+  * can be useful if you are constructing a transaction without considering fees
+  * and have some after-the-fact external formula for computing fees and they
+  * need the removed.
   */
 case class SubtractFromOutputFinalizer(spk: ScriptPubKey, subAmt: CurrencyUnit)
     extends RawTxFinalizer {
@@ -459,9 +458,9 @@ case class SubtractFromOutputFinalizer(spk: ScriptPubKey, subAmt: CurrencyUnit)
   }
 }
 
-/** Assumes the input transaction has had no fee considerations
-  * and subtracts the estimated fee in equal portions from the
-  * outputs with the specified ScriptPubKeys
+/** Assumes the input transaction has had no fee considerations and subtracts
+  * the estimated fee in equal portions from the outputs with the specified
+  * ScriptPubKeys
   */
 case class SubtractFeeFromOutputsFinalizer(
     inputInfos: Vector[InputInfo],
@@ -519,13 +518,13 @@ case class DualFundingInput(
     scriptSignature: ScriptSignature,
     maxWitnessLen: Int)
 
-/** Finalizes a dual-funded transaction given the DualFundingInputs
-  * from both parties, their change spks and the funding scriptpubkey
-  * for the dual funded protocol.
+/** Finalizes a dual-funded transaction given the DualFundingInputs from both
+  * parties, their change spks and the funding scriptpubkey for the dual funded
+  * protocol.
   *
-  * This includes adding the future fee of spending transactions
-  * to the funding output as well as subtracting relevant fees
-  * from the change outputs. This finalizer filters dust outputs.
+  * This includes adding the future fee of spending transactions to the funding
+  * output as well as subtracting relevant fees from the change outputs. This
+  * finalizer filters dust outputs.
   */
 case class DualFundingTxFinalizer(
     offerInputs: Vector[DualFundingInput],
@@ -538,7 +537,9 @@ case class DualFundingTxFinalizer(
     fundingSPK: ScriptPubKey)
     extends RawTxFinalizer {
 
-  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#fees */
+  /** @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/Transactions.md#fees
+    */
   private def computeFees(
       inputs: Vector[DualFundingInput],
       payoutSPK: ScriptPubKey,

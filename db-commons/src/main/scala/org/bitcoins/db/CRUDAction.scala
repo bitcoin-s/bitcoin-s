@@ -23,15 +23,17 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     updateAllAction(Vector(t)).map { ts =>
       ts.headOption match {
         case Some(updated) => updated
-        case None          => throw UpdateFailedException("Update failed for: " + t)
+        case None => throw UpdateFailedException("Update failed for: " + t)
       }
     }
   }
 
   /** return all rows that have a certain primary key
     *
-    * @param id primary key of the row to return
-    * @return Query object corresponding to the selected rows
+    * @param id
+    *   primary key of the row to return
+    * @return
+    *   Query object corresponding to the selected rows
     */
   protected def findByPrimaryKey(id: PrimaryKeyType): Query[Table[T], T, Seq] =
     findByPrimaryKeys(Vector(id))
@@ -40,10 +42,8 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
   protected def findByPrimaryKeys(
       ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
 
-  def findByPrimaryKeysAction(ids: Vector[PrimaryKeyType]): DBIOAction[
-    Vector[T],
-    NoStream,
-    Effect.Read] = {
+  def findByPrimaryKeysAction(ids: Vector[PrimaryKeyType])
+      : DBIOAction[Vector[T], NoStream, Effect.Read] = {
     if (ids.isEmpty) {
       DBIO.successful(Vector.empty)
     } else {
@@ -61,17 +61,14 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
 
   protected def findAll(ts: Vector[T]): Query[Table[T], T, Seq]
 
-  def findAllAction(): DBIOAction[
-    Vector[T],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  def findAllAction()
+      : DBIOAction[Vector[T], profile.api.NoStream, profile.api.Effect.Read] = {
     table.result.map(_.toVector)
   }
 
-  /** Updates all of the given ts.
-    * Returns all ts that actually existed in the database and got updated
-    * This method discards things that did not exist in the database,
-    * thus could not be updated
+  /** Updates all of the given ts. Returns all ts that actually existed in the
+    * database and got updated This method discards things that did not exist in
+    * the database, thus could not be updated
     */
   def updateAllAction(
       ts: Vector[T]): DBIOAction[Vector[T], NoStream, Effect.Write] = {
@@ -94,8 +91,8 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
       DBIO.sequence(updateActions)
     }
 
-    //discard all rows that did not exist,
-    //thus cannot be updated
+    // discard all rows that did not exist,
+    // thus cannot be updated
     sequencedA.map(_.flatten)
   }
 
@@ -104,14 +101,12 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     upsertAllAction(Vector(t)).map(_.head)
   }
 
-  /** Upsert all of the given ts.
-    * Returns all ts that were inserted or updated
-    * @see https://scala-slick.org/doc/3.3.3/queries.html#upserting
+  /** Upsert all of the given ts. Returns all ts that were inserted or updated
+    * @see
+    *   https://scala-slick.org/doc/3.3.3/queries.html#upserting
     */
-  def upsertAllAction(ts: Vector[T]): DBIOAction[
-    Vector[T],
-    NoStream,
-    Effect.Write & Effect.Read] = {
+  def upsertAllAction(ts: Vector[T])
+      : DBIOAction[Vector[T], NoStream, Effect.Write & Effect.Read] = {
     val upsertActions = {
       ts.map { t =>
         table.insertOrUpdate(t).flatMap(_ => find(t).result.map(_.headOption))
@@ -132,10 +127,8 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
   }
 
   /** WARNING: Deletes all rows in table, use with care */
-  def deleteAllAction(): DBIOAction[
-    Int,
-    NoStream,
-    Effect.Write & Effect.Transactional] = {
+  def deleteAllAction()
+      : DBIOAction[Int, NoStream, Effect.Write & Effect.Transactional] = {
     table.delete
   }
 

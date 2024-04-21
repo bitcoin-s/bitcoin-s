@@ -12,7 +12,8 @@ object FileUtil extends BitcoinSLogger {
 
   /** Zips the [[directory]] into a zip file and then stores it at [[target]]
     *
-    * @see https://www.quickprogrammingtips.com/java/how-to-zip-a-folder-in-java.html
+    * @see
+    *   https://www.quickprogrammingtips.com/java/how-to-zip-a-folder-in-java.html
     */
   def zipDirectory(
       source: Path,
@@ -22,7 +23,7 @@ object FileUtil extends BitcoinSLogger {
       !Files.exists(target),
       s"Cannot overwrite existing target directory=${target.toAbsolutePath}")
 
-    //create directories for target if they DNE
+    // create directories for target if they DNE
     Files.createDirectories(target.getParent)
 
     val zos = new ZipOutputStream(new FileOutputStream(target.toFile))

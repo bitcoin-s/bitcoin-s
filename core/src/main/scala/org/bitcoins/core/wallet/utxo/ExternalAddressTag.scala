@@ -10,7 +10,7 @@ trait ExternalAddressTagName extends AddressTagName
   */
 trait ExternalAddressTagType extends AddressTagType
 
-/** Address Tags defined outside the library, used for other projects
-  * creating there own address tags that aren't supported by bitcoin-s
+/** Address Tags defined outside the library, used for other projects creating
+  * there own address tags that aren't supported by bitcoin-s
   */
 trait ExternalAddressTag extends AddressTag

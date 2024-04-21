@@ -9,9 +9,8 @@ case class OrderedSchnorrSignatures(
       org.bitcoins.core.schnorrSignatureOrdering)
 
 object OrderedSchnorrSignatures
-    extends SortedVecFactory[
-      SchnorrDigitalSignature,
-      OrderedSchnorrSignatures] {
+    extends SortedVecFactory[SchnorrDigitalSignature,
+                             OrderedSchnorrSignatures] {
 
   override def apply(sig: SchnorrDigitalSignature): OrderedSchnorrSignatures = {
     OrderedSchnorrSignatures(Vector(sig))

@@ -7,9 +7,9 @@ sealed trait HashDigest extends Any with NetworkElement {
   /** The message digest represented in bytes */
   override def bytes: ByteVector
 
-  /** Flips the endianness of the byte sequence.
-    * Since bitcoin unfortunately has inconsistent endianness between the protocol
-    * level and the presentation level. This is useful for switching between the two.
+  /** Flips the endianness of the byte sequence. Since bitcoin unfortunately has
+    * inconsistent endianness between the protocol level and the presentation
+    * level. This is useful for switching between the two.
     * @return
     */
   def flip: HashDigest

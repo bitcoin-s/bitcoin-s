@@ -4,7 +4,9 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 // TODO test against secp256k1-zkp someday
-/** Contains constants, hash functions, and signing/verification functionality for MuSig */
+/** Contains constants, hash functions, and signing/verification functionality
+  * for MuSig
+  */
 object MuSigUtil {
 
   val nonceNum: Int = 2
@@ -45,7 +47,8 @@ object MuSigUtil {
       ._2
   }
 
-  /** Generates a MuSig partial signature, accompanied by the aggregate R value */
+  /** Generates a MuSig partial signature, accompanied by the aggregate R value
+    */
   def sign(
       noncePriv: MuSigNoncePriv,
       aggNoncePub: MuSigNoncePub,
@@ -140,7 +143,8 @@ object MuSigUtil {
       aggKey.multiply(e.multiply(a)))
   }
 
-  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature */
+  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
+    */
   def signAgg(
       sVals: Vector[FieldElement],
       aggNoncePub: MuSigNoncePub,
@@ -154,7 +158,8 @@ object MuSigUtil {
     signAgg(sVals, aggNonce, Some(tweakData))
   }
 
-  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature */
+  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
+    */
   def signAgg(
       sVals: Vector[FieldElement],
       aggPubNonce: ECPublicKey,

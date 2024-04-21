@@ -3,8 +3,8 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.crypto.Sha256Digest
 
-/** Options for the taproot signature serialization algorithm as defined
-  * in BIP341
+/** Options for the taproot signature serialization algorithm as defined in
+  * BIP341
   */
 case class TaprootSerializationOptions(
     tapLeafHashOpt: Option[Sha256Digest],
@@ -13,7 +13,7 @@ case class TaprootSerializationOptions(
   def haveAnnex: Boolean = annexHashOpt.isDefined
 
   def codeSeparatorPos: UInt32 = {
-    //defaults to UInt32 max if not defined in BIP341
+    // defaults to UInt32 max if not defined in BIP341
     codeSeparatorPosOpt.getOrElse(UInt32.max)
   }
 }

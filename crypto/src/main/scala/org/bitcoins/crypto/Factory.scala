@@ -4,23 +4,23 @@ import scodec.bits.ByteVector
 
 import scala.util.Try
 
-/** Created by chris on 2/26/16.
-  * Trait to implement ubiquitous factory functions across our codebase
+/** Created by chris on 2/26/16. Trait to implement ubiquitous factory functions
+  * across our codebase
   */
 abstract class Factory[+T] {
 
   /** Creates a T out of a hex string. */
   def fromHex(hex: String): T = fromBytes(CryptoBytesUtil.decodeHex(hex))
 
-  /** Deserializes the given hex string to a T
-    * If the hex is not correct, [[None]] is returned
+  /** Deserializes the given hex string to a T If the hex is not correct,
+    * [[None]] is returned
     */
   def fromHexOpt(hex: String): Option[T] = {
     fromHexT(hex).toOption
   }
 
-  /** Deserializes the given hex string
-    * if the hex is not correct, we give you a [[Failure]]
+  /** Deserializes the given hex string if the hex is not correct, we give you a
+    * [[Failure]]
     */
   def fromHexT(hex: String): Try[T] = {
     Try(fromHex(hex))
@@ -32,15 +32,15 @@ abstract class Factory[+T] {
   /** Creates a T out of a sequence of bytes. */
   def fromBytes(bytes: ByteVector): T
 
-  /** Deserializes the given [[ByteVector]] to a T
-    * If the [[ByteVector]] is not correct, [[None]] is returned
+  /** Deserializes the given [[ByteVector]] to a T If the [[ByteVector]] is not
+    * correct, [[None]] is returned
     */
   def fromBytesOpt(bytes: ByteVector): Option[T] = {
     fromBytesT(bytes).toOption
   }
 
-  /** Deserializes the given [[ByteVector]] string
-    * if the [[ByteVector]] is not correct, we give you a [[Failure]]
+  /** Deserializes the given [[ByteVector]] string if the [[ByteVector]] is not
+    * correct, we give you a [[Failure]]
     */
   def fromBytesT(bytes: ByteVector): Try[T] = {
     Try(fromBytes(bytes))

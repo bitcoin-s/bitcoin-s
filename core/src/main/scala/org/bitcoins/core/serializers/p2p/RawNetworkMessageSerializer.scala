@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
 
   def read(bytes: ByteVector): NetworkMessage = {
-    //first 24 bytes are the header
+    // first 24 bytes are the header
     val (headerBytes, payloadBytes) = bytes.splitAt(24)
     val header = NetworkHeader.fromBytes(headerBytes)
     if (header.payloadSize.toInt > payloadBytes.length) {

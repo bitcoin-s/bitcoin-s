@@ -2,8 +2,7 @@ package org.bitcoins.crypto.musig
 
 import org.bitcoins.crypto.{EvenParity, FieldElement, KeyParity, OddParity}
 
-/** The data required to apply the net tweak during
-  * MuSig signature aggregation
+/** The data required to apply the net tweak during MuSig signature aggregation
   */
 case class MuSigTweakData(
     context: MuSigTweakContext,

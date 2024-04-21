@@ -109,29 +109,39 @@ trait DLCWalletApi { self: WalletApi =>
 
   def broadcastDLCFundingTx(contractId: ByteVector): Future[Transaction]
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
       oracleSig: OracleAttestmentTLV): Future[Option[Transaction]] =
     executeDLC(contractId, Vector(oracleSig))
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
       oracleSigs: Seq[OracleAttestmentTLV]): Future[Option[Transaction]]
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
       oracleSig: OracleSignatures): Future[Option[Transaction]] =
     executeDLC(contractId, Vector(oracleSig))
 
-  /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
+  /** Creates the CET for the given contractId and oracle signature, does not
+    * broadcast it
+    */
   def executeDLC(
       contractId: ByteVector,
       oracleSigs: Vector[OracleSignatures]): Future[Option[Transaction]]
 
-  /** Creates the refund transaction for the given contractId, does not broadcast it */
+  /** Creates the refund transaction for the given contractId, does not
+    * broadcast it
+    */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]
 
   /** Fetches all DLCs with the given set of states */

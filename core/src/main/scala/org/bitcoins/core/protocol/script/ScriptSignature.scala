@@ -11,21 +11,20 @@ import scala.util.Try
 
 /** Created by chris on 12/26/15.
   *
-  * We only give standard types to ScriptSignatures that are Policy
-  * compliant. This is because if we wanted to be closer to Consensus
-  * compliant then it would be near impossible to type things.
+  * We only give standard types to ScriptSignatures that are Policy compliant.
+  * This is because if we wanted to be closer to Consensus compliant then it
+  * would be near impossible to type things.
   *
-  * For example almost anything could be a ConditionalScriptSignature
-  * since in consensus logic almost any ScriptToken is interpreted as True,
-  * while under Policy only OP_TRUE is True.
+  * For example almost anything could be a ConditionalScriptSignature since in
+  * consensus logic almost any ScriptToken is interpreted as True, while under
+  * Policy only OP_TRUE is True.
   */
 sealed abstract class ScriptSignature extends Script {
 
-  /** The digital signatures contained inside of the script signature
-    * p2pkh script signatures only have one sig
-    * p2pk script signatures only have one sigs
-    * p2sh script signatures can have m sigs
-    * multisignature scripts can have m sigs
+  /** The digital signatures contained inside of the script signature p2pkh
+    * script signatures only have one sig p2pk script signatures only have one
+    * sigs p2sh script signatures can have m sigs multisignature scripts can
+    * have m sigs
     */
   def signatures: Seq[ECDigitalSignature]
 
@@ -54,8 +53,8 @@ object NonStandardScriptSignature
   }
 }
 
-/** A script signature to be used in tests for signing EmptyScriptPubKey.
-  * This script pushes a true onto the stack, causing a successful spend.
+/** A script signature to be used in tests for signing EmptyScriptPubKey. This
+  * script pushes a true onto the stack, causing a successful spend.
   */
 case object TrivialTrueScriptSignature extends ScriptSignature {
   override lazy val signatures: Seq[ECDigitalSignature] = Nil
@@ -69,9 +68,8 @@ case object TrivialTrueScriptSignature extends ScriptSignature {
 }
 
 /** P2PKH script signatures have only one public key
-  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
-  * P2PKH scriptSigs follow this format
-  * <sig> <pubkey>
+  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh P2PKH
+  * scriptSigs follow this format <sig> <pubkey>
   */
 sealed trait P2PKHScriptSignature extends ScriptSignature {
 
@@ -103,7 +101,9 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     )
   }
 
-  /** Builds a P2PKH ScriptSig from a signature and raw ECPublicKeyBytes (may be invalid). */
+  /** Builds a P2PKH ScriptSig from a signature and raw ECPublicKeyBytes (may be
+    * invalid).
+    */
   private[core] def apply(
       signature: ECDigitalSignature,
       pubKeyBytes: ECPublicKeyBytes): P2PKHScriptSignature = {
@@ -117,8 +117,8 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     fromAsm(asm)
   }
 
-  /** Builds a script signature from a digital signature and a public key
-    * this is a pay to public key hash script sig
+  /** Builds a script signature from a digital signature and a public key this
+    * is a pay to public key hash script sig
     */
   def apply(
       signature: ECDigitalSignature,
@@ -143,13 +143,14 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
 }
 
 /** Represents a pay-to-script-hash script signature
-  * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
-  * P2SH scriptSigs have the following format
-  * <sig> [sig] [sig...] <redeemScript>
+  * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh P2SH
+  * scriptSigs have the following format <sig> [sig] [sig...] <redeemScript>
   */
 sealed trait P2SHScriptSignature extends ScriptSignature {
 
-  /** The redeemScript represents the conditions that must be satisfied to spend the output */
+  /** The redeemScript represents the conditions that must be satisfied to spend
+    * the output
+    */
   def redeemScript: ScriptPubKey = {
     val scriptSig = scriptSignatureNoRedeemScript
     if (asm.isEmpty) {
@@ -158,9 +159,9 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
       scriptSig == EmptyScriptSignature &&
       WitnessScriptPubKey.isValidAsm(asm.tail)
     ) {
-      //if we have an EmptyScriptSignature, we need to check if the rest of the asm
-      //is a Witness script. It is not necessarily a witness script, since this code
-      //path might be used for signing a normal p2sh spk in TransactionSignatureSerializer
+      // if we have an EmptyScriptSignature, we need to check if the rest of the asm
+      // is a Witness script. It is not necessarily a witness script, since this code
+      // path might be used for signing a normal p2sh spk in TransactionSignatureSerializer
       WitnessScriptPubKey(asm.tail)
     } else {
       ScriptPubKey.fromAsmBytes(asm.last.bytes)
@@ -168,9 +169,11 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 
   }
 
-  /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
+  /** Returns the script signature of this p2shScriptSig with no serialized
+    * redeemScript
+    */
   def scriptSignatureNoRedeemScript: ScriptSignature = {
-    //witness scriptPubKeys always have EmptyScriptSigs
+    // witness scriptPubKeys always have EmptyScriptSigs
     if (WitnessScriptPubKey.isValidAsm(asm)) {
       EmptyScriptSignature
     } else {
@@ -218,7 +221,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   def apply(
       scriptSig: ScriptSignature,
       redeemScript: ScriptPubKey): P2SHScriptSignature = {
-    //we need to calculate the size of the redeemScript and add the corresponding push op
+    // we need to calculate the size of the redeemScript and add the corresponding push op
     val serializedRedeemScript = ScriptConstant(redeemScript.asmBytes)
     val pushOps = BitcoinScriptUtil.calculatePushOp(serializedRedeemScript)
     val asm: Seq[ScriptToken] =
@@ -234,11 +237,11 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
       asm: Vector[ScriptToken],
       constructor: Vector[ScriptToken] => P2SHScriptSignature,
       errorMsg: String): P2SHScriptSignature = {
-    //everything can be a P2SHScriptSignature, thus passing the trivially true function
-    //the most important thing to note is we cannot have a P2SHScriptSignature unless
-    //we have a P2SHScriptPubKey
-    //previously P2SHScriptSignature's redeem script had to be standard scriptPubKey's, this
-    //was removed in 0.11 or 0.12 of Bitcoin Core
+    // everything can be a P2SHScriptSignature, thus passing the trivially true function
+    // the most important thing to note is we cannot have a P2SHScriptSignature unless
+    // we have a P2SHScriptPubKey
+    // previously P2SHScriptSignature's redeem script had to be standard scriptPubKey's, this
+    // was removed in 0.11 or 0.12 of Bitcoin Core
     constructor(asm)
   }
 
@@ -251,12 +254,12 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    //as noted above, technically _anything_ can be a p2sh scriptsig
-    //this applies basic checks to see if it's a standard redeemScript
-    //rather than a non standard redeeScript.
+    // as noted above, technically _anything_ can be a p2sh scriptsig
+    // this applies basic checks to see if it's a standard redeemScript
+    // rather than a non standard redeeScript.
 
-    //this will return false if the redeemScript is not a
-    //supported scriptpubkey type in our library
+    // this will return false if the redeemScript is not a
+    // supported scriptpubkey type in our library
     asm.size > 1 && isRedeemScript(asm.last)
   }
 
@@ -264,8 +267,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   def isRedeemScript(token: ScriptToken): Boolean = {
     token match {
       case _: ScriptNumberOperation | _: ScriptOperation =>
-        //more cheap checks, we can't have a redeemScript
-        //if the token is OP_0/OP_1/OP_CHECKSIG etc
+        // more cheap checks, we can't have a redeemScript
+        // if the token is OP_0/OP_1/OP_CHECKSIG etc
         false
       case constant: ScriptConstant =>
         val redeemScript: ScriptPubKey = parseRedeemScript(constant)
@@ -306,9 +309,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
 }
 
 /** Represents a multisignature script signature
-  * https://bitcoin.org/en/developer-guide#multisig
-  * Multisig script sigs have the following format
-  * OP_0 <A sig> [B sig] [C sig...]
+  * https://bitcoin.org/en/developer-guide#multisig Multisig script sigs have
+  * the following format OP_0 <A sig> [B sig] [C sig...]
   */
 sealed trait MultiSignatureScriptSignature extends ScriptSignature {
 
@@ -338,7 +340,7 @@ object MultiSignatureScriptSignature
       pushOps = BitcoinScriptUtil.calculatePushOp(sig.bytes)
     } yield pushOps ++ Seq(constant)
     val sigsWithPushOps = sigsPushOpsPairs.flatten
-    //OP_0 is for the dummy input required by OP_CHECKMULTISIG
+    // OP_0 is for the dummy input required by OP_CHECKMULTISIG
     val asm = OP_0 +: sigsWithPushOps
     MultiSignatureScriptSignature.fromAsm(asm)
   }
@@ -352,30 +354,33 @@ object MultiSignatureScriptSignature
     )
   }
 
-  /** Checks if the given script tokens are a multisignature script sig
-    * format: OP_0 <A sig> [B sig] [C sig...]
+  /** Checks if the given script tokens are a multisignature script sig format:
+    * OP_0 <A sig> [B sig] [C sig...]
     *
-    * @param asm the asm to check if it falls in the multisignature script sig format
-    * @return boolean indicating if the scriptsignature is a multisignature script signature
+    * @param asm
+    *   the asm to check if it falls in the multisignature script sig format
+    * @return
+    *   boolean indicating if the scriptsignature is a multisignature script
+    *   signature
     */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean =
     asm.isEmpty match {
       case true => false
-      //case false if (asm.size == 1) => false
+      // case false if (asm.size == 1) => false
       case false =>
         val firstTokenIsScriptNumberOperation =
           asm.head.isInstanceOf[ScriptNumberOperation]
         if (firstTokenIsScriptNumberOperation) {
-          //avoid doing this computation unless we think it need to be done
-          //fail fast
+          // avoid doing this computation unless we think it need to be done
+          // fail fast
           isPushOpsOrScriptConstants(asm.tail)
         } else {
           false
         }
     }
 
-  /** Iterates through the given given script tokens and return false if
-    * one of the elements is NOT [[ScriptConstant]] or a push operation
+  /** Iterates through the given given script tokens and return false if one of
+    * the elements is NOT [[ScriptConstant]] or a push operation
     */
   private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
     asm.forall(token =>
@@ -385,8 +390,7 @@ object MultiSignatureScriptSignature
 }
 
 /** Represents a pay to public key script signature
-  * https://bitcoin.org/en/developer-guide#pubkey
-  * Signature script: <sig>
+  * https://bitcoin.org/en/developer-guide#pubkey Signature script: <sig>
   */
 sealed trait P2PKScriptSignature extends ScriptSignature {
 
@@ -452,7 +456,9 @@ object P2PKWithTimeoutScriptSignature
   }
 }
 
-/** Parent type for all lock time script signatures, these spend [[LockTimeScriptPubKey]] */
+/** Parent type for all lock time script signatures, these spend
+  * [[LockTimeScriptPubKey]]
+  */
 sealed trait LockTimeScriptSignature extends ScriptSignature {
   def scriptSig: ScriptSignature = ScriptSignature(hex)
 

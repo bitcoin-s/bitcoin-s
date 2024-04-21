@@ -2,38 +2,41 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.crypto.StringFactory
 
-/** An AddressTagNames that is native to Bitcoin-S.
-  * InternalAddressTagNames are still usable when using Bitcoin-S
-  * as a dependency
+/** An AddressTagNames that is native to Bitcoin-S. InternalAddressTagNames are
+  * still usable when using Bitcoin-S as a dependency
   */
 sealed trait InternalAddressTagName extends AddressTagName
 
-/** An AddressTagType that is native to Bitcoin-S.
-  * InternalAddressTagTypes are still usable when using Bitcoin-S
-  * as a dependency
+/** An AddressTagType that is native to Bitcoin-S. InternalAddressTagTypes are
+  * still usable when using Bitcoin-S as a dependency
   */
 sealed trait InternalAddressTagType extends AddressTagType
 
-/** An AddressTag that is native to Bitcoin-S.
-  * InternalAddressTags are still usable when using Bitcoin-S
-  * as a dependency
+/** An AddressTag that is native to Bitcoin-S. InternalAddressTags are still
+  * usable when using Bitcoin-S as a dependency
   */
 sealed trait InternalAddressTag extends AddressTag
 
-/** An unknown address tag name, most likely an internal representation of an [[ExternalAddressTagName]] */
+/** An unknown address tag name, most likely an internal representation of an
+  * [[ExternalAddressTagName]]
+  */
 case class UnknownAddressTagName(name: String) extends InternalAddressTagName {
   require(InternalAddressTagName.fromStringOpt(name).isEmpty,
           s"This tag name is already defined, got $name")
 }
 
-/** An unknown address tag type, most likely an internal representation of an [[ExternalAddressTagType]] */
+/** An unknown address tag type, most likely an internal representation of an
+  * [[ExternalAddressTagType]]
+  */
 case class UnknownAddressTagType(typeName: String)
     extends InternalAddressTagType {
   require(InternalAddressTagType.fromStringOpt(typeName).isEmpty,
           s"This tag type is already defined, got $typeName")
 }
 
-/** An address tag without an unknown type, most likely an internal representation of an [[ExternalAddressTag]] */
+/** An address tag without an unknown type, most likely an internal
+  * representation of an [[ExternalAddressTag]]
+  */
 case class UnknownAddressTag(tagName: AddressTagName, tagType: AddressTagType)
     extends InternalAddressTag
 
@@ -137,7 +140,9 @@ object StorageLocationTag extends AddressTagFactory[StorageLocationTag] {
     override val tagName: AddressTagName = ColdStorageName
   }
 
-  /** Keys stored on a hardware wallet or other offline device locked in a safe in a distant location */
+  /** Keys stored on a hardware wallet or other offline device locked in a safe
+    * in a distant location
+    */
   case object DeepColdStorage extends StorageLocationTag {
     override val tagName: AddressTagName = DeepColdStorageName
   }
@@ -152,9 +157,8 @@ object AddressLabelTagType extends InternalAddressTagType {
 
 case class AddressLabelTagName(name: String) extends InternalAddressTagName
 
-/** Used for generic address labeling, generally labels should be
-  * provided by the user so they keep track which parties are aware
-  * of which addresses
+/** Used for generic address labeling, generally labels should be provided by
+  * the user so they keep track which parties are aware of which addresses
   */
 case class AddressLabelTag(name: String) extends InternalAddressTag {
   override val tagType: AddressTagType = AddressLabelTagType

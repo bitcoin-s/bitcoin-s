@@ -48,9 +48,10 @@ case class HikariLogging(
     }
   }
 
-  /** From the docs:
-    * How long each connection is used before being returned to the pool. This is the "out of pool" or "in-use" time.
-    * @see https://github.com/brettwooldridge/HikariCP/wiki/Dropwizard-Metrics
+  /** From the docs: How long each connection is used before being returned to
+    * the pool. This is the "out of pool" or "in-use" time.
+    * @see
+    *   https://github.com/brettwooldridge/HikariCP/wiki/Dropwizard-Metrics
     */
   private case class HikariPoolUsageUpdate(
       `75thPercentile`: Double,
@@ -81,8 +82,8 @@ case class HikariLogging(
     }
   }
 
-  //this is needed to get the 'AsyncExecutor' bean below to register properly
-  //dbConfig.database.ioExecutionContext
+  // this is needed to get the 'AsyncExecutor' bean below to register properly
+  // dbConfig.database.ioExecutionContext
 
   private lazy val poolName = hikariDataSource.getPoolName
   private lazy val mBeanServer = ManagementFactory.getPlatformMBeanServer
@@ -97,21 +98,23 @@ case class HikariLogging(
     s"com.zaxxer.hikari:type=PoolConfig ($poolName)"
   )
 
-  /** MBean uses random string incantations for
-    * accessing attributes :-(
+  /** MBean uses random string incantations for accessing attributes :-(
     *
-    * @see [[https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management#programmatic-access HikariCP docs]]
+    * @see
+    *   [[https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management#programmatic-access HikariCP docs]]
     */
   private lazy val objectName = new ObjectName(
     s"com.zaxxer.hikari:type=Pool ($poolName)"
   )
 
-  /** @see https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management
+  /** @see
+    *   https://github.com/brettwooldridge/HikariCP/wiki/MBean-(JMX)-Monitoring-and-Management
     */
   private lazy val hikariMxBean =
     JMX.newMXBeanProxy(mBeanServer, objectName, classOf[HikariPoolMXBean])
 
-  /** @see http://slick.lightbend.com/doc/3.3.0/config.html#monitoring
+  /** @see
+    *   http://slick.lightbend.com/doc/3.3.0/config.html#monitoring
     */
   private lazy val slickMxBean =
     JMX.newMXBeanProxy(mBeanServer, aeBeanName, classOf[AsyncExecutorMXBean])
@@ -212,8 +215,10 @@ object HikariLogging extends BitcoinSLogger {
   private[db] val scheduler = Executors.newScheduledThreadPool(1)
 
   /** Returns a started hikari logger if configuration is correct, else None
-    * @param jdbcProfileComponent the database component we are logging for
-    * @param interval how often the hikari logs should be output
+    * @param jdbcProfileComponent
+    *   the database component we are logging for
+    * @param interval
+    *   how often the hikari logs should be output
     */
   def fromJdbcProfileComponent[T <: DbAppConfig](
       jdbcProfileComponent: JdbcProfileComponent[T],

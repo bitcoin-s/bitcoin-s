@@ -13,7 +13,9 @@ trait AsyncExtSign extends AsyncAdaptorSign {
       bytes: ByteVector,
       path: BIP32Path): Future[ECDigitalSignature]
 
-  /** First derives the child key that corresponds to [[BIP32Path path]] and then signs */
+  /** First derives the child key that corresponds to [[BIP32Path path]] and
+    * then signs
+    */
   def asyncSign(
       bytes: ByteVector,
       path: BIP32Path): Future[ECDigitalSignature] = {
@@ -31,7 +33,9 @@ trait ExtSign extends AsyncExtSign with AdaptorSign {
     Future.successful(deriveAndSign(bytes, path))
   }
 
-  /** First derives the child key that corresponds to [[BIP32Path path]] and then signs */
+  /** First derives the child key that corresponds to [[BIP32Path path]] and
+    * then signs
+    */
   def sign(bytes: ByteVector, path: BIP32Path): ECDigitalSignature = {
     deriveAndSign(bytes, path)
   }

@@ -5,8 +5,8 @@ import org.bitcoins.core.script.constant.ScriptOperation
 
 /** Created by chris on 1/22/16.
   */
-/** Reserved words
-  * Any opcode not assigned is also reserved. Using an unassigned opcode makes the transaction invalid.
+/** Reserved words Any opcode not assigned is also reserved. Using an unassigned
+  * opcode makes the transaction invalid.
   * https://en.bitcoin.it/wiki/Script#Reserved_words
   */
 sealed trait ReservedOperation extends ScriptOperation
@@ -29,7 +29,7 @@ case object OP_VERIF extends ReservedOperation {
   override val opCode: Int = 101
 }
 
-/**  Transaction is invalid even when occuring in an unexecuted OP_IF branch
+/** Transaction is invalid even when occuring in an unexecuted OP_IF branch
   */
 case object OP_VERNOTIF extends ReservedOperation {
   override val opCode: Int = 102
@@ -47,8 +47,7 @@ case object OP_RESERVED2 extends ReservedOperation {
   override val opCode: Int = 138
 }
 
-/** Represents an operation that means
-  * nothing inside the Script language
+/** Represents an operation that means nothing inside the Script language
   */
 sealed trait NOP extends ReservedOperation
 

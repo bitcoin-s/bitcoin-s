@@ -17,7 +17,7 @@ object PicklerKeys {
   final val addressKey = "address"
   final val memoKey = "memo"
 
-  //chain
+  // chain
   final val rawKey: String = "raw"
   final val hashKey: String = "hash"
   final val confirmationsKey: String = "confirmations"
@@ -56,17 +56,17 @@ object PicklerKeys {
   final val syncKey: String = "syncing"
   final val isInitialBlockDownload: String = "isinitialblockdownload"
 
-  //tlv points
+  // tlv points
   final val pointsKey = "points"
   final val payoutKey: String = "payout"
   final val extraPrecisionKey: String = "extraPrecision"
   final val isEndpointKey: String = "isEndpoint"
 
-  //offers
+  // offers
   final val protocolVersionKey: String = "protocolVersion"
   final val tempContractIdKey: String = "temporaryContractId"
 
-  //accepts
+  // accepts
   final val fundingPubKeyKey: String = "fundingPubkey"
   final val acceptCollateralKey: String = "acceptCollateral"
   final val payoutSpkKey: String = "payoutSpk"
@@ -76,7 +76,7 @@ object PicklerKeys {
   final val changeSerialIdKey: String = "changeSerialId"
   final val negotiationFieldsKey: String = "negotiationFields"
 
-  //contract info
+  // contract info
   final val totalCollateralKey = "totalCollateral"
   final val contractDescriptorKey = "contractDescriptor"
   final val oracleInfoKey = "oracleInfo"
@@ -92,7 +92,7 @@ object PicklerKeys {
   val numericOutcomeContractDescriptorKey = "numericOutcomeContractDescriptor"
   val payoutsKey = "payouts"
 
-  //numeric contract descriptor
+  // numeric contract descriptor
   val numDigitsKey = "numDigits"
   val payFunctionKey = "payoutFunction"
   val payoutFunctionPiecesKey = "payoutFunctionPieces"
@@ -165,7 +165,7 @@ object PicklerKeys {
   val witnessKey = "witness"
   val serializedKey = "serialized"
 
-  //ws types
+  // ws types
   final val typeKey: String = "type"
   final val payloadKey: String = "payload"
 

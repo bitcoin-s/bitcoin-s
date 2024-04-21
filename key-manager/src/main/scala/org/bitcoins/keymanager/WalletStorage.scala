@@ -20,7 +20,8 @@ object WalletStorage extends KeyManagerLogger {
   /** Epoch time of the mainnet Genesis Block */
   val GENESIS_TIME = 1231006505L
 
-  /** Start of bitcoin-s wallet project, Block 555,990 block time on 2018-12-28 */
+  /** Start of bitcoin-s wallet project, Block 555,990 block time on 2018-12-28
+    */
   val FIRST_BITCOIN_S_WALLET_TIME = 1546042867L
 
   /** Checks if a wallet seed exists in datadir */
@@ -39,9 +40,8 @@ object WalletStorage extends KeyManagerLogger {
     val IMPORTED = "imported"
   }
 
-  /** Writes the mnemonic to disk.
-    * If we encounter a file in the place we're about
-    * to write to, an error will be thrown.
+  /** Writes the mnemonic to disk. If we encounter a file in the place we're
+    * about to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, seed: SeedState): Path = {
     seed match {
@@ -54,9 +54,8 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
-  /** Writes the encrypted mnemonic to disk.
-    * If we encounter a file in the place we're about
-    * to write to, an error will be thrown.
+  /** Writes the encrypted mnemonic to disk. If we encounter a file in the place
+    * we're about to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, seed: EncryptedSeed): Path = {
     val encrypted = seed.value
@@ -77,9 +76,8 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
-  /** Writes the unencrypted mnemonic to disk.
-    * If we encounter a file in the place we're about
-    * to write to, an error will be thrown.
+  /** Writes the unencrypted mnemonic to disk. If we encounter a file in the
+    * place we're about to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, mnemonic: DecryptedMnemonic): Path = {
     val mnemonicCode = mnemonic.mnemonicCode
@@ -99,9 +97,8 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
-  /** Writes the unencrypted xprv to disk.
-    * If we encounter a file in the place we're about
-    * to write to, an error will be thrown.
+  /** Writes the unencrypted xprv to disk. If we encounter a file in the place
+    * we're about to write to, an error will be thrown.
     */
   def writeSeedToDisk(seedPath: Path, extKey: DecryptedExtPrivKey): Path = {
     val jsObject = {
@@ -115,9 +112,8 @@ object WalletStorage extends KeyManagerLogger {
     writeSeedJsonToDisk(seedPath, jsObject)
   }
 
-  /** Writes a seed's json output to disk.
-    * If we encounter a file in the place we're about
-    * to write to, an error will be thrown.
+  /** Writes a seed's json output to disk. If we encounter a file in the place
+    * we're about to write to, an error will be thrown.
     */
   private def writeSeedJsonToDisk(seedPath: Path, jsObject: Obj): Path = {
     logger.info(s"Writing seed to $seedPath")
@@ -206,8 +202,7 @@ object WalletStorage extends KeyManagerLogger {
       rawBackupTime: Option[Long],
       rawImported: Boolean)
 
-  /** Reads the raw encrypted mnemonic from json,
-    * performing no decryption
+  /** Reads the raw encrypted mnemonic from json, performing no decryption
     */
   private def readEncryptedMnemonicFromJson(
       json: Value): Either[ReadMnemonicError, EncryptedSeed] = {
@@ -271,9 +266,9 @@ object WalletStorage extends KeyManagerLogger {
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
-    val readJsonTupleEither: Either[
-      ReadMnemonicError,
-      (Vector[String], Long, Option[Long], Boolean)] = {
+    val readJsonTupleEither
+        : Either[ReadMnemonicError,
+                 (Vector[String], Long, Option[Long], Boolean)] = {
       logger.trace(s"Read mnemonic JSON: Masked(json)")
       Try {
         val creationTimeNum = parseCreationTime(json)
@@ -312,9 +307,8 @@ object WalletStorage extends KeyManagerLogger {
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
-    val readJsonTupleEither: Either[
-      ReadMnemonicError,
-      (String, Long, Option[Long], Boolean)] = {
+    val readJsonTupleEither
+        : Either[ReadMnemonicError, (String, Long, Option[Long], Boolean)] = {
       logger.trace(s"Read mnemonic JSON: Masked(json)")
       Try {
         val creationTimeNum = parseCreationTime(json)
@@ -346,11 +340,8 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
-  private def decryptSeed(
-      encrypted: EncryptedSeed,
-      passphrase: AesPassword): Either[
-    ReadMnemonicError,
-    DecryptedSeedState] = {
+  private def decryptSeed(encrypted: EncryptedSeed, passphrase: AesPassword)
+      : Either[ReadMnemonicError, DecryptedSeedState] = {
     // attempt to decrypt as mnemonic
     encrypted.toMnemonic(passphrase) match {
       case Failure(_) =>
@@ -379,14 +370,10 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
-  /** Reads the wallet mnemonic from disk and tries to parse and
-    * decrypt it
+  /** Reads the wallet mnemonic from disk and tries to parse and decrypt it
     */
-  def decryptSeedFromDisk(
-      seedPath: Path,
-      passphraseOpt: Option[AesPassword]): Either[
-    ReadMnemonicError,
-    DecryptedSeedState] = {
+  def decryptSeedFromDisk(seedPath: Path, passphraseOpt: Option[AesPassword])
+      : Either[ReadMnemonicError, DecryptedSeedState] = {
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
@@ -545,15 +532,14 @@ sealed trait ReadMnemonicError { self: Error => }
 
 object ReadMnemonicError {
 
-  /** Something went wrong while decrypting the mnemonic.
-    * Most likely the passphrase was bad
+  /** Something went wrong while decrypting the mnemonic. Most likely the
+    * passphrase was bad
     */
   case object DecryptionError
       extends Error(s"Could not decrypt mnemonic!")
       with ReadMnemonicError
 
-  /** Something went wrong while parsing the encrypted
-    * mnemonic into valid JSON
+  /** Something went wrong while parsing the encrypted mnemonic into valid JSON
     */
   case class JsonParsingError(message: String)
       extends Error(s"Error when parsing JSON: $message")

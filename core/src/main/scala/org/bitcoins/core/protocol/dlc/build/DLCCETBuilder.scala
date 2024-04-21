@@ -22,8 +22,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.ECPublicKey
 
-/** Responsible for constructing unsigned
-  * Contract Execution Transactions (CETs)
+/** Responsible for constructing unsigned Contract Execution Transactions (CETs)
   */
 case class DLCCETBuilder(
     contractInfo: ContractInfo,
@@ -64,8 +63,7 @@ case class DLCCETBuilder(
     TransactionOutput(acceptValue, acceptFinalSPK)
   }
 
-  /** Constructs a Contract Execution Transaction (CET)
-    * for a given outcome
+  /** Constructs a Contract Execution Transaction (CET) for a given outcome
     */
   def buildCET(outcome: OracleOutcome): WitnessTransaction = {
     val (offerPayout, acceptPayout) = contractInfo.getPayouts(outcome)

@@ -22,7 +22,9 @@ sealed abstract class ConstantInterpreter {
     opPushData(program)
   }
 
-  /** The next two bytes contain the number of bytes to be pushed onto the stack. */
+  /** The next two bytes contain the number of bytes to be pushed onto the
+    * stack.
+    */
   def opPushData2(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_PUSHDATA2),
@@ -30,7 +32,9 @@ sealed abstract class ConstantInterpreter {
     opPushData(program)
   }
 
-  /** The next four bytes contain the number of bytes to be pushed onto the stack. */
+  /** The next four bytes contain the number of bytes to be pushed onto the
+    * stack.
+    */
   def opPushData4(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_PUSHDATA4),
@@ -38,7 +42,9 @@ sealed abstract class ConstantInterpreter {
     opPushData(program)
   }
 
-  /** Pushes the number of bytes onto the stack that is specified by script number on the script stack. */
+  /** Pushes the number of bytes onto the stack that is specified by script
+    * number on the script stack.
+    */
   def pushScriptNumberBytesToStack(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     val bytesNeeded: Long = program.script.head match {
@@ -59,7 +65,7 @@ sealed abstract class ConstantInterpreter {
         throw new RuntimeException(
           "We cannot have more bytes than what our script number specified")
       else {
-        //for the case when a ScriptNumberImpl(x) was parsed as a ByteToPushOntoStackImpl(x)
+        // for the case when a ScriptNumberImpl(x) was parsed as a ByteToPushOntoStackImpl(x)
         val scriptToken = scriptTokens.head match {
           case x: BytesToPushOntoStack => ScriptNumber(x.opCode)
           case x                       => x
@@ -80,8 +86,8 @@ sealed abstract class ConstantInterpreter {
           BytesUtil.flipEndianness(
             BytesUtil.toByteVector(bytesToPushOntoStack)))
 
-    //check to see if we have the exact amount of bytes needed to be pushed onto the stack
-    //if we do not, mark the program as invalid
+    // check to see if we have the exact amount of bytes needed to be pushed onto the stack
+    // if we do not, mark the program as invalid
     if (bytesNeeded == 0)
       program.updateStackAndScript(ScriptNumber.zero :: program.stack,
                                    newScript)
@@ -100,12 +106,13 @@ sealed abstract class ConstantInterpreter {
     } else program.updateStackAndScript(constant :: program.stack, newScript)
   }
 
-  /** Checks if the MINIMALDATA script flag is set, if so checks if we are using the minimal push operation
-    * if we are, then we push the bytes onto the stack.
+  /** Checks if the MINIMALDATA script flag is set, if so checks if we are using
+    * the minimal push operation if we are, then we push the bytes onto the
+    * stack.
     */
   private def opPushData(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    //for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
+    // for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
     def emptyPush(): StartedScriptProgram = {
       if (ScriptFlagUtil.requireMinimalData(program.flags)) {
         program.failExecution(ScriptErrorMinimalData)

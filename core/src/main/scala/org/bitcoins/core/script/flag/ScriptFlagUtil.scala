@@ -4,8 +4,7 @@ package org.bitcoins.core.script.flag
   */
 trait ScriptFlagUtil {
 
-  /** Checks if the strict encoding is required in the set of flags
-    * given to us
+  /** Checks if the strict encoding is required in the set of flags given to us
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#DER_encoding
     * @param flags
     * @return
@@ -44,9 +43,9 @@ trait ScriptFlagUtil {
     flags.contains(ScriptVerifyCheckSequenceVerify)
   }
 
-  /** Checks to see if the script flag is set to discourage NOPs that are not in use
-    * NOPs are used by soft forks to repurpose NOPs to actual functionality such as checklocktimeverify
-    * See BIP65 for an example of this seq
+  /** Checks to see if the script flag is set to discourage NOPs that are not in
+    * use NOPs are used by soft forks to repurpose NOPs to actual functionality
+    * such as checklocktimeverify See BIP65 for an example of this seq
     * @param flags
     * @return
     */
@@ -62,7 +61,8 @@ trait ScriptFlagUtil {
   def requireMinimalData(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifyMinimalData)
 
-  /** Checks to see if the script flag is set to require low s values in digital signatures
+  /** Checks to see if the script flag is set to require low s values in digital
+    * signatures
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
     * @param flags
     * @return
@@ -70,15 +70,16 @@ trait ScriptFlagUtil {
   def requireLowSValue(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifyLowS)
 
-  /** Checks to see if the script flag is set to require we only have push operations inside of a scriptSig
+  /** Checks to see if the script flag is set to require we only have push
+    * operations inside of a scriptSig
     * @param flags
     * @return
     */
   def requirePushOnly(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifySigPushOnly)
 
-  /** Checks to see if the script flag is set to require that we need a NULLDUMMY to be OP_0 for
-    * OP_CHECKMULTISIG operations
+  /** Checks to see if the script flag is set to require that we need a
+    * NULLDUMMY to be OP_0 for OP_CHECKMULTISIG operations
     * @param flags
     * @return
     */
@@ -98,8 +99,8 @@ trait ScriptFlagUtil {
   def requireScriptVerifyWitnessPubKeyType(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifyWitnessPubKeyType)
 
-  /** Requires that the argument to OP_IF/OP_NOTIF be minimally encoded
-    * See: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
+  /** Requires that the argument to OP_IF/OP_NOTIF be minimally encoded See:
+    * https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
     */
   def minimalIfEnabled(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifyMinimalIf)

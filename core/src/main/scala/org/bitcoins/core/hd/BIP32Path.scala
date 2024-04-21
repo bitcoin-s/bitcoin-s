@@ -10,13 +10,12 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
   def path: Vector[BIP32Node]
   override protected lazy val wrapped: Vector[BIP32Node] = path
 
-  /** BIP32 paths can be subsets/superset of each other.
-    * If all elements in a path `p` is included in a path
-    * `P`, (i.e. `p` is a subset of `P`), `p.diff(P)`
-    * is the elements from `P` that is not in `p`.
+  /** BIP32 paths can be subsets/superset of each other. If all elements in a
+    * path `p` is included in a path `P`, (i.e. `p` is a subset of `P`),
+    * `p.diff(P)` is the elements from `P` that is not in `p`.
     *
     * @example
-    * {{{
+    *   {{{
     *  // equal paths
     * m/44'/1' diff m/44'/1' == Some(BIP32Path.empty)
     *
@@ -30,7 +29,7 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
     * // any fields are unequal along the way
     * m/44'/1' diff m/43'/2' == None
     * m/44'/1'/0 diff m/44'/2'/1 == None
-    * }}}
+    *   }}}
     */
   def diff(otherPath: BIP32Path): Option[BIP32Path] = {
 
@@ -96,32 +95,33 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
 object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
   private case class BIP32PathImpl(path: Vector[BIP32Node]) extends BIP32Path
 
-  /** The empty BIP32 path "m", i.e. a path that does no
-    * child key derivation
+  /** The empty BIP32 path "m", i.e. a path that does no child key derivation
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#the-key-tree BIP44]]
-    *     section on key trees
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#the-key-tree BIP44]]
+    *   section on key trees
     */
   val empty: BIP32Path = BIP32PathImpl(Vector.empty)
 
   def apply(path: Vector[BIP32Node]): BIP32Path = BIP32PathImpl(path)
 
-  def apply(path: BIP32Node*): BIP32Path = BIP32Path(Vector(path *))
+  def apply(path: BIP32Node*): BIP32Path = BIP32Path(Vector(path*))
 
-  /** Parses a string representation of a BIP32 path. This is on the form
-    * of
+  /** Parses a string representation of a BIP32 path. This is on the form of
     *
     * {{{
     *   m/level/hardenedLevel'/...
     * }}}
     *
-    * Where `level` is an integer index and hardenedLevel is an integer
-    * index followed by a `'`. Different notation is used in BIP32, but this
-    * is the most common way of writing down BIP32 paths.
+    * Where `level` is an integer index and hardenedLevel is an integer index
+    * followed by a `'`. Different notation is used in BIP32, but this is the
+    * most common way of writing down BIP32 paths.
     *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki BIP43]]
-    *     and [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
-    *     for examples of this notation.
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki BIP43]]
+    *   and
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
+    *   for examples of this notation.
     */
   override def fromString(string: String): BIP32Path = {
     val parts = string
@@ -154,7 +154,8 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
   }
 
   /** Takes in a BIP32 Path and verifies all paths are hardened
-    * @throws RuntimeException is a non hardened path is found
+    * @throws RuntimeException
+    *   is a non hardened path is found
     */
   def fromHardenedString(string: String): BIP32Path = {
     val path = BIP32Path.fromString(string)
@@ -193,8 +194,7 @@ case class BIP32Node(index: Int, hardenedOpt: Option[HardenedType]) {
 
   def hardened: Boolean = hardenedOpt.isDefined
 
-  /** Converts this node to a BIP32 notation
-    * unsigned 32 bit integer
+  /** Converts this node to a BIP32 notation unsigned 32 bit integer
     */
   def toUInt32: UInt32 =
     if (hardenedOpt.isDefined) ExtKey.hardenedIdx + UInt32(index.toLong)

@@ -14,10 +14,10 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
   /** The table inside our database we are inserting into */
   override val table: profile.api.TableQuery[TableAutoInc[T]]
 
-  override def createAllAction(ts: Vector[T]): profile.api.DBIOAction[
-    Vector[T],
-    profile.api.NoStream,
-    Effect.Write] = {
+  override def createAllAction(
+      ts: Vector[T]): profile.api.DBIOAction[Vector[T],
+                                             profile.api.NoStream,
+                                             Effect.Write] = {
     val idQuery = table.map(_.id)
     val idAutoInc = table.returning(idQuery)
     val query = {
@@ -49,9 +49,9 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
   }
 }
 
-/** Defines a table that has an auto incremented fields that is named id.
-  * This is useful for things we want to store that don't have an
-  * inherent id such as a hash.
+/** Defines a table that has an auto incremented fields that is named id. This
+  * is useful for things we want to store that don't have an inherent id such as
+  * a hash.
   * @param tag
   * @param tableName
   * @tparam T

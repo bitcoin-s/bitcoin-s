@@ -24,7 +24,9 @@ case class ExtPublicKeyDTO(
 
 }
 
-/** The primary key type is the public key associated with the extended public key [[ExtPublicKey.key]] */
+/** The primary key type is the public key associated with the extended public
+  * key [[ExtPublicKey.key]]
+  */
 case class MasterXPubDAO()(implicit
     ec: ExecutionContext,
     appConfig: DbAppConfig)
@@ -43,11 +45,10 @@ case class MasterXPubDAO()(implicit
     create(dto)
   }
 
-  override def createAllAction(
-      ts: Vector[ExtPublicKeyDTO]): profile.api.DBIOAction[
-    Vector[ExtPublicKeyDTO],
-    profile.api.NoStream,
-    Effect.Write] = {
+  override def createAllAction(ts: Vector[ExtPublicKeyDTO])
+      : profile.api.DBIOAction[Vector[ExtPublicKeyDTO],
+                               profile.api.NoStream,
+                               Effect.Write] = {
     val fixedSqlAction = table ++= ts
 
     fixedSqlAction.map(_ => ts)
@@ -77,24 +78,23 @@ case class MasterXPubDAO()(implicit
       create(extKeys.head).map(Vector(_))
   }
 
-  override protected def findByPrimaryKeys(
-      pubkeys: Vector[ECPublicKey]): profile.api.Query[
-    profile.api.Table[ExtPublicKeyDTO],
-    ExtPublicKeyDTO,
-    Seq] = {
+  override protected def findByPrimaryKeys(pubkeys: Vector[ECPublicKey])
+      : profile.api.Query[profile.api.Table[ExtPublicKeyDTO],
+                          ExtPublicKeyDTO,
+                          Seq] = {
     table.filter(_.key.inSet(pubkeys))
   }
 
-  override protected def findAll(
-      ts: Vector[ExtPublicKeyDTO]): profile.api.Query[
-    profile.api.Table[ExtPublicKeyDTO],
-    ExtPublicKeyDTO,
-    Seq] = {
+  override protected def findAll(ts: Vector[ExtPublicKeyDTO])
+      : profile.api.Query[profile.api.Table[ExtPublicKeyDTO],
+                          ExtPublicKeyDTO,
+                          Seq] = {
     findByPrimaryKeys(ts.map(_.publicKey))
   }
 
   /** Validates the stored public key against the given xpub
-    * @throws RuntimeException if the keys are different
+    * @throws RuntimeException
+    *   if the keys are different
     */
   def validate(xpub: ExtPublicKey): Future[Unit] = {
     findAll().map { xpubs =>

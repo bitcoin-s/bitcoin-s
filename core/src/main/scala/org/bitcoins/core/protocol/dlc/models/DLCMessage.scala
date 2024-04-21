@@ -52,7 +52,9 @@ object DLCMessage {
   sealed trait DLCSetupMessage extends DLCMessage {
     def pubKeys: DLCPublicKeys
 
-    /** The collateral that the offerer/acceptor is putting up on their side of the DLC */
+    /** The collateral that the offerer/acceptor is putting up on their side of
+      * the DLC
+      */
     def collateral: Satoshis
 
     def fundingInputs: Vector[DLCFundingInput]
@@ -64,17 +66,26 @@ object DLCMessage {
       s"Cannot have a negative totalCollateral, got: ${collateral.toLong}")
   }
 
-  /** The initiating party starts the protocol by sending an offer message to the other party.
+  /** The initiating party starts the protocol by sending an offer message to
+    * the other party.
     *
-    * @param contractInfo The oracle public key and R point(s) to use to build the CETs as
-    *                   well as meta information to identify the oracle to be used in the contract,
-    *                   and a map to be used to create CETs.
-    * @param pubKeys The relevant public keys that the initiator will be using
-    * @param collateral How much the initiator inputs into the contract.
-    * @param fundingInputs   The set of UTXOs to be used as input to the fund transaction.
-    * @param changeAddress   The address to use to send the change for the initiator.
-    * @param feeRate         The fee rate to be used when computing fees for the different transactions.
-    * @param timeouts        The set of timeouts for the CETs
+    * @param contractInfo
+    *   The oracle public key and R point(s) to use to build the CETs as well as
+    *   meta information to identify the oracle to be used in the contract, and
+    *   a map to be used to create CETs.
+    * @param pubKeys
+    *   The relevant public keys that the initiator will be using
+    * @param collateral
+    *   How much the initiator inputs into the contract.
+    * @param fundingInputs
+    *   The set of UTXOs to be used as input to the fund transaction.
+    * @param changeAddress
+    *   The address to use to send the change for the initiator.
+    * @param feeRate
+    *   The fee rate to be used when computing fees for the different
+    *   transactions.
+    * @param timeouts
+    *   The set of timeouts for the CETs
     */
   case class DLCOffer(
       protocolVersionOpt: Option[Int],
@@ -175,7 +186,9 @@ object DLCMessage {
     }
   }
 
-  /** DLC Accept message that contains refund signatures, but does not contain cet signatures */
+  /** DLC Accept message that contains refund signatures, but does not contain
+    * cet signatures
+    */
   case class DLCAcceptWithoutCetSigs(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -203,7 +216,9 @@ object DLCMessage {
     }
   }
 
-  /** DLC accept message that does not contain cet signatures or refund signatures */
+  /** DLC accept message that does not contain cet signatures or refund
+    * signatures
+    */
   case class DLCAcceptWithoutSigs(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -366,7 +381,7 @@ object DLCMessage {
           adaptorPoints.zip(sigs)
       }
 
-      //add hashtype
+      // add hashtype
       val refundSigWithHashType = {
         ECDigitalSignature.fromBytes(
           accept.refundSignature.bytes.:+(HashType.sigHashAllByte))

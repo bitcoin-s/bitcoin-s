@@ -137,13 +137,13 @@ abstract class DbAppConfig extends AppConfig {
     hikariLoggingOpt match {
       case Some(bool) => bool
       case None       =>
-        //default hikari logging off
+        // default hikari logging off
         false
     }
   }
 
-  /** Gets how often we should log hikari connection pool stats
-    * if None, this means [[isHikariLoggingEnabled]] is not enabled
+  /** Gets how often we should log hikari connection pool stats if None, this
+    * means [[isHikariLoggingEnabled]] is not enabled
     */
   lazy val hikariLoggingInterval: Option[Duration] = {
     if (isHikariLoggingEnabled) {
@@ -152,7 +152,7 @@ abstract class DbAppConfig extends AppConfig {
       val interval = intervalOpt match {
         case Some(interval) => interval
         case None           =>
-          //default to 1 minute if nothing is set
+          // default to 1 minute if nothing is set
           new FiniteDuration(1, TimeUnit.MINUTES)
       }
       Some(interval)

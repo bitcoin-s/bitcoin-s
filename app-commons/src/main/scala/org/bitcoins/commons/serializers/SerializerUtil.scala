@@ -61,7 +61,7 @@ sealed abstract class SerializerUtil {
         val tOpt = f(key)
         tOpt match {
           case Some(t) => JsSuccess(t)
-          case None    => SerializerUtil.buildErrorMsg("invalid jsstring", jsValue)
+          case None => SerializerUtil.buildErrorMsg("invalid jsstring", jsValue)
         }
       case err @ (_: JsNumber | _: JsObject | _: JsArray | JsNull |
           _: JsBoolean) =>

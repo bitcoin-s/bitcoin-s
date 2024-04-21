@@ -35,8 +35,8 @@ sealed trait NonWitnessScriptPubKey extends ScriptPubKey
 
 /** Trait for all raw, non-nested ScriptPubKeys (no P2SH)
   *
-  * Note that all WitnessScriptPubKeys including P2WPKH are not
-  * considered to be non-nested and hence not RawScriptPubKeys.
+  * Note that all WitnessScriptPubKeys including P2WPKH are not considered to be
+  * non-nested and hence not RawScriptPubKeys.
   */
 sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
 
@@ -103,8 +103,8 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
 }
 
 /** Represents a multisignature script public key
-  * https://bitcoin.org/en/developer-guide#multisig
-  * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
+  * https://bitcoin.org/en/developer-guide#multisig Format: <m> <A pubkey> [B
+  * pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
   */
 sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
 
@@ -114,7 +114,7 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
       if (asm.indexOf(OP_CHECKMULTISIG) != -1)
         asmWithoutPushOps.indexOf(OP_CHECKMULTISIG)
       else asmWithoutPushOps.indexOf(OP_CHECKMULTISIGVERIFY)
-    //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
+    // magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs - 2)
     numSigsRequired match {
       case x: ScriptNumber => x
@@ -136,14 +136,16 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     }
   }
 
-  /** Returns the amount of required signatures for this multisignature script pubkey output */
+  /** Returns the amount of required signatures for this multisignature script
+    * pubkey output
+    */
   def requiredSigs: Int = {
     requiredSigsScriptNumber.toInt
   }
 
   def maxSigsScriptNumber: ScriptNumber = {
     if (checkMultiSigIndex == -1 || checkMultiSigIndex == 0) {
-      //means that we do not have a max signature requirement
+      // means that we do not have a max signature requirement
       OP_0
     } else {
       asm(checkMultiSigIndex - 1) match {
@@ -165,12 +167,16 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
     }
   }
 
-  /** The maximum amount of signatures for this multisignature script pubkey output */
+  /** The maximum amount of signatures for this multisignature script pubkey
+    * output
+    */
   def maxSigs: Int = {
     maxSigsScriptNumber.toInt
   }
 
-  /** Gives the `OP_CHECKMULTISIG` or `OP_CHECKMULTISIGVERIFY` index inside of asm */
+  /** Gives the `OP_CHECKMULTISIG` or `OP_CHECKMULTISIGVERIFY` index inside of
+    * asm
+    */
   private def checkMultiSigIndex: Int = {
     if (asm.indexOf(OP_CHECKMULTISIG) != -1) asm.indexOf(OP_CHECKMULTISIG)
     else asm.indexOf(OP_CHECKMULTISIGVERIFY)
@@ -245,17 +251,18 @@ object MultiSignatureScriptPubKey
 
   private val opCmsOPs = Vector(OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY)
 
-  /** Determines if the given script tokens are a multisignature `scriptPubKey` */
+  /** Determines if the given script tokens are a multisignature `scriptPubKey`
+    */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     if (asm.nonEmpty && opCmsOPs.exists(_ == asm.last)) {
       val cmsIdx = asm.size - 1
-      //we need either the first or second asm operation to indicate how many signatures are required
+      // we need either the first or second asm operation to indicate how many signatures are required
       val hasRequiredSignaturesOpt: Option[Int] = {
         asm.headOption match {
           case None        => None
           case Some(token) =>
-            //this is for the case that we have more than 16 public keys, the
-            //first operation will be a push op, the second operation being the actual number of keys
+            // this is for the case that we have more than 16 public keys, the
+            // first operation will be a push op, the second operation being the actual number of keys
             token match {
               case _: BytesToPushOntoStack =>
                 isValidPubKeyNumber(asm.tail.head)
@@ -263,7 +270,7 @@ object MultiSignatureScriptPubKey
             }
         }
       }
-      //the second to last asm operation should be the maximum amount of public keys
+      // the second to last asm operation should be the maximum amount of public keys
       val hasMaximumSignaturesOpt: Option[Int] = {
         val maxSigsIdx = asm.length - 2
         if (maxSigsIdx >= cmsIdx || maxSigsIdx <= 0) {
@@ -298,7 +305,7 @@ object MultiSignatureScriptPubKey
 
   def parsePublicKeys(asm: Seq[ScriptToken]): Seq[ECPublicKeyBytes] = {
     val keys = asm
-      .dropRight(2) //drop maxSigs, OP_CMS op
+      .dropRight(2) // drop maxSigs, OP_CMS op
       .filter(_.isInstanceOf[ScriptConstant])
       .slice(1, asm.length) // drop requiredSigs
       .map(t => ECPublicKeyBytes(t.bytes))
@@ -311,8 +318,8 @@ object MultiSignatureScriptPubKey
     parsePublicKeys(asm).size == maxSigs
   }
 
-  /** Checks that the given script token is with the range of the maximum amount of
-    * public keys we can have in a
+  /** Checks that the given script token is with the range of the maximum amount
+    * of public keys we can have in a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]]
     */
   @tailrec private def isValidPubKeyNumber(token: ScriptToken): Option[Int] = {
@@ -327,7 +334,7 @@ object MultiSignatureScriptPubKey
           None
         }
       case constant: ScriptConstant =>
-        //Consensus.maxPublicKeysPerMultiSig is at most 20, which can be represented by 2 bytes
+        // Consensus.maxPublicKeysPerMultiSig is at most 20, which can be represented by 2 bytes
         if (constant.bytes.size <= 2) {
           val sn = ScriptNumber.fromBytes(constant.bytes)
           isValidPubKeyNumber(sn)
@@ -339,12 +346,14 @@ object MultiSignatureScriptPubKey
   }
 }
 
-/** Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
+/** Represents a
+  * [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
   * Format: `OP_HASH160 <Hash160(redeemScript)> OP_EQUAL`
   */
 sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
 
-  /** The hash of the script for which this scriptPubKey is being created from */
+  /** The hash of the script for which this scriptPubKey is being created from
+    */
   def scriptHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 2).bytes)
 
@@ -394,7 +403,8 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   def apply(asm: Seq[ScriptToken]): P2SHScriptPubKey = fromAsm(asm)
 }
 
-/** Represents a [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
+/** Represents a
+  * [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
   * Format: `<pubkey> OP_CHECKSIG`
   */
 sealed trait P2PKScriptPubKey extends RawScriptPubKey {
@@ -414,9 +424,9 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
   }
 
   def apply(pubKey: PublicKey): P2PKScriptPubKey = {
-    //comeback and review the type on this constructor,
-    //depending on the output type, the key type isn't safe
-    //i.e xonly can't be used pre-taproot and vice versa
+    // comeback and review the type on this constructor,
+    // depending on the output type, the key type isn't safe
+    // i.e xonly can't be used pre-taproot and vice versa
     val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
     val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
     P2PKScriptPubKey(asm)
@@ -431,7 +441,8 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
   def apply(asm: Seq[ScriptToken]): P2PKScriptPubKey = fromAsm(asm)
 
   /** Sees if the given asm matches the
-    * [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]] pattern
+    * [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]]
+    * pattern
     */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean =
     asm match {
@@ -466,7 +477,9 @@ sealed trait LockTimeScriptPubKey extends RawScriptPubKey {
     }
   }
 
-  /** The relative locktime value (i.e. the amount of time the output should remain unspendable) */
+  /** The relative locktime value (i.e. the amount of time the output should
+    * remain unspendable)
+    */
   def locktime: ScriptNumber = {
     asm.head match {
       case scriptNumOp: ScriptNumberOperation =>
@@ -498,8 +511,8 @@ object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
   }
 }
 
-/** Represents a scriptPubKey that contains `OP_CHECKLOCKTIMEVERIFY.`
-  * Adds an absolute/defined locktime condition to any scriptPubKey.
+/** Represents a scriptPubKey that contains `OP_CHECKLOCKTIMEVERIFY.` Adds an
+  * absolute/defined locktime condition to any scriptPubKey.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki BIP65]]
   * Format: `<locktime> OP_CLTV OP_DROP <scriptPubKey>`
   */
@@ -557,7 +570,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
                    s: ScriptConstant,
                    OP_CHECKLOCKTIMEVERIFY,
                    OP_DROP) =>
-            //can only have up to 5 byte numbers for CLTV
+            // can only have up to 5 byte numbers for CLTV
             s.byteSize <= 5 && validScriptAfterLockTime(tailTokens)
           case _ => false
         }
@@ -581,13 +594,14 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
     }
   }
 
-  /** We need this check because sometimes we can get very lucky in having a non valid
-    * lock time script that has the first 4 bytes as a valid locktime script
-    * and then the bytes after the first 4 bytes gets lucky and is parsed by our
-    * [[org.bitcoins.core.serializers.script.ScriptParser ScriptParser]]
-    * A good way to see if this is _actually_ a valid script is by checking if we have any
-    * [[org.bitcoins.core.script.reserved.UndefinedOP_NOP UndefinedOP_NOP]] in the script,
-    * which means we definitely don't have a valid locktime script
+  /** We need this check because sometimes we can get very lucky in having a non
+    * valid lock time script that has the first 4 bytes as a valid locktime
+    * script and then the bytes after the first 4 bytes gets lucky and is parsed
+    * by our [[org.bitcoins.core.serializers.script.ScriptParser ScriptParser]]
+    * A good way to see if this is _actually_ a valid script is by checking if
+    * we have any
+    * [[org.bitcoins.core.script.reserved.UndefinedOP_NOP UndefinedOP_NOP]] in
+    * the script, which means we definitely don't have a valid locktime script
     *
     * See this example of what happened before we added this check:
     * [[https://travis-ci.org/bitcoin-s/bitcoin-s-core/builds/201652191#L2526 Travis CI]]
@@ -657,10 +671,10 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
                    s: ScriptConstant,
                    OP_CHECKSEQUENCEVERIFY,
                    OP_DROP) =>
-            //check that the byteSize of the ScriptNum is less than or equal to 5
-            //as per BIP112
+            // check that the byteSize of the ScriptNum is less than or equal to 5
+            // as per BIP112
             s.byteSize <= 5 &&
-              CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
+            CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
           case _ => false
         }
       }
@@ -684,7 +698,8 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
 }
 
-/** Currently only supports a single OP_IF ... OP_ELSE ... OP_ENDIF ScriptPubKey */
+/** Currently only supports a single OP_IF ... OP_ELSE ... OP_ENDIF ScriptPubKey
+  */
 sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
   def conditional: ConditionalOperation
 
@@ -738,8 +753,8 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
 
 object ConditionalScriptPubKey {
 
-  /** Validates the correctness of the conditional syntax.
-    * If valid, also returns the index of the first outer-most OP_ELSE
+  /** Validates the correctness of the conditional syntax. If valid, also
+    * returns the index of the first outer-most OP_ELSE
     */
   def isConditionalScriptPubKeyWithElseIndex(
       asm: Seq[ScriptToken],
@@ -976,14 +991,8 @@ object NonStandardNotIfConditionalScriptPubKey
   }
 }
 
-/** The type for ScriptPubKeys of the form:
-  * OP_IF
-  *   <Public Key>
-  * OP_ELSE
-  *   <Timeout> OP_CHECKSEQUENCEVERIFY OP_DROP
-  *   <Timeout Public Key>
-  * OP_ENDIF
-  * OP_CHECKSIG
+/** The type for ScriptPubKeys of the form: OP_IF <Public Key> OP_ELSE <Timeout>
+  * OP_CHECKSEQUENCEVERIFY OP_DROP <Timeout Public Key> OP_ENDIF OP_CHECKSIG
   */
 sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
 
@@ -1072,7 +1081,7 @@ object P2PKWithTimeoutScriptPubKey
         }
 
         if (timeoutPubKeyTry.isSuccess && lockTimeTry.isSuccess) {
-          //this check is expensive, so do it only if we need it
+          // this check is expensive, so do it only if we need it
           val pubKeyTry = Try(ECPublicKey.fromBytes(asm(2).bytes))
           pubKeyTry match {
             case Success(pubKey) =>
@@ -1104,7 +1113,7 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
   }
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
-    //everything can be a NonStandardScriptPubkey, thus the trivially true function
+    // everything can be a NonStandardScriptPubkey, thus the trivially true function
     buildScript(asm.toVector, NonStandardScriptPubKeyImpl.apply, "")
   }
 
@@ -1206,8 +1215,8 @@ object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
 }
 
 /** This type represents a
-  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] to evaluate a
-  * [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]]
+  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] to evaluate
+  * a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]]
   */
 sealed trait WitnessScriptPubKey extends ScriptPubKey {
   def witnessProgram: Seq[ScriptToken]
@@ -1265,18 +1274,18 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
     */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
 
-    //multisig spk with zero public keys
-    //OP_0, BytesToPushOntoStackImpl(3), ScriptConstantImpl(ByteVector(3 bytes, 0x0000ae)
+    // multisig spk with zero public keys
+    // OP_0, BytesToPushOntoStackImpl(3), ScriptConstantImpl(ByteVector(3 bytes, 0x0000ae)
 
-    //multisig spk with one public key
-    //List(OP_0, BytesToPushOntoStackImpl(37),
+    // multisig spk with one public key
+    // List(OP_0, BytesToPushOntoStackImpl(37),
     // ScriptConstantImpl(ByteVector(37 bytes, 0x0021020afd6012af90835558c68365a370b7e6cd1c0d4664a8656c8c7847185cb5db6651ae)))
 
-    //we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
+    // we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
 
-    //it turns out this method gets called a lot when we attempt
-    //to type check spks, so let's do a cheap check before deserializing
-    //everything to a byte vector which is expensive
+    // it turns out this method gets called a lot when we attempt
+    // to type check spks, so let's do a cheap check before deserializing
+    // everything to a byte vector which is expensive
     val firstOp = asm.headOption
     if (!validWitVersions.contains(firstOp.getOrElse(OP_1NEGATE))) {
       false
@@ -1301,10 +1310,10 @@ sealed abstract class WitnessScriptPubKeyV0 extends WitnessScriptPubKey {
 object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
 
   /** Mimics the function to determine if a
-    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] contains a witness
-    * A witness program is any valid
-    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] that consists of a 1 byte push op and then a data push
-    * between 2 and 40 bytes
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] contains a
+    * witness A witness program is any valid
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] that
+    * consists of a 1 byte push op and then a data push between 2 and 40 bytes
     * Verison 0 witness program need to have an OP_0 as the first operation
     * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpp#L215-L229]]
     */
@@ -1360,7 +1369,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
 
   /** Builds a P2WPKH SPK from raw ECPublicKeyBytes (unsafe). */
   private[core] def apply(pubKey: ECPublicKeyBytes): P2WPKHWitnessSPKV0 = {
-    //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
+    // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     require(
       pubKey.isCompressed,
       s"Public key must be compressed to be used in a segwit script, see BIP143")
@@ -1476,15 +1485,17 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     asm.headOption.contains(OP_1) &&
     WitnessScriptPubKey.isValidAsm(asm) &&
     asmBytes.size == 34 &&
-    //have to make sure we have a valid xonly pubkey, not just 32 bytes
+    // have to make sure we have a valid xonly pubkey, not just 32 bytes
     XOnlyPubKey.fromBytesT(asm(2).bytes).isSuccess
   }
 
-  /** Computes a [[TaprootScriptPubKey]] from a given internal key with no [[TaprootScriptPath]]
-    * If the spending conditions do not require a script path, the output key should
-    * commit to an unspendable script path instead of having no script path.
-    * This can be achieved by computing the output key point as Q = P + int(hashTapTweak(bytes(P)))G.
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs]]
+  /** Computes a [[TaprootScriptPubKey]] from a given internal key with no
+    * [[TaprootScriptPath]] If the spending conditions do not require a script
+    * path, the output key should commit to an unspendable script path instead
+    * of having no script path. This can be achieved by computing the output key
+    * point as Q = P + int(hashTapTweak(bytes(P)))G.
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs]]
     */
   def fromInternalKey(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
     val hash = CryptoUtil.tapTweakHash(xOnlyPubKey.bytes)
@@ -1508,7 +1519,7 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
       val result: Vector[Sha256Digest] = hashes
         .grouped(2)
         .map { grouped =>
-          //need to recurse?
+          // need to recurse?
           CryptoUtil.tapBranchHash(grouped(0).bytes ++ grouped(1).bytes)
         }
         .toVector
@@ -1552,9 +1563,9 @@ object UnassignedWitnessScriptPubKey
   }
 }
 
-/** This trait represents the witness commitment found in the coinbase transaction
-  * This is needed to commit to the wtxids of all of the witness transactions, since the merkle tree
-  * does not commit to the witnesses for all
+/** This trait represents the witness commitment found in the coinbase
+  * transaction This is needed to commit to the wtxids of all of the witness
+  * transactions, since the merkle tree does not commit to the witnesses for all
   * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
   * See BIP141 for more info
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
@@ -1562,8 +1573,8 @@ object UnassignedWitnessScriptPubKey
 sealed trait WitnessCommitment extends RawScriptPubKey {
 
   /** The commitment to the
-    * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]s in the
-    * [[org.bitcoins.core.protocol.blockchain.Block Block]]
+    * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]s
+    * in the [[org.bitcoins.core.protocol.blockchain.Block Block]]
     */
   def witnessRootHash: DoubleSha256Digest =
     DoubleSha256Digest(asm(2).bytes.splitAt(4)._2)
@@ -1600,7 +1611,8 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
           ScriptConstant(commitmentHeader + hash.hex)))
   }
 
-  /** This determines if the given asm has the correct witness structure according to
+  /** This determines if the given asm has the correct witness structure
+    * according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure BIP141]]
     */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {

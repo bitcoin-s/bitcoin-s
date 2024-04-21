@@ -14,8 +14,10 @@ import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S chain verification module
-  * @param directory The data directory of the module
-  * @param confs Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the module
+  * @param confs
+  *   Optional sequence of configuration overrides
   */
 case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     implicit override val ec: ExecutionContext)
@@ -36,9 +38,8 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override lazy val callbackFactory: ChainCallbacks.type = ChainCallbacks
 
-  /** Checks whether or not the chain project is initialized by
-    * trying to read the genesis block header from our block
-    * header table
+  /** Checks whether or not the chain project is initialized by trying to read
+    * the genesis block header from our block header table
     */
   def isStarted(): Future[Boolean] = {
     val bhDAO = BlockHeaderDAO()(ec, appConfig)
@@ -54,9 +55,9 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     }
   }
 
-  /** Initializes our chain project if it is needed
-    * This creates the necessary tables for the chain project
-    * and inserts preliminary data like the genesis block header
+  /** Initializes our chain project if it is needed This creates the necessary
+    * tables for the chain project and inserts preliminary data like the genesis
+    * block header
     */
   override def start(): Future[Unit] = {
     for {
@@ -83,7 +84,7 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       }
     } yield {
       if (isHikariLoggingEnabled) {
-        //.get is safe because hikari logging is enabled
+        // .get is safe because hikari logging is enabled
         startHikariLogger(hikariLoggingInterval.get)
         ()
       }
@@ -114,9 +115,9 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   lazy val filterBatchSize: Int =
     config.getInt(s"bitcoin-s.${moduleName}.neutrino.filter-batch-size")
 
-  /** Whether we should emit block processed events during IBD or not.
-    * This is because websocket events can overwhelm UIs during IBD.
-    * If this is set, we won't emit blockprocessed event until ibd is complete.
+  /** Whether we should emit block processed events during IBD or not. This is
+    * because websocket events can overwhelm UIs during IBD. If this is set, we
+    * won't emit blockprocessed event until ibd is complete.
     */
   lazy val ibdBlockProcessedEvents: Boolean = {
     config.getBoolean(s"bitcoin-s.${moduleName}.websocket.block-processed-ibd")

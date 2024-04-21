@@ -4,8 +4,8 @@ import org.bitcoin.NativeSecp256k1
 import scodec.bits.ByteVector
 
 /** This is an implementation of [[CryptoRuntime]] that defaults to libsecp256k1
-  * (https://github.com/bitcoin-core/secp256k1) when possible. All unsupported functions
-  * are delegated to [[BouncycastleCryptoRuntime]].
+  * (https://github.com/bitcoin-core/secp256k1) when possible. All unsupported
+  * functions are delegated to [[BouncycastleCryptoRuntime]].
   */
 trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
@@ -89,11 +89,11 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
                              publicKey.bytes.toArray)
 
     if (!result) {
-      //if signature verification fails with libsecp256k1 we need to use our old
-      //verification function from spongy castle, this is needed because early blockchain
-      //transactions can have weird non strict der encoded digital signatures
-      //bitcoin core implements this functionality here:
-      //https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
+      // if signature verification fails with libsecp256k1 we need to use our old
+      // verification function from spongy castle, this is needed because early blockchain
+      // transactions can have weird non strict der encoded digital signatures
+      // bitcoin core implements this functionality here:
+      // https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
 
       BouncycastleCryptoRuntime.verify(publicKey, data, signature)
     } else result

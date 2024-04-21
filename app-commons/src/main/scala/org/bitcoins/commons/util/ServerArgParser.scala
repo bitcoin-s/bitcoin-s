@@ -7,8 +7,9 @@ import org.bitcoins.core.config._
 import java.nio.file.{Path, Paths}
 import scala.util.Properties
 
-/** Parses arguments passed to the bitcoin-s app server as command line arguments
-  * This does NOT consider things that exist in reference.conf or application.conf files
+/** Parses arguments passed to the bitcoin-s app server as command line
+  * arguments This does NOT consider things that exist in reference.conf or
+  * application.conf files
   */
 case class ServerArgParser(commandLineArgs: Vector[String]) {
 
@@ -70,10 +71,10 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
   /** The datadir passed in as a command line arg using --datadir */
   lazy val datadirOpt: Option[Path] = dataDirIndexOpt.map { case (_, idx) =>
     val str = commandLineArgs(idx + 1)
-    //we only want the replace ~ if it is first in the file path
-    //otherwise windows gets mangled as it can have parts of the file path containing ~
-    //https://stackoverflow.com/a/7163455/967713
-    //C:\Users\RUNNER~1\AppData\Local\Temp\bitcoin-s-13391384540028797275
+    // we only want the replace ~ if it is first in the file path
+    // otherwise windows gets mangled as it can have parts of the file path containing ~
+    // https://stackoverflow.com/a/7163455/967713
+    // C:\Users\RUNNER~1\AppData\Local\Temp\bitcoin-s-13391384540028797275
     val usableStr = str.replaceFirst("^~", Properties.userHome)
     Paths.get(usableStr)
   }
@@ -91,9 +92,9 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
     }
   }
 
-  /** Converts the given command line args into a Config object.
-    * There is one exclusion to this, we cannot write the --conf
-    * flag to the config file as that is self referential
+  /** Converts the given command line args into a Config object. There is one
+    * exclusion to this, we cannot write the --conf flag to the config file as
+    * that is self referential
     */
   def toConfig: Config = {
     val rpcPortString = rpcPortOpt match {
@@ -126,7 +127,7 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
       case None => ""
     }
 
-    //omitting configOpt as i don't know if we can do anything with that?
+    // omitting configOpt as i don't know if we can do anything with that?
 
     val all =
       rpcPortString +

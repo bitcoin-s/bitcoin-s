@@ -57,7 +57,9 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     def network: LnParams = LnBitcoinRegTest
   }
 
-  /** Tries to construct a LN HRP with optional amount specified from the given string */
+  /** Tries to construct a LN HRP with optional amount specified from the given
+    * string
+    */
   def apply(bech32: String): Try[LnHumanReadablePart] = fromStringT(bech32)
 
   def apply(network: NetworkParameters): LnHumanReadablePart = {
@@ -76,15 +78,21 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     fromLnParams(network)
   }
 
-  /** Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
-    * without a [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
+  /** Will return a
+    * [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * without a
+    * [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]]
+    * encoded in the invoice
     */
   def fromLnParams(network: LnParams): LnHumanReadablePart = {
     LnHumanReadablePart(network, None)
   }
 
-  /** Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
-    * with the provide [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
+  /** Will return a
+    * [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * with the provide
+    * [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]]
+    * encoded in the invoice
     */
   def apply(
       network: LnParams,
@@ -103,14 +111,14 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     }
   }
 
-  /** First two chars MUST be 'ln'
-    * Next chars must be the BIP173 currency prefixes. For more information, see
+  /** First two chars MUST be 'ln' Next chars must be the BIP173 currency
+    * prefixes. For more information, see
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part BOLT11]]
     * and
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Specification BIP173]]
     */
   override def fromStringT(bech32: String): Try[LnHumanReadablePart] = {
-    //Select all of the letters, until we hit a number, as the network
+    // Select all of the letters, until we hit a number, as the network
     val networkPattern: Regex = "^[a-z]*".r
     val networkStringOpt = networkPattern.findFirstIn(bech32)
     val lnParamsOpt = networkStringOpt.flatMap(LnParams.fromPrefixString)
@@ -126,7 +134,7 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
       val amountString = bech32.slice(prefixSize, bech32.length)
       val amount = LnCurrencyUnits.fromEncodedString(amountString).toOption
 
-      //If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
+      // If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
       if (amount.isEmpty && !amountString.isEmpty) {
         Failure(
           new IllegalArgumentException(

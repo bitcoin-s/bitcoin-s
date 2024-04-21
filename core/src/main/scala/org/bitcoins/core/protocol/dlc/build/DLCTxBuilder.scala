@@ -124,8 +124,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   val fundingKeys: Vector[ECPublicKey] =
     Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
 
-  /** The 2-of-2 MultiSignatureScriptPubKey to be wrapped in P2WSH and used as the funding output,
-    * and the funding output's P2WSH(MultiSig) ScriptPubKey
+  /** The 2-of-2 MultiSignatureScriptPubKey to be wrapped in P2WSH and used as
+    * the funding output, and the funding output's P2WSH(MultiSig) ScriptPubKey
     */
   val (fundingMultiSig: MultiSignatureScriptPubKey,
        fundingSPK: P2WSHWitnessSPKV0) =
@@ -181,8 +181,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
                               tempContractId = accept.tempContractId)
   }
 
-  /** Constructs the unsigned Contract Execution Transaction (CET)
-    * for a given outcome hash
+  /** Constructs the unsigned Contract Execution Transaction (CET) for a given
+    * outcome hash
     */
   def buildCET(adaptorPoint: Indexed[ECPublicKey]): WitnessTransaction = {
     buildCETs(Vector(adaptorPoint)).head
@@ -192,8 +192,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
     buildCET(Indexed(adaptorPoint, index))
   }
 
-  def buildCETsMap(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
-    AdaptorPointCETPair] = {
+  def buildCETsMap(adaptorPoints: Vector[Indexed[ECPublicKey]])
+      : Vector[AdaptorPointCETPair] = {
     DLCTxBuilder
       .buildCETs(
         adaptorPoints,
@@ -210,8 +210,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       )
   }
 
-  def buildCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
-    WitnessTransaction] = {
+  def buildCETs(adaptorPoints: Vector[Indexed[ECPublicKey]])
+      : Vector[WitnessTransaction] = {
     buildCETsMap(adaptorPoints).map(_.wtx)
   }
 
@@ -235,9 +235,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
 
 object DLCTxBuilder {
 
-  def buildFundingSPKs(fundingPubKeys: Vector[ECPublicKey]): (
-      MultiSignatureScriptPubKey,
-      P2WSHWitnessSPKV0) = {
+  def buildFundingSPKs(fundingPubKeys: Vector[ECPublicKey])
+      : (MultiSignatureScriptPubKey, P2WSHWitnessSPKV0) = {
     require(fundingPubKeys.length == 2,
             s"There must be exactly 2 funding keys, got $fundingPubKeys")
     val multiSigSPK =
@@ -269,7 +268,8 @@ object DLCTxBuilder {
   }
 
   /** Builds the funding transaction for a DLC
-    * @return the transaction and the output index of the funding output
+    * @return
+    *   the transaction and the output index of the funding output
     */
   def buildFundingTransaction(
       offerInput: CurrencyUnit,
@@ -514,8 +514,8 @@ object DLCTxBuilder {
   }
 
   def sortAndFilterOutputs(
-      outputsWithSerialId: Vector[(TransactionOutput, UInt64)]): Vector[
-    TransactionOutput] = {
+      outputsWithSerialId: Vector[(TransactionOutput, UInt64)])
+      : Vector[TransactionOutput] = {
     outputsWithSerialId
       .sortBy(_._2)
       .map(_._1)

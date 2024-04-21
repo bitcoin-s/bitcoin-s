@@ -5,7 +5,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 import java.nio.file.{Path, Paths}
 import scala.concurrent.ExecutionContext
 
-/** @tparam I - the implicit argument. This is usually an execution context or an actor system */
+/** @tparam I
+  *   \- the implicit argument. This is usually an execution context or an actor
+  *   system
+  */
 trait AppConfigFactoryBase[C <: AppConfig, I] {
   def moduleName: String
 

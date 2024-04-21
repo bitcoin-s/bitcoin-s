@@ -12,7 +12,8 @@ import org.bitcoins.crypto.{
 import scodec.bits.{BitVector, ByteVector}
 
 /** Represents a GCS encoded set with all parameters specified
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-sets]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-sets]]
   *
   * TODO: Replace ByteVector with a type for keys
   */
@@ -34,12 +35,16 @@ case class GolombFilter(
     hash.flip
   }
 
-  /** Given the previous FilterHeader, constructs the header corresponding to this */
+  /** Given the previous FilterHeader, constructs the header corresponding to
+    * this
+    */
   def getHeader(prevHeader: FilterHeader): FilterHeader = {
     FilterHeader(filterHash = this.hash, prevHeaderHash = prevHeader.hash)
   }
 
-  /** Given the previous FilterHeader hash, constructs the header corresponding to this */
+  /** Given the previous FilterHeader hash, constructs the header corresponding
+    * to this
+    */
   def getHeader(prevHeaderHash: DoubleSha256Digest): FilterHeader = {
     FilterHeader(filterHash = this.hash, prevHeaderHash = prevHeaderHash)
   }

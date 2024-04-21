@@ -12,7 +12,9 @@ case object OP_EQUAL extends BitwiseOperation {
   override val opCode: Int = 135
 }
 
-/** Same as [[OP_EQUAL]], but runs [[org.bitcoins.core.script.control.OP_VERIFY]] afterward. */
+/** Same as [[OP_EQUAL]], but runs
+  * [[org.bitcoins.core.script.control.OP_VERIFY]] afterward.
+  */
 case object OP_EQUALVERIFY extends BitwiseOperation {
   override val opCode: Int = 136
 }

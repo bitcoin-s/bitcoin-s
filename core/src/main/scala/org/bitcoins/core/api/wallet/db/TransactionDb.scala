@@ -12,16 +12,26 @@ trait TxDB {
   def txIdBE: DoubleSha256DigestBE
 }
 
-/** Represents a relevant transaction for the wallet that we should be keeping track of
-  * @param txIdBE Transaction ID
-  * @param transaction Serialized Transaction
-  * @param unsignedTxIdBE Transaction ID of the unsigned transaction
-  * @param unsignedTx Unsigned Transaction. This is useful so we can reconcile what our estimated
-  *                   fees were against our actual fees in the case of ECDSA signature size variability
-  * @param wTxIdBEOpt Witness Transaction ID
-  * @param numInputs Number of inputs in the transaction
-  * @param numOutputs Number of outputs in the transaction
-  * @param lockTime locktime of the transaction
+/** Represents a relevant transaction for the wallet that we should be keeping
+  * track of
+  * @param txIdBE
+  *   Transaction ID
+  * @param transaction
+  *   Serialized Transaction
+  * @param unsignedTxIdBE
+  *   Transaction ID of the unsigned transaction
+  * @param unsignedTx
+  *   Unsigned Transaction. This is useful so we can reconcile what our
+  *   estimated fees were against our actual fees in the case of ECDSA signature
+  *   size variability
+  * @param wTxIdBEOpt
+  *   Witness Transaction ID
+  * @param numInputs
+  *   Number of inputs in the transaction
+  * @param numOutputs
+  *   Number of outputs in the transaction
+  * @param lockTime
+  *   locktime of the transaction
   */
 case class TransactionDb(
     txIdBE: DoubleSha256DigestBE,

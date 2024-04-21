@@ -10,8 +10,8 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.{HashType, Sign}
 
 /** Stores the information required to generate a signature (ECSignatureParams)
-  * or to generate a script signature (ScriptSignatureParams) for a given satisfaction
-  * condition on a UTXO.
+  * or to generate a script signature (ScriptSignatureParams) for a given
+  * satisfaction condition on a UTXO.
   */
 sealed trait InputSigningInfo[+InputType <: InputInfo] {
   def inputInfo: InputType
@@ -30,7 +30,7 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
       .outputs(outPoint.vout.toInt)
       .value == amount,
     s"prevTransaction output at index ${outPoint.vout.toInt} (${prevTransaction
-      .outputs(outPoint.vout.toInt)}) does match the corresponding value $amount"
+        .outputs(outPoint.vout.toInt)}) does match the corresponding value $amount"
   )
 
   private val keysToSignFor = inputInfo.pubKeys
@@ -101,8 +101,8 @@ object ScriptSignatureParams {
     ScriptSignatureParams(inputInfo, prevTransaction, Vector(signer), hashType)
 }
 
-/** Stores the information needed to generate an ECDigitalSignature for
-  * a use in spending a UTXO.
+/** Stores the information needed to generate an ECDigitalSignature for a use in
+  * spending a UTXO.
   */
 case class ECSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,

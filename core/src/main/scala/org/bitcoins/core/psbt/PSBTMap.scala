@@ -107,9 +107,12 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
     super.filterRecords(key, PSBTGlobalKeyId)
   }
 
-  /** Takes another GlobalPSBTMap and adds all records that are not contained in this GlobalPSBTMap
-    * @param other GlobalPSBTMap to be combined with
-    * @return A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
+  /** Takes another GlobalPSBTMap and adds all records that are not contained in
+    * this GlobalPSBTMap
+    * @param other
+    *   GlobalPSBTMap to be combined with
+    * @return
+    *   A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
     */
   def combine(other: GlobalPSBTMap): GlobalPSBTMap = {
     require(
@@ -180,7 +183,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
   /** The previous output for this input
     *
-    * @param vout The vout from the input's out point
+    * @param vout
+    *   The vout from the input's out point
     */
   def prevOutOpt(vout: Int): Option[TransactionOutput] = {
     witnessUTXOOpt match {
@@ -196,11 +200,12 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   }
 
   // todo maybe rethink return type
-  /** The HASH160 of each public key that could be used to sign the input,
-    * if calculable. [[Sha256Hash160Digest]] is used because we won't know the
-    * raw public key for P2PKH scripts
+  /** The HASH160 of each public key that could be used to sign the input, if
+    * calculable. [[Sha256Hash160Digest]] is used because we won't know the raw
+    * public key for P2PKH scripts
     *
-    * @param spk The [[ScriptPubKey]] of the script to calculate from
+    * @param spk
+    *   The [[ScriptPubKey]] of the script to calculate from
     */
   private def missingSigsFromScript(
       spk: ScriptPubKey): Vector[Sha256Hash160Digest] = {
@@ -263,11 +268,12 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     }
   }
 
-  /** The HASH160 of each public key that could be used to sign the input,
-    * if calculable. [[Sha256Hash160Digest]] is used because we won't know the
-    * raw public key for P2PKH scripts
+  /** The HASH160 of each public key that could be used to sign the input, if
+    * calculable. [[Sha256Hash160Digest]] is used because we won't know the raw
+    * public key for P2PKH scripts
     *
-    * @param vout The vout from the input's out point
+    * @param vout
+    *   The vout from the input's out point
     */
   def missingSignatures(vout: Int): Vector[Sha256Hash160Digest] = {
     prevOutOpt(vout) match {
@@ -407,7 +413,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   /** Finalizes this input if possible, returning None if not */
   private def finalize(spkToSatisfy: ScriptPubKey): Try[InputPSBTMap] = {
 
-    /** Removes non-utxo and non-unkown records, replacing them with finalized records */
+    /** Removes non-utxo and non-unkown records, replacing them with finalized
+      * records
+      */
     def wipeAndAdd(
         scriptSig: ScriptSignature,
         witnessOpt: Option[ScriptWitness] = None): InputPSBTMap = {
@@ -427,13 +435,15 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       InputPSBTMap(records)
     }
 
-    /** Turns the required PartialSignatures into a ScriptSignature and calls wipeAndAdd
-      * @return None if the requirement is not met
+    /** Turns the required PartialSignatures into a ScriptSignature and calls
+      * wipeAndAdd
+      * @return
+      *   None if the requirement is not met
       */
     def collectSigs(
         required: Int,
-        constructScriptSig: Seq[PartialSignature] => ScriptSignature): Try[
-      InputPSBTMap] = {
+        constructScriptSig: Seq[PartialSignature] => ScriptSignature)
+        : Try[InputPSBTMap] = {
       val sigs = getRecords(PartialSignatureKeyId)
       if (sigs.length != required) {
         Failure(new IllegalArgumentException(
@@ -521,12 +531,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         }
       case conditional: ConditionalScriptPubKey =>
         val builder =
-          Vector.newBuilder[(
-              ConditionalPath,
-              Vector[Sha256Hash160Digest],
-              RawScriptPubKey)]
+          Vector.newBuilder[(ConditionalPath,
+                             Vector[Sha256Hash160Digest],
+                             RawScriptPubKey)]
 
-        /** Traverses the ConditionalScriptPubKey tree for leaves and adds them to builder */
+        /** Traverses the ConditionalScriptPubKey tree for leaves and adds them
+          * to builder
+          */
         def addLeaves(rawSPK: RawScriptPubKey, path: Vector[Boolean]): Unit = {
           rawSPK match {
             case conditional: ConditionalScriptPubKey =>
@@ -657,27 +668,33 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     }
   }
 
-  /** Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
-    * A record's distinctness is determined by its key
-    * @param other InputPSBTMap to be combined with
-    * @return A InputPSBTMap with the combined data of the two InputPSBTMaps
+  /** Takes another InputPSBTMap and adds all records that are not contained in
+    * this InputPSBTMap A record's distinctness is determined by its key
+    * @param other
+    *   InputPSBTMap to be combined with
+    * @return
+    *   A InputPSBTMap with the combined data of the two InputPSBTMaps
     */
   def combine(other: InputPSBTMap): InputPSBTMap = {
     InputPSBTMap(distinctByKey(this.elements ++ other.elements))
   }
 
-  /** Takes the InputPSBTMap returns a NewSpendingInfoFull
-    * that can be used to sign the input
-    * @param txIn The transaction input that this InputPSBTMap represents
-    * @param signers Signers that will be used to sign the input
-    * @param conditionalPath Path that should be used for the script
-    * @return A corresponding NewSpendingInfoFull
+  /** Takes the InputPSBTMap returns a NewSpendingInfoFull that can be used to
+    * sign the input
+    * @param txIn
+    *   The transaction input that this InputPSBTMap represents
+    * @param signers
+    *   Signers that will be used to sign the input
+    * @param conditionalPath
+    *   Path that should be used for the script
+    * @return
+    *   A corresponding NewSpendingInfoFull
     */
   def toUTXOSatisfyingInfoUsingSigners(
       txIn: TransactionInput,
       signers: Vector[Sign],
-      conditionalPath: ConditionalPath =
-        ConditionalPath.NoCondition): ScriptSignatureParams[InputInfo] = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition)
+      : ScriptSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
 
     val infoSingle =
@@ -799,8 +816,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   def toUTXOSigningInfo(
       txIn: TransactionInput,
       signer: Sign,
-      conditionalPath: ConditionalPath =
-        ConditionalPath.NoCondition): ECSignatureParams[InputInfo] = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition)
+      : ECSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
     val txVec = getRecords(NonWitnessUTXOKeyId)
 
@@ -846,13 +863,15 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     InputPSBTMap(newElements)
   }
 
-  /** After a discovered vulnerability in BIP-143, this is no longer safe for SegwitV0
-    * Check if this satisfies criteria for witness. If it does, delete the NonWitnessOrUnknownUTXO field
-    * This is useful for following reasons.
-    * 1. Compresses the size of the data
-    * 2. Allows for segwit only compatibility
-    * @param txIn The TransactionInput that this InputPSBTMap represents
-    * @return The compressed InputPSBTMap
+  /** After a discovered vulnerability in BIP-143, this is no longer safe for
+    * SegwitV0 Check if this satisfies criteria for witness. If it does, delete
+    * the NonWitnessOrUnknownUTXO field This is useful for following reasons.
+    *   1. Compresses the size of the data 2. Allows for segwit only
+    *      compatibility
+    * @param txIn
+    *   The TransactionInput that this InputPSBTMap represents
+    * @return
+    *   The compressed InputPSBTMap
     */
   def compressMap(txIn: TransactionInput): InputPSBTMap = {
     if (isFinalized) {
@@ -880,9 +899,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
   import org.bitcoins.core.psbt.InputPSBTRecord._
 
-  /** Constructs a finalized InputPSBTMap from a NewSpendingInfoFull,
-    * the corresponding PSBT's unsigned transaction, and if this is
-    * a non-witness spend, the transaction being spent
+  /** Constructs a finalized InputPSBTMap from a NewSpendingInfoFull, the
+    * corresponding PSBT's unsigned transaction, and if this is a non-witness
+    * spend, the transaction being spent
     */
   def finalizedFromSpendingInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
@@ -1003,10 +1022,12 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
     super.filterRecords(key, PSBTOutputKeyId)
   }
 
-  /** Takes another OutputPSBTMap and adds all records that are not contained in this OutputPSBTMap
-    * A record's distinctness is determined by its key
-    * @param other OutputPSBTMap to be combined with
-    * @return A OutputPSBTMap with the combined data of the two OutputPSBTMaps
+  /** Takes another OutputPSBTMap and adds all records that are not contained in
+    * this OutputPSBTMap A record's distinctness is determined by its key
+    * @param other
+    *   OutputPSBTMap to be combined with
+    * @return
+    *   A OutputPSBTMap with the combined data of the two OutputPSBTMaps
     */
   def combine(other: OutputPSBTMap): OutputPSBTMap = {
     OutputPSBTMap(distinctByKey(this.elements ++ other.elements))

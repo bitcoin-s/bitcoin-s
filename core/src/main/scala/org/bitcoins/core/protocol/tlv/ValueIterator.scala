@@ -34,9 +34,9 @@ case class ValueIterator(value: ByteVector) {
     bytes
   }
 
-  /** IMPORTANT: This only works for factories which read off of
-    * the front of a ByteVector without consuming the whole thing.
-    * If this is not the case, you must specify how many bytes.
+  /** IMPORTANT: This only works for factories which read off of the front of a
+    * ByteVector without consuming the whole thing. If this is not the case, you
+    * must specify how many bytes.
     */
   def take[E <: NetworkElement](factory: Factory[E]): E = {
     val elem = factory(current)

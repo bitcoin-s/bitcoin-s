@@ -42,9 +42,8 @@ case class PeerInfo(
     channels: Int)
 
 case class ChannelCommandResult(
-    results: scala.collection.Map[
-      Either[ShortChannelId, FundedChannelId],
-      State]
+    results: scala.collection.Map[Either[ShortChannelId, FundedChannelId],
+                                  State]
 )
 
 case class UpdateRelayFeeResult(
@@ -84,12 +83,10 @@ object ChannelCommandResult extends StringFactory[State] {
     }
 }
 
-/** This is the data model returned by the RPC call
-  * `channels nodeId`. The content of the objects
-  * being returne differ based on whatever state
-  * the channel is in. The member of this abstract
-  * class are in eveyr channel state, whereas other
-  * channel states may have extra information.
+/** This is the data model returned by the RPC call `channels nodeId`. The
+  * content of the objects being returne differ based on whatever state the
+  * channel is in. The member of this abstract class are in eveyr channel state,
+  * whereas other channel states may have extra information.
   */
 sealed abstract class ChannelInfo {
   def nodeId: NodeId
@@ -111,8 +108,8 @@ case class BaseChannelInfo(
     state: ChannelState
 ) extends ChannelInfo
 
-/** This represents the case where the channel is
-  * in state `NORMAL` (i.e. an open channel)
+/** This represents the case where the channel is in state `NORMAL` (i.e. an
+  * open channel)
   */
 case class OpenChannelInfo(
     nodeId: NodeId,
@@ -154,7 +151,7 @@ case class NetworkFeesResult(
     txId: DoubleSha256DigestBE,
     fee: Satoshis,
     txType: String,
-    timestamp: Instant //milliseconds
+    timestamp: Instant // milliseconds
 )
 
 case class ChannelStats(
@@ -210,7 +207,7 @@ object ReceivedPayment {
   case class Part(
       amount: MilliSatoshis,
       fromChannelId: FundedChannelId,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   )
 }
 
@@ -220,7 +217,7 @@ case class RelayedPayment(
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    timestamp: Instant //milliseconds
+    timestamp: Instant // milliseconds
 )
 
 case class SentPayment(
@@ -239,7 +236,7 @@ object SentPayment {
       amount: MilliSatoshis,
       feesPaid: MilliSatoshis,
       toChannelId: FundedChannelId,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   )
 }
 
@@ -249,7 +246,7 @@ case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,
     shortChannelId: ShortChannelId,
-    timestamp: Instant, //seconds
+    timestamp: Instant, // seconds
     channelFlags: ChannelFlags,
     cltvExpiryDelta: Int,
     htlcMinimumMsat: MilliSatoshis,
@@ -273,7 +270,7 @@ case class ChannelResult(
 
 case class InvoiceResult(
     prefix: LnHumanReadablePart,
-    timestamp: Instant, //seconds
+    timestamp: Instant, // seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
@@ -288,13 +285,13 @@ case class SendToRouteResult(paymentId: PaymentId, parentId: PaymentId)
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
-    timestamp: Instant, //seconds
+    timestamp: Instant, // seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
     paymentHash: Sha256Digest,
     paymentMetadata: String,
-    expiry: FiniteDuration, //seconds
+    expiry: FiniteDuration, // seconds
     minFinalCltvExpiry: Int,
     amount: Option[MilliSatoshis],
     features: Features)
@@ -314,7 +311,7 @@ object PaymentType extends StringFactory[PaymentType] {
       case "SwapIn"      => SwapIn
       case "SwapOut"     => SwapOut
       case "placeholder" => Placeholder
-      case _             => throw new RuntimeException(s"Unknown payment type `$str`")
+      case _ => throw new RuntimeException(s"Unknown payment type `$str`")
     }
 
 }
@@ -328,7 +325,7 @@ case class OutgoingPayment(
     amount: MilliSatoshis,
     recipientAmount: MilliSatoshis,
     recipientNodeId: NodeId,
-    createdAt: Instant, //milliseconds
+    createdAt: Instant, // milliseconds
     paymentRequest: Option[PaymentRequest],
     status: OutgoingPaymentStatus)
 
@@ -336,7 +333,7 @@ case class IncomingPayment(
     paymentRequest: PaymentRequest,
     paymentPreimage: PaymentPreimage,
     paymentType: PaymentType,
-    createdAt: Instant, //milliseconds
+    createdAt: Instant, // milliseconds
     status: IncomingPaymentStatus)
 
 sealed trait IncomingPaymentStatus
@@ -349,7 +346,7 @@ object IncomingPaymentStatus {
 
   case class Received(
       amount: MilliSatoshis,
-      receivedAt: Instant //milliseconds
+      receivedAt: Instant // milliseconds
   ) extends IncomingPaymentStatus
 
 }
@@ -363,7 +360,7 @@ object OutgoingPaymentStatus {
       paymentPreimage: PaymentPreimage,
       feesPaid: MilliSatoshis,
       route: Seq[Hop],
-      completedAt: Instant //milliseconds
+      completedAt: Instant // milliseconds
   ) extends OutgoingPaymentStatus
 
   case class Failed(failures: Seq[PaymentFailure], completedAt: Instant)
@@ -397,7 +394,7 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
       toChannelId: FundedChannelId,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   ) extends WebSocketEvent
 
   case class PaymentReceived(
@@ -442,7 +439,7 @@ object WebSocketEvent {
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      timestamp: Instant //milliseconds
+      timestamp: Instant // milliseconds
   ) extends WebSocketEvent
 
 }

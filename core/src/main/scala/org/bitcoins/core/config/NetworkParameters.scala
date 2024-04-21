@@ -16,13 +16,15 @@ sealed abstract class NetworkParameters {
     chainParams.base58Prefix(Base58Type.ScriptAddress)
   def privateKey: ByteVector = chainParams.base58Prefix(Base58Type.SecretKey)
 
-  /** @see [[https://github.com/bitcoin/bitcoin/blob/84d0fdce11709c8e26b9c450d47727ab36641437/src/chainparams.cpp Bitcoin Core]]
-    *     `chainparams.cpp nDefaultPort`
+  /** @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/84d0fdce11709c8e26b9c450d47727ab36641437/src/chainparams.cpp Bitcoin Core]]
+    *   `chainparams.cpp nDefaultPort`
     */
   def port: Int
 
-  /** @see [[https://github.com/bitcoin/bitcoin/blob/bccb4d29a8080bf1ecda1fc235415a11d903a680/src/chainparamsbase.cpp Bitcoin Core]]
-    *     `chainparamsbase.cpp`
+  /** @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/bccb4d29a8080bf1ecda1fc235415a11d903a680/src/chainparamsbase.cpp Bitcoin Core]]
+    *   `chainparamsbase.cpp`
     */
   def rpcPort: Int
 
@@ -33,9 +35,9 @@ sealed abstract class NetworkParameters {
   /** The seeds used to bootstrap the network */
   def dnsSeeds: Seq[String]
 
-  /** The message start string is designed to be unlikely to occur in normal data.
-    * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
-    * a large 32-bit integer with any alignment.
+  /** The message start string is designed to be unlikely to occur in normal
+    * data. The characters are rarely used upper ASCII, not valid as UTF-8, and
+    * produce a large 32-bit integer with any alignment.
     * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L108
     */
   def magicBytes: ByteVector
@@ -68,11 +70,11 @@ sealed abstract class MainNet extends BitcoinNetwork {
     */
   override def dnsSeeds: Vector[String] = {
     Vector(
-      //"seed.bitcoin.sipa.be", very slow, commenting out for now
+      // "seed.bitcoin.sipa.be", very slow, commenting out for now
       "dnsseed.bluematt.me",
       "dnsseed.bitcoin.dashjr.org",
       "seed.bitcoinstats.com",
-      //"seed.btc.petertodd.net", very slow, commenting out for now
+      // "seed.btc.petertodd.net", very slow, commenting out for now
       "seed.bitcoin.jonasschnelli.ch",
       "seed.bitcoin.sprovoost.nl",
       "dnsseed.emzy.de",

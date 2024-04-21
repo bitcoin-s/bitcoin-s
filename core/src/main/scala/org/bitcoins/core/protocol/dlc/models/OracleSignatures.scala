@@ -6,7 +6,8 @@ import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 
-/** Corresponds to a set of SchnorrDigitalSignatures given by a single oracle. */
+/** Corresponds to a set of SchnorrDigitalSignatures given by a single oracle.
+  */
 sealed trait OracleSignatures extends SeqWrapper[SchnorrDigitalSignature] {
 
   /** This oracle's signatures */
@@ -51,7 +52,7 @@ object OracleSignatures {
             val sorted =
               OrderedSchnorrSignatures.fromUnsorted(v0.unsortedSignatures)
             if (v0.unsortedSignatures == sorted) {
-              //means they are sorted
+              // means they are sorted
               NumericOracleSignaturesSorted(info, v0.sigs)
             } else {
               NumericOracleSignaturesUnsorted(info, v0.unsortedSignatures)
@@ -71,7 +72,7 @@ object OracleSignatures {
         val sorted =
           OrderedSchnorrSignatures.fromUnsorted(sigs)
         if (sigs == sorted) {
-          //means they are sorted
+          // means they are sorted
           NumericOracleSignaturesSorted(info, sorted)
         } else {
           NumericOracleSignaturesUnsorted(info, sigs)
@@ -79,8 +80,8 @@ object OracleSignatures {
     }
   }
 
-  /** Computes the aggregate s value from the given signatures to be used
-    * in the given outcome.
+  /** Computes the aggregate s value from the given signatures to be used in the
+    * given outcome.
     *
     * This is what is used to decrypt a CET adaptor signature.
     */
@@ -158,8 +159,8 @@ sealed trait NumericOracleSignatures extends OracleSignatures {
   }
 
   /** Computes the NumericOutcome to which these signatures correspond. */
-  def computeOutcome(possibleOutcomes: Vector[DLCOutcomeType]): Option[
-    UnsignedNumericOutcome] = {
+  def computeOutcome(possibleOutcomes: Vector[DLCOutcomeType])
+      : Option[UnsignedNumericOutcome] = {
     val digitsSigned = getOutcome.digits
 
     CETCalculator.searchForNumericOutcome(digitsSigned, possibleOutcomes)
@@ -169,7 +170,8 @@ sealed trait NumericOracleSignatures extends OracleSignatures {
     s"${getClass.getSimpleName}(${oracle.announcement.publicKey}, $sigs)"
 }
 
-/** Wraps a set of oracle signatures of numeric digits that are sorted by nonces */
+/** Wraps a set of oracle signatures of numeric digits that are sorted by nonces
+  */
 case class NumericOracleSignaturesSorted(
     oracle: NumericSingleOracleInfo,
     sortedSignatures: OrderedSchnorrSignatures)
@@ -177,7 +179,9 @@ case class NumericOracleSignaturesSorted(
   override val sigs: Vector[SchnorrDigitalSignature] = sortedSignatures.toVector
 }
 
-/** Numeric oracle signatures that are not sorted by their nonce. This is needed for v0 attestations */
+/** Numeric oracle signatures that are not sorted by their nonce. This is needed
+  * for v0 attestations
+  */
 case class NumericOracleSignaturesUnsorted(
     oracle: NumericSingleOracleInfo,
     sigs: Vector[SchnorrDigitalSignature])

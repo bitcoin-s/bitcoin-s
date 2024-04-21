@@ -29,8 +29,8 @@ case class DLCExecutor(signer: DLCTxSigner) {
   }
 
   /** Constructs the non-initiator's SetupDLC given the initiator's
-    * CETSignatures and FundingSignatures which should arrive in
-    * a DLC sign message
+    * CETSignatures and FundingSignatures which should arrive in a DLC sign
+    * message
     */
   def setupDLCAccept(
       cetSigs: CETSignatures,
@@ -42,8 +42,8 @@ case class DLCExecutor(signer: DLCTxSigner) {
     setupDLC(cetSigs, refundSig, Some(fundingSigs), cetsOpt)
   }
 
-  /** Constructs a SetupDLC given the necessary signature information
-    * from the counter-party.
+  /** Constructs a SetupDLC given the necessary signature information from the
+    * counter-party.
     */
   def setupDLC(
       cetSigs: CETSignatures,
@@ -85,8 +85,9 @@ case class DLCExecutor(signer: DLCTxSigner) {
     signer.getPayout(sigs)
   }
 
-  /** Computes closing transactions from a DLCSetup and a set of OracleSignatures.
-    * The Vector[OracleSignatures] may contain more OracleSignatures than are needed.
+  /** Computes closing transactions from a DLCSetup and a set of
+    * OracleSignatures. The Vector[OracleSignatures] may contain more
+    * OracleSignatures than are needed.
     *
     * TODO: Test over-sharing of OracleSignatures
     */
@@ -122,10 +123,12 @@ case class DLCExecutor(signer: DLCTxSigner) {
 
 object DLCExecutor {
 
-  /** Given DLC setup data and oracle signatures, computes the OracleOutcome and a fully signed CET.
+  /** Given DLC setup data and oracle signatures, computes the OracleOutcome and
+    * a fully signed CET.
     *
-    * This function will fail if no threshold-sized subset of the oracle signatures corresponds to
-    * a valid set of expected oracle signatures as per the oracle announcements in the ContractInfo.
+    * This function will fail if no threshold-sized subset of the oracle
+    * signatures corresponds to a valid set of expected oracle signatures as per
+    * the oracle announcements in the ContractInfo.
     */
   def executeDLC(
       remoteCETInfos: Vector[(ECPublicKey, CETInfo)],

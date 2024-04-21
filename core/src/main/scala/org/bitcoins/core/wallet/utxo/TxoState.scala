@@ -16,25 +16,30 @@ object TxoState extends StringFactory[TxoState] {
     */
   case object ImmatureCoinbase extends ReceivedState
 
-  /** Means we have received funds to this utxo, and they have not been confirmed in a block */
+  /** Means we have received funds to this utxo, and they have not been
+    * confirmed in a block
+    */
   case object BroadcastReceived extends ReceivedState
 
-  /** Means we have received funds to this utxo, and they have some confirmations but
-    * have not reached our confirmation threshold
+  /** Means we have received funds to this utxo, and they have some
+    * confirmations but have not reached our confirmation threshold
     */
   case object PendingConfirmationsReceived extends ReceivedState
 
   /** Means we have received funds and they are fully confirmed for this utxo */
   case object ConfirmedReceived extends ReceivedState
 
-  /** Means we have not spent this utxo yet, but will be used in a future transaction */
+  /** Means we have not spent this utxo yet, but will be used in a future
+    * transaction
+    */
   case object Reserved extends SpentState
 
-  /** Means we have spent this utxo, and they have not been confirmed in a block */
+  /** Means we have spent this utxo, and they have not been confirmed in a block
+    */
   case object BroadcastSpent extends SpentState
 
-  /** Means we have spent this utxo, and they have some confirmations but
-    * have not reached our confirmation threshold
+  /** Means we have spent this utxo, and they have some confirmations but have
+    * not reached our confirmation threshold
     */
   case object PendingConfirmationsSpent extends SpentState
 

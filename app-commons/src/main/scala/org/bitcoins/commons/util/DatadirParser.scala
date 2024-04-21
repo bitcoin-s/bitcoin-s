@@ -5,10 +5,10 @@ import org.bitcoins.commons.config.AppConfig
 
 import java.nio.file.{Path, Paths}
 
-/** Parses the correct datadir given the possible input sources for datadir config
-  * 1. The --datadir command line flag
-  * 2. Inferring the datadir based on the bitcoin network configured
-  * 3. ??? Anything else i'm forgetting ????
+/** Parses the correct datadir given the possible input sources for datadir
+  * config
+  *   1. The --datadir command line flag 2. Inferring the datadir based on the
+  *      bitcoin network configured 3. ??? Anything else i'm forgetting ????
   */
 case class DatadirParser(
     serverArgs: ServerArgParser,
@@ -55,11 +55,8 @@ case class DatadirParser(
   lazy val datadir: Path =
     Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
-  /** Directory specific for current network or custom dir
-    * Examples are
-    * HOME/.bitcoin-s/mainnet
-    * HOME/.bitcoin-s/testnet3
-    * HOME/.bitcoin-s/oracle
+  /** Directory specific for current network or custom dir Examples are
+    * HOME/.bitcoin-s/mainnet HOME/.bitcoin-s/testnet3 HOME/.bitcoin-s/oracle
     */
   def networkDir: Path =
     DatadirUtil.getFinalDatadir(datadir, baseConfig, customFinalDirOpt)

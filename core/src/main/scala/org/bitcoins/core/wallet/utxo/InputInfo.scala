@@ -18,12 +18,12 @@ import org.bitcoins.crypto.{
 
 import scala.annotation.tailrec
 
-/** An InputInfo contains all information other than private keys about
-  * a particular spending condition in a UTXO.
+/** An InputInfo contains all information other than private keys about a
+  * particular spending condition in a UTXO.
   *
-  * Note that while some pieces of information (TxOutPoint, amount, etc.)
-  * apply to all input types, other pieces are specific to particular ones
-  * such as a witness to a SegWit input.
+  * Note that while some pieces of information (TxOutPoint, amount, etc.) apply
+  * to all input types, other pieces are specific to particular ones such as a
+  * witness to a SegWit input.
   */
 sealed trait InputInfo {
   def outPoint: TransactionOutPoint
@@ -60,24 +60,21 @@ sealed trait InputInfo {
     ECSignatureParams(this, prevTransaction, signer, hashType)
   }
 
-  def genericWithSignFrom(
-      signerMaterial: InputSigningInfo[InputInfo]): InputSigningInfo[
-    this.type] = {
+  def genericWithSignFrom(signerMaterial: InputSigningInfo[InputInfo])
+      : InputSigningInfo[this.type] = {
     signerMaterial match {
       case info: ScriptSignatureParams[InputInfo] => withSignFrom(info)
       case info: ECSignatureParams[InputInfo]     => withSignFrom(info)
     }
   }
 
-  def withSignFrom(
-      signerMaterial: ScriptSignatureParams[InputInfo]): ScriptSignatureParams[
-    this.type] = {
+  def withSignFrom(signerMaterial: ScriptSignatureParams[InputInfo])
+      : ScriptSignatureParams[this.type] = {
     signerMaterial.copy(inputInfo = this)
   }
 
-  def withSignFrom(
-      signerMaterial: ECSignatureParams[InputInfo]): ECSignatureParams[
-    this.type] = {
+  def withSignFrom(signerMaterial: ECSignatureParams[InputInfo])
+      : ECSignatureParams[this.type] = {
     signerMaterial.copy(inputInfo = this)
   }
 }
@@ -96,9 +93,9 @@ object InputInfo {
   def getScriptWitness(inputInfo: InputInfo): Option[ScriptWitness] = {
     inputInfo match {
       case _: RawInputInfo | _: P2SHNonSegwitInputInfo => None
-      case info: SegwitV0NativeInputInfo               => Some(info.scriptWitness)
-      case info: P2SHNestedSegwitV0InputInfo           => Some(info.scriptWitness)
-      case info: UnassignedSegwitNativeInputInfo       => Some(info.scriptWitness)
+      case info: SegwitV0NativeInputInfo         => Some(info.scriptWitness)
+      case info: P2SHNestedSegwitV0InputInfo     => Some(info.scriptWitness)
+      case info: UnassignedSegwitNativeInputInfo => Some(info.scriptWitness)
     }
   }
 
@@ -122,8 +119,9 @@ object InputInfo {
     }
   }
 
-  /** Returns the needed hash pre-images and conditional path that was used to spend the input
-    * at inputIndex, this is calculated through the ScriptSignature and ScriptWitness
+  /** Returns the needed hash pre-images and conditional path that was used to
+    * spend the input at inputIndex, this is calculated through the
+    * ScriptSignature and ScriptWitness
     */
   def getHashPreImagesAndConditionalPath(
       signedTransaction: Transaction,
@@ -134,9 +132,8 @@ object InputInfo {
     @tailrec
     def getPreImagesAndCondPath(
         scriptSignature: ScriptSignature,
-        conditionalPath: Vector[Boolean] = Vector.empty): (
-        Vector[NetworkElement],
-        Vector[Boolean]) = {
+        conditionalPath: Vector[Boolean] = Vector.empty)
+        : (Vector[NetworkElement], Vector[Boolean]) = {
       scriptSignature match {
         case p2pkh: P2PKHScriptSignature =>
           (Vector(p2pkh.publicKey), conditionalPath)
@@ -190,8 +187,8 @@ object InputInfo {
 
   case class ScriptSigLenAndStackHeight(scriptSigLen: Int, stackHeight: Int)
 
-  /** Computes the byteSize of witness/scriptSignature for the given info,
-    * and also returns the number of stack elements for the P2WSH case.
+  /** Computes the byteSize of witness/scriptSignature for the given info, and
+    * also returns the number of stack elements for the P2WSH case.
     */
   private def maxScriptSigLenAndStackHeight(
       info: InputInfo,
@@ -561,8 +558,8 @@ object SegwitV0NativeInputInfo {
       amount: CurrencyUnit,
       scriptWitness: ScriptWitnessV0,
       conditionalPath: ConditionalPath,
-      hashPreImages: Vector[NetworkElement] =
-        Vector.empty): SegwitV0NativeInputInfo = {
+      hashPreImages: Vector[NetworkElement] = Vector.empty)
+      : SegwitV0NativeInputInfo = {
     scriptWitness match {
       case p2wpkh: P2WPKHWitnessV0 =>
         P2WPKHV0InputInfo(outPoint, amount, p2wpkh.pubKey.toPublicKey)

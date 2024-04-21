@@ -41,15 +41,15 @@ object TxUtil {
             if (
               currentLockTime < lockTimeThreshold && lockTime >= lockTimeThreshold
             ) {
-              //means that we spend two different locktime types, one of the outputs spends a
-              //OP_CLTV script by block height, the other spends one by time stamp
+              // means that we spend two different locktime types, one of the outputs spends a
+              // OP_CLTV script by block height, the other spends one by time stamp
               TxBuilderError.IncompatibleLockTimes
             } else Success(lockTime)
           } else if (
             currentLockTime >= lockTimeThreshold && lockTime < lockTimeThreshold
           ) {
-            //means that we spend two different locktime types, one of the outputs spends a
-            //OP_CLTV script by block height, the other spends one by time stamp
+            // means that we spend two different locktime types, one of the outputs spends a
+            // OP_CLTV script by block height, the other spends one by time stamp
             TxBuilderError.IncompatibleLockTimes
           } else {
             Success(currentLockTime)
@@ -59,10 +59,10 @@ object TxUtil {
     }
   }
 
-  /** This helper function calculates the appropriate locktime for a transaction.
-    * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
-    * locktime set to the same value (or higher) than the output it is spending.
-    * See BIP65 for more info
+  /** This helper function calculates the appropriate locktime for a
+    * transaction. To be able to spend [[CLTVScriptPubKey]]'s you need to have
+    * the transaction's locktime set to the same value (or higher) than the
+    * output it is spending. See BIP65 for more info
     */
   def calcLockTimeForInfos(utxos: Seq[InputInfo]): Try[UInt32] = {
     @tailrec
@@ -120,10 +120,10 @@ object TxUtil {
     loop(utxos, None)
   }
 
-  /** This helper function calculates the appropriate locktime for a transaction.
-    * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
-    * locktime set to the same value (or higher) than the output it is spending.
-    * See BIP65 for more info
+  /** This helper function calculates the appropriate locktime for a
+    * transaction. To be able to spend [[CLTVScriptPubKey]]'s you need to have
+    * the transaction's locktime set to the same value (or higher) than the
+    * output it is spending. See BIP65 for more info
     */
   def calcLockTime(utxos: Seq[InputSigningInfo[InputInfo]]): Try[UInt32] = {
     calcLockTimeForInfos(utxos.map(_.inputInfo))
@@ -159,8 +159,8 @@ object TxUtil {
   }
 
   /** Inserts script signatures and (potentially) witness data to a given
-    * transaction using DummyECDigitalSignatures for all sigs in order
-    * to produce a transaction roughly the size of the expected fully signed
+    * transaction using DummyECDigitalSignatures for all sigs in order to
+    * produce a transaction roughly the size of the expected fully signed
     * transaction. Useful during fee estimation.
     *
     * Note that the resulting dummy-signed Transaction will have populated
@@ -213,10 +213,12 @@ object TxUtil {
     }
   }
 
-  /** Sets the ScriptSignature for every input in the given transaction to an EmptyScriptSignature
-    * as well as sets the witness to an EmptyWitness
-    * @param tx Transaction to empty signatures
-    * @return Transaction with no signatures
+  /** Sets the ScriptSignature for every input in the given transaction to an
+    * EmptyScriptSignature as well as sets the witness to an EmptyWitness
+    * @param tx
+    *   Transaction to empty signatures
+    * @return
+    *   Transaction with no signatures
     */
   def emptyAllScriptSigs(tx: Transaction): Transaction = {
     val newInputs = tx.inputs.map { input =>
@@ -270,8 +272,8 @@ object TxUtil {
     }
   }
 
-  /** Checks that the creditingAmount >= destinationAmount
-    * and then does a sanity check on the transaction's fee
+  /** Checks that the creditingAmount >= destinationAmount and then does a
+    * sanity check on the transaction's fee
     */
   def sanityAmountChecks(
       isSigned: Boolean,
@@ -298,9 +300,12 @@ object TxUtil {
 
   /** Checks if the fee is within a 'valid' range
     *
-    * @param estimatedFee the estimated amount of fee we should pay
-    * @param actualFee    the actual amount of fee the transaction pays
-    * @param feeRate      the fee rate in satoshis/vbyte we paid per byte on this tx
+    * @param estimatedFee
+    *   the estimated amount of fee we should pay
+    * @param actualFee
+    *   the actual amount of fee the transaction pays
+    * @param feeRate
+    *   the fee rate in satoshis/vbyte we paid per byte on this tx
     * @return
     */
   def isValidFeeRange(
@@ -311,18 +316,18 @@ object TxUtil {
       Success(())
     } else {
 
-      //what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
-      //versions of signed tx. I believe the two signed version can vary in size because the digital
-      //signature might have changed in size. It could become larger or smaller depending on the digital
-      //signatures produced.
+      // what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
+      // versions of signed tx. I believe the two signed version can vary in size because the digital
+      // signature might have changed in size. It could become larger or smaller depending on the digital
+      // signatures produced.
 
-      //Personally I think 40 seems like a little high. As you shouldn't vary more than a 2 bytes per input in the tx i think?
-      //bumping for now though as I don't want to spend time debugging
-      //I think there is something incorrect that errors to the low side of fee estimation
-      //for p2sh(p2wpkh) txs
+      // Personally I think 40 seems like a little high. As you shouldn't vary more than a 2 bytes per input in the tx i think?
+      // bumping for now though as I don't want to spend time debugging
+      // I think there is something incorrect that errors to the low side of fee estimation
+      // for p2sh(p2wpkh) txs
 
-      //See this link for more info on variance in size on ECDigitalSignatures
-      //https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+      // See this link for more info on variance in size on ECDigitalSignatures
+      // https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
       val acceptableVariance = 40 * feeRate.toLong
       val min = Satoshis(-acceptableVariance)
@@ -338,7 +343,8 @@ object TxUtil {
     }
   }
 
-  /** Adds the signingInfo's scriptWitness from the transaction, if it has one */
+  /** Adds the signingInfo's scriptWitness from the transaction, if it has one
+    */
   def addWitnessData(
       tx: Transaction,
       signingInfo: InputSigningInfo[InputInfo]): WitnessTransaction = {

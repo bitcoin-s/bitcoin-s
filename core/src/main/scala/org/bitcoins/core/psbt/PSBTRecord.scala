@@ -682,10 +682,8 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
         OutputPSBTRecord.TRInternalKey(xOnlyPubKey)
       case TaprootTreeKeyId =>
         @tailrec
-        def loop(
-            bytes: ByteVector,
-            accum: Vector[(Byte, Byte, ByteVector)]): Vector[
-          (Byte, Byte, ByteVector)] = {
+        def loop(bytes: ByteVector, accum: Vector[(Byte, Byte, ByteVector)])
+            : Vector[(Byte, Byte, ByteVector)] = {
           if (bytes.isEmpty) {
             accum
           } else {

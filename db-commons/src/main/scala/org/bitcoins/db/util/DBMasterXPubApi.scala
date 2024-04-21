@@ -8,7 +8,9 @@ import org.bitcoins.keymanager.WalletStorage
 import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
 
-/** A trait for checking invariants on file based seeds against a database stored master xpub */
+/** A trait for checking invariants on file based seeds against a database
+  * stored master xpub
+  */
 trait DBMasterXPubApi extends MasterXPubApi { dbAppConfig: DbAppConfig =>
 
   def seedPath: Path

@@ -24,8 +24,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, HashType, Sign}
 
-/** DB representation of a native V0
-  * SegWit UTXO
+/** DB representation of a native V0 SegWit UTXO
   */
 case class SegwitV0SpendingInfo(
     outPoint: TransactionOutPoint,
@@ -81,8 +80,7 @@ case class LegacySpendingInfo(
     copy(spendingTxIdOpt = Some(txId))
 }
 
-/** DB representation of a nested segwit V0
-  * SegWit UTXO
+/** DB representation of a nested segwit V0 SegWit UTXO
   */
 case class NestedSegwitV0SpendingInfo(
     outPoint: TransactionOutPoint,
@@ -111,12 +109,10 @@ case class NestedSegwitV0SpendingInfo(
     copy(spendingTxIdOpt = Some(txId))
 }
 
-/** The database level representation of a UTXO.
-  * When storing a UTXO we don't want to store
-  * sensitive material such as private keys.
-  * We instead store the necessary information
-  * we need to derive the private keys, given
-  * the root wallet seed.
+/** The database level representation of a UTXO. When storing a UTXO we don't
+  * want to store sensitive material such as private keys. We instead store the
+  * necessary information we need to derive the private keys, given the root
+  * wallet seed.
   */
 sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
@@ -126,8 +122,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       s"If we have spent a spendinginfodb, the spendingTxId must be defined. Outpoint=${outPoint.toString}")
   }
 
-  /** This type is here to ensure copyWithSpent returns the same
-    * type as the one it was called on.
+  /** This type is here to ensure copyWithSpent returns the same type as the one
+    * it was called on.
     */
   protected type SpendingInfoType <: SpendingInfoDb
 
@@ -142,7 +138,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
   def isChange: Boolean = privKeyPath.chain.chainType == HDChainType.Change
 
-  /** The current [[org.bitcoins.core.wallet.utxo.TxoState state]] of the utxo */
+  /** The current [[org.bitcoins.core.wallet.utxo.TxoState state]] of the utxo
+    */
   def state: TxoState
 
   /** The TXID of the transaction this output was received in */
@@ -167,8 +164,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** Updates the `spendingTxId` field */
   def copyWithSpendingTxId(txId: DoubleSha256DigestBE): SpendingInfoType
 
-  /** Converts a non-sensitive DB representation of a UTXO into
-    * a signable (and sensitive) real-world UTXO
+  /** Converts a non-sensitive DB representation of a UTXO into a signable (and
+    * sensitive) real-world UTXO
     */
   def toUTXOInfo(
       keyManager: BIP39KeyManagerApi,

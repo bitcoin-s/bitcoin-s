@@ -165,5 +165,5 @@ case class GetRpcInfoResult(
 
 case class RpcCommands(
     method: String,
-    duration: FiniteDuration //this time is in microseconds
+    duration: FiniteDuration // this time is in microseconds
 ) extends RawTransactionResult

@@ -27,7 +27,8 @@ trait ContractDescriptorTemplate {
 
 /** A template for creating a Contract For Difference DLC
   *
-  * @see https://www.investopedia.com/terms/c/contractfordifferences.asp
+  * @see
+  *   https://www.investopedia.com/terms/c/contractfordifferences.asp
   */
 sealed trait CFDTemplate extends ContractDescriptorTemplate {
 
@@ -82,7 +83,8 @@ case class ShortCFD(
 
 /** A template for doing an options contract DLC
   *
-  * @see https://www.investopedia.com/terms/o/optionscontract.asp
+  * @see
+  *   https://www.investopedia.com/terms/o/optionscontract.asp
   */
 sealed trait OptionTemplate extends ContractDescriptorTemplate {
   def premium: CurrencyUnit

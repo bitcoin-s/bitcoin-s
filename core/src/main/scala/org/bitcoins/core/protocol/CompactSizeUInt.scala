@@ -8,7 +8,8 @@ import scodec.bits.ByteVector
 
 /** Compact sized unsigned integer, a Bitcoin-native data structure
   *
-  * @see https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+  * @see
+  *   https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
   */
 sealed abstract class CompactSizeUInt extends NetworkElement {
 
@@ -64,21 +65,21 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     if (num.toBigInt <= 252) 1
     // can be represented with two bytes
     else if (num.toBigInt <= 65535) 3
-    //can be represented with 4 bytes
+    // can be represented with 4 bytes
     else if (num.toBigInt <= UInt32.max.toBigInt) 5
     else 9
   }
 
-  /** This function is responsible for calculating what the compact size unsigned integer is for a
-    * sequence of bytes
+  /** This function is responsible for calculating what the compact size
+    * unsigned integer is for a sequence of bytes
     * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
     */
   def calculateCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
-    //means we can represent the number with a single byte
+    // means we can represent the number with a single byte
     if (bytes.size <= 252) CompactSizeUInt(UInt64(bytes.size), 1)
     // can be represented with two bytes
     else if (bytes.size <= 65535) CompactSizeUInt(UInt64(bytes.size), 3)
-    //can be represented with 4 bytes
+    // can be represented with 4 bytes
     else if (bytes.size <= UInt32.max.toBigInt)
       CompactSizeUInt(UInt64(bytes.size), 5)
     else CompactSizeUInt(UInt64(bytes.size), 9)
@@ -87,7 +88,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   def calc(bytes: ByteVector): CompactSizeUInt = calculateCompactSizeUInt(bytes)
 
   /** Responsible for calculating what the
-    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] is for this hex string.
+    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] is for this
+    * hex string.
     */
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt =
     calculateCompactSizeUInt(BytesUtil.decodeHex(hex))
@@ -98,22 +100,23 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   def parseCompactSizeUInt(hex: String): CompactSizeUInt =
     parseCompactSizeUInt(BytesUtil.decodeHex(hex))
 
-  /** Parses a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a sequence of bytes
+  /** Parses a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
+    * from a sequence of bytes
     * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
     */
   def parseCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
     require(bytes.nonEmpty, "Cannot parse a VarInt if the byte array is size 0")
     val firstByte = UInt64(ByteVector(bytes.head))
-    //8 bit number
+    // 8 bit number
     if (firstByte.toInt < 253)
       CompactSizeUInt(firstByte, 1)
-    //16 bit number
+    // 16 bit number
     else if (firstByte.toInt == 253)
       CompactSizeUInt(UInt64(bytes.slice(1, 3).reverse), 3)
-    //32 bit number
+    // 32 bit number
     else if (firstByte.toInt == 254)
       CompactSizeUInt(UInt64(bytes.slice(1, 5).reverse), 5)
-    //64 bit number
+    // 64 bit number
     else CompactSizeUInt(UInt64(bytes.slice(1, 9).reverse), 9)
   }
 
@@ -123,17 +126,18 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer.
     */
   def parseCompactSizeUIntSize(byte: Byte): Long = {
-    //8 bit number
+    // 8 bit number
     if (parseLong(byte) < 253) 1
-    //16 bit number
+    // 16 bit number
     else if (parseLong(byte) == 253) 3
-    //32 bit number
+    // 32 bit number
     else if (parseLong(byte) == 254) 5
-    //64 bit number
+    // 64 bit number
     else 9
   }
 
-  /** Parses the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a
+  /** Parses the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
+    * from a
     * [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]].
     * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
     */

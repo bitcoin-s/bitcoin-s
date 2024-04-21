@@ -122,8 +122,9 @@ sealed abstract class ArithmeticInterpreter {
     performBinaryBooleanOperation(program, (x, y) => x.numEqual(y))
   }
 
-  /** Same as [[org.bitcoins.core.script.arithmetic.OP_NUMEQUAL OP_NUMEQUAL]], but runs
-    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterward.
+  /** Same as [[org.bitcoins.core.script.arithmetic.OP_NUMEQUAL OP_NUMEQUAL]],
+    * but runs [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]]
+    * afterward.
     */
   def opNumEqualVerify(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
@@ -219,7 +220,9 @@ sealed abstract class ArithmeticInterpreter {
     }
   }
 
-  /** Returns 1 if x is within the specified range (left-inclusive), 0 otherwise. */
+  /** Returns 1 if x is within the specified range (left-inclusive), 0
+    * otherwise.
+    */
   def opWithin(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_WITHIN),
@@ -240,8 +243,8 @@ sealed abstract class ArithmeticInterpreter {
       } else if (
         isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(a)
       ) {
-        //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-        //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+        // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+        // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         program.failExecution(ScriptErrorUnknownError)
       } else {
         val isWithinRange = a >= b && a < c
@@ -253,17 +256,23 @@ sealed abstract class ArithmeticInterpreter {
     }
   }
 
-  /** This function checks if a number is <= 4 bytes in size
-    * We cannot perform arithmetic operations on bitcoin numbers that are larger than 4 bytes.
+  /** This function checks if a number is <= 4 bytes in size We cannot perform
+    * arithmetic operations on bitcoin numbers that are larger than 4 bytes.
     * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L214-L239.
     */
   private def isLargerThan4Bytes(scriptNumber: ScriptNumber): Boolean =
     scriptNumber.bytes.size > 4
 
   /** Performs the given arithmetic operation on the stack head
-    * @param program the program whose stack top is used as an argument for the arithmetic operation
-    * @param op the arithmetic operation that needs to be executed on the number, for instance incrementing by 1
-    * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
+    * @param program
+    *   the program whose stack top is used as an argument for the arithmetic
+    *   operation
+    * @param op
+    *   the arithmetic operation that needs to be executed on the number, for
+    *   instance incrementing by 1
+    * @return
+    *   the program with the result from performing the arithmetic operation
+    *   pushed onto the top of the stack
     */
   @tailrec
   private def performUnaryArithmeticOperation(
@@ -279,8 +288,8 @@ sealed abstract class ArithmeticInterpreter {
         ) {
           program.failExecution(ScriptErrorMinimalData)
         } else if (isLargerThan4Bytes(s)) {
-          //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-          //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+          // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+          // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
           program.failExecution(ScriptErrorUnknownError)
         } else {
           val newScriptNumber = op(s)
@@ -300,23 +309,28 @@ sealed abstract class ArithmeticInterpreter {
           performUnaryArithmeticOperation(newProgram, op)
         }
       case Some(_: ScriptToken) =>
-        //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-        //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+        // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+        // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         program.failExecution(ScriptErrorUnknownError)
     }
   }
 
   /** Performs the given arithmetic operation on the top two stack items
-    * @param program the program whose stack top is used as an argument for the arithmetic operation
-    * @param op the arithmetic operation that needs to be executed on the number, for instance incrementing by 1
-    * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
+    * @param program
+    *   the program whose stack top is used as an argument for the arithmetic
+    *   operation
+    * @param op
+    *   the arithmetic operation that needs to be executed on the number, for
+    *   instance incrementing by 1
+    * @return
+    *   the program with the result from performing the arithmetic operation
+    *   pushed onto the top of the stack
     */
   @tailrec
   private def performBinaryArithmeticOperation(
       program: ExecutionInProgressScriptProgram,
-      op: (
-          ScriptNumber,
-          ScriptNumber) => ScriptNumber): StartedScriptProgram = {
+      op: (ScriptNumber, ScriptNumber) => ScriptNumber)
+      : StartedScriptProgram = {
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -330,8 +344,8 @@ sealed abstract class ArithmeticInterpreter {
           ) {
             program.failExecution(ScriptErrorUnknownError)
           } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
-            //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-            //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+            // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+            // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
             program.failExecution(ScriptErrorUnknownError)
           } else {
             val newStackTop = op(x, y)
@@ -339,7 +353,7 @@ sealed abstract class ArithmeticInterpreter {
                                          program.script.tail)
           }
         case (x: ScriptConstant, _: ScriptNumber) =>
-          //interpret x as a number
+          // interpret x as a number
           val interpretedNumber = ScriptNumber(x.hex)
           val newProgram =
             program.updateStack(interpretedNumber :: program.stack.tail)
@@ -350,24 +364,27 @@ sealed abstract class ArithmeticInterpreter {
             program.updateStack(x :: interpretedNumber :: program.stack.tail)
           performBinaryArithmeticOperation(newProgram, op)
         case (x: ScriptConstant, y: ScriptConstant) =>
-          //interpret x and y as a number
+          // interpret x and y as a number
           val interpretedNumberX = ScriptNumber(x.hex)
           val interpretedNumberY = ScriptNumber(y.hex)
           val newProgram = program.updateStack(
             interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail)
           performBinaryArithmeticOperation(newProgram, op)
         case (_: ScriptToken, _: ScriptToken) =>
-          //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-          //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+          // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+          // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
           program.failExecution(ScriptErrorUnknownError)
       }
     }
   }
 
   /** Compares two script numbers with the given boolean operation
-    * @param program the program whose two top stack elements are used for the comparison
-    * @param op the operation which compares the two script numbers
-    * @return the program with either OP_FALSE or OP_TRUE on the stack top
+    * @param program
+    *   the program whose two top stack elements are used for the comparison
+    * @param op
+    *   the operation which compares the two script numbers
+    * @return
+    *   the program with either OP_FALSE or OP_TRUE on the stack top
     */
   private def performBinaryBooleanOperation(
       program: ExecutionInProgressScriptProgram,
@@ -383,8 +400,8 @@ sealed abstract class ArithmeticInterpreter {
       ) {
         program.failExecution(ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
-        //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-        //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+        // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+        // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         program.failExecution(ScriptErrorUnknownError)
       } else {
         val newStackTop = if (op(x, y)) OP_TRUE else OP_FALSE
@@ -394,45 +411,51 @@ sealed abstract class ArithmeticInterpreter {
     }
   }
 
-  /** Takes the top two stack items, parses them to numbers then executes the op function on them and places the result
-    * onto the stack top
-    * @param program the script program whose two top stack items are used as arguments for op
-    * @param op the operation that needs to be executed on the two stack top items
-    * @return the program with the result of op pushed onto the top of the stack
+  /** Takes the top two stack items, parses them to numbers then executes the op
+    * function on them and places the result onto the stack top
+    * @param program
+    *   the script program whose two top stack items are used as arguments for
+    *   op
+    * @param op
+    *   the operation that needs to be executed on the two stack top items
+    * @return
+    *   the program with the result of op pushed onto the top of the stack
     */
   private def performComparisonOnTwoStackTopItems(
       program: ExecutionInProgressScriptProgram,
-      op: (
-          ScriptNumber,
-          ScriptNumber) => ScriptNumber): StartedScriptProgram = {
+      op: (ScriptNumber, ScriptNumber) => ScriptNumber)
+      : StartedScriptProgram = {
     performBinaryArithmeticOperation(program, op)
   }
 
   /** Takes the top two stack elements and parses them as script numbers
-    * @param program the program whose top two stack elements are being parsed as script numbers
-    * @return the tuple with the first element being the first stack element, the second element in the tuple being the second stack element
+    * @param program
+    *   the program whose top two stack elements are being parsed as script
+    *   numbers
+    * @return
+    *   the tuple with the first element being the first stack element, the
+    *   second element in the tuple being the second stack element
     */
   private def parseTopTwoStackElementsAsScriptNumbers(
-      program: ExecutionInProgressScriptProgram): (
-      ScriptNumber,
-      ScriptNumber) = {
+      program: ExecutionInProgressScriptProgram)
+      : (ScriptNumber, ScriptNumber) = {
     (program.stack.head, program.stack.tail.head) match {
       case (x: ScriptNumber, y: ScriptNumber) => (x, y)
       case (x: ScriptConstant, y: ScriptNumber) =>
         val interpretedNumber = ScriptNumber(x.hex)
         (interpretedNumber, y)
       case (x: ScriptNumber, y: ScriptConstant) =>
-        //interpret y as a number
+        // interpret y as a number
         val interpretedNumber = ScriptNumber(y.hex)
         (x, interpretedNumber)
       case (x: ScriptConstant, y: ScriptConstant) =>
-        //interpret x and y as a number
+        // interpret x and y as a number
         val interpretedNumberX = ScriptNumber(x.hex)
         val interpretedNumberY = ScriptNumber(y.hex)
         (interpretedNumberX, interpretedNumberY)
       case (_: ScriptToken, _: ScriptToken) =>
-        //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
-        //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+        // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
+        // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         throw new RuntimeException(
           "Stack top elements must have be script constants to be interpreted as numbers")
     }

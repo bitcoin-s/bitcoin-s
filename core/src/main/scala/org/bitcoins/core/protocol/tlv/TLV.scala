@@ -397,7 +397,9 @@ object PaymentDataTLV extends TLVFactory[PaymentDataTLV] {
   override val typeName: String = "PaymentDataTLV"
 }
 
-/** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-init-message */
+/** @see
+  *   https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-init-message
+  */
 case class InitTLV(
     globalFeatureBytes: ByteVector,
     featureBytes: ByteVector,
@@ -445,7 +447,9 @@ object InitTLV extends TLVFactory[InitTLV] {
   override val typeName: String = "InitTLV"
 }
 
-/** @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-error-message]] */
+/** @see
+  *   [[https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-error-message]]
+  */
 case class ErrorTLV(id: ByteVector, data: ByteVector) extends TLV {
   require(id.length == 32, s"ID associated with error is incorrect length: $id")
 
@@ -526,7 +530,8 @@ sealed trait EventDescriptorTLV extends DLCOracleTLV {
   def noncesNeeded: Int
 
   /** Event descriptors all use the same signing version as of now.
-    * @see https://github.com/discreetlogcontracts/dlcspecs/pull/113
+    * @see
+    *   https://github.com/discreetlogcontracts/dlcspecs/pull/113
     */
   def signingVersion: SigningVersion = DLCOracleV0SigningVersion
 }
@@ -540,8 +545,10 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 }
 
 /** Describes an event over an enumerated set of outcomes
-  * @param outcomes The set of possible outcomes
-  * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
+  * @param outcomes
+  *   The set of possible outcomes
+  * @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#simple-enumeration
   */
 case class EnumEventDescriptorV0TLV(outcomes: Vector[NormalizedString])
     extends EventDescriptorTLV {
@@ -598,9 +605,9 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
   /** The unit of the outcome value */
   def unit: NormalizedString
 
-  /** The precision of the outcome representing the base exponent
-    * by which to multiply the number represented by the composition
-    * of the digits to obtain the actual outcome value.
+  /** The precision of the outcome representing the base exponent by which to
+    * multiply the number represented by the composition of the digits to obtain
+    * the actual outcome value.
     *
     * Modifies unit.
     */
@@ -614,10 +621,10 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
 
   def maxToPrecision: BigDecimal = precisionModifier * BigDecimal(maxNum)
 
-  /** Checks if a outcome is contained in the set of outcomes when adjusted for precision
-    * If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
-    * This would return true if passed a value [0, 0.1, 0.2,...,1.0]
-    * If passed in the not precision adjusted outcomes [0,1,2,...10] it will return false
+  /** Checks if a outcome is contained in the set of outcomes when adjusted for
+    * precision If you have precision=-1 and oracle outcomes [0,1,2,3...,10]
+    * This would return true if passed a value [0, 0.1, 0.2,...,1.0] If passed
+    * in the not precision adjusted outcomes [0,1,2,...10] it will return false
     */
   def containsPreciseOutcome(outcome: BigDecimal): Boolean = {
     (outcome / precisionModifier).toBigIntExact match {
@@ -939,9 +946,10 @@ case class OracleAttestmentV0TLV(
     s"Number of outcomes must match number of signatures, ${outcomes.size} != ${sigs.size}")
   override val tpe: BigSizeUInt = OracleAttestmentV0TLV.tpe
 
-  /** This should be used very carefully with v0 attestments. We do not have a requirement in the
-    * in the original protocol that signatures are sorted. If you are seeing signature verification
-    * failing you probably need to be using [[unsortedSignatures]] rather than [[sigs]]
+  /** This should be used very carefully with v0 attestments. We do not have a
+    * requirement in the in the original protocol that signatures are sorted. If
+    * you are seeing signature verification failing you probably need to be
+    * using [[unsortedSignatures]] rather than [[sigs]]
     */
   override val sigs: OrderedSchnorrSignatures =
     OrderedSchnorrSignatures.fromUnsorted(unsortedSignatures)
@@ -1005,7 +1013,9 @@ object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
   val empty: ContractDescriptorTLV = ContractDescriptorV0TLV(Vector.empty)
 }
 
-/** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */
+/** @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info
+  */
 case class ContractDescriptorV0TLV(outcomes: Vector[(String, Satoshis)])
     extends ContractDescriptorTLV {
   override val tpe: BigSizeUInt = ContractDescriptorV0TLV.tpe
@@ -1292,7 +1302,9 @@ case class OldPayoutFunctionV0TLV(points: Vector[OldTLVPoint])
   override val value: ByteVector = u16PrefixedList(points)
 }
 
-/** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
+/** @see
+  *   https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization
+  */
 case class PayoutFunctionV0TLV(
     endpoints: OrderedTLVPoints,
     pieces: Vector[PayoutCurvePieceTLV],
@@ -1341,9 +1353,9 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
         (leftEndpoint, piece)
       }
       val rightEndpoint = iter.take(TLVPoint)
-      //we assume that points are in ordered when they are serialized
-      //if they are not, the person that serialized them is not following
-      //the spec
+      // we assume that points are in ordered when they are serialized
+      // if they are not, the person that serialized them is not following
+      // the spec
       val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
       val orderedEndpoints = OrderedTLVPoints(endpoints)
       val pieces = endpointsAndPieces.map(_._2)
@@ -1732,7 +1744,7 @@ case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
       super.toString
     } else {
       s"CETSignaturesV0TLV(sigs=${sigs.take(
-        2)}..., omitting remainingSigs of length=${sigs.length - 2})"
+          2)}..., omitting remainingSigs of length=${sigs.length - 2})"
     }
   }
 }

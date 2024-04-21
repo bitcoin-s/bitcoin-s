@@ -11,8 +11,9 @@ import scala.annotation.tailrec
   */
 sealed abstract class RawSerializerHelper {
 
-  /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
-    * Makes sure that we parse the correct amount of elements
+  /** Used parse a byte sequence to a Seq[TransactionInput],
+    * Seq[TransactionOutput], etc Makes sure that we parse the correct amount of
+    * elements
     */
   final def parseCmpctSizeUIntSeq[T <: NetworkElement](
       bytes: ByteVector,
@@ -44,7 +45,9 @@ sealed abstract class RawSerializerHelper {
     (result, remaining)
   }
 
-  /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> ByteVector */
+  /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] ->
+    * ByteVector
+    */
   final def writeCmpctSizeUInt[T](
       ts: Seq[T],
       serializer: T => ByteVector): ByteVector = {
@@ -53,7 +56,9 @@ sealed abstract class RawSerializerHelper {
     cmpct.bytes ++ serialized
   }
 
-  /** Serializes a [[scala.Seq Seq]] of [[NetworkElement]] to a [[scodec.bits.ByteVector]] */
+  /** Serializes a [[scala.Seq Seq]] of [[NetworkElement]] to a
+    * [[scodec.bits.ByteVector]]
+    */
   final def writeNetworkElements[T <: NetworkElement](
       ts: Seq[T]): ByteVector = {
     val f = { (t: T) =>

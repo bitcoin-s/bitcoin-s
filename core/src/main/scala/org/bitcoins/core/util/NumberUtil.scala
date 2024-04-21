@@ -118,22 +118,25 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
                                 { (u8: UInt8) =>
                                   u8
                                 })
-    //should always be able to convert from uint5 => uint8
+    // should always be able to convert from uint5 => uint8
     u8sTry.get
   }
 
-  /** Expands the [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]]
-    * field given in a block header to the _actual_ target difficulty.
-    * @see  [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
-    * for more information
+  /** Expands the
+    * [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]] field
+    * given in a block header to the _actual_ target difficulty.
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
+    *   for more information
     *
     * Meant to replicate this function in bitcoin core
-    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
     * @param nBits
     * @return
     */
   def targetExpansion(nBits: UInt32): BlockHeader.TargetDifficultyHelper = {
-    //mantissa bytes without sign bit
+    // mantissa bytes without sign bit
     val noSignificand = nBits.bytes.takeRight(3)
     val mantissaBytes = {
       val withSignBit = noSignificand
@@ -143,7 +146,7 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
 
     val significand = nBits.bytes.head
 
-    //if the most significant bit is set, we have a negative number
+    // if the most significant bit is set, we have a negative number
     val signum = if (noSignificand.bits.head) {
       -1
     } else {
@@ -152,14 +155,14 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
 
     val mantissa =
       new BigInteger(signum, mantissaBytes.toArray)
-    //guards against a negative exponent, in which case we just shift right
-    //see bitcoin core implementation
+    // guards against a negative exponent, in which case we just shift right
+    // see bitcoin core implementation
     val result = {
       if (significand <= 3) {
 
         val exp = 8 * (3 - significand)
-        //avoid shift right, because of weird behavior on the jvm
-        //https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
+        // avoid shift right, because of weird behavior on the jvm
+        // https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
         mantissa.divide(NumberUtil.pow2(exp).bigInteger)
       } else {
         val exponent = significand - 3
@@ -173,13 +176,13 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     val nWord = BigInt(mantissa)
     val nSize = nBits.toBigInt / NumberUtil.pow2(24)
     val isNegative: Boolean = {
-      //*pfNegative = nWord != 0 && (nCompact & 0x00800000) != 0;
+      // *pfNegative = nWord != 0 && (nCompact & 0x00800000) != 0;
       nWordNotZero &&
       (nBits & UInt32(0x00800000L)) != UInt32.zero
     }
 
     val isOverflow: Boolean = {
-      //nWord != 0 && ((nSize > 34) ||
+      // nWord != 0 && ((nSize > 34) ||
       //  (nWord > 0xff && nSize > 33) ||
       //  (nWord > 0xffff && nSize > 32));
 
@@ -191,8 +194,10 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
   }
 
-  /** Compressed the big integer to be used inside of [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
-    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
+  /** Compressed the big integer to be used inside of
+    * [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
     * @param bigInteger
     * @return
     */
@@ -202,10 +207,10 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
 
     val negativeFlag = UInt32(0x00800000L)
 
-    //emulates bits() in arith_uin256.h
-    //Returns the position of the highest bit set plus one, or zero if the
-    //value is zero.
-    //https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.h#L241
+    // emulates bits() in arith_uin256.h
+    // Returns the position of the highest bit set plus one, or zero if the
+    // value is zero.
+    // https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.h#L241
     var size: Int = if (bigInteger == BigInteger.ZERO) {
       0
     } else {
@@ -215,10 +220,10 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     var compact: UInt32 = {
       if (size <= 3) {
         // GetLow64() << 8 * (3 - nSize);
-        //note: counter intuitively, the expression
+        // note: counter intuitively, the expression
         // 8 * (3 - nSize)
-        //gets evaluated before we apply the shift left operator
-        //verified this property with g++
+        // gets evaluated before we apply the shift left operator
+        // verified this property with g++
         val shiftAmount = 8 * (3 - size)
 
         val u64 = toUnsignedInt(bitVec.takeRight(64).toByteArray).bigInteger
@@ -226,7 +231,7 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
 
         UInt32.fromBytes(ByteVector(u64.toByteArray))
       } else {
-        //8 * (nSize - 3)
+        // 8 * (nSize - 3)
         val shiftAmount = 8 * (size - 3)
         val bn = bigInteger.shiftRight(shiftAmount)
         val bytes = bn.toByteArray.takeRight(4)
@@ -234,14 +239,14 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
       }
     }
 
-    //The 0x00800000 bit denotes the sign.
+    // The 0x00800000 bit denotes the sign.
     // Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
     if ((compact & negativeFlag) != UInt32.zero) {
       compact = compact >> 8
       size = size + 1
     }
 
-    //~0x007fffff = 0xff800000
+    // ~0x007fffff = 0xff800000
     require((compact & UInt32(0xff800000L)) == UInt32.zero,
             s"Exponent/sign bit must not be set yet in compact encoding")
     require(size < 256, "Size of compact encoding can't be more than 2^256")
@@ -267,8 +272,10 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     targetCompression(difficultyHelper.difficulty, difficultyHelper.isNegative)
   }
 
-  /** Implements this check for overflowing for [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
-    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L220 bitcoin core check]]
+  /** Implements this check for overflowing for
+    * [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L220 bitcoin core check]]
     * @param nBits
     * @return
     */
@@ -296,8 +303,9 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     Math.abs(scala.util.Random.nextInt())
   }
 
-  /** Decomposes the input num into a list of numDigits digits in the given base.
-    * The output Vector has the most significant digit first and the 1's place last.
+  /** Decomposes the input num into a list of numDigits digits in the given
+    * base. The output Vector has the most significant digit first and the 1's
+    * place last.
     */
   def decompose(num: Long, base: Int, numDigits: Int): Vector[Int] = {
     var currentNum: Long = num
@@ -312,8 +320,8 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     backwardsDigits.reverse
   }
 
-  /** Recomposes the input digits into the number they represent.
-    * The input Vector has the most significant digit first and the 1's place last.
+  /** Recomposes the input digits into the number they represent. The input
+    * Vector has the most significant digit first and the 1's place last.
     */
   def fromDigits(digits: Vector[Int], base: Int, numDigits: Int): Long = {
     def pow(base: Long, exp: Long): Long = {
@@ -335,11 +343,12 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
   }
 
   /** Returns a pseudorandom, uniformly distributed long value between 0
-    *  (inclusive) and the specified value (exclusive), drawn from this
-    *  random number generator's sequence.
+    * (inclusive) and the specified value (exclusive), drawn from this random
+    * number generator's sequence.
     *
-    *  Stolen from scala.util.Random.nextLong (in scala version 2.13)
-    *  @see https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/util/Random.scala#L131
+    * Stolen from scala.util.Random.nextLong (in scala version 2.13)
+    * @see
+    *   https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/util/Random.scala#L131
     */
   def randomLong(bound: Long): Long = {
     require(bound > 0, "bound must be positive")
@@ -392,7 +401,8 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
   }
 
   /** Stolen from Scala 2.13 IndexedSeq::binarySearch
-    * @see https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/collection/IndexedSeq.scala#L117
+    * @see
+    *   https://github.com/scala/scala/blob/4aae0b91cd266f02b9f3d911db49381a300b5103/src/library/scala/collection/IndexedSeq.scala#L117
     */
   @tailrec
   final def search[A, B >: A, Wrapper](

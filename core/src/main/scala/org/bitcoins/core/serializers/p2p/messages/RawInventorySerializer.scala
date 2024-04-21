@@ -6,7 +6,8 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
 /** Serializes/deserializes a inventory
-  * @see https://bitcoin.org/en/developer-reference#term-inventory
+  * @see
+  *   https://bitcoin.org/en/developer-reference#term-inventory
   */
 trait RawInventorySerializer extends RawBitcoinSerializer[Inventory] {
 

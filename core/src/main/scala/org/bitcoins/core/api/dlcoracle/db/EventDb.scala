@@ -12,12 +12,12 @@ import org.bitcoins.crypto.{
 
 import java.time.Instant
 
-/** These represent individual events at the nonce level
-  * You can aggregate 1 to n EventDbs into an [[OracleEvent]] to get all of the information
-  * about a particular descriptor
+/** These represent individual events at the nonce level You can aggregate 1 to
+  * n EventDbs into an [[OracleEvent]] to get all of the information about a
+  * particular descriptor
   *
-  * In the case of [[EnumEventDescriptorV0TLV]] there is only 1 [[EventDb]]
-  * that corresponds to the enum descriptor
+  * In the case of [[EnumEventDescriptorV0TLV]] there is only 1 [[EventDb]] that
+  * corresponds to the enum descriptor
   *
   * In the case of [[DigitDecompositionEventDescriptorV0TLV]] you have
   * [[DigitDecompositionEventDescriptorV0TLV.numDigits]] with an optional +1

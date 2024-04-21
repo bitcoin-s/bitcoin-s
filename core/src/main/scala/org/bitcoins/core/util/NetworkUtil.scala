@@ -87,8 +87,9 @@ abstract class NetworkUtil {
 
   /** Checks if the [[java.net.InetSocketAddress]] is a loopback address.
     *
-    * @return a boolean indicating if the [[java.net.InetSocketAddress]] is
-    *         a loopback address; or false otherwise.
+    * @return
+    *   a boolean indicating if the [[java.net.InetSocketAddress]] is a loopback
+    *   address; or false otherwise.
     */
   def isLoopbackAddress(socketAddress: InetSocketAddress): Boolean = {
     try {
@@ -109,8 +110,9 @@ abstract class NetworkUtil {
 
   /** Checks if the [[java.net.URI]] is pointing to a loopback address.
     *
-    * @return a boolean indicating if the [[java.net.URI]] is
-    *         a loopback address; or false otherwise.
+    * @return
+    *   a boolean indicating if the [[java.net.URI]] is a loopback address; or
+    *   false otherwise.
     */
   def isLoopbackAddress(uri: URI): Boolean = {
     try {
@@ -151,9 +153,11 @@ abstract class NetworkUtil {
     }
   }
 
-  /** Checks if the given block header is stale relative to the given chain parameters
+  /** Checks if the given block header is stale relative to the given chain
+    * parameters
     *
-    * @see [[https://github.com/bitcoin/bitcoin/blob/664500fc71a32d5066db8cb4a19ddc7005a1c9e9/src/net_processing.cpp#L1235]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/664500fc71a32d5066db8cb4a19ddc7005a1c9e9/src/net_processing.cpp#L1235]]
     */
   def isBlockHeaderStale(
       blockHeader: BlockHeader,
@@ -163,11 +167,15 @@ abstract class NetworkUtil {
     (Instant.now.getEpochSecond - seconds) > expected.toSeconds
   }
 
-  /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
-    * bitcoin protocol messages. This function parses our byte stream into individual network messages
+  /** Akka sends messages as one byte stream. There is not a 1 to 1 relationship
+    * between byte streams received and bitcoin protocol messages. This function
+    * parses our byte stream into individual network messages
     *
-    * @param bytes the bytes that need to be parsed into individual messages
-    * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
+    * @param bytes
+    *   the bytes that need to be parsed into individual messages
+    * @return
+    *   the parsed [[NetworkMessage]]'s and the unaligned bytes that did not
+    *   parse to a message
     */
   def parseIndividualMessages(
       bytes: ByteVector): (Vector[NetworkMessage], ByteVector) = {
@@ -206,9 +214,9 @@ abstract class NetworkUtil {
               (accum, remainingBytes)
             }
           case Failure(_) =>
-            //this case means that our TCP frame was not aligned with bitcoin protocol
-            //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
-            //http://stackoverflow.com/a/37979529/967713
+            // this case means that our TCP frame was not aligned with bitcoin protocol
+            // return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
+            // http://stackoverflow.com/a/37979529/967713
             (accum, remainingBytes)
         }
       }

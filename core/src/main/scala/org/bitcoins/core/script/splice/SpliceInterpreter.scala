@@ -11,7 +11,9 @@ import org.bitcoins.core.script.{
   */
 sealed abstract class SpliceInterpreter {
 
-  /** Pushes the string length of the top element of the stack (without popping it). */
+  /** Pushes the string length of the top element of the stack (without popping
+    * it).
+    */
   def opSize(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_SIZE),

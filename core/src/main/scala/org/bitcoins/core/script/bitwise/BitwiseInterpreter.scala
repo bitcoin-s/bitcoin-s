@@ -51,7 +51,7 @@ sealed abstract class BitwiseInterpreter {
     require(program.script.headOption.contains(OP_EQUALVERIFY),
             "Script operation must be OP_EQUALVERIFY")
     if (program.stack.size > 1) {
-      //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
+      // first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
       val newProgram = opEqual(program.updateScript(simpleScript))
       val verifiedOrErr = newProgram match {

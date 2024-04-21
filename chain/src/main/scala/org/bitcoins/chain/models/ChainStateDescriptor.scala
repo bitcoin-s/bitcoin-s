@@ -7,9 +7,9 @@ sealed abstract class ChainStateDescriptorType
 object ChainStateDescriptorType
     extends StringFactory[ChainStateDescriptorType] {
 
-  final case object Syncing extends ChainStateDescriptorType
+  case object Syncing extends ChainStateDescriptorType
 
-  final case object IsInitialBlockDownload extends ChainStateDescriptorType
+  case object IsInitialBlockDownload extends ChainStateDescriptorType
 
   val all: Vector[ChainStateDescriptorType] =
     Vector(IsInitialBlockDownload, Syncing)

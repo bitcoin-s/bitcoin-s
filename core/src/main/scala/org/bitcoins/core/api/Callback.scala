@@ -31,7 +31,9 @@ object Callback {
   def noop[T]: T => Future[Unit] = _ => Future.unit
 }
 
-/** Manages a set of callbacks, should be used to manage execution and logging if needed */
+/** Manages a set of callbacks, should be used to manage execution and logging
+  * if needed
+  */
 case class CallbackHandler[C, T <: Callback[C]](
     name: String,
     override val wrapped: IndexedSeq[T])
@@ -50,7 +52,9 @@ case class CallbackHandler[C, T <: Callback[C]](
     }
   }
 
-  /** Executes the callbacks synchronously, if any fail, they are recovered by recoverFunc */
+  /** Executes the callbacks synchronously, if any fail, they are recovered by
+    * recoverFunc
+    */
   def execute(param: C, recoverFunc: Throwable => Unit = _ => ())(implicit
       ec: ExecutionContext): Future[Unit] = {
     val executeFs = wrapped.map { callback =>

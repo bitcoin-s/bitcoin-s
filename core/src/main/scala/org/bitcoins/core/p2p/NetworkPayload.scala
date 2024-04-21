@@ -15,29 +15,33 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 /** Trait that represents a payload for a message on the Bitcoin p2p network
-  * @see [[https://bitcoin.org/en/developer-reference#p2p-network]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#p2p-network]]
   */
 sealed trait NetworkPayload extends NetworkElement {
 
-  /** ASCII string which identifies what message type is contained in the payload.
-    * Followed by nulls (0x00) to pad out byte count; for example: version\0\0\0\0\0.
-    * Command names need to be 12 bytes long
-    * This is generally used to build a [[org.bitcoins.core.p2p.NetworkHeader]]
+  /** ASCII string which identifies what message type is contained in the
+    * payload. Followed by nulls (0x00) to pad out byte count; for example:
+    * version\0\0\0\0\0. Command names need to be 12 bytes long This is
+    * generally used to build a [[org.bitcoins.core.p2p.NetworkHeader]]
     */
   def commandName: String
 }
 
 /** Represents a data message inside of bitcoin core
   *
-  * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 sealed trait DataPayload extends NetworkPayload
 
 /** The block message transmits a single serialized block
   *
-  * @param block The block being transmitted inside of this message
+  * @param block
+  *   The block being transmitted inside of this message
   *
-  * @see [[https://bitcoin.org/en/developer-reference#block]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#block]]
   */
 case class BlockMessage(block: Block) extends DataPayload {
   override val commandName = NetworkPayload.blockCommandName
@@ -52,11 +56,12 @@ object BlockMessage extends Factory[BlockMessage] {
 
 }
 
-/** The `getblocks` message requests an inv message that provides block header hashes
-  * starting from a particular point in the block chain.
-  * It allows a peer which has been disconnected or started for the first time to get the data
-  * it needs to request the blocks it hasn’t seen.
-  * @see  [https://bitcoin.org/en/developer-reference#getblocks]]
+/** The `getblocks` message requests an inv message that provides block header
+  * hashes starting from a particular point in the block chain. It allows a peer
+  * which has been disconnected or started for the first time to get the data it
+  * needs to request the blocks it hasn’t seen.
+  * @see
+  *   [https://bitcoin.org/en/developer-reference#getblocks]]
   */
 trait GetBlocksMessage extends DataPayload with ExpectsResponse {
 
@@ -64,23 +69,24 @@ trait GetBlocksMessage extends DataPayload with ExpectsResponse {
     */
   def protocolVersion: ProtocolVersion
 
-  /** The number of header hashes provided not including the stop hash.
-    * There is no limit except that the byte size of the entire message
-    * must be below the MAX_SIZE limit; typically from 1 to 200 hashes are sent.
+  /** The number of header hashes provided not including the stop hash. There is
+    * no limit except that the byte size of the entire message must be below the
+    * MAX_SIZE limit; typically from 1 to 200 hashes are sent.
     */
   def hashCount: CompactSizeUInt
 
   /** One or more block header hashes (32 bytes each) in internal byte order.
-    * Hashes should be provided in reverse order of block height,
-    * so highest-height hashes are listed first and lowest-height hashes are listed last.
+    * Hashes should be provided in reverse order of block height, so
+    * highest-height hashes are listed first and lowest-height hashes are listed
+    * last.
     */
   def blockHeaderHashes: Seq[DoubleSha256Digest]
 
-  /** The header hash of the last header hash being requested;
-    * set to all zeroes to request an inv message with all subsequent
-    * header hashes (a maximum of 500 will be sent as a reply to this message;
-    * if you need more than 500, you will need to send another getblocks message
-    * with a higher-height header hash as the first entry in block header hash field).
+  /** The header hash of the last header hash being requested; set to all zeroes
+    * to request an inv message with all subsequent header hashes (a maximum of
+    * 500 will be sent as a reply to this message; if you need more than 500,
+    * you will need to send another getblocks message with a higher-height
+    * header hash as the first entry in block header hash field).
     */
   def stopHash: DoubleSha256Digest
 
@@ -89,8 +95,10 @@ trait GetBlocksMessage extends DataPayload with ExpectsResponse {
   override def bytes: ByteVector = RawGetBlocksMessageSerializer.write(this)
 }
 
-/** This is the companion object for the GetBlocks network message on the p2p network
-  * @see https://bitcoin.org/en/developer-reference#getblocks
+/** This is the companion object for the GetBlocks network message on the p2p
+  * network
+  * @see
+  *   https://bitcoin.org/en/developer-reference#getblocks
   */
 object GetBlocksMessage extends Factory[GetBlocksMessage] {
 
@@ -121,14 +129,17 @@ object GetBlocksMessage extends Factory[GetBlocksMessage] {
     RawGetBlocksMessageSerializer.read(bytes)
 }
 
-/** The getdata message requests one or more data objects from another node.
-  * The objects are requested by an inventory,
-  * which the requesting node typically previously received by way of an inv message.
+/** The getdata message requests one or more data objects from another node. The
+  * objects are requested by an inventory, which the requesting node typically
+  * previously received by way of an inv message.
   *
-  * @param inventoryCount The number of inventory enteries
-  * @param inventories One or more inventory entries up to a maximum of 50,000 entries.
+  * @param inventoryCount
+  *   The number of inventory enteries
+  * @param inventories
+  *   One or more inventory entries up to a maximum of 50,000 entries.
   *
-  * @see [[https://bitcoin.org/en/developer-reference#getdata]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#getdata]]
   */
 case class GetDataMessage(
     inventoryCount: CompactSizeUInt,
@@ -141,12 +152,10 @@ case class GetDataMessage(
   override def toString(): String = {
 
     val count = s"inventoryCount=${inventoryCount.toInt}"
-    val invs = s"inventories=${
-      val base = inventories.toString
+    val invs = s"inventories=${val base = inventories.toString
       val cutoff = 100
       if (base.length() > cutoff) base.take(cutoff) + "..."
-      else base
-    }"
+      else base}"
     s"GetDataMessage($count, $invs)"
   }
 }
@@ -180,11 +189,12 @@ sealed trait ExpectsResponse {
   }
 }
 
-/** The getheaders message requests a headers message that provides block headers starting
-  * from a particular point in the block chain.
-  * It allows a peer which has been disconnected or started for the first time to get the
+/** The getheaders message requests a headers message that provides block
+  * headers starting from a particular point in the block chain. It allows a
+  * peer which has been disconnected or started for the first time to get the
   * headers it hasn’t seen yet.
-  * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#getheaders]]
   */
 trait GetHeadersMessage extends DataPayload with ExpectsResponse {
   def version: ProtocolVersion
@@ -243,14 +253,16 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
     GetHeadersMessage(ProtocolVersion.default, hashes, hashStop)
   }
 
-  /** Creates a [[GetHeadersMessage]] with no hash stop set, this requests all possible blocks
-    * if we need more than 2000 block headers, we will have to send another [[GetHeadersMessage]]
+  /** Creates a [[GetHeadersMessage]] with no hash stop set, this requests all
+    * possible blocks if we need more than 2000 block headers, we will have to
+    * send another [[GetHeadersMessage]]
     *
-    * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#getheaders]]
     */
   def apply(hashes: Seq[DoubleSha256Digest]): GetHeadersMessage = {
-    //The header hash of the last header hash being requested; set to all zeroes to request an inv message with all
-    //subsequent header hashes (a maximum of 2000 will be sent as a reply to this message
+    // The header hash of the last header hash being requested; set to all zeroes to request an inv message with all
+    // subsequent header hashes (a maximum of 2000 will be sent as a reply to this message
     val hashStop = DoubleSha256Digest.empty
     GetHeadersMessage(hashes, hashStop)
   }
@@ -260,18 +272,21 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
   }
 }
 
-/** The headers message sends one or more block headers to a node
-  * which previously requested certain headers with a getheaders message.
-  * @see [[https://bitcoin.org/en/developer-reference#headers]]
+/** The headers message sends one or more block headers to a node which
+  * previously requested certain headers with a getheaders message.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#headers]]
   *
-  * @param count Number of block headers up to a maximum of 2,000.
-  *              Note: headers-first sync assumes the sending node
-  *              will send the maximum number of headers whenever possible.
+  * @param count
+  *   Number of block headers up to a maximum of 2,000. Note: headers-first sync
+  *   assumes the sending node will send the maximum number of headers whenever
+  *   possible.
   *
-  * @param headers Block headers: each 80-byte block header is in the format described in the
-  *                block headers section with an additional 0x00 suffixed.
-  *                This 0x00 is called the transaction count, but because the headers message
-  *                doesn’t include any transactions, the transaction count is always zero.
+  * @param headers
+  *   Block headers: each 80-byte block header is in the format described in the
+  *   block headers section with an additional 0x00 suffixed. This 0x00 is
+  *   called the transaction count, but because the headers message doesn’t
+  *   include any transactions, the transaction count is always zero.
   */
 case class HeadersMessage(count: CompactSizeUInt, headers: Vector[BlockHeader])
     extends DataPayload {
@@ -294,8 +309,9 @@ object HeadersMessage extends Factory[HeadersMessage] {
 
   /** The maximum amount of headers sent in one `headers` message
     *
-    * @see [[https://bitcoin.org/en/developer-reference#getheaders bitcoin.org]]
-    *      developer reference
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#getheaders bitcoin.org]]
+    *   developer reference
     */
   val MaxHeadersCount: Int = 2000
 
@@ -309,10 +325,12 @@ object HeadersMessage extends Factory[HeadersMessage] {
   }
 }
 
-/** The inv message (inventory message) transmits one or more inventories of objects known to the transmitting peer.
-  * It can be sent unsolicited to announce new transactions or blocks,
-  * or it can be sent in reply to a getblocks message or mempool message.
-  * @see [[https://bitcoin.org/en/developer-reference#inv]]
+/** The inv message (inventory message) transmits one or more inventories of
+  * objects known to the transmitting peer. It can be sent unsolicited to
+  * announce new transactions or blocks, or it can be sent in reply to a
+  * getblocks message or mempool message.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#inv]]
   */
 trait InventoryMessage extends DataPayload {
 
@@ -348,12 +366,14 @@ trait InventoryMessage extends DataPayload {
         inventories.mkString
       }
     s"InventoryMessage($invCount inv(s)${if (invList.nonEmpty) ", " + invList
-    else ""})"
+      else ""})"
   }
 }
 
-/** Creates an scala object that represents the inventory type on the p2p network
-  * @see https://bitcoin.org/en/developer-reference#inv
+/** Creates an scala object that represents the inventory type on the p2p
+  * network
+  * @see
+  *   https://bitcoin.org/en/developer-reference#inv
   */
 object InventoryMessage extends Factory[InventoryMessage] {
 
@@ -377,12 +397,14 @@ object InventoryMessage extends Factory[InventoryMessage] {
   }
 }
 
-/** The mempool message requests the TXIDs of transactions that the receiving node has verified
-  * as valid but which have not yet appeared in a block.
-  * That is, transactions which are in the receiving node’s memory pool.
-  * The response to the mempool message is one or more inv messages containing the TXIDs in the usual inventory format.
+/** The mempool message requests the TXIDs of transactions that the receiving
+  * node has verified as valid but which have not yet appeared in a block. That
+  * is, transactions which are in the receiving node’s memory pool. The response
+  * to the mempool message is one or more inv messages containing the TXIDs in
+  * the usual inventory format.
   *
-  * @see [[https://bitcoin.org/en/developer-reference#mempool]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#mempool]]
   */
 case object MemPoolMessage extends DataPayload {
   override val commandName = NetworkPayload.memPoolCommandName
@@ -390,13 +412,17 @@ case object MemPoolMessage extends DataPayload {
 }
 
 /** The merkleblock message is a reply to a getdata message which requested a
-  * block using the inventory type MSG_MERKLEBLOCK.
-  * It is only part of the reply: if any matching transactions are found,
-  * they will be sent separately as tx messages.
+  * block using the inventory type MSG_MERKLEBLOCK. It is only part of the
+  * reply: if any matching transactions are found, they will be sent separately
+  * as tx messages.
   *
-  * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#merkleblock]]
   *
-  * @param merkleBlock The actual [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] that this message represents
+  * @param merkleBlock
+  *   The actual
+  *   [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] that
+  *   this message represents
   */
 case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 
@@ -406,7 +432,8 @@ case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 
 }
 
-/** @see https://bitcoin.org/en/developer-reference#merkleblock
+/** @see
+  *   https://bitcoin.org/en/developer-reference#merkleblock
   */
 object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
 
@@ -415,21 +442,25 @@ object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
 
 }
 
-/** The notfound message is a reply to a getdata message which requested an object the receiving
-  * node does not have available for relay. (Nodes are not expected to relay historic transactions
-  * which are no longer in the memory pool or relay set.
-  * Nodes may also have pruned spent transactions from older blocks, making them unable to send those blocks.)
+/** The notfound message is a reply to a getdata message which requested an
+  * object the receiving node does not have available for relay. (Nodes are not
+  * expected to relay historic transactions which are no longer in the memory
+  * pool or relay set. Nodes may also have pruned spent transactions from older
+  * blocks, making them unable to send those blocks.)
   *
-  * @see [[https://bitcoin.org/en/developer-reference#notfound]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#notfound]]
   */
 trait NotFoundMessage extends DataPayload with InventoryMessage {
   override def commandName = NetworkPayload.notFoundCommandName
   override def bytes: ByteVector = RawNotFoundMessageSerializer.write(this)
 }
 
-/** The companion object factory used to create NotFoundMessages on the p2p network
+/** The companion object factory used to create NotFoundMessages on the p2p
+  * network
   *
-  * @see https://bitcoin.org/en/developer-reference#notfound
+  * @see
+  *   https://bitcoin.org/en/developer-reference#notfound
   */
 object NotFoundMessage extends Factory[NotFoundMessage] {
 
@@ -455,8 +486,10 @@ object NotFoundMessage extends Factory[NotFoundMessage] {
 
 /** The tx message transmits a single transaction in the raw transaction format.
   * It can be sent in a variety of situations;
-  * @param transaction The transaction being sent over the wire
-  * @see [[https://bitcoin.org/en/developer-reference#tx]]
+  * @param transaction
+  *   The transaction being sent over the wire
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#tx]]
   */
 case class TransactionMessage(transaction: Transaction) extends DataPayload {
 
@@ -467,7 +500,8 @@ case class TransactionMessage(transaction: Transaction) extends DataPayload {
 }
 
 /** Companion factory object for the TransactionMessage on the p2p network
-  * @see https://bitcoin.org/en/developer-reference#tx
+  * @see
+  *   https://bitcoin.org/en/developer-reference#tx
   */
 object TransactionMessage extends Factory[TransactionMessage] {
 
@@ -482,13 +516,15 @@ sealed trait ControlPayload extends NetworkPayload
 
 sealed trait GossipAddrMessage extends ControlPayload
 
-/** The addr (IP address) message relays connection information for peers on the network.
-  * Each peer which wants to accept incoming connections creates an addr message providing its
-  * connection information and then sends that message to its peers unsolicited.
-  * Some of its peers send that information to their peers (also unsolicited),
-  * some of which further distribute it, allowing decentralized peer discovery for
-  * any program already on the network.
-  * @see [[https://bitcoin.org/en/developer-reference#addr]]
+/** The addr (IP address) message relays connection information for peers on the
+  * network. Each peer which wants to accept incoming connections creates an
+  * addr message providing its connection information and then sends that
+  * message to its peers unsolicited. Some of its peers send that information to
+  * their peers (also unsolicited), some of which further distribute it,
+  * allowing decentralized peer discovery for any program already on the
+  * network.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#addr]]
   */
 trait AddrMessage extends GossipAddrMessage {
   def ipCount: CompactSizeUInt
@@ -498,7 +534,8 @@ trait AddrMessage extends GossipAddrMessage {
 }
 
 /** The companion object for an AddrMessage
-  * @see https://bitcoin.org/en/developer-reference#addr
+  * @see
+  *   https://bitcoin.org/en/developer-reference#addr
   */
 object AddrMessage extends Factory[AddrMessage] {
 
@@ -522,10 +559,11 @@ object AddrMessage extends Factory[AddrMessage] {
 
 }
 
-/** addrV2 relays information about a peer. It supports many different
-  * address types and networks.
+/** addrV2 relays information about a peer. It supports many different address
+  * types and networks.
   *
-  * @see https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
+  * @see
+  *   https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
   */
 sealed trait AddrV2Message extends GossipAddrMessage {
   def time: UInt32
@@ -625,7 +663,8 @@ case class CJDNSAddrV2Message(
   override val networkId: Byte = AddrV2Message.CJDNS_NETWORK_BYTE
 }
 
-/** addrv2 message that contains an address from a network we do not understand */
+/** addrv2 message that contains an address from a network we do not understand
+  */
 case class UnknownNetworkAddrV2Message(
     time: UInt32,
     services: CompactSizeUInt,
@@ -638,8 +677,10 @@ case class UnknownNetworkAddrV2Message(
 }
 
 /** The companion object for an AddrV2Message
-  * @see https://developer.bitcoin.org/reference/p2p_networking.html#addrv2
-  * @see https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
+  * @see
+  *   https://developer.bitcoin.org/reference/p2p_networking.html#addrv2
+  * @see
+  *   https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
   */
 object AddrV2Message extends Factory[AddrV2Message] {
 
@@ -716,32 +757,37 @@ object AddrV2Message extends Factory[AddrV2Message] {
   }
 }
 
-/** Sending such a message indicates that a node can understand and
-  * prefers to receive addrv2 messages instead of addr messages.
-  * I.e. "Send me addrv2".sendaddrv2 SHOULD be sent after receiving the verack message from the peer.
-  * For older peers, that did not emit sendaddrv2, keep sending the legacy
-  * addr message, ignoring addresses with the newly introduced address types.
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki#signaling-support-and-compatibility]]
+/** Sending such a message indicates that a node can understand and prefers to
+  * receive addrv2 messages instead of addr messages. I.e. "Send me
+  * addrv2".sendaddrv2 SHOULD be sent after receiving the verack message from
+  * the peer. For older peers, that did not emit sendaddrv2, keep sending the
+  * legacy addr message, ignoring addresses with the newly introduced address
+  * types.
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki#signaling-support-and-compatibility]]
   */
 case object SendAddrV2Message extends ControlPayload {
   override val commandName: String = NetworkPayload.sendAddrV2CommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
-/** The feefilter message is a request to the receiving peer to not relay any transaction inv messages
-  * to the sending peer where the fee rate for the transaction is below the fee rate specified in the
-  * feefilter message.
+/** The feefilter message is a request to the receiving peer to not relay any
+  * transaction inv messages to the sending peer where the fee rate for the
+  * transaction is below the fee rate specified in the feefilter message.
   *
-  * feefilter was introduced in Bitcoin Core 0.13.0 following the introduction of mempool limiting in
-  * Bitcoin Core 0.12.0. Mempool limiting provides protection against attacks and spam transactions
-  * that have low fee rates and are unlikely to be included in mined blocks. The feefilter messages
-  * allows a node to inform its peers that it will not accept transactions below a specified fee rate
-  * into its mempool, and therefore that the peers can skip relaying inv messages for transactions below
-  * that fee rate to that node.
+  * feefilter was introduced in Bitcoin Core 0.13.0 following the introduction
+  * of mempool limiting in Bitcoin Core 0.12.0. Mempool limiting provides
+  * protection against attacks and spam transactions that have low fee rates and
+  * are unlikely to be included in mined blocks. The feefilter messages allows a
+  * node to inform its peers that it will not accept transactions below a
+  * specified fee rate into its mempool, and therefore that the peers can skip
+  * relaying inv messages for transactions below that fee rate to that node.
   */
 trait FeeFilterMessage extends ControlPayload {
 
-  /** The raw fee rate, in satoshis per kb. This is what is defined in the p2p message */
+  /** The raw fee rate, in satoshis per kb. This is what is defined in the p2p
+    * message
+    */
   def feeRate: SatoshisPerKiloByte
 
   def satPerByte: SatoshisPerByte = {
@@ -774,10 +820,11 @@ object FeeFilterMessage extends Factory[FeeFilterMessage] {
 }
 
 /** The filteradd message tells the receiving peer to add a single element to a
-  * previously-set bloom filter, such as a new public key.
-  * The element is sent directly to the receiving peer; the peer then uses the parameters
-  * set in the filterload message to add the element to the bloom filter.
-  * @see [[https://bitcoin.org/en/developer-reference#filteradd]]
+  * previously-set bloom filter, such as a new public key. The element is sent
+  * directly to the receiving peer; the peer then uses the parameters set in the
+  * filterload message to add the element to the bloom filter.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#filteradd]]
   */
 trait FilterAddMessage extends ControlPayload {
 
@@ -785,11 +832,11 @@ trait FilterAddMessage extends ControlPayload {
     */
   def elementSize: CompactSizeUInt
 
-  /** The element to add to the current filter.
-    * Maximum of 520 bytes, which is the maximum size of an element which can be pushed
-    * onto the stack in a pubkey or signature script.
-    * Elements must be sent in the byte order they would use when appearing in a raw transaction;
-    * for example, hashes should be sent in internal byte order.
+  /** The element to add to the current filter. Maximum of 520 bytes, which is
+    * the maximum size of an element which can be pushed onto the stack in a
+    * pubkey or signature script. Elements must be sent in the byte order they
+    * would use when appearing in a raw transaction; for example, hashes should
+    * be sent in internal byte order.
     */
   def element: ByteVector
 
@@ -798,7 +845,8 @@ trait FilterAddMessage extends ControlPayload {
   override def bytes: ByteVector = RawFilterAddMessageSerializer.write(this)
 }
 
-/** @see [[https://bitcoin.org/en/developer-reference#filteradd]]
+/** @see
+  *   [[https://bitcoin.org/en/developer-reference#filteradd]]
   */
 object FilterAddMessage extends Factory[FilterAddMessage] {
 
@@ -823,21 +871,25 @@ object FilterAddMessage extends Factory[FilterAddMessage] {
 
 }
 
-/** The filterclear message tells the receiving peer to remove a previously-set bloom filter.
-  * This also undoes the effect of setting the relay field in the version message to 0,
-  * allowing unfiltered access to inv messages announcing new transactions.
-  * @see [[https://bitcoin.org/en/developer-reference#filterclear]]
+/** The filterclear message tells the receiving peer to remove a previously-set
+  * bloom filter. This also undoes the effect of setting the relay field in the
+  * version message to 0, allowing unfiltered access to inv messages announcing
+  * new transactions.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#filterclear]]
   */
 case object FilterClearMessage extends ControlPayload {
   override val commandName = NetworkPayload.filterClearCommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
-/** The filterload message tells the receiving peer to filter all relayed transactions and
-  * requested merkle blocks through the provided filter.
-  * This allows clients to receive transactions relevant to their wallet plus a configurable
-  * rate of false positive transactions which can provide plausible-deniability privacy.
-  * @see [[https://bitcoin.org/en/developer-reference#filterload]]
+/** The filterload message tells the receiving peer to filter all relayed
+  * transactions and requested merkle blocks through the provided filter. This
+  * allows clients to receive transactions relevant to their wallet plus a
+  * configurable rate of false positive transactions which can provide
+  * plausible-deniability privacy.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#filterload]]
   */
 trait FilterLoadMessage extends ControlPayload {
 
@@ -849,7 +901,8 @@ trait FilterLoadMessage extends ControlPayload {
   override def bytes: ByteVector = RawFilterLoadMessageSerializer.write(this)
 }
 
-/** @see [[https://bitcoin.org/en/developer-reference#filterload]]
+/** @see
+  *   [[https://bitcoin.org/en/developer-reference#filterload]]
   */
 object FilterLoadMessage extends Factory[FilterLoadMessage] {
 
@@ -896,10 +949,12 @@ object FilterLoadMessage extends Factory[FilterLoadMessage] {
 }
 
 /** The getaddr message requests an addr message from the receiving node,
-  * preferably one with lots of IP addresses of other receiving nodes.
-  * The transmitting node can use those IP addresses to quickly update its
-  * database of available nodes rather than waiting for unsolicited addr messages to arrive over time.
-  * @see [[https://bitcoin.org/en/developer-reference#getaddr]]
+  * preferably one with lots of IP addresses of other receiving nodes. The
+  * transmitting node can use those IP addresses to quickly update its database
+  * of available nodes rather than waiting for unsolicited addr messages to
+  * arrive over time.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#getaddr]]
   */
 case object GetAddrMessage extends ControlPayload {
   override val commandName = NetworkPayload.getAddrCommandName
@@ -907,16 +962,17 @@ case object GetAddrMessage extends ControlPayload {
 }
 
 /** The ping message helps confirm that the receiving peer is still connected.
-  * If a TCP/IP error is encountered when sending the ping message (such as a connection timeout),
-  * the transmitting node can assume that the receiving node is disconnected.
-  * The response to a ping message is the pong message.
-  * @see [[https://bitcoin.org/en/developer-reference#ping]]
+  * If a TCP/IP error is encountered when sending the ping message (such as a
+  * connection timeout), the transmitting node can assume that the receiving
+  * node is disconnected. The response to a ping message is the pong message.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#ping]]
   */
 trait PingMessage extends ControlPayload {
 
-  /** Random nonce assigned to this ping message.
-    * The responding pong message will include this nonce
-    * to identify the ping message to which it is replying.
+  /** Random nonce assigned to this ping message. The responding pong message
+    * will include this nonce to identify the ping message to which it is
+    * replying.
     */
   def nonce: UInt64
 
@@ -936,14 +992,17 @@ object PingMessage extends Factory[PingMessage] {
   def apply(nonce: UInt64): PingMessage = PingMessageImpl(nonce)
 }
 
-/** The pong message replies to a ping message, proving to the pinging node that the ponging node is still alive.
-  * Bitcoin Core will, by default, disconnect from any clients which have not responded
-  * to a ping message within 20 minutes.
-  * @see [[https://bitcoin.org/en/developer-reference#pong]]
+/** The pong message replies to a ping message, proving to the pinging node that
+  * the ponging node is still alive. Bitcoin Core will, by default, disconnect
+  * from any clients which have not responded to a ping message within 20
+  * minutes.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#pong]]
   */
 trait PongMessage extends ControlPayload {
 
-  /** The nonce which is the nonce in the ping message the peer is responding too
+  /** The nonce which is the nonce in the ping message the peer is responding
+    * too
     */
   def nonce: UInt64
 
@@ -966,8 +1025,10 @@ object PongMessage extends Factory[PongMessage] {
   def apply(nonce: UInt64): PongMessage = PongMessageImpl(nonce)
 }
 
-/** The reject message informs the receiving node that one of its previous messages has been rejected.
-  * @see [[https://bitcoin.org/en/developer-reference#reject]]
+/** The reject message informs the receiving node that one of its previous
+  * messages has been rejected.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#reject]]
   */
 trait RejectMessage extends ControlPayload {
 
@@ -975,8 +1036,8 @@ trait RejectMessage extends ControlPayload {
     */
   def messageSize: CompactSizeUInt
 
-  /** The type of message rejected as ASCII text without null padding.
-    * For example: “tx”, “block”, or “version”.
+  /** The type of message rejected as ASCII text without null padding. For
+    * example: “tx”, “block”, or “version”.
     */
   def message: String
 
@@ -984,19 +1045,19 @@ trait RejectMessage extends ControlPayload {
     */
   def code: Char
 
-  /** The number of bytes in the following reason field.
-    * May be 0x00 if a text reason isn’t provided.
+  /** The number of bytes in the following reason field. May be 0x00 if a text
+    * reason isn’t provided.
     */
   def reasonSize: CompactSizeUInt
 
-  /** The reason for the rejection in ASCII text.
-    * This should not be displayed to the user; it is only for debugging purposes.
+  /** The reason for the rejection in ASCII text. This should not be displayed
+    * to the user; it is only for debugging purposes.
     */
   def reason: String
 
-  /** Optional additional data provided with the rejection.
-    * For example, most rejections of tx messages or block messages include
-    * the hash of the rejected transaction or block header. See the code table below.
+  /** Optional additional data provided with the rejection. For example, most
+    * rejections of tx messages or block messages include the hash of the
+    * rejected transaction or block header. See the code table below.
     */
   def extra: ByteVector
 
@@ -1005,7 +1066,8 @@ trait RejectMessage extends ControlPayload {
   override def bytes: ByteVector = RawRejectMessageSerializer.write(this)
 }
 
-/** @see [[https://bitcoin.org/en/developer-reference#reject]]
+/** @see
+  *   [[https://bitcoin.org/en/developer-reference#reject]]
   */
 object RejectMessage extends Factory[RejectMessage] {
 
@@ -1042,11 +1104,12 @@ object RejectMessage extends Factory[RejectMessage] {
   }
 }
 
-/** The sendheaders message tells the receiving peer to send new block announcements
-  * using a headers message rather than an inv message.
-  * There is no payload in a sendheaders message. See the message header section for an example
-  * of a message without a payload.
-  * @see [[https://bitcoin.org/en/developer-reference#sendheaders]]
+/** The sendheaders message tells the receiving peer to send new block
+  * announcements using a headers message rather than an inv message. There is
+  * no payload in a sendheaders message. See the message header section for an
+  * example of a message without a payload.
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#sendheaders]]
   */
 case object SendHeadersMessage extends ControlPayload {
   override def commandName = NetworkPayload.sendHeadersCommandName
@@ -1054,17 +1117,19 @@ case object SendHeadersMessage extends ControlPayload {
 }
 
 /** The verack message acknowledges a previously-received version message,
-  * informing the connecting node that it can begin to send other messages.
-  * The verack message has no payload; for an example of a message with no payload,
+  * informing the connecting node that it can begin to send other messages. The
+  * verack message has no payload; for an example of a message with no payload,
   * see the message headers section.
-  * @see [[https://bitcoin.org/en/developer-reference#verack]]
+  * @see
+  *   [[https://bitcoin.org/en/developer-reference#verack]]
   */
 case object VerAckMessage extends ControlPayload {
   override val commandName = NetworkPayload.verAckCommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfilters BIP157]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfilters BIP157]]
   */
 case class GetCompactFiltersMessage(
     filterType: FilterType,
@@ -1093,7 +1158,8 @@ object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {
                                  stopHash)
 }
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfilter BIP157]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfilter BIP157]]
   */
 case class CompactFilterMessage(
     filterType: FilterType,
@@ -1130,9 +1196,11 @@ object CompactFilterMessage extends Factory[CompactFilterMessage] {
 
 }
 
-/** `getcfheaders` is used to request verifiable filter headers for a range of blocks
+/** `getcfheaders` is used to request verifiable filter headers for a range of
+  * blocks
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfheaders BIP157]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfheaders BIP157]]
   */
 case class GetCompactFilterHeadersMessage(
     filterType: FilterType,
@@ -1153,8 +1221,8 @@ object GetCompactFilterHeadersMessage
   def apply(
       startHeight: Int,
       stopHash: DoubleSha256Digest,
-      filterType: FilterType =
-        FilterType.Basic): GetCompactFilterHeadersMessage = {
+      filterType: FilterType = FilterType.Basic)
+      : GetCompactFilterHeadersMessage = {
     new GetCompactFilterHeadersMessage(filterType,
                                        UInt32(startHeight),
                                        stopHash)
@@ -1164,15 +1232,16 @@ object GetCompactFilterHeadersMessage
     RawGetCompactFilterHeadersMessageSerializer.read(bytes)
 }
 
-/** `cfheaders` is sent in response to `getcfheaders`. Instead of including
-  * the filter headers themselves, the response includes one filter header
-  * and a sequence of filter hashes, from which the headers can be derived.
-  * This has the benefit that the client can verify the binding links
-  * between the headers.
+/** `cfheaders` is sent in response to `getcfheaders`. Instead of including the
+  * filter headers themselves, the response includes one filter header and a
+  * sequence of filter hashes, from which the headers can be derived. This has
+  * the benefit that the client can verify the binding links between the
+  * headers.
   *
   * TODO: doc on params
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders BIP157]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders BIP157]]
   */
 case class CompactFilterHeadersMessage(
     filterType: FilterType,
@@ -1219,7 +1288,8 @@ object CompactFilterHeadersMessage
     RawCompactFilterHeadersMessageSerializer.read(bytes)
 }
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfcheckpt BIP157]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfcheckpt BIP157]]
   */
 case class GetCompactFilterCheckPointMessage(
     filterType: FilterType,
@@ -1242,7 +1312,8 @@ object GetCompactFilterCheckPointMessage
     RawGetCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157 ]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157]]
   */
 case class CompactFilterCheckPointMessage(
     filterType: FilterType,
@@ -1279,55 +1350,61 @@ object CompactFilterCheckPointMessage
 }
 
 /** The version message provides information about the transmitting node to the
-  * receiving node at the beginning of a connection.
-  * Until both peers have exchanged version messages, no other messages will be accepted.
-  * If a version message is accepted, the receiving node should send a verack message—but
-  * no node should send a verack message before initializing its half of the connection
-  * by first sending a version message.
+  * receiving node at the beginning of a connection. Until both peers have
+  * exchanged version messages, no other messages will be accepted. If a version
+  * message is accepted, the receiving node should send a verack message—but no
+  * node should send a verack message before initializing its half of the
+  * connection by first sending a version message.
   * [[https://bitcoin.org/en/developer-reference#version]]
   */
 trait VersionMessage extends ControlPayload {
 
-  /** The highest protocol version understood by the transmitting node. See the protocol version section.
+  /** The highest protocol version understood by the transmitting node. See the
+    * protocol version section.
     */
   def version: ProtocolVersion
 
-  /** The services supported by the transmitting node encoded as a bitfield. See the list of service codes below.
+  /** The services supported by the transmitting node encoded as a bitfield. See
+    * the list of service codes below.
     */
   def services: ServiceIdentifier
 
   /** The current Unix epoch time according to the transmitting node’s clock.
-    * Because nodes will reject blocks with timestamps more than two hours in the future,
-    * this field can help other nodes to determine that their clock is wrong.
+    * Because nodes will reject blocks with timestamps more than two hours in
+    * the future, this field can help other nodes to determine that their clock
+    * is wrong.
     */
   def timestamp: Int64
 
-  /** The services supported by the receiving node as perceived by the transmitting node.
-    * Same format as the ‘services’ field above.
-    * Bitcoin Core will attempt to provide accurate information. BitcoinJ will, by default, always send 0.
+  /** The services supported by the receiving node as perceived by the
+    * transmitting node. Same format as the ‘services’ field above. Bitcoin Core
+    * will attempt to provide accurate information. BitcoinJ will, by default,
+    * always send 0.
     */
   def addressReceiveServices: ServiceIdentifier
 
-  /** The IPv6 address of the receiving node as perceived by the transmitting node in big endian byte order.
-    * IPv4 addresses can be provided as IPv4-mapped IPv6 addresses.
-    * Bitcoin Core will attempt to provide accurate information
-    * BitcoinJ will, by default, always return ::ffff:127.0.0.1
-    * This is the network address of the node receiving this message
+  /** The IPv6 address of the receiving node as perceived by the transmitting
+    * node in big endian byte order. IPv4 addresses can be provided as
+    * IPv4-mapped IPv6 addresses. Bitcoin Core will attempt to provide accurate
+    * information BitcoinJ will, by default, always return ::ffff:127.0.0.1 This
+    * is the network address of the node receiving this message
     */
   def addressReceiveIpAddress: InetAddress
 
-  /** The port number of the receiving node as perceived by the transmitting node in big endian byte order.
+  /** The port number of the receiving node as perceived by the transmitting
+    * node in big endian byte order.
     */
   def addressReceivePort: Int
 
-  /** The services supported by the transmitting node. Should be identical to the ‘services’ field above.
+  /** The services supported by the transmitting node. Should be identical to
+    * the ‘services’ field above.
     */
   def addressTransServices: ServiceIdentifier
 
-  /** The IPv6 address of the transmitting node in big endian byte order.
-    * IPv4 addresses can be provided as IPv4-mapped IPv6 addresses.
-    * Set to ::ffff:127.0.0.1 if unknown.
-    * This is the network address of the node emitting this message
+  /** The IPv6 address of the transmitting node in big endian byte order. IPv4
+    * addresses can be provided as IPv4-mapped IPv6 addresses. Set to
+    * ::ffff:127.0.0.1 if unknown. This is the network address of the node
+    * emitting this message
     */
   def addressTransIpAddress: InetAddress
 
@@ -1335,14 +1412,15 @@ trait VersionMessage extends ControlPayload {
     */
   def addressTransPort: Int
 
-  /** A random nonce which can help a node detect a connection to itself.
-    * If the nonce is 0, the nonce field is ignored.
-    * If the nonce is anything else, a node should terminate the connection on receipt
-    * of a version message with a nonce it previously sent.
+  /** A random nonce which can help a node detect a connection to itself. If the
+    * nonce is 0, the nonce field is ignored. If the nonce is anything else, a
+    * node should terminate the connection on receipt of a version message with
+    * a nonce it previously sent.
     */
   def nonce: UInt64
 
-  /** Number of bytes in following user_agent field. If 0x00, no user agent field is sent.
+  /** Number of bytes in following user_agent field. If 0x00, no user agent
+    * field is sent.
     */
   def userAgentSize: CompactSizeUInt
 
@@ -1350,14 +1428,15 @@ trait VersionMessage extends ControlPayload {
     */
   def userAgent: String
 
-  /** The height of the transmitting node’s best block chain or,
-    * in the case of an SPV client, best block header chain.
+  /** The height of the transmitting node’s best block chain or, in the case of
+    * an SPV client, best block header chain.
     */
   def startHeight: Int32
 
-  /** Transaction relay flag. If 0x00, no inv messages or tx messages announcing new transactions
-    * should be sent to this client until it sends a filterload message or filterclear message.
-    * If 0x01, this node wants inv messages and tx messages announcing new transactions.
+  /** Transaction relay flag. If 0x00, no inv messages or tx messages announcing
+    * new transactions should be sent to this client until it sends a filterload
+    * message or filterclear message. If 0x01, this node wants inv messages and
+    * tx messages announcing new transactions.
     */
   def relay: Boolean
 
@@ -1372,7 +1451,8 @@ trait VersionMessage extends ControlPayload {
 
 }
 
-/** @see https://bitcoin.org/en/developer-reference#version
+/** @see
+  *   https://bitcoin.org/en/developer-reference#version
   */
 object VersionMessage extends Factory[VersionMessage] {
 
@@ -1502,11 +1582,12 @@ object NetworkPayload {
   private[core] val getCompactFilterCheckpointCommandName = "getcfcheckpt"
   private[core] val compactFilterCheckpointCommandName = "cfcheckpt"
 
-  /** Contains all the valid command names with their deserializer on the p2p protocol.
-    * These commands all have the null bytes appended to the end of the string as
-    * required by the network header specification.
+  /** Contains all the valid command names with their deserializer on the p2p
+    * protocol. These commands all have the null bytes appended to the end of
+    * the string as required by the network header specification.
     *
-    * @see [[https://bitcoin.org/en/developer-reference#message-headers]]
+    * @see
+    *   [[https://bitcoin.org/en/developer-reference#message-headers]]
     */
   val readers: Map[String, ByteVector => NetworkPayload] = Map(
     blockCommandName -> RawBlockMessageSerializer.read,
@@ -1556,15 +1637,17 @@ object NetworkPayload {
   /** All command names for P2P messages */
   val commandNames: Vector[String] = readers.keys.toVector
 
-  /** Parses a [[NetworkPayload]] from the given bytes using the [[NetworkHeader]]
-    * to determine what type of [[NetworkPayload]] this is
-    * @param networkHeader the header for the message on the p2p network
-    * @param payloadBytes the payload corresponding to the header on the p2p network
+  /** Parses a [[NetworkPayload]] from the given bytes using the
+    * [[NetworkHeader]] to determine what type of [[NetworkPayload]] this is
+    * @param networkHeader
+    *   the header for the message on the p2p network
+    * @param payloadBytes
+    *   the payload corresponding to the header on the p2p network
     */
   def apply(
       networkHeader: NetworkHeader,
       payloadBytes: ByteVector): NetworkPayload = {
-    //the commandName in the network header tells us what payload type this is
+    // the commandName in the network header tells us what payload type this is
     val deserializer: ByteVector => NetworkPayload = readers(
       networkHeader.commandName)
     deserializer(payloadBytes)
@@ -1572,8 +1655,10 @@ object NetworkPayload {
 
   /** Parses a [[NetworkPayload]] from the given hex using the [[NetworkHeader]]
     * to determine what type of [[NetworkPayload]] this is
-    * @param networkHeader the header for the message on the p2p network
-    * @param payloadHex the hexadecimal representation of the payload
+    * @param networkHeader
+    *   the header for the message on the p2p network
+    * @param payloadHex
+    *   the hexadecimal representation of the payload
     */
   def apply(
       networkHeader: NetworkHeader,

@@ -222,8 +222,8 @@ case class GetBlockHeaderResult(
 
   def blockHeader: BlockHeader = {
 
-    //prevblockhash is only empty if we have the genesis block
-    //we assume the prevhash of the gensis block is the empty hash
+    // prevblockhash is only empty if we have the genesis block
+    // we assume the prevhash of the gensis block is the empty hash
     val prevHash = {
       if (height == 0 && previousblockhash.isEmpty) {
         DoubleSha256DigestBE.empty

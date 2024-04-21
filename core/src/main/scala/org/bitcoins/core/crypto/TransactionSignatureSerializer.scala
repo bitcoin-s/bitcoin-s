@@ -12,24 +12,24 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-/** Created by chris on 2/16/16.
-  * Wrapper that serializes like Transaction, but with the modifications
-  * required for the signature hash done
+/** Created by chris on 2/16/16. Wrapper that serializes like Transaction, but
+  * with the modifications required for the signature hash done
   * [[https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105]]
   * bitcoinj version of this
   * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
   */
 sealed abstract class TransactionSignatureSerializer {
 
-  /** Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
-    * actually returns the constant "1" to indicate an error
+  /** Bitcoin Core's bug is that SignatureHash was supposed to return a hash and
+    * on this codepath it actually returns the constant "1" to indicate an error
     */
   private lazy val errorHash: DoubleSha256Digest = DoubleSha256Digest(
     BytesUtil.decodeHex(
       "0100000000000000000000000000000000000000000000000000000000000000"))
 
-  /** Implements the signature serialization algorithim that Satoshi Nakamoto originally created
-    * and the new signature serialization algorithm as specified by
+  /** Implements the signature serialization algorithim that Satoshi Nakamoto
+    * originally created and the new signature serialization algorithm as
+    * specified by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
     */
@@ -92,7 +92,7 @@ sealed abstract class TransactionSignatureSerializer {
           NonStandardScriptSignature(s.compactSizeUInt.hex),
           input.sequence)
 
-        //make sure all scriptSigs have empty asm
+        // make sure all scriptSigs have empty asm
         inputSigsRemoved.foreach(input =>
           require(input.scriptSignature.asm.isEmpty,
                   "Input asm was not empty " + input.scriptSignature.asm))
@@ -119,7 +119,7 @@ sealed abstract class TransactionSignatureSerializer {
           scriptSig,
           inputToSign.sequence)
 
-        //update the input at index i with inputWithConnectScript
+        // update the input at index i with inputWithConnectScript
         val updatedInputs = for {
           (input, index) <- inputSigsRemoved.zipWithIndex
         } yield {
@@ -363,7 +363,7 @@ sealed abstract class TransactionSignatureSerializer {
 
           } else {
             if (isSigHashAllAnyoneCanPay) {
-              //different ordering if we use SIGHASH_ANYONECANPAY
+              // different ordering if we use SIGHASH_ANYONECANPAY
               epoch ++ ByteVector
                 .fromByte(
                   hashType.byte) ++ version ++ locktimeBytes ++ outputHash ++
@@ -371,7 +371,7 @@ sealed abstract class TransactionSignatureSerializer {
                   spendType) ++ outPointHash ++ amounts ++ spentSPKs ++
                 sequenceHash ++ annexBytes ++ tapScriptBytes
             } else {
-              //different ordering if we use SIGHASH_ANYONECANPAY
+              // different ordering if we use SIGHASH_ANYONECANPAY
               epoch ++ ByteVector.fromByte(
                 hashType.byte) ++ version ++ locktimeBytes ++ ByteVector
                 .fromByte(spendType) ++
@@ -384,9 +384,9 @@ sealed abstract class TransactionSignatureSerializer {
     }
   }
 
-  /** Hashes a [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]] to give the value that needs to be signed
-    * by a [[Sign Sign]] to
-    * produce a valid [[ECDigitalSignature ECDigitalSignature]] for a transaction
+  /** Hashes a [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]] to
+    * give the value that needs to be signed by a [[Sign Sign]] to produce a
+    * valid [[ECDigitalSignature ECDigitalSignature]] for a transaction
     */
   def hashForSignature(
       txSigComponent: TxSigComponent,
@@ -422,8 +422,9 @@ sealed abstract class TransactionSignatureSerializer {
     }
   }
 
-  /** Implements the signature serialization algorithm that Satoshi Nakamoto originally created
-    * and the new signature serialization algorithm as specified by
+  /** Implements the signature serialization algorithm that Satoshi Nakamoto
+    * originally created and the new signature serialization algorithm as
+    * specified by
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
     */
@@ -454,9 +455,12 @@ sealed abstract class TransactionSignatureSerializer {
                           taprootOptions = taprootOptions)
   }
 
-  /** Hashes a [[org.bitcoins.core.wallet.utxo.InputSigningInfo InputSigningInfo]] to give the value that needs to be signed
-    * by a [[org.bitcoins.crypto.Sign Sign]] to
-    * produce a valid [[org.bitcoins.crypto.ECDigitalSignature ECDigitalSignature]] for a transaction
+  /** Hashes a
+    * [[org.bitcoins.core.wallet.utxo.InputSigningInfo InputSigningInfo]] to
+    * give the value that needs to be signed by a
+    * [[org.bitcoins.crypto.Sign Sign]] to produce a valid
+    * [[org.bitcoins.crypto.ECDigitalSignature ECDigitalSignature]] for a
+    * transaction
     */
   def hashForSignature(
       spendingTransaction: Transaction,
@@ -485,7 +489,9 @@ sealed abstract class TransactionSignatureSerializer {
     }
   }
 
-  /** Sets the input's sequence number to zero EXCEPT for the input at inputIndex. */
+  /** Sets the input's sequence number to zero EXCEPT for the input at
+    * inputIndex.
+    */
   private def setSequenceNumbersZero(
       inputs: Seq[TransactionInput],
       inputIndex: UInt32): Seq[TransactionInput] =
@@ -499,23 +505,23 @@ sealed abstract class TransactionSignatureSerializer {
                          UInt32.zero)
     }
 
-  /** Executes the [[SIGHASH_NONE SIGHASH_NONE]]
-    * procedure on a spending transaction for the input specified by inputIndex.
+  /** Executes the [[SIGHASH_NONE SIGHASH_NONE]] procedure on a spending
+    * transaction for the input specified by inputIndex.
     */
   private def sigHashNone(
       spendingTransaction: Transaction,
       inputIndex: UInt32): Transaction = {
-    //following this implementation from bitcoinj
-    //[[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957]]
-    //means that no outputs are signed at all
-    //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
+    // following this implementation from bitcoinj
+    // [[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957]]
+    // means that no outputs are signed at all
+    // set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
     val updatedInputs: Seq[TransactionInput] =
       setSequenceNumbersZero(spendingTransaction.inputs, inputIndex)
     val sigHashNoneTx = BaseTransaction(spendingTransaction.version,
                                         updatedInputs,
                                         Nil,
                                         spendingTransaction.lockTime)
-    //append hash type byte onto the end of the tx bytes
+    // append hash type byte onto the end of the tx bytes
     sigHashNoneTx
   }
 
@@ -525,8 +531,8 @@ sealed abstract class TransactionSignatureSerializer {
   private def sigHashSingle(
       spendingTransaction: Transaction,
       inputIndex: UInt32): Transaction = {
-    //following this implementation from bitcoinj
-    //[[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964]]
+    // following this implementation from bitcoinj
+    // [[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964]]
     // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
     // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
     val updatedOutputsOpt: Seq[Option[TransactionOutput]] = for {
@@ -539,8 +545,8 @@ sealed abstract class TransactionSignatureSerializer {
     }
     val updatedOutputs: Seq[TransactionOutput] = updatedOutputsOpt.flatten
 
-    //create blank inputs with sequence numbers set to zero EXCEPT
-    //the input at the inputIndex
+    // create blank inputs with sequence numbers set to zero EXCEPT
+    // the input at the inputIndex
     val updatedInputs: Seq[TransactionInput] =
       setSequenceNumbersZero(spendingTransaction.inputs, inputIndex)
     val sigHashSingleTx = BaseTransaction(spendingTransaction.version,
@@ -557,8 +563,8 @@ sealed abstract class TransactionSignatureSerializer {
     spendingTransaction
   }
 
-  /** Executes the [[SIGHASH_ANYONECANPAY SIGHASH_ANYONECANPAY]] procedure
-    * on a spending transaction at inputIndex.
+  /** Executes the [[SIGHASH_ANYONECANPAY SIGHASH_ANYONECANPAY]] procedure on a
+    * spending transaction at inputIndex.
     */
   private def sigHashAnyoneCanPay(
       spendingTransaction: Transaction,
@@ -569,7 +575,8 @@ sealed abstract class TransactionSignatureSerializer {
                     spendingTransaction.lockTime)
   }
 
-  /** Removes [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
+  /** Removes
+    * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
     * operations then returns the script.
     */
   def removeOpCodeSeparators(script: Seq[ScriptToken]): Seq[ScriptToken] = {

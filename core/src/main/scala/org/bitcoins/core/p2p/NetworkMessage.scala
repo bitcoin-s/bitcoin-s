@@ -30,9 +30,13 @@ object NetworkMessage extends Factory[NetworkMessage] {
   def fromBytes(bytes: ByteVector): NetworkMessage =
     RawNetworkMessageSerializer.read(bytes)
 
-  /** Creates a network message from it's [[NetworkHeader]] and [[NetworkPayload]]
-    * @param header the [[NetworkHeader]] which is being sent across the network
-    * @param payload the [[NetworkPayload]] which contains the information being sent across the network
+  /** Creates a network message from it's [[NetworkHeader]] and
+    * [[NetworkPayload]]
+    * @param header
+    *   the [[NetworkHeader]] which is being sent across the network
+    * @param payload
+    *   the [[NetworkPayload]] which contains the information being sent across
+    *   the network
     * @return
     */
   def apply(header: NetworkHeader, payload: NetworkPayload): NetworkMessage = {
@@ -40,8 +44,11 @@ object NetworkMessage extends Factory[NetworkMessage] {
   }
 
   /** Creates a [[NetworkMessage]] out of it's [[NetworkPayload]]
-    * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] indicating the network which the message is going to be sent on
-    * @param payload the payload that needs to be sent across the network
+    * @param network
+    *   the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
+    *   indicating the network which the message is going to be sent on
+    * @param payload
+    *   the payload that needs to be sent across the network
     * @return
     */
   def apply(

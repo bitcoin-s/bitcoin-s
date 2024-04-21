@@ -49,8 +49,8 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     MuSigNoncePriv(privs)
   }
 
-  /** Generates a MuSigNoncePriv given 32 bytes of entropy from preRand,
-    * and possibly some other sources, as specified in the BIP.
+  /** Generates a MuSigNoncePriv given 32 bytes of entropy from preRand, and
+    * possibly some other sources, as specified in the BIP.
     */
   def genInternal(
       preRand: ByteVector,

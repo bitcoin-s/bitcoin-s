@@ -382,7 +382,9 @@ object DLCHyperbolaPayoutCurvePiece {
   }
 }
 
-/** A single piece of a larger piecewise function defined between left and right endpoints */
+/** A single piece of a larger piecewise function defined between left and right
+  * endpoints
+  */
 sealed trait DLCPolynomialPayoutCurvePiece
     extends DLCPayoutCurvePiece
     with TLVSerializable[PolynomialPayoutCurvePieceTLV] {
@@ -465,7 +467,9 @@ case class OutcomePayoutConstant(
     bigDecimalSats(leftEndpoint.payout)
 }
 
-/** A Line between left and right endpoints defining a piece of a larger payout curve */
+/** A Line between left and right endpoints defining a piece of a larger payout
+  * curve
+  */
 case class OutcomePayoutLine(
     leftEndpoint: OutcomePayoutPoint,
     rightEndpoint: OutcomePayoutPoint)
@@ -484,8 +488,9 @@ case class OutcomePayoutLine(
   }
 }
 
-/** A quadratic between left and right endpoints defining a piece of a larger payout curve.
-  * A quadratic equation defines a parabola: https://en.wikipedia.org/wiki/Quadratic_function
+/** A quadratic between left and right endpoints defining a piece of a larger
+  * payout curve. A quadratic equation defines a parabola:
+  * https://en.wikipedia.org/wiki/Quadratic_function
   */
 case class OutcomePayoutQuadratic(
     leftEndpoint: OutcomePayoutPoint,
@@ -518,7 +523,9 @@ case class OutcomePayoutQuadratic(
   }
 }
 
-/** A cubic between left and right endpoints defining a piece of a larger payout curve */
+/** A cubic between left and right endpoints defining a piece of a larger payout
+  * curve
+  */
 case class OutcomePayoutCubic(
     leftEndpoint: OutcomePayoutPoint,
     leftMidpoint: OutcomePayoutPoint,
@@ -564,7 +571,9 @@ case class OutcomePayoutCubic(
   }
 }
 
-/** A polynomial interpolating points and defining a piece of a larger payout curve */
+/** A polynomial interpolating points and defining a piece of a larger payout
+  * curve
+  */
 case class OutcomePayoutPolynomial(
     override val points: Vector[OutcomePayoutPoint])
     extends DLCPolynomialPayoutCurvePiece {

@@ -6,8 +6,10 @@ trait StackPushOperationFactory {
 
   /** Determines if the given token is a stack push operation
     *
-    * @param token the token to be checked to see if it is a stack push operation
-    * @return a boolean indicating if the given token was a stack push operation
+    * @param token
+    *   the token to be checked to see if it is a stack push operation
+    * @return
+    *   a boolean indicating if the given token was a stack push operation
     */
   def isPushOperation(token: ScriptToken): Boolean = operations.contains(token)
 

@@ -1474,7 +1474,7 @@ object CreateContractInfo extends ServerJsonModels {
           val announcementTLV =
             OracleAnnouncementTLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
-          //validate that these are part of the announcement?
+          // validate that these are part of the announcement?
           val contractDescriptor =
             ContractDescriptorParser.parseCmdLine(payoutsVal, announcementTLV)
 

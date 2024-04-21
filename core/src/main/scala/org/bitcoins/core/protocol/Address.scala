@@ -30,7 +30,9 @@ sealed abstract class Address {
     */
   def hash: HashDigest
 
-  /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] the address represents */
+  /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] the
+    * address represents
+    */
   def scriptPubKey: ScriptPubKey
 
   override def toString: String = value
@@ -40,7 +42,8 @@ sealed abstract class Address {
   /** Checks if the address currently follows the standardness rules of bitcoin
     * and will be relayed by network.
     *
-    * Currently this just means verifying the address is not of a [[UnassignedWitnessScriptPubKey]]
+    * Currently this just means verifying the address is not of a
+    * [[UnassignedWitnessScriptPubKey]]
     */
   def isStandard: Boolean
 }
@@ -138,7 +141,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   def apply(
       witSPK: WitnessScriptPubKey,
       networkParameters: NetworkParameters): Bech32Address = {
-    //we don't encode the wit version or pushop for program into base5
+    // we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32.from8bitTo5bit(prog)
     val witVersion = witSPK.witnessVersion.version.toInt.toByte
@@ -191,7 +194,10 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     }
   }
 
-  /** Decodes bech32 string to the [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] & data part */
+  /** Decodes bech32 string to the
+    * [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] &
+    * data part
+    */
   override def fromString(bech32: String): Bech32Address = {
     val bech32T = for {
       (hrp, data) <- Bech32.splitToHrpAndData(bech32, Bech32Encoding.Bech32)
@@ -284,7 +290,7 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
   def apply(
       witSPK: WitnessScriptPubKey,
       networkParameters: NetworkParameters): Bech32mAddress = {
-    //we don't encode the wit version or pushop for program into base5
+    // we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32.from8bitTo5bit(prog)
     val witVersion = witSPK.witnessVersion.version.toInt.toByte
@@ -336,7 +342,10 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
     }
   }
 
-  /** Decodes bech32 string to the [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] & data part */
+  /** Decodes bech32 string to the
+    * [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] &
+    * data part
+    */
   override def fromString(bech32m: String): Bech32mAddress = {
     val bech32T = for {
       (hrp, data) <- Bech32.splitToHrpAndData(bech32m, Bech32Encoding.Bech32m)
@@ -456,9 +465,12 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
       networkParameters: NetworkParameters)
       extends P2SHAddress
 
-  /** Creates a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] from the given
-    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]],
-    * then creates an address from that [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
+  /** Creates a
+    * [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
+    * from the given
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]], then
+    * creates an address from that
+    * [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
     */
   def apply(
       scriptPubKey: ScriptPubKey,
@@ -529,7 +541,9 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 
 object BitcoinAddress extends AddressFactory[BitcoinAddress] {
 
-  /** Creates a [[org.bitcoins.core.protocol.BitcoinAddress BitcoinAddress]] from the given string value */
+  /** Creates a [[org.bitcoins.core.protocol.BitcoinAddress BitcoinAddress]]
+    * from the given string value
+    */
   def apply(value: String): BitcoinAddress = fromString(value)
 
   override def fromString(value: String): BitcoinAddress = {

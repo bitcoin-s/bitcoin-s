@@ -4,8 +4,8 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.util.{Failure, Success, Try}
 
-/** Trait that should be extended by specific runtimes like javascript
-  * or the JVM to support crypto functions needed for bitcoin-s
+/** Trait that should be extended by specific runtimes like javascript or the
+  * JVM to support crypto functions needed for bitcoin-s
   */
 trait CryptoRuntime {
 
@@ -15,8 +15,10 @@ trait CryptoRuntime {
   def freshPrivateKey: ECPrivateKey
 
   /** Converts a private key -> public key
-    * @param privateKey the private key we want the corresponding public key for
-    * @param isCompressed whether the returned public key should be compressed or not
+    * @param privateKey
+    *   the private key we want the corresponding public key for
+    * @param isCompressed
+    *   whether the returned public key should be compressed or not
     */
   def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey
 
@@ -148,13 +150,19 @@ trait CryptoRuntime {
     sha256(dlcAnnouncementTagBytes ++ bytes)
   }
 
-  /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
-    * can be verified with both, but only one of them matches that private key that was used to generate the signature.
+  /** Recover public keys from a signature and the message that was signed. This
+    * method will return 2 public keys, and the signature can be verified with
+    * both, but only one of them matches that private key that was used to
+    * generate the signature.
     *
-    * @param signature       signature
-    * @param message message that was signed
-    * @return a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If you have the recovery id  then use
-    *         pub1 if the recovery id is even and pub2 if it is odd
+    * @param signature
+    *   signature
+    * @param message
+    *   message that was signed
+    * @return
+    *   a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If
+    *   you have the recovery id then use pub1 if the recovery id is even and
+    *   pub2 if it is odd
     */
   def recoverPublicKey(
       signature: ECDigitalSignature,
@@ -251,7 +259,9 @@ trait CryptoRuntime {
     sum.bytes
   }
 
-  /** Adds two SecpPoints together and correctly handles the point at infinity (0x00). */
+  /** Adds two SecpPoints together and correctly handles the point at infinity
+    * (0x00).
+    */
   def add(point1: SecpPoint, point2: SecpPoint): SecpPoint = {
     (point1, point2) match {
       case (SecpPointInfinity, p) => p
@@ -270,11 +280,13 @@ trait CryptoRuntime {
     }
   }
 
-  /** Adds two public keys together, failing if the sum is 0x00 (the point at infinity). */
+  /** Adds two public keys together, failing if the sum is 0x00 (the point at
+    * infinity).
+    */
   def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
 
-  /** Adds a Vector of public keys together, failing only if the total sum is 0x00
-    * (the point at infinity), but still succeeding if sub-sums are 0x00.
+  /** Adds a Vector of public keys together, failing only if the total sum is
+    * 0x00 (the point at infinity), but still succeeding if sub-sums are 0x00.
     */
   def combinePubKeys(
       pubKeys: Vector[ECPublicKey],
@@ -414,7 +426,8 @@ trait CryptoRuntime {
   def isDEREncoded(signature: ECDigitalSignature): Boolean =
     DERSignatureUtil.isDEREncoded(signature)
 
-  /** https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects */
+  /** https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects
+    */
   def sipHash(item: ByteVector, key: SipHashKey): Long
 
   def pbkdf2WithSha512(
@@ -436,19 +449,18 @@ trait CryptoRuntime {
 
   def randomBytes(n: Int): ByteVector
 
-  /** Implements basic sanity tests for checking entropy like
-    * making sure it isn't all the same bytes,
-    * it isn't all 0x00...00
-    * or it isn't all 0xffff...fff
+  /** Implements basic sanity tests for checking entropy like making sure it
+    * isn't all the same bytes, it isn't all 0x00...00 or it isn't all
+    * 0xffff...fff
     */
   def checkEntropy(bitVector: BitVector): Boolean = {
     val byteArr = bitVector.toByteArray
     if (bitVector.length < 128) {
-      //not enough entropy
+      // not enough entropy
       false
     } else if (byteArr.toSet.size == 1) {
-      //means all byte were the same
-      //we need more diversity with entropy
+      // means all byte were the same
+      // we need more diversity with entropy
       false
     } else {
       true

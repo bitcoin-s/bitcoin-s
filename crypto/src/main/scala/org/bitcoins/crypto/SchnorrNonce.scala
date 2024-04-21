@@ -38,9 +38,8 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
     ECPrivateKey(nonceHash.bytes).nonceKey
   }
 
-  /** Computes the bip-schnorr nonce for a given message and private key.
-    * This is intended to ensure that no two messages are signed with the
-    * same nonce.
+  /** Computes the bip-schnorr nonce for a given message and private key. This
+    * is intended to ensure that no two messages are signed with the same nonce.
     */
   def fromBipSchnorr(
       privKey: ECPrivateKey,

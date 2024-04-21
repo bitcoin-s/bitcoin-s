@@ -5,7 +5,9 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.Try
 
-/** Represents the x-coordinate of an ECPublicKey, with undetermined y-coordinate parity */
+/** Represents the x-coordinate of an ECPublicKey, with undetermined
+  * y-coordinate parity
+  */
 case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
   require(bytes.length == 32,
           s"x-only public keys must be 32 bytes, got $bytes")
@@ -26,11 +28,17 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
 
   def coord: CurveCoordinate = CurveCoordinate(bytes)
 
-  /** @see https://github.com/bitcoin/bitcoin/blob/3340d46cd363e568ce842b2a9930e30902d150ca/src/pubkey.cpp#L227
-    * @see https://github.com/bitcoin-core/secp256k1/blob/9a5a87e0f1276e0284446af1172056ea4693737f/src/modules/extrakeys/main_impl.h#L151
-    * @param pubKey the internal tapscript pubkey
-    * @param merkleRootOpt the merkle root of the tapscript tree, if empty means we have no scripts in the tapscript tree
-    * @param parity the expected parity of the public key reproduced
+  /** @see
+    *   https://github.com/bitcoin/bitcoin/blob/3340d46cd363e568ce842b2a9930e30902d150ca/src/pubkey.cpp#L227
+    * @see
+    *   https://github.com/bitcoin-core/secp256k1/blob/9a5a87e0f1276e0284446af1172056ea4693737f/src/modules/extrakeys/main_impl.h#L151
+    * @param pubKey
+    *   the internal tapscript pubkey
+    * @param merkleRootOpt
+    *   the merkle root of the tapscript tree, if empty means we have no scripts
+    *   in the tapscript tree
+    * @param parity
+    *   the expected parity of the public key reproduced
     * @return
     */
   def checkTapTweak(
@@ -45,9 +53,11 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
     this == add.toXOnly && add.parity.isOdd == parity
   }
 
-  /** @see https://github.com/bitcoin/bitcoin/blob/5174a139c92c1238f9700d06e362dc628d81a0a9/src/pubkey.cpp#L216
-    * @param merkleRootOpt if merkle root is empty we have no scripts.
-    * The actual tweak does not matter, but follow BIP341 here to
+  /** @see
+    *   https://github.com/bitcoin/bitcoin/blob/5174a139c92c1238f9700d06e362dc628d81a0a9/src/pubkey.cpp#L216
+    * @param merkleRootOpt
+    *   if merkle root is empty we have no scripts. The actual tweak does not
+    *   matter, but follow BIP341 here to
     *
     * @return
     */
@@ -62,8 +72,10 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
     }
   }
 
-  /** @see https://github.com/bitcoin/bitcoin/blob/bdb33ec51986570ea17406c83bad2c955ae23186/src/pubkey.cpp#L249
-    * @param merkleRootOpt if the merkle root is empty we have no scripts.
+  /** @see
+    *   https://github.com/bitcoin/bitcoin/blob/bdb33ec51986570ea17406c83bad2c955ae23186/src/pubkey.cpp#L249
+    * @param merkleRootOpt
+    *   if the merkle root is empty we have no scripts.
     * @return
     */
   def createTapTweak(

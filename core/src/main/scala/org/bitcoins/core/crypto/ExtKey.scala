@@ -32,15 +32,15 @@ sealed abstract class ExtKey extends NetworkElement {
   /** The fingerprint of the parent key */
   def fingerprint: ByteVector
 
-  /** Child number. This is ser32(i) for i in xi = xpar/i, with xi the key being serialized.
-    * (0x00000000 if master key)
+  /** Child number. This is ser32(i) for i in xi = xpar/i, with xi the key being
+    * serialized. (0x00000000 if master key)
     */
   def childNum: UInt32
 
-  /** In order to prevent these from depending solely on the key itself,
-    * we extend both private and public keys first with an extra 256 bits of entropy.
-    * This extension, called the chain code,
-    * is identical for corresponding private and public keys, and consists of 32 bytes.
+  /** In order to prevent these from depending solely on the key itself, we
+    * extend both private and public keys first with an extra 256 bits of
+    * entropy. This extension, called the chain code, is identical for
+    * corresponding private and public keys, and consists of 32 bytes.
     */
   def chainCode: ChainCode
 
@@ -62,8 +62,7 @@ sealed abstract class ExtKey extends NetworkElement {
     Try(UInt32(idx)).flatMap(deriveChildPubKey)
   }
 
-  /** Derives the child pubkey at the specified index and
-    * hardening value
+  /** Derives the child pubkey at the specified index and hardening value
     */
   def deriveChildPubKey(child: BIP32Node): Try[ExtPublicKey] = {
     deriveChildPubKey(child.toUInt32)
@@ -185,11 +184,12 @@ sealed abstract class ExtPrivateKey
   override def key: ECPrivateKey
 
   /** Derives the child key corresponding to the given path. The given path
-    * could signify account levels, one sublevel for each currency, or
-    * how to derive change addresses.
+    * could signify account levels, one sublevel for each currency, or how to
+    * derive change addresses.
     *
-    * @see [[org.bitcoins.core.hd.HDPath HDPath]] for a more
-    *      specialized version of a BIP32 path
+    * @see
+    *   [[org.bitcoins.core.hd.HDPath HDPath]] for a more specialized version of
+    *   a BIP32 path
     */
   def deriveChildPrivKey(path: BIP32Path): ExtPrivateKey = {
     path.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Node) =>
@@ -198,16 +198,16 @@ sealed abstract class ExtPrivateKey
 
   def deriveChildPrivKey(idx: UInt32): ExtPrivateKey = {
     val data: ByteVector = if (idx >= ExtKey.hardenedIdx) {
-      //derive hardened key
+      // derive hardened key
       hex"0" ++ key.bytes ++ idx.bytes
     } else {
-      //derive non hardened key
+      // derive non hardened key
       key.publicKey.bytes ++ idx.bytes
     }
     val hmac = CryptoUtil.hmac512(chainCode.bytes, data)
     val (il, ir) = hmac.splitAt(32)
-    //should be ECGroup addition
-    //parse256(IL) + kpar (mod n)
+    // should be ECGroup addition
+    // parse256(IL) + kpar (mod n)
     val tweak = CryptoUtil.add(il, key)
     val childKey = ECPrivateKey(tweak)
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
@@ -299,7 +299,9 @@ object ExtPrivateKey
     )
   }
 
-  /** Takes in a base58 string and tries to convert it to an extended private key */
+  /** Takes in a base58 string and tries to convert it to an extended private
+    * key
+    */
   override def fromStringT(base58: String): Try[ExtPrivateKey] =
     ExtKey.fromStringT(base58) match {
       case Success(priv: ExtPrivateKey) => Success(priv)
@@ -436,7 +438,9 @@ object ExtPrivateKeyHardened
     )
   }
 
-  /** Takes in a base58 string and tries to convert it to an extended private key */
+  /** Takes in a base58 string and tries to convert it to an extended private
+    * key
+    */
   override def fromStringT(base58: String): Try[ExtPrivateKeyHardened] =
     ExtPrivateKey.fromStringT(base58).map(_.toHardened)
 
@@ -486,10 +490,10 @@ sealed abstract class ExtPublicKey extends ExtKey {
       val priv = ECPrivateKey(il)
       val childPubKey = CryptoUtil.pubKeyTweakAdd(key, priv)
 
-      //we do not handle this case since it is impossible
-      //In case parse256(IL) ≥ n or Ki is the point at infinity, the resulting key is invalid,
-      //and one should proceed with the next value for i.
-      //https://botbot.me/freenode/bitcoin-wizards/2017-11-20/?tz=America/Chicago
+      // we do not handle this case since it is impossible
+      // In case parse256(IL) ≥ n or Ki is the point at infinity, the resulting key is invalid,
+      // and one should proceed with the next value for i.
+      // https://botbot.me/freenode/bitcoin-wizards/2017-11-20/?tz=America/Chicago
       val cc = ChainCode(ir)
       val fp = CryptoUtil.sha256Hash160(key.bytes).bytes.take(4)
       Success(
@@ -524,7 +528,8 @@ object ExtPublicKey
     ExtPublicKeyImpl(version, depth, fingerprint, child, chainCode, publicKey)
   }
 
-  /** Takes in a base58 string and tries to convert it to an extended public key */
+  /** Takes in a base58 string and tries to convert it to an extended public key
+    */
   override def fromStringT(base58: String): Try[ExtPublicKey] =
     ExtKey.fromStringT(base58) match {
       case Success(pub: ExtPublicKey) => Success(pub)
@@ -559,16 +564,15 @@ object ExtPublicKey
   }
 
   def tupled: (
-      (
-          ExtKeyPubVersion,
-          UInt8,
-          ByteVector,
-          UInt32,
-          ChainCode,
-          ECPublicKey)) => ExtPublicKey = {
+      (ExtKeyPubVersion,
+       UInt8,
+       ByteVector,
+       UInt32,
+       ChainCode,
+       ECPublicKey)) => ExtPublicKey = {
     (ExtPublicKeyImpl.apply).tupled(
       _
-    ) //https://docs.scala-lang.org/scala3/guides/migration/incompat-other-changes.html
+    ) // https://docs.scala-lang.org/scala3/guides/migration/incompat-other-changes.html
   }
 
   def unapply: ExtPublicKey => Option[

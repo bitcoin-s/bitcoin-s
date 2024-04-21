@@ -2,8 +2,8 @@ package org.bitcoins.crypto.musig
 
 import org.bitcoins.crypto.{ECPublicKey, FieldElement, OddParity}
 
-/** Represents the total tweak sum and net parity multiplier
-  * after applying all tweaks
+/** Represents the total tweak sum and net parity multiplier after applying all
+  * tweaks
   */
 case class MuSigTweakContext(
     parityAcc: ParityMultiplier,

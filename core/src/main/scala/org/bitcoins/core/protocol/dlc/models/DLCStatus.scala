@@ -319,16 +319,16 @@ object DLCStatus {
     }
   }
 
-  /** Calculates the outcome and signature for the CET
-    * that was broadcast on chain.
+  /** Calculates the outcome and signature for the CET that was broadcast on
+    * chain.
     */
   def calculateOutcomeAndSig(
       isInitiator: Boolean,
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
-      cet: WitnessTransaction): Option[
-    (SchnorrDigitalSignature, OracleOutcome)] = {
+      cet: WitnessTransaction)
+      : Option[(SchnorrDigitalSignature, OracleOutcome)] = {
     val localAdaptorSigs = if (isInitiator) {
       sign.cetSigs.outcomeSigs
     } else {

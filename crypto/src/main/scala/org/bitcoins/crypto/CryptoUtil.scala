@@ -2,12 +2,11 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-/** Utility cryptographic functions
-  * This is a proxy for the underlying implementation of [[CryptoRuntime]]
-  * such as [[LibSecp256k1CryptoRuntime]].
+/** Utility cryptographic functions This is a proxy for the underlying
+  * implementation of [[CryptoRuntime]] such as [[LibSecp256k1CryptoRuntime]].
   *
-  * This is necessary so that the core module doesn't need to be refactored
-  * to add support for multiple platforms, it can keep referencing CryptoUtil
+  * This is necessary so that the core module doesn't need to be refactored to
+  * add support for multiple platforms, it can keep referencing CryptoUtil
   */
 trait CryptoUtil extends CryptoRuntime {
 

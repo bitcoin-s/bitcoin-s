@@ -5,9 +5,8 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 import scodec.bits.ByteVector
 
-/** Created by chris on 5/20/16.
-  * Responsible for serializing blocks in our blockchain
-  * https://bitcoin.org/en/developer-reference#serialized-blocks
+/** Created by chris on 5/20/16. Responsible for serializing blocks in our
+  * blockchain https://bitcoin.org/en/developer-reference#serialized-blocks
   */
 sealed abstract class RawBlockSerializer extends RawBitcoinSerializer[Block] {
 

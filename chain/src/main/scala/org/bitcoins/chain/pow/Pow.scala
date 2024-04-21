@@ -8,12 +8,14 @@ import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.util.NumberUtil
 
 /** Implements functions found inside of bitcoin core's
-  * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
+  * @see
+  *   [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
   */
 sealed abstract class Pow {
 
   /** Gets the next proof of work requirement for a block
-    * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implementation]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implementation]]
     */
   def getNetworkWorkRequired(
       newPotentialTip: BlockHeader,
@@ -34,7 +36,7 @@ sealed abstract class Pow {
             chainParams.compressedPowLimit
           } else {
             // Return the last non-special-min-difficulty-rules-block
-            //while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
+            // while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
             //                    pindex = pindex->pprev;
             val nonMinDiffF = blockchain.find { h =>
               h.nBits != chainParams.compressedPowLimit || h.height % chainParams.difficultyChangeInterval == 0
@@ -48,7 +50,7 @@ sealed abstract class Pow {
                     RegTestNetChainParams.compressedPowLimit
                   case TestNetChainParams | MainNetChainParams |
                       SigNetChainParams(_) =>
-                    //if we can't find a non min difficulty block, let's just fail
+                    // if we can't find a non min difficulty block, let's just fail
                     throw new RuntimeException(
                       s"Could not find non mindifficulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}")
                 }
@@ -85,7 +87,8 @@ sealed abstract class Pow {
   }
 
   /** Calculate the next proof of work requirement for our blockchain
-    * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L49 bitcoin core implementation]]
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L49 bitcoin core implementation]]
     * @param currentTip
     * @param firstBlock
     * @param chainParams

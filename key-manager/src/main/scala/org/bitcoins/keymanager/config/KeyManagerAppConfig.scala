@@ -76,9 +76,9 @@ case class KeyManagerAppConfig(
         throw new RuntimeException(s"$other is not a valid account type!")
     }
 
-  /** Entropy provided by the a user in their bitcoin-s.conf
-    * configuration file. This should be used to seed the keymanager
-    * rather than randomly generating entropy.
+  /** Entropy provided by the a user in their bitcoin-s.conf configuration file.
+    * This should be used to seed the keymanager rather than randomly generating
+    * entropy.
     */
   private lazy val externalEntropy: Option[String] = {
     val opt = config.getStringOrNone("bitcoin-s.keymanager.entropy")
@@ -111,11 +111,11 @@ case class KeyManagerAppConfig(
       logger.info(s"No seed file found at=${newDefaultFile.toAbsolutePath}")
       initializeKeyManager()
     } else if (externalEntropy.isDefined && seedExists()) {
-      //means we have a seed saved on disk and external entropy
-      //provided. We should make sure the entropy provided generates
-      //the seed on disk to prevent internal inconsistencies
+      // means we have a seed saved on disk and external entropy
+      // provided. We should make sure the entropy provided generates
+      // the seed on disk to prevent internal inconsistencies
       val bitVec = BitVector.fromValidHex(externalEntropy.get)
-      //make sure external entropy provided to us is consistent
+      // make sure external entropy provided to us is consistent
       if (!CryptoUtil.checkEntropy(bitVec)) {
         sys.error(
           s"The entropy used by bitcoin-s does not pass basic entropy sanity checks, got=${externalEntropy}")
@@ -168,8 +168,8 @@ case class KeyManagerAppConfig(
     WalletStorage.seedExists(seedPath)
   }
 
-  /** Creates a [[BIP39KeyManager]] from the seed referenced by this [[KeyManagerAppConfig]]
-    * with the given wallet purpose
+  /** Creates a [[BIP39KeyManager]] from the seed referenced by this
+    * [[KeyManagerAppConfig]] with the given wallet purpose
     */
   def toBip39KeyManager: BIP39KeyManager = {
     val kmE: Either[ReadMnemonicError, BIP39KeyManager] =
@@ -228,8 +228,8 @@ case class KeyManagerAppConfig(
     }
   }
 
-  /** The creation time of the mnemonic seed
-    * If we cannot decrypt the seed because of invalid passwords, we return None
+  /** The creation time of the mnemonic seed If we cannot decrypt the seed
+    * because of invalid passwords, we return None
     */
   def creationTime: Instant = {
     toBip39KeyManager.creationTime

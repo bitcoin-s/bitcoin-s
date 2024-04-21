@@ -14,8 +14,9 @@ trait BytesUtil extends CryptoBytesUtil {
     ByteVector.concat(cmpct.bytes +: ts.map(_.bytes))
   }
 
-  /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
-    * Makes sure that we parse the correct amount of elements
+  /** Used parse a byte sequence to a Seq[TransactionInput],
+    * Seq[TransactionOutput], etc Makes sure that we parse the correct amount of
+    * elements
     */
   def parseCmpctSizeUIntSeq[T <: NetworkElement](
       bytes: ByteVector,

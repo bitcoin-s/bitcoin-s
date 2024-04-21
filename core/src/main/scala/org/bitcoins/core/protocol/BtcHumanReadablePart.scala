@@ -27,9 +27,10 @@ object BtcHumanReadablePart extends StringFactory[BtcHumanReadablePart] {
 
   /** Represents the HumanReadablePart for a bitcoin regtest bech32 address
     *
-    * @see Regtest is not covered in the BIP. See
-    *      [[https://github.com/bitcoin/bitcoin/issues/12314 this issue]]
-    *      for more context.
+    * @see
+    *   Regtest is not covered in the BIP. See
+    *   [[https://github.com/bitcoin/bitcoin/issues/12314 this issue]] for more
+    *   context.
     */
   case object bcrt extends BtcHumanReadablePart {
     override def network: RegTest.type = RegTest

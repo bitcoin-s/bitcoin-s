@@ -46,10 +46,11 @@ sealed abstract class LnInvoice {
     amount.map(_.toPicoBitcoins)
   }
 
-  /** The [[org.bitcoins.core.protocol.ln.node.NodeId NodeId]] that we are paying this invoice too
-    * We can either recover this with public key recovery from
-    * the [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]] or if
-    * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]] is
+  /** The [[org.bitcoins.core.protocol.ln.node.NodeId NodeId]] that we are
+    * paying this invoice too We can either recover this with public key
+    * recovery from the
+    * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]] or
+    * if [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]] is
     * defined we MUST use that NodeId, as per
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#requirements-3 BOLT11]]
     */
@@ -81,8 +82,9 @@ sealed abstract class LnInvoice {
     sig
   }
 
-  /** The hash that is signed by the [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] corresponding
-    * to the `nodeId`
+  /** The hash that is signed by the
+    * [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] corresponding to the
+    * `nodeId`
     */
   private def sigHash: Sha256Digest = {
     val hash = CryptoUtil.sha256(signatureData)
@@ -149,7 +151,7 @@ object LnInvoice extends StringFactory[LnInvoice] {
 
   def apply(hrp: LnHumanReadablePart, data: Vector[UInt5]): LnInvoice = {
 
-    //https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part
+    // https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part
     val TIMESTAMP_LEN = 7
     val SIGNATURE_LEN = 104
     val MIN_LENGTH = TIMESTAMP_LEN + SIGNATURE_LEN
@@ -157,13 +159,13 @@ object LnInvoice extends StringFactory[LnInvoice] {
       throw new IllegalArgumentException(
         s"Cannot create invoice with data length less then $MIN_LENGTH, got ${data.length}")
     } else {
-      //first 35 bits is time stamp
+      // first 35 bits is time stamp
       val timestampU5s = data.take(TIMESTAMP_LEN)
 
       val timestamp = decodeTimestamp(timestampU5s)
 
-      //last bits should be a 520 bit signature
-      //should be 104 5 bit increments (104 * 5 = 520)
+      // last bits should be a 520 bit signature
+      // should be 104 5 bit increments (104 * 5 = 520)
       val signatureU5s = data.takeRight(SIGNATURE_LEN)
       val signature = LnInvoiceSignature.fromU5s(signatureU5s)
 
@@ -281,14 +283,20 @@ object LnInvoice extends StringFactory[LnInvoice] {
     LnInvoiceSignature(recoverId = recoveryId, signature = sig)
   }
 
-  /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * is by just passing the given pareameters and
-    * and then build will create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * with a valid [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
-    * @param hrp the [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
-    * @param timestamp the timestamp on the invoice
-    * @param lnTags the various tags in the invoice
-    * @param privateKey - the key used to sign the invoice
+  /** The easiest way to create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] is by just passing
+    * the given pareameters and and then build will create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] with a valid
+    * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
+    * @param hrp
+    *   the
+    *   [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * @param timestamp
+    *   the timestamp on the invoice
+    * @param lnTags
+    *   the various tags in the invoice
+    * @param privateKey
+    *   \- the key used to sign the invoice
     */
   def build(
       hrp: LnHumanReadablePart,
@@ -304,13 +312,18 @@ object LnInvoice extends StringFactory[LnInvoice] {
               signature = lnInvoiceSignature)
   }
 
-  /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * is by just passing the given parameters and
-    * and then build will create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * with a valid [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
-    * @param hrp the [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
-    * @param lnTags the various tags in the invoice
-    * @param privateKey - the key used to sign the invoice
+  /** The easiest way to create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] is by just passing
+    * the given parameters and and then build will create a
+    * [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]] with a valid
+    * [[org.bitcoins.core.protocol.ln.LnInvoiceSignature LnInvoiceSignature]]
+    * @param hrp
+    *   the
+    *   [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * @param lnTags
+    *   the various tags in the invoice
+    * @param privateKey
+    *   \- the key used to sign the invoice
     */
   def build(
       hrp: LnHumanReadablePart,
@@ -337,11 +350,15 @@ object LnInvoice extends StringFactory[LnInvoice] {
     numNoPadding.toVector
   }
 
-  /** Checks the checksum on a [[org.bitcoins.core.protocol.Bech32Address Bech32Address]]
-    * and if it is valid, strips the checksum from @d and returns strictly
-    * the payload
-    * @param h - the [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]] of the invoice
-    * @param d - the payload WITH the checksum included
+  /** Checks the checksum on a
+    * [[org.bitcoins.core.protocol.Bech32Address Bech32Address]] and if it is
+    * valid, strips the checksum from @d and returns strictly the payload
+    * @param h
+    *   \- the
+    *   [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    *   of the invoice
+    * @param d
+    *   \- the payload WITH the checksum included
     */
   private def stripChecksumIfValid(
       h: LnHumanReadablePart,

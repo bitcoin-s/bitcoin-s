@@ -24,8 +24,7 @@ import scodec.bits.ByteVector
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-/** Responsible for constructing all DLC signatures
-  * and signed transactions
+/** Responsible for constructing all DLC signatures and signed transactions
   */
 case class DLCTxSigner(
     builder: DLCTxBuilder,
@@ -121,7 +120,9 @@ case class DLCTxSigner(
     DLCTxSigner.signFundingTx(builder.buildFundingTx, utxos)
   }
 
-  /** Constructs the signed DLC funding transaction given remote FundingSignatures */
+  /** Constructs the signed DLC funding transaction given remote
+    * FundingSignatures
+    */
   def completeFundingTx(remoteSigs: FundingSignatures): Try[Transaction] = {
     signFundingTx().flatMap { localSigs =>
       DLCTxSigner.completeFundingTx(localSigs,
@@ -156,24 +157,28 @@ case class DLCTxSigner(
     signCETs(Vector(Indexed(adaptorPoint, index))).head._2
   }
 
-  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def buildAndSignCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
-    (ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes
+    */
+  def buildAndSignCETs(adaptorPoints: Vector[Indexed[ECPublicKey]])
+      : Vector[(ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
     val outcomesAndCETs = builder.buildCETsMap(adaptorPoints)
     DLCTxSigner.buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
-  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def signCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
-    (ECPublicKey, ECAdaptorSignature)] = {
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes
+    */
+  def signCETs(adaptorPoints: Vector[Indexed[ECPublicKey]])
+      : Vector[(ECPublicKey, ECAdaptorSignature)] = {
     buildAndSignCETs(adaptorPoints).map { case (outcome, _, sig) =>
       outcome -> sig
     }
   }
 
-  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
-  def signGivenCETs(outcomesAndCETs: Vector[AdaptorPointCETPair]): Vector[
-    (ECPublicKey, ECAdaptorSignature)] = {
+  /** Signs remote's Contract Execution Transaction (CET) for a given outcomes
+    * and their corresponding CETs
+    */
+  def signGivenCETs(outcomesAndCETs: Vector[AdaptorPointCETPair])
+      : Vector[(ECPublicKey, ECAdaptorSignature)] = {
     DLCTxSigner.signCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
@@ -223,9 +228,9 @@ case class DLCTxSigner(
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
     val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
-    //divide and conquer
+    // divide and conquer
 
-    //we want a batch size of at least 1
+    // we want a batch size of at least 1
     val size =
       Math.max(adaptorPoints.length / Runtime.getRuntime.availableProcessors(),
                1)
@@ -257,8 +262,8 @@ case class DLCTxSigner(
   }
 
   /** The equivalent of [[createCETsAndCETSigs()]] but async */
-  def createCETsAndCETSigsAsync()(implicit
-  ec: ExecutionContext): Future[(CETSignatures, Vector[WitnessTransaction])] = {
+  def createCETsAndCETSigsAsync()(implicit ec: ExecutionContext)
+      : Future[(CETSignatures, Vector[WitnessTransaction])] = {
     val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
     val fn = { (adaptorPoints: Vector[Indexed[ECPublicKey]]) =>
       FutureUtil.makeAsync(() => buildAndSignCETs(adaptorPoints))
@@ -266,10 +271,9 @@ case class DLCTxSigner(
     val cetsAndSigsF: Future[
       Vector[Vector[(ECPublicKey, WitnessTransaction, ECAdaptorSignature)]]] = {
       FutureUtil.batchAndParallelExecute[Indexed[ECPublicKey],
-                                         Vector[(
-                                             ECPublicKey,
-                                             WitnessTransaction,
-                                             ECAdaptorSignature)]](
+                                         Vector[(ECPublicKey,
+                                                 WitnessTransaction,
+                                                 ECAdaptorSignature)]](
         elements = adaptorPoints,
         f = fn)
     }
@@ -281,7 +285,9 @@ case class DLCTxSigner(
     } yield (CETSignatures(msgs.zip(sigs)), cets)
   }
 
-  /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
+  /** Creates this party's CETSignatures given the outcomes and their unsigned
+    * CETs
+    */
   def createCETSigs(
       outcomesAndCETs: Vector[AdaptorPointCETPair]): CETSignatures = {
     val cetSigs = signGivenCETs(outcomesAndCETs)
@@ -347,8 +353,8 @@ object DLCTxSigner {
   def buildAndSignCETs(
       outcomesAndCETs: Vector[AdaptorPointCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
-      fundingKey: AdaptorSign): Vector[
-    (ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
+      fundingKey: AdaptorSign)
+      : Vector[(ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
     outcomesAndCETs.map { case AdaptorPointCETPair(sigPoint, cet) =>
       val hashToSign =
         TransactionSignatureSerializer.hashForSignature(

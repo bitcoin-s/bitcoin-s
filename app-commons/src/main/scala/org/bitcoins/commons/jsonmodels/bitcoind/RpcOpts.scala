@@ -75,8 +75,9 @@ object RpcOpts {
     }
   }
 
-  implicit val fundRawTransactionOptionsWrites: Writes[
-    FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
+  implicit val fundRawTransactionOptionsWrites
+      : Writes[FundRawTransactionOptions] =
+    Json.writes[FundRawTransactionOptions]
 
   case class SignRawTransactionOutputParameter(
       txid: DoubleSha256DigestBE,
@@ -86,8 +87,8 @@ object RpcOpts {
       witnessScript: Option[WitnessScriptPubKey] = None,
       amount: Option[Bitcoins] = None)
 
-  implicit val signRawTransactionOutputParameterWrites: Writes[
-    SignRawTransactionOutputParameter] =
+  implicit val signRawTransactionOutputParameterWrites
+      : Writes[SignRawTransactionOutputParameter] =
     Json.writes[SignRawTransactionOutputParameter]
 
   object SignRawTransactionOutputParameter {

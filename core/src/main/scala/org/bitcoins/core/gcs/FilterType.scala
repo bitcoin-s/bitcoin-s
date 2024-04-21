@@ -6,7 +6,8 @@ import scodec.bits._
 
 /** Filter types for BIP158 block content filters
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters BIP158]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters BIP158]]
   */
 sealed abstract class FilterType extends NetworkElement {
   val M: UInt64

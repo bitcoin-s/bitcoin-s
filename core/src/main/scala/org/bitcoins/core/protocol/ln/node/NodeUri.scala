@@ -45,7 +45,7 @@ object NodeUri extends StringFactory[NodeUri] {
   /** Assumes format is [nodeId]@[host]:[port]
     */
   private def parse(validUri: String): NodeUri = {
-    //key is 33 bytes in size
+    // key is 33 bytes in size
     val (key: String, rest: String) = validUri.splitAt(66)
 
     val (host, port) = rest.splitAt(rest.length - 5)

@@ -12,19 +12,24 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
     */
   case object RandomSelection extends CoinSelectionAlgo
 
-  /** Greedily selects from walletUtxos starting with the largest outputs, skipping outputs with values
-    * below their fees. Better for high fee environments than accumulateSmallestViable.
+  /** Greedily selects from walletUtxos starting with the largest outputs,
+    * skipping outputs with values below their fees. Better for high fee
+    * environments than accumulateSmallestViable.
     */
   case object AccumulateLargest extends CoinSelectionAlgo
 
-  /** Greedily selects from walletUtxos starting with the smallest outputs, skipping outputs with values
-    * below their fees. Good for low fee environments to consolidate UTXOs.
+  /** Greedily selects from walletUtxos starting with the smallest outputs,
+    * skipping outputs with values below their fees. Good for low fee
+    * environments to consolidate UTXOs.
     *
-    * Has the potential privacy breach of connecting a ton of UTXOs to one address.
+    * Has the potential privacy breach of connecting a ton of UTXOs to one
+    * address.
     */
   case object AccumulateSmallestViable extends CoinSelectionAlgo
 
-  /** Greedily selects from walletUtxos in order, skipping outputs with values below their fees */
+  /** Greedily selects from walletUtxos in order, skipping outputs with values
+    * below their fees
+    */
   case object StandardAccumulate extends CoinSelectionAlgo
 
   /** Tries all coin selection algos and uses the one with the least waste */

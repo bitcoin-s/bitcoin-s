@@ -124,7 +124,9 @@ object AddressDbHelper {
                           scriptPubKey = spk)
   }
 
-  /** Gets an address. Derives the correct type by looking at the kind of path passed in */
+  /** Gets an address. Derives the correct type by looking at the kind of path
+    * passed in
+    */
   def getAddress(
       pub: ECPublicKey,
       path: HDPath,

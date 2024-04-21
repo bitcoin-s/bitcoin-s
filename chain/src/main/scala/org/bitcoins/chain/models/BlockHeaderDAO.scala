@@ -11,9 +11,8 @@ import org.bitcoins.db._
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
-/** This class is responsible for all database access related
-  * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
-  * our chain project
+/** This class is responsible for all database access related to
+  * [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in our chain project
   */
 case class BlockHeaderDAO()(implicit
     ec: ExecutionContext,
@@ -31,7 +30,7 @@ case class BlockHeaderDAO()(implicit
       case PostgreSQL => mappers.bigIntPostgresMapper
     }
 
-  override val table =
+  override val table: profile.api.TableQuery[BlockHeaderTable] =
     profile.api.TableQuery[BlockHeaderTable]
 
   /** Creates all of the given [[BlockHeaderDb]] in the database */
@@ -40,10 +39,8 @@ case class BlockHeaderDAO()(implicit
     createAllNoAutoInc(ts = headers, database = safeDatabase)
   }
 
-  override protected def findAll(ts: Vector[BlockHeaderDb]): Query[
-    BlockHeaderTable,
-    BlockHeaderDb,
-    Seq] = {
+  override protected def findAll(ts: Vector[BlockHeaderDb])
+      : Query[BlockHeaderTable, BlockHeaderDb, Seq] = {
     findByPrimaryKeys(ts.map(_.hashBE))
   }
 
@@ -52,11 +49,11 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(query).map(_.headOption)
   }
 
-  /** Finds the block headers associated with the hashes. Returns None if we could not find a particular
-    * hash in the database
+  /** Finds the block headers associated with the hashes. Returns None if we
+    * could not find a particular hash in the database
     */
-  def findByHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
-    Vector[Option[BlockHeaderDb]]] = {
+  def findByHashes(hashes: Vector[DoubleSha256DigestBE])
+      : Future[Vector[Option[BlockHeaderDb]]] = {
     val query = findByPrimaryKeys(hashes)
     val resultsF: Future[Vector[BlockHeaderDb]] =
       safeDatabase.runVec(query.result)
@@ -67,11 +64,9 @@ case class BlockHeaderDAO()(implicit
     }
   }
 
-  override def findByPrimaryKeys(hashes: Vector[DoubleSha256DigestBE]): Query[
-    BlockHeaderTable,
-    BlockHeaderDb,
-    Seq] = {
-    table.filter(_.hash.inSet(hashes))
+  override def findByPrimaryKeys(hashes: Vector[DoubleSha256DigestBE])
+      : Query[BlockHeaderTable, BlockHeaderDb, Seq] = {
+    table.filter(t => t.hash.inSet(hashes))
   }
 
   /** Retrieves the ancestor for the given block header at the given height
@@ -108,8 +103,8 @@ case class BlockHeaderDAO()(implicit
       @tailrec
       def loop(
           currentHeader: BlockHeaderDb,
-          headersByDescHeight: Array[Vector[BlockHeaderDb]]): Option[
-        BlockHeaderDb] = {
+          headersByDescHeight: Array[Vector[BlockHeaderDb]])
+          : Option[BlockHeaderDb] = {
         if (currentHeader.height == height) {
           Some(currentHeader)
         } else {
@@ -133,10 +128,10 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  def getAtHeightQuery(height: Int): profile.StreamingProfileAction[
-    Seq[BlockHeaderDb],
-    BlockHeaderDb,
-    Effect.Read] = {
+  def getAtHeightQuery(
+      height: Int): profile.StreamingProfileAction[Seq[BlockHeaderDb],
+                                                   BlockHeaderDb,
+                                                   Effect.Read] = {
     table.filter(_.height === height).result
   }
 
@@ -146,14 +141,16 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(query)
   }
 
-  def getAtChainWorkQuery(work: BigInt): profile.StreamingProfileAction[
-    Seq[BlockHeaderDb],
-    BlockHeaderDb,
-    Effect.Read] = {
+  def getAtChainWorkQuery(
+      work: BigInt): profile.StreamingProfileAction[Seq[BlockHeaderDb],
+                                                    BlockHeaderDb,
+                                                    Effect.Read] = {
     table.filter(_.chainWork === work).result
   }
 
-  /** Gets Block Headers between (inclusive) start height and stop hash, could be out of order */
+  /** Gets Block Headers between (inclusive) start height and stop hash, could
+    * be out of order
+    */
   def getBetweenHeightAndHash(
       startHeight: Int,
       stopHash: DoubleSha256DigestBE): Future[Vector[BlockHeaderDb]] = {
@@ -199,7 +196,8 @@ case class BlockHeaderDAO()(implicit
     }
   }
 
-  /** Gets Block Headers between (inclusive) from and to, could be out of order */
+  /** Gets Block Headers between (inclusive) from and to, could be out of order
+    */
   def getBetweenHeights(from: Int, to: Int): Future[Vector[BlockHeaderDb]] = {
     val query = getBetweenHeightsQuery(from, to)
     safeDatabase.runVec(query)
@@ -207,10 +205,9 @@ case class BlockHeaderDAO()(implicit
 
   def getBetweenHeightsQuery(
       from: Int,
-      to: Int): profile.StreamingProfileAction[
-    Seq[BlockHeaderDb],
-    BlockHeaderDb,
-    Effect.Read] = {
+      to: Int): profile.StreamingProfileAction[Seq[BlockHeaderDb],
+                                               BlockHeaderDb,
+                                               Effect.Read] = {
     table.filter(header => header.height >= from && header.height <= to).result
   }
 
@@ -245,10 +242,8 @@ case class BlockHeaderDAO()(implicit
     }
   }
 
-  private val lowestNoWorkQuery: profile.ProfileAction[
-    Int,
-    NoStream,
-    Effect.Read] = {
+  private val lowestNoWorkQuery
+      : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val noWork =
       table.filter(h => h.chainWork === BigInt(0) || h.chainWork == null)
     noWork.map(_.height).min.getOrElse(0).result
@@ -265,25 +260,22 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.run(query)
   }
 
-  private val maxHeightQuery: profile.ProfileAction[
-    Int,
-    NoStream,
-    Effect.Read] = {
+  private val maxHeightQuery
+      : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
 
-  /** Returns the block height of the block with the most work from our database */
+  /** Returns the block height of the block with the most work from our database
+    */
   def bestHeight: Future[Int] = {
     getBestChainTips.map { tips =>
       tips.maxByOption(_.chainWork).map(_.height).getOrElse(0)
     }
   }
 
-  private val maxWorkQuery: profile.ProfileAction[
-    BigInt,
-    NoStream,
-    Effect.Read] = {
+  private val maxWorkQuery
+      : profile.ProfileAction[BigInt, NoStream, Effect.Read] = {
     val query = table.map(_.chainWork).max.getOrElse(BigInt(0)).result
     query
   }
@@ -302,14 +294,15 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(aggregate)
   }
 
-  /** Retrieves chain tips my finding duplicates at a certain height
-    * within a given range. This indicates there was a contentious chain tip
-    * at some point.
+  /** Retrieves chain tips my finding duplicates at a certain height within a
+    * given range. This indicates there was a contentious chain tip at some
+    * point.
     *
-    * It's important to note that this query will NOT return the current best chain tip
-    * unless that current chain tips is contentious
+    * It's important to note that this query will NOT return the current best
+    * chain tip unless that current chain tips is contentious
     *
-    * @param lowestHeight the height we will look backwards until. This is inclusive
+    * @param lowestHeight
+    *   the height we will look backwards until. This is inclusive
     */
   private def forkedChainTips(
       lowestHeight: Int): Future[Vector[BlockHeaderDb]] = {
@@ -318,8 +311,8 @@ case class BlockHeaderDAO()(implicit
     for {
       headers <- headersF
       byHeight = headers.groupBy(_.height)
-      //now find instances where we have duplicate headers at a given height
-      //this indicates there was at one point a fork
+      // now find instances where we have duplicate headers at a given height
+      // this indicates there was at one point a fork
       forks = byHeight.filter(_._2.length > 1)
     } yield forks.flatMap(_._2).toVector
   }
@@ -337,18 +330,19 @@ case class BlockHeaderDAO()(implicit
       .runVec(aggregate)
   }
 
-  /** Retrieves all possible chainTips from the database. Note this does NOT retrieve
-    * the BEST chain tips. If you need those please call [[getBestChainTips]]. This method
-    * will search backwards [[appConfig.chain.difficultyChangeInterval]] blocks looking
-    * for all forks that we have in our chainstate.
+  /** Retrieves all possible chainTips from the database. Note this does NOT
+    * retrieve the BEST chain tips. If you need those please call
+    * [[getBestChainTips]]. This method will search backwards
+    * [[appConfig.chain.difficultyChangeInterval]] blocks looking for all forks
+    * that we have in our chainstate.
     *
     * We will then return all conflicting headers.
     *
-    * Note:
-    * This method does NOT try and remove headers that are in the best chain. This means
-    * half the returned headers from this method will be in the best chain. To figure out
-    * which headers are in the best chain, you will need to walk backwards from [[getBestChainTips]]
-    * figuring out which headers are a part of the best chain.
+    * Note: This method does NOT try and remove headers that are in the best
+    * chain. This means half the returned headers from this method will be in
+    * the best chain. To figure out which headers are in the best chain, you
+    * will need to walk backwards from [[getBestChainTips]] figuring out which
+    * headers are a part of the best chain.
     */
   def getForkedChainTips: Future[Vector[BlockHeaderDb]] = {
     val mHeight = maxHeight
@@ -357,7 +351,7 @@ case class BlockHeaderDAO()(implicit
       Math.max(lowest, 0)
     }
 
-    //what to do about tips that are in the best chain?
+    // what to do about tips that are in the best chain?
     val tipsF = for {
       lowestHeight <- lowestHeightF
       result <- forkedChainTips(lowestHeight)
@@ -369,11 +363,15 @@ case class BlockHeaderDAO()(implicit
   }
 
   /** Returns competing blockchains that are contained in our BlockHeaderDAO
-    * Each chain returns the last [[org.bitcoins.core.protocol.blockchain.ChainParams.difficultyChangeInterval difficutly interval]]
-    * block headers as defined by the network we are on. For instance, on bitcoin mainnet this will be 2016 block headers.
-    * If no competing tips are found, we only return one [[[org.bitcoins.chain.blockchain.Blockchain Blockchain]], else we
-    * return n chains for the number of competing [[chainTips tips]] we have
-    * @see [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
+    * Each chain returns the last
+    * [[org.bitcoins.core.protocol.blockchain.ChainParams.difficultyChangeInterval difficutly interval]]
+    * block headers as defined by the network we are on. For instance, on
+    * bitcoin mainnet this will be 2016 block headers. If no competing tips are
+    * found, we only return one
+    * [[[org.bitcoins.chain.blockchain.Blockchain Blockchain]], else we return n
+    * chains for the number of competing [[chainTips tips]] we have
+    * @see
+    *   [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * @param ec
     * @return
     */
@@ -398,10 +396,10 @@ case class BlockHeaderDAO()(implicit
     for {
       staleChains <- staleChainsF
       bestChains <- bestChainsF
-      //we need to check the stale chains tips to see if it is contained
-      //in our best chains. If it is, that means the stale chain
-      //is a subchain of a best chain. We need to discard it if
-      //if that is the case to avoid duplicates
+      // we need to check the stale chains tips to see if it is contained
+      // in our best chains. If it is, that means the stale chain
+      // is a subchain of a best chain. We need to discard it if
+      // if that is the case to avoid duplicates
       filtered = staleChains.filterNot { c =>
         bestChains.exists { best =>
           best.findAtHeight(c.tip.height) match {
@@ -493,19 +491,21 @@ case class BlockHeaderDAO()(implicit
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
-  /** Finds a [[org.bitcoins.core.api.chain.db.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
+  /** Finds a [[org.bitcoins.core.api.chain.db.BlockHeaderDb block header]] that
+    * satisfies the given predicate, else returns None
+    */
   def find(f: BlockHeaderDb => Boolean)(implicit
       ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
     val chainsF = getBlockchains()
     chainsF.map { chains =>
       val headersOpt: Vector[Option[BlockHeaderDb]] =
         chains.map(_.headers.find(f))
-      //if there are multiple, we just choose the first one for now
+      // if there are multiple, we just choose the first one for now
       val result = headersOpt.filter(_.isDefined).flatten
       if (result.length > 1) {
         logger.warn(
           s"Discarding other matching headers for predicate headers=${result
-            .map(_.hashBE.hex)}")
+              .map(_.hashBE.hex)}")
       }
       result.headOption
     }
@@ -550,7 +550,7 @@ case class BlockHeaderDAO()(implicit
        nBits,
        nonce,
        hex,
-       chainWork).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
+       chainWork).<>(BlockHeaderDb.apply, BlockHeaderDb.unapply)
     }
 
   }

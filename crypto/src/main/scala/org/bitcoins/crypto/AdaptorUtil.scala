@@ -8,18 +8,13 @@ import scodec.bits.ByteVector
   * Note that the naming is not entirely consistent between the specification
   * and this file in hopes of making this code more readable.
   *
-  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * The naming in this file more closely matches the naming in the secp256k1-zkp
+  * implementation:
   * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
   *
-  * Legend:
-  * x <> privKey
-  * X <> pubKey
-  * y <> adaptorSecret
-  * Y <> adaptorPoint/adaptor
-  * messageHash <> dataToSign/data/message
-  * R_a <> untweakedNonce
-  * R <> tweakedNonce
-  * proof <> (e, s)
+  * Legend: x <> privKey X <> pubKey y <> adaptorSecret Y <>
+  * adaptorPoint/adaptor messageHash <> dataToSign/data/message R_a <>
+  * untweakedNonce R <> tweakedNonce proof <> (e, s)
   */
 object AdaptorUtil {
 
@@ -45,8 +40,8 @@ object AdaptorUtil {
     FieldElement(nonceHash.bytes)
   }
 
-  /** Computes s_a = inverse(k) * (dataToSign + rx*privateKey)
-    * which is the third from last step in
+  /** Computes s_a = inverse(k) * (dataToSign + rx*privateKey) which is the
+    * third from last step in
     * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing
     */
   private def adaptorSignHelper(
@@ -68,7 +63,9 @@ object AdaptorUtil {
     }
   }
 
-  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing */
+  /** Implements
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing
+    */
   def adaptorSign(
       privateKey: ECPrivateKey,
       adaptorPoint: ECPublicKey,
@@ -96,7 +93,9 @@ object AdaptorUtil {
     ECAdaptorSignature(tweakedNonce, untweakedNonce, adaptedSig, proofE, proofS)
   }
 
-  /** Computes R = inverse(s) * (msg*G + rx*pubKey) = inverse(s) * (msg + rx*privKey) * G */
+  /** Computes R = inverse(s) * (msg*G + rx*pubKey) = inverse(s) * (msg +
+    * rx*privKey) * G
+    */
   private def adaptorVerifyHelper(
       rx: FieldElement,
       s: FieldElement,
@@ -109,7 +108,8 @@ object AdaptorUtil {
     FieldElement(untweakedPoint.bytes.tail)
   }
 
-  /** https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encryption-verification */
+  /** https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encryption-verification
+    */
   def adaptorVerify(
       adaptorSig: ECAdaptorSignature,
       pubKey: ECPublicKey,
@@ -142,7 +142,9 @@ object AdaptorUtil {
     }
   }
 
-  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#decryption */
+  /** Implements
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#decryption
+    */
   def adaptorComplete(
       adaptorSecret: ECPrivateKey,
       adaptorSig: ECAdaptorSignature): ECDigitalSignature = {
@@ -154,7 +156,9 @@ object AdaptorUtil {
     DERSignatureUtil.lowS(sig)
   }
 
-  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#key-recovery */
+  /** Implements
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#key-recovery
+    */
   def extractAdaptorSecret(
       sig: ECDigitalSignature,
       adaptorSig: ECAdaptorSignature,

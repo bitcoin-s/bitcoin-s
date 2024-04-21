@@ -4,8 +4,8 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted._
 import org.bitcoins.crypto._
 
-/** Specifies the set of oracles and their corresponding announcements
-  * and parameters to be used in a DLC.
+/** Specifies the set of oracles and their corresponding announcements and
+  * parameters to be used in a DLC.
   */
 sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
 
@@ -79,8 +79,8 @@ sealed trait SingleOracleInfo
   /** The order of the given sigs should correspond to the given outcome. */
   def verifySigs(outcome: DLCOutcomeType, sigs: OracleSignatures): Boolean
 
-  /** Computes the signature point (aka signature anticipation) for a given outcome.
-    * This point is used for adaptor signing.
+  /** Computes the signature point (aka signature anticipation) for a given
+    * outcome. This point is used for adaptor signing.
     */
   def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
     publicKey.computeSigPoint(outcome.serialized, nonces.toVector)
@@ -181,8 +181,8 @@ object EnumSingleOracleInfo
   }
 }
 
-/** Specifies a single oracles' information for an Numeric Outcome DLC
-  * through an announcement
+/** Specifies a single oracles' information for an Numeric Outcome DLC through
+  * an announcement
   */
 case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
     extends SingleOracleInfo
@@ -239,8 +239,8 @@ object NumericSingleOracleInfo {
   }
 }
 
-/** Represents the oracle information for more than one oracle through
-  * multiple announcements.
+/** Represents the oracle information for more than one oracle through multiple
+  * announcements.
   */
 sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
     extends OracleInfo
@@ -257,8 +257,8 @@ sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
   def singleOracleInfos: Vector[T]
 }
 
-/** Represents the oracle information for more than one oracle where
-  * all oracles sign exactly corresponding messages.
+/** Represents the oracle information for more than one oracle where all oracles
+  * sign exactly corresponding messages.
   */
 sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
     extends MultiOracleInfo[T]
@@ -269,9 +269,9 @@ sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
 }
 
 object ExactMultiOracleInfo
-    extends TLVDeserializable[
-      OracleInfoV1TLV,
-      ExactMultiOracleInfo[SingleOracleInfo]](OracleInfoV1TLV) {
+    extends TLVDeserializable[OracleInfoV1TLV,
+                              ExactMultiOracleInfo[SingleOracleInfo]](
+      OracleInfoV1TLV) {
 
   def apply(tlv: OracleInfoV1TLV): ExactMultiOracleInfo[SingleOracleInfo] = {
     tlv.oracles.head.eventTLV.eventDescriptor match {
@@ -288,8 +288,8 @@ object ExactMultiOracleInfo
   }
 }
 
-/** Represents the oracle information for more than one oracle where
-  * all oracles sign exactly corresponding messages from isomorphic Enums.
+/** Represents the oracle information for more than one oracle where all oracles
+  * sign exactly corresponding messages from isomorphic Enums.
   */
 case class EnumMultiOracleInfo(
     threshold: Int,
@@ -301,8 +301,8 @@ case class EnumMultiOracleInfo(
     announcements.toVector.map(EnumSingleOracleInfo.apply)
 }
 
-/** Represents the oracle information for more than one oracle where
-  * all oracles sign exactly equal numeric outcomes.
+/** Represents the oracle information for more than one oracle where all oracles
+  * sign exactly equal numeric outcomes.
   */
 case class NumericExactMultiOracleInfo(
     threshold: Int,
@@ -314,8 +314,8 @@ case class NumericExactMultiOracleInfo(
     announcements.toVector.map(NumericSingleOracleInfo.apply)
 }
 
-/** Represents the oracle information and parameters for more than
-  * one oracle where the oracles may be signing slightly different numeric outcomes.
+/** Represents the oracle information and parameters for more than one oracle
+  * where the oracles may be signing slightly different numeric outcomes.
   */
 case class NumericMultiOracleInfo(
     threshold: Int,

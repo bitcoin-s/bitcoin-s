@@ -2,8 +2,8 @@ package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.script.ScriptOperationFactory
 
-/** Created by chris on 1/9/16.
-  * Represents a the amount of bytes that need to be pushed onto the stack
+/** Created by chris on 1/9/16. Represents a the amount of bytes that need to be
+  * pushed onto the stack
   */
 trait BytesToPushOntoStack extends ScriptOperation
 

@@ -18,12 +18,10 @@ object CETCalculator {
 
   /** A Vector of digits in a given base.
     *
-    * For example if we are using base 2 (binary)
-    * This could look like
+    * For example if we are using base 2 (binary) This could look like
     * Vector(0,1,0,1,0,1,1,1,0)
     *
-    * or if we are using base 16 (hex)
-    * Vector(9,8,10,11,2,3,2,4,1,15)
+    * or if we are using base 16 (hex) Vector(9,8,10,11,2,3,2,4,1,15)
     */
   type Digits = Vector[Int]
 
@@ -33,15 +31,15 @@ object CETCalculator {
   /** A Vector of digits and the payout corresponding to this result */
   case class CETOutcome(digits: Digits, payout: Satoshis)
 
-  /** A Vector of MultiOracleDigits and the payout corresponding to this result */
+  /** A Vector of MultiOracleDigits and the payout corresponding to this result
+    */
   case class MultiOracleOutcome(
       multiOracleDigits: MultiOracleDigits,
       payout: Satoshis)
 
-  /** Given a range and a payout function with which to build CETs,
-    * the first step is to split the range into sub-ranges which
-    * can be compressed or cannot be compressed, represented here
-    * as CETRanges.
+  /** Given a range and a payout function with which to build CETs, the first
+    * step is to split the range into sub-ranges which can be compressed or
+    * cannot be compressed, represented here as CETRanges.
     *
     * These ranges are inclusive in both indices.
     */
@@ -50,12 +48,15 @@ object CETCalculator {
     def indexTo: Long
   }
 
-  /** This range contains payouts that all vary at every step and cannot be compressed */
+  /** This range contains payouts that all vary at every step and cannot be
+    * compressed
+    */
   case class VariablePayoutRange(indexFrom: Long, indexTo: Long)
       extends CETRange
 
-  /** This range contains some constant payout between 0 and totalCollateral (exclusive).
-    * To be clear, indexFrom and indexTo are still inclusive values.
+  /** This range contains some constant payout between 0 and totalCollateral
+    * (exclusive). To be clear, indexFrom and indexTo are still inclusive
+    * values.
     */
   case class ConstantPayoutRange(indexFrom: Long, indexTo: Long)
       extends CETRange
@@ -102,7 +103,9 @@ object CETCalculator {
     )
   }
 
-  /** Helper case class to return information from processConstantsForSplitIntoRangesLoop */
+  /** Helper case class to return information from
+    * processConstantsForSplitIntoRangesLoop
+    */
   private case class SplitIntoRangesLoopResult(
       nextCETRangesSoFar: Vector[CETRange],
       nextCETRange: CETRange,
@@ -111,9 +114,9 @@ object CETCalculator {
 
   /** Processes the constant range [currentOutcome, constantTo].
     *
-    * Sadly the redundant call to splitIntoRangesLoop must be repeated
-    * in all places that call this function otherwise scala cannot tell
-    * that it is tail recursive.
+    * Sadly the redundant call to splitIntoRangesLoop must be repeated in all
+    * places that call this function otherwise scala cannot tell that it is tail
+    * recursive.
     */
   private def processConstantsForSplitIntoRangesLoop(
       constantTo: Long,
@@ -276,8 +279,8 @@ object CETCalculator {
     }
   }
 
-  /** Searches for an UnsignedNumericOutcome corresponding to (prefixing) digits.
-    * Assumes outcomes is ordered.
+  /** Searches for an UnsignedNumericOutcome corresponding to (prefixing)
+    * digits. Assumes outcomes is ordered.
     */
   def searchForNumericOutcome(
       digits: Digits,
@@ -290,12 +293,14 @@ object CETCalculator {
     }.asInstanceOf[Option[UnsignedNumericOutcome]]
   }
 
-  /** Computes the front groupings in the CETCompression
-    * (with endpoint optimization but without total optimization).
-    * This means the resulting outcomes cover [start, (prefix, digits[0], base-1, ..., base-1)].
+  /** Computes the front groupings in the CETCompression (with endpoint
+    * optimization but without total optimization). This means the resulting
+    * outcomes cover [start, (prefix, digits[0], base-1, ..., base-1)].
     *
-    * @param digits The unique digits of the range's start
-    * @param base   The base the digits are represented in
+    * @param digits
+    *   The unique digits of the range's start
+    * @param base
+    *   The base the digits are represented in
     */
   def frontGroupings(digits: Digits, base: Int): Vector[Digits] = {
     val nonZeroDigits =
@@ -316,12 +321,14 @@ object CETCalculator {
     }
   }
 
-  /** Computes the back groupings in the CETCompression
-    * (with endpoint optimization but without total optimization).
-    * This means the resulting outcomes cover [(prefix, digits[0], 0, ..., 0), end].
+  /** Computes the back groupings in the CETCompression (with endpoint
+    * optimization but without total optimization). This means the resulting
+    * outcomes cover [(prefix, digits[0], 0, ..., 0), end].
     *
-    * @param digits The unique digits of the range's end
-    * @param base   The base the digits are represented in
+    * @param digits
+    *   The unique digits of the range's end
+    * @param base
+    *   The base the digits are represented in
     */
   def backGroupings(digits: Digits, base: Int): Vector[Digits] = {
     val nonMaxDigits =
@@ -348,12 +355,15 @@ object CETCalculator {
     }
   }
 
-  /** Computes the middle groupings in the CETCompression (without total optimization).
-    * This means the resulting outcomes cover
-    * [(prefix, firstDigitStart + 1, 0, ..., 0), (prefix, firstDigitEnd-1, base-1, ..., base-1)].
+  /** Computes the middle groupings in the CETCompression (without total
+    * optimization). This means the resulting outcomes cover [(prefix,
+    * firstDigitStart + 1, 0, ..., 0), (prefix, firstDigitEnd-1, base-1, ...,
+    * base-1)].
     *
-    * @param firstDigitStart The first unique digit of the range's start
-    * @param firstDigitEnd   The first unique digit of the range's end
+    * @param firstDigitStart
+    *   The first unique digit of the range's start
+    * @param firstDigitEnd
+    *   The first unique digit of the range's end
     */
   def middleGrouping(
       firstDigitStart: Int,
@@ -363,13 +373,15 @@ object CETCalculator {
     }
   }
 
-  /** Splits off the shared prefix of start and end represented in the given base
-    * and returns the shared prefix and the unique digits of start and of end.
+  /** Splits off the shared prefix of start and end represented in the given
+    * base and returns the shared prefix and the unique digits of start and of
+    * end.
     */
-  def separatePrefix(start: Long, end: Long, base: Int, numDigits: Int): (
-      Digits,
-      Digits,
-      Digits) = {
+  def separatePrefix(
+      start: Long,
+      end: Long,
+      base: Int,
+      numDigits: Int): (Digits, Digits, Digits) = {
     val startDigits = NumberUtil.decompose(start, base, numDigits)
     val endDigits = NumberUtil.decompose(end, base, numDigits)
 
@@ -383,8 +395,8 @@ object CETCalculator {
      endDigits.drop(prefixDigits.length))
   }
 
-  /** Runs the compression algorithm with all optimizations on the interval [start, end]
-    * represented in the given base.
+  /** Runs the compression algorithm with all optimizations on the interval
+    * [start, end] represented in the given base.
     */
   def groupByIgnoringDigits(
       start: Long,
@@ -415,9 +427,10 @@ object CETCalculator {
     }
   }
 
-  /** Computes the compressed set of outcomes and their corresponding payouts given
-    * a base, the number of digits to be signed, the payout function, totalCollateral
-    * and the range of outcomes to construct CETs for, [min, max].
+  /** Computes the compressed set of outcomes and their corresponding payouts
+    * given a base, the number of digits to be signed, the payout function,
+    * totalCollateral and the range of outcomes to construct CETs for, [min,
+    * max].
     */
   def computeCETs(
       base: Int,
@@ -453,8 +466,9 @@ object CETCalculator {
     }
   }
 
-  /** Computes the compressed set of outcomes and their corresponding payouts given
-    * a base, the number of digits to be signed, the payout function, and totalCollateral.
+  /** Computes the compressed set of outcomes and their corresponding payouts
+    * given a base, the number of digits to be signed, the payout function, and
+    * totalCollateral.
     */
   def computeCETs(
       base: Int,
@@ -511,7 +525,9 @@ object CETCalculator {
     }
   }
 
-  /** Given binary digits corresponding to a CET, returns the CET's support bounds */
+  /** Given binary digits corresponding to a CET, returns the CET's support
+    * bounds
+    */
   def computeCETIntervalBinary(cet: Digits, numDigits: Int): (Long, Long) = {
     val left = NumberUtil.fromDigits(cet, base = 2, numDigits)
     val right = left + (1L << (numDigits - cet.length)) - 1
@@ -598,8 +614,8 @@ object CETCalculator {
     Vector(primaryCET) ++ Vector.fill(numOracles - 1)(coverCET)
   }
 
-  /** Generates all `2^num` possible vectors of length num containing
-    * only the elements in and out, in order
+  /** Generates all `2^num` possible vectors of length num containing only the
+    * elements in and out, in order
     */
   private def inOrOutCombinations[T](
       in: T,
@@ -614,8 +630,8 @@ object CETCalculator {
     }
   }
 
-  /** For the case where secondary oracles can sign either
-    * coverCETInner or coverCETOuter
+  /** For the case where secondary oracles can sign either coverCETInner or
+    * coverCETOuter
     */
   private def doubleCoveringCETCombinations[T](
       primaryCET: T,
@@ -628,9 +644,9 @@ object CETCalculator {
     combinations.map(combos => primaryCET +: combos)
   }
 
-  /** For the case where secondary oracles can sign either
-    * coverCETInner or coverCETOuter, but not all can sign
-    * coverCETInner, and coverCETInner is what the primary signs
+  /** For the case where secondary oracles can sign either coverCETInner or
+    * coverCETOuter, but not all can sign coverCETInner, and coverCETInner is
+    * what the primary signs
     */
   private def doubleCoveringRestrictedCETCombinations[T](
       coverCETInner: T,
@@ -642,15 +658,19 @@ object CETCalculator {
                                   numOracles).tail
   }
 
-  /** Given the primary oracle's CET, computes the set of CETs needed
-    * for two oracles with an allowed difference (which is bounded).
+  /** Given the primary oracle's CET, computes the set of CETs needed for two
+    * oracles with an allowed difference (which is bounded).
     *
-    * @param numDigits The number of binary digits signed by the oracles
-    * @param cetDigits Digits corresponding to a CET for the primary oracle
-    * @param maxErrorExp The exponent (of 2) representing the difference at which
-    *                    non-support (failure) is guaranteed
-    * @param minFailExp The exponent (of 2) representing the difference up to
-    *                   which support is guaranteed
+    * @param numDigits
+    *   The number of binary digits signed by the oracles
+    * @param cetDigits
+    *   Digits corresponding to a CET for the primary oracle
+    * @param maxErrorExp
+    *   The exponent (of 2) representing the difference at which non-support
+    *   (failure) is guaranteed
+    * @param minFailExp
+    *   The exponent (of 2) representing the difference up to which support is
+    *   guaranteed
     */
   def computeCoveringCETsBinary(
       numDigits: Int,
@@ -823,18 +843,24 @@ object CETCalculator {
     }
   }
 
-  /** Given the primary oracle's CETs, computes the set of CETs needed
-    * for n oracles with an allowed difference (which is bounded).
+  /** Given the primary oracle's CETs, computes the set of CETs needed for n
+    * oracles with an allowed difference (which is bounded).
     *
-    * @param numDigits The number of binary digits signed by the oracles
-    * @param primaryCETs CETs corresponding to the primary oracle
-    * @param maxErrorExp The exponent (of 2) representing the difference at which
-    *                    non-support (failure) is guaranteed
-    * @param minFailExp The exponent (of 2) representing the difference up to
-    *                   which support is guaranteed
-    * @param maximizeCoverage The flag that determines whether CETs used in the
-    *                         non-middle small case are maximal or minimal in size
-    * @param numOracles The total number of oracles (including primary) needed for execution
+    * @param numDigits
+    *   The number of binary digits signed by the oracles
+    * @param primaryCETs
+    *   CETs corresponding to the primary oracle
+    * @param maxErrorExp
+    *   The exponent (of 2) representing the difference at which non-support
+    *   (failure) is guaranteed
+    * @param minFailExp
+    *   The exponent (of 2) representing the difference up to which support is
+    *   guaranteed
+    * @param maximizeCoverage
+    *   The flag that determines whether CETs used in the non-middle small case
+    *   are maximal or minimal in size
+    * @param numOracles
+    *   The total number of oracles (including primary) needed for execution
     */
   def computeMultiOracleCETsBinary(
       numDigits: Int,
@@ -856,20 +882,28 @@ object CETCalculator {
     }
   }
 
-  /** Computes the set of CETs needed for numOracles oracles with an
-    * allowed difference (which is bounded).
+  /** Computes the set of CETs needed for numOracles oracles with an allowed
+    * difference (which is bounded).
     *
-    * @param numDigits The number of binary digits signed by the oracles
-    * @param function The DLCPayoutCurve to use with primary oracles
-    * @param totalCollateral The funding output's value (ignoring fees)
-    * @param rounding The rounding intervals to use when computing CETs
-    * @param maxErrorExp The exponent (of 2) representing the difference at which
-    *                    non-support (failure) is guaranteed
-    * @param minFailExp The exponent (of 2) representing the difference up to
-    *                   which support is guaranteed
-    * @param maximizeCoverage The flag that determines whether CETs used in the
-    *                         non-middle small case are maximal or minimal in size
-    * @param numOracles The total number of oracles (including primary) needed for execution
+    * @param numDigits
+    *   The number of binary digits signed by the oracles
+    * @param function
+    *   The DLCPayoutCurve to use with primary oracles
+    * @param totalCollateral
+    *   The funding output's value (ignoring fees)
+    * @param rounding
+    *   The rounding intervals to use when computing CETs
+    * @param maxErrorExp
+    *   The exponent (of 2) representing the difference at which non-support
+    *   (failure) is guaranteed
+    * @param minFailExp
+    *   The exponent (of 2) representing the difference up to which support is
+    *   guaranteed
+    * @param maximizeCoverage
+    *   The flag that determines whether CETs used in the non-middle small case
+    *   are maximal or minimal in size
+    * @param numOracles
+    *   The total number of oracles (including primary) needed for execution
     */
   def computeMultiOracleCETsBinary(
       numDigits: Int,

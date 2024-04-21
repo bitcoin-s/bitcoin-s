@@ -3,8 +3,8 @@ package org.bitcoins.core.psbt
 import org.bitcoins.crypto.Factory
 import scodec.bits.ByteVector
 
-/** A PSBTKeyId refers to the first byte of a key that signifies which kind of key-value map
-  * is in a given PSBTRecord
+/** A PSBTKeyId refers to the first byte of a key that signifies which kind of
+  * key-value map is in a given PSBTRecord
   */
 sealed trait PSBTKeyId {
   def byte: Byte

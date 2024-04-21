@@ -14,7 +14,9 @@ import ujson.Value
 
 import java.net.InetSocketAddress
 
-/** The event type being sent over the websocket. An example is [[WalletWsType.NewAddress]] */
+/** The event type being sent over the websocket. An example is
+  * [[WalletWsType.NewAddress]]
+  */
 sealed trait WsType
 
 object WsType extends StringFactory[WsType] {
@@ -140,9 +142,9 @@ object DLCNodeWsType extends StringFactory[DLCNodeWsType] {
   }
 }
 
-/** A notification that we send over the websocket.
-  * The type of the notification is indicated by [[WsType]].
-  * An example is [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
+/** A notification that we send over the websocket. The type of the notification
+  * is indicated by [[WsType]]. An example is
+  * [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
   * This sends a notification that the wallet generated a new address
   */
 sealed trait WsNotification[T] {
@@ -278,7 +280,8 @@ object ChainNotification {
     override val `type`: ChainWsType = ChainWsType.CompactFilterProcessed
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(using WsPicklers.compactFilterProcessedPickler)
+      upickle.default.writeJs(this)(
+        using WsPicklers.compactFilterProcessedPickler)
     }
   }
 
@@ -327,7 +330,8 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionFailed
 
     override def json: Value =
-      upickle.default.writeJs(this)(using WsPicklers.dlcNodeConnectionFailedPickler)
+      upickle.default.writeJs(this)(
+        using WsPicklers.dlcNodeConnectionFailedPickler)
   }
 
   case class DLCAcceptFailed(payload: (Sha256Digest, String))

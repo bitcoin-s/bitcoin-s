@@ -16,15 +16,16 @@ import org.bitcoins.keymanager._
 object BIP39LockedKeyManager extends BitcoinSLogger {
 
   /** Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
-    * @param passphrase the password to decrypt the wallet
-    * @param kmParams parameters needed to create the key manager
+    * @param passphrase
+    *   the password to decrypt the wallet
+    * @param kmParams
+    *   parameters needed to create the key manager
     */
   def unlock(
       passphraseOpt: Option[AesPassword],
       bip39PasswordOpt: Option[String],
-      kmParams: KeyManagerParams): Either[
-    KeyManagerUnlockError,
-    BIP39KeyManager] = {
+      kmParams: KeyManagerParams)
+      : Either[KeyManagerUnlockError, BIP39KeyManager] = {
     logger.debug(s"Trying to unlock wallet with seedPath=${kmParams.seedPath}")
     val resultE =
       WalletStorage.decryptSeedFromDisk(kmParams.seedPath, passphraseOpt)

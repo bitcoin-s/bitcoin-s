@@ -30,10 +30,9 @@ object DatadirUtil {
     }
   }
 
-  /** Sets the final datadir for our applicatoin.
-    * We allow useres to pass in a --datadir command line
-    * flag that needs to be used instead of the [[datadir]]
-    * specified in bitcoin-s.conf
+  /** Sets the final datadir for our applicatoin. We allow useres to pass in a
+    * --datadir command line flag that needs to be used instead of the
+    * [[datadir]] specified in bitcoin-s.conf
     */
   def getFinalDatadir(
       datadir: Path,

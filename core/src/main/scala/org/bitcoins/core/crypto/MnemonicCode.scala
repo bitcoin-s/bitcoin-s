@@ -7,12 +7,13 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 
-/** A mnemonic code conforming to [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
-  * BIP39 mnemonic codes consist of a varying number of words (most often English,
-  * possible with other languages as well) that can be used to generate an
-  * [[ExtPrivateKey ExtPrivateKey ]] which again
-  * can be the root of a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki  BIP32]]
-  * HD wallet.
+/** A mnemonic code conforming to
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
+  * BIP39 mnemonic codes consist of a varying number of words (most often
+  * English, possible with other languages as well) that can be used to generate
+  * an [[ExtPrivateKey ExtPrivateKey]] which again can be the root of a
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]] HD
+  * wallet.
   */
 sealed abstract class MnemonicCode
     extends SeqWrapper[String]
@@ -36,8 +37,7 @@ sealed abstract class MnemonicCode
 
   override protected lazy val wrapped: Vector[String] = words
 
-  /** Returns the entropy initially provided to construct
-    * this mnemonic code
+  /** Returns the entropy initially provided to construct this mnemonic code
     */
   def toEntropy: BitVector = {
     val entropyWithChecksumBits = toEntropyWithChecksum
@@ -48,8 +48,8 @@ sealed abstract class MnemonicCode
     entropyWithChecksumBits.take(lengthNoEntropy)
   }
 
-  /** Returns the entropy _with checksum_ originally provided
-    * to construct this mnemonic code
+  /** Returns the entropy _with checksum_ originally provided to construct this
+    * mnemonic code
     */
   def toEntropyWithChecksum: BitVector = {
 
@@ -95,7 +95,8 @@ sealed abstract class MnemonicCode
   }
 }
 
-/** @see [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
+/** @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]]
   */
 object MnemonicCode {
 
@@ -104,8 +105,7 @@ object MnemonicCode {
     */
   private[crypto] val VALID_LENGTHS = Vector(12, 15, 18, 21, 24)
 
-  /** Length of bit groups entropy is split into to
-    * derive words from wordlist
+  /** Length of bit groups entropy is split into to derive words from wordlist
     */
   private[crypto] val BIT_GROUP_LENGTH = 11
 
@@ -233,8 +233,7 @@ object MnemonicCode {
     EnglishWordsBip39.getWords
   }.ensuring(words => words.length == 2048, "Word list must be 2048 words long")
 
-  /** Checks that the provided entropy has a valid checksum
-    * attached at the end
+  /** Checks that the provided entropy has a valid checksum attached at the end
     */
   def isEntropyWithChecksumValid(
       entropyWithChecksum: BitVector,

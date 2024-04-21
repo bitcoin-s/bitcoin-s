@@ -22,8 +22,8 @@ object AddUtxoError {
     */
   case object BadSPK extends Error("BadScriptPubKey") with AddUtxoError
 
-  /** The address associated with the provided UTXO could not be found
-    * in our DB of addresses
+  /** The address associated with the provided UTXO could not be found in our DB
+    * of addresses
     */
   case object AddressNotFound extends Error("AddressNotFound") with AddUtxoError
 }

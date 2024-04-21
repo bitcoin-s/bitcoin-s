@@ -10,9 +10,8 @@ import org.bitcoins.crypto._
 
 import java.time.Instant
 
-/** Represents an event that the oracle has committed to
-  * Contains all the necessary information to construct
-  * all the oracle TLV messages
+/** Represents an event that the oracle has committed to Contains all the
+  * necessary information to construct all the oracle TLV messages
   */
 sealed trait OracleEvent {
 
@@ -53,8 +52,8 @@ sealed trait OracleEvent {
     }
   }
 
-  /** These are needed for old announcements/attesatations that do not follow the requirement
-    * to order nonces
+  /** These are needed for old announcements/attesatations that do not follow
+    * the requirement to order nonces
     */
   protected def eventDbsOpt: Option[Vector[EventDb]]
 }
@@ -80,9 +79,9 @@ sealed trait CompletedOracleEvent extends OracleEvent {
 
     announcementTLV match {
       case ann: OracleAnnouncementV0TLV =>
-        //v0 announcements do not have a invariant stating that nonces neeed to be sorted
-        //a specific way, so we need to use the unsorted variant to make sure
-        //announcementSignatures evaluate to true
+        // v0 announcements do not have a invariant stating that nonces neeed to be sorted
+        // a specific way, so we need to use the unsorted variant to make sure
+        // announcementSignatures evaluate to true
         val unsorted = ann.eventTLV.nonces
           .zip(attestations)
           .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
@@ -291,7 +290,8 @@ object OracleEvent {
     }
   }
 
-  /** Verifies if the given attestations sign the outcomes of the given oracle announcement.
+  /** Verifies if the given attestations sign the outcomes of the given oracle
+    * announcement.
     */
   def verifyAttestations(
       announcement: OracleAnnouncementTLV,

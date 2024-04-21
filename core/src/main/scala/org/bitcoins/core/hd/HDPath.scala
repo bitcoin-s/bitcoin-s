@@ -6,8 +6,7 @@ import scala.util.{Failure, Success, Try}
 
 trait HDPath extends BIP32Path {
 
-  /** This type is to give a cleaner return
-    * type of `next`.
+  /** This type is to give a cleaner return type of `next`.
     *
     * Consider:
     *
@@ -34,9 +33,8 @@ trait HDPath extends BIP32Path {
     */
   protected type NextPath <: HDPath
 
-  /** Increments the address index and returns the
-    * new path that can be passed into a
-    * [[org.bitcoins.core.crypto.ExtKey ExtKey]]
+  /** Increments the address index and returns the new path that can be passed
+    * into a [[org.bitcoins.core.crypto.ExtKey ExtKey]]
     */
   def next: NextPath =
     HDAddress(chain, address.index + 1).toPath.asInstanceOf[NextPath]

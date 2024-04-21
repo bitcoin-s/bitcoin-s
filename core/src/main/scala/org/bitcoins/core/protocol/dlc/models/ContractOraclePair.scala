@@ -6,10 +6,9 @@ import org.bitcoins.core.protocol.tlv.{
   NumericEventDescriptorTLV
 }
 
-/** A pair of [[ContractDescriptor]] and [[OracleInfo]]
-  * This type is meant to ensure consistentcy between various
-  * [[ContractDescriptor]] and [[OracleInfo]] so that you cannot
-  * have an incorrect pairing.
+/** A pair of [[ContractDescriptor]] and [[OracleInfo]] This type is meant to
+  * ensure consistentcy between various [[ContractDescriptor]] and
+  * [[OracleInfo]] so that you cannot have an incorrect pairing.
   */
 sealed trait ContractOraclePair {
   def contractDescriptor: ContractDescriptor
@@ -55,8 +54,8 @@ object ContractOraclePair {
     require(isValid, s"OracleInfo did not match ContractDescriptor: $this")
   }
 
-  /** Returns a valid [[ContractOraclePair]] if the
-    * [[ContractDescriptor]] and [[OracleInfo]] are of the same type
+  /** Returns a valid [[ContractOraclePair]] if the [[ContractDescriptor]] and
+    * [[OracleInfo]] are of the same type
     */
   def fromDescriptorOracleOpt(
       descriptor: ContractDescriptor,
@@ -73,8 +72,8 @@ object ContractOraclePair {
     }
   }
 
-  /** Returns a valid [[ContractOraclePair]] if the
-    * [[ContractDescriptor]] and [[OracleInfo]] are of the same type
+  /** Returns a valid [[ContractOraclePair]] if the [[ContractDescriptor]] and
+    * [[OracleInfo]] are of the same type
     */
   def fromDescriptorOracle(
       descriptor: ContractDescriptor,

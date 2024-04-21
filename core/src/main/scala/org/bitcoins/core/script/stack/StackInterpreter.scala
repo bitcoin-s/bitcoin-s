@@ -10,14 +10,13 @@ import org.bitcoins.core.script.{
 
 import scala.util.{Failure, Success, Try}
 
-/** Created by chris on 1/6/16.
-  * Stack operations implemented in the script programming language
-  * https://en.bitcoin.it/wiki/Script#Stack
+/** Created by chris on 1/6/16. Stack operations implemented in the script
+  * programming language https://en.bitcoin.it/wiki/Script#Stack
   */
 sealed abstract class StackInterpreter {
 
-  /** Duplicates the element on top of the stack
-    * expects the first element in script to be the OP_DUP operation.
+  /** Duplicates the element on top of the stack expects the first element in
+    * script to be the OP_DUP operation.
     */
   def opDup(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_DUP),
@@ -56,7 +55,9 @@ sealed abstract class StackInterpreter {
                                  program.script.tail)
   }
 
-  /** Puts the input onto the top of the alt stack. Removes it from the main stack. */
+  /** Puts the input onto the top of the alt stack. Removes it from the main
+    * stack.
+    */
   def opToAltStack(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_TOALTSTACK),
@@ -71,7 +72,9 @@ sealed abstract class StackInterpreter {
     }
   }
 
-  /** Puts the input onto the top of the main stack. Removes it from the alt stack. */
+  /** Puts the input onto the top of the main stack. Removes it from the alt
+    * stack.
+    */
   def opFromAltStack(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_FROMALTSTACK),
@@ -135,7 +138,7 @@ sealed abstract class StackInterpreter {
     executeOpWithStackTopAsNumberArg(
       program,
       { (number: ScriptNumber) =>
-        //check if n is within the bound of the script
+        // check if n is within the bound of the script
         if (program.stack.size < 2)
           program.failExecution(ScriptErrorInvalidStackOperation)
         else if (
@@ -165,7 +168,7 @@ sealed abstract class StackInterpreter {
           number.toLong >= 0 && number.toLong < program.stack.tail.size
         ) {
           val newStackTop = program.stack.tail(number.toInt)
-          //removes the old instance of the stack top, appends the new index to the head
+          // removes the old instance of the stack top, appends the new index to the head
           val newStack = newStackTop :: program.stack.tail
             .diff(List(newStackTop))
           program.updateStackAndScript(newStack, program.script.tail)
@@ -175,8 +178,8 @@ sealed abstract class StackInterpreter {
     )
   }
 
-  /** The top three items on the stack are rotated to the left.
-    * Ex: x1 x2 x3 -> x2 x3 x1
+  /** The top three items on the stack are rotated to the left. Ex: x1 x2 x3 ->
+    * x2 x3 x1
     */
   def opRot(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_ROT),
@@ -190,8 +193,8 @@ sealed abstract class StackInterpreter {
     }
   }
 
-  /** The fifth and sixth items back are moved to the top of the stack.
-    * Ex. x1 x2 x3 x4 x5 x6 -> x3 x4 x5 x6 x1 x2
+  /** The fifth and sixth items back are moved to the top of the stack. Ex. x1
+    * x2 x3 x4 x5 x6 -> x3 x4 x5 x6 x1 x2
     */
   def op2Rot(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
@@ -232,7 +235,9 @@ sealed abstract class StackInterpreter {
     }
   }
 
-  /** The item at the top of the stack is copied and inserted before the second-to-top item. */
+  /** The item at the top of the stack is copied and inserted before the
+    * second-to-top item.
+    */
   def opTuck(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_TUCK),
@@ -302,10 +307,16 @@ sealed abstract class StackInterpreter {
     }
   }
 
-  /** Executes an operation with the stack top inside of the program as the argument
-    * @param program the program whose stack top is used as an argument for the operation
-    * @param op the operation that is executed with the script number on the top of the stack
-    * @return the program with the result of the op pushed onto to the top of the stack
+  /** Executes an operation with the stack top inside of the program as the
+    * argument
+    * @param program
+    *   the program whose stack top is used as an argument for the operation
+    * @param op
+    *   the operation that is executed with the script number on the top of the
+    *   stack
+    * @return
+    *   the program with the result of the op pushed onto to the top of the
+    *   stack
     */
   private def executeOpWithStackTopAsNumberArg(
       program: ExecutionInProgressScriptProgram,
@@ -313,7 +324,7 @@ sealed abstract class StackInterpreter {
     program.stack.head match {
       case scriptNum: ScriptNumber => op(scriptNum)
       case _: ScriptToken          =>
-        //interpret the stack top as a number
+        // interpret the stack top as a number
         val number: Try[ScriptNumber] = ScriptNumber(
           program.stack.head.bytes,
           ScriptFlagUtil.requireMinimalData(program.flags))

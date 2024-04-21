@@ -52,8 +52,8 @@ sealed trait LnTag {
   }
 }
 
-/** All of the different invoice tags that are currently defined
-  * Refer to BOLT11 for a full list
+/** All of the different invoice tags that are currently defined Refer to BOLT11
+  * for a full list
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
   */
 object LnTag {
@@ -190,9 +190,9 @@ object LnTag {
     }
   }
 
-  /** `min_final_ctlv_expiry` is the minimum difference between
-    * HTLC CLTV timeout and the current block height, for the
-    * terminal case (C). This is denominated in blocks.
+  /** `min_final_ctlv_expiry` is the minimum difference between HTLC CLTV
+    * timeout and the current block height, for the terminal case (C). This is
+    * denominated in blocks.
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection]]
     */
   case class MinFinalCltvExpiry(u32: UInt32) extends LnTag {

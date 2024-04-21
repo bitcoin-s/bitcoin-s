@@ -25,8 +25,7 @@ sealed trait SecpPoint extends NetworkElement {
 }
 
 /** The point at infinity, this is the secp256k1 group identity element meaning
-  * p + 0x00 = 0x00 + p = p for any point p and
-  * p + (-p) = 0x00.
+  * p + 0x00 = 0x00 + p = p for any point p and p + (-p) = 0x00.
   *
   * Note that this does not correspond to a valid ECPublicKey just like
   * FieldElement.zero does not correspond to a valid private key (and in fact

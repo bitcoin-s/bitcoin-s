@@ -12,19 +12,20 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
-/** A class that is meant to expose and api to sync
-  * [[GolombFilter]]s and [[FilterHeader]]s from an external
-  * data source. The important thing to implement is
+/** A class that is meant to expose and api to sync [[GolombFilter]]s and
+  * [[FilterHeader]]s from an external data source. The important thing to
+  * implement is
   * {{{
   *    getFilterFunc: BlockHeader => Future[GolombFilter]
   * }}}
   * which will allow us to sync our internal filters against.
   *
-  * It should be noted you are entirely trusting the provider
-  * of the `getFilterFunc` as you aren't able to validate the result
-  * against another peer that as BIP157 specifies
+  * It should be noted you are entirely trusting the provider of the
+  * `getFilterFunc` as you aren't able to validate the result against another
+  * peer that as BIP157 specifies
   *
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#client-operation]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#client-operation]]
   */
 abstract class FilterSync extends ChainVerificationLogger {
 
@@ -57,10 +58,15 @@ abstract class FilterSync extends ChainVerificationLogger {
       blockHeader: BlockHeader)
 
   /** Syncs our best filter header to our best block hash
-    * @param chainApi our current chain state
-    * @param ourBestHeader the block header we are going to sync filters up until
-    * @param ourBestFilterHeaderOpt the best filter header we have
-    * @param getFilterFunc given a block hash it retrieves filter associated with that hash from our external source
+    * @param chainApi
+    *   our current chain state
+    * @param ourBestHeader
+    *   the block header we are going to sync filters up until
+    * @param ourBestFilterHeaderOpt
+    *   the best filter header we have
+    * @param getFilterFunc
+    *   given a block hash it retrieves filter associated with that hash from
+    *   our external source
     * @param ec
     * @return
     */
@@ -86,7 +92,7 @@ abstract class FilterSync extends ChainVerificationLogger {
     } else {
       logger.info(
         s"Beginning sync for filters from filterheader=${firstBlockHash.hex} to blockheader=${ourBestHeader.hashBE.hex}")
-      //let's fetch all missing filter headers first
+      // let's fetch all missing filter headers first
       val bestFilterBlockHeaderF =
         chainApi.getHeader(firstBlockHash)
 
@@ -95,10 +101,10 @@ abstract class FilterSync extends ChainVerificationLogger {
         missing <- chainApi.getHeadersBetween(from = bestFilterBlockHeader.get,
                                               to = ourBestHeader)
       } yield {
-        //getHeaderBetween is inclusive with 'from' parameter,
-        //we only want the inclusive behavior when we are fetching
-        //from the genesis block hash, so we can get the genesis filter
-        //else we need the _next_ header after our bestFilterBlockHeader
+        // getHeaderBetween is inclusive with 'from' parameter,
+        // we only want the inclusive behavior when we are fetching
+        // from the genesis block hash, so we can get the genesis filter
+        // else we need the _next_ header after our bestFilterBlockHeader
         if (
           bestFilterBlockHeader.get.hashBE == chainAppConfig.chain.genesisHashBE
         ) {
@@ -108,8 +114,8 @@ abstract class FilterSync extends ChainVerificationLogger {
         }
       }
 
-      //because filters can be really large, we don't want to process too many
-      //at once, so batch them in groups and the process them.
+      // because filters can be really large, we don't want to process too many
+      // at once, so batch them in groups and the process them.
       val groupedHeadersF: Future[Iterator[Vector[BlockHeaderDb]]] = for {
         missing <- headersMissingFiltersF
       } yield missing.grouped(batchSize)
@@ -141,7 +147,7 @@ abstract class FilterSync extends ChainVerificationLogger {
       ourBestFilterHeaderOpt: Option[CompactFilterHeaderDb],
       getFilterFunc: BlockHeader => Future[FilterWithHeaderHash])(implicit
       ec: ExecutionContext): Future[ChainApi] = {
-    //now that we have headers that are missing filters, let's fetch the filters
+    // now that we have headers that are missing filters, let's fetch the filters
 
     val fetchNested = missingHeaders.map { b =>
       val filterF = getFilterFunc(b.blockHeader)
@@ -152,7 +158,7 @@ abstract class FilterSync extends ChainVerificationLogger {
       Future.sequence(fetchNested)
     }
 
-    //now let's build filter headers
+    // now let's build filter headers
     val blockFiltersAggF: Future[Vector[BlockFilterAggregated]] = {
       fetchFiltersF.map {
         case filters: Vector[(BlockHeaderDb, FilterWithHeaderHash)] =>
@@ -196,18 +202,18 @@ abstract class FilterSync extends ChainVerificationLogger {
     }
   }
 
-  /** This builds a [[BlockFilterAggregated]] data structure
-    * and verifies that the filter header hash from an external
-    * data source matches the hash of the header we generated internally.
-    * If the hash does not match, someone is likely feeding you a bad header chain.
+  /** This builds a [[BlockFilterAggregated]] data structure and verifies that
+    * the filter header hash from an external data source matches the hash of
+    * the header we generated internally. If the hash does not match, someone is
+    * likely feeding you a bad header chain.
     */
   private def buildBlockFilterAggregated(
       filters: Vector[(BlockHeaderDb, FilterWithHeaderHash)],
-      ourBestFilterHeaderOpt: Option[CompactFilterHeaderDb]): Vector[
-    BlockFilterAggregated] = {
+      ourBestFilterHeaderOpt: Option[CompactFilterHeaderDb])
+      : Vector[BlockFilterAggregated] = {
 
     val prevFilterHeaderHash = ourBestFilterHeaderOpt match {
-      case None                      => DoubleSha256Digest.empty //for the genesis filter
+      case None => DoubleSha256Digest.empty // for the genesis filter
       case Some(ourBestFilterHeader) => ourBestFilterHeader.hashBE.flip
     }
     val accum = new mutable.ArrayBuffer[BlockFilterAggregated](filters.length)
@@ -215,12 +221,12 @@ abstract class FilterSync extends ChainVerificationLogger {
     filters.foreach { case (blockHeaderDb, filterWithHash) =>
       val FilterWithHeaderHash(filter, expectedHeaderHash) = filterWithHash
       val filterHeader = if (accum.isEmpty) {
-        //first header to connect with our internal headers
-        //that have already been validated
+        // first header to connect with our internal headers
+        // that have already been validated
         FilterHeader(filterHash = filter.hash,
                      prevHeaderHash = prevFilterHeaderHash)
       } else {
-        //get previous filter header's hash
+        // get previous filter header's hash
         val prevHeaderHash = accum.last.filterHeader.hash
         FilterHeader(filterHash = filter.hash, prevHeaderHash = prevHeaderHash)
       }
