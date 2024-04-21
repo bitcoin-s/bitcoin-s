@@ -332,6 +332,15 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       }
   }
 
+  it should "generate a bech32m address" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
+    }
+  }
+
   it should "be able to list transactions by receiving addresses" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
@@ -670,15 +679,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       list <- client.listWalletDir()
     } yield {
       assert(list.wallets.exists(_.name.contains("Suredbits")))
-    }
-  }
-
-  it should "generate a bech32m address" in { nodePair =>
-    val client = nodePair.node1
-    for {
-      address <- client.getNewAddress(addressType = AddressType.Bech32m)
-    } yield {
-      assert(address.isInstanceOf[Bech32mAddress])
     }
   }
 
