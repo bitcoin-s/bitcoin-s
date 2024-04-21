@@ -32,8 +32,6 @@ object Deps {
     val nativeLoaderV = "2.5.0"
     val typesafeConfigV = "1.4.3"
 
-    val asyncNewScalaV = "1.0.1"
-
     val flywayV =
       "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
     val postgresV = "42.7.3" //https://jdbc.postgresql.org/
@@ -251,9 +249,6 @@ object Deps {
 
   object Test {
 
-    val newAsync =
-      "org.scala-lang.modules" %% "scala-async" % V.asyncNewScalaV % "test" withSources () withJavadoc ()
-
     val junitInterface =
       "com.github.sbt" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
@@ -411,7 +406,6 @@ object Deps {
       Test.logback,
       Test.scalaTest.value,
       Test.scalacheck.value,
-      Test.newAsync,
       Test.scalaCollectionCompat
     )
   }
