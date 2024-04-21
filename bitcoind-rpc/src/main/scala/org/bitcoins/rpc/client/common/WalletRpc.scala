@@ -149,13 +149,11 @@ trait WalletRpc { self: Client =>
   private def getWalletInfo(
       walletName: Option[String]
   ): Future[GetWalletInfoResult] = {
-    self.version.flatMap {
-      case BitcoindVersion.V23 | BitcoindVersion.V24 |
-          BitcoindVersion.Unknown =>
-        bitcoindCall[GetWalletInfoResultPostV22](
-          "getwalletinfo",
-          uriExtensionOpt = walletName.map(walletExtension)
-        )
+    self.version.flatMap { case BitcoindVersion.V24 | BitcoindVersion.Unknown =>
+      bitcoindCall[GetWalletInfoResultPostV22](
+        "getwalletinfo",
+        uriExtensionOpt = walletName.map(walletExtension)
+      )
     }
   }
 
@@ -376,7 +374,7 @@ trait WalletRpc { self: Client =>
       descriptors: Boolean = false
   ): Future[CreateWalletResult] =
     self.version.flatMap {
-      case V24 | V23 =>
+      case V24 =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(
@@ -412,7 +410,7 @@ trait WalletRpc { self: Client =>
           List(JsString(address.value)),
           uriExtensionOpt = walletNameOpt.map(walletExtension)
         )
-      case V24 | V23 | Unknown =>
+      case V24 | Unknown =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),

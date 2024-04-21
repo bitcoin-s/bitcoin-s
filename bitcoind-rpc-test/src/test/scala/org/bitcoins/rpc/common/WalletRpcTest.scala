@@ -659,6 +659,16 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       }
   }
 
+  it should "return a list of wallets" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      _ <- client.createWallet("Suredbits")
+      list <- client.listWalletDir()
+    } yield {
+      assert(list.wallets.exists(_.name.contains("Suredbits")))
+    }
+  }
+
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }

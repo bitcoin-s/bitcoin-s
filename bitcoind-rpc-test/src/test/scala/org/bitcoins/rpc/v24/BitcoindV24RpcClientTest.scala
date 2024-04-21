@@ -405,4 +405,11 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     } yield assert(info1.coinbase)
   }
 
+  it should "generate a bech32m address" in { client: BitcoindRpcClient =>
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
+    }
+  }
 }
