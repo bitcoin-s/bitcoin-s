@@ -671,7 +671,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         }
       }
   }
-
   it should "return a list of wallets" in { nodePair =>
     val client = nodePair.node1
     for {
@@ -680,6 +679,23 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield {
       assert(list.wallets.exists(_.name.contains("Suredbits")))
     }
+  }
+
+  it should "be able to create a multi sig address" in { case nodePair =>
+    val client = nodePair.node1
+    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    val ecPrivKey2 = ECPrivateKey.freshPrivateKey
+
+    val pubKey1 = ecPrivKey1.publicKey
+    val pubKey2 = ecPrivKey2.publicKey
+
+    for {
+      _ <- client.createMultiSig(
+        2,
+        Vector(pubKey1, pubKey2),
+        AddressType.Bech32
+      )
+    } yield succeed
   }
 
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
