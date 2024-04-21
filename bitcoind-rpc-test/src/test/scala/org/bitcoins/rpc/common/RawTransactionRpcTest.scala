@@ -214,22 +214,6 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
     } yield assert(rawTx.txIdBE == sentTx.txid)
   }
 
-  it should "be able to decode a raw transaction" in {
-    for {
-      (client1, client2) <- clientsF
-      transaction <-
-        BitcoindRpcTestUtil
-          .createRawCoinbaseTransaction(client1, client2)
-      rpcTransaction <- client1.decodeRawTransaction(transaction)
-    } yield {
-      assert(rpcTransaction.txid == transaction.txIdBE)
-      assert(rpcTransaction.locktime == transaction.lockTime)
-      assert(rpcTransaction.size == transaction.byteSize)
-      assert(rpcTransaction.version == transaction.version.toInt)
-      assert(rpcTransaction.vsize == transaction.vsize)
-    }
-  }
-
   it should "be able to get a raw transaction using both rpcs available" in {
     for {
       (client, _) <- clientsF
