@@ -74,6 +74,21 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       }
   }
 
+  it should "generate a bech32m address" in { client: BitcoindV24RpcClient =>
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
+    }
+  }
+
+  it should "be able to validate a bitcoin address" in { case client =>
+    for {
+      address <- client.getNewAddress
+      validation <- client.validateAddress(address)
+    } yield assert(validation.isvalid)
+  }
+
   it should "have extra address information" in { client =>
     for {
       address <- client.getNewAddress
@@ -391,10 +406,4 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     } yield assert(info1.coinbase)
   }
 
-  it should "be able to validate a bitcoin address" in { case client =>
-    for {
-      address <- client.getNewAddress
-      validation <- client.validateAddress(address)
-    } yield assert(validation.isvalid)
-  }
 }
