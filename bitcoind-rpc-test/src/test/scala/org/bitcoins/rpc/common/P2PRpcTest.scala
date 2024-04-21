@@ -46,27 +46,6 @@ class P2PRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  /*  it should "be able to ban and clear the ban of a subnet" in {
-    val loopBack = URI.create("http://127.0.0.1")
-    for {
-
-      (client1, _) <-
-        BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
-      _ <- client1.setBan(loopBack, SetBanCommand.Add)
-
-      list <- client1.listBanned
-      _ <- client1.setBan(loopBack, SetBanCommand.Remove)
-      newList <- client1.listBanned
-    } yield {
-
-      assert(list.length == 1)
-      assert(list.head.address.getAuthority == loopBack.getAuthority)
-      assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
-      assert(newList.isEmpty)
-    }
-
-  }*/
-
   it should "be able to get the difficulty on the network" in { case nodePair =>
     val client = nodePair.node1
     for {
@@ -104,85 +83,6 @@ class P2PRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(newList.isEmpty)
     }
   }
-
-  /*  it should "be able to add and remove a node" in { case _ =>
-    for {
-      (freshClient, otherFreshClient) <-
-        BitcoindRpcTestUtil
-          .createUnconnectedNodePair(clientAccum = clientAccum)
-      uri = otherFreshClient.getDaemon.uri
-
-      _ <- freshClient.addNode(uri, AddNodeArgument.Add)
-      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
-
-      info <- freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
-
-      _ <- freshClient.addNode(uri, AddNodeArgument.Remove)
-      newInfo <- otherFreshClient.getAddedNodeInfo
-    } yield {
-      assert(info.length == 1)
-      assert(info.head.addednode == otherFreshClient.getDaemon.uri)
-      assert(info.head.connected.contains(true))
-      assert(newInfo.isEmpty)
-    }
-  }*/
-
-  /*  it should "be able to add and disconnect a node" in { case _ =>
-    for {
-      (freshClient, otherFreshClient) <-
-        BitcoindRpcTestUtil
-          .createUnconnectedNodePair(clientAccum = clientAccum)
-      uri = otherFreshClient.getDaemon.uri
-
-      _ <- freshClient.addNode(uri, AddNodeArgument.Add)
-      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
-      info <- freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
-
-      _ <- freshClient.disconnectNode(otherFreshClient.getDaemon.uri)
-      _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
-      newInfo <- freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
-    } yield {
-      assert(info.head.connected.contains(true))
-      assert(newInfo.head.connected.contains(false))
-    }
-  }*/
-
-  /*  it should "be able to get the connection count" in { case _ =>
-    for {
-      (freshClient, otherFreshClient) <-
-        BitcoindRpcTestUtil
-          .createUnconnectedNodePair(clientAccum = clientAccum)
-      connectionPre <- freshClient.getConnectionCount
-      _ <-
-        freshClient.addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.Add)
-      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
-      connectionPost <- otherFreshClient.getConnectionCount
-    } yield {
-      assert(connectionPre == 0)
-      assert(connectionPost == 1)
-    }
-  }*/
-
-  /*  it should "be able to submit a new block" in { case _ =>
-    for {
-      (client1, client2) <-
-        BitcoindRpcTestUtil.createUnconnectedNodePair(clientAccum = clientAccum)
-      hash <- client2.generate(1)
-      block <- client2.getBlockRaw(hash.head)
-      preCount1 <- client1.getBlockCount()
-      preCount2 <- client2.getBlockCount()
-      _ <- client1.submitBlock(block)
-
-      postCount1 <- client1.getBlockCount()
-      postCount2 <- client2.getBlockCount()
-      hash1 <- client1.getBlockHash(postCount1)
-      hash2 <- client2.getBlockHash(postCount2)
-    } yield {
-      assert(preCount1 != preCount2)
-      assert(postCount1 == postCount2)
-      assert(hash1 == hash2)
-    }
-  }*/
 
   it should "take a network input and output addresses of same network" in {
     case nodePair =>
