@@ -14,22 +14,18 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesCachedPairNewest,
+  BitcoindRpcTestUtil
+}
 
-import scala.concurrent.Future
-
-class RawTransactionRpcTest extends BitcoindRpcTest {
-
-  lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
 
   behavior of "RawTransactionRpc"
 
-  it should "be able to fund a raw transaction" in {
+  it should "be able to fund a raw transaction" in { case nodePair =>
+    val (client, otherClient) = (nodePair.node1, nodePair.node2)
     for {
-      (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress
       transactionWithoutFunds <-
         client
@@ -56,9 +52,9 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to decode a raw transaction" in {
+  it should "be able to decode a raw transaction" in { case nodePair =>
+    val (client, otherClient) = (nodePair.node1, nodePair.node2)
     for {
-      (client, otherClient) <- clientsF
       transaction <-
         BitcoindRpcTestUtil
           .createRawCoinbaseTransaction(client, otherClient)
@@ -73,27 +69,28 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to get a raw transaction using both rpcs available" in {
-    for {
-      (client, _) <- clientsF
-      block <- BitcoindRpcTestUtil.getFirstBlock(client)
-      txid = block.tx.head.txid
-      transaction1 <- client.getRawTransaction(txid)
-      transaction2 <- client.getTransaction(txid)
-    } yield {
-      assert(transaction1.txid == transaction2.txid)
-      assert(transaction1.confirmations.contains(transaction2.confirmations))
-      assert(transaction1.hex == transaction2.hex)
+    case nodePair =>
+      val client = nodePair.node1
+      for {
+        block <- BitcoindRpcTestUtil.getFirstBlock(client)
+        txid = block.tx.head.txid
+        transaction1 <- client.getRawTransaction(txid)
+        transaction2 <- client.getTransaction(txid)
+      } yield {
+        assert(transaction1.txid == transaction2.txid)
+        assert(transaction1.confirmations.contains(transaction2.confirmations))
+        assert(transaction1.hex == transaction2.hex)
 
-      assert(transaction1.blockhash.isDefined)
-      assert(transaction2.blockhash.isDefined)
+        assert(transaction1.blockhash.isDefined)
+        assert(transaction2.blockhash.isDefined)
 
-      assert(transaction1.blockhash == transaction2.blockhash)
-    }
+        assert(transaction1.blockhash == transaction2.blockhash)
+      }
   }
 
-  it should "be able to create a raw transaction" in {
+  it should "be able to create a raw transaction" in { case nodePair =>
+    val (client, otherClient) = (nodePair.node1, nodePair.node2)
     for {
-      (client, otherClient) <- clientsF
       blocks <- client.generate(2)
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
@@ -129,27 +126,29 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to send a raw transaction to the mem pool" in {
-    for {
-      (client, otherClient) <- clientsF
-      rawTx <-
-        BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
-      signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
+    case nodePair =>
+      val (client, otherClient) = (nodePair.node1, nodePair.node2)
+      for {
+        rawTx <-
+          BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient)
+        signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client,
+                                                                    rawTx)
 
-      _ <- client.generate(101) // Can't spend coinbase until depth 100
+        _ <- client.generate(101) // Can't spend coinbase until depth 100
 
-      _ <- client.sendRawTransaction(signedTransaction.hex, maxfeerate = 0)
-    } yield succeed
+        _ <- client.sendRawTransaction(signedTransaction.hex, maxfeerate = 0)
+      } yield succeed
   }
 
-  it should "be able to sign a raw transaction" in {
+  it should "be able to sign a raw transaction" in { case nodePair =>
+    val (client, otherClient) = (nodePair.node1, nodePair.node2)
     val fundAmt = Bitcoins(1.2)
     val sendAmt = fundAmt.satoshis - Satoshis(1000)
     for {
-      (client, server) <- clientsF
       address <- client.getNewAddress
       txid <-
         BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client, server, address, fundAmt)
+          .fundBlockChainTransaction(client, otherClient, address, fundAmt)
       rawTx <- client.getTransaction(txid)
       tx <- client.decodeRawTransaction(rawTx.hex)
       output =
@@ -192,7 +191,8 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   }
 
   it should "fail to abandon a transaction which has not been sent" in {
-    clientsF.flatMap { case (client, otherClient) =>
+    case nodePair =>
+      val (client, otherClient) = (nodePair.node1, nodePair.node2)
       otherClient.getNewAddress.flatMap { address =>
         client
           .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
@@ -202,23 +202,24 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
             )
           }
       }
-    }
   }
 
   it should "be able to get a raw transaction in serialized form from the mem pool" in {
-    for {
-      (client, otherClient) <- clientsF
-
-      sentTx <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
-      rawTx <- client.getRawTransactionRaw(sentTx.txid)
-    } yield assert(rawTx.txIdBE == sentTx.txid)
+    case nodePair =>
+      val (client, otherClient) = (nodePair.node1, nodePair.node2)
+      for {
+        sentTx <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
+                                                              otherClient)
+        rawTx <- client.getRawTransactionRaw(sentTx.txid)
+      } yield assert(rawTx.txIdBE == sentTx.txid)
   }
 
-  it should "be able to decode a reedem script" in {
+  it should "be able to decode a reedem script" in { case nodePair =>
+    val client = nodePair.node1
+    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    val pubKey1 = ecPrivKey1.publicKey
     for {
-      (client, _) <- clientsF
-      ecPrivKey1 = ECPrivateKey.freshPrivateKey
-      pubKey1 = ecPrivKey1.publicKey
+
       _ <- client.unloadWallet("")
       _ <- client.createWallet("decodeRWallet")
       address <- client.getNewAddress(addressType = AddressType.Legacy)
@@ -236,9 +237,9 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "output more than one txid" in {
+  it should "output more than one txid" in { case nodePair =>
+    val (client, otherClient) = (nodePair.node1, nodePair.node2)
     for {
-      (client, otherClient) <- clientsF
       blocks <- client.generate(2)
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
