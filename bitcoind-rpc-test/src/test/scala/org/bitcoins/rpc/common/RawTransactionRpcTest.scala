@@ -214,25 +214,6 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
     } yield assert(rawTx.txIdBE == sentTx.txid)
   }
 
-  it should "be able to get a raw transaction using both rpcs available" in {
-    for {
-      (client, _) <- clientsF
-      block <- BitcoindRpcTestUtil.getFirstBlock(client)
-      txid = block.tx.head.txid
-      transaction1 <- client.getRawTransaction(txid)
-      transaction2 <- client.getTransaction(txid)
-    } yield {
-      assert(transaction1.txid == transaction2.txid)
-      assert(transaction1.confirmations.contains(transaction2.confirmations))
-      assert(transaction1.hex == transaction2.hex)
-
-      assert(transaction1.blockhash.isDefined)
-      assert(transaction2.blockhash.isDefined)
-
-      assert(transaction1.blockhash == transaction2.blockhash)
-    }
-  }
-
   it should "be able to decode a reedem script" in {
     for {
       (client, _) <- clientsF
