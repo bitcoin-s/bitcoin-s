@@ -41,7 +41,7 @@ trait RawTransactionRpc { self: Client =>
 
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
 
-    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+    self.version.flatMap { case V23 | V24 | Unknown =>
       bitcoindCall[RpcTransactionV22](
         "decoderawtransaction",
         List(JsString(transaction.hex))
@@ -102,7 +102,7 @@ trait RawTransactionRpc { self: Client =>
       case None       => Nil
     }
     val params = List(JsString(txid.hex), JsBoolean(true)) ++ lastParam
-    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+    self.version.flatMap { case V23 | V24 | Unknown =>
       bitcoindCall[GetRawTransactionResultV22]("getrawtransaction", params)
     }
 

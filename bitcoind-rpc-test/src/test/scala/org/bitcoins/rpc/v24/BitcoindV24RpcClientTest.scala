@@ -24,7 +24,10 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
-import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV24
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesFundedCachedV24,
+  BitcoindRpcTestUtil
+}
 
 import java.io.File
 import java.nio.file.Files
@@ -382,4 +385,23 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       } yield assert(hashes.size == numBlocks)
   }
 
+  it should "be able to get utxo info" in { client: BitcoindRpcClient =>
+    for {
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
+      info1 <- client.getTxOut(block.tx.head.txid, 0)
+    } yield assert(info1.coinbase)
+  }
+
+  it should "be able to get a block with verbose transactions" in {
+    client: FixtureParam =>
+      for {
+        blocks <- client.generate(2)
+        block <- client.getBlockWithTransactions(blocks(1))
+      } yield {
+        assert(block.hash == blocks(1))
+        assert(block.tx.length == 1)
+        val tx = block.tx.head
+        assert(tx.vout.head.n == 0)
+      }
+  }
 }

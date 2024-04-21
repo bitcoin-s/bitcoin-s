@@ -272,10 +272,6 @@ object JsonSerializers {
   implicit val bip9SoftforkPreV19Reads: Reads[Bip9SoftforkPreV19] =
     Json.reads[Bip9SoftforkPreV19]
 
-  implicit val getBlockChainInfoResultPreV19Reads
-      : Reads[GetBlockChainInfoResultPreV19] =
-    Json.reads[GetBlockChainInfoResultPreV19]
-
   implicit val bip9SoftforkDetailsReads: Reads[Bip9SoftforkDetails] =
     Json.reads[Bip9SoftforkDetails]
 
@@ -286,10 +282,6 @@ object JsonSerializers {
         case _      => Json.reads[BuriedSoftforkPostV19].reads(json)
       }
     }
-
-  implicit val getBlockChainInfoResultPostV19Reads
-      : Reads[GetBlockChainInfoResultPostV19] =
-    Json.reads[GetBlockChainInfoResultPostV19]
 
   implicit val getBlockChainInfoResultPostV23Reads
       : Reads[GetBlockChainInfoResultPostV23] =
@@ -308,19 +300,12 @@ object JsonSerializers {
   implicit val getMemPoolResultPreV19Reads: Reads[GetMemPoolResultPreV19] =
     Json.reads[GetMemPoolResultPreV19]
 
-  implicit val getMemPoolResultPostV19Reads: Reads[GetMemPoolResultPostV19] =
-    Json.reads[GetMemPoolResultPostV19]
-
   implicit val getMemPoolResultPostV23Reads: Reads[GetMemPoolResultPostV23] =
     Json.reads[GetMemPoolResultPostV23]
 
   implicit val getMemPoolEntryResultPreV19Reads
       : Reads[GetMemPoolEntryResultPreV19] =
     Json.reads[GetMemPoolEntryResultPreV19]
-
-  implicit val getMemPoolEntryResultPostV19Reads
-      : Reads[GetMemPoolEntryResultPostV19] =
-    Json.reads[GetMemPoolEntryResultPostV19]
 
   implicit val getMemPoolEntryResultPostV23Reads
       : Reads[GetMemPoolEntryResultPostV23] =
@@ -838,11 +823,6 @@ object JsonSerializers {
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPreV19](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
 
-  implicit def mapDoubleSha256DigestReadsPostV19
-      : Reads[Map[DoubleSha256Digest, GetMemPoolResultPostV19]] =
-    Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPostV19](s =>
-      JsSuccess(DoubleSha256Digest.fromHex(s)))
-
   implicit def mapDoubleSha256DigestReadsPostV23
       : Reads[Map[DoubleSha256Digest, GetMemPoolResultPostV23]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPostV23](s =>
@@ -851,11 +831,6 @@ object JsonSerializers {
   implicit def mapDoubleSha256DigestBEReadsPreV19
       : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]] =
     Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPreV19](s =>
-      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
-
-  implicit def mapDoubleSha256DigestBEReadsPostV19
-      : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]] =
-    Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPostV19](s =>
       JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit def mapDoubleSha256DigestBEReadsPostV23

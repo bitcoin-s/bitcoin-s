@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.file.FileUtil
+import org.bitcoins.commons.jsonmodels.bitcoind.GetWalletInfoResultPostV22
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   WalletFlag
@@ -623,6 +624,39 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         )
       )
     }
+  }
+
+  it should "create a descriptor wallet" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    for {
+      _ <- client.unloadWallet("")
+      _ <- client.createWallet("descriptorWallet", descriptors = true)
+      descript <- client.getWalletInfo("descriptorWallet")
+      _ <- client.unloadWallet("descriptorWallet")
+      _ <- client.loadWallet("")
+    } yield {
+      descript match {
+        case walletInfoPostV22: GetWalletInfoResultPostV22 =>
+          assert(walletInfoPostV22.descriptors)
+      }
+    }
+  }
+
+  it should "create a wallet with private keys disabled" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        _ <- client.unloadWallet("")
+        _ <- client.createWallet("privKeyWallet", disablePrivateKeys = true)
+        walletPriv <- client.getWalletInfo("privKeyWallet")
+        _ <- client.unloadWallet("privKeyWallet")
+        _ <- client.loadWallet("")
+      } yield {
+        walletPriv match {
+          case walletInfoPostV22: GetWalletInfoResultPostV22 =>
+            assert(!walletInfoPostV22.private_keys_enabled)
+        }
+      }
   }
 
   def startClient(client: BitcoindRpcClient): Future[Unit] = {

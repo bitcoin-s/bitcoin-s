@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
@@ -130,18 +129,6 @@ trait CachedBitcoindBlockFilterRpcNewest
   }
 }
 
-trait CachedBitcoindV22 extends CachedBitcoindFunded[BitcoindV22RpcClient] {
-  _: BitcoinSPekkoAsyncTest =>
-
-  override protected lazy val cachedBitcoindWithFundsF
-      : Future[BitcoindV22RpcClient] = {
-    val _ = isBitcoindUsed.set(true)
-    BitcoinSFixture
-      .createBitcoindWithFunds(Some(BitcoindVersion.V22))
-      .map(_.asInstanceOf[BitcoindV22RpcClient])
-  }
-}
-
 trait CachedBitcoindV23 extends CachedBitcoindFunded[BitcoindV23RpcClient] {
   _: BitcoinSPekkoAsyncTest =>
 
@@ -222,34 +209,15 @@ trait CachedBitcoindPair[T <: BitcoindRpcClient]
   }
 }
 
-trait CachedBitcoindPairV22
-    extends CachedBitcoindCollection[BitcoindV22RpcClient] {
-  _: BitcoinSPekkoAsyncTest =>
-
-  override val version: BitcoindVersion = BitcoindVersion.V22
-
-  lazy val clientsF: Future[NodePair[BitcoindV22RpcClient]] = {
-    BitcoindRpcTestUtil
-      .createNodePair[BitcoindV22RpcClient](version)
-      .map(NodePair.fromTuple)
-      .map { tuple =>
-        isClientsUsed.set(true)
-        val clients = cachedClients.get()
-        cachedClients.set(clients ++ tuple.toVector)
-        tuple
-      }
-  }
-}
-
 trait CachedBitcoindPairNewest
     extends CachedBitcoindCollection[BitcoindRpcClient] {
   _: BitcoinSPekkoAsyncTest =>
 
   override val version: BitcoindVersion = BitcoindVersion.newest
 
-  lazy val clientsF: Future[NodePair[BitcoindV22RpcClient]] = {
+  lazy val clientsF: Future[NodePair[BitcoindRpcClient]] = {
     BitcoindRpcTestUtil
-      .createNodePair[BitcoindV22RpcClient](version)
+      .createNodePair[BitcoindRpcClient](version)
       .map(NodePair.fromTuple)
       .map { tuple =>
         isClientsUsed.set(true)

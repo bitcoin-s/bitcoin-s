@@ -39,11 +39,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    self.version.flatMap {
-      case V22 =>
-        bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
-      case V23 | V24 | Unknown =>
-        bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
+    self.version.flatMap { case V23 | V24 | Unknown =>
+      bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
     }
   }
 
@@ -95,7 +92,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
       headerHash: DoubleSha256DigestBE
   ): Future[GetBlockWithTransactionsResultV22] = {
     val isVerboseJsonObject = JsNumber(2)
-    self.version.flatMap { case V22 | V23 | V24 | Unknown =>
+    self.version.flatMap { case V23 | V24 | Unknown =>
       bitcoindCall[GetBlockWithTransactionsResultV22](
         "getblock",
         List(JsString(headerHash.hex), isVerboseJsonObject)
