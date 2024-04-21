@@ -79,15 +79,7 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
         assert(info.localrelay)
       }
   }
-
-  it should "generate a bech32m address" in { client: BitcoindV24RpcClient =>
-    for {
-      address <- client.getNewAddress(addressType = AddressType.Bech32m)
-    } yield {
-      assert(address.isInstanceOf[Bech32mAddress])
-    }
-  }
-
+  
   it should "have extra address information" in { client =>
     for {
       address <- client.getNewAddress
@@ -403,13 +395,5 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
       info1 <- client.getTxOut(block.tx.head.txid, 0)
     } yield assert(info1.coinbase)
-  }
-
-  it should "generate a bech32m address" in { client: BitcoindRpcClient =>
-    for {
-      address <- client.getNewAddress(addressType = AddressType.Bech32m)
-    } yield {
-      assert(address.isInstanceOf[Bech32mAddress])
-    }
   }
 }

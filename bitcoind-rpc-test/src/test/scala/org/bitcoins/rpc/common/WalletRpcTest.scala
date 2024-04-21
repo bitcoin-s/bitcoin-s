@@ -12,7 +12,11 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  Bech32mAddress,
+  BitcoinAddress
+}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -666,6 +670,15 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       list <- client.listWalletDir()
     } yield {
       assert(list.wallets.exists(_.name.contains("Suredbits")))
+    }
+  }
+
+  it should "generate a bech32m address" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
     }
   }
 
