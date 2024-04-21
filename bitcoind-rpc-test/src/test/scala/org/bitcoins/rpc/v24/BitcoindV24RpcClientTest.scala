@@ -294,6 +294,19 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       }
   }
 
+  it should "be able to get a block with verbose transactions" in {
+    client: BitcoindRpcClient =>
+      for {
+        blocks <- client.generate(2)
+        block <- client.getBlockWithTransactions(blocks(1))
+      } yield {
+        assert(block.hash == blocks(1))
+        assert(block.tx.length == 1)
+        val tx = block.tx.head
+        assert(tx.vout.head.n == 0)
+      }
+  }
+
   it should "be able to set the wallet flag 'avoid_reuse'" in {
     client: BitcoindV24RpcClient =>
       for {
@@ -392,16 +405,4 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     } yield assert(info1.coinbase)
   }
 
-  it should "be able to get a block with verbose transactions" in {
-    client: FixtureParam =>
-      for {
-        blocks <- client.generate(2)
-        block <- client.getBlockWithTransactions(blocks(1))
-      } yield {
-        assert(block.hash == blocks(1))
-        assert(block.tx.length == 1)
-        val tx = block.tx.head
-        assert(tx.vout.head.n == 0)
-      }
-  }
 }
