@@ -3,10 +3,11 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
-import play.api.libs.json.{JsBoolean, JsString}
+import play.api.libs.json.{JsBoolean, JsString, Json}
 
 import scala.concurrent.Future
 
@@ -142,4 +143,13 @@ trait MempoolRpc { self: Client =>
     bitcoindCall[Unit]("savemempool")
   }
 
+  def testMempoolAccept(
+      transaction: Vector[Transaction],
+      maxFeeRate: Double = 0.10
+  ): Future[Vector[TestMempoolAcceptResultPostV22]] = {
+    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
+      "testmempoolaccept",
+      List(Json.toJson(transaction), Json.toJson(maxFeeRate))
+    )
+  }
 }
