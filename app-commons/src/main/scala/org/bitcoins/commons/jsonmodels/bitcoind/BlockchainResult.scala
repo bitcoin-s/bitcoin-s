@@ -12,6 +12,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -384,15 +385,20 @@ case class GetTxSpendingPrevOutResult(
 
 case class SimulateRawTransactionResult(balance_change: Bitcoins)
 
+case class ScanObject(descriptor: Descriptor) {
+  def toJson: JsString = JsString(descriptor.toString)
+}
+
 case class ScanBlocksRequest(
     action: ScanBlocksAction,
+    scanObjects: Vector[ScanObject],
     startHeightOpt: Option[Int],
     stopHeightOpt: Option[Int],
     filterTypeOpt: Option[FilterType]) {
   def params: List[JsValue] = {
     List(
       JsString(action.toString),
-      JsArray.empty, // scanobjects not supported for now?
+      JsArray(scanObjects.map(_.toJson)), // scanobjects not supported for now?
       startHeightOpt.map(JsNumber(_)).getOrElse(JsNull),
       stopHeightOpt.map(JsNumber(_)).getOrElse(JsNull),
       filterTypeOpt.map(f => JsString(f.toString)).getOrElse(JsNull)

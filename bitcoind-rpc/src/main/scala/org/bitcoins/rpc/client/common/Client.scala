@@ -350,7 +350,6 @@ trait Client
       printError: Boolean = true,
       uriExtensionOpt: Option[String] = None
   )(implicit reader: Reads[T]): Future[T] = {
-    println(s"command=$command, params=$parameters")
     val request =
       buildRequest(instance, command, JsArray(parameters), uriExtensionOpt)
     val responseF = sendRequest(request)
@@ -368,7 +367,6 @@ trait Client
 //      logger.info(
 //        s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
 //      logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
-      println(s"payload=$payload")
       parseResult(
         result = (payload \ resultKey).validate[T],
         json = payload,

@@ -5,7 +5,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   NoScanInProgress,
   ScanBlocksAbortResult,
   ScanBlocksRequest,
-  ScanBlocksStartResult
+  ScanBlocksStartResult,
+  ScanObject
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
@@ -15,6 +16,8 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.descriptor.{P2WPKHDescriptor}
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV25,
   BitcoindRpcTestUtil
@@ -261,15 +264,24 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV25 {
 
   it should "start scanning blocks" in { case nodePair =>
     val client = nodePair.node1
+    val privKey = ECPrivateKey.freshPrivateKey
+    val np = RegTest
+    val descriptor = P2WPKHDescriptor(privKey, np)
+    // val spk = P2WPKHWitnessSPKV0(privKey.publicKey)
+    // val importedAddress = Bech32Address.fromScriptPubKey(spk, np)
+    val scanObjects = Vector(ScanObject(descriptor))
     val request0 = ScanBlocksRequest(action = ScanBlocksOpt.Status,
+                                     scanObjects = Vector.empty,
                                      startHeightOpt = None,
                                      stopHeightOpt = None,
                                      filterTypeOpt = None)
     val request1 = ScanBlocksRequest(action = ScanBlocksOpt.Start,
+                                     scanObjects = scanObjects,
                                      startHeightOpt = None,
                                      stopHeightOpt = None,
                                      filterTypeOpt = None)
     val abortedReq = ScanBlocksRequest(action = ScanBlocksOpt.Abort,
+                                       Vector.empty,
                                        startHeightOpt = None,
                                        stopHeightOpt = None,
                                        filterTypeOpt = None)
@@ -280,7 +292,9 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV25 {
       response2 <- client.scanBlocks(abortedReq)
     } yield {
       assert(response0 == NoScanInProgress)
-      assert(response1.isInstanceOf[ScanBlocksStartResult])
+      val start = response1.asInstanceOf[ScanBlocksStartResult]
+      assert(start.from_height == 0)
+      assert(start.relevant_blocks.isEmpty)
       assert(!response2.asInstanceOf[ScanBlocksAbortResult].aborted)
     }
   }
