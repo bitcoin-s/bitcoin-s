@@ -102,7 +102,7 @@ TaskKeys.downloadBitcoind := {
               "25.2" -> (if (System.getProperty("os.arch") == "aarch64")
                 "f55b394eebaa11d4b717d68aad9f75b824aaf3a7841dac7c26b1ef3d6d2915f5"
               else
-                ""),
+                "e06ba379f6039ca99bc32d3e7974d420a31363498936f88aac7bab6f239de0f5"),
               "24.2" -> (if (System.getProperty("os.arch") == "aarch64")
                 "ae6f5f0cb4079005c32695711ef78b26a26c4c547ceb593b3626059626530a5d"
               else
@@ -110,7 +110,7 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
-              "25.2" -> "",
+              "25.2" -> "c2ac84f55ee879caefd4414868d318a741c52a7286da190bf7233d86a2ffca69",
               "24.2" -> "544436bc9d5ce017e679bbccfe8a4928fbc840b414ee0240db8c3523ba54340a",
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
