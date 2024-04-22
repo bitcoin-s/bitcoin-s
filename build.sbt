@@ -563,8 +563,8 @@ lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-bitcoind-rpc-test",
-            libraryDependencies ++= Deps.bitcoindRpcTest.value,
-            parallelExecution := !(isCI && Properties.isMac))
+            libraryDependencies ++= Deps.bitcoindRpcTest.value
+  )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val bench = project
