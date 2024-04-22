@@ -3,6 +3,7 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetBlockChainInfoResultPostV23,
   NoScanInProgress,
+  ScanBlocksAbortResult,
   ScanBlocksRequest,
   ScanBlocksStartResult
 }
@@ -268,13 +269,19 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV25 {
                                      startHeightOpt = None,
                                      stopHeightOpt = None,
                                      filterTypeOpt = None)
+    val abortedReq = ScanBlocksRequest(action = ScanBlocksOpt.Abort,
+                                       startHeightOpt = None,
+                                       stopHeightOpt = None,
+                                       filterTypeOpt = None)
     for {
       response0 <- client
         .scanBlocks(request0)
       response1 <- client.scanBlocks(request1)
+      response2 <- client.scanBlocks(abortedReq)
     } yield {
       assert(response0 == NoScanInProgress)
       assert(response1.isInstanceOf[ScanBlocksStartResult])
+      assert(!response2.asInstanceOf[ScanBlocksAbortResult].aborted)
     }
   }
 }

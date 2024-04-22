@@ -412,3 +412,5 @@ case class ScanBlocksStartResult(
 case object NoScanInProgress extends StatusScanBlocksResult
 case class ScanInProgress(progress: BigDecimal, current_height: Int)
     extends StatusScanBlocksResult
+
+case class ScanBlocksAbortResult(aborted: Boolean) extends ScanBlocksResult

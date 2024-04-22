@@ -262,5 +262,9 @@ object RpcOpts {
     case object Status extends ScanBlocksAction {
       override val action: String = "status"
     }
+
+    case object Abort extends ScanBlocksAction {
+      override val action: String = "abort"
+    }
   }
 }

@@ -885,7 +885,8 @@ object JsonSerializers {
   implicit object ScanBlocksResultReads extends Reads[ScanBlocksResult] {
     override def reads(json: JsValue): JsResult[ScanBlocksResult] = {
       json match {
-        case JsNull => JsSuccess(NoScanInProgress)
+        case JsNull             => JsSuccess(NoScanInProgress)
+        case JsBoolean(aborted) => JsSuccess(ScanBlocksAbortResult(aborted))
         case x =>
           scanInProgressReads.reads(x) match {
             case s: JsSuccess[_] => s
