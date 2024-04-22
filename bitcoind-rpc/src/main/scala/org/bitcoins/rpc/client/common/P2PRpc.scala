@@ -64,13 +64,13 @@ trait P2PRpc { self: Client =>
   }
 
   def getPeerInfo: Future[Vector[Peer]] = {
-    self.version.flatMap { case V24 | V23 | Unknown =>
+    self.version.flatMap { case V24 | Unknown =>
       bitcoindCall[Vector[PeerPostV21]]("getpeerinfo")
     }
   }
 
   def listBanned: Future[Vector[NodeBan]] = {
-    self.version.flatMap { case V23 | V24 | Unknown =>
+    self.version.flatMap { case V24 | Unknown =>
       bitcoindCall[Vector[NodeBanPostV22]]("listbanned")
     }
   }

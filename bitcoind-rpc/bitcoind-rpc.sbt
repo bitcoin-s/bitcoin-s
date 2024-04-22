@@ -23,12 +23,12 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("24.2", "23.2")
+    List("24.2")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
 
-  val arm64MacVersions = List("24.2", "23.2")
+  val arm64MacVersions = List("24.2")
   def getPlatformAndSuffix(version: String): (String, String) = {
     if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
     else if (Properties.isMac) {
@@ -96,18 +96,13 @@ TaskKeys.downloadBitcoind := {
           if (Properties.isLinux)
             Map(
               "24.2" -> "7540d6e34c311e355af2fd76e5eee853b76c291978d6b5ebb555c7877e9de38d",
-              "23.2" -> "853b9b0a50800a5b355df7a39dbdd6d7a2339f765e2d31a36d14bd705e7dbce1"
             )
           else if (Properties.isMac)
             Map(
               "24.2" -> (if (System.getProperty("os.arch") == "aarch64")
                 "ae6f5f0cb4079005c32695711ef78b26a26c4c547ceb593b3626059626530a5d"
               else
-                "b1b21455c339b2daf0998bfad17d0741d967c3c81db040bb5f73234168526d29"),
-              "23.2" -> (if (System.getProperty("os.arch") == "aarch64")
-                           "33f8680f820327d5f9e64c02e476d03a5b2e5bd403e1b1cb0a82bd7ec2a8dc5e"
-                         else
-                           "f56f2e21718c3ef13b962775f1e9985eed962ae6237684deebf6b59f799a912f")
+                "b1b21455c339b2daf0998bfad17d0741d967c3c81db040bb5f73234168526d29")
             )
           else if (Properties.isWin)
             Map(

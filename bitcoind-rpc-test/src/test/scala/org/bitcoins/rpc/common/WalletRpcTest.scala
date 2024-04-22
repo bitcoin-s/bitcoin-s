@@ -12,7 +12,11 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  Bech32mAddress,
+  BitcoinAddress
+}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -326,6 +330,15 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         assert(transaction.details.exists(_.address.contains(address1)))
         assert(transaction.details.exists(_.address.contains(address2)))
       }
+  }
+
+  it should "generate a bech32m address" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
+    }
   }
 
   it should "be able to list transactions by receiving addresses" in {
@@ -657,6 +670,16 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
             assert(!walletInfoPostV22.private_keys_enabled)
         }
       }
+  }
+
+  it should "return a list of wallets" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      _ <- client.createWallet(s"Suredbits-${System.currentTimeMillis()}")
+      list <- client.listWalletDir()
+    } yield {
+      assert(list.wallets.exists(_.name.contains("Suredbits")))
+    }
   }
 
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
