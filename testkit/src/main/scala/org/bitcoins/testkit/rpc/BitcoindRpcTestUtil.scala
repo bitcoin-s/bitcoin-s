@@ -32,7 +32,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.config._
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil, TorUtil}
 import org.bitcoins.util.ListUtil
 
@@ -694,6 +694,47 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     } yield {
       (first, second)
     }
+  }
+
+  def connectNodes(
+      first: BitcoindRpcClient,
+      second: BitcoindRpcClient): Future[Unit] = {
+    first.addNode(second.getDaemon.uri, AddNodeArgument.Add)
+  }
+
+  def connectNodes[T <: BitcoindRpcClient](pair: NodePair[T]): Future[Unit] = {
+    connectNodes(pair.node1, pair.node2)
+  }
+
+  def disconnectNodes(
+      first: BitcoindRpcClient,
+      second: BitcoindRpcClient): Future[Unit] = {
+    first.disconnectNode(second.getDaemon.uri)
+  }
+
+  def disconnectNodes[T <: BitcoindRpcClient](
+      nodePair: NodePair[T]): Future[Unit] = {
+    disconnectNodes(nodePair.node1, nodePair.node2)
+  }
+
+  def isConnected(first: BitcoindRpcClient, second: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    first.getPeerInfo.map(_.exists(_.networkInfo.addr == second.getDaemon.uri))
+  }
+
+  def isConnected[T <: BitcoindRpcClient](nodePair: NodePair[T])(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    isConnected(nodePair.node1, nodePair.node2)
+  }
+
+  def isNodeAdded(first: BitcoindRpcClient, second: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    first.getAddedNodeInfo.map(_.exists(_.addednode == second.getDaemon.uri))
+  }
+
+  def isNodeAdded[T <: BitcoindRpcClient](nodePair: NodePair[T])(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    isNodeAdded(nodePair.node1, nodePair.node2)
   }
 
   /** Returns a triple of

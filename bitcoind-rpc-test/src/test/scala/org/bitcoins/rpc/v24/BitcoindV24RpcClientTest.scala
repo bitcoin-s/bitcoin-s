@@ -10,7 +10,7 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.{Bech32mAddress, BitcoinAddress}
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.psbt.PSBT
@@ -72,6 +72,21 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
         assert(info.networkactive)
         assert(info.localrelay)
       }
+  }
+
+  it should "generate a bech32m address" in { client: BitcoindV24RpcClient =>
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
+    }
+  }
+
+  it should "be able to validate a bitcoin address" in { case client =>
+    for {
+      address <- client.getNewAddress
+      validation <- client.validateAddress(address)
+    } yield assert(validation.isvalid)
   }
 
   it should "have extra address information" in { client =>
@@ -390,4 +405,5 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       info1 <- client.getTxOut(block.tx.head.txid, 0)
     } yield assert(info1.coinbase)
   }
+
 }

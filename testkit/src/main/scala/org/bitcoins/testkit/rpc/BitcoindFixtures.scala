@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.rpc
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
@@ -120,6 +121,48 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
       }
     )(test)
   }
+
+  def with2BitcoindsDisconnected(
+      test: OneArgAsyncTest,
+      bitcoinds: NodePair[T]
+  ): FutureOutcome = {
+    makeDependentFixture[NodePair[T]](
+      () => {
+        for {
+          isConnected <- BitcoindRpcTestUtil.isConnected(bitcoinds)
+          _ <-
+            if (isConnected) {
+              BitcoindRpcTestUtil.disconnectNodes(bitcoinds)
+            } else Future.unit
+          isNodeAdded <- BitcoindRpcTestUtil.isNodeAdded(bitcoinds)
+          _ <-
+            if (!isNodeAdded) {
+              val node1 = bitcoinds.node1
+              val node2Uri = bitcoinds.node2.getDaemon.uri
+              node1.addNode(node2Uri, AddNodeArgument.Add)
+            } else {
+              Future.unit
+            }
+        } yield {
+          bitcoinds
+        }
+      },
+      destroy = { case nodePair: NodePair[T] =>
+        // disconnect them in case the test case left them in a connected state
+        for {
+          isConnected <- BitcoindRpcTestUtil.isConnected(nodePair)
+          _ <-
+            if (isConnected) {
+              BitcoindRpcTestUtil.disconnectNodes(nodePair)
+            } else {
+              Future.unit
+            }
+        } yield {
+          nodePair
+        }
+      }
+    )(test)
+  }
 }
 
 trait BitcoindFixturesCachedPairNewest
@@ -132,6 +175,30 @@ trait BitcoindFixturesCachedPairNewest
     val futOutcome = for {
       pair <- clientsF
       futOutcome = with2BitcoindsCached(test, pair)
+      f <- futOutcome.toFuture
+    } yield f
+    new FutureOutcome(futOutcome)
+  }
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
+/** A pair of bitcoinds that are disconnected on the p2p network when given to
+  * the test case
+  */
+trait BitcoindFixturesCachedPairNewestDisconnected
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindRpcClient] {
+  override type FixtureParam = NodePair[BitcoindRpcClient]
+  override val version: BitcoindVersion = BitcoindVersion.newest
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val futOutcome = for {
+      pair <- clientsF
+      futOutcome = with2BitcoindsDisconnected(test, pair)
       f <- futOutcome.toFuture
     } yield f
     new FutureOutcome(futOutcome)
