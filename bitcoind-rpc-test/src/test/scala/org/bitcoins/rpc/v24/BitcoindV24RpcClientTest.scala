@@ -10,7 +10,7 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.{Bech32mAddress, BitcoinAddress}
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.psbt.PSBT
