@@ -884,12 +884,13 @@ object JsonSerializers {
 
   implicit object ScanBlocksResultReads extends Reads[ScanBlocksResult] {
     override def reads(json: JsValue): JsResult[ScanBlocksResult] = {
-
-      println(s"json=$json")
       json match {
         case JsNull => JsSuccess(NoScanInProgress)
         case x =>
-          scanInProgressReads.reads(x)
+          scanInProgressReads.reads(x) match {
+            case s: JsSuccess[_] => s
+            case _: JsError      => scanBlocksStartResultReads.reads(x)
+          }
       }
     }
   }

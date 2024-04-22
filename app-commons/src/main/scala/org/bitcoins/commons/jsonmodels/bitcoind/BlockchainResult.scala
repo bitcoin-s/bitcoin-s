@@ -406,9 +406,8 @@ sealed trait StatusScanBlocksResult extends ScanBlocksResult
 case class ScanBlocksStartResult(
     from_height: Int,
     to_height: Int,
-    relevant_blocks: Vector[DoubleSha256DigestBE],
-    completed: Boolean)
-    extends BlockchainResult
+    relevant_blocks: Vector[DoubleSha256DigestBE])
+    extends ScanBlocksResult
 
 case object NoScanInProgress extends StatusScanBlocksResult
 case class ScanInProgress(progress: BigDecimal, current_height: Int)

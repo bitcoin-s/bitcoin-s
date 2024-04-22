@@ -3,7 +3,8 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetBlockChainInfoResultPostV23,
   NoScanInProgress,
-  ScanBlocksRequest
+  ScanBlocksRequest,
+  ScanBlocksStartResult
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
@@ -259,15 +260,21 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV25 {
 
   it should "start scanning blocks" in { case nodePair =>
     val client = nodePair.node1
-    val request = ScanBlocksRequest(action = ScanBlocksOpt.Status,
-                                    startHeightOpt = None,
-                                    stopHeightOpt = None,
-                                    filterTypeOpt = None)
+    val request0 = ScanBlocksRequest(action = ScanBlocksOpt.Status,
+                                     startHeightOpt = None,
+                                     stopHeightOpt = None,
+                                     filterTypeOpt = None)
+    val request1 = ScanBlocksRequest(action = ScanBlocksOpt.Start,
+                                     startHeightOpt = None,
+                                     stopHeightOpt = None,
+                                     filterTypeOpt = None)
     for {
-      response <- client
-        .scanBlocks(request)
+      response0 <- client
+        .scanBlocks(request0)
+      response1 <- client.scanBlocks(request1)
     } yield {
-      assert(response == NoScanInProgress)
+      assert(response0 == NoScanInProgress)
+      assert(response1.isInstanceOf[ScanBlocksStartResult])
     }
   }
 }
