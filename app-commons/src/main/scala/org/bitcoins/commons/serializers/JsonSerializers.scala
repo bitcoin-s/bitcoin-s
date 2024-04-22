@@ -875,4 +875,7 @@ object JsonSerializers {
     Json.reads[ImportDescriptorResult]
   }
 
+  implicit val scanBlockResultReads: Reads[ScanBlocksResult] =
+    Json.reads[ScanBlocksResult]
+
 }

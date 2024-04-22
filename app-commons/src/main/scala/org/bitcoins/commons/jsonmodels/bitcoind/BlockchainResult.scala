@@ -381,3 +381,9 @@ case class GetTxSpendingPrevOutResult(
 }
 
 case class SimulateRawTransactionResult(balance_change: Bitcoins)
+
+case class ScanBlocksResult(
+    from_height: Int,
+    to_height: Int,
+    relevant_blocks: Vector[DoubleSha256DigestBE],
+    completed: Boolean)
