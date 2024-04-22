@@ -875,7 +875,22 @@ object JsonSerializers {
     Json.reads[ImportDescriptorResult]
   }
 
-  implicit val scanBlockResultReads: Reads[ScanBlocksResult] =
-    Json.reads[ScanBlocksResult]
+  implicit val scanBlocksStartResultReads: Reads[ScanBlocksStartResult] =
+    Json.reads[ScanBlocksStartResult]
+  implicit val scanInProgressReads: Reads[ScanInProgress] =
+    Json.reads[ScanInProgress]
+  implicit val noScanInProgress: Reads[NoScanInProgress.type] =
+    Json.reads[NoScanInProgress.type]
 
+  implicit object ScanBlocksResultReads extends Reads[ScanBlocksResult] {
+    override def reads(json: JsValue): JsResult[ScanBlocksResult] = {
+
+      println(s"json=$json")
+      json match {
+        case JsNull => JsSuccess(NoScanInProgress)
+        case x =>
+          scanInProgressReads.reads(x)
+      }
+    }
+  }
 }

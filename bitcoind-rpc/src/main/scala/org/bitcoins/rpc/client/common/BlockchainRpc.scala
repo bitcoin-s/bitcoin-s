@@ -432,15 +432,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     }
   }
 
-  def scanBlocks(
-      startHeightOpt: Option[Int],
-      stopHeightOpt: Option[Int],
-      filterTypeOpt: Option[FilterType]): Future[ScanBlocksResult] = {
-    val args: List[JsValue] = List(
-      startHeightOpt.map(JsNumber(_)).getOrElse(JsNull),
-      stopHeightOpt.map(JsNumber(_)).getOrElse(JsNull),
-      filterTypeOpt.map(f => JsString(f.toString)).getOrElse(JsNull)
-    )
-    bitcoindCall("scanblocks", args)(JsonSerializers.scanBlockResultReads)
+  def scanBlocks(request: ScanBlocksRequest): Future[ScanBlocksResult] = {
+    bitcoindCall("scanblocks", request.params)(
+      JsonSerializers.ScanBlocksResultReads)
   }
 }

@@ -383,7 +383,7 @@ trait WalletRpc { self: Client =>
             JsString(walletName),
             JsBoolean(disablePrivateKeys),
             JsBoolean(blank),
-            JsString(passphrase),
+            if (passphrase.isEmpty) JsNull else JsString(passphrase),
             JsBoolean(avoidReuse),
             JsBoolean(descriptors)
           )

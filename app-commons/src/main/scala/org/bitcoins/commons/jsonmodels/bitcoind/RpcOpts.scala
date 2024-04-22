@@ -249,4 +249,18 @@ object RpcOpts {
 
   implicit val blockTemplateRequest: Writes[BlockTemplateRequest] =
     Json.writes[BlockTemplateRequest]
+
+  sealed abstract class ScanBlocksAction {
+    def action: String
+    override def toString: String = action
+  }
+
+  object ScanBlocksOpt {
+    case object Start extends ScanBlocksAction {
+      override val action: String = "start"
+    }
+    case object Status extends ScanBlocksAction {
+      override val action: String = "status"
+    }
+  }
 }

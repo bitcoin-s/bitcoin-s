@@ -497,7 +497,7 @@ final case class ArrayOfWalletsInput(
 
 final case class CreateWalletResult(
     name: String,
-    warning: String
+    warning: Option[String]
 ) extends WalletResult
 
 case class ImportDescriptorResult(

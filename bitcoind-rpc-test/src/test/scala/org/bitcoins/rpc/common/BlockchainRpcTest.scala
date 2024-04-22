@@ -1,19 +1,26 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPostV23
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetBlockChainInfoResultPostV23,
+  NoScanInProgress,
+  ScanBlocksRequest
+}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  ScanBlocksOpt
+}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairNewest,
+  BitcoindFixturesCachedPairV25,
   BitcoindRpcTestUtil
 }
 
 import scala.concurrent.Future
 
-class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
+class BlockchainRpcTest extends BitcoindFixturesCachedPairV25 {
 
   behavior of "BlockchainRpc"
 
@@ -247,6 +254,20 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
           .hash
           .flip
       )
+    }
+  }
+
+  it should "start scanning blocks" in { case nodePair =>
+    val client = nodePair.node1
+    val request = ScanBlocksRequest(action = ScanBlocksOpt.Status,
+                                    startHeightOpt = None,
+                                    stopHeightOpt = None,
+                                    filterTypeOpt = None)
+    for {
+      response <- client
+        .scanBlocks(request)
+    } yield {
+      assert(response == NoScanInProgress)
     }
   }
 }
