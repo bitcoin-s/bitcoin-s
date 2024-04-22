@@ -866,14 +866,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       transaction: Transaction,
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
   ): Future[SignRawTransactionResult] =
-    signer match {
-      case v24: BitcoindV24RpcClient =>
-        v24.signRawTransactionWithWallet(transaction, utxoDeps)
-      case unknown: BitcoindRpcClient =>
-        sys.error(
-          s"Cannot sign tx with unknown version of bitcoind, got=$unknown"
-        )
-    }
+    signer.signRawTransactionWithWallet(transaction, utxoDeps)
 
   /** Gets the pubkey (if it exists) asscociated with a given bitcoin address in
     * a version-agnostic manner
