@@ -62,6 +62,9 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
         case _: String
             if foundVersion.startsWith(BitcoindVersion.V24.toString) =>
           BitcoindVersion.V24
+        case _: String
+            if foundVersion.startsWith(BitcoindVersion.V25.toString) =>
+          BitcoindVersion.V25
         case _: String =>
           logger.warn(
             s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}"
