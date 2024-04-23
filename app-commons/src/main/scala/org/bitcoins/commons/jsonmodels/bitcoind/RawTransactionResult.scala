@@ -2,9 +2,9 @@ package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.protocol.{BitcoinAddress, P2SHAddress}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -80,13 +80,13 @@ case class RpcScriptPubKeyPostV22(
 sealed trait DecodeScriptResult extends RawTransactionResult {
   def asm: String
   def typeOfScript: Option[ScriptType]
-  def p2sh: P2SHAddress
+  def address: BitcoinAddress
 }
 
 case class DecodeScriptResultV22(
     asm: String,
     typeOfScript: Option[ScriptType],
-    p2sh: P2SHAddress
+    address: BitcoinAddress
 ) extends DecodeScriptResult
 
 case class FundRawTransactionResult(

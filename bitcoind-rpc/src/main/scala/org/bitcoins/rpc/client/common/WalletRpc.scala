@@ -101,6 +101,12 @@ trait WalletRpc { self: Client =>
   def getNewAddress(walletNameOpt: Option[String]): Future[BitcoinAddress] =
     getNewAddressInternal(addressType = None, walletNameOpt = walletNameOpt)
 
+  def getNewAddress(
+      addressType: AddressType,
+      walletNameOpt: Option[String]): Future[BitcoinAddress] =
+    getNewAddressInternal(addressType = Some(addressType),
+                          walletNameOpt = walletNameOpt)
+
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress] =
     getNewAddressInternal(addressType = Some(addressType))
 

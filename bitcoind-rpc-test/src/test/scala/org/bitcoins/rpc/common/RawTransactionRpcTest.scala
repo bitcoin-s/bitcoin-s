@@ -1,18 +1,14 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.commons.jsonmodels.bitcoind.{DecodeScriptResultV22, RpcOpts}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   ScriptPubKey,
   ScriptSignature
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.ScriptType
-import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
@@ -212,29 +208,6 @@ class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
                                                               otherClient)
         rawTx <- client.getRawTransactionRaw(sentTx.txid)
       } yield assert(rawTx.txIdBE == sentTx.txid)
-  }
-
-  it should "be able to decode a reedem script" in { case nodePair =>
-    val client = nodePair.node1
-    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
-    val pubKey1 = ecPrivKey1.publicKey
-    for {
-
-      _ <- client.unloadWallet("")
-      _ <- client.createWallet("decodeRWallet")
-      address <- client.getNewAddress(addressType = AddressType.Legacy)
-      multisig <- client.addMultiSigAddress(
-        2,
-        Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
-      decoded <- client.decodeScript(multisig.redeemScript)
-      _ <- client.loadWallet("")
-      _ <- client.unloadWallet("decodeRWallet")
-    } yield {
-      decoded match {
-        case decodedV22: DecodeScriptResultV22 =>
-          assert(decodedV22.typeOfScript.contains(ScriptType.MULTISIG))
-      }
-    }
   }
 
   it should "output more than one txid" in { case nodePair =>

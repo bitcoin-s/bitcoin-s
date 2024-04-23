@@ -136,7 +136,8 @@ case class RpcAccount(
     amount: Bitcoins,
     confirmations: Int
 ) extends WalletResult
-case class LoadWalletResult(name: String, warning: String) extends WalletResult
+case class LoadWalletResult(name: String, warning: Option[String])
+    extends WalletResult
 
 case class RescanBlockChainResult(start_height: Int, stop_height: Int)
     extends WalletResult

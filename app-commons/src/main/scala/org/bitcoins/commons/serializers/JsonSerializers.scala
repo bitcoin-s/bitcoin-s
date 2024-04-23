@@ -149,7 +149,7 @@ object JsonSerializers {
   implicit val decodeScriptResultV22Reads: Reads[DecodeScriptResultV22] =
     ((__ \ "asm").read[String] and
       (__ \ "type").readNullable[ScriptType] and
-      (__ \ "p2sh").read[P2SHAddress])(DecodeScriptResultV22)
+      (__ \ "address").read[BitcoinAddress])(DecodeScriptResultV22)
 
   implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] =
     Json.reads[FundRawTransactionResult]
