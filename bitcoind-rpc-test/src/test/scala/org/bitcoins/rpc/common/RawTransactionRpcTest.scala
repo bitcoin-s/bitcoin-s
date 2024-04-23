@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.script.{
   ScriptSignature
 }
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
@@ -280,8 +281,9 @@ class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
       )
     } yield {
       val mempooltxid: Int = mempoolAccept.length
-      val entry = mempoolAccept.head
       assert(mempooltxid > 1)
+      val entry = mempoolAccept.head
+      assert(entry.fees.get.base == SatoshisPerByte(Satoshis(4)))
       assert(entry.fees.get.effective_feerate == BigDecimal(0.0002))
       assert(entry.fees.get.effective_includes.nonEmpty)
     }
