@@ -111,12 +111,15 @@ trait RawTransactionRpc { self: Client =>
     */
   def sendRawTransaction(
       transaction: Transaction,
-      maxfeerate: Double = 0.10
+      maxfeerate: Double = 0.10,
+      maxBurnAmount: Int = 0
   ): Future[DoubleSha256DigestBE] = {
 
     bitcoindCall[DoubleSha256DigestBE](
       "sendrawtransaction",
-      List(JsString(transaction.hex), JsNumber(maxfeerate))
+      List(JsString(transaction.hex),
+           JsNumber(maxfeerate),
+           JsNumber(maxBurnAmount))
     )
   }
 }
