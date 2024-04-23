@@ -1,31 +1,24 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  GetBlockChainInfoResultPostV23,
-  NoScanInProgress,
-  ScanBlocksAbortResult,
-  ScanBlocksRequest,
-  ScanBlocksStartResult,
-  ScanObject
-}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   ScanBlocksOpt
 }
+import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.descriptor.{P2WPKHDescriptor}
+import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV25,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 
 import scala.concurrent.Future
 
-class BlockchainRpcTest extends BitcoindFixturesCachedPairV25 {
+class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
   behavior of "BlockchainRpc"
 

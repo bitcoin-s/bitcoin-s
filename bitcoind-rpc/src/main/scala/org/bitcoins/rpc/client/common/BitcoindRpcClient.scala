@@ -367,7 +367,7 @@ object BitcoindVersion
     with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V24
+  val newest: BitcoindVersion = V25
 
   val standard: Vector[BitcoindVersion] =
     Vector(V25, V24)
