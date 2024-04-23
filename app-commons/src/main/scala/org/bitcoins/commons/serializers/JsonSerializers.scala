@@ -649,11 +649,22 @@ object JsonSerializers {
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads
 
-  implicit val FeeInfoTwoReads: Reads[FeeInfoTwo] = Json.reads[FeeInfoTwo]
+  implicit object FeeInfoTwoReads extends Reads[FeeInfoTwo] {
+    override def reads(json: JsValue): JsResult[FeeInfoTwo] =
+      for {
+        base <- (json \ "base").validate[BitcoinFeeUnit]
+        effective_feerate <- (json \ "effective-feerate")
+          .validate[BigDecimal] // BTC/kvb, wtf?
+        effective_includes <- (json \ "effective-includes")
+          .validate[Vector[DoubleSha256DigestBE]]
+      } yield FeeInfoTwo(base = base,
+                         effective_feerate = effective_feerate,
+                         effective_includes = effective_includes)
+  }
 
   implicit val testMempoolAcceptResultReadsPostV22
-      : Reads[TestMempoolAcceptResultPostV22] =
-    Json.reads[TestMempoolAcceptResultPostV22]
+      : Reads[TestMempoolAcceptResultPostV24] =
+    Json.reads[TestMempoolAcceptResultPostV24]
 
   implicit val indexInfoResultReads: Reads[IndexInfoResult] =
     Json.reads[IndexInfoResult]

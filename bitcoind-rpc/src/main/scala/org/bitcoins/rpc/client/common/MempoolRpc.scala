@@ -132,8 +132,8 @@ trait MempoolRpc { self: Client =>
   def testMempoolAccept(
       transaction: Vector[Transaction],
       maxFeeRate: Double = 0.10
-  ): Future[Vector[TestMempoolAcceptResultPostV22]] = {
-    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
+  ): Future[Vector[TestMempoolAcceptResultPostV24]] = {
+    bitcoindCall[Vector[TestMempoolAcceptResultPostV24]](
       "testmempoolaccept",
       List(Json.toJson(transaction), Json.toJson(maxFeeRate))
     )

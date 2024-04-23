@@ -280,7 +280,10 @@ class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
       )
     } yield {
       val mempooltxid: Int = mempoolAccept.length
+      val entry = mempoolAccept.head
       assert(mempooltxid > 1)
+      assert(entry.fees.get.effective_feerate == BigDecimal(0.0002))
+      assert(entry.fees.get.effective_includes.nonEmpty)
     }
   }
 }
