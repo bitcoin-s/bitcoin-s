@@ -1,5 +1,6 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.ScanBlocksAction
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   BlockHeaderDbHelper,
@@ -8,12 +9,14 @@ import org.bitcoins.core.api.chain.db.{
 }
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, JsValue}
 import scodec.bits.ByteVector
 
 import java.nio.file.Path
@@ -381,3 +384,39 @@ case class GetTxSpendingPrevOutResult(
 }
 
 case class SimulateRawTransactionResult(balance_change: Bitcoins)
+
+case class ScanObject(descriptor: Descriptor) {
+  def toJson: JsString = JsString(descriptor.toString)
+}
+
+case class ScanBlocksRequest(
+    action: ScanBlocksAction,
+    scanObjects: Vector[ScanObject],
+    startHeightOpt: Option[Int],
+    stopHeightOpt: Option[Int],
+    filterTypeOpt: Option[FilterType]) {
+  def params: List[JsValue] = {
+    List(
+      JsString(action.toString),
+      JsArray(scanObjects.map(_.toJson)), // scanobjects not supported for now?
+      startHeightOpt.map(JsNumber(_)).getOrElse(JsNull),
+      stopHeightOpt.map(JsNumber(_)).getOrElse(JsNull),
+      filterTypeOpt.map(f => JsString(f.toString)).getOrElse(JsNull)
+    )
+  }
+}
+
+sealed trait ScanBlocksResult extends BlockchainResult
+sealed trait StatusScanBlocksResult extends ScanBlocksResult
+
+case class ScanBlocksStartResult(
+    from_height: Int,
+    to_height: Int,
+    relevant_blocks: Vector[DoubleSha256DigestBE])
+    extends ScanBlocksResult
+
+case object NoScanInProgress extends StatusScanBlocksResult
+case class ScanInProgress(progress: BigDecimal, current_height: Int)
+    extends StatusScanBlocksResult
+
+case class ScanBlocksAbortResult(aborted: Boolean) extends ScanBlocksResult

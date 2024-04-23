@@ -1,16 +1,23 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.file.FileUtil
-import org.bitcoins.commons.jsonmodels.bitcoind.GetWalletInfoResultPostV22
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   WalletFlag
+}
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  DecodeScriptResultV22,
+  DescriptorsResult,
+  GetWalletInfoResultPostV22
 }
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
+import org.bitcoins.core.protocol.script.descriptor.{
+  P2SHDescriptor,
+  P2WPKHDescriptor
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Bech32Address,
@@ -18,6 +25,7 @@ import org.bitcoins.core.protocol.{
   BitcoinAddress
 }
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
@@ -38,8 +46,9 @@ import org.bitcoins.testkit.util.PekkoUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
-import scala.concurrent.{Await, Future}
+import java.time.Instant
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
@@ -696,6 +705,37 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         AddressType.Bech32
       )
     } yield succeed
+  }
+
+  it should "be able to decode a reedem script" in { case nodePair =>
+    val client = nodePair.node1
+    val walletName = "decodeRWallet"
+
+    val privKey = ECPrivateKey.freshPrivateKey
+    val p2wpkh = P2PKHScriptPubKey(privKey.publicKey)
+    val descriptor = P2SHDescriptor(p2wpkh)
+
+    val imp: DescriptorsResult = DescriptorsResult(
+      desc = descriptor,
+      timestamp = Instant.now.getEpochSecond,
+      active = true,
+      internal = None,
+      range = None,
+      next = None
+    )
+    for {
+      _ <- client.unloadWallet("")
+      _ <- client.createWallet(walletName, descriptors = true)
+      _ <- client.importDescriptor(imp, Some(walletName))
+      decoded <- client.decodeScript(p2wpkh)
+      _ <- client.unloadWallet(walletName)
+      _ <- client.loadWallet("")
+    } yield {
+      decoded match {
+        case decodedV22: DecodeScriptResultV22 =>
+          assert(decodedV22.typeOfScript.contains(ScriptType.PUBKEYHASH))
+      }
+    }
   }
 
   def startClient(client: BitcoindRpcClient): Future[Unit] = {

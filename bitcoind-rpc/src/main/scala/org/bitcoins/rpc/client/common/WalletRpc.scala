@@ -101,6 +101,12 @@ trait WalletRpc { self: Client =>
   def getNewAddress(walletNameOpt: Option[String]): Future[BitcoinAddress] =
     getNewAddressInternal(addressType = None, walletNameOpt = walletNameOpt)
 
+  def getNewAddress(
+      addressType: AddressType,
+      walletNameOpt: Option[String]): Future[BitcoinAddress] =
+    getNewAddressInternal(addressType = Some(addressType),
+                          walletNameOpt = walletNameOpt)
+
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress] =
     getNewAddressInternal(addressType = Some(addressType))
 
@@ -149,11 +155,13 @@ trait WalletRpc { self: Client =>
   private def getWalletInfo(
       walletName: Option[String]
   ): Future[GetWalletInfoResult] = {
-    self.version.flatMap { case BitcoindVersion.V24 | BitcoindVersion.Unknown =>
-      bitcoindCall[GetWalletInfoResultPostV22](
-        "getwalletinfo",
-        uriExtensionOpt = walletName.map(walletExtension)
-      )
+    self.version.flatMap {
+      case BitcoindVersion.V25 | BitcoindVersion.V24 |
+          BitcoindVersion.Unknown =>
+        bitcoindCall[GetWalletInfoResultPostV22](
+          "getwalletinfo",
+          uriExtensionOpt = walletName.map(walletExtension)
+        )
     }
   }
 
@@ -374,14 +382,14 @@ trait WalletRpc { self: Client =>
       descriptors: Boolean = false
   ): Future[CreateWalletResult] =
     self.version.flatMap {
-      case V24 =>
+      case V25 | V24 =>
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(
             JsString(walletName),
             JsBoolean(disablePrivateKeys),
             JsBoolean(blank),
-            JsString(passphrase),
+            if (passphrase.isEmpty) JsNull else JsString(passphrase),
             JsBoolean(avoidReuse),
             JsBoolean(descriptors)
           )
@@ -410,7 +418,7 @@ trait WalletRpc { self: Client =>
           List(JsString(address.value)),
           uriExtensionOpt = walletNameOpt.map(walletExtension)
         )
-      case V24 | Unknown =>
+      case V25 | V24 =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),

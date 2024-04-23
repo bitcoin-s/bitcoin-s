@@ -1,20 +1,12 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  FundRawTransactionResult,
-  GetRawTransactionResult,
-  GetRawTransactionResultV22,
-  RpcOpts,
-  RpcTransaction,
-  RpcTransactionV22
-}
+import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -40,14 +32,10 @@ trait RawTransactionRpc { self: Client =>
   }
 
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
-
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[RpcTransactionV22](
-        "decoderawtransaction",
-        List(JsString(transaction.hex))
-      )
-    }
-
+    bitcoindCall[RpcTransactionV22](
+      "decoderawtransaction",
+      List(JsString(transaction.hex))
+    )
   }
 
   def fundRawTransaction(
@@ -102,10 +90,7 @@ trait RawTransactionRpc { self: Client =>
       case None       => Nil
     }
     val params = List(JsString(txid.hex), JsBoolean(true)) ++ lastParam
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[GetRawTransactionResultV22]("getrawtransaction", params)
-    }
-
+    bitcoindCall[GetRawTransactionResultV22]("getrawtransaction", params)
   }
 
   def getRawTransactionRaw(
@@ -126,12 +111,15 @@ trait RawTransactionRpc { self: Client =>
     */
   def sendRawTransaction(
       transaction: Transaction,
-      maxfeerate: Double = 0.10
+      maxfeerate: Double = 0.10,
+      maxBurnAmount: Int = 0
   ): Future[DoubleSha256DigestBE] = {
 
     bitcoindCall[DoubleSha256DigestBE](
       "sendrawtransaction",
-      List(JsString(transaction.hex), JsNumber(maxfeerate))
+      List(JsString(transaction.hex),
+           JsNumber(maxfeerate),
+           JsNumber(maxBurnAmount))
     )
   }
 }

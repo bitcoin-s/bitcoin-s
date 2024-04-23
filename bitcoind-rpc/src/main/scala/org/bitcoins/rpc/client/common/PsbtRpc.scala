@@ -12,7 +12,6 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -97,10 +96,7 @@ trait PsbtRpc {
   }
 
   def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] = {
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
-    }
-
+    bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
   }
 
 }

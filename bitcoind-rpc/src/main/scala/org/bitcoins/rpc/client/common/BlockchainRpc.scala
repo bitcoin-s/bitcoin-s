@@ -1,20 +1,20 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonSerializers
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi}
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb,
   CompactFilterHeaderDbHelper
 }
+import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion._
-import play.api.libs.json.{JsBoolean, JsNumber, JsString, Json, Reads}
+import play.api.libs.json._
 
 import scala.concurrent.Future
 
@@ -39,9 +39,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
-    }
+    bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
   }
 
   override def getBlockCount(): Future[Int] = {
@@ -92,13 +90,10 @@ trait BlockchainRpc extends ChainApi { self: Client =>
       headerHash: DoubleSha256DigestBE
   ): Future[GetBlockWithTransactionsResultV22] = {
     val isVerboseJsonObject = JsNumber(2)
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[GetBlockWithTransactionsResultV22](
-        "getblock",
-        List(JsString(headerHash.hex), isVerboseJsonObject)
-      )
-    }
-
+    bitcoindCall[GetBlockWithTransactionsResultV22](
+      "getblock",
+      List(JsString(headerHash.hex), isVerboseJsonObject)
+    )
   }
 
   def getBlockWithTransactions(
@@ -435,5 +430,10 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     } yield {
       filterOpt
     }
+  }
+
+  def scanBlocks(request: ScanBlocksRequest): Future[ScanBlocksResult] = {
+    bitcoindCall("scanblocks", request.params)(
+      JsonSerializers.ScanBlocksResultReads)
   }
 }

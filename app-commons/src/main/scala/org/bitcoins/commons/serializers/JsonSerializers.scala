@@ -149,7 +149,7 @@ object JsonSerializers {
   implicit val decodeScriptResultV22Reads: Reads[DecodeScriptResultV22] =
     ((__ \ "asm").read[String] and
       (__ \ "type").readNullable[ScriptType] and
-      (__ \ "p2sh").read[P2SHAddress])(DecodeScriptResultV22)
+      (__ \ "address").read[BitcoinAddress])(DecodeScriptResultV22)
 
   implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] =
     Json.reads[FundRawTransactionResult]
@@ -649,11 +649,22 @@ object JsonSerializers {
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads
 
-  implicit val FeeInfoTwoReads: Reads[FeeInfoTwo] = Json.reads[FeeInfoTwo]
+  implicit object FeeInfoTwoReads extends Reads[FeeInfoTwo] {
+    override def reads(json: JsValue): JsResult[FeeInfoTwo] =
+      for {
+        base <- (json \ "base").validate[BitcoinFeeUnit]
+        effective_feerate <- (json \ "effective-feerate")
+          .validate[BigDecimal] // BTC/kvb, wtf?
+        effective_includes <- (json \ "effective-includes")
+          .validate[Vector[DoubleSha256DigestBE]]
+      } yield FeeInfoTwo(base = base,
+                         effective_feerate = effective_feerate,
+                         effective_includes = effective_includes)
+  }
 
   implicit val testMempoolAcceptResultReadsPostV22
-      : Reads[TestMempoolAcceptResultPostV22] =
-    Json.reads[TestMempoolAcceptResultPostV22]
+      : Reads[TestMempoolAcceptResultPostV24] =
+    Json.reads[TestMempoolAcceptResultPostV24]
 
   implicit val indexInfoResultReads: Reads[IndexInfoResult] =
     Json.reads[IndexInfoResult]
@@ -875,4 +886,24 @@ object JsonSerializers {
     Json.reads[ImportDescriptorResult]
   }
 
+  implicit val scanBlocksStartResultReads: Reads[ScanBlocksStartResult] =
+    Json.reads[ScanBlocksStartResult]
+  implicit val scanInProgressReads: Reads[ScanInProgress] =
+    Json.reads[ScanInProgress]
+  implicit val noScanInProgress: Reads[NoScanInProgress.type] =
+    Json.reads[NoScanInProgress.type]
+
+  implicit object ScanBlocksResultReads extends Reads[ScanBlocksResult] {
+    override def reads(json: JsValue): JsResult[ScanBlocksResult] = {
+      json match {
+        case JsNull             => JsSuccess(NoScanInProgress)
+        case JsBoolean(aborted) => JsSuccess(ScanBlocksAbortResult(aborted))
+        case x =>
+          scanInProgressReads.reads(x) match {
+            case s: JsSuccess[_] => s
+            case _: JsError      => scanBlocksStartResultReads.reads(x)
+          }
+      }
+    }
+  }
 }

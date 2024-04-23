@@ -35,6 +35,8 @@ object FilterType extends Factory[FilterType] with StringFactory[FilterType] {
 
     val M: UInt64 = UInt64(784931)
     val P: UInt8 = UInt8(19)
+
+    override def toString: String = "basic"
   }
 
   def getCode(filterType: FilterType): Short =

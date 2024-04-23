@@ -7,7 +7,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import java.net.URI
@@ -64,15 +63,11 @@ trait P2PRpc { self: Client =>
   }
 
   def getPeerInfo: Future[Vector[Peer]] = {
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[Vector[PeerPostV21]]("getpeerinfo")
-    }
+    bitcoindCall[Vector[PeerPostV21]]("getpeerinfo")
   }
 
   def listBanned: Future[Vector[NodeBan]] = {
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[Vector[NodeBanPostV22]]("listbanned")
-    }
+    bitcoindCall[Vector[NodeBanPostV22]]("listbanned")
   }
 
   def setBan(

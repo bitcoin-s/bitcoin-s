@@ -9,7 +9,6 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
@@ -43,13 +42,11 @@ trait MultisigRpc { self: Client =>
         JsString(account)
       ) ++ addressType.map(Json.toJson(_)).toList
 
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[MultiSigResultPostV20](
-        "addmultisigaddress",
-        params,
-        uriExtensionOpt = walletNameOpt.map(walletExtension)
-      )
-    }
+    bitcoindCall[MultiSigResultPostV20](
+      "addmultisigaddress",
+      params,
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 
   def addMultiSigAddress(
@@ -86,16 +83,14 @@ trait MultisigRpc { self: Client =>
       addressType: AddressType,
       walletNameOpt: Option[String] = None
   ): Future[MultiSigResult] = {
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[MultiSigResultPostV20](
-        "createmultisig",
-        List(
-          JsNumber(minSignatures),
-          Json.toJson(keys.map(_.hex)),
-          Json.toJson(addressType)
-        ),
-        uriExtensionOpt = walletNameOpt.map(walletExtension)
-      )
-    }
+    bitcoindCall[MultiSigResultPostV20](
+      "createmultisig",
+      List(
+        JsNumber(minSignatures),
+        Json.toJson(keys.map(_.hex)),
+        Json.toJson(addressType)
+      ),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    )
   }
 }

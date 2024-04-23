@@ -6,7 +6,6 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json.{JsBoolean, JsString, Json}
 
 import scala.concurrent.Future
@@ -34,13 +33,10 @@ trait MempoolRpc { self: Client =>
   def getMemPoolAncestorsVerbose(
       txid: DoubleSha256DigestBE
   ): Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
-
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
-        "getmempoolancestors",
-        List(JsString(txid.hex), JsBoolean(true))
-      )
-    }
+    bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
+      "getmempoolancestors",
+      List(JsString(txid.hex), JsBoolean(true))
+    )
   }
 
   def getMemPoolAncestorsVerbose(
@@ -67,12 +63,10 @@ trait MempoolRpc { self: Client =>
   def getMemPoolDescendantsVerbose(
       txid: DoubleSha256DigestBE
   ): Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
-        "getmempooldescendants",
-        List(JsString(txid.hex), JsBoolean(true))
-      )
-    }
+    bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
+      "getmempooldescendants",
+      List(JsString(txid.hex), JsBoolean(true))
+    )
   }
 
   def getMemPoolDescendantsVerbose(
@@ -84,14 +78,10 @@ trait MempoolRpc { self: Client =>
   def getMemPoolEntry(
       txid: DoubleSha256DigestBE
   ): Future[GetMemPoolEntryResult] = {
-
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[GetMemPoolEntryResultPostV23](
-        "getmempoolentry",
-        List(JsString(txid.hex))
-      )
-    }
-
+    bitcoindCall[GetMemPoolEntryResultPostV23](
+      "getmempoolentry",
+      List(JsString(txid.hex))
+    )
   }
 
   def getMemPoolEntry(
@@ -129,14 +119,10 @@ trait MempoolRpc { self: Client =>
 
   def getRawMemPoolWithTransactions
       : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
-
-    self.version.flatMap { case V24 | Unknown =>
-      bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
-        "getrawmempool",
-        List(JsBoolean(true))
-      )
-    }
-
+    bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
+      "getrawmempool",
+      List(JsBoolean(true))
+    )
   }
 
   def saveMemPool(): Future[Unit] = {
@@ -146,8 +132,8 @@ trait MempoolRpc { self: Client =>
   def testMempoolAccept(
       transaction: Vector[Transaction],
       maxFeeRate: Double = 0.10
-  ): Future[Vector[TestMempoolAcceptResultPostV22]] = {
-    bitcoindCall[Vector[TestMempoolAcceptResultPostV22]](
+  ): Future[Vector[TestMempoolAcceptResultPostV24]] = {
+    bitcoindCall[Vector[TestMempoolAcceptResultPostV24]](
       "testmempoolaccept",
       List(Json.toJson(transaction), Json.toJson(maxFeeRate))
     )

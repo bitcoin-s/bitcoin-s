@@ -171,17 +171,19 @@ case class TestMempoolAcceptResult(
   */
 
 case class FeeInfoTwo(
-    base: BitcoinFeeUnit
+    base: BitcoinFeeUnit,
+    effective_feerate: BigDecimal,
+    effective_includes: Vector[DoubleSha256DigestBE]
 )
 
-case class TestMempoolAcceptResultPostV22(
+case class TestMempoolAcceptResultPostV24(
     txid: DoubleSha256DigestBE,
     wtxid: DoubleSha256DigestBE,
     packageError: Option[String],
     allowed: Boolean,
     vsize: Option[Int],
     fees: Option[FeeInfoTwo],
-    rejectReason: Option[String]
+    rejectReason: Option[String] // wtxid
 )
 
 final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])

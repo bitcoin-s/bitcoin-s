@@ -213,7 +213,8 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       next = None
     )
 
-    val resultF = client.importDescriptors(Vector(imp))
+    val resultF =
+      client.importDescriptors(imports = Vector(imp), walletNameOpt = None)
 
     for {
       result <- resultF
