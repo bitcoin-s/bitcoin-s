@@ -2,6 +2,7 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
@@ -192,5 +193,16 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       for {
         _ <- client.saveMemPool()
       } yield assert(regTest.list().contains("mempool.dat"))
+  }
+
+  it should "get tx spending prev out" in { nodePair =>
+    val client = nodePair.node1
+    val junkAddress: BitcoinAddress =
+      BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
+    for {
+      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
+      tx <- client.getRawTransaction(txid).map(_.hex)
+      spending <- client.getTxSpendingPrevOut(tx.inputs.head.previousOutput)
+    } yield assert(spending.spendingtxid.contains(txid))
   }
 }

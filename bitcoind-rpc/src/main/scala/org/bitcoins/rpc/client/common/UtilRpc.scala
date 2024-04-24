@@ -46,6 +46,5 @@ trait UtilRpc { self: Client =>
         List(JsString(indexName))
       ).map(_.head._2)
     }
-
   }
 }

@@ -70,4 +70,13 @@ class NodeRpcTest extends BitcoindFixturesFundedCachedNewest {
       assert(!helpHelp.isEmpty)
     }
   }
+
+  it should "be able to get network info" in { freshClient =>
+    for {
+      info <- freshClient.getNetworkInfo
+    } yield {
+      assert(info.networkactive)
+      assert(info.localrelay)
+    }
+  }
 }

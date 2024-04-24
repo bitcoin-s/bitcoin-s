@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.v24
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   WalletFlag
@@ -8,14 +7,13 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
-import org.bitcoins.core.protocol.{Bech32mAddress, BitcoinAddress}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v24.BitcoindV24RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.rpc.{
@@ -34,53 +32,6 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
     BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   behavior of "BitcoindV24RpcClient"
-
-  it should "get index info" in { client: BitcoindV24RpcClient =>
-    def indexSynced(client: BitcoindRpcClient): Future[Boolean] = {
-      client.getIndexInfo.map { indexes =>
-        indexes("txindex").best_block_height == 101 && indexes(
-          "basic block filter index"
-        ).best_block_height == 101
-      }
-    }
-    for {
-      _ <- AsyncUtil.retryUntilSatisfiedF(() => indexSynced(client))
-      indexes <- client.getIndexInfo
-    } yield {
-      val txIndexInfo = indexes("txindex")
-      assert(txIndexInfo.synced)
-      assert(txIndexInfo.best_block_height == 101)
-
-      val blockFilterIndexInfo = indexes("basic block filter index")
-      assert(blockFilterIndexInfo.synced)
-      assert(blockFilterIndexInfo.best_block_height == 101)
-    }
-  }
-
-  it should "be able to start a V24 bitcoind instance" in {
-    client: BitcoindV24RpcClient =>
-      for {
-        v <- client.version
-      } yield assert(v == BitcoindVersion.V24)
-  }
-
-  it should "be able to get network info" in {
-    freshClient: BitcoindV24RpcClient =>
-      for {
-        info <- freshClient.getNetworkInfo
-      } yield {
-        assert(info.networkactive)
-        assert(info.localrelay)
-      }
-  }
-
-  it should "generate a bech32m address" in { client: BitcoindV24RpcClient =>
-    for {
-      address <- client.getNewAddress(addressType = AddressType.Bech32m)
-    } yield {
-      assert(address.isInstanceOf[Bech32mAddress])
-    }
-  }
 
   it should "be able to validate a bitcoin address" in { case client =>
     for {
@@ -144,22 +95,6 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
       BlockHeaderDbHelper.fromBlockHeader(height = 1, BigInt(0), genesisHeader)
     val nextHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
     client.submitHeader(nextHeader.blockHeader).map(_ => succeed)
-  }
-
-  it should "simulate a transaction" in { client =>
-    for {
-      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
-      tx <- client.getRawTransaction(txid).map(_.hex)
-      change <- client.simulateRawTransaction(tx)
-    } yield assert(change <= -Bitcoins.one) // 1 bitcoin + fees
-  }
-
-  it should "get tx spending prev out" in { client =>
-    for {
-      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
-      tx <- client.getRawTransaction(txid).map(_.hex)
-      spending <- client.getTxSpendingPrevOut(tx.inputs.head.previousOutput)
-    } yield assert(spending.spendingtxid.contains(txid))
   }
 
   it should "derive addresses from a descriptor" in { client =>

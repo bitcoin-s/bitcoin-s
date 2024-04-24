@@ -738,6 +738,19 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
+  it should "simulate a transaction" in { nodePair =>
+    val client = nodePair.node1
+    val junkAddress: BitcoinAddress =
+      BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
+    for {
+      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
+      tx <- client.getRawTransaction(txid).map(_.hex)
+      change <- client.simulateRawTransaction(tx)
+    } yield {
+      assert(change <= -Bitcoins.one)
+    } // 1 bitcoin + fees
+  }
+
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }

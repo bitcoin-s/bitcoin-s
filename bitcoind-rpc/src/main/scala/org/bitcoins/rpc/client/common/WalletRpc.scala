@@ -551,4 +551,27 @@ trait WalletRpc { self: Client =>
         Json.toJson(sigHash)
       )
     )
+
+  def simulateRawTransaction(
+      tx: Transaction,
+      includeWatchOnly: Boolean = true,
+      walletNameOpt: Option[String] = None
+  ): Future[CurrencyUnit] = {
+    simulateRawTransactions(Vector(tx), includeWatchOnly, walletNameOpt)
+  }
+
+  def simulateRawTransactions(
+      txs: Vector[Transaction],
+      includeWatchOnly: Boolean = true,
+      walletNameOpt: Option[String] = None
+  ): Future[CurrencyUnit] = {
+    val txsJson = JsArray(txs.map(tx => JsString(tx.hex)))
+    val options = Json.obj("include_watchonly" -> includeWatchOnly)
+
+    bitcoindCall[SimulateRawTransactionResult](
+      "simulaterawtransaction",
+      List(txsJson, options),
+      uriExtensionOpt = walletNameOpt.map(walletExtension)
+    ).map(_.balance_change)
+  }
 }

@@ -3,10 +3,10 @@ package org.bitcoins.rpc.client.common
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.BitcoindException
-import play.api.libs.json.{JsBoolean, JsString, Json}
+import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
 
 import scala.concurrent.Future
 
@@ -136,6 +136,25 @@ trait MempoolRpc { self: Client =>
     bitcoindCall[Vector[TestMempoolAcceptResultPostV24]](
       "testmempoolaccept",
       List(Json.toJson(transaction), Json.toJson(maxFeeRate))
+    )
+  }
+
+  def getTxSpendingPrevOut(
+      prevout: TransactionOutPoint
+  ): Future[GetTxSpendingPrevOutResult] = {
+    getTxSpendingPrevOut(Vector(prevout)).map(_.head)
+  }
+
+  def getTxSpendingPrevOut(
+      prevouts: Vector[TransactionOutPoint]
+  ): Future[Vector[GetTxSpendingPrevOutResult]] = {
+    val json = JsArray(prevouts.map { prev =>
+      Json.obj("txid" -> prev.txIdBE.hex, "vout" -> prev.vout.toLong)
+    })
+
+    bitcoindCall[Vector[GetTxSpendingPrevOutResult]](
+      "gettxspendingprevout",
+      List(json)
     )
   }
 }
