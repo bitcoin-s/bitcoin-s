@@ -314,7 +314,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         val createWalletF = for {
           version <- server.version
           descriptors = true
-          _ <- res.createWallet("", descriptors = descriptors)
+          _ <- res.createWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME,
+                                descriptors = descriptors)
         } yield res
 
         createWalletF
