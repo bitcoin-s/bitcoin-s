@@ -1,13 +1,8 @@
 package org.bitcoins.rpc.client.v24
 
 import org.apache.pekko.actor.ActorSystem
-import org.bitcoins.commons.jsonmodels.bitcoind.SimulateRawTransactionResult
-import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
-import play.api.libs.json._
 
 import scala.concurrent.Future
 import scala.util.Try

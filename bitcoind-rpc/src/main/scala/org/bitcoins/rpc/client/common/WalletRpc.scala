@@ -555,15 +555,15 @@ trait WalletRpc { self: Client =>
   def simulateRawTransaction(
       tx: Transaction,
       includeWatchOnly: Boolean = true,
-      walletNameOpt: Option[String] = None
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[CurrencyUnit] = {
-    simulateRawTransactions(Vector(tx), includeWatchOnly, walletNameOpt)
+    simulateRawTransactions(Vector(tx), includeWatchOnly, walletName)
   }
 
   def simulateRawTransactions(
       txs: Vector[Transaction],
       includeWatchOnly: Boolean = true,
-      walletNameOpt: Option[String] = None
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[CurrencyUnit] = {
     val txsJson = JsArray(txs.map(tx => JsString(tx.hex)))
     val options = Json.obj("include_watchonly" -> includeWatchOnly)
@@ -571,7 +571,7 @@ trait WalletRpc { self: Client =>
     bitcoindCall[SimulateRawTransactionResult](
       "simulaterawtransaction",
       List(txsJson, options),
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
+      uriExtensionOpt = Some(walletExtension(walletName))
     ).map(_.balance_change)
   }
 }

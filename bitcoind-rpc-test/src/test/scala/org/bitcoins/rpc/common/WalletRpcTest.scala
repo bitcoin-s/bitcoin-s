@@ -743,7 +743,10 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val junkAddress: BitcoinAddress =
       BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
     for {
-      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
+      txid <- client.sendToAddress(
+        junkAddress,
+        Bitcoins.one,
+        walletNameOpt = Some(BitcoindRpcClient.DEFAULT_WALLET_NAME))
       tx <- client.getRawTransaction(txid).map(_.hex)
       change <- client.simulateRawTransaction(tx)
     } yield {
