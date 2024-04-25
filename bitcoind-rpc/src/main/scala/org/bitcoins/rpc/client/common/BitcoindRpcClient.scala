@@ -303,6 +303,8 @@ object BitcoindRpcClient {
   implicit private lazy val system: ActorSystem =
     ActorSystem.create(ActorSystemName)
 
+  val DEFAULT_WALLET_NAME: String = "wallet.dat"
+
   /** Creates an RPC client from the given instance.
     *
     * Behind the scenes, we create an actor system for you. You can use

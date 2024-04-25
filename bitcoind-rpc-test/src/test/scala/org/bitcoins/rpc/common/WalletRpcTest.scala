@@ -79,6 +79,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       // hasn't released its locks on the datadir. This is prevent that.
       _ <- PekkoUtil.nonBlockingSleep(1.second)
       _ <- walletClient.start()
+      _ <- walletClient.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
     } yield walletClient
   }
 
@@ -91,8 +92,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       wallets <- client.listWallets
     } yield {
-
-      val expectedFileName = ""
+      val expectedFileName = BitcoindRpcClient.DEFAULT_WALLET_NAME
 
       assert(wallets == Vector(expectedFileName))
     }
@@ -651,11 +651,11 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "create a descriptor wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
-      _ <- client.unloadWallet("")
+      _ <- client.unloadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
       _ <- client.createWallet("descriptorWallet", descriptors = true)
       descript <- client.getWalletInfo("descriptorWallet")
       _ <- client.unloadWallet("descriptorWallet")
-      _ <- client.loadWallet("")
+      _ <- client.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
     } yield {
       descript match {
         case walletInfoPostV22: GetWalletInfoResultPostV22 =>
@@ -668,11 +668,11 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
-        _ <- client.unloadWallet("")
+        _ <- client.unloadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
         _ <- client.createWallet("privKeyWallet", disablePrivateKeys = true)
         walletPriv <- client.getWalletInfo("privKeyWallet")
         _ <- client.unloadWallet("privKeyWallet")
-        _ <- client.loadWallet("")
+        _ <- client.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
       } yield {
         walletPriv match {
           case walletInfoPostV22: GetWalletInfoResultPostV22 =>
@@ -724,12 +724,12 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       next = None
     )
     for {
-      _ <- client.unloadWallet("")
+      _ <- client.unloadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
       _ <- client.createWallet(walletName, descriptors = true)
       _ <- client.importDescriptor(imp, Some(walletName))
       decoded <- client.decodeScript(p2wpkh)
       _ <- client.unloadWallet(walletName)
-      _ <- client.loadWallet("")
+      _ <- client.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
     } yield {
       decoded match {
         case decodedV22: DecodeScriptResultV22 =>
