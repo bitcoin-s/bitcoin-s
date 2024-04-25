@@ -70,6 +70,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <- PekkoUtil.nonBlockingSleep(1.second)
       started <- walletClient.start()
       _ <- walletClient.loadWallet(walletName)
+      _ <- walletClient.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
 
       wallets <- walletClient.listWallets
       wallets2 <- client.listWallets
