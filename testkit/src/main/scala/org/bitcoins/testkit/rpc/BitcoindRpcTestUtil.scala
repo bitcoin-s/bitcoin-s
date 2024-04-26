@@ -103,6 +103,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |regtest=1
                   |server=1
                   |daemon=$isDaemon
+                  |v2transport=1
                   |[regtest]
                   |rpcuser=$username
                   |rpcpassword=$pass

@@ -38,6 +38,10 @@ class ServiceIdentifierTest extends BitcoinSUnitTest {
     assert(ServiceIdentifier.NODE_NETWORK_LIMITED.nodeNetworkLimited)
   }
 
+  it must "parse P2P_V2" in {
+    assert(ServiceIdentifier.NODE_P2P_V2.nodeP2PV2)
+  }
+
   it must "correctly get a ServiceIdentifier from string" in {
     assert(
       ServiceIdentifier.fromString("NETWORK") == ServiceIdentifier.NODE_NETWORK
@@ -62,6 +66,10 @@ class ServiceIdentifierTest extends BitcoinSUnitTest {
     )
     assert(
       ServiceIdentifier.fromString("XTHIN") == ServiceIdentifier.NODE_XTHIN
+    )
+
+    assert(
+      ServiceIdentifier.fromString("P2P_V2") == ServiceIdentifier.NODE_P2P_V2
     )
     assertThrows[IllegalArgumentException](
       ServiceIdentifier.fromString("this is invalid")

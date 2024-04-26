@@ -17,10 +17,15 @@ import scala.concurrent.Future
   */
 trait P2PRpc { self: Client =>
 
-  def addNode(address: URI, command: AddNodeArgument): Future[Unit] = {
+  def addNode(
+      address: URI,
+      command: AddNodeArgument,
+      v2transport: Boolean = true): Future[Unit] = {
     bitcoindCall[Unit](
       "addnode",
-      List(JsString(address.getAuthority), JsString(command.toString))
+      List(JsString(address.getAuthority),
+           JsString(command.toString),
+           JsBoolean(v2transport))
     )
   }
 
@@ -62,7 +67,7 @@ trait P2PRpc { self: Client =>
       }
   }
 
-  def getPeerInfo: Future[Vector[PeerInfoResponse]] = {
+  def getPeerInfo: Future[Vector[PeerInfoResponseV25]] = {
     bitcoindCall[Vector[PeerInfoResponseV25]]("getpeerinfo")
   }
 
