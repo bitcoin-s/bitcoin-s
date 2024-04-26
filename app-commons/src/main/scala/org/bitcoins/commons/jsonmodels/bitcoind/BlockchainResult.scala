@@ -357,7 +357,7 @@ case class GetTxOutSetInfoResult(
     transactions: Int,
     txouts: Int,
     bogosize: Int,
-    hash_serialized_2: DoubleSha256DigestBE,
+    hash_serialized_3: DoubleSha256DigestBE,
     disk_size: Int,
     total_amount: Bitcoins
 ) extends BlockchainResult
