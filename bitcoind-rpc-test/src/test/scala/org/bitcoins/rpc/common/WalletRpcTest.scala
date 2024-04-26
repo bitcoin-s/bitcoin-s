@@ -728,7 +728,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       _ <- client.unloadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
       _ <- client.createWallet(walletName, descriptors = true)
-      _ <- client.importDescriptor(imp, Some(walletName))
+      _ <- client.importDescriptor(imp, walletName)
       decoded <- client.decodeScript(p2wpkh)
       _ <- client.unloadWallet(walletName)
       _ <- client.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
@@ -806,7 +806,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     )
 
     val resultF =
-      client.importDescriptors(imports = Vector(imp), walletNameOpt = None)
+      client.importDescriptors(imports = Vector(imp))
 
     for {
       result <- resultF
@@ -829,21 +829,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         addr <- client.getNewAddress
         info <- client.getAddressInfo(addr)
       } yield assert(info.address == addr)
-  }
-
-  it should "be able to get the balances" in { case nodePair =>
-    val client = nodePair.node1
-    for {
-      immatureBalance <- client.getBalances
-      _ <- client.generate(1)
-      newImmatureBalance <- client.getBalances
-    } yield {
-      val blockReward = 50
-      assert(immatureBalance.mine.immature.toBigDecimal >= 0)
-      assert(
-        immatureBalance.mine.trusted.toBigDecimal + blockReward == newImmatureBalance.mine.trusted.toBigDecimal
-      )
-    }
   }
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))

@@ -292,7 +292,7 @@ trait WalletRpc { self: Client =>
   }
 
   def getBalances: Future[GetBalancesResult] = {
-    bitcoindCall[GetBalancesResult]("getbalances")
+    getBalances(BitcoindRpcClient.DEFAULT_WALLET_NAME)
   }
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {

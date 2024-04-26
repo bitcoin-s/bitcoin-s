@@ -49,20 +49,20 @@ trait DescriptorRpc {
     */
   def importDescriptors(
       imports: Vector[DescriptorsResult],
-      walletNameOpt: Option[String]
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[Vector[ImportDescriptorResult]] = {
     bitcoindCall[Vector[ImportDescriptorResult]](
       "importdescriptors",
       List(Json.toJson(imports)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
+      uriExtensionOpt = Some(walletExtension(walletName))
     )
   }
 
   def importDescriptor(
       imp: DescriptorsResult,
-      walletNameOpt: Option[String]
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[ImportDescriptorResult] = {
-    importDescriptors(Vector(imp), walletNameOpt).map(_.head)
+    importDescriptors(Vector(imp), walletName).map(_.head)
   }
 
   def listDescriptors(): Future[ListDescriptorsResult] = {
