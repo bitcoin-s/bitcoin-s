@@ -311,10 +311,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit ec: ExecutionContext): Future[Unit] = {
     val startedServersF = Future.traverse(servers) { server =>
       server.start().flatMap { res =>
-        val descriptors = true
         val createWalletF = for {
-          _ <- res.createWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME,
-                                descriptors = descriptors)
+          _ <- res.createWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
         } yield res
 
         createWalletF

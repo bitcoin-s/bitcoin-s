@@ -6,7 +6,7 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.rpc.client.common.{Client, MultisigRpc}
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, Client, MultisigRpc}
 import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
@@ -74,7 +74,7 @@ trait V20MultisigRpc extends MultisigRpc { self: Client =>
       minSignatures: Int,
       keys: Vector[ECPublicKey],
       addressType: AddressType,
-      walletNameOpt: Option[String] = None
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[MultiSigResultPostV20] = {
     bitcoindCall[MultiSigResultPostV20](
       "createmultisig",
@@ -83,7 +83,7 @@ trait V20MultisigRpc extends MultisigRpc { self: Client =>
         Json.toJson(keys.map(_.hex)),
         Json.toJson(addressType)
       ),
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
+      uriExtensionOpt = Some(walletExtension(walletName))
     )
   }
 }

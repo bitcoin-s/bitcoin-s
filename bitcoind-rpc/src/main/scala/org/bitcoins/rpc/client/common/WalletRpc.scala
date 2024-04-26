@@ -380,7 +380,7 @@ trait WalletRpc { self: Client =>
       blank: Boolean = false,
       passphrase: String = "",
       avoidReuse: Boolean = false,
-      descriptors: Boolean = false
+      descriptors: Boolean = true
   ): Future[CreateWalletResult] =
     self.version.flatMap {
       case V25 | V26 =>

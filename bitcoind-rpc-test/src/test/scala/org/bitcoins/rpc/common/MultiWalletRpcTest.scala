@@ -1,13 +1,9 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
@@ -196,16 +192,6 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to refill the keypool" in { nodePair =>
-    val client = nodePair.node2
-    for {
-      _ <- client.walletPassphrase(password, 1000, walletName)
-      info <- client.getWalletInfo(walletName)
-      _ <- client.keyPoolRefill(info.keypoolsize + 1, walletName)
-      newInfo <- client.getWalletInfo(walletName)
-    } yield assert(newInfo.keypoolsize == info.keypoolsize + 1)
-  }
-
   it should "be able to change the wallet password" in { nodePair =>
     val walletClient = nodePair.node2
     val newPass = "new_password"
@@ -282,49 +268,6 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(balance.toBigDecimal > 0)
       assert(balance.toBigDecimal < newBalance.toBigDecimal)
     }
-  }
-
-  it should "be able to import multiple addresses with importMulti" in {
-    nodePair =>
-      val client = nodePair.node2
-      val privKey = ECPrivateKey.freshPrivateKey
-      val address1 = P2PKHAddress(privKey.publicKey, networkParam)
-
-      val privKey1 = ECPrivateKey.freshPrivateKey
-      val privKey2 = ECPrivateKey.freshPrivateKey
-
-      for {
-        firstResult <-
-          client
-            .createMultiSig(
-              2,
-              Vector(privKey1.publicKey, privKey2.publicKey),
-              AddressType.Bech32,
-              walletNameOpt = Some(walletName)
-            )
-        address2 = firstResult.address
-
-        secondResult <-
-          client
-            .importMulti(
-              Vector(
-                RpcOpts.ImportMultiRequest(
-                  RpcOpts.ImportMultiAddress(address1),
-                  UInt32(0)
-                ),
-                RpcOpts.ImportMultiRequest(
-                  RpcOpts.ImportMultiAddress(address2),
-                  UInt32(0)
-                )
-              ),
-              rescan = false,
-              walletName = walletName
-            )
-      } yield {
-        assert(secondResult.length == 2)
-        assert(secondResult(0).success)
-        assert(secondResult(1).success)
-      }
   }
 
   it should "be able to set the tx fee" in { nodePair =>
