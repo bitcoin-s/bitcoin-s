@@ -6,6 +6,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   WalletFlag
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.{
+  AddressInfoResultPostV21,
   DecodeScriptResultV22,
   DescriptorsResult,
   GetWalletInfoResultPostV22
@@ -743,15 +744,33 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val junkAddress: BitcoinAddress =
       BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
     for {
-      txid <- client.sendToAddress(
-        junkAddress,
-        Bitcoins.one,
-        walletNameOpt = Some(BitcoindRpcClient.DEFAULT_WALLET_NAME))
+      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
       tx <- client.getRawTransaction(txid).map(_.hex)
       change <- client.simulateRawTransaction(tx)
     } yield {
       assert(change <= -Bitcoins.one)
     } // 1 bitcoin + fees
+  }
+
+  it should "be able to validate a bitcoin address" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress
+      validation <- client.validateAddress(address)
+    } yield assert(validation.isvalid)
+  }
+
+  it should "have extra address information" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress
+      info <- client.getAddressInfo(address)
+    } yield {
+      info match {
+        case postV21Info: AddressInfoResultPostV21 =>
+          assert(postV21Info.address == address)
+      }
+    }
   }
 
   def startClient(client: BitcoindRpcClient): Future[Unit] = {

@@ -515,27 +515,6 @@ object JsonSerializers {
   implicit val embeddedResultReads: Reads[EmbeddedResult] =
     Json.reads[EmbeddedResult]
 
-  implicit val addressInfoResultPreV18Reads: Reads[AddressInfoResultPreV18] =
-    Json.reads[AddressInfoResultPreV18]
-
-  implicit val addressInfoResultPostV18Reads
-      : Reads[AddressInfoResultPostV18] = {
-    Reads[AddressInfoResultPostV18] { json =>
-      for {
-        isProps <-
-          Json.reads[AddressInfoResultPostV18.AddressInfoIsProps].reads(json)
-        infoWithoutProps <-
-          Json
-            .reads[
-              AddressInfoResultPostV18.AddressInfoResultPostV18WithoutIsProps
-            ]
-            .reads(json)
-      } yield {
-        AddressInfoResultPostV18(infoWithoutProps, isProps)
-      }
-    }
-  }
-
   implicit val addressInfoResultPostV21Reads
       : Reads[AddressInfoResultPostV21] = {
     Reads[AddressInfoResultPostV21] { json =>

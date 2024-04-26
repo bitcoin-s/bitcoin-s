@@ -412,19 +412,12 @@ trait WalletRpc { self: Client =>
       address: BitcoinAddress,
       walletName: String = DEFAULT_WALLET
   ): Future[AddressInfoResult] = {
-    self.version.flatMap {
-      case Unknown =>
-        bitcoindCall[AddressInfoResultPostV18](
-          "getaddressinfo",
-          List(JsString(address.value)),
-          uriExtensionOpt = Some(walletExtension(walletName))
-        )
-      case V25 | V24 =>
-        bitcoindCall[AddressInfoResultPostV21](
-          "getaddressinfo",
-          List(JsString(address.value)),
-          uriExtensionOpt = Some(walletExtension(walletName))
-        )
+    self.version.flatMap { case V25 | V24 | Unknown =>
+      bitcoindCall[AddressInfoResultPostV21](
+        "getaddressinfo",
+        List(JsString(address.value)),
+        uriExtensionOpt = Some(walletExtension(walletName))
+      )
     }
   }
 

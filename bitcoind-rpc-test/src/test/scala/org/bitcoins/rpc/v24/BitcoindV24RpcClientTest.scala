@@ -33,27 +33,6 @@ class BitcoindV24RpcClientTest extends BitcoindFixturesFundedCachedV24 {
 
   behavior of "BitcoindV24RpcClient"
 
-  it should "be able to validate a bitcoin address" in { case client =>
-    for {
-      address <- client.getNewAddress
-      validation <- client.validateAddress(address)
-    } yield assert(validation.isvalid)
-  }
-
-  it should "have extra address information" in { client =>
-    for {
-      address <- client.getNewAddress
-      info <- client.getAddressInfo(address)
-    } yield {
-      info match {
-        case _: AddressInfoResultPreV18 | _: AddressInfoResultPostV18 =>
-          fail("Was expecting AddressInfoResultPostV21")
-        case postV21Info: AddressInfoResultPostV21 =>
-          assert(postV21Info.address == address)
-      }
-    }
-  }
-
   it should "return active rpc commands" in { client =>
     val generatedF =
       client.getNewAddress.flatMap(addr => client.generateToAddress(100, addr))
