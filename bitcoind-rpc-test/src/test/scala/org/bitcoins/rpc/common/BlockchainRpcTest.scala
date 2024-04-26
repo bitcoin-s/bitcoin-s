@@ -291,5 +291,4 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(!response2.asInstanceOf[ScanBlocksAbortResult].aborted)
     }
   }
-
 }

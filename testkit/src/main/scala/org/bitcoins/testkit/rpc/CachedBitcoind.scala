@@ -80,8 +80,8 @@ trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
       // if it was used, shut down the cached bitcoind
       val stoppedF = for {
         _ <- Future.unit
-        // cachedBitcoind <- cachedBitcoindWithFundsF
-        // _ <- BitcoindRpcTestUtil.stopServer(cachedBitcoind)
+         cachedBitcoind <- cachedBitcoindWithFundsF
+         _ <- BitcoindRpcTestUtil.stopServer(cachedBitcoind)
       } yield {
         isBitcoindUsed.set(false)
         ()
