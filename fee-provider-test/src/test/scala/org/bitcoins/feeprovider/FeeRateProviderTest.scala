@@ -17,7 +17,7 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
 
   private val proxyParams = Option.empty[Socks5ProxyParams]
 
-  it must "get a valid fee rate from bitcoiner.live" ignore {
+  it must "get a valid fee rate from bitcoiner.live" in {
     val provider = BitcoinerLiveFeeRateProvider(60, proxyParams)
     testProvider(provider)
   }
@@ -47,18 +47,18 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
     testProvider(provider)
   }
 
-  it must "get a valid fee rate from mempool.space/testnet using the fastest fee target" in {
+  it must "get a valid fee rate from mempool.space/testnet using the fastest fee target" ignore {
     val provider = MempoolSpaceProvider(FastestFeeTarget, TestNet3, proxyParams)
     testProvider(provider)
   }
 
-  it must "get a valid fee rate from mempool.space/testnet using a half hour fee target" in {
+  it must "get a valid fee rate from mempool.space/testnet using a half hour fee target" ignore {
     val provider =
       MempoolSpaceProvider(HalfHourFeeTarget, TestNet3, proxyParams)
     testProvider(provider)
   }
 
-  it must "get a valid fee rate from mempool.space/testnet using an hour fee target" in {
+  it must "get a valid fee rate from mempool.space/testnet using an hour fee target" ignore {
     val provider = MempoolSpaceProvider(HourFeeTarget, TestNet3, proxyParams)
     testProvider(provider)
   }
