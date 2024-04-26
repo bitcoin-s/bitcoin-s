@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 class UtilRpcTest extends BitcoindFixturesCachedPairNewest {
 
-  behavior of "MessageRpc"
+  behavior of "UtilRpc"
 
   it should "be able to sign a message and verify that signature" in {
     nodePair =>
@@ -47,24 +47,29 @@ class UtilRpcTest extends BitcoindFixturesCachedPairNewest {
 
   it should "get index info" in { nodePair =>
     val client = nodePair.node1
+
     def indexSynced(client: BitcoindRpcClient): Future[Boolean] = {
-      client.getIndexInfo.map { indexes =>
-        indexes("txindex").best_block_height == 101 && indexes(
+      for {
+        blockCount <- client.getBlockCount()
+        indexes <- client.getIndexInfo
+      } yield {
+        indexes("txindex").best_block_height == blockCount && indexes(
           "basic block filter index"
-        ).best_block_height == 101
+        ).best_block_height == blockCount
       }
     }
     for {
       _ <- AsyncUtil.retryUntilSatisfiedF(() => indexSynced(client))
       indexes <- client.getIndexInfo
+      blockCount <- client.getBlockCount()
     } yield {
       val txIndexInfo = indexes("txindex")
       assert(txIndexInfo.synced)
-      assert(txIndexInfo.best_block_height == 101)
+      assert(txIndexInfo.best_block_height == blockCount)
 
       val blockFilterIndexInfo = indexes("basic block filter index")
       assert(blockFilterIndexInfo.synced)
-      assert(blockFilterIndexInfo.best_block_height == 101)
+      assert(blockFilterIndexInfo.best_block_height == blockCount)
     }
   }
 
