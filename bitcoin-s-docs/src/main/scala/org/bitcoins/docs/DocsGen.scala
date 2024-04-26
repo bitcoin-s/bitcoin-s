@@ -3,8 +3,8 @@ package org.bitcoins.docs
 import mdoc.MainSettings
 import scala.meta.io.AbsolutePath
 
-/** This is cribbed from how Bloop does
-  * docs generation: https://github.com/scalacenter/bloop/blob/6c8dc54b7bdf5a6145b31f94b73456693c0d1230/docs-gen/src/main/scala/bloop/Docs.scala#L8-L35
+/** This is cribbed from how Bloop does docs generation:
+  * https://github.com/scalacenter/bloop/blob/6c8dc54b7bdf5a6145b31f94b73456693c0d1230/docs-gen/src/main/scala/bloop/Docs.scala#L8-L35
   */
 object DocsGen extends App {
   val cwd0 = AbsolutePath.workingDirectory

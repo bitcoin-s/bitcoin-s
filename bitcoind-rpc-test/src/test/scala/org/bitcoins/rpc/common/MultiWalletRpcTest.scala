@@ -55,10 +55,10 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       pair
     for {
       _ <- walletClient.createWallet(walletName)
-      _ <- walletClient.encryptWallet(password, Some(walletName))
+      _ <- walletClient.encryptWallet(password, walletName)
       _ <-
         walletClient
-          .getNewAddress(Some(walletName))
+          .getNewAddress(walletName)
           .flatMap(walletClient.generateToAddress(101, _))
       _ <- client.createWallet(walletName)
 
@@ -115,7 +115,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
     val datadir = localInstance.datadir.getAbsolutePath
     for {
-      _ <- walletClient.backupWallet(datadir + "/backup.dat", Some(walletName))
+      _ <- walletClient.backupWallet(datadir + "/backup.dat", walletName)
     } yield {
       val file = new File(datadir + "/backup.dat")
       assert(file.exists)
@@ -127,7 +127,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val walletClient = nodePair.node2
     for {
       _ <- walletClient.walletLock(walletName)
-      _ <- walletClient.walletPassphrase(password, 1000, Some(walletName))
+      _ <- walletClient.walletPassphrase(password, 1000, walletName)
 
       info <- walletClient.getWalletInfo(walletName)
       _ = assert(info.unlocked_until.nonEmpty)
@@ -169,9 +169,9 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     nodePair =>
       val client = nodePair.node2
       for {
-        address <- client.getNewAddress(Some(walletName))
+        address <- client.getNewAddress(walletName)
         amount <-
-          client.getReceivedByAddress(address, walletNameOpt = Some(walletName))
+          client.getReceivedByAddress(address, walletName = walletName)
       } yield assert(amount == Bitcoins(0))
   }
 
@@ -199,9 +199,9 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to refill the keypool" in { nodePair =>
     val client = nodePair.node2
     for {
-      _ <- client.walletPassphrase(password, 1000, Some(walletName))
+      _ <- client.walletPassphrase(password, 1000, walletName)
       info <- client.getWalletInfo(walletName)
-      _ <- client.keyPoolRefill(info.keypoolsize + 1, Some(walletName))
+      _ <- client.keyPoolRefill(info.keypoolsize + 1, walletName)
       newInfo <- client.getWalletInfo(walletName)
     } yield assert(newInfo.keypoolsize == info.keypoolsize + 1)
   }
@@ -213,10 +213,10 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       _ <- walletClient.walletLock(walletName)
       _ <-
-        walletClient.walletPassphraseChange(password, newPass, Some(walletName))
+        walletClient.walletPassphraseChange(password, newPass, walletName)
       _ = password = newPass
 
-      _ <- walletClient.walletPassphrase(password, 1000, Some(walletName))
+      _ <- walletClient.walletPassphrase(password, 1000, walletName)
       info <- walletClient.getWalletInfo(walletName)
       _ <- walletClient.walletLock(walletName)
       newInfo <- walletClient.getWalletInfo(walletName)
@@ -232,15 +232,15 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val otherClient = nodePair.node1
     val client = nodePair.node2
     for {
-      address <- otherClient.getNewAddress(Some(walletName))
-      _ <- client.walletPassphrase(password, 1000, Some(walletName))
+      address <- otherClient.getNewAddress(walletName)
+      _ <- client.walletPassphrase(password, 1000, walletName)
       txid <- client.sendToAddress(
         address,
         Bitcoins(1),
-        walletNameOpt = Some(walletName)
+        walletName = walletName
       )
       transaction <-
-        client.getTransaction(txid, walletNameOpt = Some(walletName))
+        client.getTransaction(txid, walletName = walletName)
     } yield {
       assert(transaction.amount == Bitcoins(-1))
       assert(transaction.details.head.address.contains(address))
@@ -251,17 +251,17 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val otherClient = nodePair.node1
     val client = nodePair.node2
     for {
-      address1 <- otherClient.getNewAddress(Some(walletName))
-      address2 <- otherClient.getNewAddress(Some(walletName))
-      _ <- client.walletPassphrase(password, 1000, Some(walletName))
+      address1 <- otherClient.getNewAddress(walletName)
+      address2 <- otherClient.getNewAddress(walletName)
+      _ <- client.walletPassphrase(password, 1000, walletName)
       txid <-
         client
           .sendMany(
             Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)),
-            walletNameOpt = Some(walletName)
+            walletName = walletName
           )
       transaction <-
-        client.getTransaction(txid, walletNameOpt = Some(walletName))
+        client.getTransaction(txid, walletName = walletName)
     } yield {
       assert(transaction.amount == Bitcoins(-3))
       assert(transaction.details.exists(_.address.contains(address1)))
@@ -275,7 +275,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       balance <- client.getBalance(walletName)
       _ <-
         client
-          .getNewAddress(Some(walletName))
+          .getNewAddress(walletName)
           .flatMap(client.generateToAddress(1, _))
       newBalance <- client.getBalance(walletName)
     } yield {
@@ -318,7 +318,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
                 )
               ),
               rescan = false,
-              walletNameOpt = Some(walletName)
+              walletName = walletName
             )
       } yield {
         assert(secondResult.length == 2)
@@ -330,7 +330,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to set the tx fee" in { nodePair =>
     val client = nodePair.node2
     for {
-      success <- client.setTxFee(Bitcoins(0.01), Some(walletName))
+      success <- client.setTxFee(Bitcoins(0.01), walletName)
       info <- client.getWalletInfo(walletName)
     } yield {
       assert(success)
@@ -342,7 +342,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val otherClient = nodePair.node1
     val client = nodePair.node2
     for {
-      address <- otherClient.getNewAddress(Some(walletName))
+      address <- otherClient.getNewAddress(walletName)
       transactionWithoutFunds <-
         client
           .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
@@ -351,7 +351,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
       transaction = transactionResult.hex
       singedTx <-
         client
-          .signRawTransactionWithWallet(transaction, Some(walletName))
+          .signRawTransactionWithWallet(transaction, walletName)
           .map(_.hex)
 
       // Will throw error if invalid

@@ -75,7 +75,7 @@ val client = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"),
 
 for {
   _ <- client.start()
-  _ <- client.walletPassphrase("mypassword", 10000, Some("walletName"))
+  _ <- client.walletPassphrase("mypassword", 10000, "walletName")
   balance <- client.getBalance("walletName")
 } yield balance
 ```

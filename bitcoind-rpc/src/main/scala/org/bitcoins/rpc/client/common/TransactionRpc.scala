@@ -75,12 +75,12 @@ trait TransactionRpc { self: Client =>
   def getTransaction(
       txid: DoubleSha256DigestBE,
       watchOnly: Boolean = false,
-      walletNameOpt: Option[String] = None
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[GetTransactionResult] = {
     bitcoindCall[GetTransactionResult](
       "gettransaction",
       List(JsString(txid.hex), JsBoolean(watchOnly)),
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
+      uriExtensionOpt = Some(walletExtension(walletName))
     )
   }
 
