@@ -102,7 +102,7 @@ To do so the wallet rpc functions have an optional <code>walletName</code> param
 
 <span class="hljs-keyword">for</span> {
   _ &lt;- client.start()
-  _ &lt;- client.walletPassphrase(<span class="hljs-string">"mypassword"</span>, <span class="hljs-number">10000</span>, <span class="hljs-type">Some</span>(<span class="hljs-string">"walletName"</span>))
+  _ &lt;- client.walletPassphrase(<span class="hljs-string">"mypassword"</span>, <span class="hljs-number">10000</span>, <span class="hljs-string">"walletName"</span>)
   balance &lt;- client.getBalance(<span class="hljs-string">"walletName"</span>)
 } <span class="hljs-keyword">yield</span> balance
 </code></pre>
