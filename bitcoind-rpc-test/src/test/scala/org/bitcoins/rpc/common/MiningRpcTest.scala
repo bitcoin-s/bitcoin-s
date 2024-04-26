@@ -4,11 +4,14 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetBlockWithTransactionsResultV22,
   RpcOpts
 }
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
@@ -134,5 +137,14 @@ class MiningRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       hps <- client.getNetworkHashPS()
     } yield assert(hps > 0)
+  }
+
+  it should "successfully submit a header" in { case nodePair =>
+    val client = nodePair.node1
+    val genesisHeader = RegTestNetChainParams.genesisBlock.blockHeader
+    val genesisHeaderDb =
+      BlockHeaderDbHelper.fromBlockHeader(height = 1, BigInt(0), genesisHeader)
+    val nextHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+    client.submitHeader(nextHeader.blockHeader).map(_ => succeed)
   }
 }

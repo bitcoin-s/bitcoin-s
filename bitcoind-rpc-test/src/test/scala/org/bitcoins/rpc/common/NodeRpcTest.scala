@@ -70,4 +70,21 @@ class NodeRpcTest extends BitcoindFixturesFundedCachedNewest {
       assert(!helpHelp.isEmpty)
     }
   }
+
+  it should "be able to get network info" in { freshClient =>
+    for {
+      info <- freshClient.getNetworkInfo
+    } yield {
+      assert(info.networkactive)
+      assert(info.localrelay)
+    }
+  }
+
+  it should "get node address given a null parameter" in { client =>
+    val nodeF = client.getNodeAddresses()
+
+    nodeF.map { result =>
+      assert(result.isEmpty)
+    }
+  }
 }

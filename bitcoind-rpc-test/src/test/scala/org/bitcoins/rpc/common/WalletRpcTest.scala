@@ -6,6 +6,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   WalletFlag
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.{
+  AddressInfoResultPostV21,
   DecodeScriptResultV22,
   DescriptorsResult,
   GetWalletInfoResultPostV22
@@ -15,6 +16,7 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.{
+  Descriptor,
   P2SHDescriptor,
   P2WPKHDescriptor
 }
@@ -726,7 +728,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       _ <- client.unloadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
       _ <- client.createWallet(walletName, descriptors = true)
-      _ <- client.importDescriptor(imp, Some(walletName))
+      _ <- client.importDescriptor(imp, walletName)
       decoded <- client.decodeScript(p2wpkh)
       _ <- client.unloadWallet(walletName)
       _ <- client.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
@@ -738,6 +740,96 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
+  it should "simulate a transaction" in { nodePair =>
+    val client = nodePair.node1
+    val junkAddress: BitcoinAddress =
+      BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
+    for {
+      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
+      tx <- client.getRawTransaction(txid).map(_.hex)
+      change <- client.simulateRawTransaction(tx)
+    } yield {
+      assert(change <= -Bitcoins.one)
+    } // 1 bitcoin + fees
+  }
+
+  it should "be able to validate a bitcoin address" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress
+      validation <- client.validateAddress(address)
+    } yield assert(validation.isvalid)
+  }
+
+  it should "have extra address information" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      address <- client.getNewAddress
+      info <- client.getAddressInfo(address)
+    } yield {
+      info match {
+        case postV21Info: AddressInfoResultPostV21 =>
+          assert(postV21Info.address == address)
+      }
+    }
+  }
+
+  it should "analyze a descriptor" in { case nodePair =>
+    val client = nodePair.node1
+    val descriptor =
+      Descriptor.fromString(
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7"
+      )
+
+    val descriptorF = client.getDescriptorInfo(descriptor)
+
+    descriptorF.map { result =>
+      assert(result.descriptor == descriptor)
+      assert(result.isrange.==(false))
+      assert(result.issolvable.==(true))
+      assert(result.hasprivatekeys.==(false))
+    }
+  }
+
+  it must "importdescriptors" in { nodePair =>
+    val client = nodePair.node1
+    val str1 =
+      "wpkh(tprv8ZgxMBicQKsPd7Uf69XL1XwhmjHopUGep8GuEiJDZmbQz6o58LninorQAfcKZWARbtRtfnLcJ5MQ2AtHcQJCCRUcMRvmDUjyEmNUWwx8UbK/1/1/*)#kft60nuy"
+    val descriptor = Descriptor.fromString(str1)
+    val imp = DescriptorsResult(
+      desc = descriptor,
+      timestamp = Instant.now().getEpochSecond,
+      active = true,
+      internal = None,
+      range = Some(Vector(0, 2)),
+      next = None
+    )
+
+    val resultF =
+      client.importDescriptors(imports = Vector(imp))
+
+    for {
+      result <- resultF
+      _ = assert(result.forall(_.success))
+      firstAddress <- client.getNewAddress
+      secondAddress <- client.getNewAddress
+      // check it by deriving addresses externally
+      deriveAddresses <- client
+        .deriveAddresses(descriptor, Some(Vector(0, 1)))
+        .map(_.addresses)
+    } yield {
+      assert(Vector(firstAddress, secondAddress) == deriveAddresses)
+    }
+  }
+
+  it should "be able to get the address info for a given address" in {
+    case nodePair =>
+      val client = nodePair.node1
+      for {
+        addr <- client.getNewAddress
+        info <- client.getAddressInfo(addr)
+      } yield assert(info.address == addr)
+  }
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }
