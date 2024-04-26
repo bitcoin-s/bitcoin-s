@@ -79,4 +79,12 @@ class NodeRpcTest extends BitcoindFixturesFundedCachedNewest {
       assert(info.localrelay)
     }
   }
+
+  it should "get node address given a null parameter" in { client =>
+    val nodeF = client.getNodeAddresses()
+
+    nodeF.map { result =>
+      assert(result.isEmpty)
+    }
+  }
 }

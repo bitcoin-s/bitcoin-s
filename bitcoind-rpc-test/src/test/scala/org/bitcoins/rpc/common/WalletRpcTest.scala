@@ -16,6 +16,7 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.{
+  Descriptor,
   P2SHDescriptor,
   P2WPKHDescriptor
 }
@@ -773,6 +774,77 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
+  it should "analyze a descriptor" in { case nodePair =>
+    val client = nodePair.node1
+    val descriptor =
+      Descriptor.fromString(
+        "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)#gn28ywm7"
+      )
+
+    val descriptorF = client.getDescriptorInfo(descriptor)
+
+    descriptorF.map { result =>
+      assert(result.descriptor == descriptor)
+      assert(result.isrange.==(false))
+      assert(result.issolvable.==(true))
+      assert(result.hasprivatekeys.==(false))
+    }
+  }
+
+  it must "importdescriptors" in { nodePair =>
+    val client = nodePair.node1
+    val str1 =
+      "wpkh(tprv8ZgxMBicQKsPd7Uf69XL1XwhmjHopUGep8GuEiJDZmbQz6o58LninorQAfcKZWARbtRtfnLcJ5MQ2AtHcQJCCRUcMRvmDUjyEmNUWwx8UbK/1/1/*)#kft60nuy"
+    val descriptor = Descriptor.fromString(str1)
+    val imp = DescriptorsResult(
+      desc = descriptor,
+      timestamp = Instant.now().getEpochSecond,
+      active = true,
+      internal = None,
+      range = Some(Vector(0, 2)),
+      next = None
+    )
+
+    val resultF =
+      client.importDescriptors(imports = Vector(imp), walletNameOpt = None)
+
+    for {
+      result <- resultF
+      _ = assert(result.forall(_.success))
+      firstAddress <- client.getNewAddress
+      secondAddress <- client.getNewAddress
+      // check it by deriving addresses externally
+      deriveAddresses <- client
+        .deriveAddresses(descriptor, Some(Vector(0, 1)))
+        .map(_.addresses)
+    } yield {
+      assert(Vector(firstAddress, secondAddress) == deriveAddresses)
+    }
+  }
+
+  it should "be able to get the address info for a given address" in {
+    case nodePair =>
+      val client = nodePair.node1
+      for {
+        addr <- client.getNewAddress
+        info <- client.getAddressInfo(addr)
+      } yield assert(info.address == addr)
+  }
+
+  it should "be able to get the balances" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      immatureBalance <- client.getBalances
+      _ <- client.generate(1)
+      newImmatureBalance <- client.getBalances
+    } yield {
+      val blockReward = 50
+      assert(immatureBalance.mine.immature.toBigDecimal >= 0)
+      assert(
+        immatureBalance.mine.trusted.toBigDecimal + blockReward == newImmatureBalance.mine.trusted.toBigDecimal
+      )
+    }
+  }
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }
