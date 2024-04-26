@@ -98,12 +98,13 @@ case class Network(
 case class NetworkAddress(address: String, port: Int, score: Int)
     extends NetworkResult
 
-sealed trait Peer extends NetworkResult {
+sealed trait PeerInfoResponse extends NetworkResult {
   def id: Int
   def networkInfo: PeerNetworkInfo
   def version: Int
   def subver: String
   def inbound: Boolean
+  def connection_type: String
   def addnode: Boolean
   def startingheight: Int
   def synced_headers: Int
@@ -114,25 +115,7 @@ sealed trait Peer extends NetworkResult {
   def minfeefilter: Option[SatoshisPerKiloByte]
 }
 
-case class PeerPostV21(
-    id: Int,
-    networkInfo: PeerNetworkInfoPostV21,
-    version: Int,
-    subver: String,
-    inbound: Boolean,
-    connection_type: String,
-    startingheight: Int,
-    synced_headers: Int,
-    synced_blocks: Int,
-    inflight: Vector[Int],
-    bytessent_per_msg: Map[String, Int],
-    bytesrecv_per_msg: Map[String, Int],
-    minfeefilter: Option[SatoshisPerKiloByte]
-) extends Peer {
-  override val addnode: Boolean = connection_type == "manual"
-}
-
-case class PeerV22(
+case class PeerInfoResponseV25(
     id: Int,
     networkInfo: PeerNetworkInfoPostV21,
     version: Int,
@@ -148,8 +131,10 @@ case class PeerV22(
     minfeefilter: Option[SatoshisPerKiloByte],
     bip152_hb_to: Boolean,
     bip152_hb_from: Boolean,
-    permissions: Vector[String]
-) extends Peer {
+    permissions: Vector[String],
+    transport_protocol_type: String,
+    session_id: String
+) extends PeerInfoResponse {
   override val addnode: Boolean = connection_type == "manual"
 }
 
