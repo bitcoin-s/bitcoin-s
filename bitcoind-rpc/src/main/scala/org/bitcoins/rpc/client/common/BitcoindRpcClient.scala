@@ -17,6 +17,7 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
+import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
 import org.bitcoins.rpc.config._
 
 import java.io.File
@@ -344,6 +345,7 @@ object BitcoindRpcClient {
   ): BitcoindRpcClient = {
     val bitcoind = version match {
       case BitcoindVersion.V25 => BitcoindV25RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -376,6 +378,10 @@ object BitcoindVersion
 
   case object V25 extends BitcoindVersion {
     override def toString: String = "v25"
+  }
+
+  case object V26 extends BitcoindVersion {
+    override def toString: String = "v26"
   }
 
   case object Unknown extends BitcoindVersion {

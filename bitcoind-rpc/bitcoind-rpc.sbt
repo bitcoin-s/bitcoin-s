@@ -95,7 +95,7 @@ TaskKeys.downloadBitcoind := {
           if (Properties.isLinux)
             Map(
               "25.2" -> "8d8c387e597e0edfc256f0bbace1dac3ad1ebf4a3c06da3e2975fda333817dea",
-              "26.1" -> ""
+              "26.1" -> "a5b7d206384a8100058d3f2e2f02123a8e49e83f523499e70e86e121a4897d5b"
             )
           else if (Properties.isMac)
             Map(
@@ -111,7 +111,7 @@ TaskKeys.downloadBitcoind := {
           else if (Properties.isWin)
             Map(
               "25.2" -> "c2ac84f55ee879caefd4414868d318a741c52a7286da190bf7233d86a2ffca69",
-              "26.1" -> ""
+              "26.1" -> "7bd0849e47472aeff99a0ea2c0cefd98f5be829e5a2d3b0168b5a54456cc638a"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
