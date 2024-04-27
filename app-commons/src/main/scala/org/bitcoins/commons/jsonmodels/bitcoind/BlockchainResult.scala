@@ -27,8 +27,17 @@ case class DumpTxOutSetResult(
     coins_written: Int,
     base_hash: DoubleSha256DigestBE,
     base_height: Int,
-    path: Path
+    path: Path,
+    txoutset_hash: DoubleSha256DigestBE,
+    nchaintx: Long
 ) extends BlockchainResult
+
+case class LoadTxOutSetResult(
+    coins_loaded: Long,
+    tip_hash: DoubleSha256DigestBE,
+    base_height: Long,
+    path: Path)
+    extends BlockchainResult
 
 case class GetBlockResult(
     hash: DoubleSha256DigestBE,

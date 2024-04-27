@@ -2,9 +2,11 @@ package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   DumpTxOutSetResult,
+  LoadTxOutSetResult,
   RpcOpts,
   UnspentOutput
 }
+import org.bitcoins.commons.serializers.JsonSerializers
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
@@ -80,6 +82,13 @@ trait UTXORpc { self: Client =>
       "dumptxoutset",
       List(Json.toJson(path.toString))
     )
+  }
+
+  def loadTxOutSet(path: Path): Future[LoadTxOutSetResult] = {
+    bitcoindCall[LoadTxOutSetResult](
+      "loadtxoutset",
+      List(Json.toJson(path.toString))
+    )(JsonSerializers.loadTxOutSetResultReads)
   }
 
 }

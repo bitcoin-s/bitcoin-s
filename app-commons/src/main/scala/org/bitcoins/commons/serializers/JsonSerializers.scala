@@ -262,6 +262,10 @@ object JsonSerializers {
   implicit val dumpTxOutSetResultReads: Reads[DumpTxOutSetResult] =
     Json.reads[DumpTxOutSetResult]
 
+  implicit val loadTxOutSetResultReads: Reads[LoadTxOutSetResult] = {
+    Json.reads[LoadTxOutSetResult]
+  }
+
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
 
