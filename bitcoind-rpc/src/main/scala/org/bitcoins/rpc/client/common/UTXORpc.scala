@@ -1,11 +1,16 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{RpcOpts, UnspentOutput}
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  DumpTxOutSetResult,
+  RpcOpts,
+  UnspentOutput
+}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import play.api.libs.json._
 
+import java.nio.file.Path
 import scala.concurrent.Future
 
 /** This trait defines functionality related to UTXOs (unspent transaction
@@ -67,6 +72,13 @@ trait UTXORpc { self: Client =>
     bitcoindCall[Boolean](
       "lockunspent",
       List(JsBoolean(unlock), Json.toJson(outputs))
+    )
+  }
+
+  def dumpTxOutSet(path: Path): Future[DumpTxOutSetResult] = {
+    bitcoindCall[DumpTxOutSetResult](
+      "dumptxoutset",
+      List(Json.toJson(path.toString))
     )
   }
 

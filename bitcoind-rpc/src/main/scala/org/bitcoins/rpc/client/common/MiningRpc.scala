@@ -93,4 +93,15 @@ trait MiningRpc { self: Client with BlockchainRpc =>
   ): Future[Boolean] = {
     prioritiseTransaction(txid.flip, feeDelta)
   }
+
+  def generateToDescriptor(
+      numBlocks: Int,
+      descriptor: String,
+      maxTries: Long = 1000000
+  ): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
+      "generatetodescriptor",
+      List(JsNumber(numBlocks), JsString(descriptor), JsNumber(maxTries))
+    )
+  }
 }

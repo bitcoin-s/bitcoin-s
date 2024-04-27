@@ -13,12 +13,17 @@ class NodeRpcTest extends BitcoindFixturesFundedCachedNewest {
   it should "be able to abort a rescan of the blockchain" in { case client =>
     // generate some extra blocks so rescan isn't too quick
     client.getNewAddress
-      .flatMap(client.generateToAddress(3000, _))
+      .flatMap(client.generateToAddress(500, _))
       .flatMap { _ =>
+        println(s"here")
         val rescanFailedF =
           recoverToSucceededIf[MiscError](client.rescanBlockChain())
         system.scheduler.scheduleOnce(100.millis) {
-          client.abortRescan()
+          println(s"Running scheduled job")
+          client
+            .abortRescan()
+            .failed
+            .foreach(err => println(s"err=${err.getMessage}"))
           ()
         }
         rescanFailedF
