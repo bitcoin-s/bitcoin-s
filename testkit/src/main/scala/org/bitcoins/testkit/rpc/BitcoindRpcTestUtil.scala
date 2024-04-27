@@ -32,6 +32,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
+import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil, TorUtil}
@@ -178,7 +179,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V25 | V26) =>
+      case known @ (V25 | V26 | V27) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -274,6 +275,22 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       binaryDirectory = binaryDirectory
     )
 
+  def v27Instance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
+      pruneMode: Boolean = false,
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V27),
+      binaryDirectory = binaryDirectory
+    )
+
   /** Gets an instance of bitcoind with the given version */
   def getInstance(
       bitcoindVersion: BitcoindVersion,
@@ -294,6 +311,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         )
       case BitcoindVersion.V26 =>
         BitcoindRpcTestUtil.v26Instance(
+          port,
+          rpcPort,
+          zmqConfig,
+          pruneMode,
+          binaryDirectory = binaryDirectory
+        )
+      case BitcoindVersion.V27 =>
+        BitcoindRpcTestUtil.v27Instance(
           port,
           rpcPort,
           zmqConfig,
@@ -642,6 +667,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.V26 =>
           BitcoindV26RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v26Instance())
+        case BitcoindVersion.V27 =>
+          BitcoindV27RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v27Instance())
       }
 
       // this is safe as long as this method is never
