@@ -197,6 +197,8 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(!regTest.list().contains("mempool.dat"))
       for {
         _ <- client.saveMemPool()
+        mempoolPath = regTest.toPath.resolve("mempool.dat")
+        _ <- client.importMempool(mempoolPath)
       } yield assert(regTest.list().contains("mempool.dat"))
   }
 
