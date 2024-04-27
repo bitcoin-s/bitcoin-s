@@ -77,11 +77,11 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
       height <- client.getBestHashBlockHeight()
       result <- client.dumpTxOutSet(path)
       // now attempt to load it
-      //unfortunately it seems this cannot be properly tested
-      //we end up with this error:
-      //Unable to load UTXO snapshot, assumeutxo block hash in snapshot metadata not recognized
-      //see: https://bitcoin.stackexchange.com/questions/121006/anyone-tried-assumeutxo-yet
-      //loadResult <- client.loadTxOutSet(path)
+      // unfortunately it seems this cannot be properly tested
+      // we end up with this error:
+      // Unable to load UTXO snapshot, assumeutxo block hash in snapshot metadata not recognized
+      // see: https://bitcoin.stackexchange.com/questions/121006/anyone-tried-assumeutxo-yet
+      // loadResult <- client.loadTxOutSet(path)
     } yield {
       assert(Files.exists(result.path))
 
@@ -89,10 +89,10 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
       assert(result.base_height == height)
       assert(result.coins_written > 0)
 
-      //assert(loadResult.path == path)
-      //assert(loadResult.tip_hash == hash)
-      //assert(loadResult.base_height == height)
-      //assert(loadResult.coins_loaded > 0)
+      // assert(loadResult.path == path)
+      // assert(loadResult.tip_hash == hash)
+      // assert(loadResult.base_height == height)
+      // assert(loadResult.coins_loaded > 0)
 
       // Mild clean up
       Files.delete(result.path)

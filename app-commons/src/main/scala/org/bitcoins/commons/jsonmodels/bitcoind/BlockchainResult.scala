@@ -429,3 +429,13 @@ case class ScanInProgress(progress: BigDecimal, current_height: Int)
     extends StatusScanBlocksResult
 
 case class ScanBlocksAbortResult(aborted: Boolean) extends ScanBlocksResult
+
+case class ChainState(
+    blocks: Int,
+    bestblockhash: DoubleSha256DigestBE,
+    difficulty: BigDecimal,
+    verificationprogress: BigDecimal,
+    coins_db_cache_bytes: Long,
+    coins_tip_cache_bytes: Long,
+    validated: Boolean)
+case class ChainStateResult(headers: Int, chainstates: Vector[ChainState])

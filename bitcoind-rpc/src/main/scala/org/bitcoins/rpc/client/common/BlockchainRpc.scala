@@ -436,4 +436,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     bitcoindCall("scanblocks", request.params)(
       JsonSerializers.ScanBlocksResultReads)
   }
+
+  def getChainStates(): Future[ChainStateResult] = {
+    bitcoindCall("getchainstates")(JsonSerializers.chainStateResultReads)
+  }
 }

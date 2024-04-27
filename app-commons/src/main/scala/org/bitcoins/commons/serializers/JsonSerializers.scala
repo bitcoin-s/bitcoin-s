@@ -895,4 +895,9 @@ object JsonSerializers {
       }
     }
   }
+
+  implicit val chainStateReads: Reads[ChainState] = Json.reads[ChainState]
+
+  implicit val chainStateResultReads: Reads[ChainStateResult] =
+    Json.reads[ChainStateResult]
 }
