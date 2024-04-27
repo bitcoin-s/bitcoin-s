@@ -904,4 +904,9 @@ object JsonSerializers {
   implicit val prioritisedTransactionReads: Reads[PrioritisedTransaction] = {
     Json.reads[PrioritisedTransaction]
   }
+
+  implicit val addrManInfoReads: Reads[AddrManInfo] = Json.reads[AddrManInfo]
+  implicit val getAddrmanInfoResponseReads: Reads[GetAddrmanInfoResponse] = {
+    Json.reads[GetAddrmanInfoResponse]
+  }
 }

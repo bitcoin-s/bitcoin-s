@@ -231,3 +231,12 @@ case class GetNodeAddressesResultPostV22(
     port: Int,
     network: String
 ) extends GetNodeAddressesResult
+
+case class AddrManInfo(`new`: Int, tried: Int, total: Int)
+case class GetAddrmanInfoResponse(
+    ipv4: AddrManInfo,
+    ipv6: AddrManInfo,
+    onion: AddrManInfo,
+    cjdns: AddrManInfo,
+    all_networks: AddrManInfo)
+    extends NetworkResult

@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   SetBanCommand
 }
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonSerializers
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.Block
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
@@ -98,6 +99,10 @@ trait P2PRpc { self: Client =>
 
   def submitBlock(block: Block): Future[Unit] = {
     bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
+  }
 
+  def getAddrManInfo(): Future[GetAddrmanInfoResponse] = {
+    bitcoindCall[GetAddrmanInfoResponse]("getaddrmaninfo")(
+      JsonSerializers.getAddrmanInfoResponseReads)
   }
 }
