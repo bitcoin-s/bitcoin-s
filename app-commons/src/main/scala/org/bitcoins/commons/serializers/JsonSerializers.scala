@@ -900,4 +900,8 @@ object JsonSerializers {
 
   implicit val chainStateResultReads: Reads[ChainStateResult] =
     Json.reads[ChainStateResult]
+
+  implicit val prioritisedTransactionReads: Reads[PrioritisedTransaction] = {
+    Json.reads[PrioritisedTransaction]
+  }
 }
