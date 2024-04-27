@@ -15,15 +15,13 @@ class NodeRpcTest extends BitcoindFixturesFundedCachedNewest {
     client.getNewAddress
       .flatMap(client.generateToAddress(500, _))
       .flatMap { _ =>
-        println(s"here")
         val rescanFailedF =
           recoverToSucceededIf[MiscError](client.rescanBlockChain())
         system.scheduler.scheduleOnce(100.millis) {
-          println(s"Running scheduled job")
           client
             .abortRescan()
             .failed
-            .foreach(err => println(s"err=${err.getMessage}"))
+            .foreach(err => logger.error(s"NodeRpc.err abort rescan", err))
           ()
         }
         rescanFailedF
