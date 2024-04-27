@@ -232,19 +232,25 @@ object JsonSerializers {
   implicit val peerNetworkInfoPostV21Reads: Reads[PeerNetworkInfoPostV21] =
     Json.reads[PeerNetworkInfoPostV21]
 
-  implicit val peerPostV21Reads: Reads[PeerPostV21] = ((__ \ "id").read[Int] and
-    __.read[PeerNetworkInfoPostV21] and
-    (__ \ "version").read[Int] and
-    (__ \ "subver").read[String] and
-    (__ \ "inbound").read[Boolean] and
-    (__ \ "connection_type").read[String] and
-    (__ \ "startingheight").read[Int] and
-    (__ \ "synced_headers").read[Int] and
-    (__ \ "synced_blocks").read[Int] and
-    (__ \ "inflight").read[Vector[Int]] and
-    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
-    (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
-    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPostV21)
+  implicit val peerPostV25Reads: Reads[PeerInfoResponseV25] =
+    ((__ \ "id").read[Int] and
+      __.read[PeerNetworkInfoPostV21] and
+      (__ \ "version").read[Int] and
+      (__ \ "subver").read[String] and
+      (__ \ "inbound").read[Boolean] and
+      (__ \ "connection_type").read[String] and
+      (__ \ "startingheight").read[Int] and
+      (__ \ "synced_headers").read[Int] and
+      (__ \ "synced_blocks").read[Int] and
+      (__ \ "inflight").read[Vector[Int]] and
+      (__ \ "bytessent_per_msg").read[Map[String, Int]] and
+      (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
+      (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte] and
+      (__ \ "bip152_hb_to").read[Boolean] and
+      (__ \ "bip152_hb_from").read[Boolean] and
+      (__ \ "permissions").read[Vector[String]] and
+      (__ \ "transport_protocol_type").read[String] and
+      (__ \ "session_id").read[String])(PeerInfoResponseV25)
 
   implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
     Json.reads[NodeBanPostV22]
@@ -255,6 +261,10 @@ object JsonSerializers {
   // Blockchain Models
   implicit val dumpTxOutSetResultReads: Reads[DumpTxOutSetResult] =
     Json.reads[DumpTxOutSetResult]
+
+  implicit val loadTxOutSetResultReads: Reads[LoadTxOutSetResult] = {
+    Json.reads[LoadTxOutSetResult]
+  }
 
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
@@ -884,5 +894,19 @@ object JsonSerializers {
           }
       }
     }
+  }
+
+  implicit val chainStateReads: Reads[ChainState] = Json.reads[ChainState]
+
+  implicit val chainStateResultReads: Reads[ChainStateResult] =
+    Json.reads[ChainStateResult]
+
+  implicit val prioritisedTransactionReads: Reads[PrioritisedTransaction] = {
+    Json.reads[PrioritisedTransaction]
+  }
+
+  implicit val addrManInfoReads: Reads[AddrManInfo] = Json.reads[AddrManInfo]
+  implicit val getAddrmanInfoResponseReads: Reads[GetAddrmanInfoResponse] = {
+    Json.reads[GetAddrmanInfoResponse]
   }
 }

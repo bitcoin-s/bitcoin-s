@@ -291,4 +291,19 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(!response2.asInstanceOf[ScanBlocksAbortResult].aborted)
     }
   }
+
+  it must "be able to getchainstates" in { case nodePair =>
+    val client = nodePair.node1
+    val bestBlockHashF = client.getBestBlockHash()
+    val blockCountF = client.getBlockCount()
+    for {
+      bestBlockHash <- bestBlockHashF
+      blockCount <- blockCountF
+      chainStateResult <- client.getChainStates()
+    } yield {
+      assert(chainStateResult.headers == blockCount)
+      assert(chainStateResult.chainstates.size == 1)
+      assert(chainStateResult.chainstates.head.bestblockhash == bestBlockHash)
+    }
+  }
 }

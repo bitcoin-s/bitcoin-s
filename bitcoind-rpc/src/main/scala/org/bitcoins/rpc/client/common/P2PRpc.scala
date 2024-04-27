@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   SetBanCommand
 }
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonSerializers
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.Block
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
@@ -17,10 +18,15 @@ import scala.concurrent.Future
   */
 trait P2PRpc { self: Client =>
 
-  def addNode(address: URI, command: AddNodeArgument): Future[Unit] = {
+  def addNode(
+      address: URI,
+      command: AddNodeArgument,
+      v2transport: Boolean = true): Future[Unit] = {
     bitcoindCall[Unit](
       "addnode",
-      List(JsString(address.getAuthority), JsString(command.toString))
+      List(JsString(address.getAuthority),
+           JsString(command.toString),
+           JsBoolean(v2transport))
     )
   }
 
@@ -62,8 +68,8 @@ trait P2PRpc { self: Client =>
       }
   }
 
-  def getPeerInfo: Future[Vector[Peer]] = {
-    bitcoindCall[Vector[PeerPostV21]]("getpeerinfo")
+  def getPeerInfo: Future[Vector[PeerInfoResponseV25]] = {
+    bitcoindCall[Vector[PeerInfoResponseV25]]("getpeerinfo")
   }
 
   def listBanned: Future[Vector[NodeBan]] = {
@@ -93,6 +99,10 @@ trait P2PRpc { self: Client =>
 
   def submitBlock(block: Block): Future[Unit] = {
     bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
+  }
 
+  def getAddrManInfo(): Future[GetAddrmanInfoResponse] = {
+    bitcoindCall[GetAddrmanInfoResponse]("getaddrmaninfo")(
+      JsonSerializers.getAddrmanInfoResponseReads)
   }
 }

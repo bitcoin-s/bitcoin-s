@@ -15,8 +15,9 @@ import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
-import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
+import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
+import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
 import org.bitcoins.rpc.config._
 
 import java.io.File
@@ -53,8 +54,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with UtilRpc
     with V18AssortedRpc
     with DescriptorRpc
-    with V20MultisigRpc
-    with V20AssortedRpc {
+    with V20MultisigRpc {
 
   private val syncing = new AtomicBoolean(false)
 
@@ -344,6 +344,7 @@ object BitcoindRpcClient {
   ): BitcoindRpcClient = {
     val bitcoind = version match {
       case BitcoindVersion.V25 => BitcoindV25RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -367,7 +368,7 @@ object BitcoindVersion
     with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V25
+  val newest: BitcoindVersion = V26
 
   val standard: Vector[BitcoindVersion] =
     Vector(V25)
@@ -376,6 +377,10 @@ object BitcoindVersion
 
   case object V25 extends BitcoindVersion {
     override def toString: String = "v25"
+  }
+
+  case object V26 extends BitcoindVersion {
+    override def toString: String = "v26"
   }
 
   case object Unknown extends BitcoindVersion {

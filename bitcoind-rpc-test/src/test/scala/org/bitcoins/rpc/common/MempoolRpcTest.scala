@@ -121,9 +121,14 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
         txid <-
           BitcoindRpcTestUtil
             .fundMemPoolTransaction(client, address, Bitcoins(3.2))
-        tt <- client.prioritiseTransaction(txid, Bitcoins(1).satoshis)
+        tt <- client.prioritiseTransaction(txid, Bitcoins.one.satoshis)
+        txs <- client.getPrioritisedTransactions()
       } yield {
         assert(tt)
+        assert(txs.exists(_._1 == txid))
+        val p = txs(txid)
+        assert(p.in_mempool)
+        assert(p.fee_delta == Bitcoins.one)
       }
   }
 
@@ -192,6 +197,8 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(!regTest.list().contains("mempool.dat"))
       for {
         _ <- client.saveMemPool()
+        mempoolPath = regTest.toPath.resolve("mempool.dat")
+        _ <- client.importMempool(mempoolPath)
       } yield assert(regTest.list().contains("mempool.dat"))
   }
 

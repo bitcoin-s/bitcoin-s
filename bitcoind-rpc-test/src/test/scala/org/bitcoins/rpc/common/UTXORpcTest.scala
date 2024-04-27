@@ -70,19 +70,33 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
     }
   }
 
-  it should "correctly dump tx out set" in { case client =>
+  it should "correctly dump tx out set and then load it" in { case client =>
+    val path = new File("utxo.dat").toPath
     for {
       hash <- client.getBestBlockHash()
       height <- client.getBestHashBlockHeight()
-      result <- client.dumpTxOutSet(new File("utxo.dat").toPath)
+      result <- client.dumpTxOutSet(path)
+      // now attempt to load it
+      // unfortunately it seems this cannot be properly tested
+      // we end up with this error:
+      // Unable to load UTXO snapshot, assumeutxo block hash in snapshot metadata not recognized
+      // see: https://bitcoin.stackexchange.com/questions/121006/anyone-tried-assumeutxo-yet
+      // loadResult <- client.loadTxOutSet(path)
     } yield {
       assert(Files.exists(result.path))
-      // Mild clean up
-      Files.delete(result.path)
 
       assert(result.base_hash == hash)
       assert(result.base_height == height)
       assert(result.coins_written > 0)
+
+      // assert(loadResult.path == path)
+      // assert(loadResult.tip_hash == hash)
+      // assert(loadResult.base_height == height)
+      // assert(loadResult.coins_loaded > 0)
+
+      // Mild clean up
+      Files.delete(result.path)
+      succeed
     }
   }
 }

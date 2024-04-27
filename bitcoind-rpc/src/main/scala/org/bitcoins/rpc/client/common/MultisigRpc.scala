@@ -27,7 +27,7 @@ trait MultisigRpc { self: Client =>
       keys: Vector[Either[ECPublicKey, P2PKHAddress]],
       account: String = "",
       addressType: Option[AddressType],
-      walletNameOpt: Option[String] = None
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[MultiSigResult] = {
     def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString =
       key match {
@@ -45,7 +45,7 @@ trait MultisigRpc { self: Client =>
     bitcoindCall[MultiSigResultPostV20](
       "addmultisigaddress",
       params,
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
+      uriExtensionOpt = Some(walletExtension(walletName))
     )
   }
 
@@ -81,7 +81,7 @@ trait MultisigRpc { self: Client =>
       minSignatures: Int,
       keys: Vector[ECPublicKey],
       addressType: AddressType,
-      walletNameOpt: Option[String] = None
+      walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[MultiSigResult] = {
     bitcoindCall[MultiSigResultPostV20](
       "createmultisig",
@@ -90,7 +90,7 @@ trait MultisigRpc { self: Client =>
         Json.toJson(keys.map(_.hex)),
         Json.toJson(addressType)
       ),
-      uriExtensionOpt = walletNameOpt.map(walletExtension)
+      uriExtensionOpt = Some(walletExtension(walletName))
     )
   }
 }

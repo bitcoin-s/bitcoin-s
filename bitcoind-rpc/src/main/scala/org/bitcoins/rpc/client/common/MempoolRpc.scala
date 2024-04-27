@@ -8,6 +8,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.BitcoindException
 import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
 
+import java.nio.file.Path
 import scala.concurrent.Future
 
 /** This trait defines RPC calls related to the mempool of a Bitcoin Core node.
@@ -127,6 +128,10 @@ trait MempoolRpc { self: Client =>
 
   def saveMemPool(): Future[Unit] = {
     bitcoindCall[Unit]("savemempool")
+  }
+
+  def importMempool(path: Path): Future[Unit] = {
+    bitcoindCall[Unit]("importmempool", List(JsString(path.toString)))
   }
 
   def testMempoolAccept(

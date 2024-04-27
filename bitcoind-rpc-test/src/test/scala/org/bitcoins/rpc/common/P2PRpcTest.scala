@@ -116,4 +116,17 @@ class P2PRpcTest extends BitcoindFixturesCachedPairNewest {
       succeed
     }
   }
+
+  it should "getaddrmaninfo" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      result <- client.getAddrManInfo()
+    } yield {
+      assert(result.ipv4.total == 0)
+      assert(result.ipv6.total == 0)
+      assert(result.onion.total == 0)
+      assert(result.cjdns.total == 0)
+      assert(result.all_networks.total == 0)
+    }
+  }
 }

@@ -138,4 +138,20 @@ class DisconnectedPeersRpcTest
 
     } yield assert(newBestHash == bestHash1)
   }
+
+  it must "connect to a peer with v2transport" in { nodePair =>
+    val freshClient = nodePair.node1
+    val otherFreshClient = nodePair.node2
+    val uri = otherFreshClient.getDaemon.uri
+    for {
+      _ <- freshClient.addNode(uri, AddNodeArgument.OneTry, v2transport = true)
+      _ <- BitcoindRpcTestUtil.awaitConnection(from = freshClient,
+                                               to = otherFreshClient,
+                                               interval = 1.second)
+
+      info <- freshClient.getPeerInfo
+    } yield {
+      assert(info.exists(_.transport_protocol_type == "v2"))
+    }
+  }
 }

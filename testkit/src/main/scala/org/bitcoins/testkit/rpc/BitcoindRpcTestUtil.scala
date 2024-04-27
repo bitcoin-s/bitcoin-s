@@ -31,6 +31,7 @@ import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
+import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil, TorUtil}
@@ -102,6 +103,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |regtest=1
                   |server=1
                   |daemon=$isDaemon
+                  |v2transport=1
                   |[regtest]
                   |rpcuser=$username
                   |rpcpassword=$pass
@@ -176,7 +178,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V25) =>
+      case known @ (V25 | V26) =>
         val fileList = Files
           .list(binaryDirectory)
           .iterator()
@@ -256,6 +258,22 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       binaryDirectory = binaryDirectory
     )
 
+  def v26Instance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
+      pruneMode: Boolean = false,
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V26),
+      binaryDirectory = binaryDirectory
+    )
+
   /** Gets an instance of bitcoind with the given version */
   def getInstance(
       bitcoindVersion: BitcoindVersion,
@@ -274,6 +292,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
           pruneMode,
           binaryDirectory = binaryDirectory
         )
+      case BitcoindVersion.V26 =>
+        BitcoindRpcTestUtil.v26Instance(
+          port,
+          rpcPort,
+          zmqConfig,
+          pruneMode,
+          binaryDirectory = binaryDirectory
+        )
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Could not create a bitcoind version with version=${BitcoindVersion.Unknown}"
@@ -286,10 +312,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit ec: ExecutionContext): Future[Unit] = {
     val startedServersF = Future.traverse(servers) { server =>
       server.start().flatMap { res =>
-        val descriptors = true
         val createWalletF = for {
-          _ <- res.createWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME,
-                                descriptors = descriptors)
+          _ <- res.createWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
         } yield res
 
         createWalletF
@@ -615,6 +639,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.V25 =>
           BitcoindV25RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v25Instance())
+        case BitcoindVersion.V26 =>
+          BitcoindV26RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v26Instance())
       }
 
       // this is safe as long as this method is never

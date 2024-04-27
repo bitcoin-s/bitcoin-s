@@ -27,8 +27,17 @@ case class DumpTxOutSetResult(
     coins_written: Int,
     base_hash: DoubleSha256DigestBE,
     base_height: Int,
-    path: Path
+    path: Path,
+    txoutset_hash: DoubleSha256DigestBE,
+    nchaintx: Long
 ) extends BlockchainResult
+
+case class LoadTxOutSetResult(
+    coins_loaded: Long,
+    tip_hash: DoubleSha256DigestBE,
+    base_height: Long,
+    path: Path)
+    extends BlockchainResult
 
 case class GetBlockResult(
     hash: DoubleSha256DigestBE,
@@ -357,7 +366,7 @@ case class GetTxOutSetInfoResult(
     transactions: Int,
     txouts: Int,
     bogosize: Int,
-    hash_serialized_2: DoubleSha256DigestBE,
+    hash_serialized_3: DoubleSha256DigestBE,
     disk_size: Int,
     total_amount: Bitcoins
 ) extends BlockchainResult
@@ -420,3 +429,13 @@ case class ScanInProgress(progress: BigDecimal, current_height: Int)
     extends StatusScanBlocksResult
 
 case class ScanBlocksAbortResult(aborted: Boolean) extends ScanBlocksResult
+
+case class ChainState(
+    blocks: Int,
+    bestblockhash: DoubleSha256DigestBE,
+    difficulty: BigDecimal,
+    verificationprogress: BigDecimal,
+    coins_db_cache_bytes: Long,
+    coins_tip_cache_bytes: Long,
+    validated: Boolean)
+case class ChainStateResult(headers: Int, chainstates: Vector[ChainState])

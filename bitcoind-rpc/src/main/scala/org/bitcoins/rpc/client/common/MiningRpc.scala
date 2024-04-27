@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GenerateBlockResult,
   GetBlockTemplateResult,
   GetMiningInfoResult,
+  PrioritisedTransaction,
   RpcOpts
 }
 import org.bitcoins.commons.serializers.JsonReaders._
@@ -92,5 +93,22 @@ trait MiningRpc { self: Client with BlockchainRpc =>
       feeDelta: Satoshis
   ): Future[Boolean] = {
     prioritiseTransaction(txid.flip, feeDelta)
+  }
+
+  def getPrioritisedTransactions()
+      : Future[Map[DoubleSha256DigestBE, PrioritisedTransaction]] = {
+    bitcoindCall[Map[DoubleSha256DigestBE, PrioritisedTransaction]](
+      "getprioritisedtransactions")
+  }
+
+  def generateToDescriptor(
+      numBlocks: Int,
+      descriptor: String,
+      maxTries: Long = 1000000
+  ): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
+      "generatetodescriptor",
+      List(JsNumber(numBlocks), JsString(descriptor), JsNumber(maxTries))
+    )
   }
 }
