@@ -124,6 +124,15 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
             } else {
               Future.unit
             }
+          isNodeAdded <- BitcoindRpcTestUtil.isNodeAdded(bitcoinds)
+          _ <-
+            if (isNodeAdded) {
+              val node1 = bitcoinds.node1
+              val node2Uri = bitcoinds.node2.getDaemon.uri
+              node1.addNode(node2Uri, AddNodeArgument.Remove)
+            } else {
+              Future.unit
+            }
         } yield {
           nodePair
         }

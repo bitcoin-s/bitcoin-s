@@ -18,6 +18,7 @@ import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
+import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.config._
 
 import java.io.File
@@ -345,6 +346,7 @@ object BitcoindRpcClient {
     val bitcoind = version match {
       case BitcoindVersion.V25 => BitcoindV25RpcClient.withActorSystem(instance)
       case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V27 => BitcoindV27RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -368,10 +370,10 @@ object BitcoindVersion
     with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V26
+  val newest: BitcoindVersion = V27
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V25)
+    Vector(V27, V26, V25)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -381,6 +383,10 @@ object BitcoindVersion
 
   case object V26 extends BitcoindVersion {
     override def toString: String = "v26"
+  }
+
+  case object V27 extends BitcoindVersion {
+    override def toString: String = "v27"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -402,6 +408,8 @@ object BitcoindVersion
     // need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
       case "25" => V25
+      case "26" => V26
+      case "27" => V27
       case _ =>
         logger.warn(
           s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}"

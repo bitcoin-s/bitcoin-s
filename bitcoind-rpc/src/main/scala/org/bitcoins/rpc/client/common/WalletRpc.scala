@@ -14,7 +14,6 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto._
-import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -160,14 +159,10 @@ trait WalletRpc { self: Client =>
   def getWalletInfo(
       walletName: String
   ): Future[GetWalletInfoResult] = {
-    self.version.flatMap {
-      case BitcoindVersion.V25 | BitcoindVersion.V26 |
-          BitcoindVersion.Unknown =>
-        bitcoindCall[GetWalletInfoResultPostV22](
-          "getwalletinfo",
-          uriExtensionOpt = Some(walletExtension(walletName))
-        )
-    }
+    bitcoindCall[GetWalletInfoResultPostV22](
+      "getwalletinfo",
+      uriExtensionOpt = Some(walletExtension(walletName))
+    )
   }
 
   def getWalletInfo: Future[GetWalletInfoResult] = {
@@ -381,32 +376,19 @@ trait WalletRpc { self: Client =>
       passphrase: String = "",
       avoidReuse: Boolean = false,
       descriptors: Boolean = true
-  ): Future[CreateWalletResult] =
-    self.version.flatMap {
-      case V25 | V26 =>
-        bitcoindCall[CreateWalletResult](
-          "createwallet",
-          List(
-            JsString(walletName),
-            JsBoolean(disablePrivateKeys),
-            JsBoolean(blank),
-            if (passphrase.isEmpty) JsNull else JsString(passphrase),
-            JsBoolean(avoidReuse),
-            JsBoolean(descriptors)
-          )
-        )
-      case Unknown =>
-        bitcoindCall[CreateWalletResult](
-          "createwallet",
-          List(
-            JsString(walletName),
-            JsBoolean(disablePrivateKeys),
-            JsBoolean(blank),
-            JsString(passphrase),
-            JsBoolean(avoidReuse)
-          )
-        )
-    }
+  ): Future[CreateWalletResult] = {
+    bitcoindCall[CreateWalletResult](
+      "createwallet",
+      List(
+        JsString(walletName),
+        JsBoolean(disablePrivateKeys),
+        JsBoolean(blank),
+        if (passphrase.isEmpty) JsNull else JsString(passphrase),
+        JsBoolean(avoidReuse),
+        JsBoolean(descriptors)
+      )
+    )
+  }
 
   def getAddressInfo(
       address: BitcoinAddress,
