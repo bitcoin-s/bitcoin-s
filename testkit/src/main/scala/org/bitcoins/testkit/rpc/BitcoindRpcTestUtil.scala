@@ -104,7 +104,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |regtest=1
                   |server=1
                   |daemon=$isDaemon
-                  |v2transport=1
                   |[regtest]
                   |rpcuser=$username
                   |rpcpassword=$pass
@@ -756,14 +755,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     connectNodes(pair.node1, pair.node2)
   }
 
-  def disconnectNodes(
-      first: BitcoindRpcClient,
-      second: BitcoindRpcClient): Future[Unit] = {
-    first.disconnectNode(second.getDaemon.uri)
+  def disconnectNodes(first: BitcoindRpcClient, second: BitcoindRpcClient)(
+      implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    val disconnectF = first.disconnectNode(second.getDaemon.uri)
+    for {
+      _ <- disconnectF
+      _ <- awaitDisconnected(first, second)
+    } yield ()
   }
 
-  def disconnectNodes[T <: BitcoindRpcClient](
-      nodePair: NodePair[T]): Future[Unit] = {
+  def disconnectNodes[T <: BitcoindRpcClient](nodePair: NodePair[T])(implicit
+      system: ActorSystem): Future[Unit] = {
     disconnectNodes(nodePair.node1, nodePair.node2)
   }
 

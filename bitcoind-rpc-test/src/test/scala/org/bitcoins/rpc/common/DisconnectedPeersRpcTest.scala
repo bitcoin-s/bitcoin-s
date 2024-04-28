@@ -148,7 +148,11 @@ class DisconnectedPeersRpcTest
       _ <- BitcoindRpcTestUtil.awaitConnection(from = freshClient,
                                                to = otherFreshClient,
                                                interval = 1.second)
-
+      // takes awhile to figure out what the transport type is...
+      // wait until we are no longer 'detecting' the transport_protocol_type
+      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+        freshClient.getPeerInfo.map(
+          _.exists(_.transport_protocol_type != "detecting")))
       info <- freshClient.getPeerInfo
     } yield {
       assert(info.exists(_.transport_protocol_type == "v2"))
