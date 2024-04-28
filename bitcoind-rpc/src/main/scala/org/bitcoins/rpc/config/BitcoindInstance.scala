@@ -57,17 +57,16 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
         Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
           .split(" ")
           .last
-
-      foundVersion match {
-        case _: String
-            if foundVersion.startsWith(BitcoindVersion.V25.toString) =>
-          BitcoindVersion.V25
-        case _: String =>
+      BitcoindVersion.known
+        .find(v => foundVersion.startsWith(v.toString))
+        .getOrElse {
+          println(
+            s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}")
           logger.warn(
             s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}"
           )
           BitcoindVersion.newest
-      }
+        }
     }
 
     versionT match {
