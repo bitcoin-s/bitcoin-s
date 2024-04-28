@@ -38,7 +38,7 @@ trait LndFixture extends BitcoinSFixture with CachedBitcoindNewest {
 }
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
-trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV26 {
+trait DualLndFixture extends BitcoinSFixture with CachedBitcoindNewest {
 
   override type FixtureParam = (BitcoindRpcClient, LndRpcClient, LndRpcClient)
 
