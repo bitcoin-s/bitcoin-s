@@ -710,11 +710,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       spendUnconfirmed: Boolean
   ): Future[PSBT] = {
     val outputMap = outputs.map { case (addr, amt) =>
-      addr.toString -> amt.satoshis.toUInt64
+      addr.toString -> amt.satoshis.toLong
     }
     val template = TxTemplate(inputs, outputMap)
     val rawTemplate = FundPsbtRequest.Template.Raw(template)
-    val fees = SatPerVbyte(UInt64(feeRate.toLong))
+    val fees = SatPerVbyte(feeRate.toLong)
     val request = FundPsbtRequest(
       template = rawTemplate,
       fees = fees,
@@ -732,11 +732,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       spendUnconfirmed: Boolean
   ): Future[PSBT] = {
     val outputMap = outputs.map { case (addr, amt) =>
-      addr.toString -> amt.satoshis.toUInt64
+      addr.toString -> amt.satoshis.toLong
     }
     val template = TxTemplate(inputs, outputMap)
     val rawTemplate = FundPsbtRequest.Template.Raw(template)
-    val fees = SatPerVbyte(UInt64(feeRate.toLong))
+    val fees = SatPerVbyte(feeRate.toLong)
     val request = FundPsbtRequest(
       template = rawTemplate,
       fees = fees,
@@ -754,7 +754,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       spendUnconfirmed: Boolean
   ): Future[PSBT] = {
     val template = Psbt(psbt.bytes)
-    val fees = SatPerVbyte(UInt64(feeRate.toLong))
+    val fees = SatPerVbyte(feeRate.toLong)
     val request = FundPsbtRequest(
       template = template,
       fees = fees,
@@ -771,7 +771,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       spendUnconfirmed: Boolean
   ): Future[PSBT] = {
     val template = Psbt(psbt.bytes)
-    val fees = SatPerVbyte(UInt64(feeRate.toLong))
+    val fees = SatPerVbyte(feeRate.toLong)
     val request = FundPsbtRequest(
       template = template,
       fees = fees,
@@ -783,7 +783,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def fundPSBT(psbt: PSBT, feeRate: SatoshisPerVirtualByte): Future[PSBT] = {
     val template = Psbt(psbt.bytes)
-    val fees = SatPerVbyte(UInt64(feeRate.toLong))
+    val fees = SatPerVbyte(feeRate.toLong)
     val request = FundPsbtRequest(template, fees)
 
     fundPSBT(request)
@@ -835,7 +835,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     val signDescriptor =
       SignDescriptor(
         output = Some(output),
-        sighash = UInt32(hashType.num),
+        sighash = hashType.num,
         inputIndex = inputIdx,
         signMethod = signMethod
       )
@@ -855,7 +855,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     val signDescriptor =
       SignDescriptor(
         output = Some(output),
-        sighash = UInt32(HashType.sigHashAll.num),
+        sighash = HashType.sigHashAll.num,
         inputIndex = inputIdx,
         signMethod = signMethod
       )
@@ -871,7 +871,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     val signDescriptor =
       SignDescriptor(
         output = Some(output),
-        sighash = UInt32(HashType.sigHashAll.num),
+        sighash = HashType.sigHashAll.num,
         inputIndex = inputIdx
       )
 
@@ -930,7 +930,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     val request = LeaseOutputRequest(
       id = LndRpcClient.leaseId,
       outpoint = Some(outPoint),
-      expirationSeconds = UInt64(leaseSeconds)
+      expirationSeconds = leaseSeconds
     )
 
     leaseOutput(request)
@@ -948,7 +948,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def leaseOutput(request: LeaseOutputRequest): Future[UInt64] = {
     logger.trace("lnd calling leaseoutput")
 
-    wallet.leaseOutput(request).map(_.expiration)
+    wallet.leaseOutput(request).map(x => UInt64(x.expiration))
   }
 
   def releaseOutput(outpoint: TransactionOutPoint): Future[Unit] = {
@@ -1070,8 +1070,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       ConfRequest(
         txid = DoubleSha256Digest.empty.bytes,
         script = script.asmBytes,
-        numConfs = UInt32(requiredConfs),
-        heightHint = UInt32(heightHint)
+        numConfs = requiredConfs,
+        heightHint = heightHint
       )
 
     registerConfirmationsNotification(request)
@@ -1095,8 +1095,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       ConfRequest(
         txid = txId.bytes,
         script = script.asmBytes,
-        numConfs = UInt32(requiredConfs),
-        heightHint = UInt32(heightHint)
+        numConfs = requiredConfs,
+        heightHint = heightHint
       )
 
     registerConfirmationsNotification(request)
@@ -1235,7 +1235,7 @@ object LndRpcClient {
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "v0.17.3-beta"
+  private[bitcoins] val version = "v0.17.5-beta"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"
