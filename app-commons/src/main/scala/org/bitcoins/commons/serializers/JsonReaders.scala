@@ -7,7 +7,12 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
 }
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
-import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.ChannelStateChange
+import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.{
+  ChannelClosed,
+  ChannelCreated,
+  ChannelOpened,
+  ChannelStateChange
+}
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
@@ -51,6 +56,12 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 object JsonReaders {
+
+  implicit val byteVectorReads: Reads[ByteVector] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(str => ByteVector.fromHex(str))(jsValue)
+    }
+  }
 
   /** Tries to prase the provided JSON into a map with keys of type `K` and
     * values of type `V`
@@ -734,6 +745,13 @@ object JsonReaders {
         SatoshisPerVirtualByte.fromLong(num.toLong))(json)
   }
 
+  implicit object SatoshisPerKWReads extends Reads[SatoshisPerKW] {
+    override def reads(json: JsValue): JsResult[SatoshisPerKW] = {
+      SerializerUtil.processJsNumberBigInt(num =>
+        SatoshisPerKW(Satoshis(num.toLong)))(json)
+    }
+  }
+
   implicit object FileReads extends Reads[File] {
 
     override def reads(json: JsValue): JsResult[File] =
@@ -968,6 +986,13 @@ object JsonReaders {
   implicit val realChannelIdReads: Reads[RealChannelId] =
     Json.reads[RealChannelId]
 
+  implicit val tempChannelIdReads: Reads[TempChannelId] =
+    Reads {
+      case string: JsString =>
+        JsSuccess(TempChannelId(ByteVector.fromValidHex(string.value)))
+      case x => JsError(s"Invalid type for tempChannelId, got=$x")
+    }
+
   implicit val shortIdsReads: Reads[ShortIds] =
     Json.reads[ShortIds]
 
@@ -1070,11 +1095,13 @@ object JsonReaders {
       nodeId <- (jsValue \ "nodeId").validate[NodeId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState]
+      active <- (jsValue \ "data" \ "commitments" \ "active")
+        .validate[Vector[JsObject]]
       remoteMsat <-
-        (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toRemote")
+        (active.head \ "localCommit" \ "spec" \ "toRemote")
           .validate[MilliSatoshis]
       localMsat <-
-        (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocal")
+        (active.head \ "localCommit" \ "spec" \ "toLocal")
           .validate[MilliSatoshis]
 
     } yield BaseChannelInfo(
@@ -1583,6 +1610,18 @@ object JsonReaders {
     Json.reads[ChannelStateChange]
   }
 
+  implicit val channelCreatedReads: Reads[ChannelCreated] = {
+    Json.reads[ChannelCreated]
+  }
+
+  implicit val channelClosedReads: Reads[ChannelClosed] = {
+    Json.reads[ChannelClosed]
+  }
+
+  implicit val channelOpenReads: Reads[ChannelOpened] = {
+    Json.reads[ChannelOpened]
+  }
+
   implicit val webSocketEventReads: Reads[WebSocketEvent] =
     Reads { js =>
       (js \ "type")
@@ -1598,6 +1637,12 @@ object JsonReaders {
             js.validate[WebSocketEvent.PaymentSettlingOnchain]
           case "channel-state-changed" =>
             js.validate[WebSocketEvent.ChannelStateChange]
+          case "channel-created" =>
+            js.validate[WebSocketEvent.ChannelCreated]
+          case "channel-opened" =>
+            js.validate[WebSocketEvent.ChannelOpened]
+          case "channel-closed" =>
+            js.validate[WebSocketEvent.ChannelClosed]
         }
     }
 
@@ -1616,12 +1661,6 @@ object JsonReaders {
       case _: Value =>
         throw Value.InvalidData(js, "Expected value in Satoshis")
     }
-
-  implicit val byteVectorReads: Reads[ByteVector] = {
-    Reads { jsValue =>
-      SerializerUtil.processJsStringOpt(str => ByteVector.fromHex(str))(jsValue)
-    }
-  }
 
   implicit val outputStatusReads: Reads[OutputStatus] = {
     Reads { jsValue =>

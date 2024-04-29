@@ -7,12 +7,14 @@ import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
   ChannelState,
   FundedChannelId,
-  ShortChannelId
+  ShortChannelId,
+  TempChannelId
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, PaymentPreimage}
+import org.bitcoins.core.wallet.fee.SatoshisPerKW
 import org.bitcoins.crypto._
 import play.api.libs.json.JsObject
 
@@ -464,6 +466,20 @@ object WebSocketEvent {
       remoteNodeId: NodeId,
       previousState: ChannelState,
       currentState: ChannelState)
+      extends WebSocketEvent
+
+  case class ChannelCreated(
+      remoteNodeId: NodeId,
+      isInitiator: Boolean,
+      temporaryChannelId: TempChannelId,
+      commitTxFeeratePerKw: SatoshisPerKW,
+      fundingTxFeeratePerKw: Option[SatoshisPerKW])
+      extends WebSocketEvent
+
+  case class ChannelOpened(remoteNodeId: NodeId, channelId: FundedChannelId)
+      extends WebSocketEvent
+
+  case class ChannelClosed(channelId: FundedChannelId, closingType: String)
       extends WebSocketEvent
 }
 
