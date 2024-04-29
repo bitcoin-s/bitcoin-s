@@ -433,7 +433,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     val request = OpenChannelRequest(
       nodePubkey = nodeId.bytes,
       localFundingAmount = fundingAmount.satoshis.toLong,
-      satPerVbyte = satPerVByte.toLong,
+      satPerVbyte = UInt64(satPerVByte.toLong),
       `private` = privateChannel
     )
 
@@ -451,7 +451,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       nodePubkey = nodeId.bytes,
       localFundingAmount = fundingAmount.satoshis.toLong,
       pushSat = pushAmt.satoshis.toLong,
-      satPerVbyte = satPerVByte.toLong,
+      satPerVbyte = UInt64(satPerVByte.toLong),
       `private` = privateChannel
     )
 
@@ -481,13 +481,13 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       feeRate: SatoshisPerVirtualByte
   ): Future[DoubleSha256DigestBE] = {
     val channelPoint =
-      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.idx)
+      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
 
     closeChannel(
       CloseChannelRequest(
         channelPoint = Some(channelPoint),
         force = force,
-        satPerVbyte = feeRate.toLong
+        satPerVbyte = UInt64(feeRate.toLong)
       )
     )
   }
@@ -496,7 +496,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       outPoint: TransactionOutPoint
   ): Future[DoubleSha256DigestBE] = {
     val channelPoint =
-      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.idx)
+      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
     closeChannel(CloseChannelRequest(Some(channelPoint)))
   }
 
@@ -573,7 +573,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def findChannel(chanId: ShortChannelId): Future[Option[Channel]] = {
     listChannels().map { channels =>
-      channels.find(_.chanId == chanId.u64.toLong)
+      channels.find(_.chanId == chanId.u64)
     }
   }
 
@@ -598,19 +598,21 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .channelBalance(ChannelBalanceRequest())
       .map { bals =>
         ChannelBalances(
-          localBalance = Satoshis(bals.localBalance.map(_.sat).getOrElse(0L)),
-          remoteBalance = Satoshis(bals.remoteBalance.map(_.sat).getOrElse(0L)),
+          localBalance =
+            Satoshis(bals.localBalance.map(_.sat).getOrElse(UInt64.zero)),
+          remoteBalance =
+            Satoshis(bals.remoteBalance.map(_.sat).getOrElse(UInt64.zero)),
           unsettledLocalBalance = Satoshis(
-            bals.unsettledLocalBalance.map(_.sat).getOrElse(0L)
+            bals.unsettledLocalBalance.map(_.sat).getOrElse(UInt64.zero)
           ),
           unsettledRemoteBalance = Satoshis(
-            bals.unsettledRemoteBalance.map(_.sat).getOrElse(0L)
+            bals.unsettledRemoteBalance.map(_.sat).getOrElse(UInt64.zero)
           ),
           pendingOpenLocalBalance = Satoshis(
-            bals.pendingOpenLocalBalance.map(_.sat).getOrElse(0L)
+            bals.pendingOpenLocalBalance.map(_.sat).getOrElse(UInt64.zero)
           ),
           pendingOpenRemoteBalance = Satoshis(
-            bals.pendingOpenRemoteBalance.map(_.sat).getOrElse(0L)
+            bals.pendingOpenRemoteBalance.map(_.sat).getOrElse(UInt64.zero)
           )
         )
       }
@@ -923,7 +925,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       leaseSeconds: Long
   ): Future[UInt64] = {
     val outPoint =
-      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.idx)
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout)
 
     val request = LeaseOutputRequest(
       id = LndRpcClient.leaseId,
@@ -946,15 +948,12 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def leaseOutput(request: LeaseOutputRequest): Future[UInt64] = {
     logger.trace("lnd calling leaseoutput")
 
-    wallet
-      .leaseOutput(request)
-      .map(_.expiration)
-      .map(UInt64.apply)
+    wallet.leaseOutput(request).map(x => UInt64(x.expiration))
   }
 
   def releaseOutput(outpoint: TransactionOutPoint): Future[Unit] = {
     val outPoint =
-      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.idx)
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout)
 
     val request =
       ReleaseOutputRequest(id = LndRpcClient.leaseId, outpoint = Some(outPoint))
@@ -987,7 +986,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     val request =
       SendCustomMessageRequest(
         peer = peer.bytes,
-        `type` = tpe.toInt,
+        `type` = UInt32(tpe.toBigInt),
         data = data
       )
     sendCustomMessage(request)
@@ -1003,7 +1002,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     lnd.subscribeCustomMessages(SubscribeCustomMessagesRequest()).map {
       response =>
         val nodeId = NodeId(response.peer)
-        val tpe = BigSizeUInt(response.`type`)
+        val tpe = BigSizeUInt(response.`type`.toBigInt)
         val tlv = TLV.fromTypeAndValue(tpe, response.data)
 
         (nodeId, tlv)
@@ -1236,7 +1235,7 @@ object LndRpcClient {
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "v0.17.5-beta"
+  private[bitcoins] val version = "v0.17.3-beta"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"

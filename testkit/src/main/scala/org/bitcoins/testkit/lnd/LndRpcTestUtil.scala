@@ -158,7 +158,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     for {
       blockCount <- bitcoind.getBlockCount()
       info <- client.getInfo
-    } yield info.blockHeight == blockCount
+    } yield info.blockHeight.toInt == blockCount
 
   /** Shuts down an lnd daemon and the bitcoind daemon it is associated with
     */

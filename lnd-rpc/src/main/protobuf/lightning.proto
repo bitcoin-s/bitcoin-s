@@ -4,6 +4,27 @@ package lnrpc;
 
 option go_package = "github.com/lightningnetwork/lnd/lnrpc";
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+    import: "org.bitcoins.lnd.rpc.LndUtils._"
+    scope: PACKAGE
+    field_transformations : [
+        {
+            when : {
+                type: TYPE_UINT64
+            }
+            set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt64' }}
+        },
+        {
+            when : {
+                type: TYPE_UINT32
+            }
+            set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt32' }}
+        }
+    ]
+};
+
 /*
  * Comments in this file will be directly parsed into the API
  * Documentation as descriptions of the associated method, message, or field.
