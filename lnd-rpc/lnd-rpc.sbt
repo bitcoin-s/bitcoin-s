@@ -19,6 +19,7 @@ Compile / scalacOptions ++= Seq(
   "-Wconf:cat=deprecation:site=invoicesrpc\\..*:silent",
   "-Wconf:cat=deprecation:site=peersrpc\\..*:silent",
   "-Wconf:cat=deprecation:site=chainrpc\\..*:silent",
+  "-Wconf:cat=deprecation:site=wtclientrpc\\..*:silent",
   "-Wconf:cat=unused-imports:site=lnrpc:silent",
   "-Wconf:cat=unused-imports:site=signrpc:silent",
   "-Wconf:cat=unused-imports:site=walletrpc:silent",

@@ -39,7 +39,7 @@ trait LndUtils {
     TransactionOutPoint(DoubleSha256DigestBE(op.txidStr), op.outputIndex)
 
   implicit def txOutpointToOutpoint(outpoint: TransactionOutPoint): OutPoint =
-    OutPoint(outpoint.txId.bytes, outpoint.txIdBE.hex, outpoint.vout)
+    OutPoint(outpoint.txId.bytes, outpoint.txIdBE.hex, outpoint.idx)
 
   // If other kinds of Iterables are needed, there's a fancy thing to do
   // that is done all over the Seq code using params and an implicit CanBuildFrom
@@ -67,14 +67,15 @@ trait LndUtils {
       channelPoint: ChannelPoint
   ): TransactionOutPoint = {
     val txIdBytes = channelPoint.fundingTxid.fundingTxidBytes.get
-    TransactionOutPoint(DoubleSha256Digest(txIdBytes), channelPoint.outputIndex)
+    TransactionOutPoint.apply(DoubleSha256Digest(txIdBytes).flip,
+                              channelPoint.outputIndex)
   }
 
   implicit def outPointToChannelPoint(
       outPoint: TransactionOutPoint
   ): ChannelPoint = {
     val txId = FundingTxidBytes(outPoint.txIdBE.bytes)
-    ChannelPoint(txId, outPoint.vout)
+    ChannelPoint(txId, outPoint.idx)
   }
 
   implicit def lndOutputDetailToOutputDetails(

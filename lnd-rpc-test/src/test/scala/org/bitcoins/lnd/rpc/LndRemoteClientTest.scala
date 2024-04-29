@@ -2,7 +2,6 @@ package org.bitcoins.lnd.rpc
 
 import lnrpc.Invoice.InvoiceState
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.script.TaprootScriptPubKey
@@ -15,7 +14,7 @@ class LndRemoteClientTest extends RemoteLndFixture {
   it must "get info from lnd" in { lnd =>
     for {
       info <- lnd.getInfo
-    } yield assert(info.blockHeight >= UInt32.zero)
+    } yield assert(info.blockHeight >= 0)
   }
 
   it must "create an invoice using sats" in { lnd =>

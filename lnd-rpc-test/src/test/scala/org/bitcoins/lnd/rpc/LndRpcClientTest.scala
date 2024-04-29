@@ -17,7 +17,7 @@ class LndRpcClientTest extends LndFixture {
   it must "get info from lnd" in { lnd =>
     for {
       info <- lnd.getInfo
-    } yield assert(info.blockHeight >= UInt32.zero)
+    } yield assert(info.blockHeight >= 0)
   }
 
   it must "get version from lnd" in { lnd =>
@@ -158,10 +158,10 @@ class LndRpcClientTest extends LndFixture {
     val hopHint = HopHint(
       nodeId =
         "037c862ec724bc85462aaeb804dd0941cd77dc4521cabd05edf3d0f23ed6b01f09",
-      chanId = UInt64.max - UInt64.twentyTwo,
-      feeBaseMsat = UInt32.zero,
-      feeProportionalMillionths = UInt32.max,
-      cltvExpiryDelta = UInt32.zero
+      chanId = (UInt64.max - UInt64.twentyTwo).toLong,
+      feeBaseMsat = 0,
+      feeProportionalMillionths = UInt32.max.toInt,
+      cltvExpiryDelta = 0
     )
 
     val invoice = Invoice(

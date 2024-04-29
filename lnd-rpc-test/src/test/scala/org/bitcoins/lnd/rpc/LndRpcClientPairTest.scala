@@ -34,8 +34,8 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
       infoB <- lndB.getInfo
     } yield {
       assert(infoA.identityPubkey != infoB.identityPubkey)
-      assert(infoA.blockHeight >= UInt32.zero)
-      assert(infoB.blockHeight >= UInt32.zero)
+      assert(infoA.blockHeight >= 0)
+      assert(infoB.blockHeight >= 0)
     }
   }
 
@@ -52,7 +52,7 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
     lndA.lnd
       .channelAcceptor(source)
       .mapAsyncUnordered(1) { req =>
-        if (req.pushAmt == UInt64.zero) {
+        if (req.pushAmt == 0) {
           queue.offer(
             ChannelAcceptResponse(
               error = "give me money",
