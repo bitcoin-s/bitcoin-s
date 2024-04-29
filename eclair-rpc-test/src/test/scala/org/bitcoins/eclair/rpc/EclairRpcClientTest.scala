@@ -29,6 +29,7 @@ import org.bitcoins.eclair.rpc.config.{
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, EclairRpcTestClient}
 import org.scalatest.Assertion
 
@@ -1326,7 +1327,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   override def afterAll(): Unit = {
-    clients.result().foreach(EclairRpcTestUtil.shutdown)
+    val resultF = for {
+      _ <- Future.traverse(clients.result())(EclairRpcTestUtil.shutdown)
+      bitcoind <- bitcoindRpcClientF
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+    } yield ()
+    val _ = Await.result(resultF, 30.second)
     super.afterAll()
   }
 }

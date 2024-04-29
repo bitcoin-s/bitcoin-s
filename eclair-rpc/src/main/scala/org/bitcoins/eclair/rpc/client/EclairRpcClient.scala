@@ -263,9 +263,10 @@ class EclairRpcClient(
     // this is unfortunately returned in this format
     // created channel 30bdf849eb9f72c9b41a09e38a6d83138c2edf332cb116dd7cf0f0dfb66be395
     val call = eclairCall[String]("open", params: _*)
-
     // let's just return the chanId
-    val chanIdF = call.map(_.split(" ").last)
+    // format:
+    // created channel 19e11470b0dd96ed15c56ea8f32e9a3277dcbd570e7392c1c34709adc7ebfdc3 with fundingTxId=c2fdebc7ad0947c3c192730e57bddc77329a2ef3a86ec515ed96ddb07014e119 and fees=24750 sat
+    val chanIdF = call.map(_.split(" ")(2))
 
     chanIdF.map(FundedChannelId.fromHex)
   }
@@ -1080,10 +1081,10 @@ object EclairRpcClient {
   ) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "0077471"
+  private[bitcoins] val commit = "623f7e4"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.8.0"
+  private[bitcoins] val version = "0.9.0"
 
   /** The bitcoind version that eclair is officially tested & supported with by
     * ACINQ
