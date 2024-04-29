@@ -7,6 +7,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
 }
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
+import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.ChannelStateChange
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
@@ -1045,11 +1046,13 @@ object JsonReaders {
         .validate[ShortChannelId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState.NORMAL.type]
+      active <- (jsValue \ "data" \ "commitments" \ "active")
+        .validate[Vector[JsObject]]
       remoteMsat <-
-        (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toRemote")
+        (active.head \ "localCommit" \ "spec" \ "toRemote")
           .validate[MilliSatoshis]
       localMsat <-
-        (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocal")
+        (active.head \ "localCommit" \ "spec" \ "toLocal")
           .validate[MilliSatoshis]
 
     } yield OpenChannelInfo(
@@ -1576,6 +1579,10 @@ object JsonReaders {
     )
   }
 
+  implicit val channelStateChangeReads: Reads[ChannelStateChange] = {
+    Json.reads[ChannelStateChange]
+  }
+
   implicit val webSocketEventReads: Reads[WebSocketEvent] =
     Reads { js =>
       (js \ "type")
@@ -1589,6 +1596,8 @@ object JsonReaders {
             js.validate[WebSocketEvent.PaymentSent]
           case "payment-settling-onchain" =>
             js.validate[WebSocketEvent.PaymentSettlingOnchain]
+          case "channel-state-changed" =>
+            js.validate[WebSocketEvent.ChannelStateChange]
         }
     }
 

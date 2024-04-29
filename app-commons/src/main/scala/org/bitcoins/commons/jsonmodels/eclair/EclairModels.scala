@@ -459,6 +459,12 @@ object WebSocketEvent {
       timestamp: Instant // milliseconds
   ) extends WebSocketEvent
 
+  case class ChannelStateChange(
+      channelId: FundedChannelId,
+      remoteNodeId: NodeId,
+      previousState: ChannelState,
+      currentState: ChannelState)
+      extends WebSocketEvent
 }
 
 case class OnChainBalance(confirmed: Satoshis, unconfirmed: Satoshis)
