@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: macos-13
     timeout-minutes: 60
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     steps:
