@@ -107,11 +107,11 @@ TaskKeys.downloadBitcoind := {
               "26.1" -> (if (System.getProperty("os.arch") == "aarch64")
                 "8a8e415763b7ffd5988153cf03967d812eca629016dd3b0ddf6da3ab6f4a3621"
               else
-                ""),
+                "acb50edd20692a9d023de12da573b64ca0fd9b4e9a2b88d1251020a3022b0f27"),
               "27.0" -> (if (System.getProperty("os.arch") == "aarch64")
                 "1d9d9b837297a73fc7a3b1cfed376644e3fa25c4e1672fbc143d5946cb52431d"
               else
-                "")
+                "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c")
             )
           else if (Properties.isWin)
             Map(
