@@ -125,7 +125,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.alias" -> "suredbits",
         "eclair.channel.fulfill-safety-before-timeout-blocks" -> 1,
         "eclair.channel.min-final-expiry-delta-blocks" -> 2,
-        "eclair.features.keysend" -> "optional"
+        "eclair.features.keysend" -> "optional",
+        "eclair.features.option_dual_fund" -> "disabled"
       )
     }
     val c = ConfigFactory.parseMap(configMap.asJava)
@@ -722,7 +723,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     val gen = for {
       _ <- fundedChannelIdF
       address <- bitcoindRpcClient.getNewAddress
-      blocks <- bitcoindRpcClient.generateToAddress(10, address)
+      blocks <- bitcoindRpcClient.generateToAddress(6, address)
     } yield blocks
 
     val openedF = {
