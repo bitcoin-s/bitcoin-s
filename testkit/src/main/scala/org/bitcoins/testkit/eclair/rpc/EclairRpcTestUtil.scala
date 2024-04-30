@@ -126,6 +126,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.channel.fulfill-safety-before-timeout-blocks" -> 1,
         "eclair.channel.min-final-expiry-delta-blocks" -> 2,
         "eclair.features.keysend" -> "optional",
+        // for some reason dual funded channels causes tests to fail on CI
+        // but not locally on my laptop, disable them for now
         "eclair.features.option_dual_fund" -> "disabled"
       )
     }
@@ -252,7 +254,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       val chanF = client.channel(chanId)
       chanF.map { chan =>
         if (!(chan.state == state)) {
-          logger.error(
+          logger.trace(
             s"ChanId ${chanId} has not entered ${state} yet. Currently in ${chan.state}"
           )
         }
