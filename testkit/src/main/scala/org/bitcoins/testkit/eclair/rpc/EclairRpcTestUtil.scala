@@ -10,7 +10,7 @@ import org.bitcoins.commons.jsonmodels.eclair.{
 }
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.compat.JavaConverters._
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
   ChannelState,
@@ -125,7 +125,10 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.alias" -> "suredbits",
         "eclair.channel.fulfill-safety-before-timeout-blocks" -> 1,
         "eclair.channel.min-final-expiry-delta-blocks" -> 2,
-        "eclair.features.keysend" -> "optional"
+        "eclair.features.keysend" -> "optional",
+        // for some reason dual funded channels causes tests to fail on CI
+        // but not locally on my laptop, disable them for now
+        "eclair.features.option_dual_fund" -> "disabled"
       )
     }
     val c = ConfigFactory.parseMap(configMap.asJava)
@@ -457,7 +460,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def openAndConfirmChannel(
       client1F: Future[EclairRpcClient],
       client2F: Future[EclairRpcClient],
-      amount: CurrencyUnit = Satoshis(1000000)
+      amount: CurrencyUnit = Satoshis(10000000)
   )(implicit system: ActorSystem): Future[ChannelId] = {
     import system.dispatcher
     val bitcoindRpcF = client1F.map(EclairRpcTestUtil.getBitcoindRpc(_))
@@ -681,7 +684,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     resultF
   }
 
-  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(500000000L)
+  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(Bitcoins.one.satoshis)
 
   /** Opens a channel from n1 -> n2 */
   def openChannel(

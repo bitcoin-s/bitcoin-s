@@ -130,6 +130,7 @@ TaskKeys.downloadBitcoind := {
           logger.info(s"Extracting archive with command: $extractCommand")
           extractCommand.!!
         } else {
+          Files.delete(expectedEndLocation)
           logger.error(
             s"Downloaded invalid version of bitcoind v$version, got $hash, expected ${expectedHash(version)}")
         }

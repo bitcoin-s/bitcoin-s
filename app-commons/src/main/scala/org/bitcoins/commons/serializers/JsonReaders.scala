@@ -1451,6 +1451,8 @@ object JsonReaders {
 
   implicit val sentPaymentReads: Reads[SentPayment] = Json.reads[SentPayment]
 
+  implicit val relayTimestampReads: Reads[RelayTimestamp] =
+    Json.reads[RelayTimestamp]
   implicit val relayedPaymentReads: Reads[RelayedPayment] = Reads { js =>
     for {
       amountIn <- (js \ "amountIn").validate[MilliSatoshis]
@@ -1458,15 +1460,16 @@ object JsonReaders {
       paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
       fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
       toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
-      timestamp <- (js \ "timestamp" \ "unix")
-        .validate[Instant](instantReadsMilliseconds)
+      startedAt <- (js \ "startedAt").validate[RelayTimestamp]
+      settledAt <- (js \ "settledAt").validate[RelayTimestamp]
     } yield RelayedPayment(
       amountIn,
       amountOut,
       paymentHash,
       fromChannelId,
       toChannelId,
-      timestamp
+      startedAt,
+      settledAt
     )
   }
   implicit val auditResultReads: Reads[AuditResult] = Json.reads[AuditResult]

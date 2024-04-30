@@ -223,8 +223,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       _ <-
         EclairRpcTestUtil
           .awaitUntilIncomingPaymentStatus[IncomingPaymentStatus.Received](
-            client4,
-            invoice.lnTags.paymentHash.hash,
+            client = client4,
+            paymentHash = invoice.lnTags.paymentHash.hash,
             interval = 1.second
           )
 
@@ -262,7 +262,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           _ <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
           _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
           _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
-          invoice <- otherClient.createInvoice("abc", 50.msats)
+          invoice <- otherClient.createInvoice(description = "abc",
+                                               amountMsat = 50.msats)
           info <- otherClient.getInfo
           _ = assert(info.nodeId == invoice.nodeId)
           paymentResult <-
@@ -460,7 +461,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         val getChannelId =
           (client: EclairRpcClient, otherClient: EclairRpcClient) => {
             otherClient.getInfo.flatMap { info =>
-              val amt = Satoshis(100000)
+              val amt = Satoshis(10000000)
               val openedChanF = clientF.flatMap(_.open(info.nodeId, amt))
 
               openedChanF.flatMap { channelId =>
@@ -1002,7 +1003,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         c2: EclairRpcClient
     ): Future[FundedChannelId] = {
       EclairRpcTestUtil
-        .openChannel(c1, c2, Satoshis(500000), MilliSatoshis(500000))
+        .openChannel(c1, c2, Satoshis(50000000), MilliSatoshis(500000))
     }
 
     val openedChannelsF: Future[(ChannelId, ChannelId)] = {
