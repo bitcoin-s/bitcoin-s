@@ -213,6 +213,9 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
               case AddressType.Legacy =>
                 val p2sh = P2SHScriptPubKey(spk)
                 P2SHAddress(p2sh, config.network)
+              case AddressType.P2TR =>
+                throw new UnsupportedOperationException(
+                  s"Taproot not supported for multisig generations yet")
             }
 
             val json = Obj(

@@ -102,14 +102,17 @@ object CLightningJsonModels {
       destination: NodeId,
       short_channel_id: ShortChannelId,
       public: Boolean,
-      satoshis: Satoshis,
+      amount_msats: MilliSatoshis,
       message_flags: Int,
       channel_flags: Int,
       active: Boolean,
       last_update: UInt64,
       base_fee_millisatoshi: MilliSatoshis,
       fee_per_millionth: Int,
-      delay: Int
+      delay: Int,
+      htlc_minimum_msat: MilliSatoshis,
+      htlc_maximum_msat: MilliSatoshis,
+      features: String
   ) extends CLightningJsonModel
 
   case class ListChannelsResult(channels: Vector[Channel])

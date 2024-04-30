@@ -44,12 +44,12 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress] = {
     val paramF = addressType match {
       case AddressType.SegWit => Future.successful(JsString("bech32"))
-      case AddressType.NestedSegWit =>
-        Future.successful(JsString("p2sh-segwit"))
-      case AddressType.Legacy =>
+      case AddressType.P2TR =>
+        Future.successful(JsString("p2tr"))
+      case x @ (AddressType.Legacy | AddressType.NestedSegWit) =>
         Future.failed(
           new IllegalArgumentException(
-            "clightning cannot generate legacy addresses"
+            s"clightning cannot generate ${x.altName} addresses"
           )
         )
     }
@@ -416,7 +416,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
 object CLightningRpcClient {
 
   /** The current version we support of clightning */
-  val version = "24.02.2"
+  val version = "v24.02.2"
 
   private[clightning] def feeRateToJson(feeUnit: FeeUnit): JsString = {
     // clightning only takes SatoshisPerKiloByte or SatoshisPerKW
