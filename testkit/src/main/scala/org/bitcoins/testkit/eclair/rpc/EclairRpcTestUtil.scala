@@ -10,7 +10,7 @@ import org.bitcoins.commons.jsonmodels.eclair.{
 }
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.compat.JavaConverters._
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
   ChannelState,
@@ -681,7 +681,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     resultF
   }
 
-  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(500000000L)
+  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(Bitcoins.one.satoshis)
 
   /** Opens a channel from n1 -> n2 */
   def openChannel(

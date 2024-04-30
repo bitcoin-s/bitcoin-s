@@ -223,8 +223,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       _ <-
         EclairRpcTestUtil
           .awaitUntilIncomingPaymentStatus[IncomingPaymentStatus.Received](
-            client4,
-            invoice.lnTags.paymentHash.hash,
+            client = client4,
+            paymentHash = invoice.lnTags.paymentHash.hash,
             interval = 1.second
           )
 

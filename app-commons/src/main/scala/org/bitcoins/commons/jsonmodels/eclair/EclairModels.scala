@@ -222,13 +222,16 @@ object ReceivedPayment {
   )
 }
 
+case class RelayTimestamp(iso: Instant, unix: Long)
+
 case class RelayedPayment(
     amountIn: MilliSatoshis,
     amountOut: MilliSatoshis,
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    timestamp: Instant // milliseconds
+    startedAt: RelayTimestamp,
+    settledAt: RelayTimestamp
 )
 
 case class SentPayment(
@@ -489,7 +492,7 @@ case class WalletTransaction(
     address: String,
     amount: Satoshis,
     fees: Satoshis,
-    blockHash: DoubleSha256DigestBE,
+    blockId_opt: Option[DoubleSha256DigestBE],
     confirmations: Long,
     txid: DoubleSha256DigestBE,
     timestamp: Long
