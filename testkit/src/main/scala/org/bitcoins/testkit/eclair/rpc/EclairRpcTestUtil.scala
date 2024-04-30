@@ -251,7 +251,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       val chanF = client.channel(chanId)
       chanF.map { chan =>
         if (!(chan.state == state)) {
-          logger.trace(
+          logger.error(
             s"ChanId ${chanId} has not entered ${state} yet. Currently in ${chan.state}"
           )
         }
