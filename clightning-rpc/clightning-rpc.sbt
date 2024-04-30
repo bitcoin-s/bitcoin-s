@@ -19,7 +19,7 @@ TaskKeys.downloadCLightning := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "23.02.2"
+  val version = "24.02.2"
 
   val (platform, suffix) =
     if (Properties.isLinux) {
