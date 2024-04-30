@@ -33,7 +33,7 @@ object CLightningJsonModels {
       `lightning-dir`: String,
       blockheight: Int,
       network: BitcoinNetwork,
-      fees_collected_msat: String,
+      fees_collected_msat: Long,
       address: Vector[CLightningAddress],
       binding: Vector[CLightningAddress]
   ) extends CLightningJsonModel
