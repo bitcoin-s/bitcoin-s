@@ -989,8 +989,10 @@ object JsonReaders {
   implicit val tempChannelIdReads: Reads[TempChannelId] =
     Reads {
       case string: JsString =>
-        JsSuccess(TempChannelId(ByteVector.fromValidHex(string.value)))
-      case x => JsError(s"Invalid type for tempChannelId, got=$x")
+        byteVectorReads.reads(string).map(TempChannelId(_))
+      case x @ (_: JsBoolean | _: JsNumber | _: JsArray | _: JsObject |
+          JsNull) =>
+        JsError(s"Invalid json type for tempChannelId, got=$x")
     }
 
   implicit val shortIdsReads: Reads[ShortIds] =

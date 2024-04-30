@@ -426,14 +426,17 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to start and shutdown a node" in {
-    val eclairTestClient =
+    val eclairTestClientF = for {
+      bitcoind <- bitcoindRpcClientF
+    } yield {
       EclairRpcTestClient.fromSbtDownload(
         eclairVersionOpt = None,
         eclairCommitOpt = None,
-        bitcoindRpcClientOpt = None
+        bitcoindRpcClientOpt = Some(bitcoind)
       )
+    }
     for {
-      eclair <- eclairTestClient.start()
+      eclair <- eclairTestClientF.flatMap(_.start())
       _ <- TestAsyncUtil.retryUntilSatisfiedF(
         conditionF = () => eclair.isStarted(),
         interval = 1.second,
