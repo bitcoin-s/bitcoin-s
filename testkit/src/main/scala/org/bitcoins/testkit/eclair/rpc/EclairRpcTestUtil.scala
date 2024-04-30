@@ -457,7 +457,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def openAndConfirmChannel(
       client1F: Future[EclairRpcClient],
       client2F: Future[EclairRpcClient],
-      amount: CurrencyUnit = Satoshis(1000000)
+      amount: CurrencyUnit = Satoshis(10000000)
   )(implicit system: ActorSystem): Future[ChannelId] = {
     import system.dispatcher
     val bitcoindRpcF = client1F.map(EclairRpcTestUtil.getBitcoindRpc(_))
