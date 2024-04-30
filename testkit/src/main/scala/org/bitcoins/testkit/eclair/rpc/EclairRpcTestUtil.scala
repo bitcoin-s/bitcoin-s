@@ -2,7 +2,6 @@ package org.bitcoins.testkit.eclair.rpc
 
 import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.eclair.{
   IncomingPaymentStatus,
   OutgoingPayment,
@@ -722,10 +721,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     val gen = for {
       _ <- fundedChannelIdF
-      // wait a few seconds for dual funding process to complete
-      _ <- AsyncUtil.nonBlockingSleep(5.second)
       address <- bitcoindRpcClient.getNewAddress
-      blocks <- bitcoindRpcClient.generateToAddress(6, address)
+      blocks <- bitcoindRpcClient.generateToAddress(10, address)
     } yield blocks
 
     val openedF = {
