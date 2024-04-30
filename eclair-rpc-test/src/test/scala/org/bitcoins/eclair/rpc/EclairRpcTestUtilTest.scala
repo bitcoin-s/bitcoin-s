@@ -3,7 +3,11 @@ package org.bitcoins.eclair.rpc
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 class EclairRpcTestUtilTest extends BitcoinSAsyncTest {
 
@@ -21,7 +25,12 @@ class EclairRpcTestUtilTest extends BitcoinSAsyncTest {
     Vector.newBuilder[EclairRpcClient]
 
   override def afterAll(): Unit = {
-    clients.result().foreach(EclairRpcTestUtil.shutdown)
+    val resultF = for {
+      _ <- Future.traverse(clients.result())(EclairRpcTestUtil.shutdown)
+      bitcoind <- bitcoindRpcF
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+    } yield ()
+    val _ = Await.result(resultF, 30.second)
     super.afterAll()
   }
 

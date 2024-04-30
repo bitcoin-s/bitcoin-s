@@ -793,33 +793,29 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       info <- client.getInfo
     } yield info.blockHeight == blockCount
 
-  /** Shuts down an eclair daemon and the bitcoind daemon it is associated with
-    */
+  /** Shuts down an eclair daemon */
   def shutdown(
       eclairRpcClient: EclairRpcClient
   )(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
-    val bitcoindRpc = getBitcoindRpc(eclairRpcClient)
 
     logger.debug(s"shutting down eclair")
     val stopEclairF = eclairRpcClient.stop()
-    val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
     val iskilled = eclairRpcClient.isStopped
 
     val shutdownF = for {
-      _ <- killBitcoindF
       _ <- stopEclairF
       _ <- iskilled
     } yield {
       logger.debug(
-        "Successfully shutdown eclair and it's corresponding bitcoind"
+        "Successfully shutdown eclair"
       )
     }
     shutdownF.failed.foreach { err: Throwable =>
-      logger.info(
-        s"Killed a bitcoind instance, but could not find an eclair process to kill"
+      logger.error(
+        s"Could kill eclair process",
+        err
       )
-      throw err
     }
     shutdownF
   }

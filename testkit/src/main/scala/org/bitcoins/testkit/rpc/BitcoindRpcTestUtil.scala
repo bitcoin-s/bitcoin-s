@@ -352,7 +352,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       servers: Vector[BitcoindRpcClient]
   )(implicit system: ActorSystem): Future[Unit] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
-
+    logger.info(s"Shutting down ${servers.length} bitcoinds")
     val serverStopsF = Future.traverse(servers) { s =>
       val stopF = s.stop()
       stopF.onComplete {
@@ -366,7 +366,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         _ <- removeDataDirectory(s)
       } yield ()
     }
-    serverStopsF.map(_ => ())
+    serverStopsF.map { _ =>
+      logger.info(s"Done shutting down ${servers.length} bitcoinds")
+      ()
+    }
   }
 
   /** Stops the given server and deletes its data directory

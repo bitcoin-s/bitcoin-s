@@ -29,6 +29,7 @@ import org.bitcoins.eclair.rpc.config.{
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, EclairRpcTestClient}
 import org.scalatest.Assertion
 
@@ -425,14 +426,17 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to start and shutdown a node" in {
-    val eclairTestClient =
+    val eclairTestClientF = for {
+      bitcoind <- bitcoindRpcClientF
+    } yield {
       EclairRpcTestClient.fromSbtDownload(
         eclairVersionOpt = None,
         eclairCommitOpt = None,
-        bitcoindRpcClientOpt = None
+        bitcoindRpcClientOpt = Some(bitcoind)
       )
+    }
     for {
-      eclair <- eclairTestClient.start()
+      eclair <- eclairTestClientF.flatMap(_.start())
       _ <- TestAsyncUtil.retryUntilSatisfiedF(
         conditionF = () => eclair.isStarted(),
         interval = 1.second,
@@ -1326,7 +1330,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   override def afterAll(): Unit = {
-    clients.result().foreach(EclairRpcTestUtil.shutdown)
+    val resultF = for {
+      _ <- Future.traverse(clients.result())(EclairRpcTestUtil.shutdown)
+      bitcoind <- bitcoindRpcClientF
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+    } yield ()
+    val _ = Await.result(resultF, 30.second)
     super.afterAll()
   }
 }
