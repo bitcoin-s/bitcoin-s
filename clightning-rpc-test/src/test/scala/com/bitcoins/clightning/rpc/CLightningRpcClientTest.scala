@@ -15,7 +15,7 @@ class CLightningRpcClientTest extends CLightningFixture {
       assert(info.num_peers == 0)
       assert(info.blockheight >= 0)
       assert(info.id.pubKey.isFullyValid)
-      assert(info.version == CLightningRpcClient.version)
+      assert(info.version == "v" + CLightningRpcClient.version)
     }
   }
 
