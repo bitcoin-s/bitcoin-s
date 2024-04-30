@@ -2,20 +2,12 @@ package org.bitcoins.testkit.eclair.rpc
 
 import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.commons.jsonmodels.eclair.{
-  IncomingPaymentStatus,
-  OutgoingPayment,
-  OutgoingPaymentStatus,
-  PaymentId
-}
+import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.commons.jsonmodels.eclair.{IncomingPaymentStatus, OutgoingPayment, OutgoingPaymentStatus, PaymentId}
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.ln.channel.{
-  ChannelId,
-  ChannelState,
-  FundedChannelId
-}
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.crypto.Sha256Digest
@@ -23,12 +15,7 @@ import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.{
-  BitcoindAuthCredentials,
-  BitcoindInstance,
-  BitcoindInstanceLocal,
-  ZmqConfig
-}
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance, BitcoindInstanceLocal, ZmqConfig}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -721,6 +708,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     val gen = for {
       _ <- fundedChannelIdF
+      //wait a few seconds for dual funding process to complete
+      _ <- AsyncUtil.nonBlockingSleep(5.second)
       address <- bitcoindRpcClient.getNewAddress
       blocks <- bitcoindRpcClient.generateToAddress(6, address)
     } yield blocks
