@@ -47,18 +47,18 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
     testProvider(provider)
   }
 
-  it must "get a valid fee rate from mempool.space/testnet using the fastest fee target" ignore {
+  it must "get a valid fee rate from mempool.space/testnet using the fastest fee target" in {
     val provider = MempoolSpaceProvider(FastestFeeTarget, TestNet3, proxyParams)
     testProvider(provider)
   }
 
-  it must "get a valid fee rate from mempool.space/testnet using a half hour fee target" ignore {
+  it must "get a valid fee rate from mempool.space/testnet using a half hour fee target" in {
     val provider =
       MempoolSpaceProvider(HalfHourFeeTarget, TestNet3, proxyParams)
     testProvider(provider)
   }
 
-  it must "get a valid fee rate from mempool.space/testnet using an hour fee target" ignore {
+  it must "get a valid fee rate from mempool.space/testnet using an hour fee target" in {
     val provider = MempoolSpaceProvider(HourFeeTarget, TestNet3, proxyParams)
     testProvider(provider)
   }
@@ -82,7 +82,7 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
     val provider = MempoolSpaceProvider(FastestFeeTarget, MainNet, proxyParams)
     for {
       feeRate <- provider.getFeeRate()
-      _ <- AsyncUtil.nonBlockingSleep(20.seconds)
+      _ <- AsyncUtil.nonBlockingSleep(5.seconds)
       cached <- provider.getFeeRate()
     } yield assert(feeRate == cached)
   }
