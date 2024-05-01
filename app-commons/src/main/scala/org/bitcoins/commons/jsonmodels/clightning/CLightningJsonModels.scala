@@ -102,7 +102,7 @@ object CLightningJsonModels {
       destination: NodeId,
       short_channel_id: ShortChannelId,
       public: Boolean,
-      amount_msats: MilliSatoshis,
+      amount_msat: MilliSatoshis,
       message_flags: Int,
       channel_flags: Int,
       active: Boolean,
