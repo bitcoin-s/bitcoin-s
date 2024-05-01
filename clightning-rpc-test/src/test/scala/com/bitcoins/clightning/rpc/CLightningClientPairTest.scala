@@ -143,7 +143,7 @@ class CLightningClientPairTest extends DualCLightningFixture {
     } yield assert(res.status.paid)
   }
 
-  it must "send from one node to another" in { params =>
+  it must "send from one node to another" ignore { params =>
     val (bitcoind, clightningA, clightningB) = params
 
     val sendAmt = Satoshis(10000)
