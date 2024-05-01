@@ -111,7 +111,7 @@ class CLightningClientPairTest extends DualCLightningFixture {
       )
       payment <- clightningB.payInvoice(invoiceResult.bolt11)
       _ = assert(payment.payment_hash == invoiceResult.payment_hash)
-      _ = assert(payment.msatoshi.toSatoshis == amount)
+      _ = assert(payment.amount_msat.toSatoshis == amount)
 
       _ <- TestAsyncUtil.awaitConditionF(() =>
         clightningA

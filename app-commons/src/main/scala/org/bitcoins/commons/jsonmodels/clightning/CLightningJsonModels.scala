@@ -270,12 +270,11 @@ object CLightningJsonModels {
 
   case class CLightningPayResult(
       destination: Option[NodeId],
-      payment_preimage: PaymentPreimage,
       payment_hash: Sha256Digest,
       created_at: BigDecimal,
       parts: Long,
-      msatoshi: MilliSatoshis,
-      msatoshi_sent: MilliSatoshis
+      amount_msat: MilliSatoshis,
+      amount_sent_msat: MilliSatoshis
   ) extends CLightningJsonModel
 
   case class InputReservation(
