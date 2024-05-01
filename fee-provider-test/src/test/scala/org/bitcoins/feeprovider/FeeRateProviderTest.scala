@@ -82,7 +82,7 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
     val provider = MempoolSpaceProvider(FastestFeeTarget, MainNet, proxyParams)
     for {
       feeRate <- provider.getFeeRate()
-      _ <- AsyncUtil.nonBlockingSleep(20.seconds)
+      _ <- AsyncUtil.nonBlockingSleep(5.seconds)
       cached <- provider.getFeeRate()
     } yield assert(feeRate == cached)
   }
