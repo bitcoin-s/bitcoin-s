@@ -188,7 +188,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   ): Future[CLightningInvoiceResult] = {
     val params = JsObject(
       Vector(
-        "msatoshi" -> JsNumber(MilliSatoshis(amount).toLong),
+        "amount_msat" -> JsNumber(MilliSatoshis(amount).toLong),
         "label" -> JsString(label),
         "description" -> JsString(description),
         "expiry" -> JsNumber(expirySeconds)
