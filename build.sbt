@@ -582,8 +582,7 @@ lazy val eclairRpcTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.eclairRpcTest.value,
-    name := "bitcoin-s-eclair-rpc-test",
-    parallelExecution := !(isCI && Properties.isMac)
+    name := "bitcoin-s-eclair-rpc-test"
   )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
@@ -601,8 +600,7 @@ lazy val lndRpcTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.eclairRpcTest.value,
-    name := "bitcoin-s-lnd-rpc-test",
-    parallelExecution := !(isCI && Properties.isMac)
+    name := "bitcoin-s-lnd-rpc-test"
   )
   .dependsOn(coreJVM % testAndCompile, testkit, lndRpc)
 
@@ -636,8 +634,7 @@ lazy val nodeTest =
       // Scalatest issue:
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
-      libraryDependencies ++= Deps.nodeTest.value,
-      parallelExecution := !isTor
+      libraryDependencies ++= Deps.nodeTest.value
     )
     .dependsOn(
       coreJVM % testAndCompile,
@@ -781,8 +778,7 @@ lazy val dlcNodeTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-node-test",
-    libraryDependencies ++= Deps.dlcNodeTest,
-    parallelExecution := !isTor
+    libraryDependencies ++= Deps.dlcNodeTest
   )
   .dependsOn(coreJVM % testAndCompile, dlcNode, testkit)
 
