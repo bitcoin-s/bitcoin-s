@@ -73,7 +73,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
     listFunds.map { funds =>
       val start = WalletBalances(Satoshis.zero, Satoshis.zero, Satoshis.zero)
       funds.outputs.foldLeft(start) { case (balances, utxo) =>
-        val amt = utxo.value
+        val amt = utxo.amount_msat.toSatoshis
         val newTotal = balances.balance + amt
         utxo.status match {
           case OutputStatus.Spent => balances

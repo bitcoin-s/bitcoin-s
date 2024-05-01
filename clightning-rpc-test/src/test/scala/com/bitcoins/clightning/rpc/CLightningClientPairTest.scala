@@ -63,7 +63,8 @@ class CLightningClientPairTest extends DualCLightningFixture {
       _ <- bitcoind.sendToAddress(addr, Bitcoins(1))
       bitcoindAddr <- bitcoind.getNewAddress
       utxo <- clightning.listFunds.map(_.outputs.head)
-      prevOut = TransactionOutput(utxo.value, utxo.scriptpubkey)
+      prevOut = TransactionOutput(utxo.amount_msat.toSatoshis,
+                                  utxo.scriptpubkey)
 
       input = TransactionInput(
         utxo.outPoint,

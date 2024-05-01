@@ -40,15 +40,15 @@ object CLightningJsonModels {
 
   case class NewAddressResult(
       bech32: Option[BitcoinAddress],
-      `p2sh-segwit`: Option[BitcoinAddress]
+      p2tr: Option[Bech32mAddress]
   ) extends CLightningJsonModel {
-    val address: BitcoinAddress = bech32.getOrElse(`p2sh-segwit`.get)
+    val address: BitcoinAddress = bech32.getOrElse(p2tr.get)
   }
 
   case class Output(
       txid: DoubleSha256DigestBE,
       output: UInt32,
-      value: Satoshis,
+      amount_msat: MilliSatoshis,
       scriptpubkey: ScriptPubKey,
       status: OutputStatus,
       reserved: Boolean,
