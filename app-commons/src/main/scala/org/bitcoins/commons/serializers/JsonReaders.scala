@@ -35,6 +35,7 @@ import org.bitcoins.core.protocol.tlv.{
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Address,
+  Bech32mAddress,
   BitcoinAddress,
   P2PKHAddress,
   P2SHAddress
@@ -485,6 +486,22 @@ object JsonReaders {
         }
       }
     }
+  }
+
+  implicit object Bech32mAddressReads extends Reads[Bech32mAddress] {
+    override def reads(json: JsValue): JsResult[Bech32mAddress] =
+      json match {
+        case JsString(s) =>
+          Bech32mAddress.fromStringT(s) match {
+            case Success(address) =>
+              JsSuccess(address)
+            case Failure(err) =>
+              SerializerUtil.buildErrorMsg("Bech32mAddress", err)
+          }
+        case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+            _: JsObject) =>
+          SerializerUtil.buildJsErrorMsg("jsstring", err)
+      }
   }
 
   implicit object BitcoinAddressReads extends Reads[BitcoinAddress] {

@@ -15,7 +15,7 @@ class CLightningRpcClientTest extends CLightningFixture {
       assert(info.num_peers == 0)
       assert(info.blockheight >= 0)
       assert(info.id.pubKey.isFullyValid)
-      assert(info.version == CLightningRpcClient.version)
+      assert(info.version == "v" + CLightningRpcClient.version)
     }
   }
 
@@ -31,14 +31,14 @@ class CLightningRpcClientTest extends CLightningFixture {
     for {
       addr1 <- client.getNewAddress
       addr2 <- client.getNewAddress(AddressType.SegWit)
-      addr3 <- client.getNewAddress(AddressType.NestedSegWit)
+      addr3 <- client.getNewAddress(AddressType.P2TR)
       _ <- recoverToSucceededIf[IllegalArgumentException](
         client.getNewAddress(AddressType.Legacy)
       )
     } yield {
       assert(addr1.isInstanceOf[Bech32Address])
       assert(addr2.isInstanceOf[Bech32Address])
-      assert(addr3.isInstanceOf[P2SHAddress])
+      assert(addr3.isInstanceOf[Bech32mAddress])
     }
   }
 

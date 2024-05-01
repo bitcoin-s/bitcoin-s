@@ -61,8 +61,8 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
 
       midChannelsA <- clightningA.listChannels()
       midChannelsB <- clightningB.listChannels()
-      _ = assert(midChannelsA.isEmpty)
-      _ = assert(midChannelsB.isEmpty)
+      _ = assert(midChannelsA.forall(_.active == false))
+      _ = assert(midChannelsB.forall(_.active == false))
 
       res <- bitcoind.walletProcessPSBT(psbt)
       tx <- Future.fromTry(res.psbt.extractTransactionAndValidate)
@@ -113,8 +113,8 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
 
       midChannelsA <- clightningA.listChannels()
       midChannelsB <- clightningB.listChannels()
-      _ = assert(midChannelsA.isEmpty)
-      _ = assert(midChannelsB.isEmpty)
+      _ = assert(midChannelsA.forall(_.active == false))
+      _ = assert(midChannelsB.forall(_.active == false))
 
       // cancel channel
       _ <- clightningA.cancelChannelOpen(nodeId)

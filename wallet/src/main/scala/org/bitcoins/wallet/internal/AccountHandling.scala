@@ -54,6 +54,9 @@ private[wallet] trait AccountHandling { self: Wallet =>
       case Legacy       => HDCoin(HDPurposes.Legacy, DEFAULT_HD_COIN_TYPE)
       case NestedSegWit => HDCoin(HDPurposes.NestedSegWit, DEFAULT_HD_COIN_TYPE)
       case SegWit       => HDCoin(HDPurposes.SegWit, DEFAULT_HD_COIN_TYPE)
+      case P2TR =>
+        throw new UnsupportedOperationException(
+          s"Taproot not supported in wallet")
     }
     for {
       account <- accountDAO.read((hdCoin, 0))

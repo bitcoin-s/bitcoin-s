@@ -768,7 +768,9 @@ class EclairRpcClient(
                   .toString()} JSON ${json}"
             )
             throw new IllegalArgumentException(
-              s"Could not parse JsResult for command=$commandName"
+              s"Could not parse JsResult for command=$commandName: ${JsError
+                  .toJson(res)
+                  .toString()} JSON ${json}"
             )
         }
     }

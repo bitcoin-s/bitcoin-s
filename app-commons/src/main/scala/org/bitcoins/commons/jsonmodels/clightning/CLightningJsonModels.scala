@@ -33,22 +33,22 @@ object CLightningJsonModels {
       `lightning-dir`: String,
       blockheight: Int,
       network: BitcoinNetwork,
-      fees_collected_msat: String,
+      fees_collected_msat: Long,
       address: Vector[CLightningAddress],
       binding: Vector[CLightningAddress]
   ) extends CLightningJsonModel
 
   case class NewAddressResult(
       bech32: Option[BitcoinAddress],
-      `p2sh-segwit`: Option[BitcoinAddress]
+      p2tr: Option[Bech32mAddress]
   ) extends CLightningJsonModel {
-    val address: BitcoinAddress = bech32.getOrElse(`p2sh-segwit`.get)
+    val address: BitcoinAddress = bech32.getOrElse(p2tr.get)
   }
 
   case class Output(
       txid: DoubleSha256DigestBE,
       output: UInt32,
-      value: Satoshis,
+      amount_msat: MilliSatoshis,
       scriptpubkey: ScriptPubKey,
       status: OutputStatus,
       reserved: Boolean,
@@ -102,14 +102,17 @@ object CLightningJsonModels {
       destination: NodeId,
       short_channel_id: ShortChannelId,
       public: Boolean,
-      satoshis: Satoshis,
+      amount_msat: MilliSatoshis,
       message_flags: Int,
       channel_flags: Int,
       active: Boolean,
       last_update: UInt64,
       base_fee_millisatoshi: MilliSatoshis,
       fee_per_millionth: Int,
-      delay: Int
+      delay: Int,
+      htlc_minimum_msat: MilliSatoshis,
+      htlc_maximum_msat: MilliSatoshis,
+      features: String
   ) extends CLightningJsonModel
 
   case class ListChannelsResult(channels: Vector[Channel])
@@ -267,12 +270,11 @@ object CLightningJsonModels {
 
   case class CLightningPayResult(
       destination: Option[NodeId],
-      payment_preimage: PaymentPreimage,
       payment_hash: Sha256Digest,
       created_at: BigDecimal,
       parts: Long,
-      msatoshi: MilliSatoshis,
-      msatoshi_sent: MilliSatoshis
+      amount_msat: MilliSatoshis,
+      amount_sent_msat: MilliSatoshis
   ) extends CLightningJsonModel
 
   case class InputReservation(
