@@ -10,7 +10,52 @@ import invoicesrpc.LookupInvoiceMsg.InvoiceRef
 import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.{ChanClose, ClosePending}
-import lnrpc.{AbandonChannelRequest, AddressType, ChanBackupSnapshot, Channel, ChannelBackupSubscription, ChannelBalanceRequest, ChannelEventSubscription, ChannelEventUpdate, ChannelPoint, CloseChannelRequest, ConnectPeerRequest, GenSeedRequest, GenSeedResponse, GetInfoRequest, GetInfoResponse, GetStateRequest, GetTransactionsRequest, GraphTopologySubscription, GraphTopologyUpdate, InitWalletRequest, Invoice, InvoiceSubscription, LightningAddress, LightningClient, ListChannelsRequest, ListPeersRequest, ListUnspentRequest, NewAddressRequest, OpenChannelRequest, OutPoint, Payment, Peer, PeerEvent, PeerEventSubscription, PendingChannelsRequest, PendingChannelsResponse, SendCustomMessageRequest, StateClient, StopRequest, SubscribeCustomMessagesRequest, UnlockWalletRequest, WalletBalanceRequest, WalletState, WalletUnlockerClient}
+import lnrpc.{
+  AbandonChannelRequest,
+  AddressType,
+  ChanBackupSnapshot,
+  Channel,
+  ChannelBackupSubscription,
+  ChannelBalanceRequest,
+  ChannelEventSubscription,
+  ChannelEventUpdate,
+  ChannelPoint,
+  CloseChannelRequest,
+  ConnectPeerRequest,
+  GenSeedRequest,
+  GenSeedResponse,
+  GetInfoRequest,
+  GetInfoResponse,
+  GetStateRequest,
+  GetTransactionsRequest,
+  GraphTopologySubscription,
+  GraphTopologyUpdate,
+  InitWalletRequest,
+  Invoice,
+  InvoiceSubscription,
+  LightningAddress,
+  LightningClient,
+  ListChannelsRequest,
+  ListPeersRequest,
+  ListUnspentRequest,
+  NewAddressRequest,
+  OpenChannelRequest,
+  OutPoint,
+  Payment,
+  Peer,
+  PeerEvent,
+  PeerEventSubscription,
+  PendingChannelsRequest,
+  PendingChannelsResponse,
+  SendCustomMessageRequest,
+  StateClient,
+  StopRequest,
+  SubscribeCustomMessagesRequest,
+  UnlockWalletRequest,
+  WalletBalanceRequest,
+  WalletState,
+  WalletUnlockerClient
+}
 import org.apache.pekko.grpc.{GrpcClientSettings, SSLContextUtils}
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.{BitcoinSLogger, NativeProcessFactory}
@@ -24,7 +69,11 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{TransactionOutPoint, TransactionOutput, Transaction => Tx}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput,
+  Transaction => Tx
+}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
@@ -40,7 +89,17 @@ import signrpc.{SignDescriptor, SignMethod, SignReq, SignerClient}
 import verrpc.{Version, VersionRequest, VersionerClient}
 import walletrpc.FundPsbtRequest.Fees.SatPerVbyte
 import walletrpc.FundPsbtRequest.Template.Psbt
-import walletrpc.{FinalizePsbtRequest, FundPsbtRequest, LeaseOutputRequest, ListLeasesRequest, ReleaseOutputRequest, SendOutputsRequest, SignPsbtRequest, TxTemplate, WalletKitClient}
+import walletrpc.{
+  FinalizePsbtRequest,
+  FundPsbtRequest,
+  LeaseOutputRequest,
+  ListLeasesRequest,
+  ReleaseOutputRequest,
+  SendOutputsRequest,
+  SignPsbtRequest,
+  TxTemplate,
+  WalletKitClient
+}
 
 import java.io._
 import java.net.InetSocketAddress
