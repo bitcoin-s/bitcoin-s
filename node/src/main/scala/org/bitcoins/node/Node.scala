@@ -123,7 +123,7 @@ trait Node
 
     for {
       _ <- addToDbF
-      _ <- {
+      _ = {
         val connected = peerManager.peers.nonEmpty
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
@@ -132,10 +132,8 @@ trait Node
           val invMsg = InventoryMessage(inventories)
           peerManager.sendToRandomPeer(invMsg)
         } else {
-          Future.failed(
-            new RuntimeException(
-              s"Error broadcasting transaction $txIds, no peers connected"
-            )
+          throw new RuntimeException(
+            s"Error broadcasting transaction $txIds, no peers connected"
           )
         }
       }
@@ -155,9 +153,8 @@ trait Node
       val inventories =
         blockHashes.map(hash => Inventory(typeIdentifier, hash.flip))
       val message = GetDataMessage(inventories)
-      for {
-        _ <- peerManager.sendToRandomPeer(message)
-      } yield ()
+      peerManager.sendToRandomPeer(message)
+      Future.unit
     }
   }
 

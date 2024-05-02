@@ -406,16 +406,10 @@ case class DataMessageHandler(
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
             d = syncNodeState.toDoneSyncing
-            newState <- {
-              peerManager
-                .gossipGetHeadersMessage(Vector(bestBlockHash))
-                .map { _ =>
-                  // set to done syncing since we are technically done with IBD
-                  // we just need to sync blocks that occurred while we were doing IBD
-                  d
-                }
-            }
-          } yield newState
+            _ = peerManager.gossipGetHeadersMessage(Vector(bestBlockHash))
+            // set to done syncing since we are technically done with IBD
+            // we just need to sync blocks that occurred while we were doing IBD
+          } yield d
         }
       }
     } yield newState
@@ -450,15 +444,14 @@ case class DataMessageHandler(
             cachedHeaders = blockchains
               .flatMap(_.headers)
               .map(_.hashBE)
-            newState <- {
+            newState = {
               logger.info(
                 s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}"
               )
-              val queryF =
-                peerManager.gossipGetHeadersMessage(cachedHeaders)
+              val _ = peerManager.gossipGetHeadersMessage(cachedHeaders)
               // switch to DoneSyncing state until we receive a valid header from our peers
               val d = state.toDoneSyncing
-              queryF.map(_ => d)
+              d
             }
           } yield newState
         }

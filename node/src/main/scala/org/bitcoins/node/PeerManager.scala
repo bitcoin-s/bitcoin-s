@@ -1155,26 +1155,33 @@ case class PeerManager(
   override def gossipMessage(
       msg: NetworkPayload,
       excludedPeerOpt: Option[Peer]
-  ): Future[Unit] = {
+  ): Unit = {
     val m = NetworkMessage(chainAppConfig.network, msg)
     queue
       .offer(GossipMessage(m, excludedPeerOpt))
-      .map(_ => ())
+      .failed
+      .foreach(err =>
+        logger.error(s"Failed to gossip message=${msg.commandName}", err))
+    ()
   }
 
   override def gossipGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit] = {
+  ): Unit = {
     val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
     gossipMessage(msg = headersMsg, excludedPeerOpt = None)
   }
 
-  override def sendToRandomPeer(payload: NetworkPayload): Future[Unit] = {
+  override def sendToRandomPeer(payload: NetworkPayload): Unit = {
     val msg = NetworkMessage(nodeAppConfig.network, payload)
     val stp = SendToPeer(msg, None)
     queue
       .offer(stp)
-      .map(_ => ())
+      .failed
+      .foreach(err =>
+        logger.error(s"Failed to sendToPeer message=${payload.commandName}",
+                     err))
+    ()
   }
 }
 
