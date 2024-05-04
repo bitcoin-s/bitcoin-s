@@ -667,4 +667,8 @@ object Deps {
     Compile.akkaStream,
     Compile.slf4j
   )
+
+  val mempool = List()
+
+  val mempoolTest = List()
 }

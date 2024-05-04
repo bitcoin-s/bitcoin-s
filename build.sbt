@@ -167,6 +167,20 @@ lazy val torTest = project
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(tor, testkit)
 
+lazy val mempool = project
+  .in(file("mempool"))
+  .settings(name := "bitcoin-s-mempool")
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(libraryDependencies ++= Deps.mempool)
+  .dependsOn(coreJVM)
+
+lazy val mempoolTest = project
+  .in(file("mempool-test"))
+  .settings(name := "bitcoin-s-mempool-test")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.mempoolTest)
+  .dependsOn(testkit, mempool)
+
 lazy val jsProjects: Vector[ProjectReference] =
   Vector(asyncUtilsJS,
          asyncUtilsTestJS,
@@ -237,7 +251,9 @@ lazy val `bitcoin-s` = project
     torTest,
     scripts,
     clightningRpc,
-    clightningRpcTest
+    clightningRpcTest,
+    mempool,
+    mempoolTest
   )
   .dependsOn(
     secp256k1jni,
@@ -293,7 +309,9 @@ lazy val `bitcoin-s` = project
     torTest,
     scripts,
     clightningRpc,
-    clightningRpcTest
+    clightningRpcTest,
+    mempool,
+    mempoolTest
   )
   .settings(CommonSettings.settings: _*)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
