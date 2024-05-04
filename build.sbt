@@ -172,7 +172,7 @@ lazy val mempool = project
   .settings(name := "bitcoin-s-mempool")
   .settings(CommonSettings.prodSettings: _*)
   .settings(libraryDependencies ++= Deps.mempool)
-  .dependsOn(coreJVM)
+  .dependsOn(coreJVM, appCommons)
 
 lazy val mempoolTest = project
   .in(file("mempool-test"))

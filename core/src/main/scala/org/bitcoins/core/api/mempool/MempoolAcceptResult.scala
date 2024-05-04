@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 sealed abstract class MempoolAcceptResult {
 
   /** Raw base fees in satoshis. */
-  def vsize: Int
+  def vsize: Long
 
   /** The feerate at which this transaction was considered. This includes any
     * fee delta added using prioritisetransaction (i.e. modified fees). If this
@@ -18,16 +18,16 @@ sealed abstract class MempoolAcceptResult {
 
 object MempoolAcceptResult {
 
-  case class Valid(vsize: Int, baseFee: Satoshis) extends MempoolAcceptResult
-  case class Invalid(vsize: Int, baseFee: Satoshis) extends MempoolAcceptResult
+  case class Valid(vsize: Long, baseFee: Satoshis) extends MempoolAcceptResult
+  case class Invalid(vsize: Long, baseFee: Satoshis) extends MempoolAcceptResult
 
   /** A tx that we already have in our mempool */
-  case class DuplicateEntry(vsize: Int, baseFee: Satoshis)
+  case class DuplicateEntry(vsize: Long, baseFee: Satoshis)
       extends MempoolAcceptResult
 
   /** Not validated. A same-txid-different-witness tx (see m_other_wtxid)
     * already exists in the mempool and was not replaced.
     */
-  case class DifferentWitness(vsize: Int, baseFee: Satoshis)
+  case class DifferentWitness(vsize: Long, baseFee: Satoshis)
       extends MempoolAcceptResult
 }
