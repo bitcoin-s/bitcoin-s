@@ -28,14 +28,14 @@ trait PeerManagerApi {
   def gossipMessage(
       msg: NetworkPayload,
       excludedPeerOpt: Option[Peer]
-  ): Future[Unit]
+  ): Unit
 
   /** Gossips the [[org.bitcoins.core.p2p.GetHeadersMessage]] to all of our
     * peers to attempt ot get the best block headers
     */
   def gossipGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit]
+  ): Unit
 
-  def sendToRandomPeer(payload: NetworkPayload): Future[Unit]
+  def sendToRandomPeer(payload: NetworkPayload): Unit
 }
