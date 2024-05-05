@@ -347,6 +347,8 @@ object BitcoindRpcClient {
       case BitcoindVersion.V25 => BitcoindV25RpcClient.withActorSystem(instance)
       case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
       case BitcoindVersion.V27 => BitcoindV27RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V2799ClusterMempool =>
+        BitcoindV27RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -373,7 +375,7 @@ object BitcoindVersion
   val newest: BitcoindVersion = V27
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V27, V26, V25)
+    Vector(V2799ClusterMempool, V27, V26, V25)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -387,6 +389,10 @@ object BitcoindVersion
 
   case object V27 extends BitcoindVersion {
     override def toString: String = "v27.0"
+  }
+
+  case object V2799ClusterMempool extends BitcoindVersion {
+    override def toString: String = "v27.99"
   }
 
   case object Unknown extends BitcoindVersion {
