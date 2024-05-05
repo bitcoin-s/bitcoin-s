@@ -2,7 +2,7 @@ import sbt.Keys.excludeLintKeys
 
 import scala.util.Properties
 
-val scala2_13 = "2.13.13"
+val scala2_13 = "2.13.14"
 
 ThisBuild / scalafmtOnCompile := !Properties.envOrNone("CI").contains("true")
 
