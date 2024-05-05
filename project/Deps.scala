@@ -6,25 +6,25 @@ object Deps {
   object V {
     val antV = "1.10.14"
     val bouncyCastle = "1.78.1"
-    val dropwizardMetricsV = "4.2.25" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.25" // https://github.com/dropwizard/metrics
 
-    val logback = "1.5.6" //https://github.com/qos-ch/logback
+    val logback = "1.5.6" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
     val avalonLoggingV = "20020627"
 
     val scalacheck = "1.18.0"
-    val scalaTest = "3.2.18" //https://www.scalatest.org/
+    val scalaTest = "3.2.18" // https://www.scalatest.org/
 
     val scalaTestPlus =
-      "3.2.18.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
+      "3.2.18.0" // super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "2.0.13"
     val spray = "1.3.6"
     val zeromq = "0.5.4"
     val scalapb = "0.11.15"
     val akkav = "1.0.1"
-    val playv = "3.0.2" //https://github.com/playframework/play-json/releases
+    val playv = "3.0.3" // https://github.com/playframework/play-json/releases
     val akkaStreamv = "1.0.2"
     val jUnixSocketV = "2.9.1"
     val scodecV = "1.1.38"
@@ -33,12 +33,12 @@ object Deps {
     val typesafeConfigV = "1.4.3"
 
     val flywayV =
-      "9.2.1" //https://flywaydb.org/documentation/learnmore/releaseNotes
-    val postgresV = "42.7.3" //https://jdbc.postgresql.org/
+      "9.2.1" // https://flywaydb.org/documentation/learnmore/releaseNotes
+    val postgresV = "42.7.3" // https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
     val slickV = "3.5.1"
-    val sqliteV = "3.45.3.0" //https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.45.3.0" // https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "6.0.0"
@@ -47,7 +47,7 @@ object Deps {
 
     val breezeV = "1.3"
 
-    val newMicroPickleV = "3.1.4" //https://github.com/com-lihaoyi/upickle/
+    val newMicroPickleV = "3.1.4" // https://github.com/com-lihaoyi/upickle/
     val newMicroJsonV = newMicroPickleV
 
     val osgiFrameworkV = "1.10.0"
@@ -124,11 +124,11 @@ object Deps {
     val pekkoGrpc =
       "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources () withJavadoc ()
 
-    //https://mvnrepository.com/artifact/org.apache.ant/ant/
+    // https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
 
     val gson =
-      "com.google.code.gson" % "gson" % V.gsonV //https://github.com/google/gson
+      "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
@@ -139,14 +139,14 @@ object Deps {
       case n if n.startsWith("Linux") => "linux"
       case n if n.startsWith("Mac") =>
         if (arch == "aarch64") {
-          //needed to accommodate the different chip
-          //arch for M1
+          // needed to accommodate the different chip
+          // arch for M1
           s"mac-${arch}"
         } else {
           "mac"
         }
       case n if n.startsWith("Windows") => "win"
-      case x                            => throw new Exception(s"Unknown platform $x!")
+      case x => throw new Exception(s"Unknown platform $x!")
     }
 
     val javaxServlet =
@@ -169,19 +169,19 @@ object Deps {
       "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
 
     val log4j =
-      "log4j" % "log4j" % V.log4jV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L486
+      "log4j" % "log4j" % V.log4jV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L486
     val logkit =
-      "logkit" % "logkit" % V.logkitV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
+      "logkit" % "logkit" % V.logkitV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
     val avalonLogging =
-      "avalon-framework" % "avalon-framework" % V.avalonLoggingV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
+      "avalon-framework" % "avalon-framework" % V.avalonLoggingV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
 
     val codehaus = "org.codehaus.janino" % "janino" % V.codehausV
 
-    //for loading secp256k1 natively
+    // for loading secp256k1 natively
     val nativeLoader =
       "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
 
-    //node deps
+    // node deps
     val slick =
       "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
@@ -206,7 +206,7 @@ object Deps {
 
     // HTTP client lib
     val sttp = "com.softwaremill.sttp.client3" %% "core" % V.sttpV
-    //https://sttp.softwaremill.com/en/stable/backends/wrappers/logging.html#using-slf4j
+    // https://sttp.softwaremill.com/en/stable/backends/wrappers/logging.html#using-slf4j
     val sttpSlf4j = "com.softwaremill.sttp.client3" %% "slf4j-backend" % V.sttpV
 
     val scalaCollectionCompat =
@@ -454,24 +454,26 @@ object Deps {
     ) ++ appServerTransitiveDeps
   }
 
-  /** Transitive dependencies needed for the oracleServer to build properly with jlink */
+  /** Transitive dependencies needed for the oracleServer to build properly with
+    * jlink
+    */
   private val serverTransitiveDeps = Vector(
-    //transitive deps needed for jlink
+    // transitive deps needed for jlink
     Compile.codehaus,
     Compile.gson,
     Compile.dropwizardMetricsHealthChecks,
     Compile.dropwizardMetricsJvm,
-    //postgres transitive deps
+    // postgres transitive deps
     Compile.jna,
     Compile.waffleJna,
     Compile.osgiCore,
     Compile.osgiJdbc,
     Compile.osgiFramework,
-    //logging transitive deps
+    // logging transitive deps
     Compile.log4j,
     Compile.avalonLogging,
     Compile.logkit,
-    //transitive javax deps
+    // transitive javax deps
     Compile.javaxServlet,
     Compile.javaxMail,
     Compile.javaxJms
