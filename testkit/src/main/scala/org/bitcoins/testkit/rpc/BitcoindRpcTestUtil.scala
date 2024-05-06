@@ -179,24 +179,35 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
       case known @ (V25 | V26 | V27) =>
-        val fileList = Files
+        val fileList: List[(Path, String)] = Files
           .list(binaryDirectory)
           .iterator()
           .asScala
           .toList
           .filter(f => Files.isDirectory(f))
+          .map(p => (p, p.toString.split("-").last))
         // drop leading 'v'
         val version = known.toString.drop(1)
-        val filtered = fileList.filter(f => f.toString.contains(version))
+        val exactMatchOpt = fileList.find { case (_, versionStr) =>
+          // try matching the version exactly
+          versionStr == version
+        }
 
-        if (filtered.isEmpty)
-          throw new RuntimeException(
-            s"bitcoind ${known.toString} is not installed in $binaryDirectory. Run `sbt downloadBitcoind`"
-          )
+        val versionFolder: Path = exactMatchOpt match {
+          case Some((p, _)) =>
+            p
+          case None =>
+            val filtered = fileList.filter(f => f.toString.contains(version))
+            if (filtered.isEmpty)
+              throw new RuntimeException(
+                s"bitcoind ${known.toString} is not installed in $binaryDirectory. Run `sbt downloadBitcoind`"
+              )
 
-        // might be multiple versions downloaded for
-        // each major version, i.e. 0.16.2 and 0.16.3
-        val versionFolder = filtered.max
+            // might be multiple versions downloaded for
+            // each major version, i.e. 0.16.2 and 0.16.3
+            val versionFolder = filtered.max
+            versionFolder._1
+        }
 
         versionFolder
           .resolve("bin")
