@@ -51,22 +51,18 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
   def getVersion: BitcoindVersion = {
 
     val binaryPath = binary.getAbsolutePath
-
     val versionT = Try {
       val foundVersion =
         Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
           .split(" ")
           .last
-      BitcoindVersion.known
-        .find(v => foundVersion.startsWith(v.toString))
-        .getOrElse {
-          println(
-            s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}")
-          logger.warn(
-            s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}"
-          )
-          BitcoindVersion.newest
-        }
+      BitcoindVersion.findVersion(foundVersion).getOrElse {
+        // else just default to the newest version of bitcoind
+        logger.warn(
+          s"Unsupported Bitcoin Core version: $foundVersion. The latest supported version is ${BitcoindVersion.newest}"
+        )
+        BitcoindVersion.newest
+      }
     }
 
     versionT match {

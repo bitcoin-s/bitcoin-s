@@ -378,15 +378,15 @@ object BitcoindVersion
   val known: Vector[BitcoindVersion] = standard
 
   case object V25 extends BitcoindVersion {
-    override def toString: String = "v25"
+    override def toString: String = "v25.2"
   }
 
   case object V26 extends BitcoindVersion {
-    override def toString: String = "v26"
+    override def toString: String = "v26.1"
   }
 
   case object V27 extends BitcoindVersion {
-    override def toString: String = "v27"
+    override def toString: String = "v27.0"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -415,6 +415,19 @@ object BitcoindVersion
           s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}"
         )
         newest
+    }
+  }
+
+  def findVersion(version: String): Option[BitcoindVersion] = {
+    // first try to match the version exactly
+    BitcoindVersion.known
+      .find(v => version == v.toString) match {
+      case Some(r) => Some(r)
+      case None    =>
+        // try to match the major version if we can't match it exactly
+        BitcoindVersion.known.find { v =>
+          version.startsWith(v.toString)
+        }
     }
   }
 }
