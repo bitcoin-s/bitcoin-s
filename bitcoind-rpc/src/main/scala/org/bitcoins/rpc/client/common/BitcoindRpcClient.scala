@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
+import org.bitcoins.rpc.client.clustermempool.ClusterMempoolRpcClient
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
@@ -348,7 +349,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
       case BitcoindVersion.V27 => BitcoindV27RpcClient.withActorSystem(instance)
       case BitcoindVersion.V2799ClusterMempool =>
-        BitcoindV27RpcClient.withActorSystem(instance)
+        ClusterMempoolRpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
