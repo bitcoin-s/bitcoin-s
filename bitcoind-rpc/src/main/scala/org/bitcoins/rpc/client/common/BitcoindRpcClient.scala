@@ -393,7 +393,7 @@ object BitcoindVersion
   }
 
   case object V2799ClusterMempool extends BitcoindVersion {
-    override def toString: String = "v27.99"
+    override def toString: String = "v27.99.0"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -427,8 +427,9 @@ object BitcoindVersion
 
   def findVersion(version: String): Option[BitcoindVersion] = {
     // first try to match the version exactly
-    BitcoindVersion.known
-      .find(v => version == v.toString) match {
+    val noCommit = version.split("-").head
+    val result = BitcoindVersion.known
+      .find(v => noCommit == v.toString) match {
       case Some(r) => Some(r)
       case None    =>
         // try to match the major version if we can't match it exactly
@@ -436,5 +437,6 @@ object BitcoindVersion
           version.startsWith(v.toString)
         }
     }
+    result
   }
 }
