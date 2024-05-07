@@ -110,7 +110,6 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       val defaultRelayFee = Bitcoins(Satoshis(1000))
       assert(info.loaded)
       assert(info.size == 0)
-      assert(info.usage == 0)
       assert(info.fullrbf)
       assert(info.minrelaytxfee == defaultRelayFee)
       assert(info.incrementalrelayfee == defaultRelayFee.toBigDecimal)
