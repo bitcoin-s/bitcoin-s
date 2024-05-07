@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
+import org.bitcoins.rpc.client.clustermempool.ClusterMempoolRpcClient
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
@@ -73,7 +74,7 @@ trait BitcoindFixturesFundedCachedCluster
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesFundedCached
     with CachedBitcoindCluster {
-  override type FixtureParam = BitcoindRpcClient
+  override type FixtureParam = ClusterMempoolRpcClient
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {

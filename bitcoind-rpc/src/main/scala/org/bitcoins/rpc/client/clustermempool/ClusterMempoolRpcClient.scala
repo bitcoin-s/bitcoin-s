@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.client.clustermempool
 
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetMemPoolInfoResultCluster}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 
@@ -13,6 +14,10 @@ class ClusterMempoolRpcClient(override val instance: BitcoindInstance)(implicit
 
   override lazy val version: Future[BitcoindVersion] =
     Future.successful(BitcoindVersion.V2799ClusterMempool)
+
+  override def getMemPoolInfo: Future[GetMemPoolInfoResultCluster] = {
+    super.getMemPoolInfo.map(_.asInstanceOf[GetMemPoolInfoResultCluster])
+  }
 }
 
 object ClusterMempoolRpcClient {

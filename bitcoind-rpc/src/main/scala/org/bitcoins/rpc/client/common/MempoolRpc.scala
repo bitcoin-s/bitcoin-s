@@ -108,7 +108,14 @@ trait MempoolRpc { self: Client =>
   }
 
   def getMemPoolInfo: Future[GetMemPoolInfoResult] = {
-    bitcoindCall[GetMemPoolInfoResult]("getmempoolinfo")
+    self.version.flatMap {
+      case BitcoindVersion.V2799ClusterMempool =>
+        bitcoindCall[GetMemPoolInfoResultCluster]("getmempoolinfo")
+      case BitcoindVersion.V25 | BitcoindVersion.V26 | BitcoindVersion.V27 |
+          BitcoindVersion.Unknown =>
+        bitcoindCall[GetMemPoolInfoResultV27]("getmempoolinfo")
+    }
+
   }
 
   def getRawMempoolTxIds(): Future[GetRawMempoolTxIds] = {

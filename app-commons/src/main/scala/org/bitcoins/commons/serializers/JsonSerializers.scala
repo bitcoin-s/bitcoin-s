@@ -321,6 +321,11 @@ object JsonSerializers {
       : Reads[GetMemPoolEntryResultPostV23] =
     Json.reads[GetMemPoolEntryResultPostV23]
 
+  implicit val getMemPoolInfoResultV27Reads: Reads[GetMemPoolInfoResultV27] =
+    Json.reads[GetMemPoolInfoResultV27]
+  implicit val getMemPoolInfoResultClusterReads
+      : Reads[GetMemPoolInfoResultCluster] =
+    Json.reads[GetMemPoolInfoResultCluster]
   implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] =
     Json.reads[GetMemPoolInfoResult]
 
