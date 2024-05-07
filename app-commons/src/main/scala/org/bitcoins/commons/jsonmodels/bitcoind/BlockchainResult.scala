@@ -336,12 +336,16 @@ case class GetMemPoolEntryResultPostV23(
 }
 
 case class GetMemPoolInfoResult(
+    loaded: Boolean,
     size: Int,
     bytes: Int,
     usage: Int,
     maxmempool: Int,
     mempoolminfee: BitcoinFeeUnit,
-    minrelaytxfee: Bitcoins
+    minrelaytxfee: Bitcoins,
+    incrementalrelayfee: BigDecimal, // BTC/kvb
+    unbroadcastcount: Int,
+    fullrbf: Boolean
 ) extends BlockchainResult
 
 sealed abstract trait GetTxOutResult extends BlockchainResult {

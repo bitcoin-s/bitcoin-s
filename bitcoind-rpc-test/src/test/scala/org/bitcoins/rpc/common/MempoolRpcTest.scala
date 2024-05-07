@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -107,7 +107,13 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
           .sendCoinbaseTransaction(client, otherClient)
       newInfo <- client.getMemPoolInfo
     } yield {
+      val defaultRelayFee = Bitcoins(Satoshis(1000))
+      assert(info.loaded)
       assert(info.size == 0)
+      assert(info.fullrbf)
+      assert(info.minrelaytxfee == defaultRelayFee)
+      assert(info.incrementalrelayfee == defaultRelayFee.toBigDecimal)
+      assert(info.unbroadcastcount == 0)
       assert(newInfo.size == 1)
     }
   }
