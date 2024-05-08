@@ -3,7 +3,7 @@ package org.bitcoins.commons.serializers
 import org.bitcoins.commons.jsonmodels.SerializedTransaction.tokenToString
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetRawMempoolVerboseResult, _}
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.wallet._
 import org.bitcoins.commons.serializers.JsonReaders._
@@ -323,6 +323,35 @@ object JsonSerializers {
 
   implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] =
     Json.reads[GetMemPoolInfoResult]
+
+  implicit val getRawMempoolVerboseResultReads
+      : Reads[GetRawMempoolVerboseResult] =
+    Json.reads[GetRawMempoolVerboseResult]
+
+  implicit object GetRawMempoolTxIdsReads extends Reads[GetRawMempoolTxIds] {
+    override def reads(json: JsValue): JsResult[GetRawMempoolTxIds] = {
+      json match {
+        case arr: JsArray =>
+          arr
+            .validate[Vector[DoubleSha256DigestBE]]
+            .map(GetRawMempoolTxIds)
+        case x @ (_: JsNumber | _: JsString | JsNull | _: JsObject |
+            _: JsBoolean) =>
+          JsError(s"Invalid json for getrawmempool, got=$x")
+      }
+    }
+  }
+  implicit object GetRawMempoolVerboseReads
+      extends Reads[GetRawMempoolVerbose] {
+    override def reads(json: JsValue): JsResult[GetRawMempoolVerbose] = {
+      json
+        .validate[Map[DoubleSha256DigestBE, GetRawMempoolVerboseResult]]
+        .map(GetRawMempoolVerbose)
+    }
+  }
+
+  implicit val getRawMempoolResultReads: Reads[GetRawMempoolResult] =
+    Json.reads[GetRawMempoolResult]
 
   implicit val getTxOutResultV22Reads: Reads[GetTxOutResultV22] =
     Json.reads[GetTxOutResultV22]

@@ -236,6 +236,35 @@ case class GetChainTxStatsResult(
     txrate: Option[BigDecimal]
 ) extends BlockchainResult
 
+sealed abstract class GetRawMempoolResult extends BlockchainResult {
+  def txids: Vector[DoubleSha256DigestBE]
+}
+
+case class GetRawMempoolTxIds(txids: Vector[DoubleSha256DigestBE])
+    extends GetRawMempoolResult
+
+case class GetRawMempoolVerboseResult(
+    vsize: Int,
+    weight: Int,
+    time: Long,
+    height: Int,
+    descendantcount: Int,
+    descendantsize: Int,
+    ancestorcount: Int,
+    ancestorsize: Int,
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
+    depends: Vector[DoubleSha256DigestBE],
+    spentby: Vector[DoubleSha256DigestBE],
+    `bip125-replaceable`: Boolean,
+    unbroadcast: Boolean)
+
+case class GetRawMempoolVerbose(
+    map: Map[DoubleSha256DigestBE, GetRawMempoolVerboseResult])
+    extends GetRawMempoolResult {
+  override val txids: Vector[DoubleSha256DigestBE] = map.keys.toVector
+}
+
 sealed trait GetMemPoolResult extends BlockchainResult {
   def size: Int
   def time: UInt32

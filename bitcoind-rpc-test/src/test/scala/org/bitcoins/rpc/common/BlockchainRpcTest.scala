@@ -56,7 +56,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       blocks <- client.generate(1)
       mostRecentBlock <- client.getBlock(blocks.head)
       _ <- client.invalidateBlock(blocks.head)
-      mempool <- client.getRawMemPool
+      mempool <- client.getRawMemPool().map(_.txids)
       count1 <- client.getBlockCount()
       count2 <- otherClient.getBlockCount()
 

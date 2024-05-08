@@ -111,11 +111,26 @@ trait MempoolRpc { self: Client =>
     bitcoindCall[GetMemPoolInfoResult]("getmempoolinfo")
   }
 
-  def getRawMemPool: Future[Vector[DoubleSha256DigestBE]] = {
-    bitcoindCall[Vector[DoubleSha256DigestBE]](
+  def getRawMempoolTxIds(): Future[GetRawMempoolTxIds] = {
+    bitcoindCall[GetRawMempoolTxIds](
       "getrawmempool",
       List(JsBoolean(false))
     )
+  }
+
+  def getRawMempoolVerbose(): Future[GetRawMempoolVerbose] = {
+    bitcoindCall[GetRawMempoolVerbose](
+      "getrawmempool",
+      List(JsBoolean(true))
+    )
+  }
+  def getRawMemPool(verbose: Boolean = false): Future[GetRawMempoolResult] = {
+    if (verbose) {
+      getRawMempoolVerbose()
+    } else {
+      getRawMempoolTxIds()
+    }
+
   }
 
   def getRawMemPoolWithTransactions

@@ -12,7 +12,7 @@ import org.apache.pekko.stream.scaladsl.{
 }
 import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.ChainCallbacks
-import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult}
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
@@ -621,7 +621,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         }
 
         val res = for {
-          mempool <- bitcoind.getRawMemPool
+          mempool <- bitcoind.getRawMempoolTxIds().map(_.txids)
           newTxIds = getDiffAndReplace(mempool.toSet)
           _ = logger.debug(s"Found ${newTxIds.size} new mempool transactions")
 
