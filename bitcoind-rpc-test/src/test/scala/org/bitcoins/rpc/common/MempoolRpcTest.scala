@@ -40,7 +40,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       for {
         transaction <-
           BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
-        mempool <- client.getRawMemPool
+        mempool <- client.getRawMemPool().map(_.txids)
       } yield {
         assert(mempool.length == 1)
         assert(mempool.head == transaction.txid)
@@ -149,7 +149,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
           address1,
           Bitcoins(2)
         )
-        mempool <- client.getRawMemPool
+        mempool <- client.getRawMemPool().map(_.txids)
         address2 <- client.getNewAddress
 
         createdTx <- {
@@ -217,5 +217,21 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       tx <- client.getRawTransaction(txid).map(_.hex)
       spending <- client.getTxSpendingPrevOut(tx.inputs.head.previousOutput)
     } yield assert(spending.spendingtxid.contains(txid))
+  }
+
+  it must "getrawmempool verbose" in { case nodePair =>
+    val client = nodePair.node1
+    for {
+      // generate block to clear out mempool for test
+      _ <- client.generate(1)
+      verbose0 <- client.getRawMempoolVerbose()
+      addr0 <- client.getNewAddress
+      txid <- client.sendToAddress(addr0, Bitcoins.one)
+      verbose1 <- client.getRawMempoolVerbose()
+    } yield {
+      assert(verbose0.txids.isEmpty)
+      assert(verbose1.txids.exists(_ == txid))
+    }
+
   }
 }

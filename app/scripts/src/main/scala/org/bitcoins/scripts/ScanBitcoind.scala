@@ -151,7 +151,7 @@ class ScanBitcoind()(implicit
   def getMemPoolSource(
       bitcoind: BitcoindRpcClient
   ): Future[Source[Transaction, NotUsed]] = {
-    val mempoolF = bitcoind.getRawMemPool
+    val mempoolF = bitcoind.getRawMemPool().map(_.txids)
     val sourceF: Future[Source[DoubleSha256DigestBE, NotUsed]] =
       mempoolF.map(Source(_))
 
