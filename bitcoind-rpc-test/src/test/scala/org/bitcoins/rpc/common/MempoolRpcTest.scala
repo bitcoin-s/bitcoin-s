@@ -222,6 +222,8 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
   it must "getrawmempool verbose" in { case nodePair =>
     val client = nodePair.node1
     for {
+      // generate block to clear out mempool for test
+      _ <- client.generate(1)
       verbose0 <- client.getRawMempoolVerbose()
       addr0 <- client.getNewAddress
       txid <- client.sendToAddress(addr0, Bitcoins.one)
