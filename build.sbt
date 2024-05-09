@@ -36,6 +36,7 @@ lazy val commonJsSettings = {
 
 lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
+  .settings(scalacOptions += "-Xsource:3")
   .settings(
     name := "bitcoin-s-crypto",
     libraryDependencies ++= Deps.crypto.value
