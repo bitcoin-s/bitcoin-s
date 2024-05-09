@@ -9,7 +9,7 @@ import scala.util.{Failure, Success, Try}
   */
 trait CryptoRuntime {
 
-  val cryptoContext: CryptoContext
+  def cryptoContext: CryptoContext
 
   /** Generates a 32 byte private key */
   def freshPrivateKey: ECPrivateKey
@@ -166,8 +166,7 @@ trait CryptoRuntime {
     */
   def recoverPublicKey(
       signature: ECDigitalSignature,
-      message: ByteVector
-  ): (ECPublicKey, ECPublicKey)
+      message: ByteVector): (ECPublicKey, ECPublicKey)
 
   // The tag "BIP0340/aux"
   private val schnorrAuxTagBytes = {
@@ -200,16 +199,14 @@ trait CryptoRuntime {
   def signWithEntropy(
       privateKey: ECPrivateKey,
       bytes: ByteVector,
-      entropy: ByteVector
-  ): ECDigitalSignature
+      entropy: ByteVector): ECDigitalSignature
 
   def secKeyVerify(privateKeybytes: ByteVector): Boolean
 
   def verify(
       publicKey: ECPublicKeyApi,
       data: ByteVector,
-      signature: ECDigitalSignature
-  ): Boolean
+      signature: ECDigitalSignature): Boolean
 
   def decompressed(pubKeyBytes: ByteVector): ByteVector = {
     decodePoint(pubKeyBytes) match {
@@ -223,8 +220,7 @@ trait CryptoRuntime {
 
   def decompressed[PK <: ECPublicKeyApi](
       pubKeyBytes: ByteVector,
-      fromBytes: ByteVector => PK
-  ): PK = {
+      fromBytes: ByteVector => PK): PK = {
     fromBytes(decompressed(pubKeyBytes))
   }
 
@@ -294,15 +290,13 @@ trait CryptoRuntime {
     */
   def combinePubKeys(
       pubKeys: Vector[ECPublicKey],
-      isCompressed: Boolean = true
-  ): ECPublicKey = {
+      isCompressed: Boolean = true): ECPublicKey = {
     val summandPoints = pubKeys.map(_.toPoint)
     val sumPoint = summandPoints.reduce[SecpPoint](add(_, _))
     sumPoint match {
       case SecpPointInfinity =>
         throw new IllegalArgumentException(
-          "Sum result was 0x00, an invalid public key."
-        )
+          "Sum result was 0x00, an invalid public key.")
       case p: SecpPointFinite =>
         if (isCompressed) p.toPublicKey.compressed
         else p.toPublicKey.decompressed
@@ -325,8 +319,7 @@ trait CryptoRuntime {
   def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      auxRand: ByteVector
-  ): SchnorrDigitalSignature = {
+      auxRand: ByteVector): SchnorrDigitalSignature = {
     val nonceKey =
       SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
 
@@ -336,14 +329,12 @@ trait CryptoRuntime {
   def schnorrSignWithNonce(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey
-  ): SchnorrDigitalSignature = {
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
     val rx = nonceKey.schnorrNonce
     val k = nonceKey.nonceKey.fieldElement
     val x = privateKey.schnorrKey.fieldElement
     val e = sha256SchnorrChallenge(
-      rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign
-    ).bytes
+      rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign).bytes
 
     val challenge = x.multiply(FieldElement(e))
     val sig = k.add(challenge)
@@ -354,16 +345,14 @@ trait CryptoRuntime {
   def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature
-  ): Boolean = {
+      signature: SchnorrDigitalSignature): Boolean = {
     val rx = signature.rx
     val sT = Try(signature.sig.toPrivateKey)
 
     sT match {
       case Success(s) =>
         val eBytes = sha256SchnorrChallenge(
-          rx.bytes ++ schnorrPubKey.bytes ++ data
-        ).bytes
+          rx.bytes ++ schnorrPubKey.bytes ++ data).bytes
 
         val e = FieldElement(eBytes)
         val negE = e.negate
@@ -384,11 +373,9 @@ trait CryptoRuntime {
       data: ByteVector,
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
-      compressed: Boolean
-  ): ECPublicKey = {
+      compressed: Boolean): ECPublicKey = {
     val eBytes = sha256SchnorrChallenge(
-      nonce.bytes ++ pubKey.bytes ++ data
-    ).bytes
+      nonce.bytes ++ pubKey.bytes ++ data).bytes
 
     val e = FieldElement(eBytes)
 
@@ -406,23 +393,20 @@ trait CryptoRuntime {
       key: ECPrivateKey,
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector
-  ): ECAdaptorSignature = {
+      auxRand: ByteVector): ECAdaptorSignature = {
     AdaptorUtil.adaptorSign(key, adaptorPoint, msg, auxRand)
   }
 
   def adaptorComplete(
       key: ECPrivateKey,
-      adaptorSignature: ECAdaptorSignature
-  ): ECDigitalSignature = {
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
     AdaptorUtil.adaptorComplete(key, adaptorSignature)
   }
 
   def extractAdaptorSecret(
       signature: ECDigitalSignature,
       adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey
-  ): ECPrivateKey = {
+      key: ECPublicKey): ECPrivateKey = {
     AdaptorUtil.extractAdaptorSecret(signature, adaptorSignature, key)
   }
 
@@ -430,8 +414,7 @@ trait CryptoRuntime {
       adaptorSignature: ECAdaptorSignature,
       key: ECPublicKey,
       msg: ByteVector,
-      adaptorPoint: ECPublicKey
-  ): Boolean =
+      adaptorPoint: ECPublicKey): Boolean =
     AdaptorUtil.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
 
   def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt) =
@@ -451,22 +434,18 @@ trait CryptoRuntime {
       pass: String,
       salt: String,
       iterationCount: Int,
-      derivedKeyLength: Int
-  ): ByteVector = {
-    pbkdf2WithSha512(
-      ByteVector(pass.getBytes),
-      ByteVector(salt.getBytes),
-      iterationCount,
-      derivedKeyLength
-    )
+      derivedKeyLength: Int): ByteVector = {
+    pbkdf2WithSha512(ByteVector(pass.getBytes),
+                     ByteVector(salt.getBytes),
+                     iterationCount,
+                     derivedKeyLength)
   }
 
   def pbkdf2WithSha512(
       pass: ByteVector,
       salt: ByteVector,
       iterationCount: Int,
-      derivedKeyLength: Int
-  ): ByteVector
+      derivedKeyLength: Int): ByteVector
 
   def randomBytes(n: Int): ByteVector
 

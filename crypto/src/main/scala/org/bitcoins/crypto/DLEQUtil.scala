@@ -19,8 +19,7 @@ object DLEQUtil {
 
   def dleqPair(
       fe: FieldElement,
-      adaptorPoint: ECPublicKey
-  ): (ECPublicKey, ECPublicKey) = {
+      adaptorPoint: ECPublicKey): (ECPublicKey, ECPublicKey) = {
     val point = fe.getPublicKey
     val tweakedPoint = adaptorPoint.multiply(fe)
 
@@ -35,19 +34,16 @@ object DLEQUtil {
       adaptorPoint: ECPublicKey,
       point: ECPublicKey,
       tweakedPoint: ECPublicKey,
-      auxRand: ByteVector
-  ): FieldElement = {
+      auxRand: ByteVector): FieldElement = {
     val hash = CryptoUtil
       .sha256(point.bytes ++ tweakedPoint.bytes)
       .bytes
 
-    AdaptorUtil.adaptorNonce(
-      hash,
-      fe.toPrivateKey,
-      adaptorPoint,
-      "DLEQ",
-      auxRand
-    )
+    AdaptorUtil.adaptorNonce(hash,
+                             fe.toPrivateKey,
+                             adaptorPoint,
+                             "DLEQ",
+                             auxRand)
   }
 
   /** Computes the challenge hash value for dleqProve as specified in
@@ -58,13 +54,11 @@ object DLEQUtil {
       r1: ECPublicKey,
       r2: ECPublicKey,
       p1: ECPublicKey,
-      p2: ECPublicKey
-  ): ByteVector = {
+      p2: ECPublicKey): ByteVector = {
     CryptoUtil
       .sha256DLEQ(
         p1.bytes ++ adaptorPoint.bytes ++
-          p2.bytes ++ r1.bytes ++ r2.bytes
-      )
+          p2.bytes ++ r1.bytes ++ r2.bytes)
       .bytes
   }
 
@@ -76,8 +70,7 @@ object DLEQUtil {
   def dleqProve(
       fe: FieldElement,
       adaptorPoint: ECPublicKey,
-      auxRand: ByteVector
-  ): (FieldElement, FieldElement) = {
+      auxRand: ByteVector): (FieldElement, FieldElement) = {
     require(!fe.isZero, "Input field element cannot be zero.")
 
     // (fe*G, fe*Y)
@@ -120,8 +113,7 @@ object DLEQUtil {
       e: FieldElement,
       p1: ECPublicKey,
       adaptor: ECPublicKey,
-      p2: ECPublicKey
-  ): Boolean = {
+      p2: ECPublicKey): Boolean = {
     val r1 = p1.multiply(e.negate).add(s.getPublicKey)
     val r2 = p2.multiply(e.negate).add(adaptor.multiply(s))
     val challengeHash = dleqChallengeHash(adaptor, r1, r2, p1, p2)

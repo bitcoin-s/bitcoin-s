@@ -42,8 +42,7 @@ class HMacDSAKCalculatorWithEntropy(digest: Digest, entropy: ByteVector)
   override def init(
       n: BigInteger,
       d: BigInteger,
-      message: Array[Byte]
-  ): Unit = {
+      message: Array[Byte]): Unit = {
     this.n = n
 
     Arrays.fill(V, 0x01.toByte)

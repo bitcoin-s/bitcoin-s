@@ -17,6 +17,5 @@ object PBKDF2 extends js.Object {
       pass: Buffer,
       salt: Buffer,
       iter: Int,
-      len: Int
-  ): Buffer = js.native
+      len: Int): Buffer = js.native
 }

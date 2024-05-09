@@ -51,10 +51,8 @@ case class SecpPointFinite(x: CurveCoordinate, y: CurveCoordinate)
 
   def schnorrNonce: SchnorrNonce = {
     val pub = toPublicKey
-    require(
-      pub.isCompressed,
-      s"SchnorrNonce can only be created from compressed public keys"
-    )
+    require(pub.isCompressed,
+            s"SchnorrNonce can only be created from compressed public keys")
     pub.schnorrNonce
   }
 }
@@ -70,10 +68,8 @@ object SecpPoint {
     SecpPointFinite(CurveCoordinate.fromBytes(x), CurveCoordinate.fromBytes(y))
 
   def apply(x: Array[Byte], y: Array[Byte]): SecpPointFinite =
-    SecpPointFinite(
-      CurveCoordinate.fromByteArray(x),
-      CurveCoordinate.fromByteArray(y)
-    )
+    SecpPointFinite(CurveCoordinate.fromByteArray(x),
+                    CurveCoordinate.fromByteArray(y))
 
   def apply(x: BigInteger, y: BigInteger): SecpPointFinite =
     SecpPointFinite(CurveCoordinate(x), CurveCoordinate(y))

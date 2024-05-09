@@ -89,8 +89,7 @@ object KeySet {
 
   def apply(
       keys: Vector[SchnorrPublicKey],
-      tweaks: Vector[MuSigTweak]
-  ): LexicographicKeySet = {
+      tweaks: Vector[MuSigTweak]): LexicographicKeySet = {
     val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
     LexicographicKeySet(sortedKeys, tweaks)
   }
@@ -99,13 +98,11 @@ object KeySet {
 /** The default way of ordering a KeySet is lexicographically */
 case class LexicographicKeySet(
     override val keys: Vector[SchnorrPublicKey],
-    override val tweaks: Vector[MuSigTweak] = Vector.empty
-) extends KeySet {
+    override val tweaks: Vector[MuSigTweak] = Vector.empty)
+    extends KeySet {
   keys.init.zip(keys.tail).foreach { case (key1, key2) =>
-    require(
-      key1.hex.compareTo(key2.hex) <= 0,
-      "Keys must be sorted lexicographically"
-    )
+    require(key1.hex.compareTo(key2.hex) <= 0,
+            "Keys must be sorted lexicographically")
   }
 }
 
@@ -114,5 +111,5 @@ case class LexicographicKeySet(
   */
 case class UnsortedKeySet(
     override val keys: Vector[SchnorrPublicKey],
-    override val tweaks: Vector[MuSigTweak] = Vector.empty
-) extends KeySet
+    override val tweaks: Vector[MuSigTweak] = Vector.empty)
+    extends KeySet

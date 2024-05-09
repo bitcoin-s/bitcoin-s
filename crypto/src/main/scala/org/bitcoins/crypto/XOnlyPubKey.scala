@@ -9,14 +9,10 @@ import scala.util.Try
   * y-coordinate parity
   */
 case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
-  require(
-    bytes.length == 32,
-    s"x-only public keys must be 32 bytes, got $bytes"
-  )
-  require(
-    Try(publicKey(EvenParity)).isSuccess,
-    s"x-only public key must be a valid x coordinate, got $bytes"
-  )
+  require(bytes.length == 32,
+          s"x-only public keys must be 32 bytes, got $bytes")
+  require(Try(publicKey(EvenParity)).isSuccess,
+          s"x-only public key must be a valid x coordinate, got $bytes")
 
   def publicKey(parity: KeyParity): ECPublicKey = {
     val pubKeyBytes = parity.bytes ++ bytes
@@ -48,8 +44,7 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
   def checkTapTweak(
       internal: XOnlyPubKey,
       merkleRootOpt: Option[Sha256Digest],
-      parity: Boolean
-  ): Boolean = {
+      parity: Boolean): Boolean = {
     // Q = point_add(lift_x(pubkey), point_mul(G, t))
     val tweaked = internal.computeTapTweakHash(merkleRootOpt)
     val fe = FieldElement.fromBytes(tweaked.bytes)
@@ -84,8 +79,7 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
     * @return
     */
   def createTapTweak(
-      merkleRootOpt: Option[Sha256Digest]
-  ): (KeyParity, XOnlyPubKey) = {
+      merkleRootOpt: Option[Sha256Digest]): (KeyParity, XOnlyPubKey) = {
     val taggedHash = computeTapTweakHash(merkleRootOpt)
     val result = CryptoParams.getG
       .multiply(FieldElement(taggedHash.bytes))
@@ -102,10 +96,8 @@ object XOnlyPubKey extends Factory[XOnlyPubKey] {
 
   @tailrec
   def fromBytes(bytes: ByteVector): XOnlyPubKey = {
-    require(
-      bytes.length <= 33,
-      s"XOnlyPublicKey must be less than 33 bytes, got $bytes"
-    )
+    require(bytes.length <= 33,
+            s"XOnlyPublicKey must be less than 33 bytes, got $bytes")
 
     if (bytes.length == 32)
       new XOnlyPubKey(bytes)
@@ -118,8 +110,7 @@ object XOnlyPubKey extends Factory[XOnlyPubKey] {
     } else {
       throw new IllegalArgumentException(
         "XOnlyPublicKey cannot be greater than 33 bytes in size, got: " +
-          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size
-      )
+          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
     }
   }
 

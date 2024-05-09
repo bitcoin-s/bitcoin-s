@@ -67,30 +67,24 @@ class Buffer() extends js.Object {
     *   {{{new Buffer(arrayBuffer[, byteOffset[, length]])}}}
     */
   @inline
-  @deprecated(
-    "Use Buffer.from(arrayBuffer[, byteOffset [, length]]) instead.",
-    since = "6.0.0"
-  )
+  @deprecated("Use Buffer.from(arrayBuffer[, byteOffset [, length]]) instead.",
+              since = "6.0.0")
   def this(arrayBuffer: ArrayBuffer, byteOffset: Int, length: Int) = this()
 
   /** @example
     *   {{{new Buffer(arrayBuffer[, byteOffset[, length]])}}}
     */
   @inline
-  @deprecated(
-    "Use Buffer.from(arrayBuffer[, byteOffset [, length]]) instead.",
-    since = "6.0.0"
-  )
+  @deprecated("Use Buffer.from(arrayBuffer[, byteOffset [, length]]) instead.",
+              since = "6.0.0")
   def this(arrayBuffer: ArrayBuffer, byteOffset: Int) = this()
 
   /** @example
     *   {{{new Buffer(arrayBuffer[, byteOffset[, length]])}}}
     */
   @inline
-  @deprecated(
-    "Use Buffer.from(arrayBuffer[, byteOffset [, length]]) instead.",
-    since = "6.0.0"
-  )
+  @deprecated("Use Buffer.from(arrayBuffer[, byteOffset [, length]]) instead.",
+              since = "6.0.0")
   def this(arrayBuffer: ArrayBuffer) = this()
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -149,8 +143,7 @@ class Buffer() extends js.Object {
       targetStart: Int = js.native,
       targetEnd: Int = js.native,
       sourceStart: Int = js.native,
-      sourceEnd: Int = js.native
-  ): Int = js.native
+      sourceEnd: Int = js.native): Int = js.native
 
   /** Copies data from a region of buf to a region in target even if the target
     * memory region overlaps with buf.
@@ -173,8 +166,7 @@ class Buffer() extends js.Object {
       target: Buffer,
       targetStart: Int = js.native,
       sourceStart: Int = js.native,
-      sourceEnd: Int = js.native
-  ): Int = js.native
+      sourceEnd: Int = js.native): Int = js.native
 
   /** Creates and returns an iterator of [index, byte] pairs from the Buffer
     * contents.
@@ -215,8 +207,7 @@ class Buffer() extends js.Object {
       value: Buffer | Int | String,
       offset: Int = js.native,
       end: Int = js.native,
-      encoding: String = js.native
-  ): this.type = js.native
+      encoding: String = js.native): this.type = js.native
 
   /** Returns the index of the first occurrence of value in buf or -1 if buf
     * does not contain value
@@ -235,8 +226,7 @@ class Buffer() extends js.Object {
   def indexOf(
       value: Buffer | Int | String,
       byteOffset: Int = js.native,
-      encoding: String = js.native
-  ): Int = js.native
+      encoding: String = js.native): Int = js.native
 
   /** Equivalent to buf.indexOf() !== -1.
     * @param value
@@ -253,8 +243,7 @@ class Buffer() extends js.Object {
   def includes(
       value: Buffer | Int | String,
       byteOffset: Int = js.native,
-      encoding: String = js.native
-  ): Boolean =
+      encoding: String = js.native): Boolean =
     js.native
 
   /** Creates and returns an iterator of buf keys (indices).
@@ -292,8 +281,7 @@ class Buffer() extends js.Object {
   def lastIndexOf(
       value: Buffer | Int | String,
       byteOffset: Int = js.native,
-      encoding: String = js.native
-  ): Int =
+      encoding: String = js.native): Int =
     js.native
 
   /** Returns the amount of memory allocated for buf in bytes. Note that this
@@ -496,8 +484,7 @@ class Buffer() extends js.Object {
   def readIntBE(
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Reads byteLength number of bytes from buf at the specified offset and
     * interprets the result as a two's complement signed value. Supports up to
@@ -520,8 +507,7 @@ class Buffer() extends js.Object {
   def readIntLE(
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Reads an unsigned 8-bit integer from buf at the specified offset. Setting
     * noAssert to true allows offset to be beyond the end of buf, but the result
@@ -624,8 +610,7 @@ class Buffer() extends js.Object {
   def readUIntBE(
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Reads byteLength number of bytes from buf at the specified offset and
     * interprets the result as an unsigned integer. Supports up to 48 bits of
@@ -648,8 +633,7 @@ class Buffer() extends js.Object {
   def readUIntLE(
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Returns a new Buffer that references the same memory as the original, but
     * offset and cropped by the start and end indices.
@@ -722,8 +706,7 @@ class Buffer() extends js.Object {
   def toString(
       encoding: String = js.native,
       start: Int = js.native,
-      end: Int = js.native
-  ): String = js.native
+      end: Int = js.native): String = js.native
 
   /** Re-encodes the given Buffer instance from one character encoding to
     * another. Returns a new Buffer instance. Throws if the fromEnc or toEnc
@@ -772,8 +755,7 @@ class Buffer() extends js.Object {
       string: String,
       offset: Int = js.native,
       length: Int = js.native,
-      encoding: String = js.native
-  ): Int =
+      encoding: String = js.native): Int =
     js.native
 
   /** Writes value to buf at the specified offset with specified endian format
@@ -797,8 +779,7 @@ class Buffer() extends js.Object {
   def writeDoubleBE(
       value: Double,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeDoubleBE() writes big endian, writeDoubleLE() writes little endian).
@@ -821,8 +802,7 @@ class Buffer() extends js.Object {
   def writeDoubleLE(
       value: Double,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeFloatBE() writes big endian, writeFloatLE() writes little endian).
@@ -845,8 +825,7 @@ class Buffer() extends js.Object {
   def writeFloatBE(
       value: Float,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeFloatBE() writes big endian, writeFloatLE() writes little endian).
@@ -869,8 +848,7 @@ class Buffer() extends js.Object {
   def writeFloatLE(
       value: Float,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset. value should be a valid
     * signed 8-bit integer. Behavior is undefined when value is anything other
@@ -917,8 +895,7 @@ class Buffer() extends js.Object {
   def writeInt16BE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeInt16BE() writes big endian, writeInt16LE() writes little endian).
@@ -943,8 +920,7 @@ class Buffer() extends js.Object {
   def writeInt16LE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeInt32BE() writes big endian, writeInt32LE() writes little endian).
@@ -969,8 +945,7 @@ class Buffer() extends js.Object {
   def writeInt32BE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeInt32BE() writes big endian, writeInt32LE() writes little endian).
@@ -995,8 +970,7 @@ class Buffer() extends js.Object {
   def writeInt32LE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes byteLength bytes of value to buf at the specified offset. Supports
     * up to 48 bits of accuracy. Behavior is undefined when value is anything
@@ -1022,8 +996,7 @@ class Buffer() extends js.Object {
       value: Int,
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes byteLength bytes of value to buf at the specified offset. Supports
     * up to 48 bits of accuracy. Behavior is undefined when value is anything
@@ -1049,8 +1022,7 @@ class Buffer() extends js.Object {
       value: Int,
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset. value should be a valid
     * unsigned 8-bit integer. Behavior is undefined when value is anything other
@@ -1093,8 +1065,7 @@ class Buffer() extends js.Object {
   def writeUInt16BE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeUInt16BE() writes big endian, writeUInt16LE() writes little endian).
@@ -1117,8 +1088,7 @@ class Buffer() extends js.Object {
   def writeUInt16LE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeUInt32BE() writes big endian, writeUInt32LE() writes little endian).
@@ -1141,8 +1111,7 @@ class Buffer() extends js.Object {
   def writeUInt32BE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes value to buf at the specified offset with specified endian format
     * (writeUInt32BE() writes big endian, writeUInt32LE() writes little endian).
@@ -1165,8 +1134,7 @@ class Buffer() extends js.Object {
   def writeUInt32LE(
       value: Int,
       offset: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes byteLength bytes of value to buf at the specified offset. Supports
     * up to 48 bits of accuracy. Behavior is undefined when value is anything
@@ -1192,8 +1160,7 @@ class Buffer() extends js.Object {
       value: Int,
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
   /** Writes byteLength bytes of value to buf at the specified offset. Supports
     * up to 48 bits of accuracy. Behavior is undefined when value is anything
@@ -1219,8 +1186,7 @@ class Buffer() extends js.Object {
       value: Int,
       offset: Int,
       byteLength: Int,
-      noAssert: Boolean = js.native
-  ): Int = js.native
+      noAssert: Boolean = js.native): Int = js.native
 
 }
 
@@ -1273,8 +1239,7 @@ object Buffer extends js.Object {
   def alloc(
       size: Int,
       fill: Buffer | Int | String = js.native,
-      encoding: String = js.native
-  ): Buffer = js.native
+      encoding: String = js.native): Buffer = js.native
 
   /** Calling Buffer.alloc(size) can be significantly slower than the
     * alternative Buffer.allocUnsafe(size) but ensures that the newly created

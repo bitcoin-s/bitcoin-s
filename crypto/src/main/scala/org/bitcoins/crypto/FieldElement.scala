@@ -16,8 +16,7 @@ case class FieldElement(bytes: ByteVector)
 
   require(
     privKeyT.isSuccess || isZero,
-    s"$bytes is not a valid field element: ${privKeyT.failed.get.getMessage}"
-  )
+    s"$bytes is not a valid field element: ${privKeyT.failed.get.getMessage}")
 
   def toPrivateKey: ECPrivateKey =
     if (!isZero) {

@@ -6,14 +6,10 @@ import scala.annotation.tailrec
 import scala.util.Try
 
 case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
-  require(
-    bytes.length == 32,
-    s"Schnorr public keys must be 32 bytes, got $bytes"
-  )
-  require(
-    Try(publicKey).isSuccess,
-    s"Schnorr public key must be a valid x coordinate, got $bytes"
-  )
+  require(bytes.length == 32,
+          s"Schnorr public keys must be 32 bytes, got $bytes")
+  require(Try(publicKey).isSuccess,
+          s"Schnorr public key must be a valid x coordinate, got $bytes")
 
   def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
     CryptoUtil.schnorrVerify(data, this, signature)
@@ -33,8 +29,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
 
   def computeSigPoint(
       bytesToHash: Vector[ByteVector],
-      nonces: Vector[SchnorrNonce]
-  ): ECPublicKey = {
+      nonces: Vector[SchnorrNonce]): ECPublicKey = {
     // TODO: when combine function is ported from secp, use that instead for nonces
     val bytesAndNonces = bytesToHash.zip(nonces)
 
@@ -43,8 +38,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
         .sha256SchnorrChallenge(
           nonce.bytes ++ this.bytes ++ CryptoUtil
             .sha256DLCAttestation(bytes)
-            .bytes
-        )
+            .bytes)
         .bytes
       val e = ECPrivateKey(eBytes)
       (e, nonce.publicKey)
@@ -62,8 +56,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
   def computeSigPoint(
       data: ByteVector,
       nonce: SchnorrNonce,
-      compressed: Boolean
-  ): ECPublicKey = {
+      compressed: Boolean): ECPublicKey = {
     CryptoUtil.schnorrComputeSigPoint(data, nonce, this, compressed)
   }
 
@@ -84,10 +77,8 @@ object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
 
   @tailrec
   def fromBytes(bytes: ByteVector): SchnorrPublicKey = {
-    require(
-      bytes.length <= 33,
-      s"XOnlyPublicKey must be less than 33 bytes, got $bytes"
-    )
+    require(bytes.length <= 33,
+            s"XOnlyPublicKey must be less than 33 bytes, got $bytes")
     if (bytes.length == 32)
       new SchnorrPublicKey(bytes)
     else if (bytes.length < 32) {
@@ -99,8 +90,7 @@ object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
     } else {
       throw new IllegalArgumentException(
         "XOnlyPublicKey cannot be greater than 33 bytes in size, got: " +
-          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size
-      )
+          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
     }
   }
 

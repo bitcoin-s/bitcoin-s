@@ -68,11 +68,9 @@ object Sha256Digest extends Factory[Sha256Digest] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha256Digest = {
-    require(
-      bytes.length == 32,
-      // $COVERAGE-OFF$
-      "Sha256Digest must be 32 bytes in size, got: " + bytes.length
-    )
+    require(bytes.length == 32,
+            // $COVERAGE-OFF$
+            "Sha256Digest must be 32 bytes in size, got: " + bytes.length)
     Sha256DigestImpl(bytes)
   }
 
@@ -98,11 +96,9 @@ object Sha256DigestBE extends Factory[Sha256DigestBE] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha256DigestBE = {
-    require(
-      bytes.length == 32,
-      // $COVERAGE-OFF$
-      "Sha256Digest must be 32 bytes in size, got: " + bytes.length
-    )
+    require(bytes.length == 32,
+            // $COVERAGE-OFF$
+            "Sha256Digest must be 32 bytes in size, got: " + bytes.length)
     Sha256DigestBEImpl(bytes)
   }
 
@@ -112,10 +108,8 @@ object Sha256DigestBE extends Factory[Sha256DigestBE] {
 /** Represents the result of SHA256(SHA256())
   */
 case class DoubleSha256Digest(bytes: ByteVector) extends HashDigest {
-  require(
-    bytes.length == 32,
-    "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length
-  )
+  require(bytes.length == 32,
+          "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
 
   lazy val flip: DoubleSha256DigestBE = DoubleSha256DigestBE(bytes.reverse)
 
@@ -139,10 +133,8 @@ object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
 
 /** The big endian version of [[DoubleSha256Digest DoubleSha256Digest]] */
 case class DoubleSha256DigestBE(bytes: ByteVector) extends HashDigest {
-  require(
-    bytes.length == 32,
-    "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length
-  )
+  require(bytes.length == 32,
+          "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
 
   def flip: DoubleSha256Digest =
     DoubleSha256Digest.fromBytes(bytes.reverse)
@@ -177,11 +169,9 @@ object RipeMd160Digest extends Factory[RipeMd160Digest] {
   }
 
   override def fromBytes(bytes: ByteVector): RipeMd160Digest = {
-    require(
-      bytes.length == 20,
-      // $COVERAGE-OFF$
-      "RIPEMD160Digest must always be 20 bytes, got: " + bytes.length
-    )
+    require(bytes.length == 20,
+            // $COVERAGE-OFF$
+            "RIPEMD160Digest must always be 20 bytes, got: " + bytes.length)
     RipeMd160DigestImpl(bytes)
   }
 }
@@ -202,11 +192,9 @@ object RipeMd160DigestBE extends Factory[RipeMd160DigestBE] {
   }
 
   override def fromBytes(bytes: ByteVector): RipeMd160DigestBE = {
-    require(
-      bytes.length == 20,
-      // $COVERAGE-OFF$
-      "RIPEMD160Digest must always be 20 bytes, got: " + bytes.length
-    )
+    require(bytes.length == 20,
+            // $COVERAGE-OFF$
+            "RIPEMD160Digest must always be 20 bytes, got: " + bytes.length)
     RipeMd160DigestBEImpl(bytes)
   }
 }
@@ -229,11 +217,9 @@ object Sha256Hash160Digest extends Factory[Sha256Hash160Digest] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha256Hash160Digest = {
-    require(
-      bytes.length == 20,
-      // $COVERAGE-OFF$
-      "Sha256Hash160Digest must always be 20 bytes, got: " + bytes.length
-    )
+    require(bytes.length == 20,
+            // $COVERAGE-OFF$
+            "Sha256Hash160Digest must always be 20 bytes, got: " + bytes.length)
     Sha256Hash160DigestImpl(bytes)
   }
 }
@@ -254,11 +240,9 @@ object Sha256Hash160DigestBE extends Factory[Sha256Hash160DigestBE] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha256Hash160DigestBE = {
-    require(
-      bytes.length == 20,
-      // $COVERAGE-OFF$
-      "Sha256Hash160Digest must always be 20 bytes, got: " + bytes.length
-    )
+    require(bytes.length == 20,
+            // $COVERAGE-OFF$
+            "Sha256Hash160Digest must always be 20 bytes, got: " + bytes.length)
     Sha256Hash160DigestBEImpl(bytes)
   }
 }
@@ -279,11 +263,9 @@ object Sha3_256Digest extends Factory[Sha3_256Digest] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha3_256Digest = {
-    require(
-      bytes.length == 32,
-      // $COVERAGE-OFF$
-      "Sha3-256Digest must be 32 bytes in size, got: " + bytes.length
-    )
+    require(bytes.length == 32,
+            // $COVERAGE-OFF$
+            "Sha3-256Digest must be 32 bytes in size, got: " + bytes.length)
     Sha3_256DigestImpl(bytes)
   }
 
@@ -309,11 +291,9 @@ object Sha3_256DigestBE extends Factory[Sha3_256DigestBE] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha3_256DigestBE = {
-    require(
-      bytes.length == 32,
-      // $COVERAGE-OFF$
-      "Sha3-256Digest must be 32 bytes in size, got: " + bytes.length
-    )
+    require(bytes.length == 32,
+            // $COVERAGE-OFF$
+            "Sha3-256Digest must be 32 bytes in size, got: " + bytes.length)
     Sha3_256DigestBEImpl(bytes)
   }
 
