@@ -35,14 +35,12 @@ object DLCAdaptorPointComputer {
   def computePoint(
       pubKey: SchnorrPublicKey,
       nonce: ECPublicKey,
-      outcome: ByteVector
-  ): ECPublicKey = {
+      outcome: ByteVector): ECPublicKey = {
     val hash = CryptoUtil
       .sha256SchnorrChallenge(
         nonce.schnorrNonce.bytes ++ pubKey.bytes ++ CryptoUtil
           .sha256DLCAttestation(outcome)
-          .bytes
-      )
+          .bytes)
       .bytes
 
     nonce.add(pubKey.publicKey.multiply(FieldElement(hash)))
@@ -65,8 +63,7 @@ object DLCAdaptorPointComputer {
       preComputeTable: Vector[Vector[ECPublicKey]], // Nonce -> Outcome -> Point
       depth: Int = 0,
       private var children: Vector[AdditionTrieNode] = Vector.empty,
-      private var pointOpt: Option[SecpPoint] = None
-  ) {
+      private var pointOpt: Option[SecpPoint] = None) {
 
     /** Populates children field with base empty nodes.
       *
@@ -94,8 +91,7 @@ object DLCAdaptorPointComputer {
         point match {
           case SecpPointInfinity =>
             throw new IllegalArgumentException(
-              "Sum cannot be point at infinity."
-            )
+              "Sum cannot be point at infinity.")
           case point: SecpPointFinite => point.toPublicKey
         }
       } else {
@@ -119,8 +115,7 @@ object DLCAdaptorPointComputer {
 
     /** Creates a fresh AdditionTreeNode for a given preComputeTable */
     def makeRoot(
-        preComputeTable: Vector[Vector[ECPublicKey]]
-    ): AdditionTrieNode = {
+        preComputeTable: Vector[Vector[ECPublicKey]]): AdditionTrieNode = {
       AdditionTrieNode(preComputeTable, pointOpt = Some(SecpPointInfinity))
     }
   }
@@ -131,13 +126,12 @@ object DLCAdaptorPointComputer {
     *   https://medium.com/crypto-garage/optimizing-numeric-outcome-dlc-creation-6d6091ac0e47
     */
   def computeAdaptorPoints(
-      contractInfo: SingleContractInfo
-  ): Vector[ECPublicKey] = {
+      contractInfo: SingleContractInfo): Vector[ECPublicKey] = {
     // The possible messages a single nonce may be used to sign
     val possibleOutcomes: Vector[ByteVector] =
       contractInfo.contractDescriptor match {
-        case enum: EnumContractDescriptor =>
-          enum.keys.map(_.outcome).map(CryptoUtil.serializeForHash)
+        case enumEvent: EnumContractDescriptor =>
+          enumEvent.keys.map(_.outcome).map(CryptoUtil.serializeForHash)
         case _: NumericContractDescriptor => numericPossibleOutcomes
       }
 
@@ -183,8 +177,7 @@ object DLCAdaptorPointComputer {
               case UnsignedNumericOutcome(digits) => digits
               case _: SignedNumericOutcome =>
                 throw new UnsupportedOperationException(
-                  "Signed numeric outcomes not supported!"
-                )
+                  "Signed numeric outcomes not supported!")
             }
 
             outcomeIndices.zipWithIndex.map { case (outcomeIndex, nonceIndex) =>
@@ -208,8 +201,7 @@ object DLCAdaptorPointComputer {
                 additionTries(oracleIndex).computeSum(digits)
               case _: SignedNumericOutcome =>
                 throw new UnsupportedOperationException(
-                  "Signed numeric outcomes not supported!"
-                )
+                  "Signed numeric outcomes not supported!")
             }
           }
       }

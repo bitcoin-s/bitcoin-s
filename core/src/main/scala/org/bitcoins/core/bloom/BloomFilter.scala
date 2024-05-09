@@ -232,13 +232,11 @@ sealed abstract class BloomFilter extends NetworkElement {
     */
   def updateP2PKOnly(
       scriptPubKeysWithIndex: Seq[(ScriptPubKey, Int)],
-      txId: DoubleSha256Digest
-  ): BloomFilter = {
+      txId: DoubleSha256Digest): BloomFilter = {
     @tailrec
     def loop(
         constantsWithIndex: Seq[(ScriptToken, Int)],
-        accumFilter: BloomFilter
-    ): BloomFilter =
+        accumFilter: BloomFilter): BloomFilter =
       constantsWithIndex match {
         case h +: t if accumFilter.contains(h._1.bytes) =>
           val filter =
@@ -293,19 +291,15 @@ sealed abstract class BloomFilter extends NetworkElement {
     * filter
     */
   def insertByteVectors(
-      bytes: scala.collection.Seq[ByteVector]
-  ): BloomFilter = {
+      bytes: scala.collection.Seq[ByteVector]): BloomFilter = {
     @tailrec
     def loop(
         remainingByteVectors: scala.collection.Seq[ByteVector],
-        accumBloomFilter: BloomFilter
-    ): BloomFilter = {
+        accumBloomFilter: BloomFilter): BloomFilter = {
       if (remainingByteVectors.isEmpty) accumBloomFilter
       else
-        loop(
-          remainingByteVectors.tail,
-          accumBloomFilter.insert(remainingByteVectors.head)
-        )
+        loop(remainingByteVectors.tail,
+             accumBloomFilter.insert(remainingByteVectors.head))
     }
     loop(bytes, this)
   }
@@ -320,8 +314,8 @@ object BloomFilter extends Factory[BloomFilter] {
       data: ByteVector,
       hashFuncs: UInt32,
       tweak: UInt32,
-      flags: BloomFlag
-  ) extends BloomFilter
+      flags: BloomFlag)
+      extends BloomFilter
 
   /** Max bloom filter size as per
     * [[https://bitcoin.org/en/developer-reference#filterload]]
@@ -333,13 +327,11 @@ object BloomFilter extends Factory[BloomFilter] {
     */
   val maxHashFuncs = UInt32(50)
 
-  val empty: BloomFilter = BloomFilterImpl(
-    CompactSizeUInt.zero,
-    ByteVector.empty,
-    UInt32.zero,
-    UInt32.zero,
-    BloomUpdateAll
-  )
+  val empty: BloomFilter = BloomFilterImpl(CompactSizeUInt.zero,
+                                           ByteVector.empty,
+                                           UInt32.zero,
+                                           UInt32.zero,
+                                           BloomUpdateAll)
 
   /** Creates a bloom filter based on the number of elements to be inserted into
     * the filter and the desired false positive rate.
@@ -351,8 +343,7 @@ object BloomFilter extends Factory[BloomFilter] {
   def apply(
       numElements: Int,
       falsePositiveRate: Double,
-      flags: BloomFlag
-  ): BloomFilter = {
+      flags: BloomFlag): BloomFilter = {
     val random = Math.floor(Math.random() * UInt32.max.toLong).toLong
     val tweak = UInt32(random)
     apply(numElements, falsePositiveRate, tweak, flags)
@@ -375,8 +366,7 @@ object BloomFilter extends Factory[BloomFilter] {
       numElements: Int,
       falsePositiveRate: Double,
       tweak: UInt32,
-      flags: BloomFlag
-  ): BloomFilter = {
+      flags: BloomFlag): BloomFilter = {
     if (numElements == 0) {
       BloomFilter.empty
     } else {
@@ -395,13 +385,11 @@ object BloomFilter extends Factory[BloomFilter] {
         max(1, min(optimalHashFuncs, maxHashFuncs.toInt)).toInt
 
       val emptyByteArray = ByteVector(Array.fill(actualFilterSize)(0.toByte))
-      BloomFilter(
-        filterSize = CompactSizeUInt(UInt64(actualFilterSize)),
-        data = emptyByteArray,
-        hashFuncs = UInt32(actualHashFuncs),
-        tweak = tweak,
-        flags = flags
-      )
+      BloomFilter(filterSize = CompactSizeUInt(UInt64(actualFilterSize)),
+                  data = emptyByteArray,
+                  hashFuncs = UInt32(actualHashFuncs),
+                  tweak = tweak,
+                  flags = flags)
     }
 
   }
@@ -411,8 +399,7 @@ object BloomFilter extends Factory[BloomFilter] {
       data: ByteVector,
       hashFuncs: UInt32,
       tweak: UInt32,
-      flags: BloomFlag
-  ): BloomFilter = {
+      flags: BloomFlag): BloomFilter = {
     BloomFilterImpl(filterSize, data, hashFuncs, tweak, flags)
   }
 

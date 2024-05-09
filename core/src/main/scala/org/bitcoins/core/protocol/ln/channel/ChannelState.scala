@@ -32,7 +32,6 @@ object ChannelState extends StringFactory[ChannelState] {
   case object SYNCING extends ChannelState
   case object WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT extends ChannelState
   case object ERR_INFORMATION_LEAK extends ChannelState
-  case object WAIT_FOR_DUAL_FUNDING_SIGNED extends ChannelState
 
   private lazy val all: Map[String, ChannelState] = List(
     WAIT_FOR_INIT_INTERNAL,
@@ -58,8 +57,7 @@ object ChannelState extends StringFactory[ChannelState] {
     OFFLINE,
     SYNCING,
     WAIT_FOR_REMOTE_PUBLISH_FUTURE_COMMITMENT,
-    ERR_INFORMATION_LEAK,
-    WAIT_FOR_DUAL_FUNDING_SIGNED
+    ERR_INFORMATION_LEAK
   ).map(state => state.toString -> state).toMap
 
   override def fromStringOpt(str: String): Option[ChannelState] = {

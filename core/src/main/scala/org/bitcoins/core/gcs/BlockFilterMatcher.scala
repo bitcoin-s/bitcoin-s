@@ -104,8 +104,7 @@ case class BinarySearchFilterMatcher(filter: GolombFilter)
         from: Int,
         to: Int,
         hash: UInt64,
-        set: Vector[UInt64]
-    ): Boolean = {
+        set: Vector[UInt64]): Boolean = {
       if (to < from) {
         false
       } else {

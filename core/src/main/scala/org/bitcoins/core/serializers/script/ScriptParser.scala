@@ -71,9 +71,7 @@ sealed abstract class ScriptParser
                 case true =>
                   val scriptNumber = ScriptNumber(
                     BytesUtil.flipEndianness(
-                      ScriptNumberUtil.longToHex(bytes.size)
-                    )
-                  )
+                      ScriptNumberUtil.longToHex(bytes.size)))
                   bytes.size match {
                     case size if size < Byte.MaxValue =>
                       Vector(scriptNumber, OP_PUSHDATA1)
@@ -92,12 +90,10 @@ sealed abstract class ScriptParser
           }
         // if we see a byte constant in the form of "0x09adb"
         case h +: t if h.size > 1 && h.substring(0, 2) == "0x" =>
-          loop(
-            t,
-            BytesUtil
-              .decodeHex(h.substring(2, h.size).toLowerCase)
-              .reverse ++ accum
-          )
+          loop(t,
+               BytesUtil
+                 .decodeHex(h.substring(2, h.size).toLowerCase)
+                 .reverse ++ accum)
         // skip the empty string
         case h +: t if h == ""  => loop(t, accum)
         case h +: t if h == "0" => loop(t, OP_0.bytes ++ accum)
@@ -110,22 +106,18 @@ sealed abstract class ScriptParser
             BytesUtil.flipEndianness(ScriptNumberUtil.longToHex(h.toLong))
           val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
           // convert the string to int, then convert to hex
-          loop(
-            t,
-            BytesUtil
-              .decodeHex(hexLong) ++ bytesToPushOntoStack.bytes ++ accum
-          )
+          loop(t,
+               BytesUtil
+                 .decodeHex(hexLong) ++ bytesToPushOntoStack.bytes ++ accum)
         // means that it must be a BytesToPushOntoStack followed by a script constant
         case h +: t =>
           // find the size of the string in bytes
           val bytesToPushOntoStack = BytesToPushOntoStack(h.size / 2)
-          loop(
-            t,
-            BytesUtil
-              .decodeHex(
-                BytesUtil.flipEndianness(h)
-              ) ++ bytesToPushOntoStack.bytes ++ accum
-          )
+          loop(t,
+               BytesUtil
+                 .decodeHex(
+                   BytesUtil.flipEndianness(
+                     h)) ++ bytesToPushOntoStack.bytes ++ accum)
         case _: Vector[_] =>
           accum
       }
@@ -159,8 +151,7 @@ sealed abstract class ScriptParser
     @tailrec
     def loop(
         bytes: ByteVector,
-        accum: Vector[ScriptToken]
-    ): Vector[ScriptToken] = {
+        accum: Vector[ScriptToken]): Vector[ScriptToken] = {
       // logger.debug("Byte to be parsed: " + bytes.headOption)
       if (bytes.nonEmpty) {
         val op = ScriptOperation.fromByte(bytes.head)
@@ -187,8 +178,7 @@ sealed abstract class ScriptParser
     */
   private def sliceConstant(
       bytesToPushOntoStack: BytesToPushOntoStack,
-      data: ByteVector
-  ): (ByteVector, ByteVector) = {
+      data: ByteVector): (ByteVector, ByteVector) = {
     val finalIndex = bytesToPushOntoStack.opCode
     val dataConstant = data.slice(0, finalIndex)
     (dataConstant, data.slice(finalIndex, data.size))
@@ -218,8 +208,7 @@ sealed abstract class ScriptParser
 
   sealed private case class ParsingHelper(
       tail: ByteVector,
-      accum: Vector[ScriptToken]
-  )
+      accum: Vector[ScriptToken])
 
   /** Parses an operation if the tail is a scodec.bits.ByteVector If the
     * operation is a bytesToPushOntoStack, it pushes the number of bytes onto
@@ -230,8 +219,7 @@ sealed abstract class ScriptParser
   private def parseOperationByte(
       op: ScriptOperation,
       accum: Vector[ScriptToken],
-      tail: ByteVector
-  ): ParsingHelper = {
+      tail: ByteVector): ParsingHelper = {
     op match {
       case bytesToPushOntoStack: BytesToPushOntoStack =>
         // logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
@@ -262,8 +250,7 @@ sealed abstract class ScriptParser
   private def parseOpPushData(
       op: ScriptOperation,
       accum: Vector[ScriptToken],
-      tail: ByteVector
-  ): ParsingHelper = {
+      tail: ByteVector): ParsingHelper = {
 
     def parseOpPushDataHelper(numBytes: Int): ParsingHelper = {
       // next numBytes is the size of the script constant
@@ -280,13 +267,11 @@ sealed abstract class ScriptParser
       val scriptConstantBytes = tail.slice(numBytes, endIndex)
       val scriptConstant = ScriptConstant(scriptConstantBytes)
       val restOfBytes = tail.slice(endIndex, tail.size)
-      buildParsingHelper(
-        op,
-        bytesToPushOntoStack,
-        scriptConstant,
-        restOfBytes,
-        accum
-      )
+      buildParsingHelper(op,
+                         bytesToPushOntoStack,
+                         scriptConstant,
+                         restOfBytes,
+                         accum)
     }
 
     op match {
@@ -298,8 +283,7 @@ sealed abstract class ScriptParser
         parseOpPushDataHelper(4)
       case _: ScriptToken =>
         throw new RuntimeException(
-          "parseOpPushData can only parse OP_PUSHDATA operations"
-        )
+          "parseOpPushData can only parse OP_PUSHDATA operations")
     }
   }
 
@@ -324,16 +308,13 @@ sealed abstract class ScriptParser
       bytesToPushOntoStack: ScriptConstant,
       scriptConstant: ScriptConstant,
       restOfBytes: ByteVector,
-      accum: Vector[ScriptToken]
-  ): ParsingHelper = {
+      accum: Vector[ScriptToken]): ParsingHelper = {
     if (bytesToPushOntoStack.hex == "00") {
       // if we need to push 0 bytes onto the stack we do not add the script constant
       ParsingHelper(restOfBytes, bytesToPushOntoStack +: op +: accum)
     } else
-      ParsingHelper(
-        restOfBytes,
-        scriptConstant +: bytesToPushOntoStack +: op +: accum
-      )
+      ParsingHelper(restOfBytes,
+                    scriptConstant +: bytesToPushOntoStack +: op +: accum)
   }
 
   /** Checks if a string can be cast to an int */

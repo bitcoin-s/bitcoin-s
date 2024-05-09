@@ -36,8 +36,8 @@ object TransactionInput extends Factory[TransactionInput] {
   private case class TransactionInputImpl(
       previousOutput: TransactionOutPoint,
       scriptSignature: ScriptSignature,
-      sequence: UInt32
-  ) extends TransactionInput
+      sequence: UInt32)
+      extends TransactionInput
   def empty: TransactionInput = EmptyTransactionInput
 
   /** Generates a transaction input from the provided txid and output index. A
@@ -47,14 +47,11 @@ object TransactionInput extends Factory[TransactionInput] {
   def fromTxidAndVout(
       txid: DoubleSha256DigestBE,
       vout: UInt32,
-      signature: ScriptSignature = ScriptSignature.empty
-  ): TransactionInput = {
+      signature: ScriptSignature = ScriptSignature.empty): TransactionInput = {
     val outpoint = TransactionOutPoint(txid, vout)
-    TransactionInput(
-      outPoint = outpoint,
-      scriptSignature = signature,
-      sequenceNumber = TransactionConstants.sequence
-    )
+    TransactionInput(outPoint = outpoint,
+                     scriptSignature = signature,
+                     sequenceNumber = TransactionConstants.sequence)
 
   }
 
@@ -64,8 +61,7 @@ object TransactionInput extends Factory[TransactionInput] {
   def apply(
       outPoint: TransactionOutPoint,
       scriptSignature: ScriptSignature,
-      sequenceNumber: UInt32
-  ): TransactionInput =
+      sequenceNumber: UInt32): TransactionInput =
     outPoint match {
       case EmptyTransactionOutPoint =>
         CoinbaseInput(scriptSignature, sequenceNumber)
@@ -79,8 +75,8 @@ object CoinbaseInput {
 
   private case class CoinbaseInputImpl(
       scriptSignature: ScriptSignature,
-      sequence: UInt32
-  ) extends CoinbaseInput
+      sequence: UInt32)
+      extends CoinbaseInput
 
   /** Creates a coinbase input - coinbase inputs always have an empty outpoint
     * @param scriptSignature
@@ -91,8 +87,7 @@ object CoinbaseInput {
     */
   def apply(
       scriptSignature: ScriptSignature,
-      sequence: UInt32
-  ): CoinbaseInput = {
+      sequence: UInt32): CoinbaseInput = {
     CoinbaseInputImpl(scriptSignature, sequence)
   }
 }

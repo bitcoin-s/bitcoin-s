@@ -28,15 +28,12 @@ object RawCompactFilterHeadersMessageSerializer
         afterPreviousFilterHeader,
         { bytes =>
           DoubleSha256Digest.fromBytes(bytes.take(32))
-        }
-      )
+        })
 
-    val message = CompactFilterHeadersMessage(
-      filterType,
-      stopHash,
-      previousFilterHeaderHash,
-      hashes.toVector
-    )
+    val message = CompactFilterHeadersMessage(filterType,
+                                              stopHash,
+                                              previousFilterHeaderHash,
+                                              hashes.toVector)
 
     message
   }
@@ -46,12 +43,10 @@ object RawCompactFilterHeadersMessageSerializer
     val stopHash = message.stopHash.bytes
     val previousFilterHeader = message.previousFilterHeader.bytes
     val filterHashes =
-      RawSerializerHelper.writeCmpctSizeUInt(
-        message.filterHashes,
-        { fh: DoubleSha256Digest =>
-          fh.bytes
-        }
-      )
+      RawSerializerHelper.writeCmpctSizeUInt(message.filterHashes,
+                                             { (fh: DoubleSha256Digest) =>
+                                               fh.bytes
+                                             })
 
     filterType ++ stopHash ++ previousFilterHeader ++ filterHashes
   }

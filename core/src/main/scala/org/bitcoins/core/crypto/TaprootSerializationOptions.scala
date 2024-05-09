@@ -9,8 +9,7 @@ import org.bitcoins.crypto.Sha256Digest
 case class TaprootSerializationOptions(
     tapLeafHashOpt: Option[Sha256Digest],
     annexHashOpt: Option[Sha256Digest],
-    codeSeparatorPosOpt: Option[UInt32]
-) {
+    codeSeparatorPosOpt: Option[UInt32]) {
   def haveAnnex: Boolean = annexHashOpt.isDefined
 
   def codeSeparatorPos: UInt32 = {
@@ -22,9 +21,7 @@ case class TaprootSerializationOptions(
 object TaprootSerializationOptions {
 
   val empty: TaprootSerializationOptions =
-    TaprootSerializationOptions(
-      tapLeafHashOpt = None,
-      annexHashOpt = None,
-      codeSeparatorPosOpt = None
-    )
+    TaprootSerializationOptions(tapLeafHashOpt = None,
+                                annexHashOpt = None,
+                                codeSeparatorPosOpt = None)
 }

@@ -86,14 +86,11 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     */
   lazy val nodeNetworkLimited: Boolean = reversedBits(10) // 1 << 10
 
-  lazy val nodeP2PV2: Boolean = reversedBits(11) // 1 << 1
-
   override def toString: String = {
     val innerText =
       if (nodeNone) "none"
       else
-        s"network=$nodeNetwork,compactFilters=$nodeCompactFilters,getUtxo=$nodeGetUtxo,bloom=$nodeBloom," +
-          s"witness=$nodeWitness,xthin=$nodeXthin,networkLimited=$nodeNetworkLimited,v2transport=$nodeP2PV2"
+        s"network=$nodeNetwork,compactFilters=$nodeCompactFilters,getUtxo=$nodeGetUtxo,bloom=$nodeBloom,witness=$nodeWitness,xthin=$nodeXthin,networkLimited=$nodeNetworkLimited"
     s"ServiceIdentifier($innerText)"
   }
 
@@ -168,15 +165,13 @@ object ServiceIdentifier
     */
   val NODE_NETWORK_LIMITED: ServiceIdentifier = ServiceIdentifier(1 << 10)
 
-  val NODE_P2P_V2: ServiceIdentifier = ServiceIdentifier(1 << 11)
-
   private case class ServiceIdentifierImpl(num: UInt64)
       extends ServiceIdentifier
 
   def fromBytes(bytes: ByteVector): ServiceIdentifier =
     RawServiceIdentifierSerializer.read(bytes)
 
-  override def fromString(string: String): ServiceIdentifier = {
+  override def fromString(string: String): ServiceIdentifier =
     string match {
       case "NETWORK"         => NODE_NETWORK
       case "NETWORK_LIMITED" => NODE_NETWORK_LIMITED
@@ -185,13 +180,10 @@ object ServiceIdentifier
       case "GETUTXO"         => NODE_GET_UTXO
       case "COMPACT_FILTERS" => NODE_COMPACT_FILTERS
       case "XTHIN"           => NODE_XTHIN
-      case "P2P_V2"          => NODE_P2P_V2
       case _: String =>
         throw new IllegalArgumentException(
-          s"$string does not represent a ServiceIdentifier"
-        )
+          s""""$string" does not represent a ServiceIdentifier""")
     }
-  }
 
   def apply(num: BigInt): ServiceIdentifier = ServiceIdentifier(UInt64(num))
 

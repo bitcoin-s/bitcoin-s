@@ -46,8 +46,7 @@ object ConditionalPath {
     @tailrec
     def loop(
         current: ConditionalPath,
-        accum: Vector[Boolean]
-    ): Vector[Boolean] = {
+        accum: Vector[Boolean]): Vector[Boolean] = {
       current match {
         case cond: ConditionTrue =>
           loop(cond.nextCondition, accum :+ true)

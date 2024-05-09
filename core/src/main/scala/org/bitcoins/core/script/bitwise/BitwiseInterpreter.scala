@@ -18,12 +18,9 @@ sealed abstract class BitwiseInterpreter {
 
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
   def opEqual(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_EQUAL),
-      "Script operation must be OP_EQUAL"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_EQUAL),
+            "Script operation must be OP_EQUAL")
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -41,10 +38,8 @@ sealed abstract class BitwiseInterpreter {
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean = if (result) OP_TRUE else OP_FALSE
-      program.updateStackAndScript(
-        scriptBoolean :: program.stack.tail.tail,
-        program.script.tail
-      )
+      program.updateStackAndScript(scriptBoolean :: program.stack.tail.tail,
+                                   program.script.tail)
     }
   }
 
@@ -52,12 +47,9 @@ sealed abstract class BitwiseInterpreter {
     * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterward.
     */
   def opEqualVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_EQUALVERIFY),
-      "Script operation must be OP_EQUALVERIFY"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_EQUALVERIFY),
+            "Script operation must be OP_EQUALVERIFY")
     if (program.stack.size > 1) {
       // first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail

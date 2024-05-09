@@ -21,10 +21,8 @@ sealed trait InternalAddressTag extends AddressTag
   * [[ExternalAddressTagName]]
   */
 case class UnknownAddressTagName(name: String) extends InternalAddressTagName {
-  require(
-    InternalAddressTagName.fromStringOpt(name).isEmpty,
-    s"This tag name is already defined, got $name"
-  )
+  require(InternalAddressTagName.fromStringOpt(name).isEmpty,
+          s"This tag name is already defined, got $name")
 }
 
 /** An unknown address tag type, most likely an internal representation of an
@@ -32,10 +30,8 @@ case class UnknownAddressTagName(name: String) extends InternalAddressTagName {
   */
 case class UnknownAddressTagType(typeName: String)
     extends InternalAddressTagType {
-  require(
-    InternalAddressTagType.fromStringOpt(typeName).isEmpty,
-    s"This tag type is already defined, got $typeName"
-  )
+  require(InternalAddressTagType.fromStringOpt(typeName).isEmpty,
+          s"This tag type is already defined, got $typeName")
 }
 
 /** An address tag without an unknown type, most likely an internal
@@ -47,10 +43,8 @@ case class UnknownAddressTag(tagName: AddressTagName, tagType: AddressTagType)
 object UnknownAddressTag {
 
   def apply(tagName: String, tagType: String): UnknownAddressTag =
-    UnknownAddressTag(
-      UnknownAddressTagName(tagName),
-      UnknownAddressTagType(tagType)
-    )
+    UnknownAddressTag(UnknownAddressTagName(tagName),
+                      UnknownAddressTagType(tagType))
 
   def apply(tagName: String, tagType: AddressTagType): UnknownAddressTag =
     UnknownAddressTag(UnknownAddressTagName(tagName), tagType)
@@ -61,7 +55,7 @@ object UnknownAddressTag {
 
 object InternalAddressTagName extends StringFactory[InternalAddressTagName] {
 
-  val all: Seq[InternalAddressTagName] = StorageLocationTag.tagNames
+  val all: Vector[InternalAddressTagName] = StorageLocationTag.tagNames
 
   override def fromStringOpt(string: String): Option[InternalAddressTagName] =
     all.find(_.name.toLowerCase == string.toLowerCase)
@@ -86,8 +80,7 @@ object InternalAddressTag {
 
   def apply(
       tagName: AddressTagName,
-      tagType: AddressTagType
-  ): InternalAddressTag = {
+      tagType: AddressTagType): InternalAddressTag = {
     tagType match {
       case StorageLocationTagType =>
         tagName match {
@@ -121,7 +114,7 @@ object StorageLocationTag extends AddressTagFactory[StorageLocationTag] {
 
   override val tagType: InternalAddressTagType = StorageLocationTagType
 
-  override val tagNames =
+  override val tagNames: Vector[InternalAddressTagName] =
     Vector(HotStorageName, ColdStorageName, DeepColdStorageName)
 
   // Tag Names

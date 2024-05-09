@@ -88,7 +88,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
 
 }
 
-final case object MainNet extends MainNet
+case object MainNet extends MainNet
 
 sealed abstract class TestNet3 extends BitcoinNetwork {
   override def chainParams: TestNetChainParams.type = TestNetChainParams
@@ -104,12 +104,10 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
   /** @inheritdoc
     */
   override def dnsSeeds: Seq[String] =
-    Seq(
-      "testnet-seed.bitcoin.jonasschnelli.ch",
-      "seed.tbtc.petertodd.org",
-      "seed.testnet.bitcoin.sprovoost.nl",
-      "testnet-seed.bluematt.me"
-    )
+    Seq("testnet-seed.bitcoin.jonasschnelli.ch",
+        "seed.tbtc.petertodd.org",
+        "seed.testnet.bitcoin.sprovoost.nl",
+        "testnet-seed.bluematt.me")
   /*
    * @inheritdoc
    */
@@ -117,7 +115,7 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
 
 }
 
-final case object TestNet3 extends TestNet3
+case object TestNet3 extends TestNet3
 
 sealed abstract class RegTest extends BitcoinNetwork {
   override def chainParams: RegTestNetChainParams.type = RegTestNetChainParams
@@ -139,7 +137,7 @@ sealed abstract class RegTest extends BitcoinNetwork {
   override def magicBytes: ByteVector = ByteVector(0xfa, 0xbf, 0xb5, 0xda)
 }
 
-final case object RegTest extends RegTest
+case object RegTest extends RegTest
 
 sealed abstract class SigNet extends BitcoinNetwork {
   override def chainParams: SigNetChainParams = SigNetChainParams()
@@ -155,11 +153,9 @@ sealed abstract class SigNet extends BitcoinNetwork {
   /** @inheritdoc
     */
   override def dnsSeeds: Seq[String] =
-    Seq(
-      "178.128.221.177",
-      "2a01:7c8:d005:390::5",
-      "ntv3mtqw5wt63red.onion:38333"
-    )
+    Seq("178.128.221.177",
+        "2a01:7c8:d005:390::5",
+        "ntv3mtqw5wt63red.onion:38333")
 
   /** @inheritdoc
     */
@@ -172,7 +168,7 @@ sealed abstract class SigNet extends BitcoinNetwork {
 
 }
 
-final case object SigNet extends SigNet
+case object SigNet extends SigNet
 // $COVERAGE-ON$
 
 object Networks extends StringFactory[NetworkParameters] {
@@ -193,11 +189,8 @@ object Networks extends StringFactory[NetworkParameters] {
   def fromChainHash(chainHash: DoubleSha256DigestBE): NetworkParameters = {
     knownNetworks
       .find(_.chainParams.genesisBlock.blockHeader.hashBE == chainHash)
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"$chainHash is not a recognized Chain Hash"
-        )
-      )
+      .getOrElse(throw new IllegalArgumentException(
+        s"$chainHash is not a recognized Chain Hash"))
   }
 }
 

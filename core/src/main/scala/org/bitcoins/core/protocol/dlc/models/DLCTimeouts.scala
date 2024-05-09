@@ -19,13 +19,11 @@ case class DLCTimeouts(
     case (_: BlockTime, _: BlockTime) =>
       if (contractMaturity.toUInt32 >= contractTimeout.toUInt32)
         throw new IllegalArgumentException(
-          s"contract must mature before it expires, ${contractTimeout.toUInt32} >= ${contractMaturity.toUInt32}"
-        )
+          s"contract must mature before it expires, ${contractTimeout.toUInt32} >= ${contractMaturity.toUInt32}")
     case (_: BlockHeight, _: BlockHeight) =>
       if (contractMaturity.toUInt32 >= contractTimeout.toUInt32)
         throw new IllegalArgumentException(
-          s"contract must mature before it expires, ${contractTimeout.toUInt32} >= ${contractMaturity.toUInt32}"
-        )
+          s"contract must mature before it expires, ${contractTimeout.toUInt32} >= ${contractMaturity.toUInt32}")
     case (_: BlockTime, _: BlockHeight) | (_: BlockHeight, _: BlockTime) => ()
   }
 

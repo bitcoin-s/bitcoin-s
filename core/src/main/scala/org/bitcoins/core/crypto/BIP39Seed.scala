@@ -47,18 +47,15 @@ object BIP39Seed extends Factory[BIP39Seed] {
     */
   def fromMnemonic(
       mnemonic: MnemonicCode,
-      password: String = EMPTY_PASSWORD
-  ): BIP39Seed = {
+      password: String = EMPTY_PASSWORD): BIP39Seed = {
     val salt = s"mnemonic$password"
 
     val words = mnemonic.mkString(" ")
 
-    val encodedBytes = CryptoUtil.pbkdf2WithSha512(
-      words,
-      salt,
-      ITERATION_COUNT,
-      DERIVED_KEY_LENGTH
-    )
+    val encodedBytes = CryptoUtil.pbkdf2WithSha512(words,
+                                                   salt,
+                                                   ITERATION_COUNT,
+                                                   DERIVED_KEY_LENGTH)
 
     BIP39Seed.fromBytes(encodedBytes)
   }
@@ -69,8 +66,7 @@ object BIP39Seed extends Factory[BIP39Seed] {
     */
   def fromMnemonic(
       mnemonic: MnemonicCode,
-      passwordOpt: Option[String]
-  ): BIP39Seed = {
+      passwordOpt: Option[String]): BIP39Seed = {
     passwordOpt match {
       case Some(pass) =>
         fromMnemonic(mnemonic, pass)

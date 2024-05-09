@@ -65,12 +65,10 @@ sealed abstract class Transaction extends NetworkElement {
     this match {
       case btx: NonWitnessTransaction => btx.byteSize
       case wtx: WitnessTransaction =>
-        BaseTransaction(
-          wtx.version,
-          wtx.inputs,
-          wtx.outputs,
-          wtx.lockTime
-        ).baseSize
+        BaseTransaction(wtx.version,
+                        wtx.inputs,
+                        wtx.outputs,
+                        wtx.lockTime).baseSize
     }
 
   def totalSize: Long = bytes.size
@@ -95,21 +93,20 @@ sealed abstract class Transaction extends NetworkElement {
       case _: NonWitnessTransaction =>
         BaseTransaction(version, updatedInputs, outputs, lockTime)
       case wtx: WitnessTransaction =>
-        WitnessTransaction(
-          version,
-          updatedInputs,
-          outputs,
-          lockTime,
-          wtx.witness
-        )
+        WitnessTransaction(version,
+                           updatedInputs,
+                           outputs,
+                           lockTime,
+                           wtx.witness)
     }
   }
-
-  lazy val totalOutput: CurrencyUnit = outputs.map(_.value).sum
 
   lazy val toBaseTx: BaseTransaction = {
     BaseTransaction(version, inputs, outputs, lockTime)
   }
+
+  lazy val totalOutput: CurrencyUnit =
+    outputs.map(_.value).sum(org.bitcoins.core.currency.currencyUnitNumeric)
 }
 
 object Transaction extends Factory[Transaction] {
@@ -121,8 +118,7 @@ object Transaction extends Factory[Transaction] {
     val tx = {
       if (
         bytes(4) == WitnessTransaction.marker && bytes(
-          5
-        ) == WitnessTransaction.flag
+          5) == WitnessTransaction.flag
       ) {
         // this throw/catch is _still_ necessary for the case where we have unsigned base transactions
         // with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
@@ -162,8 +158,8 @@ case class BaseTransaction(
     version: Int32,
     inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput],
-    lockTime: UInt32
-) extends NonWitnessTransaction
+    lockTime: UInt32)
+    extends NonWitnessTransaction
 
 object BaseTransaction extends Factory[BaseTransaction] {
 
@@ -180,9 +176,8 @@ object BaseTransaction extends Factory[BaseTransaction] {
     BaseTransaction(version, inputs, outputs, lockTime)
   }
 
-  def unapply(
-      tx: NonWitnessTransaction
-  ): Option[(Int32, Seq[TransactionInput], Seq[TransactionOutput], UInt32)] = {
+  def unapply(tx: NonWitnessTransaction): Option[
+    (Int32, Seq[TransactionInput], Seq[TransactionOutput], UInt32)] = {
     Some((tx.version, tx.inputs, tx.outputs, tx.lockTime))
   }
 }
@@ -200,8 +195,8 @@ case class WitnessTransaction(
     inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput],
     lockTime: UInt32,
-    witness: TransactionWitness
-) extends Transaction {
+    witness: TransactionWitness)
+    extends Transaction {
   require(
     inputs.length == witness.length,
     s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.length}"
@@ -280,13 +275,11 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
     val marker = bytes(4)
     require(
       marker.toInt == 0,
-      "Incorrect marker for witness transaction, the marker MUST be 0 for the marker according to BIP141, got: " + marker
-    )
+      "Incorrect marker for witness transaction, the marker MUST be 0 for the marker according to BIP141, got: " + marker)
     val flag = bytes(5)
     require(
       flag.toInt != 0,
-      "Incorrect flag for witness transaction, this must NOT be 0 according to BIP141, got: " + flag
-    )
+      "Incorrect flag for witness transaction, this must NOT be 0 according to BIP141, got: " + flag)
     val txInputBytes = bytes.slice(6, bytes.size)
     val (inputs, outputBytes) =
       BytesUtil.parseCmpctSizeUIntSeq(txInputBytes, TransactionInput)
@@ -302,13 +295,11 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
   def toWitnessTx(tx: Transaction): WitnessTransaction =
     tx match {
       case btx: NonWitnessTransaction =>
-        WitnessTransaction(
-          btx.version,
-          btx.inputs,
-          btx.outputs,
-          btx.lockTime,
-          EmptyWitness.fromInputs(btx.inputs)
-        )
+        WitnessTransaction(btx.version,
+                           btx.inputs,
+                           btx.outputs,
+                           btx.lockTime,
+                           EmptyWitness.fromInputs(btx.inputs))
       case wtx: WitnessTransaction => wtx
     }
 

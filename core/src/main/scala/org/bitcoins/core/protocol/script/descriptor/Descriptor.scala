@@ -35,15 +35,15 @@ sealed abstract class ScriptDescriptor extends Descriptor {
 
 case class RawDescriptor(
     expression: RawScriptExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
   override val scriptPubKey: RawScriptPubKey = expression.scriptPubKey
 }
 
 case class P2WPKHDescriptor(
     expression: P2WPKHExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
   override val scriptPubKey: P2WPKHWitnessSPKV0 = expression.scriptPubKey
 
   def address(np: NetworkParameters): Bech32Address = {
@@ -53,29 +53,29 @@ case class P2WPKHDescriptor(
 
 case class P2WSHDescriptor(
     expression: P2WSHExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
   override val scriptPubKey: P2WSHWitnessSPKV0 = expression.scriptPubKey
 }
 
 case class P2PKDescriptor[T <: PublicKey](
     expression: P2PKScriptExpression[T],
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
   override val scriptPubKey: P2PKScriptPubKey = expression.scriptPubKey
 }
 
 case class P2PKHDescriptor(
     expression: P2PKHScriptExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
   override val scriptPubKey: P2PKHScriptPubKey = expression.scriptPubKey
 }
 
 case class MultisigDescriptor(
     expression: MultisigExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
 
   override val scriptPubKey: MultiSignatureScriptPubKey =
     expression.scriptPubKey
@@ -83,8 +83,8 @@ case class MultisigDescriptor(
 
 case class SortedMultisigDescriptor(
     expression: SortedMultisigExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
 
   override val scriptPubKey: MultiSignatureScriptPubKey =
     expression.scriptPubKey
@@ -97,8 +97,8 @@ case class P2SHDescriptor(expression: P2SHExpression, checksum: Option[String])
 
 case class TaprootDescriptor(
     expression: TreeExpression,
-    checksum: Option[String]
-) extends ScriptDescriptor {
+    checksum: Option[String])
+    extends ScriptDescriptor {
   override val scriptPubKey: TaprootScriptPubKey = expression.scriptPubKey
 }
 
@@ -112,17 +112,16 @@ sealed abstract class ComboDescriptor extends ScriptDescriptor {
 
 case class ComboDescriptorUncompressed(
     expression: ComboExpression,
-    checksum: Option[String]
-) extends ComboDescriptor
+    checksum: Option[String])
+    extends ComboDescriptor
 
 case class ComboDescriptorCompressed(
     expression: ComboExpression,
-    checksum: Option[String]
-) extends ComboDescriptor {
+    checksum: Option[String])
+    extends ComboDescriptor {
   require(
     expression.source.pubKey.isCompressed,
-    s"ComboDescriptorCompressed must have compressed pubkey, got=$expression"
-  )
+    s"ComboDescriptorCompressed must have compressed pubkey, got=$expression")
 
   val p2wpkh: P2WPKHWitnessSPKV0 =
     P2WPKHWitnessSPKV0(pubKey = expression.source.pubKey)
@@ -132,8 +131,8 @@ case class ComboDescriptorCompressed(
 sealed abstract class DescriptorFactory[
     T <: Descriptor,
     E <: DescriptorExpression,
-    U <: DescriptorType
-] extends StringFactory[T] {
+    U <: DescriptorType]
+    extends StringFactory[T] {
   def descriptorType: U
 
   override def fromString(string: String): T = {
@@ -141,8 +140,7 @@ sealed abstract class DescriptorFactory[
     val t = iter.takeDescriptorType()
     if (t != descriptorType) {
       sys.error(
-        s"Incorrect type for descriptor, got=$t expected=$descriptorType"
-      )
+        s"Incorrect type for descriptor, got=$t expected=$descriptorType")
     } else {
       val (payload, checksum) = iter.current.span(_ != '#')
       val expressionIter = DescriptorIterator(payload.dropRight(1)) // drop ')'
@@ -152,8 +150,7 @@ sealed abstract class DescriptorFactory[
         if (checksum.nonEmpty) Some(checksum.tail) else None // drop '#'
       val isValidChecksum = Descriptor.isValidChecksum(
         createDescriptor(expression, None),
-        checksumOpt
-      )
+        checksumOpt)
       if (isValidChecksum) {
         createDescriptor(expression, checksumOpt)
       } else {
@@ -168,60 +165,50 @@ sealed abstract class DescriptorFactory[
 }
 
 object RawDescriptor
-    extends DescriptorFactory[
-      RawDescriptor,
-      RawScriptExpression,
-      DescriptorType.Raw.type
-    ] {
+    extends DescriptorFactory[RawDescriptor,
+                              RawScriptExpression,
+                              DescriptorType.Raw.type] {
 
   override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): RawScriptExpression = {
+      iter: DescriptorIterator): RawScriptExpression = {
     val raw = RawScriptPubKey.fromAsmHex(iter.current)
     RawScriptExpression(raw)
   }
 
   override protected def createDescriptor(
       e: RawScriptExpression,
-      checksum: Option[String]
-  ): RawDescriptor = {
+      checksum: Option[String]): RawDescriptor = {
     RawDescriptor(e, checksum)
   }
 }
 
 object P2WPKHDescriptor
-    extends DescriptorFactory[
-      P2WPKHDescriptor,
-      P2WPKHExpression,
-      DescriptorType.WPKH.type
-    ] {
+    extends DescriptorFactory[P2WPKHDescriptor,
+                              P2WPKHExpression,
+                              DescriptorType.WPKH.type] {
   override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
 
   override def parseValidExpression(
-      iter: DescriptorIterator
-  ): P2WPKHExpression = {
+      iter: DescriptorIterator): P2WPKHExpression = {
     val keyExpression = iter.takeSingleECKeyExpression()
     P2WPKHExpression(keyExpression)
   }
 
   override protected def createDescriptor(
       e: P2WPKHExpression,
-      checksum: Option[String]
-  ): P2WPKHDescriptor = {
+      checksum: Option[String]): P2WPKHDescriptor = {
     P2WPKHDescriptor(e, checksum)
   }
 
   def apply(
       privKey: ECPrivateKey,
-      network: NetworkParameters
-  ): P2WPKHDescriptor = {
+      network: NetworkParameters): P2WPKHDescriptor = {
     val keyExpression = RawPrivateECPublicKeyExpression(
       key = privKey.toPrivateKeyBytes(),
       network = network,
-      originOpt = None
-    )
+      originOpt = None)
     val p2wpkhExpression = P2WPKHExpression(keyExpression)
     val noChecksum = P2WPKHDescriptor(p2wpkhExpression, None)
     val checksum = Descriptor.createChecksum(noChecksum)
@@ -230,199 +217,159 @@ object P2WPKHDescriptor
 }
 
 object P2WSHDescriptor
-    extends DescriptorFactory[
-      P2WSHDescriptor,
-      P2WSHExpression,
-      DescriptorType.WSH.type
-    ] {
+    extends DescriptorFactory[P2WSHDescriptor,
+                              P2WSHExpression,
+                              DescriptorType.WSH.type] {
   override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): P2WSHExpression = {
+      iter: DescriptorIterator): P2WSHExpression = {
     val scriptExpression = iter.takeRawSPKScriptExpression()
     P2WSHExpression(scriptExpression)
   }
 
   override protected def createDescriptor(
       e: P2WSHExpression,
-      checksum: Option[String]
-  ): P2WSHDescriptor = {
+      checksum: Option[String]): P2WSHDescriptor = {
     P2WSHDescriptor(e, checksum)
   }
 }
 
 object P2PKDescriptor
     extends DescriptorFactory[P2PKDescriptor[PublicKey],
-                              P2PKScriptExpression[
-                                PublicKey
-                              ],
+                              P2PKScriptExpression[PublicKey],
                               DescriptorType.PK.type] {
   override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): P2PKScriptExpression[PublicKey] = {
+      iter: DescriptorIterator): P2PKScriptExpression[PublicKey] = {
     val keyExpression = iter.takeSingleKeyExpression()
     P2PKScriptExpression[PublicKey](keyExpression)
   }
 
   override protected def createDescriptor(
       e: P2PKScriptExpression[PublicKey],
-      checksum: Option[String]
-  ): P2PKDescriptor[PublicKey] = {
+      checksum: Option[String]): P2PKDescriptor[PublicKey] = {
     P2PKDescriptor(e, checksum)
   }
 }
 
 object P2PKHDescriptor
-    extends DescriptorFactory[
-      P2PKHDescriptor,
-      P2PKHScriptExpression,
-      DescriptorType.PKH.type
-    ] {
+    extends DescriptorFactory[P2PKHDescriptor,
+                              P2PKHScriptExpression,
+                              DescriptorType.PKH.type] {
   override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): P2PKHScriptExpression = {
+      iter: DescriptorIterator): P2PKHScriptExpression = {
     val keyExpression = iter.takeSingleECKeyExpression()
     P2PKHScriptExpression(keyExpression)
   }
 
   override protected def createDescriptor(
       e: P2PKHScriptExpression,
-      checksum: Option[String]
-  ): P2PKHDescriptor = {
+      checksum: Option[String]): P2PKHDescriptor = {
     P2PKHDescriptor(e, checksum)
   }
 }
 
 object MultisigDescriptor
-    extends DescriptorFactory[
-      MultisigDescriptor,
-      MultisigExpression,
-      DescriptorType.Multi.type
-    ] {
+    extends DescriptorFactory[MultisigDescriptor,
+                              MultisigExpression,
+                              DescriptorType.Multi.type] {
   override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): MultisigExpression = {
+      iter: DescriptorIterator): MultisigExpression = {
     val keyExpression = iter.takeMultisigKeyExpression()
     MultisigExpression(keyExpression)
   }
 
   override protected def createDescriptor(
       e: MultisigExpression,
-      checksum: Option[String]
-  ): MultisigDescriptor = {
+      checksum: Option[String]): MultisigDescriptor = {
     MultisigDescriptor(e, checksum)
   }
 }
 
 object SortedMultisigDescriptor
-    extends DescriptorFactory[
-      SortedMultisigDescriptor,
-      SortedMultisigExpression,
-      DescriptorType.SortedMulti.type
-    ] {
+    extends DescriptorFactory[SortedMultisigDescriptor,
+                              SortedMultisigExpression,
+                              DescriptorType.SortedMulti.type] {
 
   override val descriptorType: DescriptorType.SortedMulti.type =
     DescriptorType.SortedMulti
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): SortedMultisigExpression = {
+      iter: DescriptorIterator): SortedMultisigExpression = {
     val expr = iter.takeMultisigKeyExpression()
     SortedMultisigExpression(expr)
   }
 
   override protected def createDescriptor(
       e: SortedMultisigExpression,
-      checksum: Option[String]
-  ): SortedMultisigDescriptor = {
+      checksum: Option[String]): SortedMultisigDescriptor = {
     SortedMultisigDescriptor(e, checksum)
   }
 }
 
 object P2SHDescriptor
-    extends DescriptorFactory[
-      P2SHDescriptor,
-      P2SHExpression,
-      DescriptorType.SH.type
-    ] {
+    extends DescriptorFactory[P2SHDescriptor,
+                              P2SHExpression,
+                              DescriptorType.SH.type] {
   override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): P2SHExpression = {
+      iter: DescriptorIterator): P2SHExpression = {
     val scriptExpression = iter.takeScriptExpressionECKey()
     require(
       !scriptExpression.isInstanceOf[ComboExpression],
-      s"Cannot have ComboExpression in P2SHDescriptor, got=$scriptExpression"
-    )
+      s"Cannot have ComboExpression in P2SHDescriptor, got=$scriptExpression")
     P2SHExpression(scriptExpression)
   }
 
   override protected def createDescriptor(
       e: P2SHExpression,
-      checksum: Option[String]
-  ): P2SHDescriptor = {
+      checksum: Option[String]): P2SHDescriptor = {
     P2SHDescriptor(e, checksum)
-  }
-
-  def apply(spk: RawScriptPubKey): P2SHDescriptor = {
-    val raw = RawScriptExpression(spk)
-    val p2shExpr = P2SHExpression(raw)
-    val checksum = Descriptor.createChecksum(createDescriptor(p2shExpr, None))
-    createDescriptor(p2shExpr, Some(checksum))
   }
 }
 
 object ComboDescriptor
-    extends DescriptorFactory[
-      ComboDescriptor,
-      ComboExpression,
-      DescriptorType.Combo.type
-    ] {
+    extends DescriptorFactory[ComboDescriptor,
+                              ComboExpression,
+                              DescriptorType.Combo.type] {
   override val descriptorType: DescriptorType.Combo.type = DescriptorType.Combo
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): ComboExpression = {
+      iter: DescriptorIterator): ComboExpression = {
     val keyExpr = iter.takeSingleECKeyExpression()
     ComboExpression(keyExpr)
   }
 
   override protected def createDescriptor(
       e: ComboExpression,
-      checksum: Option[String]
-  ): ComboDescriptor = {
+      checksum: Option[String]): ComboDescriptor = {
     if (e.source.pubKey.isCompressed) ComboDescriptorCompressed(e, checksum)
     else ComboDescriptorUncompressed(e, checksum)
   }
 }
 
 object TaprootDescriptor
-    extends DescriptorFactory[
-      TaprootDescriptor,
-      TreeExpression,
-      DescriptorType.TR.type
-    ] {
+    extends DescriptorFactory[TaprootDescriptor,
+                              TreeExpression,
+                              DescriptorType.TR.type] {
   override val descriptorType: DescriptorType.TR.type = DescriptorType.TR
 
   override protected def parseValidExpression(
-      iter: DescriptorIterator
-  ): TreeExpression = {
+      iter: DescriptorIterator): TreeExpression = {
     val treeExpression = iter.takeTreeExpression()
     treeExpression
   }
 
   override protected def createDescriptor(
       e: TreeExpression,
-      checksum: Option[String]
-  ): TaprootDescriptor = {
+      checksum: Option[String]): TaprootDescriptor = {
     TaprootDescriptor(e, checksum)
   }
 }
@@ -430,11 +377,9 @@ object TaprootDescriptor
 object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
 
   private val map: Map[DescriptorType,
-                       DescriptorFactory[
-                         _ <: ScriptDescriptor,
-                         _ <: ScriptExpression,
-                         _ <: DescriptorType
-                       ]] = {
+                       DescriptorFactory[? <: ScriptDescriptor,
+                                         ? <: ScriptExpression,
+                                         ? <: DescriptorType]] = {
     Map(
       DescriptorType.Raw -> RawDescriptor,
       DescriptorType.WPKH -> P2WPKHDescriptor,
@@ -458,8 +403,7 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
           .get(s)
           .map(_.fromString(string))
           .getOrElse(
-            sys.error(s"Cannot find parse t=$t to ScriptDescriptor s=$s")
-          )
+            sys.error(s"Cannot find parse t=$t to ScriptDescriptor s=$s"))
     }
   }
 }
@@ -490,10 +434,8 @@ object Descriptor extends StringFactory[Descriptor] {
     *   [[https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki#checksum]]
     */
   def createChecksum(string: String): String = {
-    require(
-      !string.exists(_ == '#'),
-      s"String already contains checksum, got=$string"
-    )
+    require(!string.exists(_ == '#'),
+            s"String already contains checksum, got=$string")
     var c = UInt64.one
     var cls = 0
     var clsCount = 0
@@ -543,8 +485,7 @@ object Descriptor extends StringFactory[Descriptor] {
 
   def isValidChecksum(
       descriptor: Descriptor,
-      checksumOpt: Option[String]
-  ): Boolean = {
+      checksumOpt: Option[String]): Boolean = {
     checksumOpt match {
       case None => true // trivially true if we have no checksum
       case Some(checksum) =>

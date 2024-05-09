@@ -13,15 +13,12 @@ import scodec.bits.ByteVector
   * for more info.
   */
 sealed abstract class LnInvoiceSignature extends NetworkElement {
-  require(
-    recoverId.toInt >= 0 && recoverId.toInt <= 3,
-    s"signature recovery byte must be 0,1,2,3, got ${recoverId.toInt}"
-  )
+  require(recoverId.toInt >= 0 && recoverId.toInt <= 3,
+          s"signature recovery byte must be 0,1,2,3, got ${recoverId.toInt}")
 
   require(
     bytes.length == 65,
-    s"LnInvoiceSignatures MUST be 65 bytes in length, got ${bytes.length}"
-  )
+    s"LnInvoiceSignatures MUST be 65 bytes in length, got ${bytes.length}")
   def signature: ECDigitalSignature
 
   def recoverId: UInt8
@@ -40,13 +37,12 @@ object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
 
   private case class LnInvoiceSignatureImpl(
       recoverId: UInt8,
-      signature: ECDigitalSignature
-  ) extends LnInvoiceSignature
+      signature: ECDigitalSignature)
+      extends LnInvoiceSignature
 
   def apply(
       recoverId: UInt8,
-      signature: ECDigitalSignature
-  ): LnInvoiceSignature = {
+      signature: ECDigitalSignature): LnInvoiceSignature = {
     LnInvoiceSignatureImpl(recoverId, signature)
   }
 
@@ -62,8 +58,7 @@ object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
   def fromRS(
       r: BigInteger,
       s: BigInteger,
-      recovId: UInt8
-  ): LnInvoiceSignature = {
+      recovId: UInt8): LnInvoiceSignature = {
     val sig = ECDigitalSignature.fromRS(r, s)
     LnInvoiceSignature(recovId, sig)
   }

@@ -38,8 +38,7 @@ object BloomFlag extends Factory[BloomFlag] {
     if (flagOpt.isDefined) flagOpt.get
     else
       throw new IllegalArgumentException(
-        "The given byte was not defined for BloomFlag, got: " + byte
-      )
+        "The given byte was not defined for BloomFlag, got: " + byte)
   }
 
   def fromBytes(bytes: ByteVector): BloomFlag = BloomFlag(bytes.head)

@@ -11,8 +11,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
   */
 case class FilterSyncMarker(
     startHeight: Int,
-    stopBlockHash: DoubleSha256Digest
-) {
+    stopBlockHash: DoubleSha256Digest) {
 
   val stopBlockHashBE: DoubleSha256DigestBE = stopBlockHash.flip
 

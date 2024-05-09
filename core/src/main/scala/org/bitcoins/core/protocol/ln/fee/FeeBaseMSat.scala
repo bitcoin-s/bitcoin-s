@@ -13,10 +13,8 @@ import scodec.bits.ByteVector
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#on-mainnet-with-fallback-address-1rustyrx2oai4eyydpqgwvel62bbgqn9t-with-extra-routing-info-to-go-via-nodes-029e03a901b85534ff1e92c43c74431f7ce72046060fcf7a95c37e148f78c77255-then-039e03a901b85534ff1e92c43c74431f7ce72046060fcf7a95c37e148f78c77255 BOLT11]]
   */
 case class FeeBaseMSat(msat: MilliSatoshis) extends NetworkElement {
-  require(
-    msat.toLong <= UInt32.max.toLong,
-    s"Value too large for FeeBaseMSat $msat"
-  )
+  require(msat.toLong <= UInt32.max.toLong,
+          s"Value too large for FeeBaseMSat $msat")
 
   override def bytes: ByteVector = {
     // note that the feebase msat is only 4 bytes

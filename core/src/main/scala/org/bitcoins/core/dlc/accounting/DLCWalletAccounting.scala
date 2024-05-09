@@ -9,14 +9,13 @@ case class DLCWalletAccounting(
     myCollateral: CurrencyUnit,
     theirCollateral: CurrencyUnit,
     myPayout: CurrencyUnit,
-    theirPayout: CurrencyUnit
-) extends PayoutAccounting
+    theirPayout: CurrencyUnit)
+    extends PayoutAccounting
 
 object DLCWalletAccounting {
 
   def fromDLCAccounting(
-      accountings: Vector[DLCAccounting]
-  ): DLCWalletAccounting = {
+      accountings: Vector[DLCAccounting]): DLCWalletAccounting = {
     val myCollateral =
       accountings.foldLeft(CurrencyUnits.zero)(_ + _.myCollateral)
     val theirCollateral =

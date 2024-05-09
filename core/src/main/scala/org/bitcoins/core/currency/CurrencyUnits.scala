@@ -218,8 +218,7 @@ object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
 
   def apply(
       underlying: BigDecimal,
-      roundingMode: RoundingMode = RoundingMode.DOWN
-  ): Bitcoins = {
+      roundingMode: RoundingMode = RoundingMode.DOWN): Bitcoins = {
     // Bitcoin can't represent amounts lower than a satoshi
     // so we need to round to the nearest satoshi
     val rounded = underlying.setScale(8, roundingMode)

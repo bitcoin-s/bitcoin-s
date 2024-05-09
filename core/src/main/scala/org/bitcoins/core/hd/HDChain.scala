@@ -31,8 +31,8 @@ object HDChain {
       coin: HDCoin,
       chainType: HDChainType,
       account: HDAccount,
-      purpose: HDPurpose
-  ) extends HDChain
+      purpose: HDPurpose)
+      extends HDChain
 
   def apply(chainType: HDChainType, account: HDAccount): HDChain =
     BIP44ChainImpl(account.coin, chainType, account, account.purpose)

@@ -10,16 +10,11 @@ case class IncomingDLCOfferDb(
     receivedAt: Instant,
     peer: Option[String],
     message: Option[String],
-    offerTLV: DLCOfferTLV
-) {
-  require(
-    peer.forall(_.length <= 1024),
-    "peer length must not exceed 1024 characters"
-  )
-  require(
-    message.forall(_.length <= 1024),
-    "message length must not exceed 1024 characters"
-  )
+    offerTLV: DLCOfferTLV) {
+  require(peer.forall(_.length <= 1024),
+          "peer length must not exceed 1024 characters")
+  require(message.forall(_.length <= 1024),
+          "message length must not exceed 1024 characters")
 
   def toTLV: SendOfferTLV = {
     require(peer.nonEmpty)

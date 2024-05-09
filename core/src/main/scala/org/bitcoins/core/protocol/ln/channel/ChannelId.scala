@@ -17,10 +17,8 @@ sealed abstract class ChannelId extends NetworkElement
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#the-open_channel-message LN p2p protocol]]
   */
 case class TempChannelId(bytes: ByteVector) extends ChannelId {
-  require(
-    bytes.length == 32,
-    s"ChannelId must be 32 bytes in size, got ${bytes.length}"
-  )
+  require(bytes.length == 32,
+          s"ChannelId must be 32 bytes in size, got ${bytes.length}")
 }
 
 /** Represents the stable ChannelId that represents a channel that has been
@@ -32,10 +30,8 @@ case class TempChannelId(bytes: ByteVector) extends ChannelId {
   * exclusive-OR (i.e. `funding_output_index` alters the last 2 bytes).
   */
 case class FundedChannelId(bytes: ByteVector) extends ChannelId {
-  require(
-    bytes.length == 32,
-    s"ChannelId must be 32 bytes in size, got ${bytes.length}"
-  )
+  require(bytes.length == 32,
+          s"ChannelId must be 32 bytes in size, got ${bytes.length}")
 }
 
 object FundedChannelId extends Factory[FundedChannelId] {

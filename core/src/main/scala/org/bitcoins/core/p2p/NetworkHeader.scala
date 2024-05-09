@@ -32,10 +32,8 @@ case class NetworkHeader(
     payloadSize: UInt32,
     checksum: ByteVector
 ) extends NetworkElement {
-  require(
-    bytes.length == NetworkHeader.bytesSize,
-    s"NetworkHeaders must be ${NetworkHeader.bytesSize} bytes"
-  )
+  require(bytes.length == NetworkHeader.bytesSize,
+          s"NetworkHeaders must be ${NetworkHeader.bytesSize} bytes")
 
   override def bytes: ByteVector = RawNetworkHeaderSerializer.write(this)
 
@@ -59,14 +57,11 @@ object NetworkHeader extends Factory[NetworkHeader] {
     */
   def apply(
       network: NetworkParameters,
-      payload: NetworkPayload
-  ): NetworkHeader = {
+      payload: NetworkPayload): NetworkHeader = {
     val checksum = CryptoUtil.doubleSHA256(payload.bytes)
-    NetworkHeader(
-      network,
-      payload.commandName,
-      UInt32(payload.bytes.size),
-      checksum.bytes.take(4)
-    )
+    NetworkHeader(network,
+                  payload.commandName,
+                  UInt32(payload.bytes.size),
+                  checksum.bytes.take(4))
   }
 }

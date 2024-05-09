@@ -8,8 +8,7 @@ import org.bitcoins.core.protocol.tlv._
 case class OrderedAnnouncements(vec: Vector[OracleAnnouncementTLV])
     extends SortedVec[OracleAnnouncementTLV, OracleAnnouncementTLV](
       vec,
-      SortedVec.forOrdered(vec)
-    ) {
+      SortedVec.forOrdered(vec)) {
   require(vec.nonEmpty, s"Cannot have empty OrderedAnnouncements")
 }
 
@@ -19,5 +18,4 @@ case class OrderedAnnouncements(vec: Vector[OracleAnnouncementTLV])
 case class OrderedAnnouncementV0s(vec: Vector[OracleAnnouncementV0TLV])
     extends SortedVec[OracleAnnouncementV0TLV, OracleAnnouncementV0TLV](
       vec,
-      SortedVec.forOrdered(vec)
-    )
+      SortedVec.forOrdered(vec))

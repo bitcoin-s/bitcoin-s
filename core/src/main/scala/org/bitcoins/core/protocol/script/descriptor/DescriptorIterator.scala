@@ -62,7 +62,7 @@ case class DescriptorIterator(descriptor: String) {
   }
 
   def takeChecksumOpt(): Option[String] = {
-    if (current.isEmpty || !(current.take(1) == '#')) {
+    if (current.isEmpty || !(current.take(1) == "#")) {
       // means we do not have a checksum
       None
     } else {
@@ -144,10 +144,8 @@ case class DescriptorIterator(descriptor: String) {
     val single = SingleXOnlyPubKeyExpression.fromString(keyExpr)
     skip(single.toString().length)
     if (current.nonEmpty) {
-      require(
-        current.head == ',' || current.head == ')',
-        s"Key was not 32 bytes, got=$descriptor current=$current"
-      )
+      require(current.head == ',' || current.head == ')',
+              s"Key was not 32 bytes, got=$descriptor current=$current")
     }
     skip(1) // ','
     single
@@ -185,8 +183,7 @@ case class DescriptorIterator(descriptor: String) {
       case raw: RawSPKScriptExpression => raw
       case x =>
         sys.error(
-          s"Unexpected expression=$x when expecting RawSPKScriptExpression"
-        )
+          s"Unexpected expression=$x when expecting RawSPKScriptExpression")
     }
   }
 
@@ -203,8 +200,7 @@ case class DescriptorIterator(descriptor: String) {
       case raw: RawSPKScriptExpression => raw
       case x =>
         sys.error(
-          s"Unexpected expression=$x when expecting RawSPKScriptExpression"
-        )
+          s"Unexpected expression=$x when expecting RawSPKScriptExpression")
     }
   }
 

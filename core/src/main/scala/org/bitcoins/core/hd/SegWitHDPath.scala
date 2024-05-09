@@ -19,8 +19,7 @@ object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int
-  ): SegWitHDPath = {
+      addressIndex: Int): SegWitHDPath = {
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)
     SegWitHDPathImpl(address)

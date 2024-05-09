@@ -43,22 +43,18 @@ trait RawInventoryMessageSerializer
     */
   private def parseInventories(
       bytes: ByteVector,
-      requiredInventories: CompactSizeUInt
-  ): (List[Inventory], ByteVector) = {
+      requiredInventories: CompactSizeUInt): (List[Inventory], ByteVector) = {
     @tailrec
     def loop(
         remainingInventories: Long,
         remainingBytes: ByteVector,
-        accum: List[Inventory]
-    ): (List[Inventory], ByteVector) = {
+        accum: List[Inventory]): (List[Inventory], ByteVector) = {
       if (remainingInventories <= 0) (accum.reverse, remainingBytes)
       else {
         val inventory = RawInventorySerializer.read(remainingBytes.slice(0, 36))
-        loop(
-          remainingInventories - 1,
-          remainingBytes.slice(36, remainingBytes.size),
-          inventory :: accum
-        )
+        loop(remainingInventories - 1,
+             remainingBytes.slice(36, remainingBytes.size),
+             inventory :: accum)
       }
     }
     loop(requiredInventories.num.toInt, bytes, List.empty)

@@ -24,8 +24,8 @@ object NetworkMessage extends Factory[NetworkMessage] {
 
   private case class NetworkMessageImpl(
       header: NetworkHeader,
-      payload: NetworkPayload
-  ) extends NetworkMessage
+      payload: NetworkPayload)
+      extends NetworkMessage
 
   def fromBytes(bytes: ByteVector): NetworkMessage =
     RawNetworkMessageSerializer.read(bytes)
@@ -53,8 +53,7 @@ object NetworkMessage extends Factory[NetworkMessage] {
     */
   def apply(
       network: NetworkParameters,
-      payload: NetworkPayload
-  ): NetworkMessage = {
+      payload: NetworkPayload): NetworkMessage = {
     val header = NetworkHeader(network, payload)
     NetworkMessage(header, payload)
   }

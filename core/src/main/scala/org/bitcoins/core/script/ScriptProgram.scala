@@ -113,8 +113,8 @@ case class PreExecutionScriptProgram(
     script: List[ScriptToken],
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
-    flags: Seq[ScriptFlag]
-) extends ScriptProgram {
+    flags: Seq[ScriptFlag])
+    extends ScriptProgram {
 
   def startingValidationWeight: Option[Long] = txSignatureComponent match {
     case _: BaseTxSigComponent | _: WitnessTxSigComponentRaw |
@@ -156,15 +156,13 @@ case class PreExecutionScriptProgram(
   }
 
   def updateOriginalScript(
-      tokens: Seq[ScriptToken]
-  ): PreExecutionScriptProgram = {
+      tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
     this.copy(originalScript = tokens.toList)
   }
 
   def updateStackAndScript(
       stackTokens: Seq[ScriptToken],
-      scriptTokens: Seq[ScriptToken]
-  ): PreExecutionScriptProgram = {
+      scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
     val updatedStack = this.updateStack(stackTokens)
     val updatedScript = updatedStack.updateScript(scriptTokens)
     require(updatedStack.stack == stackTokens)
@@ -301,8 +299,8 @@ case class ExecutionInProgressScriptProgram(
     lastCodeSeparator: Option[Int],
     codeSeparatorTapscriptIdx: Option[Int],
     validationWeightRemaining: Option[Long],
-    conditionalCounter: ConditionalCounter
-) extends StartedScriptProgram {
+    conditionalCounter: ConditionalCounter)
+    extends StartedScriptProgram {
 
   def toExecutedProgram: ExecutedScriptProgram = {
     val errorOpt = if (conditionalCounter.totalDepth > 0) {
@@ -329,8 +327,7 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def replaceFlags(
-      newFlags: Seq[ScriptFlag]
-  ): ExecutionInProgressScriptProgram = {
+      newFlags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
     this.copy(flags = newFlags)
   }
 
@@ -388,47 +385,40 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def updateStack(
-      tokens: Seq[ScriptToken]
-  ): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
     this.copy(stack = tokens.toList)
   }
 
   def updateAltStack(
-      tokens: Seq[ScriptToken]
-  ): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
     this.copy(altStack = tokens.toList)
   }
 
   def updateScript(
-      tokens: Seq[ScriptToken]
-  ): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
     this.copy(script = tokens.toList)
   }
 
   def updateStackAndScript(
       stack: Seq[ScriptToken],
-      script: Seq[ScriptToken]
-  ): ExecutionInProgressScriptProgram = {
+      script: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
     this
       .updateStack(stack)
       .updateScript(script)
   }
 
   def updateOriginalScript(
-      tokens: Seq[ScriptToken]
-  ): ExecutionInProgressScriptProgram = {
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
     this.copy(originalScript = tokens.toList)
   }
 
   def updateLastCodeSeparator(
-      newLastCodeSeparator: Int
-  ): ExecutionInProgressScriptProgram = {
+      newLastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
     this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
 
   def updateTapscriptCodeSeparatorIdx(
-      newIdx: Int
-  ): ExecutionInProgressScriptProgram = {
+      newIdx: Int): ExecutionInProgressScriptProgram = {
     this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
   }
 
@@ -437,11 +427,9 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def taprootSerializationOptions: TaprootSerializationOptions = {
-    TaprootSerializationOptions(
-      tapLeafHashOpt,
-      getAnnexHashOpt,
-      codeSeparatorTapscriptIdx.map(UInt32(_))
-    )
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorTapscriptIdx.map(UInt32(_)))
   }
 }
 
@@ -464,15 +452,13 @@ case class ExecutedScriptProgram(
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
     codeSeparatorTapscriptIdx: Option[Int],
-    error: Option[ScriptError]
-) extends StartedScriptProgram {
+    error: Option[ScriptError])
+    extends StartedScriptProgram {
 
   def taprootSerializationOptions: TaprootSerializationOptions = {
-    TaprootSerializationOptions(
-      tapLeafHashOpt,
-      getAnnexHashOpt,
-      codeSeparatorTapscriptIdx.map(UInt32(_))
-    )
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorTapscriptIdx.map(UInt32(_)))
   }
 
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {

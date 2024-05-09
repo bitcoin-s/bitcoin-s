@@ -9,8 +9,7 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
   */
 case class FinalizedTxWithSigningInfo(
     finalizedTx: Transaction,
-    infos: Vector[ScriptSignatureParams[InputInfo]]
-) {
+    infos: Vector[ScriptSignatureParams[InputInfo]]) {
 
   def sign(expectedFeeRate: FeeUnit): Transaction = {
     RawTxSigner.sign(this, expectedFeeRate)
@@ -20,9 +19,7 @@ case class FinalizedTxWithSigningInfo(
       expectedFeeRate: FeeUnit,
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction
-      ) => Boolean
-  ): Transaction = {
+          Transaction) => Boolean): Transaction = {
     RawTxSigner.sign(this, expectedFeeRate, invariants)
   }
 }

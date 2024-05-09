@@ -42,8 +42,8 @@ object MerkleBlock extends Factory[MerkleBlock] {
   private case class MerkleBlockImpl(
       blockHeader: BlockHeader,
       transactionCount: UInt32,
-      partialMerkleTree: PartialMerkleTree
-  ) extends MerkleBlock
+      partialMerkleTree: PartialMerkleTree)
+      extends MerkleBlock
 
   /** Creates a
     * [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] from the
@@ -66,8 +66,8 @@ object MerkleBlock extends Factory[MerkleBlock] {
     def loop(
         remainingTxs: Seq[Transaction],
         accumFilter: BloomFilter,
-        txMatches: Seq[(Boolean, DoubleSha256Digest)]
-    ): (Seq[(Boolean, DoubleSha256Digest)], BloomFilter) = {
+        txMatches: Seq[(Boolean, DoubleSha256Digest)])
+        : (Seq[(Boolean, DoubleSha256Digest)], BloomFilter) = {
       if (remainingTxs.isEmpty) (txMatches.reverse, accumFilter)
       else {
         val tx = remainingTxs.head
@@ -91,8 +91,8 @@ object MerkleBlock extends Factory[MerkleBlock] {
     @tailrec
     def loop(
         remainingTxs: Seq[Transaction],
-        txMatches: Seq[(Boolean, DoubleSha256Digest)]
-    ): (Seq[(Boolean, DoubleSha256Digest)]) = {
+        txMatches: Seq[(Boolean, DoubleSha256Digest)])
+        : (Seq[(Boolean, DoubleSha256Digest)]) = {
       if (remainingTxs.isEmpty) txMatches.reverse
       else {
         val tx = remainingTxs.head
@@ -111,8 +111,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
   def apply(
       blockHeader: BlockHeader,
       txCount: UInt32,
-      partialMerkleTree: PartialMerkleTree
-  ): MerkleBlock = {
+      partialMerkleTree: PartialMerkleTree): MerkleBlock = {
     MerkleBlockImpl(blockHeader, txCount, partialMerkleTree)
   }
 
@@ -120,8 +119,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
       blockHeader: BlockHeader,
       txCount: UInt32,
       hashes: Seq[DoubleSha256Digest],
-      bits: BitVector
-  ): MerkleBlock = {
+      bits: BitVector): MerkleBlock = {
     val partialMerkleTree = PartialMerkleTree(txCount, hashes, bits)
     MerkleBlock(blockHeader, txCount, partialMerkleTree)
   }

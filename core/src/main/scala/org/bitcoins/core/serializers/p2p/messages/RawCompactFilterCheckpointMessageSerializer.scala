@@ -26,8 +26,7 @@ object RawCompactFilterCheckpointMessageSerializer
         afterStopHash,
         { bytes =>
           DoubleSha256Digest.fromBytes(bytes.take(32))
-        }
-      )
+        })
 
     require(
       headers.length == filterHeadersLength.toInt,
@@ -41,12 +40,10 @@ object RawCompactFilterCheckpointMessageSerializer
     val filterType = message.filterType.bytes
     val stopHash = message.stopHash.bytes
     val filterHeaders =
-      RawSerializerHelper.writeCmpctSizeUInt(
-        message.filterHeaders,
-        { fh: DoubleSha256Digest =>
-          fh.bytes
-        }
-      )
+      RawSerializerHelper.writeCmpctSizeUInt(message.filterHeaders,
+                                             { (fh: DoubleSha256Digest) =>
+                                               fh.bytes
+                                             })
     filterType ++ stopHash ++ filterHeaders
   }
 }

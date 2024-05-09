@@ -110,9 +110,7 @@ object ECPrivateKeyUtil {
           case None =>
             Failure(
               new IllegalArgumentException(
-                "Failed to match network bytes for WIF"
-              )
-            )
+                "Failed to match network bytes for WIF"))
         }
       case Failure(exn) => Failure(exn)
     }

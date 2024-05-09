@@ -11,7 +11,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
   */
 case class IncomingTransactionDb(
     txIdBE: DoubleSha256DigestBE,
-    incomingAmount: CurrencyUnit
-) extends TxDB {
+    incomingAmount: CurrencyUnit)
+    extends TxDB {
   lazy val txId: DoubleSha256Digest = txIdBE.flip
 }

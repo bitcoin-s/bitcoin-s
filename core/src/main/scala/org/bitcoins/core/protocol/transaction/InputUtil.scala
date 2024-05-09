@@ -29,8 +29,7 @@ object InputUtil {
     } else {
       val n = scriptNum.toLong
       val sequence = UInt32(
-        n & TransactionConstants.sequenceLockTimeMask.toLong
-      )
+        n & TransactionConstants.sequenceLockTimeMask.toLong)
       // set sequence number to indicate this is relative locktime
       sequence | TransactionConstants.sequenceLockTimeTypeFlag
     }
@@ -42,13 +41,11 @@ object InputUtil {
     */
   def calcSequenceForInputInfos(
       utxos: Seq[InputInfo],
-      defaultSequence: UInt32 = Policy.sequence
-  ): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
     @tailrec
     def loop(
         remaining: Seq[InputInfo],
-        accum: Seq[TransactionInput]
-    ): Seq[TransactionInput] =
+        accum: Seq[TransactionInput]): Seq[TransactionInput] =
       remaining match {
         case Nil => accum.reverse
         case spendingInfo +: newRemaining =>
@@ -58,30 +55,23 @@ object InputUtil {
                 case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
                 case _: CLTVScriptPubKey  => UInt32.zero
               }
-              val input = TransactionInput(
-                lockTime.outPoint,
-                EmptyScriptSignature,
-                sequence
-              )
+              val input = TransactionInput(lockTime.outPoint,
+                                           EmptyScriptSignature,
+                                           sequence)
               loop(newRemaining, input +: accum)
             case p2pkWithTimeout: P2PKWithTimeoutInputInfo =>
               if (p2pkWithTimeout.isBeforeTimeout) {
                 val input =
-                  TransactionInput(
-                    spendingInfo.outPoint,
-                    EmptyScriptSignature,
-                    defaultSequence
-                  )
+                  TransactionInput(spendingInfo.outPoint,
+                                   EmptyScriptSignature,
+                                   defaultSequence)
                 loop(newRemaining, input +: accum)
               } else {
                 val sequence = solveSequenceForCSV(
-                  p2pkWithTimeout.scriptPubKey.lockTime
-                )
-                val input = TransactionInput(
-                  p2pkWithTimeout.outPoint,
-                  EmptyScriptSignature,
-                  sequence
-                )
+                  p2pkWithTimeout.scriptPubKey.lockTime)
+                val input = TransactionInput(p2pkWithTimeout.outPoint,
+                                             EmptyScriptSignature,
+                                             sequence)
                 loop(newRemaining, input +: accum)
               }
             case p2sh: P2SHInputInfo =>
@@ -95,11 +85,9 @@ object InputUtil {
                 _: MultiSignatureInputInfo | _: EmptyInputInfo =>
               // none of these script types affect the sequence number of a tx so the defaultSequence is used
               val input =
-                TransactionInput(
-                  spendingInfo.outPoint,
-                  EmptyScriptSignature,
-                  defaultSequence
-                )
+                TransactionInput(spendingInfo.outPoint,
+                                 EmptyScriptSignature,
+                                 defaultSequence)
               loop(newRemaining, input +: accum)
           }
       }
@@ -114,8 +102,7 @@ object InputUtil {
     */
   def calcSequenceForInputs(
       utxos: Seq[InputSigningInfo[InputInfo]],
-      defaultSequence: UInt32 = Policy.sequence
-  ): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
     calcSequenceForInputInfos(utxos.map(_.inputInfo), defaultSequence)
   }
 }

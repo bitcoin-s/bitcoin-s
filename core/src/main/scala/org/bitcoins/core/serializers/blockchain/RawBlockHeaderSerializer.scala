@@ -19,8 +19,7 @@ sealed abstract class RawBlockHeaderSerializer
     // previous header hash next 32 bytes
     val prevBlockHashBytes = bytes.slice(4, 36)
     val prevBlockHash: DoubleSha256Digest = DoubleSha256Digest(
-      prevBlockHashBytes
-    )
+      prevBlockHashBytes)
     // merkle hash next 32 bytes
     val merkleRootBytes = bytes.slice(36, 68)
     val merkleRoot: DoubleSha256Digest = DoubleSha256Digest(merkleRootBytes)

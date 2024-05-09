@@ -49,37 +49,32 @@ sealed trait InputInfo {
   def toSpendingInfo(
       prevTransaction: Transaction,
       signers: Vector[Sign],
-      hashType: HashType
-  ): ScriptSignatureParams[InputInfo] = {
+      hashType: HashType): ScriptSignatureParams[InputInfo] = {
     ScriptSignatureParams(this, prevTransaction, signers, hashType)
   }
 
   def toSpendingInfo(
       prevTransaction: Transaction,
       signer: Sign,
-      hashType: HashType
-  ): ECSignatureParams[InputInfo] = {
+      hashType: HashType): ECSignatureParams[InputInfo] = {
     ECSignatureParams(this, prevTransaction, signer, hashType)
   }
 
-  def genericWithSignFrom(
-      signerMaterial: InputSigningInfo[InputInfo]
-  ): InputSigningInfo[this.type] = {
+  def genericWithSignFrom(signerMaterial: InputSigningInfo[InputInfo])
+      : InputSigningInfo[this.type] = {
     signerMaterial match {
       case info: ScriptSignatureParams[InputInfo] => withSignFrom(info)
       case info: ECSignatureParams[InputInfo]     => withSignFrom(info)
     }
   }
 
-  def withSignFrom(
-      signerMaterial: ScriptSignatureParams[InputInfo]
-  ): ScriptSignatureParams[this.type] = {
+  def withSignFrom(signerMaterial: ScriptSignatureParams[InputInfo])
+      : ScriptSignatureParams[this.type] = {
     signerMaterial.copy(inputInfo = this)
   }
 
-  def withSignFrom(
-      signerMaterial: ECSignatureParams[InputInfo]
-  ): ECSignatureParams[this.type] = {
+  def withSignFrom(signerMaterial: ECSignatureParams[InputInfo])
+      : ECSignatureParams[this.type] = {
     signerMaterial.copy(inputInfo = this)
   }
 }
@@ -130,16 +125,15 @@ object InputInfo {
     */
   def getHashPreImagesAndConditionalPath(
       signedTransaction: Transaction,
-      inputIndex: Int
-  ): (Vector[NetworkElement], ConditionalPath) = {
+      inputIndex: Int): (Vector[NetworkElement], ConditionalPath) = {
 
     val txIn = signedTransaction.inputs(inputIndex)
 
     @tailrec
     def getPreImagesAndCondPath(
         scriptSignature: ScriptSignature,
-        conditionalPath: Vector[Boolean] = Vector.empty
-    ): (Vector[NetworkElement], Vector[Boolean]) = {
+        conditionalPath: Vector[Boolean] = Vector.empty)
+        : (Vector[NetworkElement], Vector[Boolean]) = {
       scriptSignature match {
         case p2pkh: P2PKHScriptSignature =>
           (Vector(p2pkh.publicKey), conditionalPath)
@@ -147,10 +141,8 @@ object InputInfo {
           val path = conditionalPath :+ cond.isTrue
           getPreImagesAndCondPath(cond.nestedScriptSig, path)
         case p2sh: P2SHScriptSignature =>
-          getPreImagesAndCondPath(
-            p2sh.scriptSignatureNoRedeemScript,
-            conditionalPath
-          )
+          getPreImagesAndCondPath(p2sh.scriptSignatureNoRedeemScript,
+                                  conditionalPath)
         case _: ScriptSignature =>
           (Vector.empty, conditionalPath)
       }
@@ -175,8 +167,7 @@ object InputInfo {
           case taprootWitness @ (_: TaprootScriptPath |
               _: TaprootUnknownPath) =>
             throw new UnsupportedOperationException(
-              s"Taproot script path not yet supported, got=$taprootWitness"
-            )
+              s"Taproot script path not yet supported, got=$taprootWitness")
         }
     }
 
@@ -201,8 +192,7 @@ object InputInfo {
     */
   private def maxScriptSigLenAndStackHeight(
       info: InputInfo,
-      forP2WSH: Boolean
-  ): ScriptSigLenAndStackHeight = {
+      forP2WSH: Boolean): ScriptSigLenAndStackHeight = {
     val boolSize = if (forP2WSH) 2 else 1
 
     info match {
@@ -219,42 +209,32 @@ object InputInfo {
         val ScriptSigLenAndStackHeight(scriptSigLen, stackHeight) =
           maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
 
-        ScriptSigLenAndStackHeight(
-          redeemScriptLen + scriptSigLen,
-          stackHeight + 1
-        )
+        ScriptSigLenAndStackHeight(redeemScriptLen + scriptSigLen,
+                                   stackHeight + 1)
       case _: EmptyInputInfo =>
         ScriptSigLenAndStackHeight(boolSize, 1)
       case _: P2PKInputInfo =>
         ScriptSigLenAndStackHeight(
           P2PKScriptSignature(
-            LowRDummyECDigitalSignature
-          ).asmBytes.length.toInt,
-          1
-        )
+            LowRDummyECDigitalSignature).asmBytes.length.toInt,
+          1)
       case _: P2PKHInputInfo =>
         ScriptSigLenAndStackHeight(
-          P2PKHScriptSignature(
-            LowRDummyECDigitalSignature,
-            ECPublicKey.dummy
-          ).asmBytes.length.toInt,
-          2
-        )
+          P2PKHScriptSignature(LowRDummyECDigitalSignature,
+                               ECPublicKey.dummy).asmBytes.length.toInt,
+          2)
       case info: P2PKWithTimeoutInputInfo =>
         ScriptSigLenAndStackHeight(
           P2PKWithTimeoutScriptSignature(
             info.isBeforeTimeout,
-            LowRDummyECDigitalSignature
-          ).asmBytes.length.toInt,
-          2
-        )
+            LowRDummyECDigitalSignature).asmBytes.length.toInt,
+          2)
       case info: MultiSignatureInputInfo =>
         ScriptSigLenAndStackHeight(
           MultiSignatureScriptSignature(
-            Vector.fill(info.requiredSigs)(LowRDummyECDigitalSignature)
-          ).asmBytes.length.toInt,
-          1 + info.requiredSigs
-        )
+            Vector.fill(info.requiredSigs)(
+              LowRDummyECDigitalSignature)).asmBytes.length.toInt,
+          1 + info.requiredSigs)
       case info: ConditionalInputInfo =>
         val ScriptSigLenAndStackHeight(maxLen, stackHeight) =
           maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
@@ -281,8 +261,7 @@ object InputInfo {
         maxWitnessLen(info.nestedInputInfo)
       case _: UnassignedSegwitNativeInputInfo =>
         throw new IllegalArgumentException(
-          s"Cannot compute witness for unknown segwit InputInfo, got $info"
-        )
+          s"Cannot compute witness for unknown segwit InputInfo, got $info")
     }
   }
 
@@ -292,15 +271,13 @@ object InputInfo {
       redeemScriptOpt: Option[ScriptPubKey],
       scriptWitnessOpt: Option[ScriptWitness],
       conditionalPath: ConditionalPath,
-      hashPreImages: Vector[NetworkElement] = Vector.empty
-  ): InputInfo = {
+      hashPreImages: Vector[NetworkElement] = Vector.empty): InputInfo = {
     output.scriptPubKey match {
       case _: P2SHScriptPubKey =>
         redeemScriptOpt match {
           case None =>
             throw new IllegalArgumentException(
-              "Redeem Script must be defined for P2SH."
-            )
+              "Redeem Script must be defined for P2SH.")
           case Some(redeemScript) =>
             redeemScript match {
               case _: WitnessScriptPubKeyV0 =>
@@ -308,38 +285,30 @@ object InputInfo {
                   case Some(witness: ScriptWitnessV0) => witness
                   case None =>
                     throw new IllegalArgumentException(
-                      "Script Witness must be defined for (nested) Segwit input"
-                    )
+                      "Script Witness must be defined for (nested) Segwit input")
                   case Some(_: ScriptWitness) =>
                     throw new UnsupportedOperationException(
-                      "Only v0 Segwit is supported for wrapped segwit"
-                    )
+                      "Only v0 Segwit is supported for wrapped segwit")
                 }
-                P2SHNestedSegwitV0InputInfo(
-                  outPoint,
-                  output.value,
-                  witness,
-                  conditionalPath,
-                  hashPreImages
-                )
+                P2SHNestedSegwitV0InputInfo(outPoint,
+                                            output.value,
+                                            witness,
+                                            conditionalPath,
+                                            hashPreImages)
               case nonWitnessSPK: RawScriptPubKey =>
-                P2SHNonSegwitInputInfo(
-                  outPoint,
-                  output.value,
-                  nonWitnessSPK,
-                  conditionalPath,
-                  hashPreImages
-                )
+                P2SHNonSegwitInputInfo(outPoint,
+                                       output.value,
+                                       nonWitnessSPK,
+                                       conditionalPath,
+                                       hashPreImages)
               case _: P2SHScriptPubKey =>
                 throw new IllegalArgumentException("Cannot have nested P2SH")
               case _: TaprootScriptPubKey =>
                 throw new UnsupportedOperationException(
-                  s"Taproot cannot be used as a nested P2SH"
-                )
+                  s"Taproot cannot be used as a nested P2SH")
               case _: UnassignedWitnessScriptPubKey =>
                 throw new UnsupportedOperationException(
-                  s"Unsupported ScriptPubKey ${output.scriptPubKey}"
-                )
+                  s"Unsupported ScriptPubKey ${output.scriptPubKey}")
             }
         }
       case _: WitnessScriptPubKeyV0 =>
@@ -347,20 +316,16 @@ object InputInfo {
           case Some(witness: ScriptWitnessV0) => witness
           case None =>
             throw new IllegalArgumentException(
-              "Script Witness must be defined for Segwit input"
-            )
+              "Script Witness must be defined for Segwit input")
           case Some(_: ScriptWitness) =>
             throw new UnsupportedOperationException(
-              "Only v0 Segwit is currently supported"
-            )
+              "Only v0 Segwit is currently supported")
         }
-        SegwitV0NativeInputInfo(
-          outPoint,
-          output.value,
-          witness,
-          conditionalPath,
-          hashPreImages
-        )
+        SegwitV0NativeInputInfo(outPoint,
+                                output.value,
+                                witness,
+                                conditionalPath,
+                                hashPreImages)
       case wspk @ (_: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey) =>
         UnassignedSegwitNativeInputInfo(
           outPoint,
@@ -368,16 +333,13 @@ object InputInfo {
           wspk.asInstanceOf[WitnessScriptPubKey],
           scriptWitnessOpt.getOrElse(EmptyScriptWitness),
           conditionalPath,
-          Vector.empty
-        )
+          Vector.empty)
       case rawSPK: RawScriptPubKey =>
-        RawInputInfo(
-          outPoint,
-          output.value,
-          rawSPK,
-          conditionalPath,
-          hashPreImages
-        )
+        RawInputInfo(outPoint,
+                     output.value,
+                     rawSPK,
+                     conditionalPath,
+                     hashPreImages)
     }
   }
 }
@@ -393,8 +355,7 @@ object RawInputInfo {
       amount: CurrencyUnit,
       scriptPubKey: RawScriptPubKey,
       conditionalPath: ConditionalPath,
-      hashPreImages: Vector[NetworkElement] = Vector.empty
-  ): RawInputInfo = {
+      hashPreImages: Vector[NetworkElement] = Vector.empty): RawInputInfo = {
     scriptPubKey match {
       case p2pk: P2PKScriptPubKey =>
         P2PKInputInfo(outPoint, amount, p2pk)
@@ -406,13 +367,11 @@ object RawInputInfo {
         } match {
           case None =>
             throw new IllegalArgumentException(
-              s"P2PKH pre-image must be specified for P2PKH ScriptPubKey, got $hashPreImages"
-            )
+              s"P2PKH pre-image must be specified for P2PKH ScriptPubKey, got $hashPreImages")
           case Some(p2pkhPreImage) =>
             require(
               P2PKHScriptPubKey(p2pkhPreImage) == p2pkh,
-              s"Specified P2PKH pre-image ($p2pkhPreImage) does not match $p2pkh"
-            )
+              s"Specified P2PKH pre-image ($p2pkhPreImage) does not match $p2pkh")
 
             P2PKHInputInfo(outPoint, amount, p2pkhPreImage)
         }
@@ -420,34 +379,27 @@ object RawInputInfo {
         conditionalPath.headOption match {
           case None =>
             throw new IllegalArgumentException(
-              "ConditionalPath must be specified for P2PKWithTimeout"
-            )
+              "ConditionalPath must be specified for P2PKWithTimeout")
           case Some(beforeTimeout) =>
-            P2PKWithTimeoutInputInfo(
-              outPoint,
-              amount,
-              p2pkWithTimeout,
-              beforeTimeout
-            )
+            P2PKWithTimeoutInputInfo(outPoint,
+                                     amount,
+                                     p2pkWithTimeout,
+                                     beforeTimeout)
         }
       case multiSig: MultiSignatureScriptPubKey =>
         MultiSignatureInputInfo(outPoint, amount, multiSig)
       case conditional: ConditionalScriptPubKey =>
-        ConditionalInputInfo(
-          outPoint,
-          amount,
-          conditional,
-          conditionalPath,
-          hashPreImages
-        )
+        ConditionalInputInfo(outPoint,
+                             amount,
+                             conditional,
+                             conditionalPath,
+                             hashPreImages)
       case lockTime: LockTimeScriptPubKey =>
-        LockTimeInputInfo(
-          outPoint,
-          amount,
-          lockTime,
-          conditionalPath,
-          hashPreImages
-        )
+        LockTimeInputInfo(outPoint,
+                          amount,
+                          lockTime,
+                          conditionalPath,
+                          hashPreImages)
       case EmptyScriptPubKey =>
         EmptyInputInfo(outPoint, amount)
       case spk @ (_: NonStandardScriptPubKey | _: WitnessCommitment) =>
@@ -455,8 +407,7 @@ object RawInputInfo {
           EmptyInputInfo(outPoint, amount)
         } else {
           throw new UnsupportedOperationException(
-            s"Currently unsupported ScriptPubKey $scriptPubKey"
-          )
+            s"Currently unsupported ScriptPubKey $scriptPubKey")
         }
     }
   }
@@ -475,15 +426,14 @@ case class EmptyInputInfo(outPoint: TransactionOutPoint, amount: CurrencyUnit)
 case class P2PKInputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
-    scriptPubKey: P2PKScriptPubKey
-) extends RawInputInfo {
+    scriptPubKey: P2PKScriptPubKey)
+    extends RawInputInfo {
 
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
 
   override def pubKeys: Vector[ECPublicKey] = Vector(
-    scriptPubKey.publicKey.toPublicKey
-  )
+    scriptPubKey.publicKey.toPublicKey)
 
   override def requiredSigs: Int = 1
 }
@@ -491,8 +441,8 @@ case class P2PKInputInfo(
 case class P2PKHInputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
-    pubKey: ECPublicKey
-) extends RawInputInfo {
+    pubKey: ECPublicKey)
+    extends RawInputInfo {
   override def scriptPubKey: P2PKHScriptPubKey = P2PKHScriptPubKey(pubKey)
 
   override def conditionalPath: ConditionalPath =
@@ -507,8 +457,8 @@ case class P2PKWithTimeoutInputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2PKWithTimeoutScriptPubKey,
-    isBeforeTimeout: Boolean
-) extends RawInputInfo {
+    isBeforeTimeout: Boolean)
+    extends RawInputInfo {
 
   override def conditionalPath: ConditionalPath = {
     if (isBeforeTimeout) {
@@ -519,10 +469,8 @@ case class P2PKWithTimeoutInputInfo(
   }
 
   override def pubKeys: Vector[ECPublicKey] =
-    Vector(
-      scriptPubKey.pubKey.toPublicKey,
-      scriptPubKey.timeoutPubKey.toPublicKey
-    )
+    Vector(scriptPubKey.pubKey.toPublicKey,
+           scriptPubKey.timeoutPubKey.toPublicKey)
 
   override def requiredSigs: Int = 1
 }
@@ -530,8 +478,8 @@ case class P2PKWithTimeoutInputInfo(
 case class MultiSignatureInputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
-    scriptPubKey: MultiSignatureScriptPubKey
-) extends RawInputInfo {
+    scriptPubKey: MultiSignatureScriptPubKey)
+    extends RawInputInfo {
 
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
@@ -547,8 +495,8 @@ case class ConditionalInputInfo(
     amount: CurrencyUnit,
     scriptPubKey: ConditionalScriptPubKey,
     conditionalPath: ConditionalPath,
-    hashPreImages: Vector[NetworkElement] = Vector.empty
-) extends RawInputInfo {
+    hashPreImages: Vector[NetworkElement] = Vector.empty)
+    extends RawInputInfo {
 
   lazy val (condition: Boolean, nextConditionalPath: ConditionalPath) =
     conditionalPath match {
@@ -567,13 +515,11 @@ case class ConditionalInputInfo(
       scriptPubKey.falseSPK
     }
 
-    RawInputInfo(
-      outPoint,
-      amount,
-      nestedSPK,
-      nextConditionalPath,
-      hashPreImages
-    )
+    RawInputInfo(outPoint,
+                 amount,
+                 nestedSPK,
+                 nextConditionalPath,
+                 hashPreImages)
   }
 
   override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
@@ -594,8 +540,7 @@ case class LockTimeInputInfo(
     amount,
     scriptPubKey.nestedScriptPubKey,
     conditionalPath,
-    hashPreImages
-  )
+    hashPreImages)
 
   override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
 
@@ -613,19 +558,17 @@ object SegwitV0NativeInputInfo {
       amount: CurrencyUnit,
       scriptWitness: ScriptWitnessV0,
       conditionalPath: ConditionalPath,
-      hashPreImages: Vector[NetworkElement] = Vector.empty
-  ): SegwitV0NativeInputInfo = {
+      hashPreImages: Vector[NetworkElement] = Vector.empty)
+      : SegwitV0NativeInputInfo = {
     scriptWitness match {
       case p2wpkh: P2WPKHWitnessV0 =>
         P2WPKHV0InputInfo(outPoint, amount, p2wpkh.pubKey.toPublicKey)
       case p2wsh: P2WSHWitnessV0 =>
-        P2WSHV0InputInfo(
-          outPoint,
-          amount,
-          p2wsh,
-          conditionalPath,
-          hashPreImages
-        )
+        P2WSHV0InputInfo(outPoint,
+                         amount,
+                         p2wsh,
+                         conditionalPath,
+                         hashPreImages)
     }
   }
 }
@@ -633,8 +576,8 @@ object SegwitV0NativeInputInfo {
 case class P2WPKHV0InputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
-    pubKey: ECPublicKey
-) extends SegwitV0NativeInputInfo {
+    pubKey: ECPublicKey)
+    extends SegwitV0NativeInputInfo {
   override def scriptPubKey: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(pubKey)
 
   override def scriptWitness: P2WPKHWitnessV0 = P2WPKHWitnessV0(pubKey)
@@ -652,20 +595,18 @@ case class P2WSHV0InputInfo(
     amount: CurrencyUnit,
     scriptWitness: P2WSHWitnessV0,
     conditionalPath: ConditionalPath,
-    hashPreImages: Vector[NetworkElement] = Vector.empty
-) extends SegwitV0NativeInputInfo {
+    hashPreImages: Vector[NetworkElement] = Vector.empty)
+    extends SegwitV0NativeInputInfo {
 
   override def scriptPubKey: P2WSHWitnessSPKV0 =
     P2WSHWitnessSPKV0(scriptWitness.redeemScript)
 
   val nestedInputInfo: RawInputInfo =
-    RawInputInfo(
-      outPoint,
-      amount,
-      scriptWitness.redeemScript,
-      conditionalPath,
-      hashPreImages
-    )
+    RawInputInfo(outPoint,
+                 amount,
+                 scriptWitness.redeemScript,
+                 conditionalPath,
+                 hashPreImages)
 
   override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
 
@@ -678,8 +619,8 @@ case class UnassignedSegwitNativeInputInfo(
     scriptPubKey: WitnessScriptPubKey,
     scriptWitness: ScriptWitness,
     conditionalPath: ConditionalPath,
-    pubKeys: Vector[ECPublicKey]
-) extends InputInfo {
+    pubKeys: Vector[ECPublicKey])
+    extends InputInfo {
   override def requiredSigs: Int = pubKeys.length
 }
 
@@ -702,8 +643,8 @@ case class P2SHNonSegwitInputInfo(
     amount: CurrencyUnit,
     redeemScript: RawScriptPubKey,
     conditionalPath: ConditionalPath,
-    hashPreImages: Vector[NetworkElement] = Vector.empty
-) extends P2SHInputInfo {
+    hashPreImages: Vector[NetworkElement] = Vector.empty)
+    extends P2SHInputInfo {
 
   override val nestedInputInfo: RawInputInfo =
     RawInputInfo(outPoint, amount, redeemScript, conditionalPath, hashPreImages)
@@ -714,8 +655,8 @@ case class P2SHNestedSegwitV0InputInfo(
     amount: CurrencyUnit,
     scriptWitness: ScriptWitnessV0,
     conditionalPath: ConditionalPath,
-    hashPreImages: Vector[NetworkElement] = Vector.empty
-) extends P2SHInputInfo {
+    hashPreImages: Vector[NetworkElement] = Vector.empty)
+    extends P2SHInputInfo {
 
   override def redeemScript: WitnessScriptPubKeyV0 =
     scriptWitness match {
@@ -724,11 +665,9 @@ case class P2SHNestedSegwitV0InputInfo(
     }
 
   override val nestedInputInfo: SegwitV0NativeInputInfo =
-    SegwitV0NativeInputInfo(
-      outPoint,
-      amount,
-      scriptWitness,
-      conditionalPath,
-      hashPreImages
-    )
+    SegwitV0NativeInputInfo(outPoint,
+                            amount,
+                            scriptWitness,
+                            conditionalPath,
+                            hashPreImages)
 }

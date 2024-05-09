@@ -13,13 +13,11 @@ trait ContractDescriptorTemplate {
 
   require(
     individualCollateral >= Satoshis.zero,
-    s"individualCollateral must be greater than or equal to zero, got $individualCollateral"
-  )
+    s"individualCollateral must be greater than or equal to zero, got $individualCollateral")
 
   require(
     totalCollateral > Satoshis.zero,
-    s"totalCollateral must be greater than or equal to zero, got $totalCollateral"
-  )
+    s"totalCollateral must be greater than or equal to zero, got $totalCollateral")
 
   require(
     individualCollateral <= totalCollateral,
@@ -40,14 +38,11 @@ sealed trait CFDTemplate extends ContractDescriptorTemplate {
 
   def numDigits: Int
 
-  require(
-    numDigits > 0,
-    s"Num digits must be greater than zero, got $numDigits"
-  )
+  require(numDigits > 0,
+          s"Num digits must be greater than zero, got $numDigits")
   require(
     strikePrice >= 0,
-    s"Strike price must be greater than or equal to zero, got $strikePrice"
-  )
+    s"Strike price must be greater than or equal to zero, got $strikePrice")
 
   override val toContractDescriptor: NumericContractDescriptor = {
     val func: Long => Long = { outcome =>
@@ -100,19 +95,14 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
 
   def roundingIntervals: RoundingIntervals
 
-  require(
-    premium >= Satoshis.zero,
-    s"Premium must be greater than or equal to zero, got $premium"
-  )
+  require(premium >= Satoshis.zero,
+          s"Premium must be greater than or equal to zero, got $premium")
 
-  require(
-    numDigits > 0,
-    s"Num digits must be greater than zero, got $numDigits"
-  )
+  require(numDigits > 0,
+          s"Num digits must be greater than zero, got $numDigits")
   require(
     strikePrice >= 0,
-    s"Strike price must be greater than or equal to zero, got $strikePrice"
-  )
+    s"Strike price must be greater than or equal to zero, got $strikePrice")
 
   override val toContractDescriptor: NumericContractDescriptor = {
     val maxNum: Long = (BigInt(2).pow(numDigits) - 1).toLong
@@ -121,37 +111,30 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
       case _: CallOption =>
         val pointA = PiecewisePolynomialEndpoint(
           0L,
-          (individualCollateral - premium).satoshis
-        )
+          (individualCollateral - premium).satoshis)
 
         val pointB = PiecewisePolynomialEndpoint(
           strikePrice,
-          (individualCollateral - premium).satoshis
-        )
+          (individualCollateral - premium).satoshis)
 
         val pointC =
           PiecewisePolynomialEndpoint(maxNum, totalCollateral.satoshis)
-        DLCPayoutCurve.polynomialInterpolate(
-          Vector(pointA, pointB, pointC),
-          serializationVersion = DLCSerializationVersion.Beta
-        )
+        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC),
+                                             serializationVersion =
+                                               DLCSerializationVersion.Beta)
       case _: PutOption =>
         val pointA = PiecewisePolynomialEndpoint(0L, totalCollateral.satoshis)
 
         val pointB = PiecewisePolynomialEndpoint(
           strikePrice,
-          (individualCollateral - premium).satoshis
-        )
+          (individualCollateral - premium).satoshis)
 
         val pointC =
-          PiecewisePolynomialEndpoint(
-            maxNum,
-            (individualCollateral - premium).satoshis
-          )
-        DLCPayoutCurve.polynomialInterpolate(
-          Vector(pointA, pointB, pointC),
-          serializationVersion = DLCSerializationVersion.Beta
-        )
+          PiecewisePolynomialEndpoint(maxNum,
+                                      (individualCollateral - premium).satoshis)
+        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC),
+                                             serializationVersion =
+                                               DLCSerializationVersion.Beta)
     }
 
     NumericContractDescriptor(curve, numDigits = numDigits, roundingIntervals)

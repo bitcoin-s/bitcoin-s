@@ -8,5 +8,5 @@ case class DLCAccounting(
     myCollateral: CurrencyUnit,
     theirCollateral: CurrencyUnit,
     myPayout: CurrencyUnit,
-    theirPayout: CurrencyUnit
-) extends PayoutAccounting
+    theirPayout: CurrencyUnit)
+    extends PayoutAccounting

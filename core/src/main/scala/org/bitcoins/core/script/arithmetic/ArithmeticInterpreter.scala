@@ -22,104 +22,78 @@ sealed abstract class ArithmeticInterpreter {
 
   /** a is added to b. */
   def opAdd(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_ADD),
-      "Script top must be OP_ADD"
-    )
+    require(program.script.headOption.contains(OP_ADD),
+            "Script top must be OP_ADD")
     performBinaryArithmeticOperation(program, (x, y) => x + y)
   }
 
   /** Increments the stack top by 1. */
   def op1Add(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_1ADD),
-      "Script top must be OP_1ADD"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_1ADD),
+            "Script top must be OP_1ADD")
     performUnaryArithmeticOperation(program, x => x + ScriptNumber.one)
   }
 
   /** Decrements the stack top by 1. */
   def op1Sub(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_1SUB),
-      "Script top must be OP_1SUB"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_1SUB),
+            "Script top must be OP_1SUB")
     performUnaryArithmeticOperation(program, x => x - ScriptNumber.one)
   }
 
   /** b is subtracted from a. */
   def opSub(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_SUB),
-      "Script top must be OP_SUB"
-    )
+    require(program.script.headOption.contains(OP_SUB),
+            "Script top must be OP_SUB")
     performBinaryArithmeticOperation(program, (x, y) => y - x)
   }
 
   /** Takes the absolute value of the stack top. */
   def opAbs(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_ABS),
-      "Script top must be OP_ABS"
-    )
+    require(program.script.headOption.contains(OP_ABS),
+            "Script top must be OP_ABS")
     performUnaryArithmeticOperation(
       program,
       {
         case ScriptNumber.zero     => ScriptNumber.zero
         case x @ (_: ScriptNumber) => ScriptNumber(x.toLong.abs)
-      }
-    )
+      })
   }
 
   /** Negates the stack top. */
   def opNegate(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_NEGATE),
-      "Script top must be OP_NEGATE"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_NEGATE),
+            "Script top must be OP_NEGATE")
     performUnaryArithmeticOperation(program, x => -x)
   }
 
   /** If the input is 0 or 1, it is flipped. Otherwise the output will be 0. */
   def opNot(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_NOT),
-      "Script top must be OP_NOT"
-    )
+    require(program.script.headOption.contains(OP_NOT),
+            "Script top must be OP_NOT")
     performUnaryArithmeticOperation(
       program,
-      _ => if (program.stackTopIsFalse) OP_TRUE else OP_FALSE
-    )
+      _ => if (program.stackTopIsFalse) OP_TRUE else OP_FALSE)
   }
 
   /** Returns 0 if the input is 0. 1 otherwise. */
   def op0NotEqual(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_0NOTEQUAL),
-      "Script top must be OP_0NOTEQUAL"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_0NOTEQUAL),
+            "Script top must be OP_0NOTEQUAL")
     performUnaryArithmeticOperation(
       program,
-      x => if (x.toLong == 0) OP_FALSE else OP_TRUE
-    )
+      x => if (x.toLong == 0) OP_FALSE else OP_TRUE)
   }
 
   /** If both a and b are not 0, the output is 1. Otherwise 0. */
   def opBoolAnd(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_BOOLAND),
-      "Script top must be OP_BOOLAND"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_BOOLAND),
+            "Script top must be OP_BOOLAND")
     performBinaryBooleanOperation(
       program,
       (x, y) => {
@@ -130,28 +104,21 @@ sealed abstract class ArithmeticInterpreter {
 
   /** If a or b is not 0, the output is 1. Otherwise 0. */
   def opBoolOr(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_BOOLOR),
-      "Script top must be OP_BOOLOR"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_BOOLOR),
+            "Script top must be OP_BOOLOR")
     performBinaryBooleanOperation(
       program,
       (x, y) => {
         !ScriptNumberUtil.isZero(x) || !ScriptNumberUtil.isZero(y)
-      }
-    )
+      })
   }
 
   /** Returns 1 if the numbers are equal, 0 otherwise. */
   def opNumEqual(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_NUMEQUAL),
-      "Script top must be OP_NUMEQUAL"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_NUMEQUAL),
+            "Script top must be OP_NUMEQUAL")
     performBinaryBooleanOperation(program, (x, y) => x.numEqual(y))
   }
 
@@ -160,26 +127,21 @@ sealed abstract class ArithmeticInterpreter {
     * afterward.
     */
   def opNumEqualVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_NUMEQUALVERIFY),
-      "Script top must be OP_NUMEQUALVERIFY"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_NUMEQUALVERIFY),
+            "Script top must be OP_NUMEQUALVERIFY")
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val numEqualProgram = program.updateStackAndScript(
         program.stack,
-        OP_NUMEQUAL :: program.script.tail
-      )
+        OP_NUMEQUAL :: program.script.tail)
       val numEqualResultOrError = opNumEqual(numEqualProgram)
       numEqualResultOrError match {
         case numEqualResult: ExecutionInProgressScriptProgram =>
           val verifyProgram = numEqualResult.updateStackAndScript(
             numEqualResult.stack,
-            OP_VERIFY :: numEqualResult.script
-          )
+            OP_VERIFY :: numEqualResult.script)
           val verifyResult =
             ControlOperationsInterpreter.opVerify(verifyProgram)
           verifyResult
@@ -191,93 +153,70 @@ sealed abstract class ArithmeticInterpreter {
 
   /** Returns 1 if the numbers are not equal, 0 otherwise. */
   def opNumNotEqual(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_NUMNOTEQUAL),
-      "Script top must be OP_NUMNOTEQUAL"
-    )
-    performBinaryBooleanOperation(
-      program,
-      (x, y) => {
-        x.toLong != y.toLong
-      }
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_NUMNOTEQUAL),
+            "Script top must be OP_NUMNOTEQUAL")
+    performBinaryBooleanOperation(program,
+                                  (x, y) => {
+                                    x.toLong != y.toLong
+                                  })
   }
 
   /** Returns 1 if a is less than b, 0 otherwise. */
   def opLessThan(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_LESSTHAN),
-      "Script top must be OP_LESSTHAN"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_LESSTHAN),
+            "Script top must be OP_LESSTHAN")
     performBinaryBooleanOperation(program, (x, y) => y < x)
   }
 
   /** Returns 1 if a is greater than b, 0 otherwise. */
   def opGreaterThan(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_GREATERTHAN),
-      "Script top must be OP_GREATERTHAN"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_GREATERTHAN),
+            "Script top must be OP_GREATERTHAN")
     performBinaryBooleanOperation(program, (x, y) => y > x)
   }
 
   /** Returns 1 if a is less than or equal to b, 0 otherwise. */
   def opLessThanOrEqual(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_LESSTHANOREQUAL),
-      "Script top must be OP_LESSTHANOREQUAL"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_LESSTHANOREQUAL),
+            "Script top must be OP_LESSTHANOREQUAL")
     performBinaryBooleanOperation(program, (x, y) => y <= x)
   }
 
   /** Returns 1 if a is greater than or equal to b, 0 otherwise. */
   def opGreaterThanOrEqual(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_GREATERTHANOREQUAL),
-      "Script top must be OP_GREATERTHANOREQUAL"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_GREATERTHANOREQUAL),
+            "Script top must be OP_GREATERTHANOREQUAL")
     performBinaryBooleanOperation(program, (x, y) => y >= x)
   }
 
   /** Returns the smaller of a and b. */
   def opMin(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_MIN),
-      "Script top must be OP_MIN"
-    )
+    require(program.script.headOption.contains(OP_MIN),
+            "Script top must be OP_MIN")
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       performComparisonOnTwoStackTopItems(
         program,
-        (x: ScriptNumber, y: ScriptNumber) => if (x < y) x else y
-      )
+        (x: ScriptNumber, y: ScriptNumber) => if (x < y) x else y)
     }
   }
 
   /** Returns the larger of a and b. */
   def opMax(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_MAX),
-      "Script top must be OP_MAX"
-    )
+    require(program.script.headOption.contains(OP_MAX),
+            "Script top must be OP_MAX")
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       performComparisonOnTwoStackTopItems(
         program,
-        (x: ScriptNumber, y: ScriptNumber) => if (x > y) x else y
-      )
+        (x: ScriptNumber, y: ScriptNumber) => if (x > y) x else y)
     }
   }
 
@@ -285,12 +224,9 @@ sealed abstract class ArithmeticInterpreter {
     * otherwise.
     */
   def opWithin(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_WITHIN),
-      "Script top must be OP_WITHIN"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_WITHIN),
+            "Script top must be OP_WITHIN")
     if (program.stack.size < 3) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -315,8 +251,7 @@ sealed abstract class ArithmeticInterpreter {
         val newStackTop = if (isWithinRange) OP_TRUE else OP_FALSE
         program.updateStackAndScript(
           newStackTop :: program.stack.tail.tail.tail,
-          program.script.tail
-        )
+          program.script.tail)
       }
     }
   }
@@ -342,8 +277,7 @@ sealed abstract class ArithmeticInterpreter {
   @tailrec
   private def performUnaryArithmeticOperation(
       program: ExecutionInProgressScriptProgram,
-      op: ScriptNumber => ScriptNumber
-  ): StartedScriptProgram = {
+      op: ScriptNumber => ScriptNumber): StartedScriptProgram = {
     program.stack.headOption match {
       case None =>
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -359,10 +293,8 @@ sealed abstract class ArithmeticInterpreter {
           program.failExecution(ScriptErrorUnknownError)
         } else {
           val newScriptNumber = op(s)
-          program.updateStackAndScript(
-            newScriptNumber :: program.stack.tail,
-            program.script.tail
-          )
+          program.updateStackAndScript(newScriptNumber :: program.stack.tail,
+                                       program.script.tail)
         }
       case Some(s: ScriptConstant) =>
         if (
@@ -397,8 +329,8 @@ sealed abstract class ArithmeticInterpreter {
   @tailrec
   private def performBinaryArithmeticOperation(
       program: ExecutionInProgressScriptProgram,
-      op: (ScriptNumber, ScriptNumber) => ScriptNumber
-  ): StartedScriptProgram = {
+      op: (ScriptNumber, ScriptNumber) => ScriptNumber)
+      : StartedScriptProgram = {
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -406,11 +338,9 @@ sealed abstract class ArithmeticInterpreter {
         case (x: ScriptNumber, y: ScriptNumber) =>
           if (
             ScriptFlagUtil.requireMinimalData(
-              program.flags
-            ) && (!BitcoinScriptUtil
+              program.flags) && (!BitcoinScriptUtil
               .isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(
-              y
-            ))
+              y))
           ) {
             program.failExecution(ScriptErrorUnknownError)
           } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
@@ -419,10 +349,8 @@ sealed abstract class ArithmeticInterpreter {
             program.failExecution(ScriptErrorUnknownError)
           } else {
             val newStackTop = op(x, y)
-            program.updateStackAndScript(
-              newStackTop :: program.stack.tail.tail,
-              program.script.tail
-            )
+            program.updateStackAndScript(newStackTop :: program.stack.tail.tail,
+                                         program.script.tail)
           }
         case (x: ScriptConstant, _: ScriptNumber) =>
           // interpret x as a number
@@ -440,8 +368,7 @@ sealed abstract class ArithmeticInterpreter {
           val interpretedNumberX = ScriptNumber(x.hex)
           val interpretedNumberY = ScriptNumber(y.hex)
           val newProgram = program.updateStack(
-            interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail
-          )
+            interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail)
           performBinaryArithmeticOperation(newProgram, op)
         case (_: ScriptToken, _: ScriptToken) =>
           // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
@@ -461,8 +388,7 @@ sealed abstract class ArithmeticInterpreter {
     */
   private def performBinaryBooleanOperation(
       program: ExecutionInProgressScriptProgram,
-      op: (ScriptNumber, ScriptNumber) => Boolean
-  ): StartedScriptProgram = {
+      op: (ScriptNumber, ScriptNumber) => Boolean): StartedScriptProgram = {
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -479,10 +405,8 @@ sealed abstract class ArithmeticInterpreter {
         program.failExecution(ScriptErrorUnknownError)
       } else {
         val newStackTop = if (op(x, y)) OP_TRUE else OP_FALSE
-        program.updateStackAndScript(
-          newStackTop :: program.stack.tail.tail,
-          program.script.tail
-        )
+        program.updateStackAndScript(newStackTop :: program.stack.tail.tail,
+                                     program.script.tail)
       }
     }
   }
@@ -499,8 +423,8 @@ sealed abstract class ArithmeticInterpreter {
     */
   private def performComparisonOnTwoStackTopItems(
       program: ExecutionInProgressScriptProgram,
-      op: (ScriptNumber, ScriptNumber) => ScriptNumber
-  ): StartedScriptProgram = {
+      op: (ScriptNumber, ScriptNumber) => ScriptNumber)
+      : StartedScriptProgram = {
     performBinaryArithmeticOperation(program, op)
   }
 
@@ -513,8 +437,8 @@ sealed abstract class ArithmeticInterpreter {
     *   second element in the tuple being the second stack element
     */
   private def parseTopTwoStackElementsAsScriptNumbers(
-      program: ExecutionInProgressScriptProgram
-  ): (ScriptNumber, ScriptNumber) = {
+      program: ExecutionInProgressScriptProgram)
+      : (ScriptNumber, ScriptNumber) = {
     (program.stack.head, program.stack.tail.head) match {
       case (x: ScriptNumber, y: ScriptNumber) => (x, y)
       case (x: ScriptConstant, y: ScriptNumber) =>
@@ -533,8 +457,7 @@ sealed abstract class ArithmeticInterpreter {
         // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         throw new RuntimeException(
-          "Stack top elements must have be script constants to be interpreted as numbers"
-        )
+          "Stack top elements must have be script constants to be interpreted as numbers")
     }
   }
 }

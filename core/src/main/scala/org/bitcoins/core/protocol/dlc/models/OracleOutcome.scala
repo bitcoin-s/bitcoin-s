@@ -48,8 +48,8 @@ sealed trait OracleOutcome {
   */
 case class EnumOracleOutcome(
     oracles: Vector[EnumSingleOracleInfo],
-    outcome: EnumOutcome
-) extends OracleOutcome {
+    outcome: EnumOutcome)
+    extends OracleOutcome {
 
   override protected def computeSigPoint: ECPublicKey = {
     oracles.map(_.sigPoint(outcome)).reduce(_.add(_))
@@ -71,10 +71,9 @@ case class EnumOracleOutcome(
   * oracles have each signed some NumericOutcome.
   */
 case class NumericOracleOutcome(
-    override val oraclesAndOutcomes: Vector[
-      (NumericSingleOracleInfo, UnsignedNumericOutcome)
-    ]
-) extends OracleOutcome {
+    override val oraclesAndOutcomes: Vector[(NumericSingleOracleInfo,
+                                             UnsignedNumericOutcome)])
+    extends OracleOutcome {
 
   override def oracles: Vector[NumericSingleOracleInfo] = {
     oraclesAndOutcomes.map(_._1)
@@ -110,8 +109,7 @@ object NumericOracleOutcome {
 
   def apply(
       oracleInfo: NumericSingleOracleInfo,
-      outcome: UnsignedNumericOutcome
-  ): NumericOracleOutcome = {
+      outcome: UnsignedNumericOutcome): NumericOracleOutcome = {
     NumericOracleOutcome(Vector((oracleInfo, outcome)))
   }
 }

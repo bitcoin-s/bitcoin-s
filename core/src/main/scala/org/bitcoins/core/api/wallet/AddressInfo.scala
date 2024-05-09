@@ -10,5 +10,4 @@ import org.bitcoins.crypto.ECPublicKey
 case class AddressInfo(
     pubkey: ECPublicKey,
     network: NetworkParameters,
-    path: HDPath
-)
+    path: HDPath)

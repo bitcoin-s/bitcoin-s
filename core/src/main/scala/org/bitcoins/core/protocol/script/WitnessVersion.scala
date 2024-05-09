@@ -24,8 +24,7 @@ sealed trait WitnessVersion {
     */
   def rebuild(
       scriptWitness: ScriptWitness,
-      witnessSPK: WitnessScriptPubKey
-  ): Either[ScriptError, ScriptPubKey]
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey]
 
   def version: ScriptNumberOperation
 }
@@ -35,8 +34,7 @@ case object WitnessVersion0 extends WitnessVersion {
   /** Rebuilds a witness version 0 SPK program, see BIP141 */
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessSPK: WitnessScriptPubKey
-  ): Either[ScriptError, ScriptPubKey] = {
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
     val witnessProgram = witnessSPK.witnessProgram
     val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
@@ -75,12 +73,9 @@ case object WitnessVersion1 extends WitnessVersion {
 
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessSPK: WitnessScriptPubKey
-  ): Either[ScriptError, ScriptPubKey] = {
-    require(
-      witnessSPK.isInstanceOf[TaprootScriptPubKey],
-      s"WitnessScriptPubKey must be a taproot spk, got=${witnessSPK}"
-    )
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
+    require(witnessSPK.isInstanceOf[TaprootScriptPubKey],
+            s"WitnessScriptPubKey must be a taproot spk, got=${witnessSPK}")
     val taprootSPK = witnessSPK.asInstanceOf[TaprootScriptPubKey]
     val witnessProgram = taprootSPK.witnessProgram
     val programBytes = BytesUtil.toByteVector(witnessProgram)
@@ -100,8 +95,7 @@ case object WitnessVersion1 extends WitnessVersion {
             case w @ (EmptyScriptWitness | _: P2WPKHWitnessV0 |
                 _: P2WSHWitnessV0) =>
               sys.error(
-                s"Cannot rebuild witnessv1 with a non v1 witness, got=$w"
-              )
+                s"Cannot rebuild witnessv1 with a non v1 witness, got=$w")
           }
           rebuiltSPK
         }
@@ -131,8 +125,7 @@ case class UnassignedWitness(version: ScriptNumberOperation)
 
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessSPK: WitnessScriptPubKey
-  ): Either[ScriptError, ScriptPubKey] = {
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
     Left(ScriptErrorDiscourageUpgradeableWitnessProgram)
   }
 }
@@ -148,8 +141,7 @@ object WitnessVersion {
         UnassignedWitness(x)
       case OP_1NEGATE =>
         throw new IllegalArgumentException(
-          "OP_1NEGATE is not a valid witness version"
-        )
+          "OP_1NEGATE is not a valid witness version")
     }
 
   def apply(token: ScriptToken): WitnessVersion =
@@ -158,8 +150,7 @@ object WitnessVersion {
         WitnessVersion(scriptNumberOp)
       case _: ScriptConstant | _: ScriptNumber | _: ScriptOperation =>
         throw new IllegalArgumentException(
-          "We can only have witness version that is a script number operation, i.e OP_0 through OP_16"
-        )
+          "We can only have witness version that is a script number operation, i.e OP_0 through OP_16")
     }
 
   def apply(int: Int): Option[WitnessVersion] =

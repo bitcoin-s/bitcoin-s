@@ -131,14 +131,10 @@ object ScriptNumber
 
   def fromBytes(
       bytes: ByteVector,
-      requireMinimal: Boolean
-  ): Try[ScriptNumber] = {
+      requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(bytes)) {
-      Failure(
-        new IllegalArgumentException(
-          s"The given hex was not the shortest encoding for the script number: ${bytes.toHex}"
-        )
-      )
+      Failure(new IllegalArgumentException(
+        s"The given hex was not the shortest encoding for the script number: ${bytes.toHex}"))
     } else if (requireMinimal) {
       // our cache contains minimal encoded script numbers
       // so we can check our cache to try and avoid allocating
@@ -182,10 +178,8 @@ object ScriptNumber
       ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
 
     def apply(underlying: Long): ScriptNumber = {
-      ScriptNumberImpl(
-        underlying,
-        ScriptNumberUtil.longToByteVector(underlying)
-      )
+      ScriptNumberImpl(underlying,
+                       ScriptNumberUtil.longToByteVector(underlying))
     }
 
     def apply(int64: Int64): ScriptNumber = checkCached(int64.toLong)
@@ -395,29 +389,27 @@ object ScriptNumberOperation
     extends ScriptOperationFactory[ScriptNumberOperation] {
 
   /** Finds the [[ScriptNumberOperation]] based on the given integer. */
-  def fromNumber(underlying: Long): Option[ScriptNumberOperation] =
-    operations.find(_.underlying == underlying)
+  def fromNumber(long: Long): Option[ScriptNumberOperation] =
+    operations.find(_.toLong == long)
 
-  override val operations = Vector(
-    OP_0,
-    OP_1,
-    OP_1NEGATE,
-    OP_2,
-    OP_3,
-    OP_4,
-    OP_5,
-    OP_6,
-    OP_7,
-    OP_8,
-    OP_9,
-    OP_10,
-    OP_11,
-    OP_12,
-    OP_13,
-    OP_14,
-    OP_15,
-    OP_16
-  )
+  override val operations = Vector(OP_0,
+                                   OP_1,
+                                   OP_1NEGATE,
+                                   OP_2,
+                                   OP_3,
+                                   OP_4,
+                                   OP_5,
+                                   OP_6,
+                                   OP_7,
+                                   OP_8,
+                                   OP_9,
+                                   OP_10,
+                                   OP_11,
+                                   OP_12,
+                                   OP_13,
+                                   OP_14,
+                                   OP_15,
+                                   OP_16)
 
 }
 

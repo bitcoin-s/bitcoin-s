@@ -64,9 +64,7 @@ object HDPath extends StringFactory[HDPath] {
     if (path.path.isEmpty) {
       Failure(
         new IllegalArgumentException(
-          s"Cannot parse an empty HDPath, got str=$string"
-        )
-      )
+          s"Cannot parse an empty HDPath, got str=$string"))
     } else {
       val purpose = path.path.head.index
       if (purpose == LegacyHDPath.PURPOSE) {

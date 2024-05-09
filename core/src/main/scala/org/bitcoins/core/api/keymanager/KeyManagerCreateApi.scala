@@ -27,14 +27,11 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
   final def initialize(
       aesPasswordOpt: Option[AesPassword],
       kmParams: KeyManagerParams,
-      bip39PasswordOpt: Option[String]
-  ): Either[KeyManagerInitializeError, T] =
-    initializeWithEntropy(
-      aesPasswordOpt = aesPasswordOpt,
-      entropy = MnemonicCode.getEntropy256Bits,
-      bip39PasswordOpt = bip39PasswordOpt,
-      kmParams = kmParams
-    )
+      bip39PasswordOpt: Option[String]): Either[KeyManagerInitializeError, T] =
+    initializeWithEntropy(aesPasswordOpt = aesPasswordOpt,
+                          entropy = MnemonicCode.getEntropy256Bits,
+                          bip39PasswordOpt = bip39PasswordOpt,
+                          kmParams = kmParams)
 
   /** $initializeWithEnt
     */
@@ -42,8 +39,7 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
       aesPasswordOpt: Option[AesPassword],
       entropy: BitVector,
       bip39PasswordOpt: Option[String],
-      kmParams: KeyManagerParams
-  ): Either[KeyManagerInitializeError, T]
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
 
   /** Helper method to initialize a [[KeyManagerApi KeyManager]] with a
     * [[MnemonicCode MnemonicCode]]
@@ -56,14 +52,11 @@ trait BIP39KeyManagerCreateApi[T <: BIP39KeyManagerApi]
       aesPasswordOpt: Option[AesPassword],
       mnemonicCode: MnemonicCode,
       bip39PasswordOpt: Option[String],
-      kmParams: KeyManagerParams
-  ): Either[KeyManagerInitializeError, T] = {
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] = {
     val entropy = mnemonicCode.toEntropy
-    initializeWithEntropy(
-      aesPasswordOpt = aesPasswordOpt,
-      entropy = entropy,
-      bip39PasswordOpt = bip39PasswordOpt,
-      kmParams = kmParams
-    )
+    initializeWithEntropy(aesPasswordOpt = aesPasswordOpt,
+                          entropy = entropy,
+                          bip39PasswordOpt = bip39PasswordOpt,
+                          kmParams = kmParams)
   }
 }

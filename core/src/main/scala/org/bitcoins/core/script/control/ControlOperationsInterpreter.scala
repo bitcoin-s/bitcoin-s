@@ -15,13 +15,10 @@ import org.bitcoins.core.util._
 sealed abstract class ControlOperationsInterpreter {
 
   /** Factors out the similarities between OP_IF and OP_NOTIF */
-  private def opConditional(
-      conditional: ConditionalOperation
-  )(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(conditional),
-      s"Script top was not $conditional"
-    )
+  private def opConditional(conditional: ConditionalOperation)(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(conditional),
+            s"Script top was not $conditional")
 
     if (program.isInExecutionBranch) {
       val sigVersion = program.txSignatureComponent.sigVersion
@@ -60,8 +57,7 @@ sealed abstract class ControlOperationsInterpreter {
   private def isNotMinimalStackTop(
       stackTop: ScriptToken,
       sigVersion: SignatureVersion,
-      minimalIfEnabled: Boolean
-  ): Boolean = {
+      minimalIfEnabled: Boolean): Boolean = {
     // see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
     // https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
     val correctSigVersion =
@@ -82,8 +78,7 @@ sealed abstract class ControlOperationsInterpreter {
     * value is removed.
     */
   def opNotIf(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     opConditional(OP_NOTIF)(program)
   }
 
@@ -91,12 +86,9 @@ sealed abstract class ControlOperationsInterpreter {
     * operator.
     */
   def opElse(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_ELSE),
-      "First script opt must be OP_ELSE"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_ELSE),
+            "First script opt must be OP_ELSE")
     program.updateScript(program.script.tail).invertCondition()
   }
 
@@ -104,12 +96,9 @@ sealed abstract class ControlOperationsInterpreter {
     * operator.
     */
   def opEndIf(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_ENDIF),
-      "Script top must be OP_ENDIF"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_ENDIF),
+            "Script top must be OP_ENDIF")
 
     program.updateScript(program.script.tail).removeCondition()
   }
@@ -126,8 +115,7 @@ sealed abstract class ControlOperationsInterpreter {
     * than one pushdata op.
     */
   def opReturn(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_RETURN))
     program.failExecution(ScriptErrorOpReturn)
   }
@@ -136,12 +124,9 @@ sealed abstract class ControlOperationsInterpreter {
     * as invalid if top stack value is not true.
     */
   def opVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_VERIFY),
-      "Script top must be OP_VERIFY"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_VERIFY),
+            "Script top must be OP_VERIFY")
     program.stack.nonEmpty match {
       case true =>
         if (program.stackTopIsFalse) program.failExecution(ScriptErrorVerify)

@@ -109,8 +109,7 @@ object TransactionWitness {
     * constructor
     */
   def fromWitOpt(
-      witnesses: Vector[Option[ScriptWitness]]
-  ): TransactionWitness = {
+      witnesses: Vector[Option[ScriptWitness]]): TransactionWitness = {
     val replaced: Vector[ScriptWitness] = witnesses.map {
       case Some(wit) => wit
       case None      => EmptyScriptWitness
