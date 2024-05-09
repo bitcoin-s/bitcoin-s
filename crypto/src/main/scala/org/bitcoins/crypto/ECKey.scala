@@ -172,8 +172,7 @@ case class ECPrivateKey(bytes: ByteVector)
 
   override def signWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector
-  ): ECDigitalSignature = {
+      entropy: ByteVector): ECDigitalSignature = {
     CryptoUtil.signWithEntropy(this, bytes, entropy)
   }
 
@@ -184,36 +183,31 @@ case class ECPrivateKey(bytes: ByteVector)
 
   def schnorrSign(
       dataToSign: ByteVector,
-      auxRand: ByteVector
-  ): SchnorrDigitalSignature = {
+      auxRand: ByteVector): SchnorrDigitalSignature = {
     CryptoUtil.schnorrSign(dataToSign, this, auxRand)
   }
 
   def schnorrSignWithNonce(
       dataToSign: ByteVector,
-      nonce: ECPrivateKey
-  ): SchnorrDigitalSignature = {
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
     CryptoUtil.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
   override def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector
-  ): ECAdaptorSignature = {
+      auxRand: ByteVector): ECAdaptorSignature = {
     CryptoUtil.adaptorSign(this, adaptorPoint, msg, auxRand)
   }
 
   def completeAdaptorSignature(
-      adaptorSignature: ECAdaptorSignature
-  ): ECDigitalSignature = {
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
     CryptoUtil.adaptorComplete(this, adaptorSignature)
   }
 
   def completeAdaptorSignature(
       adaptorSignature: ECAdaptorSignature,
-      hashTypeByte: Byte
-  ): ECDigitalSignature = {
+      hashTypeByte: Byte): ECDigitalSignature = {
     val completedSig = completeAdaptorSignature(adaptorSignature)
     ECDigitalSignature(completedSig.bytes ++ ByteVector.fromByte(hashTypeByte))
   }
@@ -236,8 +230,7 @@ case class ECPrivateKey(bytes: ByteVector)
 
   // CryptoParams.curve.getN
   private val N: BigInteger = new BigInteger(
-    "115792089237316195423570985008687907852837564279074904382605163141518161494337"
-  )
+    "115792089237316195423570985008687907852837564279074904382605163141518161494337")
 
   def negate: ECPrivateKey = {
     val negPrivKeyNum = N.subtract(new BigInteger(1, bytes.toArray))
@@ -281,8 +274,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     } else
       throw new IllegalArgumentException(
         "Private keys must be 32 in size, got: " +
-          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size
-      )
+          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
   }
 
   def fromFieldElement(fieldElement: FieldElement): ECPrivateKey = {
@@ -341,15 +333,13 @@ case class ECPublicKey(bytes: ByteVector)
 
   def schnorrVerify(
       data: ByteVector,
-      signature: SchnorrDigitalSignature
-  ): Boolean = {
+      signature: SchnorrDigitalSignature): Boolean = {
     schnorrPublicKey.verify(data, signature)
   }
 
   def schnorrComputePoint(
       data: ByteVector,
-      nonce: SchnorrNonce
-  ): ECPublicKey = {
+      nonce: SchnorrNonce): ECPublicKey = {
     schnorrPublicKey.computeSigPoint(data, nonce)
   }
 
@@ -360,15 +350,13 @@ case class ECPublicKey(bytes: ByteVector)
   def adaptorVerify(
       msg: ByteVector,
       adaptorPoint: ECPublicKey,
-      adaptorSignature: ECAdaptorSignature
-  ): Boolean = {
+      adaptorSignature: ECAdaptorSignature): Boolean = {
     CryptoUtil.adaptorVerify(adaptorSignature, this, msg, adaptorPoint)
   }
 
   def extractAdaptorSecret(
       adaptorSignature: ECAdaptorSignature,
-      signature: ECDigitalSignature
-  ): ECPrivateKey = {
+      signature: ECDigitalSignature): ECPrivateKey = {
     CryptoUtil.extractAdaptorSecret(signature, adaptorSignature, this)
   }
 

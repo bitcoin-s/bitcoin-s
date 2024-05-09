@@ -26,10 +26,8 @@ object CryptoJsUtil {
         accum += entry.value
       }
     }
-    require(
-      accum.length == len,
-      s"Need $len bytes for buffer -> bytevector conversion"
-    )
+    require(accum.length == len,
+            s"Need $len bytes for buffer -> bytevector conversion")
     ByteVector(accum.map(_.toByte))
   }
 

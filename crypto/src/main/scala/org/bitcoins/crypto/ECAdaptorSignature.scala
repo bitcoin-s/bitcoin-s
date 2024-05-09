@@ -3,10 +3,8 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 case class ECAdaptorSignature(bytes: ByteVector) extends NetworkElement {
-  require(
-    bytes.length == 162,
-    s"Adaptor signature must be 162 bytes, got $bytes"
-  )
+  require(bytes.length == 162,
+          s"Adaptor signature must be 162 bytes, got $bytes")
 
   val (adaptedSig: ByteVector, dleqProof: ByteVector) = bytes.splitAt(98)
 
@@ -31,8 +29,7 @@ object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
       untweakedNonce: ECPublicKey,
       adaptedS: FieldElement,
       dleqProofE: FieldElement,
-      dleqProofS: FieldElement
-  ): ECAdaptorSignature = {
+      dleqProofS: FieldElement): ECAdaptorSignature = {
     fromBytes(
       tweakedNonce.bytes ++ untweakedNonce.bytes ++
         adaptedS.bytes ++ dleqProofE.bytes ++ dleqProofS.bytes

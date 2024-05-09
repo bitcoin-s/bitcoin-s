@@ -107,16 +107,14 @@ object HashType extends Factory[HashType] {
         false
     }
 
-  lazy val hashTypes = Seq(
-    sigHashAll,
-    sigHashNone,
-    sigHashSingle,
-    sigHashAnyoneCanPay,
-    sigHashNoneAnyoneCanPay,
-    sigHashAllAnyoneCanPay,
-    sigHashSingleAnyoneCanPay,
-    sigHashDefault
-  )
+  lazy val hashTypes = Seq(sigHashAll,
+                           sigHashNone,
+                           sigHashSingle,
+                           sigHashAnyoneCanPay,
+                           sigHashNoneAnyoneCanPay,
+                           sigHashAllAnyoneCanPay,
+                           sigHashSingleAnyoneCanPay,
+                           sigHashDefault)
 
   lazy val hashTypeBytes: Vector[Byte] = Vector(
     sigHashDefaultByte,
@@ -157,8 +155,7 @@ object HashType extends Factory[HashType] {
   val sigHashAnyoneCanPayByte = 0x80.toByte
 
   val sigHashAnyoneCanPay: SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAY(
-    sigHashAnyoneCanPayNum
-  )
+    sigHashAnyoneCanPayNum)
 
   /** The default byte for [[SIGHASH_NONE]] */
   val sigHashNoneByte: Byte = 2.toByte
@@ -176,8 +173,7 @@ object HashType extends Factory[HashType] {
   val sigHashAllAnyoneCanPayNum = sigHashAllByte.toInt | sigHashAnyoneCanPayNum
 
   val sigHashAllAnyoneCanPay = SIGHASH_ALL_ANYONECANPAY(
-    sigHashAllAnyoneCanPayNum
-  )
+    sigHashAllAnyoneCanPayNum)
 
   val sigHashNoneAnyoneCanPayByte =
     (HashType.sigHashNoneByte | HashType.sigHashAnyoneCanPayByte).toByte
@@ -186,8 +182,7 @@ object HashType extends Factory[HashType] {
     sigHashNoneByte.toInt | sigHashAnyoneCanPayNum
 
   val sigHashNoneAnyoneCanPay = SIGHASH_NONE_ANYONECANPAY(
-    sigHashNoneAnyoneCanPayNum
-  )
+    sigHashNoneAnyoneCanPayNum)
 
   val sigHashSingleAnyoneCanPayByte =
     (HashType.sigHashSingleByte | HashType.sigHashAnyoneCanPayByte).toByte
@@ -196,8 +191,7 @@ object HashType extends Factory[HashType] {
     sigHashSingleByte.toInt | sigHashAnyoneCanPayNum
 
   val sigHashSingleAnyoneCanPay = SIGHASH_SINGLE_ANYONECANPAY(
-    sigHashSingleAnyoneCanPayNum
-  )
+    sigHashSingleAnyoneCanPayNum)
 
   /** Checks if the given digital signature has a valid hash type Mimics this
     * functionality inside of Bitcoin Core
@@ -220,8 +214,7 @@ case class SIGHASH_ALL(override val num: Int) extends HashType {
     HashType.isSigHashAll(num),
     "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
       "value of one. Your input was: " + num + ", which is of hashType: " + HashType(
-        num
-      )
+        num)
   )
 }
 
@@ -230,43 +223,32 @@ object SIGHASH_ALL {
 }
 
 case class SIGHASH_NONE(override val num: Int) extends HashType {
-  require(
-    HashType.isSigHashNone(num),
-    "The given number is not a SIGHASH_NONE number: " + num
-  )
+  require(HashType.isSigHashNone(num),
+          "The given number is not a SIGHASH_NONE number: " + num)
 }
 
 case class SIGHASH_SINGLE(override val num: Int) extends HashType {
-  require(
-    HashType.isSigHashSingle(num),
-    "The given number is not a SIGHASH_SINGLE number: " + num
-  )
+  require(HashType.isSigHashSingle(num),
+          "The given number is not a SIGHASH_SINGLE number: " + num)
 }
 
 case class SIGHASH_ANYONECANPAY(override val num: Int) extends HashType {
-  require(
-    HashType.isSigHashAnyoneCanPay(num),
-    "The given number was not a SIGHASH_ANYONECANPAY number: " + num
-  )
+  require(HashType.isSigHashAnyoneCanPay(num),
+          "The given number was not a SIGHASH_ANYONECANPAY number: " + num)
 }
 
 case class SIGHASH_ALL_ANYONECANPAY(override val num: Int) extends HashType {
-  require(
-    HashType.isSigHashAllAnyoneCanPay(num),
-    "The given number was not a SIGHASH_ALL_ANYONECANPAY number: " + num
-  )
+  require(HashType.isSigHashAllAnyoneCanPay(num),
+          "The given number was not a SIGHASH_ALL_ANYONECANPAY number: " + num)
 }
 
 case class SIGHASH_NONE_ANYONECANPAY(override val num: Int) extends HashType {
-  require(
-    HashType.isSigHashNoneAnyoneCanPay(num),
-    "The given number was not a SIGHASH_NONE_ANYONECANPAY number: " + num
-  )
+  require(HashType.isSigHashNoneAnyoneCanPay(num),
+          "The given number was not a SIGHASH_NONE_ANYONECANPAY number: " + num)
 }
 
 case class SIGHASH_SINGLE_ANYONECANPAY(override val num: Int) extends HashType {
   require(
     HashType.isSigHashSingleAnyoneCanPay(num),
-    "The given number was not a SIGHASH_SINGLE_ANYONECANPAY number: " + num
-  )
+    "The given number was not a SIGHASH_SINGLE_ANYONECANPAY number: " + num)
 }

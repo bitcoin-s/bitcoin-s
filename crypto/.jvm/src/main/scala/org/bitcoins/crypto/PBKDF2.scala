@@ -29,8 +29,7 @@ object PBKDF2 {
       bytes: ByteVector,
       salt: ByteVector,
       iterationCount: Int,
-      derivedKeyLength: Int
-  ): SecretKey = {
+      derivedKeyLength: Int): SecretKey = {
 
     val keySpec = new PBEKeySpec(
       bytes.toArray.map(_.toChar),

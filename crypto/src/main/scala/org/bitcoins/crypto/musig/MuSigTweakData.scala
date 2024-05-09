@@ -7,8 +7,7 @@ import org.bitcoins.crypto.{EvenParity, FieldElement, KeyParity, OddParity}
 case class MuSigTweakData(
     context: MuSigTweakContext,
     aggPubKeyParity: KeyParity,
-    e: FieldElement
-) {
+    e: FieldElement) {
 
   def additiveTweak: FieldElement = {
     val g = aggPubKeyParity match {

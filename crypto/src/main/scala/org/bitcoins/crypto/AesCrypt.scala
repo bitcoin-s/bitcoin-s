@@ -10,7 +10,7 @@ import scala.util.{Failure, Success, Try}
   * vector (IV). Both the cipher text and the IV is needed to decrypt the cipher
   * text.
   */
-final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV)
+case class AesEncryptedData(cipherText: ByteVector, iv: AesIV)
     extends NetworkElement {
 
   /** We serialize IV and ciphertext by prepending the IV to the ciphertext, and
@@ -59,8 +59,7 @@ object AesEncryptedData extends Factory[AesEncryptedData] {
   override def fromBytes(bytes: ByteVector): AesEncryptedData = {
     require(
       bytes.length > AesIV.length,
-      s"AesEncryptedData must be longer than ${AesIV.length} bytes, got $bytes"
-    )
+      s"AesEncryptedData must be longer than ${AesIV.length} bytes, got $bytes")
     val (ivBytes, cipherText) = bytes.splitAt(AesIV.length)
     val iv = AesIV.fromValidBytes(ivBytes)
     AesEncryptedData(cipherText, iv)
@@ -69,7 +68,7 @@ object AesEncryptedData extends Factory[AesEncryptedData] {
 
 /** Represents a salt used to derive a AES key from a human-readable passphrase.
   */
-final case class AesSalt(
+case class AesSalt(
     bytes: ByteVector
 ) extends AnyVal
 
@@ -87,7 +86,7 @@ object AesSalt extends Factory[AesSalt] {
 
 // we enforce the non-empty password length in the companion object
 // to be able to make this extend AnyVal, and not be boxed at runtime
-final case class AesPassword private (private val value: String)
+case class AesPassword private (private val value: String)
     extends MaskedToString {
 
   /** Converts this password into an AES key
@@ -116,8 +115,7 @@ final case class AesPassword private (private val value: String)
       passwordBytes,
       salt.bytes,
       iterationCount = AesPassword.ITERATIONS,
-      derivedKeyLength = AesPassword.KEY_SIZE
-    )
+      derivedKeyLength = AesPassword.KEY_SIZE)
 
     AesKey.fromValidBytes(secretKey)
   }
@@ -145,8 +143,7 @@ object AesPassword extends StringFactory[AesPassword] {
       case Some(password) => password
       case None =>
         sys.error(
-          s"Could not construct AesPassword from given string, not logging in case it's sensitive"
-        )
+          s"Could not construct AesPassword from given string, not logging in case it's sensitive")
     }
   }
 
@@ -156,9 +153,7 @@ object AesPassword extends StringFactory[AesPassword] {
   def fromNonEmptyString(string: String): AesPassword =
     fromStringOpt(string).getOrElse(
       throw new IllegalArgumentException(
-        "Cannot construct empty AES passwords!"
-      )
-    )
+        "Cannot construct empty AES passwords!"))
 }
 
 /** Represents a encryption/decryption key. AES keys can be converted to
@@ -206,9 +201,7 @@ object AesKey {
   def fromValidBytes(bytes: ByteVector): AesKey = {
     fromBytes(bytes).getOrElse(
       throw new IllegalArgumentException(
-        s"Given bytes (${bytes.toHex}) had bad length"
-      )
-    )
+        s"Given bytes (${bytes.toHex}) had bad length"))
   }
 
   /** Allowed AES key lengths, bytes */
@@ -256,9 +249,7 @@ object AesIV {
   def fromValidBytes(bytes: ByteVector): AesIV =
     fromBytes(bytes).getOrElse(
       throw new IllegalArgumentException(
-        s"Given bytes must be of length 16! Got: ${bytes.length}"
-      )
-    )
+        s"Given bytes must be of length 16! Got: ${bytes.length}"))
 
   /** Generates a random IV */
   def random: AesIV = {
@@ -282,14 +273,11 @@ object AesCrypt {
 
   private def decryptionCipher(
       secret: AesKey,
-      initializationVector: AesIV
-  ): Cipher = {
+      initializationVector: AesIV): Cipher = {
     val cipher = getCipher
-    cipher.init(
-      Cipher.DECRYPT_MODE,
-      secret.toSecretKey,
-      new IvParameterSpec(initializationVector.bytes.toArray)
-    )
+    cipher.init(Cipher.DECRYPT_MODE,
+                secret.toSecretKey,
+                new IvParameterSpec(initializationVector.bytes.toArray))
     cipher
   }
 
@@ -297,8 +285,7 @@ object AesCrypt {
     */
   def decrypt(
       encrypted: AesEncryptedData,
-      key: AesKey
-  ): Either[AesDecryptionException, ByteVector] = {
+      key: AesKey): Either[AesDecryptionException, ByteVector] = {
     val cipher = decryptionCipher(key, encrypted.iv)
 
     val decryptionAttempt = Try {
@@ -319,11 +306,9 @@ object AesCrypt {
 
   private def encryptionCipher(secret: AesKey, iv: AesIV): Cipher = {
     val cipher = getCipher
-    cipher.init(
-      Cipher.ENCRYPT_MODE,
-      secret.toSecretKey,
-      new IvParameterSpec(iv.bytes.toArray)
-    )
+    cipher.init(Cipher.ENCRYPT_MODE,
+                secret.toSecretKey,
+                new IvParameterSpec(iv.bytes.toArray))
     cipher
   }
 
@@ -335,8 +320,7 @@ object AesCrypt {
   private[crypto] def encryptWithIV(
       plainText: ByteVector,
       iv: AesIV,
-      key: AesKey
-  ): AesEncryptedData = {
+      key: AesKey): AesEncryptedData = {
     val cipher = encryptionCipher(key, iv)
 
     val cipherText = cipher.doFinal(plainText.toArray)

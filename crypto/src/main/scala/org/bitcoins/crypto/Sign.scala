@@ -36,12 +36,10 @@ trait AsyncSign {
     */
   def asyncSignWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector
-  ): Future[ECDigitalSignature]
+      entropy: ByteVector): Future[ECDigitalSignature]
 
   private def asyncSignLowR(bytes: ByteVector, startAt: Long)(implicit
-      ec: ExecutionContext
-  ): Future[ECDigitalSignature] = {
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
     val sigF = if (startAt == 0) { // On first try, use normal signing
       asyncSign(bytes)
     } else { // Subsequently, use additional entropy
@@ -58,9 +56,8 @@ trait AsyncSign {
     }
   }
 
-  def asyncSignLowR(
-      bytes: ByteVector
-  )(implicit ec: ExecutionContext): Future[ECDigitalSignature] = {
+  def asyncSignLowR(bytes: ByteVector)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
     asyncSignLowR(bytes, startAt = 0)
   }
 
@@ -73,10 +70,9 @@ object AsyncSign {
       asyncSignFunction: ByteVector => Future[ECDigitalSignature],
       asyncSignWithEntropyFunction: (
           ByteVector,
-          ByteVector
-      ) => Future[ECDigitalSignature],
-      override val publicKey: ECPublicKey
-  ) extends AsyncSign {
+          ByteVector) => Future[ECDigitalSignature],
+      override val publicKey: ECPublicKey)
+      extends AsyncSign {
 
     override def asyncSign(bytes: ByteVector): Future[ECDigitalSignature] = {
       asyncSignFunction(bytes)
@@ -84,8 +80,7 @@ object AsyncSign {
 
     override def asyncSignWithEntropy(
         bytes: ByteVector,
-        entropy: ByteVector
-    ): Future[ECDigitalSignature] = {
+        entropy: ByteVector): Future[ECDigitalSignature] = {
       asyncSignWithEntropyFunction(bytes, entropy)
     }
   }
@@ -94,19 +89,15 @@ object AsyncSign {
       asyncSign: ByteVector => Future[ECDigitalSignature],
       asyncSignWithEntropy: (
           ByteVector,
-          ByteVector
-      ) => Future[ECDigitalSignature],
-      pubKey: ECPublicKey
-  ): AsyncSign = {
+          ByteVector) => Future[ECDigitalSignature],
+      pubKey: ECPublicKey): AsyncSign = {
     AsyncSignImpl(asyncSign, asyncSignWithEntropy, pubKey)
   }
 
   def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): AsyncSign = {
-    AsyncSignImpl(
-      _ => Future.successful(sig),
-      (_, _) => Future.successful(sig),
-      pubKey
-    )
+    AsyncSignImpl(_ => Future.successful(sig),
+                  (_, _) => Future.successful(sig),
+                  pubKey)
   }
 
   /** This dummySign function is useful for the case where we do not have the
@@ -127,13 +118,11 @@ trait AsyncAdaptorSign extends AsyncSign {
   def asyncAdaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector
-  ): Future[ECAdaptorSignature]
+      auxRand: ByteVector): Future[ECAdaptorSignature]
 
   def asyncAdaptorSign(
       adaptorPoint: ECPublicKey,
-      msg: ByteVector
-  ): Future[ECAdaptorSignature] = {
+      msg: ByteVector): Future[ECAdaptorSignature] = {
     val auxRand = ECPrivateKey.freshPrivateKey.bytes
     asyncAdaptorSign(adaptorPoint, msg, auxRand)
   }
@@ -158,13 +147,11 @@ trait Sign extends AsyncSign {
     */
   def signWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector
-  ): ECDigitalSignature
+      entropy: ByteVector): ECDigitalSignature
 
   override def asyncSignWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector
-  ): Future[ECDigitalSignature] = {
+      entropy: ByteVector): Future[ECDigitalSignature] = {
     Future.successful(signWithEntropy(bytes, entropy))
   }
 
@@ -193,9 +180,8 @@ trait Sign extends AsyncSign {
     signLowR(bytes, startAt = 0)
   }
 
-  override def asyncSignLowR(
-      bytes: ByteVector
-  )(implicit ec: ExecutionContext): Future[ECDigitalSignature] = {
+  override def asyncSignLowR(bytes: ByteVector)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
     Future.successful(signLowR(bytes))
   }
 }
@@ -205,8 +191,8 @@ object Sign {
   private case class SignImpl(
       signFunction: ByteVector => ECDigitalSignature,
       signWithEntropyFunction: (ByteVector, ByteVector) => ECDigitalSignature,
-      override val publicKey: ECPublicKey
-  ) extends Sign {
+      override val publicKey: ECPublicKey)
+      extends Sign {
 
     override def sign(bytes: ByteVector): ECDigitalSignature = {
       signFunction(bytes)
@@ -214,8 +200,7 @@ object Sign {
 
     override def signWithEntropy(
         bytes: ByteVector,
-        entropy: ByteVector
-    ): ECDigitalSignature = {
+        entropy: ByteVector): ECDigitalSignature = {
       signWithEntropyFunction(bytes, entropy)
     }
   }
@@ -223,8 +208,7 @@ object Sign {
   def apply(
       sign: ByteVector => ECDigitalSignature,
       signWithEntropy: (ByteVector, ByteVector) => ECDigitalSignature,
-      pubKey: ECPublicKey
-  ): Sign = {
+      pubKey: ECPublicKey): Sign = {
     SignImpl(sign, signWithEntropy, pubKey)
   }
 
@@ -242,13 +226,11 @@ trait AdaptorSign extends Sign with AsyncAdaptorSign {
   def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector
-  ): ECAdaptorSignature
+      auxRand: ByteVector): ECAdaptorSignature
 
   def adaptorSign(
       adaptorPoint: ECPublicKey,
-      msg: ByteVector
-  ): ECAdaptorSignature = {
+      msg: ByteVector): ECAdaptorSignature = {
     val auxRand = ECPrivateKey.freshPrivateKey.bytes
     adaptorSign(adaptorPoint, msg, auxRand)
   }
@@ -256,8 +238,7 @@ trait AdaptorSign extends Sign with AsyncAdaptorSign {
   override def asyncAdaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
-      auxRand: ByteVector
-  ): Future[ECAdaptorSignature] = {
+      auxRand: ByteVector): Future[ECAdaptorSignature] = {
     Future.successful(adaptorSign(adaptorPoint, msg, auxRand))
   }
 }

@@ -87,10 +87,8 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
   }
 
   def appendHashType(hashType: HashType): ECDigitalSignature = {
-    require(
-      this.hashTypeOpt.isEmpty,
-      "Cannot append HashType to signature which already has HashType"
-    )
+    require(this.hashTypeOpt.isEmpty,
+            "Cannot append HashType to signature which already has HashType")
 
     val bytesWithHashType = bytes.:+(hashType.byte)
     ECDigitalSignature.fromBytes(bytesWithHashType)
@@ -156,10 +154,8 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     val sigWithExtra = fromBytes(bytes)
     val sig = fromRS(sigWithExtra.r, sigWithExtra.s)
 
-    require(
-      bytes.startsWith(sig.bytes),
-      s"Received weirdly encoded signature at beginning of $bytes"
-    )
+    require(bytes.startsWith(sig.bytes),
+            s"Received weirdly encoded signature at beginning of $bytes")
 
     sig
   }
@@ -170,8 +166,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   def fromFrontOfBytesWithSigHash(bytes: ByteVector): ECDigitalSignature = {
     val sigWithoutSigHash = fromFrontOfBytes(bytes)
     ECDigitalSignature(
-      sigWithoutSigHash.bytes :+ bytes.drop(sigWithoutSigHash.byteSize).head
-    )
+      sigWithoutSigHash.bytes :+ bytes.drop(sigWithoutSigHash.byteSize).head)
   }
 
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)
@@ -195,13 +190,10 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     val totalSize = 4 + rsSize
     val bytes: ByteVector = {
       ByteVector(
-        Array(
-          0x30.toByte,
-          totalSize.toByte,
-          0x2.toByte,
-          r.toByteArray.length.toByte
-        )
-      )
+        Array(0x30.toByte,
+              totalSize.toByte,
+              0x2.toByte,
+              r.toByteArray.length.toByte))
         .++(ByteVector(r.toByteArray))
         .++(ByteVector(Array(0x2.toByte, s.toByteArray.length.toByte)))
         .++(ByteVector(s.toByteArray))
@@ -233,8 +225,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   def fromRS(byteVector: ByteVector): ECDigitalSignature = {
     require(
       byteVector.length == 64,
-      s"Incorrect size for reading a ECDigital signature from a bytevec, got ${byteVector.length}"
-    )
+      s"Incorrect size for reading a ECDigital signature from a bytevec, got ${byteVector.length}")
     val r = BigInt(1, byteVector.take(32).toArray)
     val s = BigInt(1, byteVector.takeRight(32).toArray)
     fromRS(r, s)

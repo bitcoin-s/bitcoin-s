@@ -5,10 +5,8 @@ import scodec.bits.ByteVector
 
 /** Wraps the ephemeral points making up a MuSig2 nonce */
 case class MuSigNoncePub(pubNonces: Vector[SecpPoint]) extends NetworkElement {
-  require(
-    pubNonces.length == MuSigUtil.nonceNum,
-    s"Exactly ${MuSigUtil.nonceNum} keys are expected, found $pubNonces"
-  )
+  require(pubNonces.length == MuSigUtil.nonceNum,
+          s"Exactly ${MuSigUtil.nonceNum} keys are expected, found $pubNonces")
 
   def apply(i: Int): SecpPoint = {
     pubNonces(i)
@@ -27,13 +25,11 @@ case class MuSigNoncePub(pubNonces: Vector[SecpPoint]) extends NetworkElement {
 
   /** Collapses this into a single ephemeral public key */
   def sumToKey(b: FieldElement): ECPublicKey = {
-    MuSigUtil.nonceSum[SecpPoint](
-      pubNonces,
-      b,
-      _.add(_),
-      _.multiply(_),
-      SecpPointInfinity
-    ) match {
+    MuSigUtil.nonceSum[SecpPoint](pubNonces,
+                                  b,
+                                  _.add(_),
+                                  _.multiply(_),
+                                  SecpPointInfinity) match {
       case SecpPointInfinity  => CryptoParams.getG
       case p: SecpPointFinite => p.toPublicKey
     }

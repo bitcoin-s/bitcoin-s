@@ -36,8 +36,7 @@ object BouncyCastleUtil {
 
   private[crypto] def decodePubKey(
       point: ECPoint,
-      isCompressed: Boolean = true
-  ): ECPublicKey = {
+      isCompressed: Boolean = true): ECPublicKey = {
     val bytes = point.getEncoded(isCompressed)
     ECPublicKey.fromBytes(ByteVector(bytes))
   }
@@ -77,16 +76,12 @@ object BouncyCastleUtil {
 
   def sign(
       dataToSign: ByteVector,
-      privateKey: ECPrivateKey
-  ): ECDigitalSignature = {
+      privateKey: ECPrivateKey): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(
-      new HMacDSAKCalculator(new SHA256Digest())
-    )
+      new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters =
-      new ECPrivateKeyParameters(
-        getBigInteger(privateKey.bytes),
-        BouncyCastleCryptoParams.curve
-      )
+      new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
+                                 BouncyCastleCryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)
@@ -99,8 +94,7 @@ object BouncyCastleUtil {
     val signatureLowS = DERSignatureUtil.lowS(signature)
     require(
       signatureLowS.isDEREncoded,
-      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS
-    )
+      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
     signatureLowS
   }
 
@@ -117,16 +111,12 @@ object BouncyCastleUtil {
   def signWithEntropy(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      entropy: ByteVector
-  ): ECDigitalSignature = {
+      entropy: ByteVector): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(
-      new HMacDSAKCalculatorWithEntropy(new SHA256Digest(), entropy)
-    )
+      new HMacDSAKCalculatorWithEntropy(new SHA256Digest(), entropy))
     val privKey: ECPrivateKeyParameters =
-      new ECPrivateKeyParameters(
-        getBigInteger(privateKey.bytes),
-        BouncyCastleCryptoParams.curve
-      )
+      new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
+                                 BouncyCastleCryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)
@@ -139,32 +129,26 @@ object BouncyCastleUtil {
     val signatureLowS = DERSignatureUtil.lowS(signature)
     require(
       signatureLowS.isDEREncoded,
-      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS
-    )
+      "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
     signatureLowS
   }
 
   def verifyDigitalSignature(
       data: ByteVector,
       publicKey: ECPublicKeyApi,
-      signature: ECDigitalSignature
-  ): Boolean = {
+      signature: ECDigitalSignature): Boolean = {
     val resultTry = Try {
       val publicKeyParams =
-        new ECPublicKeyParameters(
-          decodePoint(publicKey.bytes),
-          BouncyCastleCryptoParams.curve
-        )
+        new ECPublicKeyParameters(decodePoint(publicKey.bytes),
+                                  BouncyCastleCryptoParams.curve)
 
       val signer = new ECDSASigner
       signer.init(false, publicKeyParams)
       signature match {
         case EmptyDigitalSignature =>
-          signer.verifySignature(
-            data.toArray,
-            java.math.BigInteger.valueOf(0),
-            java.math.BigInteger.valueOf(0)
-          )
+          signer.verifySignature(data.toArray,
+                                 java.math.BigInteger.valueOf(0),
+                                 java.math.BigInteger.valueOf(0))
         case _: ECDigitalSignature =>
           val (r, s) = signature.decodeSignature
           signer.verifySignature(data.toArray, r.bigInteger, s.bigInteger)
