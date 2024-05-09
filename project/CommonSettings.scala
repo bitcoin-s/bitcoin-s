@@ -349,6 +349,53 @@ object CommonSettings {
     )
   }
 
+  /**
+   * Needed for waffle-jna "3.4.0"
+   * I tried just adding javax.annotation as a transitive dependency
+   * but couldn't get the build to work, unsure why so just ignore
+   * the dependencies for now as waffle-jna is only relevant on windows
+   * @see https://github.com/bitcoin-s/bitcoin-s/pull/5571
+   *
+   */
+  private val byteBuddyJlinkIgnore = {
+    Vector(
+    "net.bytebuddy" -> "org.objectweb.asm",
+    "net.bytebuddy.agent.utility.nullability" -> "javax.annotation",
+    "net.bytebuddy.agent.utility.nullability" -> "javax.annotation.meta",
+    "net.bytebuddy.asm" -> "javax.annotation",
+    "net.bytebuddy.asm" -> "org.objectweb.asm",
+    "net.bytebuddy.description" -> "javax.annotation",
+    "net.bytebuddy.description" -> "org.objectweb.asm",
+    "net.bytebuddy.description.field" -> "javax.annotation",
+    "net.bytebuddy.description.method" -> "javax.annotation",
+    "net.bytebuddy.description.method" -> "org.objectweb.asm",
+    "net.bytebuddy.description.modifier" -> "org.objectweb.asm",
+    "net.bytebuddy.description.type" -> "javax.annotation",
+    "net.bytebuddy.description.type" -> "org.objectweb.asm",
+    "net.bytebuddy.dynamic" -> "javax.annotation",
+    "net.bytebuddy.dynamic" -> "org.objectweb.asm",
+    "net.bytebuddy.dynamic.scaffold" -> "javax.annotation",
+    "net.bytebuddy.dynamic.scaffold" -> "org.objectweb.asm",
+    "net.bytebuddy.dynamic.scaffold.inline" -> "javax.annotation",
+    "net.bytebuddy.dynamic.scaffold.inline" -> "org.objectweb.asm",
+    "net.bytebuddy.dynamic.scaffold.subclass" -> "org.objectweb.asm",
+    "net.bytebuddy.implementation" -> "javax.annotation",
+    "net.bytebuddy.implementation" -> "org.objectweb.asm",
+    "net.bytebuddy.implementation.auxiliary" -> "org.objectweb.asm",
+    "net.bytebuddy.implementation.bind.annotation" -> "org.objectweb.asm",
+    "net.bytebuddy.implementation.bytecode.assign.primitive" -> "org.objectweb.asm",
+    "net.bytebuddy.implementation.bytecode.collection" -> "org.objectweb.asm",
+    "net.bytebuddy.implementation.bytecode.member" -> "org.objectweb.asm",
+    "net.bytebuddy.matcher" -> "org.objectweb.asm",
+    "net.bytebuddy.pool" -> "javax.annotation",
+    "net.bytebuddy.pool" -> "org.objectweb.asm",
+    "net.bytebuddy.utility" -> "org.objectweb.asm",
+    "net.bytebuddy.utility.dispatcher" -> "org.objectweb.asm",
+    "net.bytebuddy.utility.nullability" -> "javax.annotation",
+    "net.bytebuddy.utility.nullability" -> "javax.annotation.meta"
+    )
+  }
+
   lazy val oracleServerJlinkIgnore = {
     val oracleServerIgnore = Vector(
       "java.xml" -> "java.activation",
@@ -361,6 +408,7 @@ object CommonSettings {
       .++(loggingJlinkIgnore)
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
+      .++(byteBuddyJlinkIgnore)
     JlinkIgnore.byPackagePrefix(oracleServerIgnore: _*)
   }
 
@@ -369,6 +417,7 @@ object CommonSettings {
     val appServerIgnore = loggingJlinkIgnore
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
+      .++(byteBuddyJlinkIgnore)
       .++(
         Vector(
           //https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
