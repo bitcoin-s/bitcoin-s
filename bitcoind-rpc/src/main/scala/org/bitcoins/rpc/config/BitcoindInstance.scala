@@ -52,8 +52,13 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
 
     val binaryPath = binary.getAbsolutePath
     val versionT = Try {
+      val cmd =
+        Seq(binaryPath, s"-datadir=${datadir.toPath.toString}", "--version")
       val foundVersion =
-        Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
+        cmd
+          .!!(NativeProcessFactory.processLogger)
+          .split(Properties.lineSeparator)
+          .head
           .split(" ")
           .last
       BitcoindVersion.findVersion(foundVersion).getOrElse {
@@ -69,7 +74,7 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
       case Success(value) => value
       case Failure(exception) =>
         logger.error("Error getting bitcoind version", exception)
-        BitcoindVersion.newest
+        throw exception
     }
   }
 }
