@@ -333,6 +333,13 @@ object P2SHDescriptor
       checksum: Option[String]): P2SHDescriptor = {
     P2SHDescriptor(e, checksum)
   }
+
+  def apply(spk: RawScriptPubKey): P2SHDescriptor = {
+    val raw = RawScriptExpression(spk)
+    val p2shExpr = P2SHExpression(raw)
+    val checksum = Descriptor.createChecksum(createDescriptor(p2shExpr, None))
+    createDescriptor(p2shExpr, Some(checksum))
+  }
 }
 
 object ComboDescriptor
