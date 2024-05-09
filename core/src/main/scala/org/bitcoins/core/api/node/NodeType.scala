@@ -11,19 +11,15 @@ sealed abstract class ExternalImplementationNodeType extends NodeType
 
 object NodeType extends StringFactory[NodeType] {
 
-  case object FullNode extends InternalImplementationNodeType {
+  final case object FullNode extends InternalImplementationNodeType {
     override def shortName: String = "full"
   }
 
-  case object NeutrinoNode extends InternalImplementationNodeType {
+  final case object NeutrinoNode extends InternalImplementationNodeType {
     override def shortName: String = "neutrino"
   }
 
-  case object SpvNode extends InternalImplementationNodeType {
-    override def shortName: String = "spv"
-  }
-
-  case object BitcoindBackend extends ExternalImplementationNodeType {
+  final case object BitcoindBackend extends ExternalImplementationNodeType {
     override def shortName: String = "bitcoind"
   }
 

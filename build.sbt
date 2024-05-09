@@ -344,6 +344,7 @@ lazy val cryptoTestJS = cryptoTest.js
 
 lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
+  .settings(scalacOptions += "-Xsource:3")
   .in(file("core-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(

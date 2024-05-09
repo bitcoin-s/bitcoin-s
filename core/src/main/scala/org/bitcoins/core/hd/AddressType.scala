@@ -26,7 +26,11 @@ object AddressType extends StringFactory[AddressType] {
     override def altName: String = "legacy"
   }
 
-  private val all = Vector(SegWit, NestedSegWit, Legacy)
+  case object P2TR extends AddressType {
+    override def altName: String = "p2tr"
+  }
+
+  private val all = Vector(SegWit, NestedSegWit, Legacy, P2TR)
 
   override def fromStringOpt(str: String): Option[AddressType] = {
     all.find(_.toString.toLowerCase == str.toLowerCase) match {
