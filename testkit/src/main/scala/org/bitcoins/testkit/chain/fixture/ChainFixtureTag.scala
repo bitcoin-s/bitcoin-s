@@ -2,8 +2,8 @@ package org.bitcoins.testkit.chain.fixture
 
 import org.scalatest.Tag
 
-/** If a test file uses ChainFixture as its FixtureParam, then
-  * using these tags will determine which fixture the test will get.
+/** If a test file uses ChainFixture as its FixtureParam, then using these tags
+  * will determine which fixture the test will get.
   *
   * Simply add taggedAs FixtureTag._ to your test before calling inFixtured.
   */
@@ -20,8 +20,9 @@ object ChainFixtureTag {
 
   case object GenisisChainHandler extends ChainFixtureTag("GenisisChainHandler")
 
-  /** Creates the genesis block header and genesis [[org.bitcoins.core.api.chain.db.CompactFilterHeaderDb]]
-    * and [[org.bitcoins.core.api.chain.db.CompactFilterDb]]
+  /** Creates the genesis block header and genesis
+    * [[org.bitcoins.core.api.chain.db.CompactFilterHeaderDb]] and
+    * [[org.bitcoins.core.api.chain.db.CompactFilterDb]]
     */
   case object GenesisChainHandlerWithFilter
       extends ChainFixtureTag("GenesisChainHandlerWithFilter")

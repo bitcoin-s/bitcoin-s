@@ -77,7 +77,7 @@ class DescriptorTest extends BitcoinSUnitTest {
     val expected12 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
     runTest(str12, expected12)
 
-    //invalid hardened derivation, needs to be removed from BIP381
+    // invalid hardened derivation, needs to be removed from BIP381
     /*    val str13 =
       "pkh(xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB/2147483647'/0)"
     val expected13 = "76a914ebdc90806a9c4356c1c88e42216611e1cb4c1c1788ac"
@@ -453,7 +453,7 @@ class DescriptorTest extends BitcoinSUnitTest {
   }
 
   it must "have fidelity with the type of hardened derivation used as input" in {
-    //note using h instead of ' for hardened derivation path
+    // note using h instead of ' for hardened derivation path
     val str =
       "wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)"
     val desc = Descriptor.fromString(str)

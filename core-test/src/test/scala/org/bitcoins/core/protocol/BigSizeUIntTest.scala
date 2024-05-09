@@ -60,14 +60,14 @@ object BigSizeJsonTestVectors {
 
   case class EncodeTestVector(name: String, value: BigInt, bytes: ByteVector)
 
-  implicit
-  val encodeTestVectorR: Reader[EncodeTestVector] = reader[Value].map { value =>
-    val obj = value.obj
-    val name = obj("name").str
-    val num = BigInt(obj("value").str)
-    val bytes = ByteVector.fromValidHex(obj("bytes").str)
+  implicit val encodeTestVectorR: Reader[EncodeTestVector] = reader[Value].map {
+    value =>
+      val obj = value.obj
+      val name = obj("name").str
+      val num = BigInt(obj("value").str)
+      val bytes = ByteVector.fromValidHex(obj("bytes").str)
 
-    EncodeTestVector(name, num, bytes)
+      EncodeTestVector(name, num, bytes)
   }
 
   val encode: String = """[
@@ -119,15 +119,15 @@ object BigSizeJsonTestVectors {
       bytes: ByteVector,
       expectedErrorOpt: Option[String])
 
-  implicit
-  val decodeTestVectorR: Reader[DecodeTestVector] = reader[Value].map { value =>
-    val obj = value.obj
-    val name = obj("name").str
-    val num = obj("value").str
-    val bytes = ByteVector.fromValidHex(obj("bytes").str)
-    val expectedErrorOpt = Try(obj("exp_error").str).toOption
+  implicit val decodeTestVectorR: Reader[DecodeTestVector] = reader[Value].map {
+    value =>
+      val obj = value.obj
+      val name = obj("name").str
+      val num = obj("value").str
+      val bytes = ByteVector.fromValidHex(obj("bytes").str)
+      val expectedErrorOpt = Try(obj("exp_error").str).toOption
 
-    DecodeTestVector(name, num, bytes, expectedErrorOpt)
+      DecodeTestVector(name, num, bytes, expectedErrorOpt)
   }
 
   val decode: String = """[

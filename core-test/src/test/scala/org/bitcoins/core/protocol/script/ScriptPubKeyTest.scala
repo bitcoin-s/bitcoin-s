@@ -22,7 +22,7 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
          ScriptConstant("31a420903c05a0a7de2de40c9f02ebedbacdc172"),
          OP_EQUALVERIFY,
          OP_CHECKSIG)
-  //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+  // from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   val rawScriptPubKey: String = TestUtil.rawP2PKHScriptPubKey
   val scriptPubKey: ScriptPubKey = ScriptPubKey(rawScriptPubKey)
 
@@ -47,9 +47,9 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
   }
 
   it must "fail to construct a valid witness spk v1 when the coordinate is not on the curve" in {
-    //all zeroes
+    // all zeroes
     val pubKey = ByteVector.fill(32)(0.toByte)
-    //reconstruct asm
+    // reconstruct asm
     val asm = OP_1 +: (BitcoinScriptUtil.calculatePushOp(pubKey) ++ Vector(
       ScriptConstant(pubKey)))
 
@@ -78,7 +78,7 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
     val p2sh = P2SHScriptPubKey(p2pkh)
     assert(p2sh.toString == "sh(2a941c7a3e92c7f5fe149a641cae6b417989c411)")
 
-    //p2wpkh
+    // p2wpkh
     val p2wpkh = P2WPKHWitnessSPKV0(key)
     assert(p2wpkh.toString == "wpkh(63fe7c47cf475802b1c4ec2d34d1ef33e6b0fc63)")
 

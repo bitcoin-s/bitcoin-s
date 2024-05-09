@@ -22,8 +22,8 @@ trait FeeProviderFactory[T <: FeeRateApi] {
 
 object FeeProviderFactory extends BitcoinSLogger {
 
-  /** Gets a Fee Provider from the given wallet app config
-    * Returns default if there is no config set
+  /** Gets a Fee Provider from the given wallet app config Returns default if
+    * there is no config set
     */
   def getFeeProviderOrElse(
       default: => FeeRateApi,

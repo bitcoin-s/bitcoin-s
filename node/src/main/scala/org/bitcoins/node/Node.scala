@@ -21,7 +21,8 @@ import org.bitcoins.node.models._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-/**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
+/** This a base trait for various kinds of nodes. It contains house keeping
+  * methods required for all nodes.
   */
 trait Node
     extends NodeApi
@@ -82,17 +83,18 @@ trait Node
     } yield {
       logger.info(
         s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filters. It took=${System
-          .currentTimeMillis() - start}ms")
+            .currentTimeMillis() - start}ms")
       node
     }
   }
 
-  /** Starts to sync our node with our peer
-    * If our local best block hash is the same as our peers
-    * we will not sync, otherwise we will keep syncing
-    * until our best block hashes match up
+  /** Starts to sync our node with our peer If our local best block hash is the
+    * same as our peers we will not sync, otherwise we will keep syncing until
+    * our best block hashes match up
     *
-    * @return the peer we are syncing with, or a failed Future if we could not find a peer to sync with after 5 seconds
+    * @return
+    *   the peer we are syncing with, or a failed Future if we could not find a
+    *   peer to sync with after 5 seconds
     */
   def sync(): Future[Unit]
 
@@ -132,7 +134,8 @@ trait Node
     } yield ()
   }
 
-  /** Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
+  /** Fetches the given blocks from the peers and calls the appropriate
+    * [[callbacks]] when done.
     */
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {

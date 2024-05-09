@@ -60,10 +60,10 @@ class FutureUtilTest extends BitcoinSJvmTest {
     val doneF =
       FutureUtil.batchAndSyncExecute(elements = vec, f = f, batchSize = 1)
 
-    //here is how this test case works:
-    //the vector above has the same number of elements as available processors in it, and the batchSize is 1
-    //each function sleeps for 1000ms (1 second). If things are
-    //not run in parallel, the total time should be 5 seconds (5 elements * 1 second sleep)
+    // here is how this test case works:
+    // the vector above has the same number of elements as available processors in it, and the batchSize is 1
+    // each function sleeps for 1000ms (1 second). If things are
+    // not run in parallel, the total time should be 5 seconds (5 elements * 1 second sleep)
     for {
       _ <- doneF
       stop = TimeUtil.now

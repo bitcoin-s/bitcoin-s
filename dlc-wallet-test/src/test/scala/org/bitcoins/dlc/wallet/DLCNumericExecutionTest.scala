@@ -19,9 +19,8 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  def getSigs(contractInfo: ContractInfo): (
-      OracleAttestmentTLV,
-      OracleAttestmentTLV) = {
+  def getSigs(contractInfo: ContractInfo)
+      : (OracleAttestmentTLV, OracleAttestmentTLV) = {
     contractInfo.contractDescriptors.head match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
@@ -173,9 +172,9 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
         contractId <- getContractId(wallets._1.wallet)
         status <- getDLCStatus(wallets._2.wallet)
         (_, goodAttestment) = getSigs(status.contractInfo)
-        //purposefully drop these
-        //we cannot drop just a sig, or just an outcome because
-        //of invariants in OracleAttestmentV0TLV
+        // purposefully drop these
+        // we cannot drop just a sig, or just an outcome because
+        // of invariants in OracleAttestmentV0TLV
         badSigs = OrderedSchnorrSignatures.fromUnsorted(
           goodAttestment.sigs.dropRight(1).toVector)
         badOutcomes = goodAttestment.outcomes.dropRight(1)

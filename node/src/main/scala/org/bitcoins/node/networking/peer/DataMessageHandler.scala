@@ -21,12 +21,15 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-/** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
-  * that a peer to sent to us on the p2p network, for instance, if we a receive a
-  * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
+/** This actor is meant to handle a
+  * [[org.bitcoins.core.p2p.DataPayload DataPayload]] that a peer to sent to us
+  * on the p2p network, for instance, if we a receive a
+  * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store
+  * those headers in our database
   *
-  * @param currentFilterBatch holds the current batch of filters to be processed, after its size reaches
-  *                           chainConfig.filterBatchSize they will be processed and then emptied
+  * @param currentFilterBatch
+  *   holds the current batch of filters to be processed, after its size reaches
+  *   chainConfig.filterBatchSize they will be processed and then emptied
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
@@ -57,15 +60,15 @@ case class DataMessageHandler(
             val syncPeer = state.syncPeer
             val isQueryTimedOut = state.isQueryTimedOut(appConfig.queryWaitTime)
             if (peerData.peer != syncPeer && !isQueryTimedOut) {
-              //ignore message from peers that we aren't syncing with during IBD
+              // ignore message from peers that we aren't syncing with during IBD
               logger.debug(
                 s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer")
               Future.successful(this)
             } else {
               val dmh = if (isQueryTimedOut) {
-                //if query is timed out, we need to transition back to DoneSyncing
-                //to avoid getting stuck in a state when a peer does not respond to us
-                //see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
+                // if query is timed out, we need to transition back to DoneSyncing
+                // to avoid getting stuck in a state when a peer does not respond to us
+                // see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
                 logger.info(s"Query timed out with in state=$state")
                 copy(state = state.toDoneSyncing)
               } else {
@@ -104,8 +107,8 @@ case class DataMessageHandler(
             new RuntimeException(
               s"Cannot continue processing p2p messages from badPeer=$badPeer"))
         } else {
-          //re-review this, we should probably pattern match on old state so we can continue syncing
-          //from where we left off?
+          // re-review this, we should probably pattern match on old state so we can continue syncing
+          // from where we left off?
           val d = DoneSyncing(pdm, m.waitingForDisconnection, m.peerFinder)
           copy(state = d).handleDataPayload(payload, peerData)
         }
@@ -128,8 +131,8 @@ case class DataMessageHandler(
 
   }
 
-  /** Processes a [[DataPayload]] if our [[NodeState]] is valid.
-    * We ignore messages from certain peers when we are in initial block download.
+  /** Processes a [[DataPayload]] if our [[NodeState]] is valid. We ignore
+    * messages from certain peers when we are in initial block download.
     */
   private def handleDataPayloadValidState(
       payload: DataPayload,
@@ -269,7 +272,7 @@ case class DataMessageHandler(
               .getHeader(block.blockHeader.hashBE)
             newMsgHandler <- {
               if (isIBD && headerOpt.isEmpty) {
-                //ignore block, don't execute callbacks until IBD is done
+                // ignore block, don't execute callbacks until IBD is done
                 logger.info(
                   s"Received block=${block.blockHeader.hashBE.hex} while in IBD, ignoring it until IBD complete state=${state}.")
                 Future.successful(this)
@@ -310,7 +313,9 @@ case class DataMessageHandler(
     wrappedFuture.flatten
   }
 
-  /** syncs filter headers in case the header chain is still ahead post filter sync */
+  /** syncs filter headers in case the header chain is still ahead post filter
+    * sync
+    */
   private def syncIfHeadersAhead(
       syncNodeState: SyncNodeState,
       peerMessageSenderApi: PeerMessageSenderApi): Future[NodeRunningState] = {
@@ -349,8 +354,8 @@ case class DataMessageHandler(
           require(headerHeight == filterCount,
                   s"headerHeight=$headerHeight filterCount=$filterCount")
           logger.info(s"We are synced")
-          //check to see if we had blocks mined while IBD
-          //was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
+          // check to see if we had blocks mined while IBD
+          // was ongoing, see: https://github.com/bitcoin-s/bitcoin-s/issues/5036
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
             d = syncNodeState.toDoneSyncing
@@ -358,8 +363,8 @@ case class DataMessageHandler(
               peerManager
                 .gossipGetHeadersMessage(Vector(bestBlockHash))
                 .map { _ =>
-                  //set to done syncing since we are technically done with IBD
-                  //we just need to sync blocks that occurred while we were doing IBD
+                  // set to done syncing since we are technically done with IBD
+                  // we just need to sync blocks that occurred while we were doing IBD
                   d
                 }
             }
@@ -369,7 +374,9 @@ case class DataMessageHandler(
     } yield newState
   }
 
-  /** Recover the data message handler if we received an invalid block header from a peer */
+  /** Recover the data message handler if we received an invalid block header
+    * from a peer
+    */
   private def recoverInvalidHeader(
       peerData: PersistentPeerData): Future[NodeRunningState] = {
     val result = state match {
@@ -398,7 +405,7 @@ case class DataMessageHandler(
                 s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}")
               val queryF =
                 peerManager.gossipGetHeadersMessage(cachedHeaders)
-              //switch to DoneSyncing state until we receive a valid header from our peers
+              // switch to DoneSyncing state until we receive a valid header from our peers
               val d = state.toDoneSyncing
               queryF.map(_ => d)
             }
@@ -471,8 +478,8 @@ case class DataMessageHandler(
 
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
-      peerMessageSenderApi: PeerMessageSenderApi): Future[
-    DataMessageHandler] = {
+      peerMessageSenderApi: PeerMessageSenderApi)
+      : Future[DataMessageHandler] = {
     logger.debug(s"Received inv=${invMsg}")
     val invsOptF: Future[Seq[Option[Inventory]]] =
       Future.traverse(invMsg.inventories) {
@@ -525,9 +532,9 @@ case class DataMessageHandler(
         chainApi)
       isSynced <-
         if (newFilterHeight == 0 && walletCreationTimeOpt.isDefined) {
-          //if we have zero filters in our database and are syncing filters after a wallet creation time
-          //we need to calculate the offset of the first filter
-          //and how many compact filter headers we have seen. filter_height = best_filter_header - first_filter_filter_header
+          // if we have zero filters in our database and are syncing filters after a wallet creation time
+          // we need to calculate the offset of the first filter
+          // and how many compact filter headers we have seen. filter_height = best_filter_header - first_filter_filter_header
           val bestBlockHashF = chainApi.getBestBlockHash()
           val filterHeadersF: Future[Vector[CompactFilterHeaderDb]] = {
             Future
@@ -543,7 +550,7 @@ case class DataMessageHandler(
             filterHeaders.exists(_.blockHashBE == bestBlockHash)
           }
         } else if (newFilterHeight == 0 && walletCreationTimeOpt.isEmpty) {
-          //fully syncing all filters
+          // fully syncing all filters
           Future.successful(filterBatch.size == newFilterHeaderHeight + 1)
         } else {
           for {
@@ -627,7 +634,7 @@ case class DataMessageHandler(
         if (count == HeadersMessage.MaxHeadersCount) {
           logger.debug(
             s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-          //ask for headers more from the same peer
+          // ask for headers more from the same peer
           peerMessageSenderApi
             .sendGetHeadersMessage(lastHash.flip)
             .map(_ => state)
@@ -661,12 +668,12 @@ case class DataMessageHandler(
           fhsOptF.map {
             case Some(s) => s
             case None    =>
-              //is this right? If we don't send cfheaders to our peers, are we done syncing?
+              // is this right? If we don't send cfheaders to our peers, are we done syncing?
               state.toDoneSyncing
           }
         }
       } else {
-        //what if we are synced exactly by the 2000th header
+        // what if we are synced exactly by the 2000th header
         Future.successful(state)
       }
     }
@@ -684,7 +691,7 @@ case class DataMessageHandler(
     val newStateOpt: Option[NodeRunningState] = state match {
       case d: DoneSyncing =>
         val s = if (count.toInt != 0) {
-          //why do we sometimes get empty HeadersMessage?
+          // why do we sometimes get empty HeadersMessage?
           d.toHeaderSync(peer)
         } else {
           d
@@ -697,7 +704,7 @@ case class DataMessageHandler(
         } else if (headerSync.syncPeer == peer) {
           Some(headerSync)
         } else {
-          //means we received a headers message from a peer we aren't syncing with, so ignore for now
+          // means we received a headers message from a peer we aren't syncing with, so ignore for now
           logger.debug(
             s"Ignoring block headers from peer=$peer while we are syncing with syncPeer=${headerSync.syncPeer}")
           None
@@ -774,7 +781,7 @@ case class DataMessageHandler(
       newState <- recoveredStateF
       _ <- {
         if (count == 0) {
-          Future.unit //don't execute callbacks if we receive 0 headers from peer
+          Future.unit // don't execute callbacks if we receive 0 headers from peer
         } else {
           appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(headers)
         }

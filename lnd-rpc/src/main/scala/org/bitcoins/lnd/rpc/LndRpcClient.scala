@@ -59,7 +59,8 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.Try
 
-/** @param binaryOpt Path to lnd executable
+/** @param binaryOpt
+  *   Path to lnd executable
   */
 class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit val system: ActorSystem)
@@ -86,7 +87,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   // These need to be lazy so we don't try and fetch
   // the tls certificate before it is generated
-  private[this] lazy val certStreamOpt: Option[InputStream] = {
+  private lazy val certStreamOpt: Option[InputStream] = {
     instance.certFileOpt match {
       case Some(file) => Some(new FileInputStream(file))
       case None =>
@@ -514,8 +515,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     lnd.abandonChannel(request).map(_ => ())
   }
 
-  def listChannels(request: ListChannelsRequest =
-    ListChannelsRequest()): Future[Vector[Channel]] = {
+  def listChannels(request: ListChannelsRequest = ListChannelsRequest())
+      : Future[Vector[Channel]] = {
     logger.trace("lnd calling listchannels")
 
     lnd
@@ -765,8 +766,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       hashType: HashType,
       output: TransactionOutput,
       signMethod: SignMethod,
-      prevOuts: Vector[TransactionOutput]): Future[
-    (ScriptSignature, ScriptWitness)] = {
+      prevOuts: Vector[TransactionOutput])
+      : Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
       SignDescriptor(output = Some(output),
                      sighash = UInt32(hashType.num),
@@ -805,10 +806,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)
   }
 
-  def computeInputScript(
-      tx: Tx,
-      signDescriptors: Vector[SignDescriptor]): Future[
-    Vector[(ScriptSignature, ScriptWitness)]] = {
+  def computeInputScript(tx: Tx, signDescriptors: Vector[SignDescriptor])
+      : Future[Vector[(ScriptSignature, ScriptWitness)]] = {
     val request: SignReq =
       SignReq(tx.bytes, signDescriptors)
 
@@ -859,11 +858,14 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     leaseOutput(request)
   }
 
-  /** LeaseOutput locks an output to the given ID, preventing it from being available for any future coin selection attempts.
-    * The absolute time of the lock's expiration is returned.
-    * The expiration of the lock can be extended by successive invocations of this RPC.
-    * @param request LeaseOutputRequest
-    * @return Unix timestamp for when the lease expires
+  /** LeaseOutput locks an output to the given ID, preventing it from being
+    * available for any future coin selection attempts. The absolute time of the
+    * lock's expiration is returned. The expiration of the lock can be extended
+    * by successive invocations of this RPC.
+    * @param request
+    *   LeaseOutputRequest
+    * @return
+    *   Unix timestamp for when the lease expires
     */
   def leaseOutput(request: LeaseOutputRequest): Future[UInt64] = {
     logger.trace("lnd calling leaseoutput")
@@ -926,7 +928,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   /** Broadcasts the given transaction
-    * @return None if no error, otherwise the error string
+    * @return
+    *   None if no error, otherwise the error string
     */
   def publishTransaction(tx: Tx): Future[Option[String]] = {
     logger.trace("lnd calling publishtransaction")
@@ -1026,17 +1029,17 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       def run(): Unit = {
         val receivedInfoF = lookupInvoice(rHash)
 
-        //register callback that publishes a payment to our actor system's
-        //event stream,
+        // register callback that publishes a payment to our actor system's
+        // event stream,
         receivedInfoF.foreach { case info: Invoice =>
           if (info.state.isSettled) {
-            //invoice has been paid, let's publish to event stream
-            //so subscribers so the even stream can see that a payment
-            //was received
-            //we need to create a `PaymentSucceeded`
+            // invoice has been paid, let's publish to event stream
+            // so subscribers so the even stream can see that a payment
+            // was received
+            // we need to create a `PaymentSucceeded`
             system.eventStream.publish(info)
 
-            //complete the promise so the runnable will be canceled
+            // complete the promise so the runnable will be canceled
             p.success(info)
           } else if (attempts.incrementAndGet() >= maxAttempts) {
             // too many tries to get info about a payment
@@ -1045,7 +1048,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
             p.failure(
               new RuntimeException(
                 s"LndApi.monitorInvoice() [$instance] too many attempts: ${attempts
-                  .get()} for invoice=${rHash.hash.hex}"))
+                    .get()} for invoice=${rHash.hash.hex}"))
           }
         }
       }
@@ -1066,7 +1069,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   /** Boolean check to verify the state of the client
-    * @return Future Boolean representing if client has started
+    * @return
+    *   Future Boolean representing if client has started
     */
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
@@ -1092,9 +1096,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     p.future
   }
 
-  /** Returns a Future LndRpcClient if able to shut down
-    * Lnd instance, inherits from the StartStop trait
-    * @return A future LndRpcClient that is stopped
+  /** Returns a Future LndRpcClient if able to shut down Lnd instance, inherits
+    * from the StartStop trait
+    * @return
+    *   A future LndRpcClient that is stopped
     */
   override def stop(): Future[LndRpcClient] = {
     logger.trace("lnd calling stop daemon")
@@ -1125,8 +1130,8 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
 object LndRpcClient {
 
-  /** Lease id should be unique per application
-    * this is the sha256 of "lnd bitcoin-s"
+  /** Lease id should be unique per application this is the sha256 of "lnd
+    * bitcoin-s"
     */
   val leaseId: ByteString =
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
@@ -1137,15 +1142,14 @@ object LndRpcClient {
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"
 
-  /** THe name we use to create actor systems. We use this to know which
-    * actor systems to shut down on node shutdown
+  /** THe name we use to create actor systems. We use this to know which actor
+    * systems to shut down on node shutdown
     */
   private[lnd] val ActorSystemName = "lnd-rpc-client-created-by-bitcoin-s"
 
-  /** Creates an RPC client from the given instance,
-    * together with the given actor system. This is for
-    * advanced users, where you need fine grained control
-    * over the RPC client.
+  /** Creates an RPC client from the given instance, together with the given
+    * actor system. This is for advanced users, where you need fine grained
+    * control over the RPC client.
     */
   def apply(
       instance: LndInstance,
@@ -1154,8 +1158,8 @@ object LndRpcClient {
     withActorSystem(instance, binary)
   }
 
-  /** Constructs a RPC client from the given datadir, or
-    * the default datadir if no directory is provided
+  /** Constructs a RPC client from the given datadir, or the default datadir if
+    * no directory is provided
     */
   def withActorSystem(instance: LndInstance, binary: Option[File] = None)(
       implicit system: ActorSystem) = new LndRpcClient(instance, binary)

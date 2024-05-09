@@ -72,7 +72,8 @@ case class PersistentPeerData(
     lastTimedOut = System.currentTimeMillis()
   }
 
-  /** returns true if the peer has failed due to any reason within the past 30 minutes
+  /** returns true if the peer has failed due to any reason within the past 30
+    * minutes
     */
   def hasFailedRecently: Boolean = {
     val timePast = System.currentTimeMillis() - lastTimedOut
@@ -84,9 +85,9 @@ case class PersistentPeerData(
   }
 }
 
-/** A peer we are just discovering on the p2p network for future connections
-  * we do not want to be persistently connected to this peer, just see if
-  * we can connect to it and exchange version/verack messages
+/** A peer we are just discovering on the p2p network for future connections we
+  * do not want to be persistently connected to this peer, just see if we can
+  * connect to it and exchange version/verack messages
   */
 case class AttemptToConnectPeerData(
     peer: Peer,

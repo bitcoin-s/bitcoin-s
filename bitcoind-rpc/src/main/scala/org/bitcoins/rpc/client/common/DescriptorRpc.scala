@@ -15,8 +15,10 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 
 /** RPC calls in V18 that use descriptor to give us output information
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/deriveaddresses/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/getdescriptorinfo/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/deriveaddresses/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/getdescriptorinfo/]]
   */
 trait DescriptorRpc {
   self: Client =>
@@ -42,8 +44,8 @@ trait DescriptorRpc {
     * @param imports
     * @return
     */
-  def importDescriptors(imports: Vector[DescriptorsResult]): Future[
-    Vector[ImportDescriptorResult]] = {
+  def importDescriptors(imports: Vector[DescriptorsResult])
+      : Future[Vector[ImportDescriptorResult]] = {
     bitcoindCall[Vector[ImportDescriptorResult]]("importdescriptors",
                                                  List(Json.toJson(imports)))
   }

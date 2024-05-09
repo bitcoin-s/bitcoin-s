@@ -10,8 +10,8 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
   */
 class RawHeadersMessageSerializerTest extends BitcoinSUnitTest {
 
-  //from this example
-  //https://bitcoin.org/en/developer-reference#headers
+  // from this example
+  // https://bitcoin.org/en/developer-reference#headers
   val hex = "01" +
     "02000000" +
     "b6ff0b1b1680a2862a30ca44d346d9e8910d334beb48ca0c0000000000000000" +

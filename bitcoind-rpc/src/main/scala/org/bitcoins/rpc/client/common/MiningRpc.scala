@@ -18,7 +18,7 @@ import scala.concurrent.Future
 
 /** RPC calls related to mining
   */
-trait MiningRpc { self: Client with BlockchainRpc =>
+trait MiningRpc { self: Client & BlockchainRpc =>
 
   def generateToAddress(
       blocks: Int,
@@ -48,8 +48,8 @@ trait MiningRpc { self: Client with BlockchainRpc =>
     } yield hash
   }
 
-  def getBlockTemplate(request: Option[RpcOpts.BlockTemplateRequest] =
-    None): Future[GetBlockTemplateResult] = {
+  def getBlockTemplate(request: Option[RpcOpts.BlockTemplateRequest] = None)
+      : Future[GetBlockTemplateResult] = {
     val params =
       if (request.isEmpty) {
         List.empty

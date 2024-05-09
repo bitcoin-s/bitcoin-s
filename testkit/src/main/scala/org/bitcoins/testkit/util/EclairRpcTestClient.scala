@@ -40,7 +40,7 @@ case class EclairRpcTestClient(
   }
 
   override def start(): Future[EclairRpcClient] = {
-    //should we start bitcoind rpc client here too?
+    // should we start bitcoind rpc client here too?
     for {
       rpcClient <- eclairRpcClientF
       started <- rpcClient.start()
@@ -48,7 +48,7 @@ case class EclairRpcTestClient(
   }
 
   override def stop(): Future[EclairRpcClient] = {
-    //should we stop bitcoind rpc client here too?
+    // should we stop bitcoind rpc client here too?
     for {
       rpcClient <- eclairRpcClientF
       stopped <- rpcClient.stop()

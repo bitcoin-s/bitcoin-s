@@ -20,22 +20,21 @@ import org.scalatest.{FutureOutcome, Outcome}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-/** Bitcoin-s wallet test trait that uses cached bitcoinds
-  * rather than fresh bitcoinds.
+/** Bitcoin-s wallet test trait that uses cached bitcoinds rather than fresh
+  * bitcoinds.
   *
-  * This should be used by default unless there is a reason your
-  * test suite needs fresh bitcoin's for every unit test inside of it
+  * This should be used by default unless there is a reason your test suite
+  * needs fresh bitcoin's for every unit test inside of it
   */
 trait BitcoinSWalletTestCachedBitcoind
     extends BitcoinSFixture
     with BaseWalletTest
     with EmbeddedPg { _: CachedBitcoind[_] =>
 
-  /** Creates a funded wallet fixture with bitcoind
-    * This is different than [[withFundedWalletAndBitcoind()]]
-    * in the sense that it does NOT destroy the given bitcoind.
-    * It is the responsibility of the caller of this method to
-    * do that, if needed.
+  /** Creates a funded wallet fixture with bitcoind This is different than
+    * [[withFundedWalletAndBitcoind()]] in the sense that it does NOT destroy
+    * the given bitcoind. It is the responsibility of the caller of this method
+    * to do that, if needed.
     */
   def withFundedWalletAndBitcoindCached(
       test: OneArgAsyncTest,
@@ -89,8 +88,8 @@ trait BitcoinSWalletTestCachedBitcoind
     val bitcoindF = BitcoinSFixture
       .createBitcoindWithFunds(None)
 
-    //create a bitcoind, then pretend that it is cached
-    //so we can re-use code in withFundedWalletBitcoindCached
+    // create a bitcoind, then pretend that it is cached
+    // so we can re-use code in withFundedWalletBitcoindCached
     val resultF = for {
       bitcoind <- bitcoindF
       outcome = withFundedWalletAndBitcoindCached(test = test,
@@ -98,8 +97,8 @@ trait BitcoinSWalletTestCachedBitcoind
       f <- outcome.toFuture
     } yield f
 
-    //since we aren't actually caching the bitcoind, we need
-    //to shut it down now
+    // since we aren't actually caching the bitcoind, we need
+    // to shut it down now
     val stoppedBitcoind: Future[Outcome] = resultF.transformWith({
       case Success(outcome) =>
         stopBitcoind(bitcoindF)

@@ -30,15 +30,15 @@ abstract class FeeUnitGen {
     } yield SatoshisPerVirtualByte(curr)
   }
 
-  /** Choose between different sets of Satoshi sizes so we get a better distribution */
+  /** Choose between different sets of Satoshi sizes so we get a better
+    * distribution
+    */
   private def realisticFee: Gen[Satoshis] = {
     Gen.oneOf(lowFee, highFee, exorbitantFee)
   }
 
   /** Max fee between 101 - 100 sats. So we can have
-    * 1. 100 sats/byte
-    * 2. 100 sats/vbyte
-    * 3. 100 sats/kb
+    *   1. 100 sats/byte 2. 100 sats/vbyte 3. 100 sats/kb
     */
   private def lowFee: Gen[Satoshis] = {
     Gen
@@ -47,9 +47,7 @@ abstract class FeeUnitGen {
   }
 
   /** Max fee between 0 - 300 sats. So we can have
-    * 1. 300 sats/byte
-    * 2. 300 sats/vbyte
-    * 3. 300 sats/kb
+    *   1. 300 sats/byte 2. 300 sats/vbyte 3. 300 sats/kb
     */
   private def highFee: Gen[Satoshis] = {
     Gen
@@ -58,12 +56,10 @@ abstract class FeeUnitGen {
   }
 
   /** Max fee between 301 - 1,000 sats. So we can have
-    * 1. 1,000 sats/byte
-    * 2. 1,000 sats/vbyte
-    * 3. 1,000 sats/kb
+    *   1. 1,000 sats/byte 2. 1,000 sats/vbyte 3. 1,000 sats/kb
     *
-    * Anything higher can cause a bitcoind to reject the transaction
-    * for paying too high a fee
+    * Anything higher can cause a bitcoind to reject the transaction for paying
+    * too high a fee
     */
   private def exorbitantFee: Gen[Satoshis] = {
     Gen

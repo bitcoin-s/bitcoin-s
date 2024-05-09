@@ -31,9 +31,8 @@ case class WalletCallbackStreamManager(
     with BitcoinSLogger {
   import system.dispatcher
 
-  private val txProcessedQueueSource: Source[
-    Transaction,
-    SourceQueueWithComplete[Transaction]] = {
+  private val txProcessedQueueSource
+      : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -47,9 +46,8 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(txProcessedQueueSource, txProcessedSink)
   }
 
-  private val txBroadcastQueueSource: Source[
-    Transaction,
-    SourceQueueWithComplete[Transaction]] = {
+  private val txBroadcastQueueSource
+      : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -63,15 +61,14 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(txBroadcastQueueSource, txBroadcastSink)
   }
 
-  private val onReservedUtxosSource: Source[
-    Vector[SpendingInfoDb],
-    SourceQueueWithComplete[Vector[SpendingInfoDb]]] = {
+  private val onReservedUtxosSource
+      : Source[Vector[SpendingInfoDb],
+               SourceQueueWithComplete[Vector[SpendingInfoDb]]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
-  private val onReservedUtxosSink: Sink[
-    Vector[SpendingInfoDb],
-    Future[Done]] = {
+  private val onReservedUtxosSink
+      : Sink[Vector[SpendingInfoDb], Future[Done]] = {
     Sink.foreachAsync(1) { case utxos =>
       callbacks.executeOnReservedUtxos(utxos)
     }
@@ -81,9 +78,8 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(onReservedUtxosSource, onReservedUtxosSink)
   }
 
-  private val onAddressGeneratedSource: Source[
-    BitcoinAddress,
-    SourceQueueWithComplete[BitcoinAddress]] = {
+  private val onAddressGeneratedSource
+      : Source[BitcoinAddress, SourceQueueWithComplete[BitcoinAddress]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -97,9 +93,8 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(onAddressGeneratedSource, onAddressGeneratedSink)
   }
 
-  private val onBlockProcessedSource: Source[
-    Block,
-    SourceQueueWithComplete[Block]] = {
+  private val onBlockProcessedSource
+      : Source[Block, SourceQueueWithComplete[Block]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -113,9 +108,8 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(onBlockProcessedSource, onBockProcessedSink)
   }
 
-  private val onRescanCompleteSource: Source[
-    String,
-    SourceQueueWithComplete[String]] = {
+  private val onRescanCompleteSource
+      : Source[String, SourceQueueWithComplete[String]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -129,9 +123,8 @@ case class WalletCallbackStreamManager(
     matSourceAndQueue(onRescanCompleteSource, onRescanCompleteSink)
   }
 
-  private val onFeeChangeSource: Source[
-    FeeUnit,
-    SourceQueueWithComplete[FeeUnit]] = {
+  private val onFeeChangeSource
+      : Source[FeeUnit, SourceQueueWithComplete[FeeUnit]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -152,9 +145,9 @@ case class WalletCallbackStreamManager(
   override def stop(): Future[Unit] = {
     val start = System.currentTimeMillis()
 
-    //can't complete a stream twice
+    // can't complete a stream twice
     if (!isStopped.get()) {
-      //complete all queues
+      // complete all queues
       txProcessedQueue.complete()
       txBroadcastQueue.complete()
       onReservedUtxosQueue.complete()
@@ -179,42 +172,37 @@ case class WalletCallbackStreamManager(
     } yield {
       logger.info(
         s"Done draining akka streams for WalletCallbackStreamManager, it took=${System
-          .currentTimeMillis() - start}ms")
+            .currentTimeMillis() - start}ms")
       ()
     }
   }
 
   private def matSourceAndQueue[T](
       source: Source[T, SourceQueueWithComplete[T]],
-      sink: Sink[T, Future[Done]]): (
-      SourceQueueWithComplete[T],
-      Future[Done]) = {
+      sink: Sink[T, Future[Done]])
+      : (SourceQueueWithComplete[T], Future[Done]) = {
     source
       .toMat(sink)(Keep.both)
       .run()
   }
 
-  override def onTransactionProcessed: CallbackHandler[
-    Transaction,
-    OnTransactionProcessed] = {
+  override def onTransactionProcessed
+      : CallbackHandler[Transaction, OnTransactionProcessed] = {
     callbacks.onTransactionProcessed
   }
 
-  override def onTransactionBroadcast: CallbackHandler[
-    Transaction,
-    OnTransactionBroadcast] = {
+  override def onTransactionBroadcast
+      : CallbackHandler[Transaction, OnTransactionBroadcast] = {
     callbacks.onTransactionBroadcast
   }
 
-  override def onReservedUtxos: CallbackHandler[
-    Vector[SpendingInfoDb],
-    OnReservedUtxos] = {
+  override def onReservedUtxos
+      : CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos] = {
     callbacks.onReservedUtxos
   }
 
-  override def onNewAddressGenerated: CallbackHandler[
-    BitcoinAddress,
-    OnNewAddressGenerated] = {
+  override def onNewAddressGenerated
+      : CallbackHandler[BitcoinAddress, OnNewAddressGenerated] = {
     callbacks.onNewAddressGenerated
   }
 

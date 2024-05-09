@@ -26,7 +26,7 @@ class CLTVScriptPubKeyTest extends BitcoinSUnitTest {
          ScriptConstant("31a420903c05a0a7de2de40c9f02ebedbacdc172"),
          OP_EQUALVERIFY,
          OP_CHECKSIG)
-  //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+  // from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   val rawScriptPubKey = TestUtil.rawP2PKHScriptPubKey
   val scriptPubKey = ScriptPubKey(rawScriptPubKey)
 

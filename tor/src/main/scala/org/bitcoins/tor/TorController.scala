@@ -22,9 +22,12 @@ import scala.concurrent.{Future, Promise}
 
 /** Created by rorp
   *
-  * @param address              Tor control address
-  * @param protocolHandlerProps Tor protocol handler props
-  * @param ec                   execution context
+  * @param address
+  *   Tor control address
+  * @param protocolHandlerProps
+  *   Tor protocol handler props
+  * @param ec
+  *   execution context
   */
 class TorController(
     address: InetSocketAddress,
@@ -100,11 +103,17 @@ object TorController extends BitcoinSLogger {
     *
     * Note: only Tor protocol v3 is supported
     *
-    * @param controlAddress      Tor control address
-    * @param authentication      Tor controller auth mechanism (password or safecookie)
-    * @param privateKeyPath      path to a file that contains a Tor private key
-    * @param virtualPort         port for the public hidden service (typically 9735)
-    * @param targets             address of our protected server (format [host:]port), 127.0.0.1:[[virtualPort]] if empty
+    * @param controlAddress
+    *   Tor control address
+    * @param authentication
+    *   Tor controller auth mechanism (password or safecookie)
+    * @param privateKeyPath
+    *   path to a file that contains a Tor private key
+    * @param virtualPort
+    *   port for the public hidden service (typically 9735)
+    * @param targets
+    *   address of our protected server (format [host:]port),
+    *   127.0.0.1:[[virtualPort]] if empty
     */
   def setUpHiddenService(
       controlAddress: InetSocketAddress,

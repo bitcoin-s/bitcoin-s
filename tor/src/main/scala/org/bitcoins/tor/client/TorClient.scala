@@ -88,10 +88,12 @@ object TorClient extends BitcoinSLogger {
     }
   }
 
-  /** Copies the tor executable and needed files to the given datadir
-    * Returns the tor executable file
-    * @param datadir Directory where to write files
-    * @return Tor executable file
+  /** Copies the tor executable and needed files to the given datadir Returns
+    * the tor executable file
+    * @param datadir
+    *   Directory where to write files
+    * @return
+    *   Tor executable file
     */
   private def torBinaryFromResource(datadir: Path): File = {
     val torBundle = if (EnvUtil.isLinux) {
@@ -124,7 +126,7 @@ object TorClient extends BitcoinSLogger {
         writeFileFromResource(fileName, writePath)
       }
 
-      //set files as executable
+      // set files as executable
       torBundle.executables.foreach { f =>
         val executable = datadir.resolve(f)
         val isExecutable = executable.toFile.setExecutable(true)
@@ -158,18 +160,22 @@ object TorClient extends BitcoinSLogger {
     Files.copy(stream, writePath, StandardCopyOption.REPLACE_EXISTING)
   }
 
-  /** The executables and lists of library files needed to run tor on a specific platform
+  /** The executables and lists of library files needed to run tor on a specific
+    * platform
     *
-    * @param executables the files that need to be set to executable
-    * @param fileList shared object files or library files for tor to operate
+    * @param executables
+    *   the files that need to be set to executable
+    * @param fileList
+    *   shared object files or library files for tor to operate
     */
   private case class TorFileBundle(
       executables: Vector[String],
       fileList: Vector[String]) {
     val allFilesNames: Vector[String] = executables ++ fileList
 
-    /** By convention, make the primary executable the first element passed into executables
-      * This is needed because some platforms like osx require two tor executables (tor, tor.real)
+    /** By convention, make the primary executable the first element passed into
+      * executables This is needed because some platforms like osx require two
+      * tor executables (tor, tor.real)
       */
     def primaryExecutable: String = executables.head
   }
@@ -218,7 +224,9 @@ object TorClient extends BitcoinSLogger {
     )
   }
 
-  /** Checks if the executable files exists in the given datadir and are executable */
+  /** Checks if the executable files exists in the given datadir and are
+    * executable
+    */
   private def existsAndIsExecutable(
       datadir: Path,
       bundle: TorFileBundle): Boolean = {

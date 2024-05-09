@@ -22,7 +22,7 @@ class AddressLabelTest extends BitcoinSWalletTest {
     val tag2 = UnknownAddressTag("test_tag_name_2", "test_tag_type_2")
     val addressF = for {
       address <- wallet.getNewAddress(Vector(tag1))
-      //add another tag to address
+      // add another tag to address
       tagDb1 <- wallet.getAddressTags(address)
       tagDb2 <- wallet.tagAddress(address, tag2)
     } yield {
@@ -45,7 +45,7 @@ class AddressLabelTest extends BitcoinSWalletTest {
                                    tagType = "test_tag_type_2")
       val resultF = for {
         address <- wallet.getNewAddress()
-        //add another tag to address
+        // add another tag to address
         _ <- wallet.tagAddress(address, tag1)
         _ <- wallet.tagAddress(address, tag2)
       } yield ()

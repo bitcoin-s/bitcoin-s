@@ -32,25 +32,27 @@ object DLCFeeTestUtil extends Assertions {
     val closingOutput = closingTx.outputs.map(_.value).sum(CurrencyUnits)
     val actualClosingFee = closingInput - closingOutput
 
-    /** Actual Fee Rate = Actual Fee / Ceil(Actual Weight / 4.0)
-      * Expected Fee Rate = Expected Fee / Ceil(Expected Weight / 4.0)
+    /** Actual Fee Rate = Actual Fee / Ceil(Actual Weight / 4.0) Expected Fee
+      * Rate = Expected Fee / Ceil(Expected Weight / 4.0)
       *
       * Expected Fee = Actual Fee (yay!)
       *
-      * Expected Weight - #sigs - 4 <= Actual Weight <= Expected Weight
-      * The right comparison is true because Expected Weight is designed to be an upper bound.
-      * The left comparison is true because the possible savings are from one weight being saved per
-      * signature, and 1 vbyte = 4 weight being saved if rounding works out well between both parites.
+      * Expected Weight - #sigs - 4 <= Actual Weight <= Expected Weight The
+      * right comparison is true because Expected Weight is designed to be an
+      * upper bound. The left comparison is true because the possible savings
+      * are from one weight being saved per signature, and 1 vbyte = 4 weight
+      * being saved if rounding works out well between both parites.
       *
       * Because of these comparisons, we can derive
       *
-      * Lower Bound Fee Rate = Actual Fee / (Ceil((Actual Weight + #sigs)/4.0) + 1)
-      * Upper Bound Fee Rate = Actual Fee / Ceil(Actual Weight/4.0)
+      * Lower Bound Fee Rate = Actual Fee / (Ceil((Actual Weight + #sigs)/4.0) +
+      * 1) Upper Bound Fee Rate = Actual Fee / Ceil(Actual Weight/4.0)
       *
-      * So that these two fee rates correspond to vbyte amounts 1 apart and represent the
-      * actual fee rate but allowing for signature size variation after which we should match
-      * the expected fee rate. This function asserts:
-      * Lower Bound Fee Rate <= Expected Fee Rate <= Upper Bound Fee Rate
+      * So that these two fee rates correspond to vbyte amounts 1 apart and
+      * represent the actual fee rate but allowing for signature size variation
+      * after which we should match the expected fee rate. This function
+      * asserts: Lower Bound Fee Rate <= Expected Fee Rate <= Upper Bound Fee
+      * Rate
       */
     def feeRateBounds(
         tx: Transaction,

@@ -16,9 +16,8 @@ object FileUtil extends BitcoinSLogger {
 
   /** Deletes the given temporary directory
     *
-    * @throws IllegalArgumentException if the
-    *         given directory isn't in the user
-    *         temp dir location
+    * @throws IllegalArgumentException
+    *   if the given directory isn't in the user temp dir location
     */
   def deleteTmpDir(dir: File): Boolean = {
     val isTemp = dir.getPath startsWith Properties.tmpDir
@@ -34,7 +33,7 @@ object FileUtil extends BitcoinSLogger {
         case Some(files) =>
           files.foreach(deleteTmpDir)
         case None =>
-        //do nothing since list files must have returned null
+        // do nothing since list files must have returned null
       }
       dir.delete()
     }

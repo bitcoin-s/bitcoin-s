@@ -50,10 +50,10 @@ class DLCClient(
         }
       context.become(connecting(peer))
 
-      //currently our request timeout for requests sent to the backend is 60 seconds
-      //so we need the connection timeout to occur before the request times out
-      //when a user tries to submit an accept to the backend
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4080
+      // currently our request timeout for requests sent to the backend is 60 seconds
+      // so we need the connection timeout to occur before the request times out
+      // when a user tries to submit an accept to the backend
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/4080
       val connectionTimeout = 45.seconds
       IO(Tcp) ! Tcp.Connect(peerOrProxyAddress,
                             timeout = Some(connectionTimeout))
@@ -140,10 +140,8 @@ object DLCClient {
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-      handleWriteError: (
-          BigSizeUInt,
-          ByteVector,
-          Throwable) => Future[Unit]): Props =
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
+      : Props =
     Props(
       new DLCClient(dlcWalletApi,
                     connectedAddress,

@@ -8,14 +8,14 @@ import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 
 trait EventDbUtil {
 
-  /** Takes in a [[EventDescriptorTLV]] and nonces and creates [[EventOutcomeDb]] from them
-    * that can be inserted into the database.
+  /** Takes in a [[EventDescriptorTLV]] and nonces and creates
+    * [[EventOutcomeDb]] from them that can be inserted into the database.
     */
   def toEventOutcomeDbs(
       descriptor: EventDescriptorTLV,
       nonces: Vector[
         SchnorrNonce
-      ], //ugh, can we enforce some sort of invariant here? can i make this method private?
+      ], // ugh, can we enforce some sort of invariant here? can i make this method private?
       signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
     descriptor match {
       case enum: EnumEventDescriptorV0TLV =>
@@ -59,8 +59,8 @@ trait EventDbUtil {
 
   def toEventOutcomeDbs(
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
-      signingVersion: SigningVersion = SigningVersion.latest): Vector[
-    EventOutcomeDb] = {
+      signingVersion: SigningVersion = SigningVersion.latest)
+      : Vector[EventOutcomeDb] = {
     val oracleEventV0 = oracleAnnouncementV0TLV.eventTLV match {
       case v0: OracleEventV0TLV => v0
     }
@@ -73,8 +73,8 @@ trait EventDbUtil {
   def toEventDbs(
       oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
       eventName: String,
-      signingVersion: SigningVersion = SigningVersion.latest): Vector[
-    EventDb] = {
+      signingVersion: SigningVersion = SigningVersion.latest)
+      : Vector[EventDb] = {
     val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.toVector
     nonces.zipWithIndex.map { case (nonce, index) =>
       EventDb(

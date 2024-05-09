@@ -12,11 +12,12 @@ import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
-/** This trait defines RPC calls related to
-  * multisignature functionality in Bitcoin Core.
+/** This trait defines RPC calls related to multisignature functionality in
+  * Bitcoin Core.
   *
-  * @see [[https://en.bitcoin.it/wiki/Multisignature Bitcoin Wiki]]
-  *     article on multisignature.
+  * @see
+  *   [[https://en.bitcoin.it/wiki/Multisignature Bitcoin Wiki]] article on
+  *   multisignature.
   */
 trait V20MultisigRpc extends MultisigRpc { self: Client =>
 
@@ -43,8 +44,8 @@ trait V20MultisigRpc extends MultisigRpc { self: Client =>
 
   override def addMultiSigAddress(
       minSignatures: Int,
-      keys: Vector[Either[ECPublicKey, P2PKHAddress]]): Future[
-    MultiSigResultPostV20] =
+      keys: Vector[Either[ECPublicKey, P2PKHAddress]])
+      : Future[MultiSigResultPostV20] =
     addMultiSigAddress(minSignatures, keys, addressType = None)
 
   override def addMultiSigAddress(

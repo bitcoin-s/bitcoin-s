@@ -79,7 +79,9 @@ case class PeerMessageSender(peerConnection: PeerConnection)
 
   }
 
-  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
+  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our
+    * peer
+    */
   override def sendVersionMessage()(implicit
       conf: NodeAppConfig): Future[Unit] = {
     val local = java.net.InetAddress.getLocalHost

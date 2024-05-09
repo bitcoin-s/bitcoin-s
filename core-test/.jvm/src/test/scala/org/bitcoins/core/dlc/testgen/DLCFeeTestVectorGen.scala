@@ -22,8 +22,8 @@ object DLCFeeTestVectorGen
 
   override val inputStr: String = "inputs"
 
-  override def generateFromInput: DLCFeeTestVectorInput => Future[
-    DLCFeeTestVector] = { input =>
+  override def generateFromInput
+      : DLCFeeTestVectorInput => Future[DLCFeeTestVector] = { input =>
     Future.successful(DLCFeeTestVector(input))
   }
 

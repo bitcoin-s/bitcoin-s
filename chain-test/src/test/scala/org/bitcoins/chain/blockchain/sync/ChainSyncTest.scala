@@ -19,12 +19,12 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
     bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
-      //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+      // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
       val getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind)
 
       val getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind)
 
-      //let's generate a block on bitcoind
+      // let's generate a block on bitcoind
       val block1F =
         bitcoind.generate(1)
       val newChainHandlerF: Future[ChainApi] = block1F.flatMap { _ =>
@@ -46,7 +46,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
     bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
-      //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+      // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
       val getBestBlockHashFunc = { () =>
         bitcoind.getBestBlockHash()
       }
@@ -55,7 +55,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
         bitcoind.getBlockHeader(hash).map(_.blockHeader)
       }
 
-      //note we are not generating a block on bitcoind
+      // note we are not generating a block on bitcoind
       val newChainHandlerF: Future[ChainApi] =
         ChainSync.sync(chainHandler = chainHandler,
                        getBlockHeaderFunc = getBlockHeaderFunc,
@@ -63,7 +63,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
 
       val newChainHandler2F = for {
         newChainHandler <- newChainHandlerF
-        //sync it again to make sure we don't fail
+        // sync it again to make sure we don't fail
         newChainHandler2 <- ChainSync.sync(
           chainHandler = newChainHandler.asInstanceOf[ChainHandler],
           getBlockHeaderFunc = getBlockHeaderFunc,
@@ -79,7 +79,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
     bitcoindWithChainHandler =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
-      //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+      // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
       val getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind)
 
       val getBlockHeaderFunc = SyncUtil.getBlockHeaderFunc(bitcoind)
@@ -107,7 +107,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
         assert(bestHash == bitcoindBestBlockHash)
       }
 
-      //let's call sync again and make sure nothing bad happens
+      // let's call sync again and make sure nothing bad happens
       val sync2F = for {
         _ <- assertion1F
         chainApiSync1 <- sync1F

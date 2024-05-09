@@ -16,10 +16,11 @@ import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import java.time.Instant
 import scala.concurrent.Future
 
-/** Useful script for scanning bitcoind
-  * This file assumes you have pre-configured the connection
-  * between bitcoin-s and bitcoind inside of bitcoin-s.conf
-  * @see https://bitcoin-s.org/docs/config/configuration#example-configuration-file
+/** Useful script for scanning bitcoind This file assumes you have
+  * pre-configured the connection between bitcoin-s and bitcoind inside of
+  * bitcoin-s.conf
+  * @see
+  *   https://bitcoin-s.org/docs/config/configuration#example-configuration-file
   */
 class ScanBitcoind()(implicit
     override val system: ActorSystem,
@@ -36,7 +37,7 @@ class ScanBitcoind()(implicit
     val f = for {
       bitcoind <- bitcoindF
       endHeight <- endHeightF
-      //_ <- countWitV1MempoolTxs(bitcoind)
+      // _ <- countWitV1MempoolTxs(bitcoind)
       _ <- countTaprootTxsInBlocks(endHeight, 50000, bitcoind)
     } yield ()
     f.failed.foreach(err =>
@@ -50,13 +51,15 @@ class ScanBitcoind()(implicit
       .map(_ => ())
   }
 
-  /** Searches a given Source[Int] that represents block heights applying f to them and returning a Seq[T] with the results */
+  /** Searches a given Source[Int] that represents block heights applying f to
+    * them and returning a Seq[T] with the results
+    */
   def searchBlocks[T](
       bitcoind: BitcoindRpcClient,
       source: Source[Int, NotUsed],
       f: Block => T,
-      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[
-    Seq[T]] = {
+      numParallelism: Int = Runtime.getRuntime.availableProcessors())
+      : Future[Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
@@ -82,7 +85,7 @@ class ScanBitcoind()(implicit
     val startTime = System.currentTimeMillis()
     val source: Source[Int, NotUsed] = Source(startHeight.to(endHeight))
 
-    //in this simple example, we are going to count the number of witness transactions
+    // in this simple example, we are going to count the number of witness transactions
     val countSegwitTxs: Block => Int = { block: Block =>
       block.transactions.count(_.isInstanceOf[WitnessTransaction])
     }

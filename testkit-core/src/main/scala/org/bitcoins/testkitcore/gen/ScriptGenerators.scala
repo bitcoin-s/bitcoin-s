@@ -36,8 +36,8 @@ sealed abstract class ScriptGenerators {
   val timeout = 30.seconds
   val defaultMaxDepth: Int = 2
 
-  /** Since redeem scripts are pushed onto the stack, this function
-    * checks that the redeem script is not too large for a push operation.
+  /** Since redeem scripts are pushed onto the stack, this function checks that
+    * the redeem script is not too large for a push operation.
     */
   private[gen] def redeemScriptTooBig(redeemScript: ScriptPubKey): Boolean = {
     redeemScript.compactSizeUInt.toInt + CompactSizeUInt(
@@ -123,8 +123,9 @@ sealed abstract class ScriptGenerators {
 
   /** Generates a P2SH script signature
     *
-    * @note the redeem script and the script signature DO NOT evaluate to true
-    * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
+    * @note
+    *   the redeem script and the script signature DO NOT evaluate to true if
+    *   executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     */
   def p2shScriptSignature: Gen[P2SHScriptSignature] =
     for {
@@ -157,8 +158,8 @@ sealed abstract class ScriptGenerators {
       p2pkh = P2PKHScriptPubKey(pubKey)
     } yield (p2pkh, privKey)
 
-  def p2pkWithTimeoutScriptPubKey: Gen[
-    (P2PKWithTimeoutScriptPubKey, Seq[ECPrivateKey])] =
+  def p2pkWithTimeoutScriptPubKey
+      : Gen[(P2PKWithTimeoutScriptPubKey, Seq[ECPrivateKey])] =
     for {
       privKey <- CryptoGenerators.privateKey
       timeoutPrivKey <- CryptoGenerators.privateKey
@@ -191,16 +192,16 @@ sealed abstract class ScriptGenerators {
       (cltv, privKeys, num)
     }
 
-  def nonConditionalCltvScriptPubKey: Gen[
-    (CLTVScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonConditionalCltvScriptPubKey
+      : Gen[(CLTVScriptPubKey, Seq[ECPrivateKey])] = {
     for {
       num <- NumberGenerator.timeLockScriptNumbers
       (cltv, privKeys, num) <- nonConditionalCltvScriptPubKey(num)
     } yield (cltv, privKeys)
   }
 
-  def nonConditionalCltvScriptPubKey(num: ScriptNumber): Gen[
-    (CLTVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
+  def nonConditionalCltvScriptPubKey(num: ScriptNumber)
+      : Gen[(CLTVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
     for {
       (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
     } yield {
@@ -230,8 +231,8 @@ sealed abstract class ScriptGenerators {
       csv = CSVScriptPubKey(num, scriptPubKey)
     } yield (csv, privKeys)
 
-  def nonConditionalCsvScriptPubKey(num: ScriptNumber): Gen[
-    (CSVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] = {
+  def nonConditionalCsvScriptPubKey(num: ScriptNumber)
+      : Gen[(CSVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] = {
     for {
       (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
     } yield {
@@ -240,8 +241,8 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  def nonConditionalCsvScriptPubKey: Gen[
-    (CSVScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonConditionalCsvScriptPubKey
+      : Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] = {
     for {
       (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
       num <- NumberGenerator.timeLockScriptNumbers
@@ -249,8 +250,8 @@ sealed abstract class ScriptGenerators {
     } yield (csv, privKeys)
   }
 
-  def multiSigScriptPubKey: Gen[
-    (MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
+  def multiSigScriptPubKey
+      : Gen[(MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (privateKeys, requiredSigs) <-
         CryptoGenerators.privateKeySeqWithRequiredSigs
@@ -259,8 +260,8 @@ sealed abstract class ScriptGenerators {
         MultiSignatureScriptPubKey(requiredSigs, pubKeys)
     } yield (multiSignatureScriptPubKey, privateKeys.take(requiredSigs))
 
-  def smallMultiSigScriptPubKey: Gen[
-    (MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
+  def smallMultiSigScriptPubKey
+      : Gen[(MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (privateKeys, requiredSigs) <-
         CryptoGenerators.smallPrivateKeySeqWithRequiredSigs
@@ -269,9 +270,11 @@ sealed abstract class ScriptGenerators {
         MultiSignatureScriptPubKey(requiredSigs, pubKeys)
     } yield (multiSignatureScriptPubKey, privateKeys.take(requiredSigs))
 
-  /** Generates a random P2SHScriptPubKey as well as it's corresponding private keys and redeem script */
-  def p2shScriptPubKey: Gen[
-    (P2SHScriptPubKey, Seq[ECPrivateKey], ScriptPubKey)] =
+  /** Generates a random P2SHScriptPubKey as well as it's corresponding private
+    * keys and redeem script
+    */
+  def p2shScriptPubKey
+      : Gen[(P2SHScriptPubKey, Seq[ECPrivateKey], ScriptPubKey)] =
     for {
       (randomScriptPubKey, privKeys) <-
         randomNonP2SHScriptPubKey
@@ -292,7 +295,8 @@ sealed abstract class ScriptGenerators {
 
   /** Creates a ConditionalScriptPubKey with keys for the true case
     *
-    * @param maxDepth The maximum level of nesting allowed within this conditional.
+    * @param maxDepth
+    *   The maximum level of nesting allowed within this conditional.
     */
   def conditionalScriptPubKey(
       maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
@@ -329,8 +333,8 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  def multiSignatureWithTimeoutScriptPubKey: Gen[
-    (MultiSignatureWithTimeoutScriptPubKey, Seq[ECPrivateKey])] = {
+  def multiSignatureWithTimeoutScriptPubKey
+      : Gen[(MultiSignatureWithTimeoutScriptPubKey, Seq[ECPrivateKey])] = {
     multiSigScriptPubKey.flatMap { case (multiSig, keys) =>
       cltvScriptPubKey.map { case (cltv, _) =>
         (MultiSignatureWithTimeoutScriptPubKey(multiSig, cltv), keys)
@@ -344,7 +348,9 @@ sealed abstract class ScriptGenerators {
       privKey <- CryptoGenerators.privateKey
     } yield (P2WPKHWitnessSPKV0(privKey.publicKey), Seq(privKey))
 
-  /** Generates a random P2WSHWitnessSPKV0 as well as it's corresponding private keys and redeem script */
+  /** Generates a random P2WSHWitnessSPKV0 as well as it's corresponding private
+    * keys and redeem script
+    */
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey], ScriptPubKey)] =
     rawScriptPubKey
       .suchThat { case (spk, _) =>
@@ -366,12 +372,12 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  /** Creates an unassigned witness scriptPubKey.
-    * Currently this is any witness script pubkey besides
+  /** Creates an unassigned witness scriptPubKey. Currently this is any witness
+    * script pubkey besides
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]]
     */
-  def unassignedWitnessScriptPubKey: Gen[
-    (UnassignedWitnessScriptPubKey, Seq[ECPrivateKey])] =
+  def unassignedWitnessScriptPubKey
+      : Gen[(UnassignedWitnessScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (witV0, privKeys) <- p2wpkhSPKV0
       version <- Gen.oneOf(WitnessScriptPubKey.unassignedWitVersions)
@@ -382,8 +388,8 @@ sealed abstract class ScriptGenerators {
   def witnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] =
     Gen.oneOf(assignedWitnessScriptPubKey, unassignedWitnessScriptPubKey)
 
-  def assignedWitnessScriptPubKey: Gen[
-    (WitnessScriptPubKey, Seq[ECPrivateKey])] = {
+  def assignedWitnessScriptPubKey
+      : Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate), witnessScriptPubKeyV1)
   }
 
@@ -422,8 +428,8 @@ sealed abstract class ScriptGenerators {
       maxDepth: Int): Gen[(LockTimeScriptPubKey, Seq[ECPrivateKey])] =
     Gen.oneOf(cltvScriptPubKey(maxDepth), csvScriptPubKey(maxDepth))
 
-  def nonConditionalLockTimeScriptPubKey: Gen[
-    (LockTimeScriptPubKey, Seq[ECPrivateKey])] =
+  def nonConditionalLockTimeScriptPubKey
+      : Gen[(LockTimeScriptPubKey, Seq[ECPrivateKey])] =
     Gen.oneOf(nonConditionalCltvScriptPubKey, nonConditionalCsvScriptPubKey)
 
   def lockTimeScriptSig: Gen[LockTimeScriptSignature] =
@@ -449,8 +455,8 @@ sealed abstract class ScriptGenerators {
     )
   }
 
-  def nonWitnessScriptPubKey: Gen[
-    (NonWitnessScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonWitnessScriptPubKey
+      : Gen[(NonWitnessScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
@@ -465,8 +471,8 @@ sealed abstract class ScriptGenerators {
     )
   }
 
-  def nonConditionalNonLocktimeRawScriptPubKey: Gen[
-    (RawScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonConditionalNonLocktimeRawScriptPubKey
+      : Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
@@ -486,8 +492,8 @@ sealed abstract class ScriptGenerators {
     )
   }
 
-  def nonConditionalRawScriptPubKey: Gen[
-    (RawScriptPubKey, Seq[ECPrivateKey])] = {
+  def nonConditionalRawScriptPubKey
+      : Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
@@ -526,9 +532,9 @@ sealed abstract class ScriptGenerators {
       emptyScriptSignature,
       p2shScriptSignature,
       conditionalScriptSignature
-      //NOTE: This are commented out because it fail serializatoin symmetry
-      //sicne we cannot properly type CSV/CLTV ScriptSigs w/o it's SPK
-      //csvScriptSignature, cltvScriptSignature
+      // NOTE: This are commented out because it fail serializatoin symmetry
+      // sicne we cannot properly type CSV/CLTV ScriptSigs w/o it's SPK
+      // csvScriptSignature, cltvScriptSignature
     )
   }
 
@@ -543,9 +549,8 @@ sealed abstract class ScriptGenerators {
     )
   }
 
-  /** Generates a `ScriptSignature` corresponding to the type of
-    * `ScriptPubKey` given.
-    * Note: Does NOT generate a correct/valid signature
+  /** Generates a `ScriptSignature` corresponding to the type of `ScriptPubKey`
+    * given. Note: Does NOT generate a correct/valid signature
     */
   private def pickCorrespondingScriptSignature(
       scriptPubKey: ScriptPubKey): Gen[ScriptSignature] =
@@ -573,12 +578,12 @@ sealed abstract class ScriptGenerators {
   /** Generates a signed `P2PKScriptSignature` that spends the
     * `P2PKScriptPubKey` correctly
     *
-    * @return the signed `P2PKScriptSignature`,
-    *         the `P2PKScriptPubKey` it spends, and the
-    *         `ECPrivateKey` used to sign the scriptSig
+    * @return
+    *   the signed `P2PKScriptSignature`, the `P2PKScriptPubKey` it spends, and
+    *   the `ECPrivateKey` used to sign the scriptSig
     */
-  def signedP2PKScriptSignature: Gen[
-    (P2PKScriptSignature, P2PKScriptPubKey, ECPrivateKey)] =
+  def signedP2PKScriptSignature
+      : Gen[(P2PKScriptSignature, P2PKScriptPubKey, ECPrivateKey)] =
     for {
       privateKey <- CryptoGenerators.privateKey
       hashType <- CryptoGenerators.hashType
@@ -602,21 +607,21 @@ sealed abstract class ScriptGenerators {
       txSigComponent = P2PKSigner.sign(spendingInfo,
                                        spendingTx,
                                        isDummySignature = false)
-      //add the signature to the scriptSig instead of having an empty scriptSig
+      // add the signature to the scriptSig instead of having an empty scriptSig
       signedScriptSig =
         txSigComponent.scriptSignature
           .asInstanceOf[P2PKScriptSignature]
     } yield (signedScriptSig, scriptPubKey, privateKey)
 
-  /** Generates a signed `P2PKHScriptSignature` that
-    * spends the `P2PKHScriptPubKey` correctly
+  /** Generates a signed `P2PKHScriptSignature` that spends the
+    * `P2PKHScriptPubKey` correctly
     *
-    * @return the signed `P2PKHScriptSignature`, the
-    *         `P2PKHScriptPubKey` it spends, and the
-    *         `ECPrivateKey` used to sign the scriptSig
+    * @return
+    *   the signed `P2PKHScriptSignature`, the `P2PKHScriptPubKey` it spends,
+    *   and the `ECPrivateKey` used to sign the scriptSig
     */
-  def signedP2PKHScriptSignature: Gen[
-    (P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = {
+  def signedP2PKHScriptSignature
+      : Gen[(P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = {
     for {
       privateKey <- CryptoGenerators.privateKey
       hashType <- CryptoGenerators.hashType
@@ -677,18 +682,16 @@ sealed abstract class ScriptGenerators {
       (signedScriptSig, spk, privKey)
     }
 
-  /** Generates a signed
-    * `MultiSignatureScriptSignature` that spends the
-    * `MultiSignatureScriptPubKey` correctly
-    * ti
-    * @return the signed `MultiSignatureScriptSignature`,
-    *         the `MultiSignatureScriptPubKey` it spends and the
-    *         sequence of `ECPrivateKey` used to sign the scriptSig
+  /** Generates a signed `MultiSignatureScriptSignature` that spends the
+    * `MultiSignatureScriptPubKey` correctly ti
+    * @return
+    *   the signed `MultiSignatureScriptSignature`, the
+    *   `MultiSignatureScriptPubKey` it spends and the sequence of
+    *   `ECPrivateKey` used to sign the scriptSig
     */
-  def signedMultiSignatureScriptSignature: Gen[(
-      MultiSignatureScriptSignature,
-      MultiSignatureScriptPubKey,
-      Seq[ECPrivateKey])] =
+  def signedMultiSignatureScriptSignature: Gen[(MultiSignatureScriptSignature,
+                                                MultiSignatureScriptPubKey,
+                                                Seq[ECPrivateKey])] =
     for {
       (privateKeysWithExtra, requiredSigs) <-
         CryptoGenerators.privateKeySeqWithRequiredSigs
@@ -722,10 +725,9 @@ sealed abstract class ScriptGenerators {
           .asInstanceOf[MultiSignatureScriptSignature]
     } yield (signedScriptSig, multiSigScriptPubKey, privateKeys)
 
-  def signedConditionalScriptSignature: Gen[(
-      ConditionalScriptSignature,
-      ConditionalScriptPubKey,
-      Seq[ECPrivateKey])] = {
+  def signedConditionalScriptSignature: Gen[(ConditionalScriptSignature,
+                                             ConditionalScriptPubKey,
+                                             Seq[ECPrivateKey])] = {
     val signed = Gen.oneOf(
       packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature),
       packageToSequenceOfPrivateKeys(signedP2PKScriptSignature),
@@ -747,10 +749,10 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  def signedMultiSignatureWithTimeoutScriptSignature: Gen[(
-      ConditionalScriptSignature,
-      MultiSignatureWithTimeoutScriptPubKey,
-      Seq[ECPrivateKey])] = {
+  def signedMultiSignatureWithTimeoutScriptSignature
+      : Gen[(ConditionalScriptSignature,
+             MultiSignatureWithTimeoutScriptPubKey,
+             Seq[ECPrivateKey])] = {
     NumberGenerator.bool.flatMap { condition =>
       signedMultiSignatureScriptSignature.flatMap {
         case (multiSigScriptSig, multiSigSPK, multiSigKeys) =>
@@ -772,24 +774,24 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  /** Generates a signed `P2SHScriptSignature`
-    * that spends from a `P2SHScriptPubKey` correctly
+  /** Generates a signed `P2SHScriptSignature` that spends from a
+    * `P2SHScriptPubKey` correctly
     *
-    * @return the signed `P2SHScriptSignature`,
-    *         the `P2SHScriptPubKey` it spends, and the
-    *         sequence of `ECPrivateKey`
-    *         used to sign the scriptSig
+    * @return
+    *   the signed `P2SHScriptSignature`, the `P2SHScriptPubKey` it spends, and
+    *   the sequence of `ECPrivateKey` used to sign the scriptSig
     */
-  def signedP2SHScriptSignature: Gen[
-    (P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey])] =
+  def signedP2SHScriptSignature
+      : Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (scriptSig, redeemScript, privateKeys) <- chooseSignedScriptSig
       p2SHScriptPubKey = P2SHScriptPubKey(redeemScript)
       p2SHScriptSignature = P2SHScriptSignature(scriptSig, redeemScript)
     } yield (p2SHScriptSignature, p2SHScriptPubKey, privateKeys)
 
-  /** Utility function to compute how many signatures will be required in the inner-most true case.
-    * For use with CLTV and CSV ScriptSignature generation.
+  /** Utility function to compute how many signatures will be required in the
+    * inner-most true case. For use with CLTV and CSV ScriptSignature
+    * generation.
     */
   @tailrec
   private def findRequiredSigs(conditional: ConditionalScriptPubKey): Int = {
@@ -809,16 +811,15 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  /** @return the signed `CLTVScriptSignature`, the
-    *         `CLTVScriptPubKey` it spends, and the
-    *         sequences of `ECPrivateKey`
-    *         used to sign the scriptSig
+  /** @return
+    *   the signed `CLTVScriptSignature`, the `CLTVScriptPubKey` it spends, and
+    *   the sequences of `ECPrivateKey` used to sign the scriptSig
     */
   def signedCLTVScriptSignature(
       cltvLockTime: ScriptNumber,
       lockTime: UInt32,
-      sequence: UInt32): Gen[
-    (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
+      sequence: UInt32)
+      : Gen[(CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(defaultMaxDepth)
       hashType <- CryptoGenerators.hashType
@@ -865,18 +866,15 @@ sealed abstract class ScriptGenerators {
             "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
     }
 
-  /** Generates a signed `CLTVScriptSignature` that spends
-    * from a `CLTVScriptSignature` correctly
+  /** Generates a signed `CLTVScriptSignature` that spends from a
+    * `CLTVScriptSignature` correctly
     *
-    * @return the signed `CSVScriptSignature`, the
-    *         `CSVScriptPubKey` it spends, and the
-    *         sequences of `ECPrivateKey`
-    *         used to sign the scriptSig
+    * @return
+    *   the signed `CSVScriptSignature`, the `CSVScriptPubKey` it spends, and
+    *   the sequences of `ECPrivateKey` used to sign the scriptSig
     */
-  def signedCSVScriptSignature(
-      csvScriptNum: ScriptNumber,
-      sequence: UInt32): Gen[
-    (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
+  def signedCSVScriptSignature(csvScriptNum: ScriptNumber, sequence: UInt32)
+      : Gen[(CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(defaultMaxDepth)
       hashType <- CryptoGenerators.hashType
@@ -915,16 +913,16 @@ sealed abstract class ScriptGenerators {
             "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
     }
 
-  def signedCSVScriptSignature: Gen[
-    (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
+  def signedCSVScriptSignature
+      : Gen[(CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (csv, privKeys) <- csvScriptPubKey(defaultMaxDepth)
       sequence <- NumberGenerator.uInt32s
       scriptSig <- signedCSVScriptSignature(csv.locktime, sequence)
     } yield scriptSig
 
-  def signedCLTVScriptSignature: Gen[
-    (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
+  def signedCLTVScriptSignature
+      : Gen[(CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (cltv, privKeys) <- cltvScriptPubKey(defaultMaxDepth)
       txLockTime <- NumberGenerator.uInt32s
@@ -933,9 +931,8 @@ sealed abstract class ScriptGenerators {
         signedCLTVScriptSignature(cltv.locktime, txLockTime, sequence)
     } yield scriptSig
 
-  /** Generates a `LockTimeScriptSignature` and
-    * `LockTimeScriptPubKey` pair that are valid when
-    * run through the interpreter
+  /** Generates a `LockTimeScriptSignature` and `LockTimeScriptPubKey` pair that
+    * are valid when run through the interpreter
     */
   def signedLockTimeScriptSignature: Gen[
     (LockTimeScriptSignature, LockTimeScriptPubKey, Seq[ECPrivateKey])] = {
@@ -987,13 +984,11 @@ sealed abstract class ScriptGenerators {
     }
   }
 
-  def signedP2SHP2WPKHScriptSignature: Gen[
-    (
-        P2SHScriptSignature,
-        P2SHScriptPubKey,
-        Seq[ECPrivateKey],
-        TransactionWitness,
-        CurrencyUnit)] =
+  def signedP2SHP2WPKHScriptSignature: Gen[(P2SHScriptSignature,
+                                            P2SHScriptPubKey,
+                                            Seq[ECPrivateKey],
+                                            TransactionWitness,
+                                            CurrencyUnit)] =
     for {
       (witness, wtxSigComponent, privKeys) <-
         WitnessGenerators.signedP2WPKHTransactionWitness
@@ -1006,13 +1001,11 @@ sealed abstract class ScriptGenerators {
              witness,
              wtxSigComponent.amount)
 
-  def signedP2SHP2WSHScriptSignature: Gen[
-    (
-        P2SHScriptSignature,
-        P2SHScriptPubKey,
-        Seq[ECPrivateKey],
-        TransactionWitness,
-        CurrencyUnit)] =
+  def signedP2SHP2WSHScriptSignature: Gen[(P2SHScriptSignature,
+                                           P2SHScriptPubKey,
+                                           Seq[ECPrivateKey],
+                                           TransactionWitness,
+                                           CurrencyUnit)] =
     for {
       (witness, wtxSigComponent, privKeys) <-
         WitnessGenerators.signedP2WSHTransactionWitness
@@ -1024,17 +1017,16 @@ sealed abstract class ScriptGenerators {
              witness,
              wtxSigComponent.amount)
 
-  /** This function chooses a random signed `ScriptSignature`
-    * that is NOT a `P2SHScriptSignature`,
-    * `CSVScriptSignature`,
-    * `CLTVScriptSignature`, or any witness type
+  /** This function chooses a random signed `ScriptSignature` that is NOT a
+    * `P2SHScriptSignature`, `CSVScriptSignature`, `CLTVScriptSignature`, or any
+    * witness type
     *
-    * @return the signed `ScriptSignature`,
-    *         the `ScriptPubKey` it is spending,
-    *         and the sequence of `ECPrivateKey` used to sign it
+    * @return
+    *   the signed `ScriptSignature`, the `ScriptPubKey` it is spending, and the
+    *   sequence of `ECPrivateKey` used to sign it
     */
-  def chooseSignedScriptSig: Gen[
-    (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
+  def chooseSignedScriptSig
+      : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       packageToSequenceOfPrivateKeys(signedP2PKScriptSignature),
       packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature),
@@ -1042,12 +1034,11 @@ sealed abstract class ScriptGenerators {
     )
   }
 
-  /** Generates a random `ScriptSignature`, the
-    * `ScriptPubKey` it is spending, and the
-    * `ECPrivateKey` needed to spend it.
+  /** Generates a random `ScriptSignature`, the `ScriptPubKey` it is spending,
+    * and the `ECPrivateKey` needed to spend it.
     */
-  def randomScriptSig: Gen[
-    (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
+  def randomScriptSig
+      : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val witP2SHP2WPKH =
       signedP2SHP2WPKHScriptSignature.map(x => (x._1, x._2, x._3))
     val witP2SHP2WSH =
@@ -1067,15 +1058,19 @@ sealed abstract class ScriptGenerators {
     )
   }
 
-  /** Simply converts one private key in the generator to a sequence of private keys */
+  /** Simply converts one private key in the generator to a sequence of private
+    * keys
+    */
   private def packageToSequenceOfPrivateKeys[SPK <: ScriptPubKey](
-      gen: Gen[(ScriptSignature, SPK, ECPrivateKey)]): Gen[
-    (ScriptSignature, SPK, Seq[ECPrivateKey])] =
+      gen: Gen[(ScriptSignature, SPK, ECPrivateKey)])
+      : Gen[(ScriptSignature, SPK, Seq[ECPrivateKey])] =
     for {
       (scriptSig, scriptPubKey, privateKey) <- gen
     } yield (scriptSig, scriptPubKey, Seq(privateKey))
 
-  /** Simply converts one private key in the generator to a sequence of private keys */
+  /** Simply converts one private key in the generator to a sequence of private
+    * keys
+    */
   private def privKeyToSeq[T](
       tuple: (T, ECPrivateKey)): (T, Seq[ECPrivateKey]) = {
     val (s, key) = tuple
@@ -1088,8 +1083,8 @@ sealed abstract class ScriptGenerators {
       keys: Seq[ECPublicKey]): LockTimeScriptSignature = {
 
     val nestedScriptSig = lock.nestedScriptPubKey match {
-      case _: P2PKScriptPubKey           => P2PKScriptSignature(sigs.head)
-      case _: P2PKHScriptPubKey          => P2PKHScriptSignature(sigs.head, keys.head)
+      case _: P2PKScriptPubKey  => P2PKScriptSignature(sigs.head)
+      case _: P2PKHScriptPubKey => P2PKHScriptSignature(sigs.head, keys.head)
       case _: MultiSignatureScriptPubKey => MultiSignatureScriptSignature(sigs)
       case conditional: ConditionalScriptPubKey =>
         val spk = lock match {

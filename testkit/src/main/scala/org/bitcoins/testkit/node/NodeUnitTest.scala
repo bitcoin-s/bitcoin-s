@@ -35,8 +35,8 @@ trait NodeUnitTest extends BaseNodeTest {
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
-        //we aren't calling node.start(), but we need to call appConfig.start()
-        //to make sure migrations are run
+        // we aren't calling node.start(), but we need to call appConfig.start()
+        // to make sure migrations are run
         _ <- node.chainConfig.start()
         _ <- node.nodeConfig.start()
       } yield node
@@ -57,8 +57,8 @@ trait NodeUnitTest extends BaseNodeTest {
   def withNeutrinoNodeConnectedToBitcoindV22(test: OneArgAsyncTest)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoindV22] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoindV22] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         bitcoind <-
@@ -86,8 +86,8 @@ trait NodeUnitTest extends BaseNodeTest {
       versionOpt: Option[BitcoindVersion] = None)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
@@ -111,8 +111,8 @@ trait NodeUnitTest extends BaseNodeTest {
       bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeNotConnectedWithBitcoinds] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeNotConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -219,7 +219,7 @@ object NodeUnitTest extends P2PLogger {
     resultF
   }
 
-  //does not destroys the bitcoinds
+  // does not destroys the bitcoinds
   private def destroyNodeConnectedWithBitcoinds(
       nodeConnectedWithBitcoind: NodeConnectedWithBitcoinds)(implicit
       system: ActorSystem,
@@ -246,13 +246,15 @@ object NodeUnitTest extends P2PLogger {
       NeutrinoNodeConnectedWithBitcoinds(x.node, x.bitcoinds))
   }
 
-  /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
+  /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are
+    * connected to bitcoind
+    */
   private def createNeutrinoNodeFundedWalletBitcoind(
       versionOpt: Option[BitcoindVersion],
       walletCallbacks: WalletCallbacks)(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): Future[
-    NeutrinoNodeFundedWalletBitcoind] = {
+      appConfig: BitcoinSAppConfig)
+      : Future[NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
     for {
@@ -267,8 +269,8 @@ object NodeUnitTest extends P2PLogger {
         walletCallbacks = walletCallbacks)
       startedNode <- node.start()
       syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
-      //callbacks are executed asynchronously, which is how we fund the wallet
-      //so we need to wait until the wallet balances are correct
+      // callbacks are executed asynchronously, which is how we fund the wallet
+      // so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
         appConfig.walletConf,
         system)
@@ -283,8 +285,8 @@ object NodeUnitTest extends P2PLogger {
       bitcoind: BitcoindRpcClient,
       walletCallbacks: WalletCallbacks)(implicit
       system: ActorSystem,
-      appConfig: BitcoinSAppConfig): Future[
-    NeutrinoNodeFundedWalletBitcoind] = {
+      appConfig: BitcoinSAppConfig)
+      : Future[NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
     for {
@@ -302,8 +304,8 @@ object NodeUnitTest extends P2PLogger {
       startedNode <- node.start()
       _ <- NodeTestUtil.awaitConnectionCount(node = node,
                                              expectedConnectionCount = 1)
-      //callbacks are executed asynchronously, which is how we fund the wallet
-      //so we need to wait until the wallet balances are correct
+      // callbacks are executed asynchronously, which is how we fund the wallet
+      // so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
         appConfig.walletConf,
         system)
@@ -325,8 +327,8 @@ object NodeUnitTest extends P2PLogger {
                             appConfig.walletConf)
     }
 
-    //these need to be done in order, as the spv node needs to be
-    //stopped before the bitcoind node is stopped
+    // these need to be done in order, as the spv node needs to be
+    // stopped before the bitcoind node is stopped
     val destroyedF = for {
       _ <- BitcoinSWalletTest.destroyOnlyWalletWithBitcoindCached(
         walletWithBitcoind)
@@ -347,8 +349,8 @@ object NodeUnitTest extends P2PLogger {
     Peer(id = None, socket = socket, socks5ProxyParams = None)
   }
 
-  /** Creates a Neutrino node peered with the given bitcoind client, this does NOT
-    * start the neutrino node
+  /** Creates a Neutrino node peered with the given bitcoind client, this does
+    * NOT start the neutrino node
     */
   def createNeutrinoNode(
       bitcoind: BitcoindRpcClient,
@@ -378,8 +380,8 @@ object NodeUnitTest extends P2PLogger {
     nodeF
   }
 
-  /** Creates a Neutrino node peered with the given peer, this does NOT
-    * start the neutrino node
+  /** Creates a Neutrino node peered with the given peer, this does NOT start
+    * the neutrino node
     */
   def createNeutrinoNode(peer: Peer, walletCreationTimeOpt: Option[Instant])(
       implicit
@@ -407,8 +409,8 @@ object NodeUnitTest extends P2PLogger {
     nodeF
   }
 
-  /** Creates a Neutrino node peered with the given bitcoind client, this does NOT
-    * start the neutrino node
+  /** Creates a Neutrino node peered with the given bitcoind client, this does
+    * NOT start the neutrino node
     */
   def createNeutrinoNode(
       bitcoinds: Vector[BitcoindRpcClient],
@@ -446,7 +448,7 @@ object NodeUnitTest extends P2PLogger {
       syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
       newNode <- {
         if (syncing) {
-          //do nothing as we are already syncing
+          // do nothing as we are already syncing
           logger.info(
             s"Node is already syncing, skipping initiating a new sync.")
           NodeTestUtil.awaitSyncAndIBD(node, bitcoind).map(_ => node)
@@ -463,9 +465,9 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[NeutrinoNode] = {
     import system.dispatcher
     for {
-      //wait for bitcoind to be synced internally
-      //see: https://github.com/bitcoin/bitcoin/issues/27085
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4976
+      // wait for bitcoind to be synced internally
+      // see: https://github.com/bitcoin/bitcoin/issues/27085
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/4976
       _ <- bitcoind.syncWithValidationInterfaceQueue()
       _ <- node.sync()
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
@@ -473,10 +475,10 @@ object NodeUnitTest extends P2PLogger {
     } yield node
   }
 
-  /** This is needed for postgres, we do not drop tables in between individual tests with postgres
-    * rather an entire test suite shares the same postgres database.
-    * therefore, we need to clean the database after each test, so that migrations can be applied during
-    * the setup phase for the next test.
+  /** This is needed for postgres, we do not drop tables in between individual
+    * tests with postgres rather an entire test suite shares the same postgres
+    * database. therefore, we need to clean the database after each test, so
+    * that migrations can be applied during the setup phase for the next test.
     * @param appConfig
     */
   private def cleanTables(appConfig: BitcoinSAppConfig): Unit = {

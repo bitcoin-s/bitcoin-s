@@ -47,8 +47,8 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
   }
 }
 
-/** Test trait that caches a [[BitcoindV22RpcClient]] that is funded
-  * and available to use with fixtures
+/** Test trait that caches a [[BitcoindV22RpcClient]] that is funded and
+  * available to use with fixtures
   */
 trait BitcoindFixturesFundedCachedV22
     extends BitcoinSAsyncFixtureTest
@@ -81,8 +81,8 @@ trait BitcoindFixturesFundedCachedV22
   }
 }
 
-/** Test trait that caches a [[BitcoindV23RpcClient]] that is funded
-  * and available to use with fixtures
+/** Test trait that caches a [[BitcoindV23RpcClient]] that is funded and
+  * available to use with fixtures
   */
 trait BitcoindFixturesFundedCachedV23
     extends BitcoinSAsyncFixtureTest
@@ -179,15 +179,17 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
     makeDependentFixture[NodePair[T]](
       () => Future.successful(bitcoinds),
       destroy = { case _: NodePair[T] =>
-        //do nothing since we are caching bitcoinds
-        //the test trait may want to re-use them
+        // do nothing since we are caching bitcoinds
+        // the test trait may want to re-use them
         Future.unit
       }
     )(test)
   }
 }
 
-/** Bitcoind fixtures with two cached bitcoind rpc clients that are [[BitcoindVersion.newest]] that are connected via p2p */
+/** Bitcoind fixtures with two cached bitcoind rpc clients that are
+  * [[BitcoindVersion.newest]] that are connected via p2p
+  */
 trait BitcoindFixturesCachedPairV22
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesCachedPair[BitcoindV22RpcClient] {
@@ -243,8 +245,8 @@ trait BitcoindFixturesCachedTriple[T <: BitcoindRpcClient]
     makeDependentFixture[NodeTriple[T]](
       () => Future.successful(bitcoinds),
       destroy = { case _: NodeTriple[T] =>
-        //do nothing since we are caching bitcoinds
-        //the test trait may want to re-use them
+        // do nothing since we are caching bitcoinds
+        // the test trait may want to re-use them
         Future.unit
       }
     )(test)

@@ -1036,7 +1036,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] == s"""{"result":"${LnMessage(
-          offer.toTLV).hex}","error":null}""")
+            offer.toTLV).hex}","error":null}""")
       }
 
       val badRoute = walletRoutes.handleCommand(
@@ -1088,7 +1088,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] == s"""{"result":"${LnMessage(
-          accept.toTLV).hex}","error":null}""")
+            accept.toTLV).hex}","error":null}""")
       }
     }
 
@@ -1112,7 +1112,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] == s"""{"result":"${LnMessage(
-          sign.toTLV).hex}","error":null}""")
+            sign.toTLV).hex}","error":null}""")
       }
     }
 
@@ -1598,8 +1598,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[String] == s"""{"result":"${PSBT
-          .fromUnsignedTx(tx)
-          .base64}","error":null}""")
+            .fromUnsignedTx(tx)
+            .base64}","error":null}""")
       }
     }
 

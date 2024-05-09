@@ -31,9 +31,9 @@ import scala.concurrent.Future
 class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
 
   "TransactionSignatureCreator" must "create a signature for a scriptSignature in a transaction" in {
-    //this is a signed tx, but since TransactionSignatureSerializer removes scriptSigs, it will work for testing this
-    //from fe6ef8e20a9ca9cb5d59cb1c0f30eff2b23be2e3cc2bf4b4cfff519414e9a300 on testnet
-    //"30440220357864ae2beba3d6ec34c0ce42262c1c12939502f0f8f4bd338c9d8b307593420220656687c327589dc3e464700fa7b784c7efc2b465c627a60c2f1ce402d05fc39d01"
+    // this is a signed tx, but since TransactionSignatureSerializer removes scriptSigs, it will work for testing this
+    // from fe6ef8e20a9ca9cb5d59cb1c0f30eff2b23be2e3cc2bf4b4cfff519414e9a300 on testnet
+    // "30440220357864ae2beba3d6ec34c0ce42262c1c12939502f0f8f4bd338c9d8b307593420220656687c327589dc3e464700fa7b784c7efc2b465c627a60c2f1ce402d05fc39d01"
     val expectedSig = ECDigitalSignature(
       "30440220357864ae2beba3d6ec34c0ce42262c1c12939502f0f8f4bd338c9d8b307593420220656687c327589dc3e464700fa7b784c7efc2b465c627a60c2f1ce402d05fc39d01")
     val rawTx =
@@ -62,7 +62,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
 
   }
   it must "create the correct digital signature for a transaction with 1 input using a TxSignatureComponent" in {
-    //66f48fa8ef5db20a3b4be6b13f024b6e23480fd83df26ffbe7449110b113a665 on testnet
+    // 66f48fa8ef5db20a3b4be6b13f024b6e23480fd83df26ffbe7449110b113a665 on testnet
     val expectedSig = ECDigitalSignature(
       "3044022075b4ab08ff34799ee6f8048a5044be98dff493fc5a0b8a36dcaee3bd7a9993ae02207bc532ceab09c10f1d54035d03ff9aad0e1004c3e0325a8b97b6be04b7d6c3a201")
     val rawTx =
@@ -90,7 +90,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
   }
 
   it must "create the correct digital signature for a transaction with 1 input" in {
-    //66f48fa8ef5db20a3b4be6b13f024b6e23480fd83df26ffbe7449110b113a665 on testnet
+    // 66f48fa8ef5db20a3b4be6b13f024b6e23480fd83df26ffbe7449110b113a665 on testnet
     val expectedSig = ECDigitalSignature(
       "3044022075b4ab08ff34799ee6f8048a5044be98dff493fc5a0b8a36dcaee3bd7a9993ae02207bc532ceab09c10f1d54035d03ff9aad0e1004c3e0325a8b97b6be04b7d6c3a201")
     val rawTx =
@@ -188,7 +188,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
                                               privateKey,
                                               HashType.sigHashAll)
 
-      //add the signature to the scriptSig instead of having an empty scriptSig
+      // add the signature to the scriptSig instead of having an empty scriptSig
       val signedScriptSig = P2PKScriptSignature(txSignature)
       val (signedTx, _) =
         TransactionTestUtil.buildSpendingTransaction(creditingTx,
@@ -202,7 +202,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
           output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
           flags = Policy.standardScriptVerifyFlags)
 
-      //run it through the interpreter
+      // run it through the interpreter
       val program = PreExecutionScriptProgram(signedTxSigComponent)
 
       val result = ScriptInterpreter.run(program)
@@ -233,14 +233,14 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
                                               privateKey,
                                               HashType.sigHashAll)
 
-      //add the signature to the scriptSig instead of having an empty scriptSig
+      // add the signature to the scriptSig instead of having an empty scriptSig
       val signedScriptSig = P2PKHScriptSignature(txSignature, publicKey)
       val (signedTx, _) =
         TransactionTestUtil.buildSpendingTransaction(creditingTx,
                                                      signedScriptSig,
                                                      outputIndex)
 
-      //run it through the interpreter
+      // run it through the interpreter
       val signedTxSigComponent =
         BaseTxSigComponent(
           transaction = signedTx,
@@ -276,7 +276,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
                                               privateKey,
                                               HashType.sigHashAll)
 
-      //add the signature to the scriptSig instead of having an empty scriptSig
+      // add the signature to the scriptSig instead of having an empty scriptSig
       val signedScriptSig = MultiSignatureScriptSignature(Seq(txSignature))
       val (signedTx, _) =
         TransactionTestUtil.buildSpendingTransaction(creditingTx,
@@ -289,7 +289,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
           inputIndex = inputIndex,
           output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
           Policy.standardScriptVerifyFlags)
-      //run it through the interpreter
+      // run it through the interpreter
       val program = PreExecutionScriptProgram(signedTxSigComponent)
 
       val result = ScriptInterpreter.run(program)
@@ -335,7 +335,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
           inputIndex = inputIndex,
           output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
           Policy.standardScriptVerifyFlags)
-      //run it through the interpreter
+      // run it through the interpreter
       val program = PreExecutionScriptProgram(signedTxSigComponent)
       val result = ScriptInterpreter.run(program)
       result must be(ScriptOk)
@@ -378,7 +378,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
                                                      ss,
                                                      outputIndex)
     }
-    //run it through the interpreter
+    // run it through the interpreter
     val program = signedTxFuture.map { case (tx, _) =>
       val signedTxSigComponent = BaseTxSigComponent(
         transaction = tx,

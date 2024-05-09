@@ -198,7 +198,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
       val newHeaderCF = reorgFixtureF.map(_.headerDb2)
 
-      //we are going to generate two new blocks on chain C
+      // we are going to generate two new blocks on chain C
       val chainHandlerEWithHeaderF: Future[(ChainApi, BlockHeaderDb)] = for {
         newHeaderC <- newHeaderCF
         chainHandler <- chainHandlerCF
@@ -211,9 +211,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val chainHandlerEF = chainHandlerEWithHeaderF.map(_._1)
 
       val headerEF = chainHandlerEWithHeaderF.map(_._2)
-      //now we are going to attempt to generate a block on top of B
-      //we should _not_ reorg to a new best tip after adding block F ontop of B
-      //the best hash should still be header E's best hash.
+      // now we are going to attempt to generate a block on top of B
+      // we should _not_ reorg to a new best tip after adding block F ontop of B
+      // the best hash should still be header E's best hash.
 
       val chainHandlerFF = for {
         chainHandler <- chainHandlerEF
@@ -428,7 +428,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(marker.stopBlockHash == genesisHeader.hash)
       }
 
-      //let's process a block header, and then be able to fetch that header as the last stopHash
+      // let's process a block header, and then be able to fetch that header as the last stopHash
       val blockHeaderDb = {
         BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                             chainWork =
@@ -463,8 +463,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val newHeaderCF = reorgFixtureF.map(_.headerDb2)
       val batchSize = 100
 
-      //two competing headers B,C built off of A
-      //first specify header B to be syncing filter headers from
+      // two competing headers B,C built off of A
+      // first specify header B to be syncing filter headers from
       val assert0F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
@@ -483,8 +483,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(newHeaderB.hashBE == marker.stopBlockHash.flip)
       }
 
-      //two competing headers B,C built off of A
-      //first specify header C to be syncing filter headers from
+      // two competing headers B,C built off of A
+      // first specify header C to be syncing filter headers from
       val assert1F = for {
         _ <- assert0F
         chainHandler <- chainHandlerF
@@ -504,9 +504,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(newHeaderC.hashBE == marker.stopBlockHash.flip)
       }
 
-      //now let's build a new block header ontop of C and process it
-      //when we call chainHandler.nextBlockHeaderBatchRange it
-      //should be C's hash instead of B's hash
+      // now let's build a new block header ontop of C and process it
+      // when we call chainHandler.nextBlockHeaderBatchRange it
+      // should be C's hash instead of B's hash
       for {
         _ <- assert1F
         chainHandler <- chainHandlerF
@@ -549,8 +549,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
       val newHeaderCF = reorgFixtureF.map(_.headerDb2)
 
-      //two competing headers B,C built off of A
-      //first specify header C to be syncing filter headers from
+      // two competing headers B,C built off of A
+      // first specify header C to be syncing filter headers from
       val assert1F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
@@ -570,9 +570,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
 
       val headerDF = newHeaderCF.map(BlockHeaderHelper.buildNextHeader)
-      //now let's build a new block header ontop of C and process it
-      //when we call chainHandler.nextBlockHeaderBatchRange it
-      //should be C's hash instead of D's hash due to batchSize
+      // now let's build a new block header ontop of C and process it
+      // when we call chainHandler.nextBlockHeaderBatchRange it
+      // should be C's hash instead of D's hash due to batchSize
       val assert2F = for {
         _ <- assert1F
         chainHandler <- chainHandlerF
@@ -605,13 +605,13 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(headerD.hashBE == marker.stopBlockHash.flip)
       }
 
-      //must return None in the case of reorg scenario between prevStopHash / stopHash
+      // must return None in the case of reorg scenario between prevStopHash / stopHash
       for {
         _ <- assert3F
         chainHandler <- chainHandlerF
         headerB <- newHeaderBF
         headerD <- headerDF
-        //note headerB and headerD are not part of the same chain as D is built ontop of C
+        // note headerB and headerD are not part of the same chain as D is built ontop of C
         blockHeaderBatchOpt <-
           chainHandler.nextBlockHeaderBatchRange(prevStopHash = headerB.hashBE,
                                                  stopHash = headerD.hashBE,
@@ -623,9 +623,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "generate the next range of block headers correctly if its outside of our in memory blockchain" in {
     chainHandler =>
-      //need to generate a bunch of block headers first
+      // need to generate a bunch of block headers first
       val target =
-        2500 //our limit for in memory blockchains is 2016 headers currently (difficulty interval)
+        2500 // our limit for in memory blockchains is 2016 headers currently (difficulty interval)
       val buildF = ChainUnitTest.buildNHeaders(chainHandler, target)
       val chainParams = chainHandler.chainConfig.network.chainParams
       val batchSize = 2000
@@ -656,8 +656,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val newHeaderCF = reorgFixtureF.map(_.headerDb2)
       val batchSize = 100
 
-      //two competing headers B,C built off of A
-      //first specify header B to be syncing filter headers from
+      // two competing headers B,C built off of A
+      // first specify header B to be syncing filter headers from
       val assert0F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
@@ -675,8 +675,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(marker.stopBlockHash.flip == newHeaderB.hashBE)
       }
 
-      //two competing headers B,C built off of A
-      //first specify header C to be syncing filter headers from
+      // two competing headers B,C built off of A
+      // first specify header C to be syncing filter headers from
       val assert1F = for {
         _ <- assert0F
         chainHandler <- chainHandlerF
@@ -695,9 +695,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(marker.stopBlockHash.flip == newHeaderC.hashBE)
       }
 
-      //now let's build a new block header ontop of C and process it
-      //when we call chainHandler.nextFilterHeaderBatchRange it
-      //should be C's hash instead of B's hash
+      // now let's build a new block header ontop of C and process it
+      // when we call chainHandler.nextFilterHeaderBatchRange it
+      // should be C's hash instead of B's hash
       for {
         _ <- assert1F
         chainHandler <- chainHandlerF
@@ -734,7 +734,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(marker.stopBlockHash == genesisHeader.hash)
       }
 
-      //let's process a block header, and then be able to fetch that header as the last stopHash
+      // let's process a block header, and then be able to fetch that header as the last stopHash
       val blockHeaderDb = {
         BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                             chainWork =
@@ -768,8 +768,8 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
       val newHeaderCF = reorgFixtureF.map(_.headerDb2)
 
-      //two competing headers B,C built off of A
-      //first specify header C to be syncing filter headers from
+      // two competing headers B,C built off of A
+      // first specify header C to be syncing filter headers from
       val assert1F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
@@ -790,9 +790,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
       val headerDF = {
         newHeaderCF.map(headerC => BlockHeaderHelper.buildNextHeader(headerC))
       }
-      //now let's build a new block header ontop of C and process it
-      //when we call chainHandler.nextFilterHeaderBatchRange with batchSize=3
-      //should get D's hash back as the stop hash
+      // now let's build a new block header ontop of C and process it
+      // when we call chainHandler.nextFilterHeaderBatchRange with batchSize=3
+      // should get D's hash back as the stop hash
       val assert3F = for {
         _ <- assert1F
         chainHandler <- chainHandlerF
@@ -835,9 +835,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
   it must "generate the next range of filters correctly if its outside of our in memory blockchain" in {
     chainHandler =>
-      //need to generate a bunch of block headers first
+      // need to generate a bunch of block headers first
       val target =
-        2500 //our limit for in memory blockchains is 2016 headers currently (difficulty interval)
+        2500 // our limit for in memory blockchains is 2016 headers currently (difficulty interval)
       val buildF = ChainUnitTest.buildNHeaders(chainHandler, target)
       val batchSize = 2000
       val startHeight = 0
@@ -1080,9 +1080,9 @@ class ChainHandlerTest extends ChainDbUnitTest {
 object ChainHandlerTest {
 
   /** Checks that
-    * 1. The header1 & header2 have the same chainwork
-    * 2. Checks that header1 and header2 have the same time
-    * 3. Checks bestHash is one of header1.hashBE or header2.hashBE
+    *   1. The header1 & header2 have the same chainwork 2. Checks that header1
+    *      and header2 have the same time 3. Checks bestHash is one of
+    *      header1.hashBE or header2.hashBE
     */
   def checkReorgHeaders(
       header1: BlockHeaderDb,
@@ -1090,9 +1090,9 @@ object ChainHandlerTest {
       bestHash: DoubleSha256DigestBE): Assertion = {
     Assertions.assert(header1.chainWork == header2.chainWork)
     Assertions.assert(header1.time == header2.time)
-    //if both chainwork and time are the same, we are left to
-    //how the database serves up the data
-    //just make sure it is one of the two headers
+    // if both chainwork and time are the same, we are left to
+    // how the database serves up the data
+    // just make sure it is one of the two headers
     Assertions.assert(Vector(header1.hashBE, header2.hashBE).contains(bestHash))
   }
 }

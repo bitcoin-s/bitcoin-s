@@ -14,11 +14,12 @@ import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
-/** This trait defines RPC calls related to
-  * multisignature functionality in Bitcoin Core.
+/** This trait defines RPC calls related to multisignature functionality in
+  * Bitcoin Core.
   *
-  * @see [[https://en.bitcoin.it/wiki/Multisignature Bitcoin Wiki]]
-  *     article on multisignature.
+  * @see
+  *   [[https://en.bitcoin.it/wiki/Multisignature Bitcoin Wiki]] article on
+  *   multisignature.
   */
 trait MultisigRpc { self: Client =>
 

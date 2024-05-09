@@ -49,7 +49,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
       val createdF = blockHeaderDAO.create(blockHeader)
-      //delete the header in the db
+      // delete the header in the db
       val deletedF = {
         createdF.flatMap { _ =>
           blockHeaderDAO.delete(blockHeader)
@@ -133,7 +133,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
       val blockHeader2 = BlockHeaderHelper.buildNextHeader(blockHeader)
 
-      //insert another header and make sure that is the new last header
+      // insert another header and make sure that is the new last header
       assert1F.flatMap { _ =>
         val created2F = blockHeaderDAO.create(blockHeader2)
         val chainTip2F = created2F.flatMap(_ => blockHeaderDAO.getBestChainTips)
@@ -157,7 +157,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
     blockHeaderDAO: BlockHeaderDAO =>
       val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
 
-      //now we have 2 competing tips, chainTips should return both competing headers
+      // now we have 2 competing tips, chainTips should return both competing headers
       val firstAssertionF = for {
         reorgFixture <- reorgFixtureF
         headerDb1 = reorgFixture.headerDb1
@@ -169,9 +169,9 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         assert(chainTips.contains(headerDb2))
       }
 
-      //ok, now we are going to build a new header off of headerDb1
-      //however, headerDb2 is _still_ a possible chainTip that we can reorg
-      //too. So we should still have both of them returned
+      // ok, now we are going to build a new header off of headerDb1
+      // however, headerDb2 is _still_ a possible chainTip that we can reorg
+      // too. So we should still have both of them returned
       for {
         _ <- firstAssertionF
         reorgFixture <- reorgFixtureF
@@ -189,7 +189,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
     blockHeaderDAO: BlockHeaderDAO =>
       val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
 
-      //now we have 2 competing tips, so we should return 2 chains
+      // now we have 2 competing tips, so we should return 2 chains
       val firstAssertionF = for {
         _ <- reorgFixtureF
         chains <- blockHeaderDAO.getBlockchains()
@@ -217,7 +217,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         assert(headers.head.height == 1)
       }
 
-      //create one at height 2
+      // create one at height 2
       val blockHeader2 = BlockHeaderHelper.buildNextHeader(blockHeader)
 
       val created2F = blockHeaderDAO.create(blockHeader2)
@@ -265,7 +265,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       val blockHeader1 = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val created2F = createdF.flatMap(_ => blockHeaderDAO.create(blockHeader1))
 
-      //now make sure they are both at height 1
+      // now make sure they are both at height 1
       val getHeightF = created2F.flatMap(_ => blockHeaderDAO.getAtHeight(1))
 
       getHeightF.map { case headers =>

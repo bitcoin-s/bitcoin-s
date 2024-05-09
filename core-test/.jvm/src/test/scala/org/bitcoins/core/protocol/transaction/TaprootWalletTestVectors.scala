@@ -9,7 +9,7 @@ import org.scalatest.Assertion
 class TaprootWalletTestVectors extends BitcoinSUnitTest {
   behavior of "TaprootWalletTestVectors"
 
-  //from: https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json
+  // from: https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json
   lazy val url = getClass.getResource("/wallet-test-vectors.json")
 
   lazy val lines = {

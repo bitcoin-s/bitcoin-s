@@ -34,7 +34,7 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
     val numDigits = if (EnvUtil.isNativeSecp256k1Disabled) {
       12
     } else {
-      //optimization for CI, tests are much slower when secp256k1 isnt used
+      // optimization for CI, tests are much slower when secp256k1 isnt used
       17
     }
     val contractParams =

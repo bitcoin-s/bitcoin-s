@@ -52,10 +52,8 @@ case class AccountDAO()(implicit
     findByPrimaryKeys(
       accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
 
-  def findByAccountAction(account: HDAccount): DBIOAction[
-    Option[AccountDb],
-    NoStream,
-    Effect.Read] = {
+  def findByAccountAction(account: HDAccount)
+      : DBIOAction[Option[AccountDb], NoStream, Effect.Read] = {
     val q = table
       .filter(_.coinType === account.coin.coinType)
       .filter(_.purpose === account.purpose)
@@ -67,7 +65,7 @@ case class AccountDAO()(implicit
       case Vector() =>
         None
       case accounts: Vector[AccountDb] =>
-        //yikes, we should not have more the one account per coin type/purpose
+        // yikes, we should not have more the one account per coin type/purpose
         throw new RuntimeException(
           s"More than one account per account=${account}, got=${accounts}")
     }

@@ -85,9 +85,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   lazy val fourthClientF: Future[EclairRpcClient] = eclairNodesF.map(_.c4)
 
-  /** There is specific cases where we just need two clients,
-    * so this is a helper val that pairs two connected
-    * clients together with an open channel
+  /** There is specific cases where we just need two clients, so this is a
+    * helper val that pairs two connected clients together with an open channel
     */
   lazy val clientF: Future[EclairRpcClient] = secondClientF
   lazy val otherClientF: Future[EclairRpcClient] = thirdClientF
@@ -95,8 +94,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   private val clients =
     Vector.newBuilder[EclairRpcClient]
 
-  /** Executes a test with the default clients defined at the
-    * top of this file
+  /** Executes a test with the default clients defined at the top of this file
     *
     * @param test
     * @tparam T
@@ -152,7 +150,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  /** Please keep this test the very first. All other tests rely on the propagated gossip messages.
+  /** Please keep this test the very first. All other tests rely on the
+    * propagated gossip messages.
     */
   it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
     val hasRoute = () => {
@@ -551,7 +550,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to list an existing peer and isConnected must be true" in {
-    //test assumes that a connection to a peer was made in `beforeAll`
+    // test assumes that a connection to a peer was made in `beforeAll`
     val otherClientNodeIdF = {
       val getOtherClientNodeId = {
         (_: EclairRpcClient, otherClient: EclairRpcClient) =>
@@ -748,7 +747,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to generate an invoice and get the same amount back" in {
-    val amt = PicoBitcoins(10) //this is the smallest unit we can use, 1 msat
+    val amt = PicoBitcoins(10) // this is the smallest unit we can use, 1 msat
     val description = "bitcoin-s test case"
     val expiry = System.currentTimeMillis().millis
 
@@ -1081,10 +1080,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" in {
-    //make sure we see payments outside of our immediate peers
-    //this is important because these gossip messages contain
-    //information about channel fees, so we need to get updates
-    //about the channels for future fee calculations
+    // make sure we see payments outside of our immediate peers
+    // this is important because these gossip messages contain
+    // information about channel fees, so we need to get updates
+    // about the channels for future fee calculations
     val sentPaymentF = secondClientF.flatMap { c1 =>
       thirdClientF.flatMap { c2 =>
         EclairRpcTestUtil.sendPayments(c1, c2, numPayments = 1)
@@ -1115,8 +1114,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         }
     }
 
-    //the second client and fourth client aren't directly connected
-    //which is why i am choosing to use them for this test
+    // the second client and fourth client aren't directly connected
+    // which is why i am choosing to use them for this test
     executeSpecificClients(
       clientF = secondClientF,
       otherClientF = fourthClientF,
@@ -1224,7 +1223,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     hasPeersAssertF.flatMap(_ => isConnectedAssertF.map(isConn => isConn))
   }
 
-  /** Checks that the given [[org.bitcoins.eclair.rpc.client.EclairRpcClient]] has the given chanId */
+  /** Checks that the given [[org.bitcoins.eclair.rpc.client.EclairRpcClient]]
+    * has the given chanId
+    */
   private def hasChannel(
       client: EclairRpcClient,
       chanId: ChannelId): Future[Assertion] = {

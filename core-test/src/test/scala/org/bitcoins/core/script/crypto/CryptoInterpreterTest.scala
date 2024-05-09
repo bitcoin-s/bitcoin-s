@@ -164,7 +164,7 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
   }
 
   it must "evaluate an OP_CHECKMULTISIG for" in {
-    //0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
+    // 0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
     val stack = List(OP_1, OP_0, OP_0, OP_0)
     val script = List(OP_CHECKMULTISIG)
     val program =
@@ -205,7 +205,7 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
 
   it must "mark a transaction invalid when the DERSIG flag is set for a OP_CHECKSIG operaetion & the signature is not a strict der sig" in {
     val flags = Seq(ScriptVerifyDerSig)
-    //signature is from script_valid.json, it has a negative S value which makes it non strict der
+    // signature is from script_valid.json, it has a negative S value which makes it non strict der
     val stack = Seq(
       OP_0,
       ScriptConstant(

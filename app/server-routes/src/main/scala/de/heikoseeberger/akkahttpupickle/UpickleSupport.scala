@@ -31,11 +31,13 @@ import upickle.default.{read, write, Reader, Writer}
 
 import scala.collection.immutable.Seq
 
-/** Automatic to and from JSON marshalling/unmarshalling using *upickle* protocol.
+/** Automatic to and from JSON marshalling/unmarshalling using *upickle*
+  * protocol.
   */
 object UpickleSupport extends UpickleSupport
 
-/** Automatic to and from JSON marshalling/unmarshalling using *upickle* protocol.
+/** Automatic to and from JSON marshalling/unmarshalling using *upickle*
+  * protocol.
   */
 trait UpickleSupport {
 
@@ -47,27 +49,31 @@ trait UpickleSupport {
 
   private val jsonStringUnmarshaller =
     Unmarshaller.byteStringUnmarshaller
-      .forContentTypes(unmarshallerContentTypes: _*)
+      .forContentTypes(unmarshallerContentTypes*)
       .mapWithCharset {
         case (ByteString.empty, _) => throw Unmarshaller.NoContentException
         case (data, charset)       => data.decodeString(charset.nioCharset.name)
       }
 
   private val jsonStringMarshaller =
-    Marshaller.oneOf(mediaTypes: _*)(Marshaller.stringMarshaller)
+    Marshaller.oneOf(mediaTypes*)(Marshaller.stringMarshaller)
 
   /** HTTP entity => `A`
     *
-    * @tparam A type to decode
-    * @return unmarshaller for `A`
+    * @tparam A
+    *   type to decode
+    * @return
+    *   unmarshaller for `A`
     */
   implicit def unmarshaller[A: Reader]: FromEntityUnmarshaller[A] =
     jsonStringUnmarshaller.map(read(_))
 
   /** `A` => HTTP entity
     *
-    * @tparam A type to encode
-    * @return marshaller for any `A` value
+    * @tparam A
+    *   type to encode
+    * @return
+    *   marshaller for any `A` value
     */
   implicit def marshaller[A: Writer]: ToEntityMarshaller[A] =
     jsonStringMarshaller.compose(write(_))

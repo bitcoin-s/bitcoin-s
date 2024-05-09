@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.BitcoinAddress
 
 import scala.concurrent.Future
 
-/** ScalaMock cannot stub traits with protected methods,
-  * so we need to stub them manually.
+/** ScalaMock cannot stub traits with protected methods, so we need to stub them
+  * manually.
   */
 abstract class MockWalletApi extends DLCNeutrinoHDWalletApi {
 

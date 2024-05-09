@@ -55,7 +55,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   val descpriptionHashTag = Right(LnTag.DescriptionHashTag(descriptionHash))
 
   it must "parse BOLT11 example 1" in {
-    //BOLT11 Example #1
+    // BOLT11 Example #1
 
     val descriptionTagE =
       Left(LnTag.DescriptionTag("Please consider supporting this project"))
@@ -86,7 +86,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "parse BOLT11 example 2" in {
-    //BOLT11 Example #2
+    // BOLT11 Example #2
 
     val descriptionTagE = Left(LnTag.DescriptionTag("1 cup coffee"))
     val expiryTimeTag = LnTag.ExpiryTimeTag(UInt32(60))
@@ -112,7 +112,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "parse BOLT11 example 3" in {
-    //BOLT11 Example #3 - Description field does not encode correctly due to Japanese letters
+    // BOLT11 Example #3 - Description field does not encode correctly due to Japanese letters
 
     val descriptionTagE = Left(LnTag.DescriptionTag("ナンセンス 1杯"))
     val expiryTag = LnTag.ExpiryTimeTag(UInt32(60))
@@ -146,7 +146,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "parse BOLT11 example 4" in {
-    //BOLT11 Example #4
+    // BOLT11 Example #4
 
     val descriptionHash = Sha256Digest.fromHex(
       "3925b6f67e2c340036ed12093dd44e0368df1b6ea26c53dbe4811f58fd5db8c1")
@@ -177,7 +177,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "parse BOLT11 example 5" in {
-    //BOLT11 Example #5
+    // BOLT11 Example #5
 
     val descriptionHash = Sha256Digest.fromHex(
       "3925b6f67e2c340036ed12093dd44e0368df1b6ea26c53dbe4811f58fd5db8c1")
@@ -200,9 +200,9 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     serialized must be(
       "lntb20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfpp3x9et2e20v6pu37c5d9vax37wxq72un98kmzzhznpurw9sgl2v0nklu2g4d0keph5t7tj9tcqd8rexnd07ux4uv2cjvcqwaxgj7v4uwn5wmypjd5n69z2xm3xgksg28nwht7f6zsp2mh7qm")
-    //In example #5, the order in which tags are encoded in the invoice has been changed to demonstrate the ability to move tags as needed.
-    //For that reason, the example #5 output we are matching against has been modified to fit the order in which we encode our invoices.
-    //TODO: Add checksum data to check
+    // In example #5, the order in which tags are encoded in the invoice has been changed to demonstrate the ability to move tags as needed.
+    // For that reason, the example #5 output we are matching against has been modified to fit the order in which we encode our invoices.
+    // TODO: Add checksum data to check
 
     val deserialized = LnInvoice.fromStringT(serialized)
 
@@ -291,7 +291,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "parse BOLT11 example 7 (p2wpkh fallback addr)" in {
-    //this test does not pass because bitcoin-s does not support p2wpkh currently
+    // this test does not pass because bitcoin-s does not support p2wpkh currently
 
     val expected = "lnbc20m1pvjluez" +
       "pp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypq" +
@@ -405,7 +405,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "deserialize and reserialize a invoice with a explicity expiry time" in {
-    //from eclair
+    // from eclair
     val bech32 =
       "lnbcrt1m1pd6ssf3pp5mqcepx6yzx7uu0uagw5x3c7kqhnpwr3mfn844hjux8tlza6ztr7sdqqxqrrss0rl3gzer9gfc54fs84rd4xk6g8nf0syharnnyljc9za933memdzxrjz0v2v94ntuhdxduk3z0nlmpmznryvvvl4gzgu28kjkm4ey98gpmyhjfa"
 
@@ -458,7 +458,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   }
 
   it must "handle the weird case if sigdata being exactly on a byte boundary, which means we need to pad the sigdata with a zero byte" in {
-    //https://github.com/bitcoin-s/bitcoin-s-core/issues/277
+    // https://github.com/bitcoin-s/bitcoin-s-core/issues/277
     val expected =
       "03fad6c016f998e85d03ce0b7358b3b6a38ebc7fd60030340d0245fea0d95c8c12"
     val expectedHash =

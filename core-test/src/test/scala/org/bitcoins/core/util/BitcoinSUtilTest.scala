@@ -12,12 +12,12 @@ class BitcoinSUtilTest extends BitcoinSUnitTest {
 
     BytesUtil.isHex("") must be(false)
 
-    //don't allow upper case hex chars
+    // don't allow upper case hex chars
     BytesUtil.isHex("ABCDEF0123456789") must be(false)
 
     BytesUtil.isHex("g") must be(false)
 
-    //fail to parse a hex string that is uneven
+    // fail to parse a hex string that is uneven
     BytesUtil.isHex("123") must be(false)
   }
 

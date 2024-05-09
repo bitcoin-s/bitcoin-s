@@ -639,15 +639,15 @@ class UTXOLifeCycleTest
       val reservedUtxoF: Future[SpendingInfoDb] = for {
         utxos <- utxosF
         first = utxos.head
-        //just reserve this one to start
+        // just reserve this one to start
         reserved <- wallet.markUTXOsAsReserved(Vector(first))
       } yield reserved.head
 
       val reserveFailedF = for {
         utxos <- utxosF
         _ <- reservedUtxoF
-        //now try to reserve them all
-        //this should fail as the first utxo is reserved
+        // now try to reserve them all
+        // this should fail as the first utxo is reserved
         _ <- wallet.markUTXOsAsReserved(utxos)
       } yield ()
 
@@ -658,7 +658,7 @@ class UTXOLifeCycleTest
         reserved <- reservedUtxoF
         utxos <- wallet.listUtxos(TxoState.Reserved)
       } yield {
-        //make sure only 1 utxo is still reserved
+        // make sure only 1 utxo is still reserved
         assert(utxos.length == 1)
         assert(reserved.outPoint == utxos.head.outPoint)
       }
@@ -674,32 +674,32 @@ class UTXOLifeCycleTest
       val throwAwayAddrF = bitcoind.getNewAddress
       for {
         txId <- txIdF
-        //generate a few blocks to make the utxo pending confirmations received
+        // generate a few blocks to make the utxo pending confirmations received
         throwAwayAddr <- throwAwayAddrF
         hashes <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
         block <- bitcoind.getBlockRaw(hashes.head)
         _ <- wallet.processBlock(block)
 
-        //make sure the utxo is pending confirmations received
+        // make sure the utxo is pending confirmations received
         utxos <- wallet.listUtxos(TxoState.PendingConfirmationsReceived)
         _ = assert(utxos.length == 1)
         utxo = utxos.head
         _ = assert(utxo.txid == txId)
         _ = assert(utxo.state == TxoState.PendingConfirmationsReceived)
-        //now mark the utxo as reserved
+        // now mark the utxo as reserved
         _ <- wallet.markUTXOsAsReserved(Vector(utxo))
-        //confirm it is reserved
+        // confirm it is reserved
         _ <- wallet
           .listUtxos(TxoState.Reserved)
           .map(utxos =>
             assert(utxos.contains(utxo.copyWithState(TxoState.Reserved))))
 
-        //now process another block
+        // now process another block
         hashes2 <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
         block2 <- bitcoind.getBlockRaw(hashes2.head)
         _ <- wallet.processBlock(block2)
 
-        //the utxo should still be reserved
+        // the utxo should still be reserved
         reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
         reservedUtxo = reservedUtxos.head
       } yield {
@@ -718,24 +718,24 @@ class UTXOLifeCycleTest
       for {
         bitcoindAdr <- bitcoindAddrF
         utxoCount <- utxoCountF
-        //build a spending transaction
+        // build a spending transaction
         tx <- wallet.sendToAddress(bitcoindAdr, amt, SatoshisPerVirtualByte.one)
         c <- wallet.listUtxos()
         _ = assert(c.length == utxoCount.length)
         txIdBE <- bitcoind.sendRawTransaction(tx)
 
-        //find all utxos that we can use to fund a transaction
+        // find all utxos that we can use to fund a transaction
         utxos <- wallet
           .listUtxos()
           .map(_.filter(u => TxoState.receivedStates.contains(u.state)))
         broadcastReceived <- wallet.listUtxos(TxoState.BroadcastReceived)
-        _ = assert(broadcastReceived.length == 1) //change output
+        _ = assert(broadcastReceived.length == 1) // change output
 
-        //mark all utxos as reserved
+        // mark all utxos as reserved
         _ <- wallet.markUTXOsAsReserved(utxos)
         newReservedUtxos <- wallet.listUtxos(TxoState.Reserved)
 
-        //make sure all utxos are reserved
+        // make sure all utxos are reserved
         _ = assert(newReservedUtxos.length == utxoCount.length)
         blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
         block <- bitcoind.getBlockRaw(blockHash)
@@ -749,9 +749,9 @@ class UTXOLifeCycleTest
         assert(newReservedUtxos == finalReservedUtxos)
         assert(pendingConfirmationsReceivedUtxos.isEmpty)
         assert(broadcastSpentUtxo.length == 1)
-        //make sure spendingTxId got set correctly
+        // make sure spendingTxId got set correctly
         assert(broadcastSpentUtxo.head.spendingTxIdOpt.get == txIdBE)
-        //make sure no utxos get unreserved when processing the block
+        // make sure no utxos get unreserved when processing the block
         assert(finalReservedUtxos.length == newReservedUtxos.length)
       }
   }

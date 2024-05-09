@@ -22,8 +22,7 @@ case class BitcoindRpcTestClient(
                                     binaryDirectory = binaryDirectory)
   }
 
-  /** Cached client. This is defined if start() has been called
-    * else None
+  /** Cached client. This is defined if start() has been called else None
     */
   private var clientOpt: Option[BitcoindRpcClient] = None
 

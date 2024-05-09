@@ -96,9 +96,9 @@ class ExtKeyTest extends BitcoinSUnitTest {
     }
   }
 
-  //https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#test-vectors
+  // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#test-vectors
   it must "pass the test vectors in BIP32" in {
-    //master key
+    // master key
     val seedBytes = hex"000102030405060708090a0b0c0d0e0f"
 
     val path = BIP32Path.empty
@@ -108,12 +108,12 @@ class ExtKeyTest extends BitcoinSUnitTest {
     masterPriv.toStringSensitive must be(
       "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi")
 
-    //master public key
+    // master public key
     val masterPub = masterPriv.extPublicKey
     masterPub.toString must be(
       "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8")
 
-    //derive child
+    // derive child
     val m0hPath = BIP32Path.fromString("m/0'")
     val m0h = masterPriv.deriveChildPrivKey(m0hPath)
     m0h.toStringSensitive must be(
@@ -392,8 +392,8 @@ class ExtKeyTest extends BitcoinSUnitTest {
   }
 
   it must "have derivation symmetry with (1<<31)-1, last i before hardened keys" in {
-    //xprv9s21ZrQH143K4QWHDnxmxUbzAQYiDavkg14kQcmZjP2KaSB1PZs5BUsyNGSrWXTzZ9qwyJo5yzvDe3fWybykc8CQPDZMaKupTeVbkfG7osL
-    //actual priv key 68e5ed2b2c8fc5a6605107d29d074e3d6ccb119c2811007e32f48305176f814c
+    // xprv9s21ZrQH143K4QWHDnxmxUbzAQYiDavkg14kQcmZjP2KaSB1PZs5BUsyNGSrWXTzZ9qwyJo5yzvDe3fWybykc8CQPDZMaKupTeVbkfG7osL
+    // actual priv key 68e5ed2b2c8fc5a6605107d29d074e3d6ccb119c2811007e32f48305176f814c
     val str =
       "xprv9s21ZrQH143K4LCRq4tUZUt3fiTNZr6QTiep3HGzMxtSwfxKAhBmNJJnsmoyWuYZCPC4DNsiVwToHJbxZtq4iEkozBhMzWNTiCH4tzJNjPi"
     val masterPriv = ExtPrivateKey.fromString(str)

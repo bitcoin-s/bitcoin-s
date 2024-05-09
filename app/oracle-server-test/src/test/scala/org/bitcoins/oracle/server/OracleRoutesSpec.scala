@@ -141,7 +141,7 @@ class OracleRoutesSpec
            |  "error":null
            |}
            |""".stripMargin
-          .replaceAll("\\s", "") //strip whitespace
+          .replaceAll("\\s", "") // strip whitespace
 
       val expectedJson: ujson.Value = ujson.read(Readable.fromString(expected))
       Post() ~> route ~> check {

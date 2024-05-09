@@ -25,7 +25,7 @@ import java.nio.file.Files
 class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
   val purpose = HDPurposes.Legacy
 
-  //this is taken from 'trezor-addresses.json' which give us test cases that conform with trezor
+  // this is taken from 'trezor-addresses.json' which give us test cases that conform with trezor
   val mnemonicStr =
     "stage boring net gather radar radio arrest eye ask risk girl country"
   val mnemonic = MnemonicCode.fromWords(mnemonicStr.split(" ").toVector)
@@ -51,7 +51,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       withInitializedKeyManager(aesPasswordOpt = aesPasswordOpt,
                                 entropy = entropy)
     val seedPath = keyManager.kmParams.seedPath
-    //verify we wrote the seed
+    // verify we wrote the seed
     assert(WalletStorage.seedExists(seedPath),
            "KeyManager did not write the seed to disk!")
 
@@ -105,7 +105,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(apiXpub == directXpub,
            s"We don't have initialization symmetry between our constructors!")
 
-    //we should be able to derive the same child xpub
+    // we should be able to derive the same child xpub
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
@@ -133,7 +133,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(apiXpub == directXpub,
            s"We don't have initialization symmetry between our constructors!")
 
-    //we should be able to derive the same child xpub
+    // we should be able to derive the same child xpub
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
@@ -164,7 +164,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(apiXpub == directXpub,
            s"We don't have initialization symmetry between our constructors!")
 
-    //we should be able to derive the same child xpub
+    // we should be able to derive the same child xpub
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
@@ -199,7 +199,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(apiXpub == directXpub,
            s"We don't have initialization symmetry between our constructors!")
 
-    //we should be able to derive the same child xpub
+    // we should be able to derive the same child xpub
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
@@ -228,7 +228,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     assert(apiXpub == directXpub,
            s"We don't have initialization symmetry between our constructors!")
 
-    //we should be able to derive the same child xpub
+    // we should be able to derive the same child xpub
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
@@ -306,7 +306,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
 
     val firstXpub = keyManager.getRootXPub
 
-    //now let's try to initialize again, our xpub should be exactly the same
+    // now let's try to initialize again, our xpub should be exactly the same
     val keyManager2E =
       BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
                                  kmParams,
@@ -338,7 +338,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     // change the data to not be json format
     Files.write(kmParams.seedPath, "now this is the wrong format".getBytes)
 
-    //now let's try to initialize again, it should fail with a JsonParsingError
+    // now let's try to initialize again, it should fail with a JsonParsingError
     val keyManager2E =
       BIP39KeyManager.initialize(aesPasswordOpt,
                                  kmParams,

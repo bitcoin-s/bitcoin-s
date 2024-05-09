@@ -44,8 +44,8 @@ trait LnMessageGen extends TLVGen {
     dlcAcceptTLV(offer).map(LnMessage.apply)
   }
 
-  def dlcOfferMessageAcceptMessage: Gen[
-    (LnMessage[DLCOfferTLV], LnMessage[DLCAcceptTLV])] = {
+  def dlcOfferMessageAcceptMessage
+      : Gen[(LnMessage[DLCOfferTLV], LnMessage[DLCAcceptTLV])] = {
     dlcOfferTLVAcceptTLV.map { case (offer, accept) =>
       (LnMessage(offer), LnMessage(accept))
     }
@@ -61,10 +61,9 @@ trait LnMessageGen extends TLVGen {
     dlcSignTLV(offer, accept).map(LnMessage.apply)
   }
 
-  def dlcOfferMessageAcceptMessageSignMessage: Gen[(
-      LnMessage[DLCOfferTLV],
-      LnMessage[DLCAcceptTLV],
-      LnMessage[DLCSignTLV])] = {
+  def dlcOfferMessageAcceptMessageSignMessage: Gen[(LnMessage[DLCOfferTLV],
+                                                    LnMessage[DLCAcceptTLV],
+                                                    LnMessage[DLCSignTLV])] = {
     dlcOfferTLVAcceptTLVSignTLV.map { case (offer, accept, sign) =>
       (LnMessage(offer), LnMessage(accept), LnMessage(sign))
     }

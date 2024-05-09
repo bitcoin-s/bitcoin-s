@@ -1927,19 +1927,18 @@ object ConsoleCli extends BitcoinSLogger {
     Failure(new RuntimeException(message))
   }
 
-  /** Gets the given key from jsObj if it exists
-    * and is not null
+  /** Gets the given key from jsObj if it exists and is not null
     */
   private def getKey(
       key: String,
-      jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]]): Option[
-    ujson.Value] = {
+      jsObjT: Try[mutable.LinkedHashMap[String, ujson.Value]])
+      : Option[ujson.Value] = {
     jsObjT.toOption.flatMap(_.get(key).flatMap(result =>
       if (result.isNull) None else Some(result)))
   }
 
-  /** Converts a `ujson.Value` to String, making an
-    * effort to avoid preceding and trailing `"`s
+  /** Converts a `ujson.Value` to String, making an effort to avoid preceding
+    * and trailing `"`s
     */
   private def jsValueToString(value: ujson.Value): String = {
     value match {
@@ -1992,8 +1991,8 @@ object ConsoleCli extends BitcoinSLogger {
       case Right(response) => response
     }
     Iterator.apply()
-    val jsObjT: Try[
-      scala.collection.mutable.LinkedHashMap[String, ujson.Value]] = {
+    val jsObjT
+        : Try[scala.collection.mutable.LinkedHashMap[String, ujson.Value]] = {
       Try(ujson.read(rawBody).obj)
         .transform[scala.collection.mutable.LinkedHashMap[String, ujson.Value]](
           { case v: upickle.core.LinkedHashMap[String, ujson.Value] =>

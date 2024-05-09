@@ -8,9 +8,9 @@ sealed trait BitcoindChainHandlerViaRpc {
   def chainHandler: ChainHandler
 }
 
-/** Represents a bitcoind instance paired with a chain handler via rpc
-  * This is useful for when the bitcoind version doesn't matter, you
-  * just need a generic [[BitcoindRpcClient]]
+/** Represents a bitcoind instance paired with a chain handler via rpc This is
+  * useful for when the bitcoind version doesn't matter, you just need a generic
+  * [[BitcoindRpcClient]]
   */
 case class BitcoindBaseVersionChainHandlerViaRpc(
     bitcoindRpc: BitcoindRpcClient,

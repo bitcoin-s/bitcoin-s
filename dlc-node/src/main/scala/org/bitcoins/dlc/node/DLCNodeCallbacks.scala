@@ -13,23 +13,19 @@ trait DLCNodeCallbacks
     extends ModuleCallbacks[DLCNodeCallbacks]
     with BitcoinSLogger {
 
-  def onPeerConnectionInitiated: CallbackHandler[
-    InetSocketAddress,
-    OnPeerConnectionInitiated]
+  def onPeerConnectionInitiated
+      : CallbackHandler[InetSocketAddress, OnPeerConnectionInitiated]
 
-  def onPeerConnectionEstablished: CallbackHandler[
-    InetSocketAddress,
-    OnPeerConnectionEstablished]
+  def onPeerConnectionEstablished
+      : CallbackHandler[InetSocketAddress, OnPeerConnectionEstablished]
 
-  def onPeerConnectionFailed: CallbackHandler[
-    InetSocketAddress,
-    OnPeerConnectionFailed]
+  def onPeerConnectionFailed
+      : CallbackHandler[InetSocketAddress, OnPeerConnectionFailed]
 
   def onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed]
 
-  def onOfferSendFailed: CallbackHandler[
-    (Sha256Digest, String),
-    OnOfferSendFailed]
+  def onOfferSendFailed
+      : CallbackHandler[(Sha256Digest, String), OnOfferSendFailed]
 
   def onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed]
 
@@ -148,19 +144,15 @@ object DLCNodeCallbacks extends CallbackFactory[DLCNodeCallbacks] {
 
   // Use Impl pattern here to enforce the correct names on the CallbackHandlers
   private case class DLCNodeCallbacksImpl(
-      onPeerConnectionInitiated: CallbackHandler[
-        InetSocketAddress,
-        OnPeerConnectionInitiated],
-      onPeerConnectionEstablished: CallbackHandler[
-        InetSocketAddress,
-        OnPeerConnectionEstablished],
-      onPeerConnectionFailed: CallbackHandler[
-        InetSocketAddress,
-        OnPeerConnectionFailed],
+      onPeerConnectionInitiated: CallbackHandler[InetSocketAddress,
+                                                 OnPeerConnectionInitiated],
+      onPeerConnectionEstablished: CallbackHandler[InetSocketAddress,
+                                                   OnPeerConnectionEstablished],
+      onPeerConnectionFailed: CallbackHandler[InetSocketAddress,
+                                              OnPeerConnectionFailed],
       onOfferSendSucceed: CallbackHandler[Sha256Digest, OnOfferSendSucceed],
-      onOfferSendFailed: CallbackHandler[
-        (Sha256Digest, String),
-        OnOfferSendFailed],
+      onOfferSendFailed: CallbackHandler[(Sha256Digest, String),
+                                         OnOfferSendFailed],
       onAcceptSucceed: CallbackHandler[Sha256Digest, OnAcceptSucceed],
       onAcceptFailed: CallbackHandler[(Sha256Digest, String), OnAcceptFailed],
       onSignSucceed: CallbackHandler[Sha256Digest, OnSignSucceed],

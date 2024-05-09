@@ -51,8 +51,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         _ <- callbacks
           .executeOnTxReceivedCallbacks(tx2)
           .recoverWith { case _: StreamDetachedException =>
-            //expect the stream to be detatched because we stopped
-            //the stream with callbacks.stop()
+            // expect the stream to be detatched because we stopped
+            // the stream with callbacks.stop()
             Future.unit
           }
         balance3 <- wallet.getBalance()
@@ -92,8 +92,8 @@ class CallBackUtilTest extends BitcoinSWalletTest {
         _ <- callbacks
           .executeOnTxReceivedCallbacks(tx2)
           .recoverWith { case _: StreamDetachedException =>
-            //expect the stream to be detatched because we stopped
-            //the stream with callbacks.stop()
+            // expect the stream to be detatched because we stopped
+            // the stream with callbacks.stop()
             Future.unit
           }
         balance3 <- wallet.getBalance()

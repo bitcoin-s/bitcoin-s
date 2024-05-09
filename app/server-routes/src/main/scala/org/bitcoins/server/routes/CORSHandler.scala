@@ -8,7 +8,8 @@ import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
 
 /** Add CORS handling for accessing backend over localhost from modern browsers
-  * @see dzone.com/articles/handling-cors-in-akka-http
+  * @see
+  *   dzone.com/articles/handling-cors-in-akka-http
   */
 trait CORSHandler {
 
@@ -20,12 +21,12 @@ trait CORSHandler {
                                    "X-Requested-With")
   )
 
-  //this directive adds access control headers to normal responses
+  // this directive adds access control headers to normal responses
   private def addAccessControlHeaders: Directive0 = {
     respondWithHeaders(corsResponseHeaders)
   }
 
-  //this handles preflight OPTIONS requests.
+  // this handles preflight OPTIONS requests.
   private def preflightRequestHandler: Route = options {
     complete(
       HttpResponse(StatusCodes.OK).withHeaders(

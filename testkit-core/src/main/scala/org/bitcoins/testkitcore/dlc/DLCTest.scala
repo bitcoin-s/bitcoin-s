@@ -420,10 +420,8 @@ trait DLCTest {
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
-      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext): (
-      TestDLCClient,
-      TestDLCClient,
-      Vector[EnumOutcome]) = {
+      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext)
+      : (TestDLCClient, TestDLCClient, Vector[EnumOutcome]) = {
     val (offerInfo, acceptInfo) = constructEnumContractInfos(contractParams)
 
     val (offerDLC, acceptDLC) = constructDLCClientsFromInfos(
@@ -501,10 +499,8 @@ trait DLCTest {
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
-      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext): (
-      TestDLCClient,
-      TestDLCClient,
-      Vector[UnsignedNumericOutcome]) = {
+      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext)
+      : (TestDLCClient, TestDLCClient, Vector[UnsignedNumericOutcome]) = {
     val (offerInfo, acceptInfo) = constructNumericContractInfos(contractParams)
     val outcomes =
       offerInfo.allOutcomes.map(_.asInstanceOf[NumericOracleOutcome].outcome)
@@ -540,10 +536,8 @@ trait DLCTest {
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
-      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext): (
-      TestDLCClient,
-      TestDLCClient,
-      Vector[DLCOutcomeType]) = {
+      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext)
+      : (TestDLCClient, TestDLCClient, Vector[DLCOutcomeType]) = {
     var oraclesSoFar = 0
     val singleInfosAndOutcomes = contractParams.singleParams.map {
       case enumParams: EnumContractParams =>
@@ -599,10 +593,8 @@ trait DLCTest {
         this.acceptFundingUtxos,
       acceptFundingInputs: Vector[DLCFundingInput] = this.acceptFundingInputs,
       feeRate: SatoshisPerVirtualByte = this.feeRate,
-      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext): (
-      TestDLCClient,
-      TestDLCClient,
-      Vector[DLCOutcomeType]) = {
+      timeouts: DLCTimeouts = this.timeouts)(implicit ec: ExecutionContext)
+      : (TestDLCClient, TestDLCClient, Vector[DLCOutcomeType]) = {
     contractParams match {
       case enumParams: EnumContractParams =>
         constructEnumDLCClients(
@@ -657,7 +649,7 @@ trait DLCTest {
       dlcOffer: TestDLCClient,
       dlcAccept: TestDLCClient,
       fundingTxF: Future[SetupDLC] => Future[Transaction],
-      publishTransaction: Transaction => Future[_])(implicit
+      publishTransaction: Transaction => Future[?])(implicit
       ec: ExecutionContext): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP = {
       Promise[(CETSignatures, PartialSignature)]()
@@ -715,13 +707,11 @@ trait DLCTest {
   }
 
   def constructAndSetupDLC(contractParams: ContractParams)(implicit
-      ec: ExecutionContext): Future[
-    (
-        TestDLCClient,
-        SetupDLC,
-        TestDLCClient,
-        SetupDLC,
-        Vector[DLCOutcomeType])] = {
+      ec: ExecutionContext): Future[(TestDLCClient,
+                                     SetupDLC,
+                                     TestDLCClient,
+                                     SetupDLC,
+                                     Vector[DLCOutcomeType])] = {
     val (offerDLC, acceptDLC, outcomes) = constructDLCClients(contractParams)
 
     for {
@@ -789,8 +779,8 @@ trait DLCTest {
   def computeNumericOracleSignatures(
       digits: Vector[Int],
       privKey: ECPrivateKey = oraclePrivKey,
-      kVals: Vector[ECPrivateKey] =
-        preCommittedKs): OrderedSchnorrSignatures = {
+      kVals: Vector[ECPrivateKey] = preCommittedKs)
+      : OrderedSchnorrSignatures = {
     val unsorted =
       digits.zip(kVals.take(digits.length)).map { case (digit, kValue) =>
         privKey.schnorrSignWithNonce(CryptoUtil
@@ -802,7 +792,9 @@ trait DLCTest {
     OrderedSchnorrSignatures.fromUnsorted(unsorted)
   }
 
-  /** Deterministically chooses an outcome from the middle third of the interesting possible outcomes. */
+  /** Deterministically chooses an outcome from the middle third of the
+    * interesting possible outcomes.
+    */
   def computeNumericOutcome(
       numDigits: Int,
       desc: NumericContractDescriptor,
@@ -821,7 +813,7 @@ trait DLCTest {
 
     CETCalculator.searchForNumericOutcome(fullDigits, outcomes) match {
       case Some(UnsignedNumericOutcome(digits)) => digits
-      case None                                 => Assertions.fail(s"Couldn't find outcome for $outcomeIndex")
+      case None => Assertions.fail(s"Couldn't find outcome for $outcomeIndex")
     }
   }
 
@@ -952,9 +944,8 @@ trait DLCTest {
       contractInfo: SingleContractInfo,
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV]): (
-      OracleOutcome,
-      Vector[OracleSignatures]) = {
+      paramsOpt: Option[OracleParamsV0TLV])
+      : (OracleOutcome, Vector[OracleSignatures]) = {
     val outcome = genOracleOutcome(numOutcomesOrDigits,
                                    isNumeric,
                                    contractInfo,

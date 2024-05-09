@@ -68,13 +68,13 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         bitcoindPeers <- bitcoinPeersF
         _ <- node.start()
         _ <- NodeTestUtil.awaitConnectionCount(node, bitcoinds.size)
-        //sync from first bitcoind
+        // sync from first bitcoind
         peer0 = bitcoindPeers(0)
         _ <- node.peerManager.disconnectPeer(peer0)
         _ = logger.debug(
           s"Disconnected $peer0 from node bitcoind(0).p2pPort=${peer0.socket.getPort} bitcoind(1).p2pPort=${bitcoinds(
-            1).instance.p2pPort}")
-        //old peer we were syncing with that just disconnected us
+              1).instance.p2pPort}")
+        // old peer we were syncing with that just disconnected us
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
       } yield {
         succeed
@@ -92,14 +92,14 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         _ <- bitcoinds(1).generateToAddress(1, junkAddress)
         h1 <- bitcoinds(0).getBestHashBlockHeight()
         h2 <- bitcoinds(1).getBestHashBlockHeight()
-        //out of sync by 1 block, h2 ahead
+        // out of sync by 1 block, h2 ahead
         _ = assert(h2 - h1 == 1)
         _ <- NodeTestUtil.awaitBestHash(node, bitcoinds(1))
       } yield {
         succeed
       }
   }
-  //note: now bitcoinds(1) is ahead by 1 block compared to bitcoinds(0)
+  // note: now bitcoinds(1) is ahead by 1 block compared to bitcoinds(0)
 
   it must "re-query in case invalid headers are sent" in {
     nodeConnectedWithBitcoinds =>
@@ -114,7 +114,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peer = peers.head
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))
         // generating 6 blocks will cause bitcoind(1) NOT to gossip them on the p2p network
-        //this means we can test our re-query logic by sending an invalid header from bitcoinds(0)
+        // this means we can test our re-query logic by sending an invalid header from bitcoinds(0)
         _ <- bitcoinds(1).generate(6)
         _ <- AsyncUtil.nonBlockingSleep(2.second)
         invalidHeaderMessage = HeadersMessage(headers = Vector(invalidHeader))
@@ -144,7 +144,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
               NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
             node
               .offer(msg)
-              //add a delay to not overwhelm queue so other messages can be processed
+              // add a delay to not overwhelm queue so other messages can be processed
               .flatMap(_ => AsyncUtil.nonBlockingSleep(100.millis))
           }
         }
@@ -164,7 +164,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         bitcoind0 = bitcoinds(0)
         bitcoind1 = bitcoinds(1)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind1)
-        //disconnect bitcoind(0) as its not needed for this test
+        // disconnect bitcoind(0) as its not needed for this test
         peer0 <- NodeTestUtil.getBitcoindPeer(bitcoind0)
         _ <- node.peerManager.disconnectPeer(peer0)
         _ <- AsyncUtil.retryUntilSatisfied(peerManager.peers.size == 1)

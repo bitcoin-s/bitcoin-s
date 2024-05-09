@@ -19,8 +19,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** RPC calls related to wallet management
-  * functionality in bitcoind
+/** RPC calls related to wallet management functionality in bitcoind
   */
 trait WalletRpc { self: Client =>
 
@@ -160,8 +159,8 @@ trait WalletRpc { self: Client =>
   def importMulti(
       requests: Vector[RpcOpts.ImportMultiRequest],
       rescan: Boolean = true,
-      walletNameOpt: Option[String] = None): Future[
-    Vector[ImportMultiResult]] = {
+      walletNameOpt: Option[String] = None)
+      : Future[Vector[ImportMultiResult]] = {
     bitcoindCall[Vector[ImportMultiResult]](
       "importmulti",
       List(Json.toJson(requests), JsObject(Map("rescan" -> JsBoolean(rescan)))),
@@ -299,8 +298,8 @@ trait WalletRpc { self: Client =>
 
   def signRawTransactionWithWallet(
       transaction: Transaction,
-      walletNameOpt: Option[String]): Future[
-    SignRawTransactionWithWalletResult] = {
+      walletNameOpt: Option[String])
+      : Future[SignRawTransactionWithWalletResult] = {
     bitcoindCall[SignRawTransactionWithWalletResult](
       "signrawtransactionwithwallet",
       List(JsString(transaction.hex)),
@@ -312,8 +311,10 @@ trait WalletRpc { self: Client =>
     signRawTransactionWithWallet(transaction, None)
   }
 
-  /** @param blank Not available to versions before v19
-    * @param passphrase Not available to versions before v19
+  /** @param blank
+    *   Not available to versions before v19
+    * @param passphrase
+    *   Not available to versions before v19
     * @return
     */
   def createWallet(
@@ -439,8 +440,8 @@ trait WalletRpc { self: Client =>
 
   /** $signRawTx
     *
-    * This RPC call signs the raw transaction with keys found in
-    * the Bitcoin Core wallet.
+    * This RPC call signs the raw transaction with keys found in the Bitcoin
+    * Core wallet.
     */
   def signRawTransactionWithWallet(
       transaction: Transaction,
@@ -454,8 +455,7 @@ trait WalletRpc { self: Client =>
 
   /** $signRawTx
     *
-    * This RPC call signs the raw transaction with keys provided
-    * manually.
+    * This RPC call signs the raw transaction with keys provided manually.
     */
   def signRawTransactionWithKey(
       transaction: Transaction,

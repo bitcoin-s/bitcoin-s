@@ -13,13 +13,15 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
-/** This test spins up one test node and [[NetworkSize]] sender nodes, which open channels with the test one.
-  * Then each sender node sends [[PaymentCount]] payments to the test node one by one. For each payment the
-  * test node generates an invoice and the send node pays it using `sendtonode` API call.
+/** This test spins up one test node and [[NetworkSize]] sender nodes, which
+  * open channels with the test one. Then each sender node sends
+  * [[PaymentCount]] payments to the test node one by one. For each payment the
+  * test node generates an invoice and the send node pays it using `sendtonode`
+  * API call.
   *
-  * The test keeps track of times when a payment was initiated, when the payment ID was received,
-  * and when the corresponding web socket event was received. It writes all results into [[OutputFileName]]
-  * in CSV format.
+  * The test keeps track of times when a payment was initiated, when the payment
+  * ID was received, and when the corresponding web socket event was received.
+  * It writes all results into [[OutputFileName]] in CSV format.
   */
 object EclairBench extends App with EclairRpcTestUtil {
 
@@ -107,7 +109,7 @@ object EclairBench extends App with EclairRpcTestUtil {
         s"Set up $NetworkSize nodes, that will send $PaymentCount payments to the test node each")
       _ = println(
         s"Test node data directory: ${network.testEclairNode.instance.authCredentials.datadir
-          .getOrElse("")}")
+            .getOrElse("")}")
       _ = println("Testing...")
       _ <- sendPayments(network, PaymentAmount, PaymentCount)
       _ <- TestAsyncUtil.retryUntilSatisfied(

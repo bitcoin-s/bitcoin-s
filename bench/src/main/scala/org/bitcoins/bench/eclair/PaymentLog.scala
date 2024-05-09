@@ -57,11 +57,11 @@ object PaymentLog {
 
     def toCSV: String =
       s"""${paymentHash
-        .map(_.hex)
-        .getOrElse("")},${id.map(_.toString).getOrElse("")},${event
-        .map(_.getClass.getName.split('$').last)
-        .getOrElse(
-          "")},$paymentSentAt,$paymentIdReceivedAt,$eventReceivedAt,${paymentIdReceivedAt - paymentSentAt},${eventReceivedAt - paymentIdReceivedAt}"""
+          .map(_.hex)
+          .getOrElse("")},${id.map(_.toString).getOrElse("")},${event
+          .map(_.getClass.getName.split('$').last)
+          .getOrElse(
+            "")},$paymentSentAt,$paymentIdReceivedAt,$eventReceivedAt,${paymentIdReceivedAt - paymentSentAt},${eventReceivedAt - paymentIdReceivedAt}"""
   }
 
   object PaymentLogEntry {

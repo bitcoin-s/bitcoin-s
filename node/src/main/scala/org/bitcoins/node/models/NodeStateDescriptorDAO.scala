@@ -30,28 +30,22 @@ case class NodeStateDescriptorDAO()(implicit
   override val table: profile.api.TableQuery[NodeStateDescriptorTable] =
     TableQuery[NodeStateDescriptorTable]
 
-  override def createAll(ts: Vector[NodeStateDescriptorDb]): Future[
-    Vector[NodeStateDescriptorDb]] =
+  override def createAll(ts: Vector[NodeStateDescriptorDb])
+      : Future[Vector[NodeStateDescriptorDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findByPrimaryKeys(ids: Vector[NodeStateDescriptorType]): Query[
-    NodeStateDescriptorTable,
-    NodeStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKeys(ids: Vector[NodeStateDescriptorType])
+      : Query[NodeStateDescriptorTable, NodeStateDescriptorDb, Seq] = {
     table.filter(_.tpe.inSet(ids))
   }
 
-  override def findByPrimaryKey(id: NodeStateDescriptorType): Query[
-    Table[NodeStateDescriptorDb],
-    NodeStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKey(id: NodeStateDescriptorType)
+      : Query[Table[NodeStateDescriptorDb], NodeStateDescriptorDb, Seq] = {
     table.filter(_.tpe === id)
   }
 
-  override def findAll(ts: Vector[NodeStateDescriptorDb]): Query[
-    Table[NodeStateDescriptorDb],
-    NodeStateDescriptorDb,
-    Seq] =
+  override def findAll(ts: Vector[NodeStateDescriptorDb])
+      : Query[Table[NodeStateDescriptorDb], NodeStateDescriptorDb, Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
 
 //  def setWalletName(walletName: Option[String]): Future[Unit] = {

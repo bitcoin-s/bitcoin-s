@@ -10,23 +10,21 @@ import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Properties
 
-/** This class represents a parsed `lightning.conf` file. It
-  * respects the different ways of writing options in
-  * `lightning.conf`: Raw options, network-prefixed options
-  * and options within network sections. It also tries to
-  * conform to the way clightning gives precedence to the
-  * different properties.
+/** This class represents a parsed `lightning.conf` file. It respects the
+  * different ways of writing options in `lightning.conf`: Raw options,
+  * network-prefixed options and options within network sections. It also tries
+  * to conform to the way clightning gives precedence to the different
+  * properties.
   *
-  * Not all options are exposed from this class. We only
-  * expose those that are of relevance when making RPC
-  * requests.
+  * Not all options are exposed from this class. We only expose those that are
+  * of relevance when making RPC requests.
   */
 case class CLightningConfig(
     private[bitcoins] val lines: Seq[String],
     datadir: File)
     extends BitcoinSLogger {
 
-  //create datadir and config if it DNE on disk
+  // create datadir and config if it DNE on disk
   if (!datadir.exists()) {
     logger.debug(
       s"datadir=${datadir.getAbsolutePath} does not exist, creating now")
@@ -36,21 +34,20 @@ case class CLightningConfig(
 
   private val confFile = datadir.toPath.resolve("config")
 
-  //create config file in datadir if it does not exist
+  // create config file in datadir if it does not exist
   if (!Files.exists(confFile)) {
     logger.debug(
       s"config in datadir=${datadir.getAbsolutePath} does not exist, creating now")
     CLightningConfig.writeConfigToFile(this, datadir)
   }
 
-  /** Converts the config back to a string that can be written
-    * to file, and passed to `lightning`
+  /** Converts the config back to a string that can be written to file, and
+    * passed to `lightning`
     */
   lazy val toWriteableString: String = lines.mkString("\n")
 
-  /** Splits the provided lines into pairs of keys/values
-    * based on `=`, and then applies the provided
-    * `collect` function on those pairs
+  /** Splits the provided lines into pairs of keys/values based on `=`, and then
+    * applies the provided `collect` function on those pairs
     */
   private def collectFrom(lines: Seq[String])(
       collect: PartialFunction[(String, String), String]): Seq[String] = {
@@ -150,8 +147,8 @@ object CLightningConfig
   override lazy val empty: CLightningConfig =
     CLightningConfig("", DEFAULT_DATADIR)
 
-  /** Constructs a `lightning` config from the given string,
-    * by splitting it on newlines
+  /** Constructs a `lightning` config from the given string, by splitting it on
+    * newlines
     */
   override def apply(config: String, datadir: File): CLightningConfig =
     apply(config.split("\n").toList, datadir)
@@ -182,9 +179,8 @@ object CLightningConfig
     apply(dir.toPath.resolve("config"))
   }
 
-  /** If there is a `config` in the default
-    * data directory, this is read. Otherwise, the
-    * default configuration is returned.
+  /** If there is a `config` in the default data directory, this is read.
+    * Otherwise, the default configuration is returned.
     */
   override def fromDefaultDatadir: CLightningConfig = {
     if (DEFAULT_CONF_FILE.isFile) {
@@ -223,8 +219,8 @@ object CLightningConfig
     .resolve("lightning-rpc")
     .toFile
 
-  /** Writes the config to the data directory within it, if it doesn't
-    * exist. Returns the written file.
+  /** Writes the config to the data directory within it, if it doesn't exist.
+    * Returns the written file.
     */
   override def writeConfigToFile(
       config: CLightningConfig,

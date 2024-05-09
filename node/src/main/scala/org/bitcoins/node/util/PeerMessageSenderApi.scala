@@ -72,7 +72,9 @@ trait PeerMessageSenderApi {
     sendMsg(sendHeadersMsg)
   }
 
-  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
+  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our
+    * peer
+    */
   def sendVersionMessage()(implicit conf: NodeAppConfig): Future[Unit]
 
   def sendVersionMessage(chainApi: ChainApi)(implicit

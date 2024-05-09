@@ -26,8 +26,7 @@ case class LndRpcTestClient(
           s"Path did not exist! got=${binary.toAbsolutePath.toString}")
   import system.dispatcher
 
-  /** Cached client. This is defined if start() has been called
-    * else None
+  /** Cached client. This is defined if start() has been called else None
     */
   private var clientOpt: Option[LndRpcClient] = None
 

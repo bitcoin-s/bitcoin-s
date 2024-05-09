@@ -42,7 +42,7 @@ class BlockFilterTest extends BitcoinSUnitTest {
 
   object Bip158TestCase {
 
-    //["Block Height,Block Hash,Block,[Prev Output Scripts for Block],Previous Basic Header,Basic Filter,Basic Header,Notes"]
+    // ["Block Height,Block Hash,Block,[Prev Output Scripts for Block],Previous Basic Header,Basic Filter,Basic Header,Notes"]
     def fromArr(array: Arr): Bip158TestCase = {
       val parseResult = for {
         height <- array(0).numOpt.map(_.toInt)

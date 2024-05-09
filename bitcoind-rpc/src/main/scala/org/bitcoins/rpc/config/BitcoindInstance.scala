@@ -146,7 +146,8 @@ object BitcoindInstanceLocal
   /** Constructs a `bitcoind` instance from the given datadir, using the
     * `bitcoin.conf` found within (if any)
     *
-    * @throws IllegalArgumentException if the given datadir does not exist
+    * @throws IllegalArgumentException
+    *   if the given datadir does not exist
     */
   def fromDatadir(
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
@@ -182,7 +183,8 @@ object BitcoindInstanceLocal
   /** Construct a `bitcoind` from the given config file. If no `datadir` setting
     * is found, the parent directory to the given file is used.
     *
-    * @throws  IllegalArgumentException if the given config file does not exist
+    * @throws IllegalArgumentException
+    *   if the given config file does not exist
     */
   def fromConfFile(
       file: File = BitcoindConfig.DEFAULT_CONF_FILE,

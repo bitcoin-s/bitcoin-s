@@ -25,8 +25,8 @@ import slick.dbio.{DBIOAction, Effect, NoStream}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-/** Provides functionality related to addresses. This includes
-  * enumeratng and creating them, primarily.
+/** Provides functionality related to addresses. This includes enumeratng and
+  * creating them, primarily.
   */
 private[wallet] trait AddressHandling extends WalletLogger {
   self: Wallet =>
@@ -77,8 +77,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
-  override def listFundedAddresses(): Future[
-    Vector[(AddressDb, CurrencyUnit)]] = {
+  override def listFundedAddresses()
+      : Future[Vector[(AddressDb, CurrencyUnit)]] = {
     addressDAO.getFundedAddresses
   }
 
@@ -121,11 +121,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
   protected[wallet] def listSPKs(): Future[Vector[ScriptPubKey]] =
     addressDAO.findAllSPKs()
 
-  /** Given a transaction, returns the outputs (with their corresponding outpoints)
-    * that pay to this wallet
+  /** Given a transaction, returns the outputs (with their corresponding
+    * outpoints) that pay to this wallet
     */
-  def findOurOuts(transaction: Transaction): Future[
-    Vector[(TransactionOutput, TransactionOutPoint)]] =
+  def findOurOuts(transaction: Transaction)
+      : Future[Vector[(TransactionOutput, TransactionOutPoint)]] =
     for {
       spks <- listSPKs()
     } yield transaction.outputs.zipWithIndex.collect {
@@ -191,17 +191,17 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
-  /** Derives a new address in the wallet for the
-    * given account and chain type (change/external).
-    * After deriving the address it inserts it into our
-    * table of addresses.
+  /** Derives a new address in the wallet for the given account and chain type
+    * (change/external). After deriving the address it inserts it into our table
+    * of addresses.
     *
-    * This method is called with the approriate params
-    * from the public facing methods `getNewChangeAddress`
-    * and `getNewAddress`.
+    * This method is called with the approriate params from the public facing
+    * methods `getNewChangeAddress` and `getNewAddress`.
     *
-    * @param account Account to generate address from
-    * @param chainType What chain do we generate from? Internal change vs. external
+    * @param account
+    *   Account to generate address from
+    * @param chainType
+    *   What chain do we generate from? Internal change vs. external
     */
   private def getNewAddressDb(
       account: AccountDb,
@@ -213,22 +213,23 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
   private def getNewAddressHelperAction(
       account: AccountDb,
-      chainType: HDChainType): DBIOAction[
-    BitcoinAddress,
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+      chainType: HDChainType)
+      : DBIOAction[BitcoinAddress,
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     logger.debug(s"Processing $account $chainType in our address request queue")
-    val resultA: DBIOAction[
-      BitcoinAddress,
-      NoStream,
-      Effect.Read with Effect.Write with Effect.Transactional] = for {
-      addressDb <- getNewAddressDbAction(account, chainType)
-      writtenAddressDb <- addressDAO.createAction(addressDb)
-    } yield {
-      logger.info(
-        s"Generated new address=${addressDb.address} path=${addressDb.path} isChange=${addressDb.isChange}")
-      writtenAddressDb.address
-    }
+    val resultA
+        : DBIOAction[BitcoinAddress,
+                     NoStream,
+                     Effect.Read with Effect.Write with Effect.Transactional] =
+      for {
+        addressDb <- getNewAddressDbAction(account, chainType)
+        writtenAddressDb <- addressDAO.createAction(addressDb)
+      } yield {
+        logger.info(
+          s"Generated new address=${addressDb.address} path=${addressDb.path} isChange=${addressDb.isChange}")
+        writtenAddressDb.address
+      }
 
     val callbackExecuted = resultA.flatMap { address =>
       val executedF =
@@ -241,9 +242,9 @@ private[wallet] trait AddressHandling extends WalletLogger {
     callbackExecuted
   }
 
-  /** Queues a request to generate an address and returns a Future that will
-    * be completed when the request is processed in the queue. If the queue
-    * is full it throws an exception.
+  /** Queues a request to generate an address and returns a Future that will be
+    * completed when the request is processed in the queue. If the queue is full
+    * it throws an exception.
     * @throws IllegalStateException
     */
   private def getNewAddressHelper(
@@ -260,10 +261,10 @@ private[wallet] trait AddressHandling extends WalletLogger {
     getNewAddressDb(accountDb, chainType).map(_.path.path.last.index)
   }
 
-  def getNewAddressAction(account: HDAccount): DBIOAction[
-    BitcoinAddress,
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+  def getNewAddressAction(account: HDAccount)
+      : DBIOAction[BitcoinAddress,
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     val accountDbOptA = findAccountAction(account)
     accountDbOptA.flatMap {
       case Some(accountDb) => getNewAddressAction(accountDb)
@@ -274,10 +275,10 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
-  def getNewChangeAddressAction(account: HDAccount): DBIOAction[
-    BitcoinAddress,
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+  def getNewChangeAddressAction(account: HDAccount)
+      : DBIOAction[BitcoinAddress,
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     val accountDbOptA = findAccountAction(account)
     accountDbOptA.flatMap {
       case Some(accountDb) => getNewChangeAddressAction(accountDb)
@@ -299,17 +300,17 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
-  def getNewAddressAction(account: AccountDb): DBIOAction[
-    BitcoinAddress,
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+  def getNewAddressAction(account: AccountDb)
+      : DBIOAction[BitcoinAddress,
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     getNewAddressHelperAction(account, HDChainType.External)
   }
 
-  def getNewChangeAddressAction(account: AccountDb): DBIOAction[
-    BitcoinAddress,
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+  def getNewChangeAddressAction(account: AccountDb)
+      : DBIOAction[BitcoinAddress,
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     getNewAddressHelperAction(account, HDChainType.Change)
   }
 
@@ -422,10 +423,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     } yield address
   }
 
-  def findAccountAction(account: HDAccount): DBIOAction[
-    Option[AccountDb],
-    NoStream,
-    Effect.Read] = {
+  def findAccountAction(account: HDAccount)
+      : DBIOAction[Option[AccountDb], NoStream, Effect.Read] = {
     accountDAO.findByAccountAction(account)
   }
 

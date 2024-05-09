@@ -30,8 +30,9 @@ case class DLCDAO()(implicit
 
   override val table: TableQuery[DLCTable] = TableQuery[DLCTable]
 
-  private lazy val contactTable: slick.lifted.TableQuery[
-    DLCContactDAO#DLCContactTable] = DLCContactDAO().table
+  private lazy val contactTable
+      : slick.lifted.TableQuery[DLCContactDAO#DLCContactTable] =
+    DLCContactDAO().table
 
   override def createAll(ts: Vector[DLCDb]): Future[Vector[DLCDb]] =
     createAllNoAutoInc(ts, safeDatabase)
@@ -49,18 +50,16 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
-    Vector[DLCDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdsAction(
+      dlcIds: Vector[Sha256Digest]): DBIOAction[Vector[DLCDb],
+                                                profile.api.NoStream,
+                                                profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest)
+      : DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }
@@ -138,10 +137,8 @@ case class DLCDAO()(implicit
     table.filter(_.state === state).result.map(_.toVector)
   }
 
-  def findByStatesAction(states: Vector[DLCState]): DBIOAction[
-    Vector[DLCDb],
-    NoStream,
-    Effect.Read] = {
+  def findByStatesAction(states: Vector[DLCState])
+      : DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
     table.filter(_.state.inSet(states)).result.map(_.toVector)
   }
 
@@ -173,12 +170,8 @@ case class DLCDAO()(implicit
     safeDatabase.run(action).map(_ => ())
   }
 
-  private def updatePeerAction(
-      dlcId: Sha256Digest,
-      peerOpt: Option[String]): DBIOAction[
-    Int,
-    NoStream,
-    Effect.Read with Effect.Write] = {
+  private def updatePeerAction(dlcId: Sha256Digest, peerOpt: Option[String])
+      : DBIOAction[Int, NoStream, Effect.Read with Effect.Write] = {
     val dlcQuery = table.filter(_.dlcId === dlcId)
 
     for {

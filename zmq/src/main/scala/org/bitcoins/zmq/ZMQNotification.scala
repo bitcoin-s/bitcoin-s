@@ -1,7 +1,7 @@
 package org.bitcoins.zmq
 
-/** Represents the various notifications we can subscribe
-  * to from a zmq publisher
+/** Represents the various notifications we can subscribe to from a zmq
+  * publisher
   * [[https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md#usage]]
   */
 sealed abstract class ZMQNotification {

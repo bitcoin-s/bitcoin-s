@@ -12,9 +12,10 @@ import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 
 /** Creates a case class that represents all DLC data from dlcdb.sqlite
-  * Unfortunately we have to read some data from walletdb.sqlite to build a
-  * full [[DLCStatus]]
-  * @see https://github.com/bitcoin-s/bitcoin-s/pull/4555#issuecomment-1200113188
+  * Unfortunately we have to read some data from walletdb.sqlite to build a full
+  * [[DLCStatus]]
+  * @see
+  *   https://github.com/bitcoin-s/bitcoin-s/pull/4555#issuecomment-1200113188
   */
 case class IntermediaryDLCStatus(
     dlcDb: DLCDb,
@@ -70,7 +71,9 @@ case class IntermediaryDLCStatus(
 
 object DLCStatusBuilder {
 
-  /** Helper method to convert a bunch of indepdendent datastructures into a in progress dlc status */
+  /** Helper method to convert a bunch of indepdendent datastructures into a in
+    * progress dlc status
+    */
   def buildInProgressDLCStatus(
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
@@ -235,7 +238,7 @@ object DLCStatusBuilder {
     }
     val status = dlcDb.state.asInstanceOf[DLCState.ClosedState] match {
       case DLCState.Refunded =>
-        //no oracle information in the refund case
+        // no oracle information in the refund case
         val refund = Refunded(
           dlcId,
           dlcDb.isInitiator,
@@ -309,15 +312,14 @@ object DLCStatusBuilder {
     status
   }
 
-  /** Calculates oracle outcome and signatures. Returns none if the dlc is not in a valid state to
-    * calculate the outcome
+  /** Calculates oracle outcome and signatures. Returns none if the dlc is not
+    * in a valid state to calculate the outcome
     */
   def getOracleOutcomeAndSigs(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
-      nonceDbs: Vector[OracleNonceDb]): (
-      OracleOutcome,
-      OrderedSchnorrSignatures) = {
+      nonceDbs: Vector[OracleNonceDb])
+      : (OracleOutcome, OrderedSchnorrSignatures) = {
     val noncesByAnnouncement: Map[Long, Vector[OracleNonceDb]] =
       nonceDbs.sortBy(_.index).groupBy(_.announcementId)
     val oracleOutcome = {

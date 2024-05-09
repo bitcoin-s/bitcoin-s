@@ -106,7 +106,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val peerManager = node.peerManager
       def peers = peerManager.peers
 
-      //is the database peer same as Peer
+      // is the database peer same as Peer
       def isSame(peerDb: PeerDb, peer: Peer): Boolean = {
         val dbSocket =
           NetworkUtil.parseInetSocketAddress(peerDb.address, peerDb.port)
@@ -114,9 +114,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         val hostMatch: Boolean = {
           if (dbSocket.getHostString == peer.socket.getHostString) true
           else {
-            //checking if both are localhost
-            //a bit hacky way but resolution of localhost to address cannot be done so as to allow for tor
-            //addresses too
+            // checking if both are localhost
+            // a bit hacky way but resolution of localhost to address cannot be done so as to allow for tor
+            // addresses too
             val localhost = Vector("localhost", "127.0.0.1")
             localhost.contains(dbSocket.getHostString) && localhost.contains(
               peer.socket.getHostString)
@@ -126,7 +126,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         hostMatch && dbSocket.getPort == peer.socket.getPort
       }
 
-      //assert connected to 2 peers and both initialised and connected
+      // assert connected to 2 peers and both initialised and connected
       val assertConnAndInit = for {
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
@@ -188,35 +188,35 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
-      //we need to generate 1 block for bitcoind to consider
-      //itself out of IBD. bitcoind will not sendheaders
-      //when it believes itself, or it's peer is in IBD
+      // we need to generate 1 block for bitcoind to consider
+      // itself out of IBD. bitcoind will not sendheaders
+      // when it believes itself, or it's peer is in IBD
       val gen1F = for {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         x <- bitcoind.generate(1)
       } yield x
 
-      //this needs to be called to get our peer to send us headers
-      //as they happen with the 'sendheaders' message
-      //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
-      //at this point so no actual syncing is happening
+      // this needs to be called to get our peer to send us headers
+      // as they happen with the 'sendheaders' message
+      // both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
+      // at this point so no actual syncing is happening
       val initSyncF = gen1F.flatMap { _ =>
         for {
           _ <- NodeTestUtil.awaitBestHash(node, bitcoind)
         } yield ()
       }
 
-      //start generating a block every 10 seconds with bitcoind
-      //this should result in 5 blocks
+      // start generating a block every 10 seconds with bitcoind
+      // this should result in 5 blocks
       val startGenF: Future[Cancellable] = initSyncF.map { _ =>
-        //generate a block every 5 seconds
-        //until we have generated 5 total blocks
+        // generate a block every 5 seconds
+        // until we have generated 5 total blocks
         genBlockInterval(bitcoind)
       }
 
       startGenF.flatMap { cancellable =>
-        //we should expect 5 headers have been announced to us via
-        //the send headers message.
+        // we should expect 5 headers have been announced to us via
+        // the send headers message.
         for {
           _ <- NodeTestUtil.awaitSync(node, bitcoind)
           _ = {
@@ -231,7 +231,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       }
   }
 
-  //intended for test fixtures
+  // intended for test fixtures
   it must "sync filters when multiple header messages are sent in succession" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
@@ -240,10 +240,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       for {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         _ <- PekkoUtil.nonBlockingSleep(3.seconds)
-        //have to generate the block headers independent of one another
-        //rather than just calling generateToAddress(2,junkAddress)
-        //because of this bitcoin core bug: https://github.com/bitcoin-s/bitcoin-s/issues/1098
-        //hopefully they fix it some day...
+        // have to generate the block headers independent of one another
+        // rather than just calling generateToAddress(2,junkAddress)
+        // because of this bitcoin core bug: https://github.com/bitcoin-s/bitcoin-s/issues/1098
+        // hopefully they fix it some day...
         _ <- bitcoind.generateToAddress(1, junkAddress)
         _ <- AsyncUtil.nonBlockingSleep(500.millis)
         _ <- bitcoind.generateToAddress(1, junkAddress)
@@ -255,23 +255,23 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   it must "start syncing compact filter headers / compact filters when block header is seen" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4933
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/4933
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
       for {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         _ <- node.stop()
-        //drop all compact filter headers / filters
+        // drop all compact filter headers / filters
         _ <- CompactFilterHeaderDAO()(executionContext, node.chainConfig)
           .deleteAll()
         _ <- CompactFilterDAO()(executionContext, node.chainConfig).deleteAll()
         _ <- bitcoind.generate(1)
-        //restart the node
+        // restart the node
         _ <- node.start()
-        //await for us to sync compact filter headers filters
-        //the sync process should get kicked off after we see the
-        //newly mined block header
+        // await for us to sync compact filter headers filters
+        // the sync process should get kicked off after we see the
+        // newly mined block header
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
         succeed
@@ -280,25 +280,25 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   it must "sync block headers that occurred while were syncing compact filters during IBD" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/5017
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/5017
 
-      //problem: We are generating blocks with bitcoinds(0)
-      //but we are trying to sync these blocks with bitcoinds(1)
-      //this results in a race condition between the bitcoin-s node and bitcoinds(0) / bitcoinds(1) syncing with each other
-      //some cases, when we try to sync filters / filter headers from bitcoinds(1) we will get this error message saying we cannot find the block
-      //2023-05-01T21:46:46Z [net] Failed to find block filter hashes in index: filter_type=basic, start_height=208, stop_hash=303cc906bf99b5370581e7f23285378c18005745882c6112dbbf3e61a82aeddb
+      // problem: We are generating blocks with bitcoinds(0)
+      // but we are trying to sync these blocks with bitcoinds(1)
+      // this results in a race condition between the bitcoin-s node and bitcoinds(0) / bitcoinds(1) syncing with each other
+      // some cases, when we try to sync filters / filter headers from bitcoinds(1) we will get this error message saying we cannot find the block
+      // 2023-05-01T21:46:46Z [net] Failed to find block filter hashes in index: filter_type=basic, start_height=208, stop_hash=303cc906bf99b5370581e7f23285378c18005745882c6112dbbf3e61a82aeddb
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
       val bitcoind1 = nodeConnectedWithBitcoind.bitcoinds(1)
 
-      //start syncing node
+      // start syncing node
       val numBlocks = 5
       val genBlocksF = {
         for {
           peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind1)
           _ <- node.peerManager.disconnectPeer(peer1)
           _ <- NodeTestUtil.awaitConnectionCount(node, 1)
-          //generate blocks while sync is ongoing
+          // generate blocks while sync is ongoing
           _ <- bitcoind.generate(numBlocks)
         } yield {
           ()
@@ -307,9 +307,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       for {
         _ <- genBlocksF
-        //wait for sync to complete
+        // wait for sync to complete
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
-        //generate another block and make sure it syncs it
+        // generate another block and make sure it syncs it
         _ <- bitcoind.generate(1)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
@@ -337,7 +337,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   it must "start syncing compact filters on startup when block headers / filter headers are synced" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      //https://github.com/bitcoin-s/bitcoin-s/issues/5221
+      // https://github.com/bitcoin-s/bitcoin-s/issues/5221
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       val bitcoind0 = bitcoinds(0)
@@ -368,26 +368,26 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   it must "handle reorgs correctly" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      //https://github.com/bitcoin-s/bitcoin-s/issues/5017
+      // https://github.com/bitcoin-s/bitcoin-s/issues/5017
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       val bitcoind0 = bitcoinds(0)
       val bitcoind1 = bitcoinds(1)
       for {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind0)
-        //disconnect bitcoind1 as we don't need it
+        // disconnect bitcoind1 as we don't need it
         peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind1)
         _ <- node.peerManager.disconnectPeer(peer1)
         bestBlockHash0 <- bitcoind0.getBestBlockHash()
-        //invalidate blockhash to force a reorg when next block is generated
+        // invalidate blockhash to force a reorg when next block is generated
         _ <- bitcoind0.invalidateBlock(bestBlockHash0)
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)
-        //now generate a block, make sure we sync with them
+        // now generate a block, make sure we sync with them
         hashes0 <- bitcoind0.generate(1)
         chainApi <- node.chainApiFromDb()
         _ <- AsyncUtil.retryUntilSatisfiedF(() =>
           chainApi.getHeader(hashes0.head).map(_.isDefined))
-        //generate another block to make sure the reorg is complete
+        // generate another block to make sure the reorg is complete
         hashes1 <- bitcoind0.generate(1)
         _ <- NodeTestUtil.awaitAllSync(node = node,
                                        bitcoind = bitcoind0,
@@ -419,8 +419,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
     require(initNode.nodeConfig.maxConnectedPeers != maxConnectedPeers,
             s"maxConnectedPeers must be different")
-    //make a custom config, set the inactivity timeout very low
-    //so we will disconnect our peer organically
+    // make a custom config, set the inactivity timeout very low
+    // so we will disconnect our peer organically
     val str =
       s"""
          |bitcoin-s.node.maxConnectedPeers = $maxConnectedPeers

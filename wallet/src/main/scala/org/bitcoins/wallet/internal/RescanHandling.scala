@@ -86,8 +86,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
                                       endOpt = endOpt,
                                       addressBatchSize = addressBatchSize,
                                       forceGenerateSpks = false)
-            //purposefully don't map on this Future as it won't be completed until
-            //the rescan is completely done.
+            // purposefully don't map on this Future as it won't be completed until
+            // the rescan is completely done.
             _ = RescanState.awaitRescanComplete(state).map { _ =>
               logger.info(
                 s"Rescan is complete, resetting rescan state to false")
@@ -104,17 +104,17 @@ private[wallet] trait RescanHandling extends WalletLogger {
             state
           }
 
-          //register callbacks for resetting rescan flag in case of failure
+          // register callbacks for resetting rescan flag in case of failure
           val _ = handleRescanFailure(resF)
 
           resF.map {
             case r: RescanState.RescanStarted =>
               r.entireRescanDoneF.map(_ =>
                 logger.info(s"Finished rescanning the wallet. It took ${System
-                  .currentTimeMillis() - startTime}ms"))
+                    .currentTimeMillis() - startTime}ms"))
             case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
                 RescanState.RescanNotNeeded =>
-            //nothing to log
+            // nothing to log
           }
 
           resF
@@ -129,10 +129,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  /** Register callbacks to reset rescan flag in the database if there is a rescan failure */
+  /** Register callbacks to reset rescan flag in the database if there is a
+    * rescan failure
+    */
   private def handleRescanFailure(
       rescanStateF: Future[RescanState]): Future[Unit] = {
-    //handle the case where there is a top level rescan failure when _starting_ the rescan
+    // handle the case where there is a top level rescan failure when _starting_ the rescan
     rescanStateF.recoverWith { case err: Throwable =>
       logger.error(s"Failed to rescan wallet=${walletConfig.walletName}", err)
       stateDescriptorDAO
@@ -140,7 +142,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         .flatMap(_ => Future.failed(err))
     }
 
-    //handle the case where the rescan fails while the rescan is in progress
+    // handle the case where the rescan fails while the rescan is in progress
     for {
       rescanState <- rescanStateF
       _ <- RescanState.awaitRescanDone(rescanState).recoverWith {
@@ -174,14 +176,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val scriptsF = generateScriptPubKeys(account = account,
                                          addressBatchSize = addressBatchSize,
                                          forceGenerateSpks = forceGenerateSpks)
-    //by completing the promise returned by this sink
-    //we will be able to arbitrarily terminate the stream
-    //see: https://doc.akka.io/docs/akka/current/stream/operators/Source/maybe.html
+    // by completing the promise returned by this sink
+    // we will be able to arbitrarily terminate the stream
+    // see: https://doc.akka.io/docs/akka/current/stream/operators/Source/maybe.html
     val maybe = Source.maybe[Int]
 
-    //combine the Source.maybe with the Source providing filter heights
-    //this is needed so we can arbitrarily kill the stream with
-    //the promise returned by Source.maybe
+    // combine the Source.maybe with the Source providing filter heights
+    // this is needed so we can arbitrarily kill the stream with
+    // the promise returned by Source.maybe
     val combine: Source[Int, Promise[Option[Int]]] = {
       Source.combineMat(maybe, Source(range))(Merge(_))(Keep.left)
     }
@@ -193,13 +195,13 @@ private[wallet] trait RescanHandling extends WalletLogger {
       case (vec: Vector[Int], int: Int) => vec.:+(int)
     }
 
-    //this promise is completed after we scan the last filter
-    //in the rescanSink
+    // this promise is completed after we scan the last filter
+    // in the rescanSink
     val rescanCompletePromise: Promise[Unit] = Promise()
 
-    //fetches filters, matches filters against our wallet, and then request blocks
-    //for the wallet to process. This sink takes as input filter heights
-    //to fetch for rescanning.
+    // fetches filters, matches filters against our wallet, and then request blocks
+    // for the wallet to process. This sink takes as input filter heights
+    // to fetch for rescanning.
     val rescanSink: Sink[Int, Future[Seq[Vector[BlockMatchingResponse]]]] = {
       Flow[Int]
         .batch[Vector[Int]](filterBatchSize, seed)(aggregate)
@@ -216,51 +218,58 @@ private[wallet] trait RescanHandling extends WalletLogger {
           f.onComplete {
             case Success(_) =>
               if (heightRange.lastOption == range.lastOption) {
-                //complete the stream if we processed the last filter
+                // complete the stream if we processed the last filter
                 rescanCompletePromise.success(())
               }
-            case Failure(_) => //do nothing, the stream will fail on its own
+            case Failure(_) => // do nothing, the stream will fail on its own
           }
           f
         }
         .toMat(Sink.seq)(Keep.right)
     }
 
-    //the materialized values of the two streams
-    //completeRescanEarly allows us to safely complete the rescan early
-    //matchingBlocksF is materialized when the stream is complete. This is all blocks our wallet matched
+    // the materialized values of the two streams
+    // completeRescanEarly allows us to safely complete the rescan early
+    // matchingBlocksF is materialized when the stream is complete. This is all blocks our wallet matched
     val (completeRescanEarlyP, matchingBlocksF) =
       combine.toMat(rescanSink)(Keep.both).run()
 
     val recursiveRescanP: Promise[RescanState] = Promise()
 
-    //if we have seen the last filter, complete the rescanEarlyP so we are consistent
+    // if we have seen the last filter, complete the rescanEarlyP so we are consistent
     rescanCompletePromise.future.map { _ =>
       completeRescanEarlyP.success(None)
     }
 
     val flatten = matchingBlocksF.map(_.flatten.toVector)
 
-    //return RescanStarted with access to the ability to complete the rescan early
-    //via the completeRescanEarlyP promise.
+    // return RescanStarted with access to the ability to complete the rescan early
+    // via the completeRescanEarlyP promise.
     RescanState.RescanStarted(completeRescanEarlyP, flatten, recursiveRescanP)
   }
 
-  /** Iterates over the block filters in order to find filters that match to the given addresses
+  /** Iterates over the block filters in order to find filters that match to the
+    * given addresses
     *
-    * I queries the filter database for [[batchSize]] filters a time
-    * and tries to run [[GolombFilter.matchesAny]] for each filter.
+    * I queries the filter database for [[batchSize]] filters a time and tries
+    * to run [[GolombFilter.matchesAny]] for each filter.
     *
-    * It tries to match the filters in parallel using [[parallelismLevel]] threads.
-    * For best results use it with a separate execution context.
+    * It tries to match the filters in parallel using [[parallelismLevel]]
+    * threads. For best results use it with a separate execution context.
     *
-    * @param scripts list of [[ScriptPubKey]]'s to watch
-    * @param startOpt start point (if empty it starts with the genesis block)
-    * @param endOpt end point (if empty it ends with the best tip)
-    * @param batchSize number of filters that can be matched in one batch
-    * @param parallelismLevel max number of threads required to perform matching
-    *                         (default [[Runtime.getRuntime.availableProcessors()]])
-    * @return a list of matching block hashes
+    * @param scripts
+    *   list of [[ScriptPubKey]]'s to watch
+    * @param startOpt
+    *   start point (if empty it starts with the genesis block)
+    * @param endOpt
+    *   end point (if empty it ends with the best tip)
+    * @param batchSize
+    *   number of filters that can be matched in one batch
+    * @param parallelismLevel
+    *   max number of threads required to perform matching (default
+    *   [[Runtime.getRuntime.availableProcessors()]])
+    * @return
+    *   a list of matching block hashes
     */
   private def getMatchingBlocks(
       startOpt: Option[BlockStamp],
@@ -324,10 +333,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  /** Used to call a recursive rescan after the previous rescan is complete.
-    * The [[prevState]] parameter is what represents the previous rescan.
-    * We wait for this rescan to complete, and then check if we need to
-    * do another rescan
+  /** Used to call a recursive rescan after the previous rescan is complete. The
+    * [[prevState]] parameter is what represents the previous rescan. We wait
+    * for this rescan to complete, and then check if we need to do another
+    * rescan
     */
   private def recursiveRescan(
       prevState: RescanState.RescanStarted,
@@ -338,7 +347,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val awaitPreviousRescanF =
       RescanState.awaitSingleRescanDone(rescanState = prevState)
     for {
-      _ <- awaitPreviousRescanF //this is where the deadlock occurs
+      _ <- awaitPreviousRescanF // this is where the deadlock occurs
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
       _ <- {
@@ -373,9 +382,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressDbs <- addressDAO.findAllForAccount(account)
       addressGap <-
         addressDbs
-          //make sure all addressDb are of the correct chainType
-          //and they are sorted according to their index so we can
-          //calculate the gap accurately
+          // make sure all addressDb are of the correct chainType
+          // and they are sorted according to their index so we can
+          // calculate the gap accurately
           .filter(_.accountChain == chainType)
           .sortBy(_.addressIndex)
           .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
@@ -428,10 +437,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def generateAddressesForRescanAction(
       account: HDAccount,
-      addressBatchSize: Int): DBIOAction[
-    Vector[BitcoinAddress],
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+      addressBatchSize: Int)
+      : DBIOAction[Vector[BitcoinAddress],
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     val receiveAddressesA: DBIOAction[
       Vector[BitcoinAddress],
       NoStream,
@@ -458,14 +467,16 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield receiveAddresses ++ changeAddresses
   }
 
-  /** If forceGeneratSpks is true or addressCount == 0 we generate a new pool of scriptpubkeys */
+  /** If forceGeneratSpks is true or addressCount == 0 we generate a new pool of
+    * scriptpubkeys
+    */
   private def generateScriptPubKeysAction(
       account: HDAccount,
       addressBatchSize: Int,
-      forceGenerateSpks: Boolean): DBIOAction[
-    Vector[ScriptPubKey],
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+      forceGenerateSpks: Boolean)
+      : DBIOAction[Vector[ScriptPubKey],
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     val addressCountA = addressDAO.countAction
     for {
       addressCount <- addressCountA
@@ -475,9 +486,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
             s"Generating $addressBatchSize fresh addresses for the rescan")
           generateAddressesForRescanAction(account, addressBatchSize)
         } else {
-          //we don't want to continously generate addresses
-          //if our wallet already has them, so just use what is in the
-          //database already
+          // we don't want to continously generate addresses
+          // if our wallet already has them, so just use what is in the
+          // database already
           addressDAO.findAllAddressesAction().map(_.map(_.address))
         }
       }
@@ -491,14 +502,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  /** Given a range of filter heights, we fetch the filters associated with those heights and emit them downstream */
-  private val fetchFiltersFlow: Flow[
-    Vector[Int],
-    Vector[ChainQueryApi.FilterResponse],
-    NotUsed] = {
-    //parallelism as 1 here because `getFiltersBetweenHeights`
-    //fetches filters in parallel. We can run into our max open requests
-    //allowed by akka if we have parallelism more than 1 here
+  /** Given a range of filter heights, we fetch the filters associated with
+    * those heights and emit them downstream
+    */
+  private val fetchFiltersFlow
+      : Flow[Vector[Int], Vector[ChainQueryApi.FilterResponse], NotUsed] = {
+    // parallelism as 1 here because `getFiltersBetweenHeights`
+    // fetches filters in parallel. We can run into our max open requests
+    // allowed by akka if we have parallelism more than 1 here
     Flow[Vector[Int]].mapAsync(1) { case range: Vector[Int] =>
       val startHeight = range.head
       val endHeight = range.last
@@ -520,8 +531,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
     safeDatabase.run(action)
   }
 
-  /** Searches the given block filters against the given scriptPubKeys for matches.
-    * If there is a match, request the full block to search
+  /** Searches the given block filters against the given scriptPubKeys for
+    * matches. If there is a match, request the full block to search
     */
   private def searchFiltersForMatches(
       scripts: Vector[ScriptPubKey],
@@ -581,8 +592,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
     }
   }
 
-  /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
-    * It's needed to limit number of threads required to run the matching
+  /** Calculates group size to split a filter vector into [[parallelismLevel]]
+    * groups. It's needed to limit number of threads required to run the
+    * matching
     */
   private def calcGroupSize(vectorSize: Int, parallelismLevel: Int): Int = {
     if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)

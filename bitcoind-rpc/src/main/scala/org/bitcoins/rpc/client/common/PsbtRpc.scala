@@ -19,9 +19,12 @@ import scala.concurrent.Future
 
 /** Set of utilities to analyze, join, and update existing PSBTs
   *
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/analyzepsbt/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/joinpsbts/]]
-  * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/utxoupdatepsbt/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/analyzepsbt/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/joinpsbts/]]
+  * @see
+  *   [[https://bitcoincore.org/en/doc/0.18.0/rpc/rawtransactions/utxoupdatepsbt/]]
   */
 trait PsbtRpc {
   self: Client =>

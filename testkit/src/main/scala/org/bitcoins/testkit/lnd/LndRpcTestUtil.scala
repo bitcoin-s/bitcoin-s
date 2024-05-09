@@ -44,7 +44,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   def startedBitcoindRpcClient(
       instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
       actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
-    //need to do something with the Vector.newBuilder presumably?
+    // need to do something with the Vector.newBuilder presumably?
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt, Vector.newBuilder)
   }
 
@@ -88,11 +88,11 @@ trait LndRpcTestUtil extends BitcoinSLogger {
        |externalip=127.0.0.1
        |maxpendingchannels=10
        |bitcoind.rpcuser = ${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .username}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .username}
        |bitcoind.rpcpass = ${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .password}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .password}
        |bitcoind.rpchost = 127.0.0.1:${bitcoindInstance.rpcUri.getPort}
        |bitcoind.zmqpubrawtx = tcp://127.0.0.1:${rawTx.getPort}
        |bitcoind.zmqpubrawblock = tcp://127.0.0.1:${rawBlock.getPort}
@@ -104,10 +104,10 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       isCannonical: Boolean): File = {
     val bitcoindInstance = bitcoindRpcClient.instance
     if (isCannonical) {
-      //assumes that the ${HOME}/.lnd/lnd.conf file is created AND a bitcoind instance is running
+      // assumes that the ${HOME}/.lnd/lnd.conf file is created AND a bitcoind instance is running
       cannonicalDatadir
     } else {
-      //creates a random lnd datadir, but still assumes that a bitcoind instance is running right now
+      // creates a random lnd datadir, but still assumes that a bitcoind instance is running right now
       val datadir = randomLndDatadir()
       datadir.mkdirs()
       logger.trace(s"Creating temp lnd dir ${datadir.getAbsolutePath}")
@@ -133,8 +133,9 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     LndInstanceLocal.fromDataDir(datadir)
   }
 
-  /** Returns a `Future` that is completed when both lnd and bitcoind have the same block height
-    * Fails the future if they are not synchronized within the given timeout.
+  /** Returns a `Future` that is completed when both lnd and bitcoind have the
+    * same block height Fails the future if they are not synchronized within the
+    * given timeout.
     */
   def awaitLndInSync(lnd: LndRpcClient, bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[Unit] = {

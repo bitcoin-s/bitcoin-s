@@ -32,8 +32,8 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc with WalletRpc {
       count: Int): Future[Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(Some(count))
 
-  override def getNodeAddresses(): Future[
-    Vector[GetNodeAddressesResultPostV22]] =
+  override def getNodeAddresses()
+      : Future[Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(None)
 
 }

@@ -66,11 +66,11 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       }
     }
 
-    //default wallet utxos are 3BTC, 2BTC, 1BTC
-    //our coin selection algorithm seems to be selecting
-    //the 3BTC utxo to spend, so we should have
-    //confirmed = 2BTC + 1BTC
-    //unconfirmed = 3 BTC - TestAmount - TestFees
+    // default wallet utxos are 3BTC, 2BTC, 1BTC
+    // our coin selection algorithm seems to be selecting
+    // the 3BTC utxo to spend, so we should have
+    // confirmed = 2BTC + 1BTC
+    // unconfirmed = 3 BTC - TestAmount - TestFees
     val condition1 = () => {
       condition(
         expectedBalance = 6.bitcoin - TestAmount - TestFees,
@@ -79,10 +79,10 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       )
     }
 
-    //this is just sending TestAmount back to us
-    //so everything should stay the same as above
-    //expected we should have received TestAmount back
-    //and have 1 more address/utxo
+    // this is just sending TestAmount back to us
+    // so everything should stay the same as above
+    // expected we should have received TestAmount back
+    // and have 1 more address/utxo
     val condition2 = { () =>
       condition(
         expectedBalance = (6.bitcoin - TestAmount - TestFees) + TestAmount,
@@ -103,7 +103,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- AsyncUtil.awaitConditionF(condition1, maxTries = 100) //10 seconds
+      _ <- AsyncUtil.awaitConditionF(condition1, maxTries = 100) // 10 seconds
       // receive
       address <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(address, TestAmount)
@@ -226,7 +226,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       val receivedAddrF = wallet.getNewAddress()
       val bitcoindAddrF = bitcoind.getNewAddress
       val sendAmt = Bitcoins.one
-      //stop the node to take us offline
+      // stop the node to take us offline
       val stopF = {
         for {
           _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
@@ -238,11 +238,11 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         receiveAddr <- receivedAddrF
         bitcoindAddr <- bitcoindAddrF
         stoppedNode <- stopF
-        //send money and generate a block to confirm the funds while we are offline
+        // send money and generate a block to confirm the funds while we are offline
         _ <- bitcoind.sendToAddress(receiveAddr, sendAmt)
-        //generate a block to confirm the tx
+        // generate a block to confirm the tx
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
-        //restart the node now that we have received funds
+        // restart the node now that we have received funds
         startedNode <- stoppedNode.start()
         _ <- NodeTestUtil.awaitSync(node = startedNode, rpc = bitcoind)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => {
@@ -259,28 +259,28 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "recognize funds were spent while we were offline" in { param =>
-    //useful test for the case where we are in a DLC
-    //and the counterparty broadcasts the funding tx or a CET
+    // useful test for the case where we are in a DLC
+    // and the counterparty broadcasts the funding tx or a CET
     val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
     val initBalanceF = wallet.getBalance()
     val bitcoindAddrF = bitcoind.getNewAddress
     val sendAmt = Bitcoins.one
 
-    //stop the node to take us offline
+    // stop the node to take us offline
     val stopF = node.stop()
     for {
       initBalance <- initBalanceF
       bitcoindAddr <- bitcoindAddrF
       stoppedNode <- stopF
 
-      //create a transaction that spends to bitcoind with our wallet
+      // create a transaction that spends to bitcoind with our wallet
       tx <- wallet.sendToAddress(bitcoindAddr, sendAmt, SatoshisPerByte.one)
-      //broadcast tx
+      // broadcast tx
       _ <- bitcoind.sendRawTransaction(tx)
       _ <- bitcoind.generateToAddress(1, bitcoindAddr)
       _ <- PekkoUtil.nonBlockingSleep(3.seconds)
 
-      //bring node back online
+      // bring node back online
       startedNode <- stoppedNode.start()
       _ <- NodeTestUtil.awaitSync(startedNode, bitcoind)
       balanceAfterSpend <- wallet.getBalance()

@@ -70,10 +70,8 @@ trait TxDAO[DbEntryType <: TxDB]
     safeDatabase.runVec(q.result)
   }
 
-  def findByTxIdAction(txIdBE: DoubleSha256DigestBE): DBIOAction[
-    Option[DbEntryType],
-    NoStream,
-    Effect.Read] = {
+  def findByTxIdAction(txIdBE: DoubleSha256DigestBE)
+      : DBIOAction[Option[DbEntryType], NoStream, Effect.Read] = {
     table
       .filter(_.txIdBE === txIdBE)
       .result

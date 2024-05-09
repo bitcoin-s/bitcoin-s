@@ -11,8 +11,9 @@ import scala.util.{Failure, Success}
 
 trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
-  /** Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
-    * (this version gives the destroy function access to the fixture)
+  /** Given functions to build and destroy a fixture, returns a OneArgAsyncTest
+    * \=> FutureOutcome (this version gives the destroy function access to the
+    * fixture)
     *
     * Example:
     * {{{
@@ -38,12 +39,12 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       case Failure(exn) =>
         fixtureF.transformWith {
           case Success(t) =>
-            //means fixture setup successfully, something in test case code failed
-            //so we should destroy the fixture
+            // means fixture setup successfully, something in test case code failed
+            // so we should destroy the fixture
             destroy(t).flatMap(_ => Future.failed(exn))
           case Failure(fixtureExn) =>
-            //means setting up the fixture, NOT the test case, failed
-            //since the fixture failed, we cannot destroy the fixture
+            // means setting up the fixture, NOT the test case, failed
+            // since the fixture failed, we cannot destroy the fixture
             logger.error(s"Failed to setup test fixture", fixtureExn)
             Future.failed(fixtureExn)
         }
@@ -51,8 +52,9 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
     new FutureOutcome(destructedF)
   }
 
-  /** Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
-    * (this version does not give the destroy function access to the fixture, see makeDependentFixture)
+  /** Given functions to build and destroy a fixture, returns a OneArgAsyncTest
+    * \=> FutureOutcome (this version does not give the destroy function access
+    * to the fixture, see makeDependentFixture)
     *
     * Example:
     * {{{
@@ -105,8 +107,11 @@ object BitcoinSFixture {
   }
 
   /** Creates a new bitcoind instance
-    * @param versionOpt the version of bitcoind ot use
-    * @param enableNeutrinoOpt whether neutrino should be enabled or not, if param not given it is default enabled
+    * @param versionOpt
+    *   the version of bitcoind ot use
+    * @param enableNeutrinoOpt
+    *   whether neutrino should be enabled or not, if param not given it is
+    *   default enabled
     */
   def createBitcoind(
       versionOpt: Option[BitcoindVersion] = None,
@@ -122,8 +127,8 @@ object BitcoinSFixture {
     BitcoindRpcTestUtil.startServers(Vector(bitcoind)).map(_ => bitcoind)
   }
 
-  /** Given two fixture building methods (one dependent on the other), returns a single
-    * fixture building method where the fixture is the pair of the two.
+  /** Given two fixture building methods (one dependent on the other), returns a
+    * single fixture building method where the fixture is the pair of the two.
     *
     * Example:
     * {{{
@@ -142,8 +147,9 @@ object BitcoinSFixture {
       }
     }
 
-  /** Given two fixture building methods (one dependent on the other) and a wrapper
-    * for their pair type, returns a single fixture building method where the fixture is wrapper.
+  /** Given two fixture building methods (one dependent on the other) and a
+    * wrapper for their pair type, returns a single fixture building method
+    * where the fixture is wrapper.
     *
     * Example:
     * {{{
@@ -164,12 +170,12 @@ object BitcoinSFixture {
       }
     }
 
-  /** Given two fixture building methods (one dependent on the other) and
-    * a function that processes the result of the builders returning a Future,
+  /** Given two fixture building methods (one dependent on the other) and a
+    * function that processes the result of the builders returning a Future,
     * returns a single fixture building method where the fixture is wrapper.
     *
-    * This method is identical to `composeBuildersAndWrap`, except that
-    * the wrapping function returns a `Future[C]` instead of a `C`
+    * This method is identical to `composeBuildersAndWrap`, except that the
+    * wrapping function returns a `Future[C]` instead of a `C`
     */
   def composeBuildersAndWrapFuture[T, U, C](
       builder: () => Future[T],

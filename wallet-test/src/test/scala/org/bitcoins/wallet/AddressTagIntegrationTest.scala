@@ -120,7 +120,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
   it must "process a tagged tx correctly when we broadcast it and receive it in a block" in {
     walletWithBitcoind =>
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
       val WalletWithBitcoindRpc(wallet, bitcoind, _) = walletWithBitcoind
 
       val bitcoindAddrF = bitcoind.getNewAddress

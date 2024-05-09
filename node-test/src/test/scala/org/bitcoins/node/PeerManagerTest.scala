@@ -54,7 +54,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         assert(peerManager.peers.exists(_ == peer))
         assert(
           peerManager.paramPeers.nonEmpty
-        ) //make sure we had a peer passed as a param
+        ) // make sure we had a peer passed as a param
       }
   }
 
@@ -70,7 +70,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         peerManager = node.peerManager
 
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
-        //disconnect
+        // disconnect
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         _ <- node.peerManager.connectPeer(peer)
         _ <- NodeTestUtil.awaitConnectionCount(node, 1)
@@ -89,7 +89,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- node.start()
         peer <- peerF
         _ <- NodeTestUtil.awaitSyncAndIBD(node = node, bitcoind = bitcoind)
-        //disconnect
+        // disconnect
         timestamp = Instant.now()
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)

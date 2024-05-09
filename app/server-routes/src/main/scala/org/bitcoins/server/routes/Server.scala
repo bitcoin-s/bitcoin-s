@@ -52,7 +52,7 @@ case class Server(
     rpcport: Int,
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
-    wsSource: Source[WsNotification[_], NotUsed])(implicit system: ActorSystem)
+    wsSource: Source[WsNotification[?], NotUsed])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -228,7 +228,7 @@ case class Server(
     }
   }
 
-  private val notificationToMsgFn: WsNotification[_] => Message = {
+  private val notificationToMsgFn: WsNotification[?] => Message = {
     notification =>
       val msg = TextMessage.Strict(notification.json.toString())
       msg

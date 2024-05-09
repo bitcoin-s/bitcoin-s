@@ -18,8 +18,8 @@ case class IncomingTransactionDAO()(implicit
     TableQuery[IncomingTransactionTable]
   }
 
-  private lazy val txTable: profile.api.TableQuery[
-    TransactionDAO#TransactionTable] = {
+  private lazy val txTable
+      : profile.api.TableQuery[TransactionDAO#TransactionTable] = {
     TransactionDAO().table
   }
 
@@ -42,8 +42,9 @@ case class IncomingTransactionDAO()(implicit
         IncomingTransactionDb(txId, incomingAmount)
     }
 
-    private val toTuple: IncomingTransactionDb => Option[
-      IncomingTransactionTuple] = tx => Some((tx.txIdBE, tx.incomingAmount))
+    private val toTuple
+        : IncomingTransactionDb => Option[IncomingTransactionTuple] = tx =>
+      Some((tx.txIdBE, tx.incomingAmount))
 
     def * : ProvenShape[IncomingTransactionDb] =
       (txIdBE, incomingAmount).<>(fromTuple, toTuple)

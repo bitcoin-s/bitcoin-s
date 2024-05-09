@@ -34,7 +34,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object DLCAcceptUtil extends BitcoinSLogger {
 
-  /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
+  /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of
+    * the [[DLCWallet]]
+    */
   def buildAcceptWithoutSigs(
       keyIndex: Int,
       chainType: HDChainType,
@@ -45,9 +47,8 @@ object DLCAcceptUtil extends BitcoinSLogger {
       collateral: CurrencyUnit,
       networkParameters: NetworkParameters,
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): (
-      DLCAcceptWithoutSigs,
-      DLCPublicKeys) = {
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : (DLCAcceptWithoutSigs, DLCPublicKeys) = {
     val spendingInfos = fundRawTxHelper.scriptSigParams
     val txBuilder = fundRawTxHelper.txBuilderWithFinalizer
     val serialIds = DLCMessage.genSerialIds(

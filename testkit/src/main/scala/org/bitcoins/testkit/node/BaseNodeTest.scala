@@ -46,7 +46,8 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
 
   /** Helper method to generate blocks every interval
-    * @return a cancellable that will stop generating blocks
+    * @return
+    *   a cancellable that will stop generating blocks
     */
   def genBlockInterval(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Cancellable = {
@@ -80,8 +81,8 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
         hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
       Future.successful(None)
 
-    override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
-      Vector[Option[BlockHeaderDb]]] = {
+    override def getHeaders(hashes: Vector[DoubleSha256DigestBE])
+        : Future[Vector[Option[BlockHeaderDb]]] = {
       Future.successful(Vector.fill(hashes.length)(None))
     }
 
@@ -133,8 +134,8 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
       Future.successful(None)
     }
 
-    override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
-      Option[CompactFilterHeaderDb]] = Future.successful(None)
+    override def getFilterHeader(blockHash: DoubleSha256DigestBE)
+        : Future[Option[CompactFilterHeaderDb]] = Future.successful(None)
 
     override def getFilter(
         hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] =

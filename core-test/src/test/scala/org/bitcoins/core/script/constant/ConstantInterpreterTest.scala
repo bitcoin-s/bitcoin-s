@@ -109,7 +109,7 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
       .updateStackAndScript(stack4, script4)
       .removeFlags()
 
-    //purposely call incorrect functions to mismatch opCodes
+    // purposely call incorrect functions to mismatch opCodes
     intercept[IllegalArgumentException] {
       CI.opPushData1(program2)
     }

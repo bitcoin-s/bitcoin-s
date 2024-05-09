@@ -45,13 +45,12 @@ case class OutgoingTransactionDAO()(implicit
     def feeRate: Rep[SatoshisPerByte] = column("feeRate")
 
     private type OutgoingTransactionTuple =
-      (
-          DoubleSha256DigestBE,
-          CurrencyUnit,
-          CurrencyUnit,
-          CurrencyUnit,
-          CurrencyUnit,
-          SatoshisPerByte)
+      (DoubleSha256DigestBE,
+       CurrencyUnit,
+       CurrencyUnit,
+       CurrencyUnit,
+       CurrencyUnit,
+       SatoshisPerByte)
 
     private val fromTuple: OutgoingTransactionTuple => OutgoingTransactionDb = {
       case (txId, inputAmount, sentAmount, actualFee, expectedFee, feeRate) =>
@@ -63,8 +62,8 @@ case class OutgoingTransactionDAO()(implicit
                               feeRate)
     }
 
-    private val toTuple: OutgoingTransactionDb => Option[
-      OutgoingTransactionTuple] = tx =>
+    private val toTuple
+        : OutgoingTransactionDb => Option[OutgoingTransactionTuple] = tx =>
       Some(
         (tx.txIdBE,
          tx.inputAmount,

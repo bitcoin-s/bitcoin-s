@@ -22,8 +22,7 @@ trait NodeRpc { self: Client =>
     val params = List(Json.toJson(include.getOrElse(Vector.empty)),
                       Json.toJson(exclude.getOrElse(Vector.empty)))
 
-    /** Bitcoin Core v0.16 returns a map of 1/0s,
-      * v0.17 returns proper booleans
+    /** Bitcoin Core v0.16 returns a map of 1/0s, v0.17 returns proper booleans
       */
     object IntOrBoolReads extends Reads[Boolean] {
       override def reads(json: JsValue): JsResult[Boolean] =

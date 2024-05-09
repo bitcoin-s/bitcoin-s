@@ -12,27 +12,24 @@ import org.bitcoins.node.callback.NodeCallbackStreamManager
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Callbacks for responding to events in the node.
-  * The appropriate callback is executed whenever the node receives
-  * a `getdata` message matching it.
+/** Callbacks for responding to events in the node. The appropriate callback is
+  * executed whenever the node receives a `getdata` message matching it.
   */
 trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
 
-  def onCompactFiltersReceived: CallbackHandler[
-    Vector[(DoubleSha256DigestBE, GolombFilter)],
-    OnCompactFiltersReceived]
+  def onCompactFiltersReceived
+      : CallbackHandler[Vector[(DoubleSha256DigestBE, GolombFilter)],
+                        OnCompactFiltersReceived]
 
   def onTxReceived: CallbackHandler[Transaction, OnTxReceived]
 
   def onBlockReceived: CallbackHandler[Block, OnBlockReceived]
 
-  def onMerkleBlockReceived: CallbackHandler[
-    (MerkleBlock, Vector[Transaction]),
-    OnMerkleBlockReceived]
+  def onMerkleBlockReceived: CallbackHandler[(MerkleBlock, Vector[Transaction]),
+                                             OnMerkleBlockReceived]
 
-  def onBlockHeadersReceived: CallbackHandler[
-    Vector[BlockHeader],
-    OnBlockHeadersReceived]
+  def onBlockHeadersReceived
+      : CallbackHandler[Vector[BlockHeader], OnBlockHeadersReceived]
 
   override def +(other: NodeCallbacks): NodeCallbacks
 
@@ -106,17 +103,15 @@ object NodeCallbacks extends CallbackFactory[NodeCallbacks] {
 
   // Use Impl pattern here to enforce the correct names on the CallbackHandlers
   private case class NodeCallbacksImpl(
-      onCompactFiltersReceived: CallbackHandler[
-        Vector[(DoubleSha256DigestBE, GolombFilter)],
-        OnCompactFiltersReceived],
+      onCompactFiltersReceived: CallbackHandler[Vector[(DoubleSha256DigestBE,
+                                                        GolombFilter)],
+                                                OnCompactFiltersReceived],
       onTxReceived: CallbackHandler[Transaction, OnTxReceived],
       onBlockReceived: CallbackHandler[Block, OnBlockReceived],
-      onMerkleBlockReceived: CallbackHandler[
-        (MerkleBlock, Vector[Transaction]),
-        OnMerkleBlockReceived],
-      onBlockHeadersReceived: CallbackHandler[
-        Vector[BlockHeader],
-        OnBlockHeadersReceived]
+      onMerkleBlockReceived: CallbackHandler[(MerkleBlock, Vector[Transaction]),
+                                             OnMerkleBlockReceived],
+      onBlockHeadersReceived: CallbackHandler[Vector[BlockHeader],
+                                              OnBlockHeadersReceived]
   ) extends NodeCallbacks {
 
     override def +(other: NodeCallbacks): NodeCallbacks =

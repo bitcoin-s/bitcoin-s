@@ -19,8 +19,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     for {
       account <- getDefaultAccount()
       funded <- fundRawTransaction(destinations = destinations,
@@ -36,8 +36,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       fromTagOpt: Option[AddressTag] = None,
-      markAsReserved: Boolean = false): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean = false)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     fundRawTransactionInternal(destinations = destinations,
                                feeRate = feeRate,
                                fromAccount = fromAccount,
@@ -50,8 +50,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     fundRawTransaction(destinations = destinations,
                        feeRate = feeRate,
                        fromAccount = fromAccount,
@@ -59,8 +59,9 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                        markAsReserved = markAsReserved)
   }
 
-  /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
-    * which can be signed with the returned [[ScriptSignatureParams]].
+  /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned
+    * transaction with [[RawTxBuilder.result()]] which can be signed with the
+    * returned [[ScriptSignatureParams]].
     *
     * Utxos are funded with the given coin selection algorithm
     */
@@ -70,8 +71,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     val action = fundRawTransactionInternalAction(destinations,
                                                   feeRate,
                                                   fromAccount,
@@ -91,12 +92,12 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): DBIOAction[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer],
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+      markAsReserved: Boolean)
+      : DBIOAction[FundRawTxHelper[ShufflingNonInteractiveFinalizer],
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     val amts = destinations.map(_.value)
-    //need to allow 0 for OP_RETURN outputs
+    // need to allow 0 for OP_RETURN outputs
     require(amts.forall(_.satoshis.toBigInt >= 0),
             s"Cannot fund a transaction for a negative amount, got=$amts")
     val amt = amts.sum

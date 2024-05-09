@@ -22,8 +22,9 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** A trait used to help load a different load and discard the current wallet in memory
-  * This trait encapsulates the heavy lifting done in the 'loadwallet' RPC command
+/** A trait used to help load a different load and discard the current wallet in
+  * memory This trait encapsulates the heavy lifting done in the 'loadwallet'
+  * RPC command
   */
 sealed trait DLCWalletLoaderApi
     extends BitcoinSLogger
@@ -40,10 +41,8 @@ sealed trait DLCWalletLoaderApi
   /** Determine if a wallet has been loaded */
   def isWalletLoaded: Boolean = walletHolder.isInitialized
 
-  def load(
-      walletNameOpt: Option[String],
-      aesPasswordOpt: Option[AesPassword]): Future[
-    (WalletHolder, WalletAppConfig, DLCAppConfig)]
+  def load(walletNameOpt: Option[String], aesPasswordOpt: Option[AesPassword])
+      : Future[(WalletHolder, WalletAppConfig, DLCAppConfig)]
 
   protected def loadWallet(
       walletHolder: WalletHolder,
@@ -51,9 +50,8 @@ sealed trait DLCWalletLoaderApi
       nodeApi: NodeApi,
       feeProviderApi: FeeRateApi,
       walletNameOpt: Option[String],
-      aesPasswordOpt: Option[AesPassword])(implicit
-      ec: ExecutionContext): Future[
-    (DLCNeutrinoHDWalletApi, WalletAppConfig, DLCAppConfig)] = {
+      aesPasswordOpt: Option[AesPassword])(implicit ec: ExecutionContext)
+      : Future[(DLCNeutrinoHDWalletApi, WalletAppConfig, DLCAppConfig)] = {
     logger.info(
       s"Loading wallet with bitcoind backend, walletName=${walletNameOpt.getOrElse("DEFAULT")}")
     val walletName =
@@ -130,23 +128,23 @@ sealed trait DLCWalletLoaderApi
     } yield res
   }
 
-  /** Store a rescan state for the wallet that is currently loaded
-    * This is needed because we don't save rescan state anywhere else.
+  /** Store a rescan state for the wallet that is currently loaded This is
+    * needed because we don't save rescan state anywhere else.
     */
-  @volatile private[this] var rescanStateOpt: Option[
-    RescanState.RescanStarted] = None
+  @volatile private[this] var rescanStateOpt
+      : Option[RescanState.RescanStarted] = None
 
   def setRescanState(rescanState: RescanState): Unit = {
     rescanState match {
       case RescanState.RescanAlreadyStarted =>
-      //do nothing in this case, we don't need to keep these states around
-      //don't overwrite the existing reference to RescanStarted
+      // do nothing in this case, we don't need to keep these states around
+      // don't overwrite the existing reference to RescanStarted
       case RescanState.RescanDone | RescanState.RescanNotNeeded =>
-        //rescan is done, reset state
+        // rescan is done, reset state
         rescanStateOpt = None
       case started: RescanState.RescanStarted =>
         if (rescanStateOpt.isEmpty) {
-          //add callback to reset state when the rescan is done
+          // add callback to reset state when the rescan is done
           val resetStateCallbackF = started.entireRescanDoneF.map { _ =>
             rescanStateOpt = None
           }
@@ -169,7 +167,7 @@ sealed trait DLCWalletLoaderApi
 
   protected def stopRescan()(implicit ec: ExecutionContext): Future[Unit] = {
     rescanStateOpt match {
-      case Some(state) => state.stop().map(_ => ()) //stop the rescan
+      case Some(state) => state.stop().map(_ => ()) // stop the rescan
       case None        => Future.unit
     }
   }
@@ -188,8 +186,8 @@ sealed trait DLCWalletLoaderApi
     ()
   }
 
-  @volatile private[this] var currentWalletAppConfigOpt: Option[
-    WalletAppConfig] = None
+  @volatile private[this] var currentWalletAppConfigOpt
+      : Option[WalletAppConfig] = None
 
   @volatile private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] =
     None
@@ -198,7 +196,7 @@ sealed trait DLCWalletLoaderApi
       newWalletConfig: WalletAppConfig): Future[Unit] = {
     currentWalletAppConfigOpt match {
       case Some(current) =>
-        //stop the old config
+        // stop the old config
         current
           .stop()
           .map(_ => {
@@ -217,7 +215,7 @@ sealed trait DLCWalletLoaderApi
       newDlcConfig: DLCAppConfig): Future[Unit] = {
     currentDLCAppConfigOpt match {
       case Some(current) =>
-        //stop the old config
+        // stop the old config
         current
           .stop()
           .map(_ => {
@@ -278,8 +276,8 @@ case class DLCWalletNeutrinoBackendLoader(
 
   override def load(
       walletNameOpt: Option[String],
-      aesPasswordOpt: Option[AesPassword]): Future[
-    (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
+      aesPasswordOpt: Option[AesPassword])
+      : Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
     val stopCallbackF = nodeConf.callBacks match {
       case stream: NodeCallbackStreamManager =>
         stream.stop()
@@ -329,8 +327,8 @@ case class DLCWalletBitcoindBackendLoader(
 
   override def load(
       walletNameOpt: Option[String],
-      aesPasswordOpt: Option[AesPassword]): Future[
-    (WalletHolder, WalletAppConfig, DLCAppConfig)] = {
+      aesPasswordOpt: Option[AesPassword])
+      : Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
     val stopCallbackF = nodeConf.callBacks match {
       case stream: NodeCallbackStreamManager =>
         stream.stop()
@@ -355,7 +353,7 @@ case class DLCWalletBitcoindBackendLoader(
         walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
-      //do something with possible rescan?
+      // do something with possible rescan?
       rescanState <- restartRescanIfNeeded(walletHolder)
       _ = setRescanState(rescanState)
     } yield {

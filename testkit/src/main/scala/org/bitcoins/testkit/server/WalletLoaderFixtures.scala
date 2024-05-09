@@ -21,7 +21,7 @@ trait WalletLoaderFixtures
         bitcoind <- cachedBitcoindWithFundsF
         config = BitcoinSServerMainUtil.buildBitcoindBitcoinSAppConfig(bitcoind)
         _ <- config.start()
-        //initialize the default wallet so it can be used in tests
+        // initialize the default wallet so it can be used in tests
         _ <- config.walletConf.createHDWallet(nodeApi = bitcoind,
                                               chainQueryApi = bitcoind,
                                               feeRateApi = bitcoind)

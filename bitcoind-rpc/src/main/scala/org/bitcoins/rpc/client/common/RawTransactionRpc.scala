@@ -19,9 +19,8 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** This trait defines RPC calls relating to interacting
-  * with raw transactions. This includes creation, decoding
-  * funding and sending.
+/** This trait defines RPC calls relating to interacting with raw transactions.
+  * This includes creation, decoding funding and sending.
   */
 trait RawTransactionRpc { self: Client =>
 
@@ -59,8 +58,8 @@ trait RawTransactionRpc { self: Client =>
   private def fundRawTransaction(
       transaction: Transaction,
       options: Option[RpcOpts.FundRawTransactionOptions],
-      walletNameOpt: Option[String] = None): Future[
-    FundRawTransactionResult] = {
+      walletNameOpt: Option[String] = None)
+      : Future[FundRawTransactionResult] = {
     val params =
       if (options.isEmpty) {
         List(JsString(transaction.hex))
@@ -76,8 +75,9 @@ trait RawTransactionRpc { self: Client =>
 
   def fundRawTransaction(
       transaction: Transaction,
-      options: RpcOpts.FundRawTransactionOptions): Future[
-    FundRawTransactionResult] = fundRawTransaction(transaction, Some(options))
+      options: RpcOpts.FundRawTransactionOptions)
+      : Future[FundRawTransactionResult] =
+    fundRawTransaction(transaction, Some(options))
 
   def fundRawTransaction(
       transaction: Transaction,
@@ -87,8 +87,8 @@ trait RawTransactionRpc { self: Client =>
 
   def getRawTransaction(
       txid: DoubleSha256DigestBE,
-      blockhash: Option[DoubleSha256DigestBE] = None): Future[
-    GetRawTransactionResult] = {
+      blockhash: Option[DoubleSha256DigestBE] = None)
+      : Future[GetRawTransactionResult] = {
     val lastParam: List[JsString] = blockhash match {
       case Some(hash) => JsString(hash.hex) :: Nil
       case None       => Nil
@@ -112,7 +112,8 @@ trait RawTransactionRpc { self: Client =>
     bitcoindCall[Transaction]("getrawtransaction", params)
   }
 
-  /** @param maxfeerate Set to 0 if you want to enable allowhighfees
+  /** @param maxfeerate
+    *   Set to 0 if you want to enable allowhighfees
     */
   def sendRawTransaction(
       transaction: Transaction,

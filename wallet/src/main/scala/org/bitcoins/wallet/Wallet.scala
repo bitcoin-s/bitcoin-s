@@ -155,8 +155,8 @@ abstract class Wallet
   }
 
   override def processCompactFilters(
-      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]): Future[
-    Wallet] = {
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])
+      : Future[Wallet] = {
     val utxosF = listUtxos()
     val spksF = listScriptPubKeys()
     val blockHashOpt = blockFilters.lastOption.map(_._1)
@@ -174,8 +174,8 @@ abstract class Wallet
         utxos.flatMap(_.redeemScriptOpt).toSet ++ scripts.map(_.scriptPubKey)
       blockHashToDownload <- {
         if (scriptPubKeys.isEmpty) {
-          //do nothing as an optimization, if we have nothing in the wallet
-          //we don't need to search the filters
+          // do nothing as an optimization, if we have nothing in the wallet
+          // we don't need to search the filters
           Future.successful(Vector.empty)
         } else {
           FutureUtil
@@ -193,15 +193,15 @@ abstract class Wallet
         heightOpt match {
           case Some(height) =>
             if (blockHashToDownload.isEmpty) {
-              //if we don't have any block hashes
-              //we need to update the wallet's sync height
+              // if we don't have any block hashes
+              // we need to update the wallet's sync height
               stateDescriptorDAO
                 .updateSyncHeight(hash, height)
                 .map(_ => ())
             } else {
-              //if we do have a block hash that we matched
-              //we need to let wallet.processBlock()
-              //update the wallet's sync height
+              // if we do have a block hash that we matched
+              // we need to let wallet.processBlock()
+              // update the wallet's sync height
               Future.unit
             }
           case None =>
@@ -214,8 +214,8 @@ abstract class Wallet
   }
 
   private def searchFilterMatches(spks: Vector[ScriptPubKey])(
-      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]): Future[
-    Vector[DoubleSha256DigestBE]] = FutureUtil.makeAsync { () =>
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])
+      : Future[Vector[DoubleSha256DigestBE]] = FutureUtil.makeAsync { () =>
     val asmVec = spks.map(_.asmBytes)
     blockFilters.flatMap { case (blockHash, blockFilter) =>
       val matcher = SimpleFilterMatcher(blockFilter)
@@ -241,10 +241,8 @@ abstract class Wallet
     } yield addressCount == 0 && spendingInfoCount == 0
 
   override def clearUtxos(account: HDAccount): Future[Wallet] = {
-    val aggregatedActions: DBIOAction[
-      Wallet,
-      NoStream,
-      Effect.Read with Effect.Write] = {
+    val aggregatedActions
+        : DBIOAction[Wallet, NoStream, Effect.Read with Effect.Write] = {
       for {
         accountUtxos <- spendingInfoDAO.findAllForAccountAction(account)
         _ <- spendingInfoDAO.deleteSpendingInfoDbAllAction(accountUtxos)
@@ -255,10 +253,8 @@ abstract class Wallet
   }
 
   override def clearAllUtxos(): Future[Wallet] = {
-    val aggregatedActions: DBIOAction[
-      Unit,
-      NoStream,
-      Effect.Write with Effect.Transactional] =
+    val aggregatedActions
+        : DBIOAction[Unit, NoStream, Effect.Write with Effect.Transactional] =
       spendingInfoDAO.deleteAllAction().map(_ => ())
 
     val resultedF = safeDatabase.run(aggregatedActions)
@@ -316,8 +312,8 @@ abstract class Wallet
     }
   }
 
-  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
-    Vector[SpendingInfoDb]] = {
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint])
+      : Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findByOutPoints(outPoints)
   }
 
@@ -335,8 +331,9 @@ abstract class Wallet
   protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
     spendingInfoDAO.findAllOutpoints()
 
-  /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
-    * finalizing and signing the transaction, then correctly processing and logging it
+  /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and
+    * completes it by: finalizing and signing the transaction, then correctly
+    * processing and logging it
     */
   private def finishSend[F <: RawTxFinalizer](
       rawTxHelper: FundRawTxHelper[F],
@@ -367,8 +364,8 @@ abstract class Wallet
     }
 
     processedTxF.recoverWith { case _ =>
-      //if something fails, we need to unreserve the utxos associated with this tx
-      //and then propogate the failed future upwards
+      // if something fails, we need to unreserve the utxos associated with this tx
+      // and then propogate the failed future upwards
       unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
     }
   }
@@ -837,8 +834,9 @@ abstract class Wallet
       .map(_.lastOption)
   }
 
-  /** Creates a new account my reading from our account database, finding the last account,
-    * and then incrementing the account index by one, and then creating that account
+  /** Creates a new account my reading from our account database, finding the
+    * last account, and then incrementing the account index by one, and then
+    * creating that account
     *
     * @return
     */
@@ -912,7 +910,7 @@ abstract class Wallet
         getFeeRate()
           .map(feeRate => Some(feeRate))
           .recover { case NonFatal(_) =>
-            //logger.error("Cannot get fee rate ", ex)
+            // logger.error("Cannot get fee rate ", ex)
             None
           }
           .foreach { feeRateOpt =>
@@ -950,14 +948,15 @@ object Wallet extends WalletLogger {
   }
 
   /** Creates the master xpub for the key manager in the database
-    * @throws RuntimeException if a different master xpub key exists in the database
+    * @throws RuntimeException
+    *   if a different master xpub key exists in the database
     */
   private def createMasterXPub(keyManager: BIP39KeyManager)(implicit
       walletAppConfig: WalletAppConfig): Future[ExtPublicKey] = {
     import walletAppConfig.ec
     val masterXPubDAO = MasterXPubDAO()
     val countF = masterXPubDAO.count()
-    //make sure we don't have a xpub in the db
+    // make sure we don't have a xpub in the db
     countF.flatMap { count =>
       if (count == 0) {
         masterXPubDAO.create(keyManager.getRootXPub).map(_.toExtPublicKey)
@@ -979,12 +978,12 @@ object Wallet extends WalletLogger {
 
   }
 
-  /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
+  /** Creates the level 0 account for the given HD purpose, if the root account
+    * exists do nothing
+    */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
-      implicit ec: ExecutionContext): DBIOAction[
-    AccountDb,
-    NoStream,
-    Effect.Read with Effect.Write] = {
+      implicit ec: ExecutionContext)
+      : DBIOAction[AccountDb, NoStream, Effect.Read with Effect.Write] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
       HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
@@ -993,11 +992,11 @@ object Wallet extends WalletLogger {
     val xpub = keyManager.deriveXPub(account).get
     val accountDb = AccountDb(xpub, account)
 
-    //see if we already have this account in our database
-    //Three possible cases:
-    //1. We have nothing in our database, so we need to insert it
-    //2. We already have this account in our database, so we do nothing
-    //3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
+    // see if we already have this account in our database
+    // Three possible cases:
+    // 1. We have nothing in our database, so we need to insert it
+    // 2. We already have this account in our database, so we do nothing
+    // 3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
     //   this most likely means that we have a different key manager than we expected
     wallet.accountDAO
       .findByPrimaryKeyAction((account.coin, account.index))
@@ -1033,8 +1032,8 @@ object Wallet extends WalletLogger {
     val createAccountActions: Vector[
       DBIOAction[AccountDb, NoStream, Effect.Read with Effect.Write]] = {
       val accounts = HDPurposes.singleSigPurposes.map { purpose =>
-        //we need to create key manager params for each purpose
-        //and then initialize a key manager to derive the correct xpub
+        // we need to create key manager params for each purpose
+        // and then initialize a key manager to derive the correct xpub
         val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
         val kmE = {
           BIP39KeyManager.fromParams(kmParams = kmParams,
@@ -1045,8 +1044,8 @@ object Wallet extends WalletLogger {
           case Right(km) =>
             createRootAccount(wallet = wallet, keyManager = km)
           case Left(err) =>
-            //probably means you haven't initialized the key manager via the
-            //'CreateKeyManagerApi'
+            // probably means you haven't initialized the key manager via the
+            // 'CreateKeyManagerApi'
             DBIOAction.failed(
               new RuntimeException(
                 s"Failed to create keymanager with params=$kmParams err=$err"))
@@ -1064,8 +1063,8 @@ object Wallet extends WalletLogger {
         logger.info(s"Created account=${a} to DB")
       }
       _ <- {
-        //check if creationTime is well in the past, if so generate a pool of addresses
-        //see: https://github.com/bitcoin-s/bitcoin-s/issues/5033
+        // check if creationTime is well in the past, if so generate a pool of addresses
+        // see: https://github.com/bitcoin-s/bitcoin-s/issues/5033
         val creationTime = wallet.keyManager.creationTime
         val threshold = Instant.now().minus(1, ChronoUnit.HOURS)
         val isOldCreationTime = creationTime.compareTo(threshold) <= 0
@@ -1077,7 +1076,7 @@ object Wallet extends WalletLogger {
                                    forceGenerateSpks = true)
             .map(_ => ())
         } else {
-          //fresh seed, no need to generate addresses
+          // fresh seed, no need to generate addresses
           Future.unit
         }
       }

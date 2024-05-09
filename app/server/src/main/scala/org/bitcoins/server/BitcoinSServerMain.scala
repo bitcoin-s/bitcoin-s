@@ -77,8 +77,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       startedConfig <- startedConfigF
       chainApi = ChainHandler.fromDatabase()
       nodeType = nodeConf.nodeType
-      //on server startup we assume we are out of sync with the bitcoin network
-      //so we set this flag to true.
+      // on server startup we assume we are out of sync with the bitcoin network
+      // so we set this flag to true.
       _ <- initializeChainState(chainApi, nodeType)
       start <- {
         nodeType match {
@@ -104,7 +104,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       case NodeType.NeutrinoNode =>
         blockCountF.flatMap { blockCount =>
           if (blockCount == 0) {
-            //means we are starting a fresh node, set IBD to true
+            // means we are starting a fresh node, set IBD to true
             chainHandler
               .setIBD(true)
               .map(_ => ())
@@ -113,7 +113,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           }
         }
       case NodeType.BitcoindBackend =>
-        //don't need to do anything as we outsource chain management to bitcoind
+        // don't need to do anything as we outsource chain management to bitcoind
         syncF.map(_ => ())
       case NodeType.FullNode =>
         sys.error(
@@ -147,7 +147,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
     } yield {
       resetState()
-      //return empty wallet holder
+      // return empty wallet holder
       WalletHolder.empty
     }
   }
@@ -160,7 +160,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   /** Start the bitcoin-s wallet server with a neutrino backend
-    * @param startedTorConfigF a future that is completed when tor is fully started
+    * @param startedTorConfigF
+    *   a future that is completed when tor is fully started
     * @return
     */
   def startBitcoinSBackend(
@@ -171,7 +172,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApi = ChainHandler.fromDatabase()
     val creationTime: Instant = conf.walletConf.creationTime
 
-    //get a node that isn't started
+    // get a node that isn't started
     val nodeF = nodeConf.createNode(
       peers = nodeConf.peers,
       walletCreationTimeOpt = Some(creationTime))(chainConf, system)
@@ -184,7 +185,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       conf.walletConf.feeProviderTargetOpt,
       torConf.socks5ProxyParams,
       network)
-    //get our wallet
+    // get our wallet
     val walletHolder = WalletHolder.empty
     val neutrinoWalletLoaderF = {
       for {
@@ -208,13 +209,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     torConf.addCallbacks(torCallbacks)
 
     val isTorStartedF = if (torConf.torProvided) {
-      //if tor is provided we need to execute the tor started callback immediately
+      // if tor is provided we need to execute the tor started callback immediately
       torConf.callBacks.executeOnTorStarted()
     } else {
       Future.unit
     }
     val startedNodeF = {
-      //can't start connecting to peers until tor is done starting
+      // can't start connecting to peers until tor is done starting
       for {
         _ <- startedTorConfigF
         _ <- isTorStartedF
@@ -250,7 +251,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       } yield dlcNode
     }
 
-    //start our http server now that we are synced
+    // start our http server now that we are synced
     val startedF = for {
       _ <- configuredWalletF
       _ <- startHttpServer(
@@ -265,9 +266,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
-            .currentTimeMillis() - start}ms")
+              .currentTimeMillis() - start}ms")
       }
-      //make sure callbacks are registered before we start sync
+      // make sure callbacks are registered before we start sync
       _ <- callbacksF
       node <- startedNodeF
       _ <- startedTorConfigF
@@ -308,7 +309,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     ()
   }
 
-  /** Returns blockchain info, in case of  [[InWarmUp]] exception it retries.
+  /** Returns blockchain info, in case of [[InWarmUp]] exception it retries.
     */
   private def getBlockChainInfo(
       client: BitcoindRpcClient): Future[GetBlockChainInfoResult] = {
@@ -346,7 +347,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private[this] var nodeOpt: Option[Node] = None
 
   /** Start the bitcoin-s wallet server with a bitcoind backend
-    * @param startedTorConfigF a future that is completed when tor is fully started
+    * @param startedTorConfigF
+    *   a future that is completed when tor is fully started
     * @return
     */
   private def startBitcoindBackend(
@@ -365,7 +367,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     val _ = torConf.addCallbacks(torCallbacks)
     val isTorStartedF = if (torConf.torProvided) {
-      //if tor is provided we need to emit a tor started event immediately
+      // if tor is provided we need to emit a tor started event immediately
       torConf.callBacks.executeOnTorStarted()
     } else {
       Future.unit
@@ -477,9 +479,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
     }
 
-    //don't return the Future that represents the full syncing of the wallet with bitcoind
+    // don't return the Future that represents the full syncing of the wallet with bitcoind
     for {
-      _ <- bitcoindSyncStateF //drop nested Future here
+      _ <- bitcoindSyncStateF // drop nested Future here
       walletHolder <- walletF.map(_._1)
     } yield walletHolder
   }
@@ -516,7 +518,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         Future.successful(commonRoutes),
         Future.successful(coreRoutes),
         Future.successful(chainRoutes),
-        //dependent on tor, slow start up
+        // dependent on tor, slow start up
         walletRoutesF,
         nodeRoutesF,
         dlcRoutesF
@@ -570,15 +572,17 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-  /** Syncs the bitcoin-s wallet against bitcoind and then
-    * starts rpc polling if zmq isn't enabled, otherwise it starts zmq polling.
+  /** Syncs the bitcoin-s wallet against bitcoind and then starts rpc polling if
+    * zmq isn't enabled, otherwise it starts zmq polling.
     *
     * The key thing this helper method does is it logs errors based on the
-    * future returned by this method. This is needed because we don't want
-    * to block the rest of the application from starting if we have to
-    * do a ton of syncing. However, we don't want to swallow
-    * exceptions thrown by this method.
-    * @return the [[Cancellable]] representing the schedule job that polls the mempool. You can call .cancel() to stop this
+    * future returned by this method. This is needed because we don't want to
+    * block the rest of the application from starting if we have to do a ton of
+    * syncing. However, we don't want to swallow exceptions thrown by this
+    * method.
+    * @return
+    *   the [[Cancellable]] representing the schedule job that polls the
+    *   mempool. You can call .cancel() to stop this
     */
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
@@ -592,7 +596,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         chainCallbacksOpt)(system)
       _ = syncF.map(_ => wallet.updateUtxoPendingStates())
 
-      //don't start polling until initial sync is done
+      // don't start polling until initial sync is done
       pollingCancellable <- syncF.flatMap { _ =>
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           val blockingPollingCancellable = BitcoindRpcBackendUtil
@@ -624,9 +628,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     f
   }
 
-  /** Surprisingly on some OSes like umbrel bitcoind can lose blocks during the shutdown process
-    * This means next time we boot up, our wallet will have more blocks than bitcoind!
-    * Eventually bitcoind will synchrnoize with the network. This waits until bitcoind is synced
+  /** Surprisingly on some OSes like umbrel bitcoind can lose blocks during the
+    * shutdown process This means next time we boot up, our wallet will have
+    * more blocks than bitcoind! Eventually bitcoind will synchrnoize with the
+    * network. This waits until bitcoind is synced
     */
   private def handlePotentialBitcoindLostBlock(
       bitcoind: BitcoindRpcClient,
@@ -645,21 +650,20 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     )
   }
 
-  /** Builds a websocket queue that you can feed elements to.
-    * The Source can be wired up with Directives.handleWebSocketMessages
-    * to create a flow that emits websocket messages
+  /** Builds a websocket queue that you can feed elements to. The Source can be
+    * wired up with Directives.handleWebSocketMessages to create a flow that
+    * emits websocket messages
     */
-  private def buildWsSource: (
-      SourceQueueWithComplete[WsNotification[_]],
-      Source[WsNotification[_], NotUsed]) = {
+  private def buildWsSource: (SourceQueueWithComplete[WsNotification[_]],
+                              Source[WsNotification[_], NotUsed]) = {
     val maxBufferSize: Int = 25
 
-    /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
-      * we will drop the first element in the buffer
+    /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer
+      * size is reached, we will drop the first element in the buffer
       */
     val tuple = {
-      //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
-      //the BroadcastHub.sink is needed to avoid these errors
+      // from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
+      // the BroadcastHub.sink is needed to avoid these errors
       // 'Websocket handler failed with Processor actor'
       Source
         .queue[WsNotification[_]](maxBufferSize, OverflowStrategy.dropHead)
@@ -667,7 +671,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         .run()
     }
 
-    //need to drain the websocket queue if no one is connected
+    // need to drain the websocket queue if no one is connected
     val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
     tuple

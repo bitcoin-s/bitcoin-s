@@ -19,7 +19,7 @@ class DescriptorChecksumTest extends BitcoinSUnitTest {
 
     assert(Descriptor.isValidChecksum(descriptor0, Some(checksum)))
 
-    //expression with nochecksum should be valid
+    // expression with nochecksum should be valid
     assert(Descriptor.isValidChecksum(descriptor0, None))
 
     val descriptor1 =
@@ -31,19 +31,19 @@ class DescriptorChecksumTest extends BitcoinSUnitTest {
   }
 
   it must "fail when a bad checksum is given" in {
-    //Missing checksum
+    // Missing checksum
     assert(!Descriptor.isValidChecksum(descriptor0, Some("#")))
-    //Too long checksum (9 chars)
+    // Too long checksum (9 chars)
     assert(!Descriptor.isValidChecksum(descriptor0, Some("89f8spxmx")))
-    //Too short checksum (7 chars)
+    // Too short checksum (7 chars)
     assert(!Descriptor.isValidChecksum(descriptor0, Some("89f8spx")))
-    //Error in payload
+    // Error in payload
     val bad =
       RawDescriptor(
         RawScriptExpression(NonStandardScriptPubKey.fromAsmHex("deedbeef")),
         None)
     assert(!Descriptor.isValidChecksum(bad, Some("89f8spxm")))
-    //Error in checksum
+    // Error in checksum
     assert(!Descriptor.isValidChecksum(descriptor0, Some("#9f8spxm")))
   }
 }

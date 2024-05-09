@@ -31,10 +31,8 @@ class Socks5ClientTransport(proxyParams: Socks5ProxyParams)
   override def connectTo(
       host: String,
       port: Int,
-      settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[
-    ByteString,
-    ByteString,
-    Future[Http.OutgoingConnection]] = {
+      settings: ClientConnectionSettings)(implicit system: ActorSystem)
+      : Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
     Socks5ProxyGraphStage(host, port, proxyParams)
       .joinMat(
         TCP.connectTo(proxyParams.address.getHostString,
@@ -70,8 +68,9 @@ object Socks5ClientTransport {
       case None => ConnectionPoolSettings(system)
     }
 
-  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
-    * If the URI points to the loopback interface returns the default [[ConnectionPoolSettings]] without SOCKS5 proxy
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters. If
+    * the URI points to the loopback interface returns the default
+    * [[ConnectionPoolSettings]] without SOCKS5 proxy
     */
   def createConnectionPoolSettings(uri: URI, proxyParams: Socks5ProxyParams)(
       implicit system: ActorSystem): ConnectionPoolSettings = {
@@ -80,8 +79,9 @@ object Socks5ClientTransport {
     } else ConnectionPoolSettings(system)
   }
 
-  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
-    * If the URI points to the loopback interface returns the default [[ConnectionPoolSettings]] without SOCKS5 proxy
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters. If
+    * the URI points to the loopback interface returns the default
+    * [[ConnectionPoolSettings]] without SOCKS5 proxy
     */
   def createConnectionPoolSettings(
       uri: URI,
@@ -104,12 +104,8 @@ object Socks5ProxyGraphStage {
   def apply(
       targetHostName: String,
       targetPort: Int,
-      proxyParams: Socks5ProxyParams): BidiFlow[
-    ByteString,
-    ByteString,
-    ByteString,
-    ByteString,
-    NotUsed] =
+      proxyParams: Socks5ProxyParams)
+      : BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     BidiFlow.fromGraph(
       new Socks5ProxyGraphStage(targetHostName, targetPort, proxyParams))
 
@@ -132,11 +128,9 @@ class Socks5ProxyGraphStage(
   import Socks5Connection._
   import Socks5ProxyGraphStage._
 
-  override def shape: BidiShape[
-    ByteString,
-    ByteString,
-    ByteString,
-    ByteString] = BidiShape.apply(socks5In, bytesOut, bytesIn, socks5Out)
+  override def shape
+      : BidiShape[ByteString, ByteString, ByteString, ByteString] =
+    BidiShape.apply(socks5In, bytesOut, bytesIn, socks5Out)
 
   private val credentialsOpt = Socks5ProxyParams.proxyCredentials(proxyParams)
 

@@ -103,7 +103,7 @@ class NetworkUtilTest extends BitcoinSUtilTest {
       )
     )
     val networkMsg = NetworkMessage(np, headersMsg)
-    //split the network msg at a random index to simulate a tcp frame not being aligned
+    // split the network msg at a random index to simulate a tcp frame not being aligned
     val randomIndex = scala.util.Random.nextInt().abs % networkMsg.bytes.size
     val (firstHalf, secondHalf) = networkMsg.bytes.splitAt(randomIndex)
     val (firstHalfParseHeaders, remainingBytes) =
@@ -123,7 +123,7 @@ class NetworkUtilTest extends BitcoinSUtilTest {
   it must "return the entire byte array if a message is not aligned to a byte frame" in {
     val networkMsg = NetworkMessage(
       "fabfb5da76657273696f6e00000000006e000000b12d23e97d1101000000000000000000b487c95f00000000000000000000000000000000000000000000ffffc0f1a38e480c010000000000000000000000000000000000ffff7f000101480c0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000")
-    //remove last byte so the message is not aligned
+    // remove last byte so the message is not aligned
     val bytes = networkMsg.bytes.slice(0, networkMsg.bytes.size - 1)
     val (_, unAlignedBytes) = NetworkUtil.parseIndividualMessages(bytes)
 

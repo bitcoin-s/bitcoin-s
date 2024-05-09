@@ -9,8 +9,8 @@ import scodec.bits.BitVector
 
 class RawMerkleBlockMessageSerializerTest extends BitcoinSUnitTest {
 
-  //from bitcoin developer reference
-  //https://bitcoin.org/en/developer-reference#merkleblock
+  // from bitcoin developer reference
+  // https://bitcoin.org/en/developer-reference#merkleblock
   val hex =
     "0100000082bb869cf3a793432a66e826e05a6fc37469f8efb7421dc88067010000000000" +
       "7f16c5962e8bd963659c793ce370d95f093bc7e367117b3c30c1f8fdd0d97287" +

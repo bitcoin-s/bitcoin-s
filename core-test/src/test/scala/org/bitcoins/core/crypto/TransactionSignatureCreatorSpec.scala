@@ -14,7 +14,7 @@ class TransactionSignatureCreatorSpec
   property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {
       case (txSignatureComponent: TxSigComponent, _) =>
-        //run it through the interpreter
+        // run it through the interpreter
         val program: PreExecutionScriptProgram =
           PreExecutionScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -24,7 +24,7 @@ class TransactionSignatureCreatorSpec
   property("generate valid signatures for a multisignature transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
       case (txSignatureComponent: TxSigComponent, _) =>
-        //run it through the interpreter
+        // run it through the interpreter
         val program = PreExecutionScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
         result == ScriptOk
@@ -33,10 +33,10 @@ class TransactionSignatureCreatorSpec
   property("generate a valid signature for a p2sh transaction") =
     Prop.forAll(TransactionGenerators.signedP2SHTransaction) {
       case (txSignatureComponent: TxSigComponent, _) =>
-        //run it through the interpreter
+        // run it through the interpreter
         val program = PreExecutionScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
-        //can be ScriptErrorPushSize if the redeemScript is larger than 520 bytes
+        // can be ScriptErrorPushSize if the redeemScript is larger than 520 bytes
         Seq(ScriptOk, ScriptErrorPushSize).contains(result)
     }
 
@@ -66,7 +66,7 @@ class TransactionSignatureCreatorSpec
     Prop.forAllNoShrink(
       TransactionGenerators.spendableCSVTransaction :| "spendable csv") {
       case (txSignatureComponent: TxSigComponent, _) =>
-        //run it through the interpreter
+        // run it through the interpreter
         val program = PreExecutionScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
         Seq(ScriptOk, ScriptErrorPushSize).contains(result)
@@ -76,7 +76,7 @@ class TransactionSignatureCreatorSpec
     Prop.forAllNoShrink(
       TransactionGenerators.unspendableCSVTransaction :| "unspendable csv") {
       case (txSignatureComponent: TxSigComponent, _) =>
-        //run it through the interpreter
+        // run it through the interpreter
         val program = PreExecutionScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
         Seq(ScriptErrorUnsatisfiedLocktime, ScriptErrorPushSize).contains(

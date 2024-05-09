@@ -58,8 +58,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
 
   behavior of "AdaptorDLCClient"
 
-  def constructDLC(numOutcomes: Int): Future[
-    (TestDLCClient, TestDLCClient, Vector[EnumOutcome])] = {
+  def constructDLC(numOutcomes: Int)
+      : Future[(TestDLCClient, TestDLCClient, Vector[EnumOutcome])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }

@@ -35,7 +35,7 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
                                 UInt32(1),
                                 BitVector.bits(
                                   Vector(false, false, false, false, false,
-                                    false, false, false)),
+                                         false, false, false)),
                                 List(DoubleSha256Digest(
                                   "442abdc8e74ad35ebd9571f88fda91ff511dcda8d241a5aed52cea1e00d69e03"))
                               )
@@ -91,8 +91,8 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
                                 UInt32(6),
                                 BitVector.bits(
                                   List(true, true, true, false, true, true,
-                                    false, true, false, false, false, false,
-                                    false, false, false, false)),
+                                       false, true, false, false, false, false,
+                                       false, false, false, false)),
                                 List(
                                   DoubleSha256Digest(
                                     "e4aeaf729035a7fb939e12c4f6a2072a9b2e7da784207ce7852d398593210a45"),
@@ -122,9 +122,9 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "serialize and deserialize a merkle block from bitcoinj" in {
-    //https://github.com/bitcoinj/bitcoinj/blob/840df06b79beac1b984e6e247e90fcdedc4ad6e0/core/src/test/java/org/bitcoinj/core/FilteredBlockAndPartialMerkleTreeTests.java#L73
-    //from this block
-    //000000000000dab0130bbcc991d3d7ae6b81aa6f50a798888dfe62337458dc45
+    // https://github.com/bitcoinj/bitcoinj/blob/840df06b79beac1b984e6e247e90fcdedc4ad6e0/core/src/test/java/org/bitcoinj/core/FilteredBlockAndPartialMerkleTreeTests.java#L73
+    // from this block
+    // 000000000000dab0130bbcc991d3d7ae6b81aa6f50a798888dfe62337458dc45
     val hex =
       "0100000079cda856b143d9db2c1caff01d1aecc8630d30625d10e8b4b8b0000000000000b50cc069d6a3e33e3ff84a5c41d9d3febe7c770fdcc96b2c3ff60abe184f196367291b4d4c86041b8fa45d630100000001b50cc069d6a3e33e3ff84a5c41d9d3febe7c770fdcc96b2c3ff60abe184f19630101"
     val merkleBlock = MerkleBlock(hex)
@@ -142,7 +142,7 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "serialize and deserialize a merkle block with two bytes worth of bit flags" in {
-    //https://github.com/bitcoinj/bitcoinj/blob/840df06b79beac1b984e6e247e90fcdedc4ad6e0/core/src/test/java/org/bitcoinj/core/FilteredBlockAndPartialMerkleTreeTests.java#L129
+    // https://github.com/bitcoinj/bitcoinj/blob/840df06b79beac1b984e6e247e90fcdedc4ad6e0/core/src/test/java/org/bitcoinj/core/FilteredBlockAndPartialMerkleTreeTests.java#L129
     val hex = "0100000006e533fd1ada86391f3f6c343204b0d278d4aaec1c0b20aa27ba0300000000006abbb3eb3d733a9fe18967fd7d4c117" +
       "e4ccbbac5bec4d910d900b3ae0793e77f54241b4d4c86041b4089cc9b0c000000084c30b63cfcdc2d35e3329421b9805ef0c6565d35381c" +
       "a857762ea0b3a5a128bbca5065ff9617cbcba45eb23726df6498a9b9cafed4f54cbab9d227b0035ddefbbb15ac1d57d0182aaee61c74743" +

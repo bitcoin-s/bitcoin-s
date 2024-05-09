@@ -10,7 +10,7 @@ class RawGetCompactFiltersMessageSerializerTest extends BitcoinSUnitTest {
 
   it must "parse a message" in {
     // cribbed from a P2P log dump with Bitcoin-S node
-    val bytes = hex"00" ++ //type
+    val bytes = hex"00" ++ // type
       hex"1d0c0000" ++ // start height
       hex"83abc1c5f4d8c065208b3c0b5f8b61a373c79b647b0421c56ee50c6f0ddd2917" // stop hash
 
@@ -24,7 +24,7 @@ class RawGetCompactFiltersMessageSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry" in {
-    val bytes = hex"00" ++ //type
+    val bytes = hex"00" ++ // type
       hex"1d0c0000" ++ // start height
       hex"83abc1c5f4d8c065208b3c0b5f8b61a373c79b647b0421c56ee50c6f0ddd2917" // stop hash
 

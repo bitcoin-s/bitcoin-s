@@ -43,10 +43,10 @@ sealed trait EclairAuthCredentials {
 }
 
 /** @define fromConfigDoc
-  * Parses a [[com.typesafe.config.Config Config]] in the format of this
-  * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
-  * file to a
-  * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+  *   Parses a [[com.typesafe.config.Config Config]] in the format of this
+  *   [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+  *   file to a
+  *   [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
   */
 object EclairAuthCredentials {
 
@@ -106,7 +106,7 @@ object EclairAuthCredentials {
 
     val bitcoindUri = new URI(s"http://$bitcoindRpcHost:$bitcoindRpcPort")
 
-    //does eclair not have a username field??
+    // does eclair not have a username field??
     val password = config.getString("eclair.api.password")
     val eclairRpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
 

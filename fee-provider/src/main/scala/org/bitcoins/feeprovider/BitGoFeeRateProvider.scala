@@ -12,7 +12,8 @@ import org.bitcoins.core.satoshisPerKiloByteOrdering
 import scala.util.{Failure, Success, Try}
 
 /** Fetches fee rate from BitGo's API
-  * @see [[https://www.bitgo.com/api/v2/#operation/v2.tx.getfeeestimate]]
+  * @see
+  *   [[https://www.bitgo.com/api/v2/#operation/v2.tx.getfeeestimate]]
   */
 case class BitGoFeeRateProvider(
     blockTargetOpt: Option[Int],

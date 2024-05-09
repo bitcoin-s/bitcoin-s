@@ -12,9 +12,8 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import ujson._
 import upickle.default._
 
-/** Created by chris on 5/4/16.
-  * Used to represent the test cases found inside of tx_valid.json & tx_invalid.json
-  * from bitcoin core
+/** Created by chris on 5/4/16. Used to represent the test cases found inside of
+  * tx_valid.json & tx_invalid.json from bitcoin core
   */
 case class CoreTransactionTestCase(
     creditingTxsInfo: Seq[
@@ -25,8 +24,8 @@ case class CoreTransactionTestCase(
 
 object CoreTransactionTestCase {
 
-  implicit val coreTransactionTestCaseR: Reader[
-    Option[CoreTransactionTestCase]] =
+  implicit val coreTransactionTestCaseR
+      : Reader[Option[CoreTransactionTestCase]] =
     reader[Value].map { value =>
       val arr: Arr = value match {
         case array: Arr => array
@@ -38,10 +37,8 @@ object CoreTransactionTestCase {
 
       if (elements.size < 3) None
       else {
-        val creditingTxsInfo: Seq[(
-            TransactionOutPoint,
-            ScriptPubKey,
-            Option[CurrencyUnit])] =
+        val creditingTxsInfo
+            : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] =
           elements.head match {
             case array: Arr => parseOutPointsScriptPubKeysAmount(array)
             case _: Value =>
@@ -59,8 +56,8 @@ object CoreTransactionTestCase {
       }
     }
 
-  private def parseOutPointsScriptPubKeysAmount(array: Arr): Seq[
-    (TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] = {
+  private def parseOutPointsScriptPubKeysAmount(array: Arr)
+      : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] = {
     val result = array.value.map {
       case array: Arr =>
         val prevoutHashHex =

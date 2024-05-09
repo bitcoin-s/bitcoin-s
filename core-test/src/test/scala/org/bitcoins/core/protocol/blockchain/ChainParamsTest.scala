@@ -143,7 +143,7 @@ class ChainParamsTest extends BitcoinSUnitTest {
 
   it must "have the correct base58 prefix for MainNet" in {
     import Base58Type._
-    //correct answers taken from https://en.bitcoin.it/wiki/List_of_address_prefixes
+    // correct answers taken from https://en.bitcoin.it/wiki/List_of_address_prefixes
     BytesUtil.encodeHex(
       MainNetChainParams.base58Prefixes(PubKeyAddress)) must be("00")
     BytesUtil.encodeHex(

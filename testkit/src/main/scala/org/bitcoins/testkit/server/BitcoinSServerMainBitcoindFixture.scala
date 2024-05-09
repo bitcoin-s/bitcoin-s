@@ -14,8 +14,8 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-/** Starts an instnace of [[BitcoinSserverMain]] that is
-  * using bitcoind as a backend
+/** Starts an instnace of [[BitcoinSserverMain]] that is using bitcoind as a
+  * backend
   */
 trait BitcoinSServerMainBitcoindFixture
     extends BitcoinSFixture
@@ -33,7 +33,7 @@ trait BitcoinSServerMainBitcoindFixture
         walletHolder <- server.start()
         account1 = WalletTestUtil.getHdAccount1(config.walletConf)
 
-        //needed for fundWalletWithBitcoind
+        // needed for fundWalletWithBitcoind
         _ <- walletHolder.createNewAccount(hdAccount = account1,
                                            keyManagerParams =
                                              walletHolder.keyManager.kmParams)

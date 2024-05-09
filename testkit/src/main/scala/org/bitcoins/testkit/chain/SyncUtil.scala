@@ -22,23 +22,30 @@ import org.bitcoins.wallet.sync.WalletSync
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Useful utilities to use in the chain project for syncing things against bitcoind */
+/** Useful utilities to use in the chain project for syncing things against
+  * bitcoind
+  */
 abstract class SyncUtil extends BitcoinSLogger {
 
-  /** Creates a function that will retrun bitcoin's best block hash when called */
+  /** Creates a function that will retrun bitcoin's best block hash when called
+    */
   def getBestBlockHashFunc(
       bitcoind: BitcoindRpcClient): () => Future[DoubleSha256DigestBE] = { () =>
     bitcoind.getBestBlockHash()
   }
 
-  /** Creates a function that you can pass a hash to and it returns the block header */
+  /** Creates a function that you can pass a hash to and it returns the block
+    * header
+    */
   def getBlockHeaderFunc(bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext): DoubleSha256DigestBE => Future[BlockHeader] = {
     hash: DoubleSha256DigestBE =>
       bitcoind.getBlockHeader(hash).map(_.blockHeader)
   }
 
-  /** Creates a function that you can pass a block header to and it's return's it's [[GolombFilter]] */
+  /** Creates a function that you can pass a block header to and it's return's
+    * it's [[GolombFilter]]
+    */
   def getFilterFunc(bitcoind: BlockchainRpc, filterType: FilterType)(implicit
       ec: ExecutionContext): BlockHeader => Future[FilterWithHeaderHash] = {
     case header: BlockHeader =>
@@ -63,7 +70,8 @@ abstract class SyncUtil extends BitcoinSLogger {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
 
-      /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+      /** Request the underlying node to download the given blocks from its
+        * peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
         */
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256DigestBE]): Future[Unit] = {
@@ -139,14 +147,15 @@ abstract class SyncUtil extends BitcoinSLogger {
     } yield syncedWalletApi
   }
 
-  /** Syncs the given chain handler to the given bitcoind node. This also syncs block filters
-    * since we know a bitcoind v19 node has block filter capability
+  /** Syncs the given chain handler to the given bitcoind node. This also syncs
+    * block filters since we know a bitcoind v19 node has block filter
+    * capability
     */
   def syncBitcoindWithChainHandler(
       bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc)(implicit
       ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[
-    BitcoindBaseVersionChainHandlerViaRpc] = {
+      chainAppConfig: ChainAppConfig)
+      : Future[BitcoindBaseVersionChainHandlerViaRpc] = {
     val bitcoindV19 = bitcoindWithChainHandler.bitcoindRpc
     val chainApiF = syncBitcoindWithChainHandler(bitcoindWithChainHandler)
       .map(_.chainHandler)

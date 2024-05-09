@@ -17,8 +17,10 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
 /** Configuration for a BitcoindRpcClient
-  * @param directory The data directory of the Bitcoin-S instance
-  * @param confs Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the Bitcoin-S instance
+  * @param confs
+  *   Optional sequence of configuration overrides
   */
 case class BitcoindRpcAppConfig(
     baseDatadir: Path,
@@ -165,7 +167,8 @@ case class BitcoindRpcAppConfig(
                              proxyParams = socks5ProxyParams)
   }
 
-  /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured */
+  /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured
+    */
   lazy val clientF: Future[BitcoindRpcClient] = {
     bitcoindInstance match {
       case local: BitcoindInstanceLocal =>
@@ -173,16 +176,16 @@ case class BitcoindRpcAppConfig(
         val client = BitcoindRpcClient.fromVersion(version, bitcoindInstance)
         Future.successful(client)
       case _: BitcoindInstanceRemote =>
-        //first get a generic rpc client so we can retrieve
-        //the proper version of the remote running bitcoind
+        // first get a generic rpc client so we can retrieve
+        // the proper version of the remote running bitcoind
         val noVersionRpc = new BitcoindRpcClient(bitcoindInstance)
         val versionF = getBitcoindVersion(noVersionRpc)
 
-        //if we don't retrieve the proper version, we can
-        //end up with exceptions on an rpc client that actually supports
-        //specific features that are not supported across all versions of bitcoind
-        //such as blockfilters
-        //see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
+        // if we don't retrieve the proper version, we can
+        // end up with exceptions on an rpc client that actually supports
+        // specific features that are not supported across all versions of bitcoind
+        // such as blockfilters
+        // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
           BitcoindRpcClient.fromVersion(version, instance = bitcoindInstance)
         }
@@ -193,7 +196,7 @@ case class BitcoindRpcAppConfig(
       client: BitcoindRpcClient): Future[BitcoindVersion] = {
     val promise = Promise[BitcoindVersion]()
     val interval = 1.second
-    val maxTries = 300 //5 minutes
+    val maxTries = 300 // 5 minutes
     for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = { () =>
@@ -223,8 +226,8 @@ object BitcoindRpcAppConfig
 
   override val moduleName: String = "bitcoind"
 
-  /** Constructs a node configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a node configuration from the default Bitcoin-S data directory
+    * and given list of configuration overrides.
     */
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit

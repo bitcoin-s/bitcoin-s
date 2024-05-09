@@ -31,13 +31,13 @@ case class AddressDAO()(implicit
   override val table: profile.api.TableQuery[AddressTable] =
     TableQuery[AddressTable]
 
-  private lazy val spendingInfoTable: profile.api.TableQuery[
-    SpendingInfoDAO#SpendingInfoTable] = {
+  private lazy val spendingInfoTable
+      : profile.api.TableQuery[SpendingInfoDAO#SpendingInfoTable] = {
     SpendingInfoDAO().table
   }
 
-  private lazy val spkTable: profile.api.TableQuery[
-    ScriptPubKeyDAO#ScriptPubKeyTable] = {
+  private lazy val spkTable
+      : profile.api.TableQuery[ScriptPubKeyDAO#ScriptPubKeyTable] = {
     ScriptPubKeyDAO().table
   }
 
@@ -45,10 +45,10 @@ case class AddressDAO()(implicit
       ts: Vector[AddressRecord]): Future[Vector[AddressRecord]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  def createAction(addressDb: AddressDb): DBIOAction[
-    AddressDb,
-    NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional] = {
+  def createAction(addressDb: AddressDb)
+      : DBIOAction[AddressDb,
+                   NoStream,
+                   Effect.Read with Effect.Write with Effect.Transactional] = {
     val spkFind =
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
     val actions = for {
@@ -133,20 +133,16 @@ case class AddressDAO()(implicit
   }
 
   /** Finds the rows that correlate to the given primary keys */
-  override def findByPrimaryKeys(addresses: Vector[BitcoinAddress]): Query[
-    AddressTable,
-    AddressRecord,
-    Seq] =
+  override def findByPrimaryKeys(addresses: Vector[BitcoinAddress])
+      : Query[AddressTable, AddressRecord, Seq] =
     table.filter(_.address.inSet(addresses))
 
   override def findAll(
       ts: Vector[AddressRecord]): Query[AddressTable, AddressRecord, Seq] =
     findByPrimaryKeys(ts.map(_.address))
 
-  def findAllAddressesAction(): DBIOAction[
-    Vector[AddressDb],
-    NoStream,
-    Effect.Read] = {
+  def findAllAddressesAction()
+      : DBIOAction[Vector[AddressDb], NoStream, Effect.Read] = {
     val query = table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -168,10 +164,8 @@ case class AddressDAO()(implicit
     safeDatabase.run(findAddressAction(addr))
   }
 
-  def findAddressAction(addr: BitcoinAddress): DBIOAction[
-    Option[AddressDb],
-    NoStream,
-    Effect.Read] = {
+  def findAddressAction(addr: BitcoinAddress)
+      : DBIOAction[Option[AddressDb], NoStream, Effect.Read] = {
     table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -184,10 +178,10 @@ case class AddressDAO()(implicit
         })
   }
 
-  private def addressesForAccountQuery(accountIndex: Int): Query[
-    (AddressTable, ScriptPubKeyDAO#ScriptPubKeyTable),
-    (AddressRecord, ScriptPubKeyDb),
-    Seq] =
+  private def addressesForAccountQuery(accountIndex: Int)
+      : Query[(AddressTable, ScriptPubKeyDAO#ScriptPubKeyTable),
+              (AddressRecord, ScriptPubKeyDb),
+              Seq] =
     table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -215,10 +209,8 @@ case class AddressDAO()(implicit
     safeDatabase.runVec(action)
   }
 
-  def findAllForAccountAction(account: HDAccount): DBIOAction[
-    Vector[AddressRecord],
-    NoStream,
-    Effect.Read] = {
+  def findAllForAccountAction(account: HDAccount)
+      : DBIOAction[Vector[AddressRecord], NoStream, Effect.Read] = {
     val query = table
       .filter(_.purpose === account.purpose)
       .filter(_.accountIndex === account.index)
@@ -226,10 +218,8 @@ case class AddressDAO()(implicit
     query.result.map(_.toVector)
   }
 
-  def findMostRecentChangeAction(hdAccount: HDAccount): DBIOAction[
-    Option[AddressDb],
-    NoStream,
-    Effect.Read] = {
+  def findMostRecentChangeAction(hdAccount: HDAccount)
+      : DBIOAction[Option[AddressDb], NoStream, Effect.Read] = {
     val action =
       findMostRecentForChain(hdAccount, HDChainType.Change)
     action.map(_.map { case (addrRec, spkRec) =>
@@ -319,10 +309,8 @@ case class AddressDAO()(implicit
     safeDatabase.run(findByScriptPubKeysAction(spks))
   }
 
-  def findByScriptPubKeysAction(spks: Vector[ScriptPubKey]): DBIOAction[
-    Vector[AddressDb],
-    NoStream,
-    Effect.Read] = {
+  def findByScriptPubKeysAction(spks: Vector[ScriptPubKey])
+      : DBIOAction[Vector[AddressDb], NoStream, Effect.Read] = {
     table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -335,10 +323,9 @@ case class AddressDAO()(implicit
 
   private def findMostRecentForChain(
       account: HDAccount,
-      chain: HDChainType): DBIOAction[
-    Option[(AddressRecord, ScriptPubKeyDb)],
-    NoStream,
-    Effect.Read] = {
+      chain: HDChainType): DBIOAction[Option[(AddressRecord, ScriptPubKeyDb)],
+                                      NoStream,
+                                      Effect.Read] = {
     addressesForAccountQuery(account.index)
       .filter(_._1.purpose === account.purpose)
       .filter(_._1.accountCoin === account.coin.coinType)
@@ -349,10 +336,8 @@ case class AddressDAO()(implicit
       .headOption
   }
 
-  def findMostRecentExternalAction(hdAccount: HDAccount): DBIOAction[
-    Option[AddressDb],
-    NoStream,
-    Effect.Read] = {
+  def findMostRecentExternalAction(hdAccount: HDAccount)
+      : DBIOAction[Option[AddressDb], NoStream, Effect.Read] = {
     val action = findMostRecentForChain(hdAccount, HDChainType.External)
     action.map(_.map { case (addrRec, spkRec) =>
       addrRec.toAddressDb(spkRec.scriptPubKey)
@@ -367,8 +352,8 @@ case class AddressDAO()(implicit
     safeDatabase.run(action)
   }
 
-  /** todo: this needs design rework.
-    * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
+  /** todo: this needs design rework. todo:
+    * https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
     */
   class AddressTable(tag: Tag)
       extends Table[AddressRecord](tag, schemaName, "addresses") {

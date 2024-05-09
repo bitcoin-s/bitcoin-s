@@ -25,15 +25,14 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
 
-/** This class is not guaranteed to be compatible with any particular
-  * version of Bitcoin Core. It implements RPC calls that are similar
-  * across different versions. If you need RPC calls specific to a
-  * version, check out
+/** This class is not guaranteed to be compatible with any particular version of
+  * Bitcoin Core. It implements RPC calls that are similar across different
+  * versions. If you need RPC calls specific to a version, check out
   *
   * If a RPC call fails for any reason, a
-  * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown.
-  * This is a sealed abstract class, so you can pattern match easily
-  * on the errors, and handle them as you see fit.
+  * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown. This is
+  * a sealed abstract class, so you can pattern match easily on the errors, and
+  * handle them as you see fit.
   */
 class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     override val system: ActorSystem)
@@ -172,9 +171,9 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
     getBlockHeader(hash).map(header => Some(header.blockHeaderDb))
 
-  override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
-    Vector[Option[BlockHeaderDb]]] = {
-    //sends a request for every header, i'm not aware of a way to batch these
+  override def getHeaders(hashes: Vector[DoubleSha256DigestBE])
+      : Future[Vector[Option[BlockHeaderDb]]] = {
+    // sends a request for every header, i'm not aware of a way to batch these
     val resultsNested: Vector[Future[Option[BlockHeaderDb]]] =
       hashes.map(getHeader)
     Future
@@ -273,8 +272,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
 object BitcoindRpcClient {
 
-  /** The name we give to actor systems we create. We use this
-    * information to know which actor systems to shut down
+  /** The name we give to actor systems we create. We use this information to
+    * know which actor systems to shut down
     */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
@@ -283,27 +282,25 @@ object BitcoindRpcClient {
 
   /** Creates an RPC client from the given instance.
     *
-    * Behind the scenes, we create an actor system for
-    * you. You can use `withActorSystem` if you want to
-    * manually specify an actor system for the RPC client.
+    * Behind the scenes, we create an actor system for you. You can use
+    * `withActorSystem` if you want to manually specify an actor system for the
+    * RPC client.
     */
   def apply(instance: BitcoindInstance): BitcoindRpcClient = {
     withActorSystem(instance)(system)
   }
 
-  /** Creates an RPC client from the given instance,
-    * together with the given actor system. This is for
-    * advanced users, where you need fine grained control
-    * over the RPC client.
+  /** Creates an RPC client from the given instance, together with the given
+    * actor system. This is for advanced users, where you need fine grained
+    * control over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient =
     new BitcoindRpcClient(instance)
 
-  /** Constructs a RPC client from the given datadir, or
-    * the default datadir if no directory is provided.
-    * This is always a [[BitcoindInstanceLocal]] since a binary
-    * is passed into this method
+  /** Constructs a RPC client from the given datadir, or the default datadir if
+    * no directory is provided. This is always a [[BitcoindInstanceLocal]] since
+    * a binary is passed into this method
     */
   def fromDatadir(
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
@@ -313,7 +310,9 @@ object BitcoindRpcClient {
     cli
   }
 
-  /** Returns a bitcoind with the appropriated version you passed in, the bitcoind is NOT started. */
+  /** Returns a bitcoind with the appropriated version you passed in, the
+    * bitcoind is NOT started.
+    */
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindRpcClient = {
     val bitcoind = version match {
@@ -373,11 +372,11 @@ object BitcoindVersion
     fromStringOpt(string).get
   }
 
-  /** Gets the bitcoind version from the 'getnetworkresult' bitcoind rpc
-    * An example for 210100 for the 21.1.0 release of bitcoin core
+  /** Gets the bitcoind version from the 'getnetworkresult' bitcoind rpc An
+    * example for 210100 for the 21.1.0 release of bitcoin core
     */
   def fromNetworkVersion(int: Int): BitcoindVersion = {
-    //need to translate the int 210100 (as an example) to a BitcoindVersion
+    // need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
       case "22" => V22
       case "23" => V23

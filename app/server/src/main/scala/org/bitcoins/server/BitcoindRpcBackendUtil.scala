@@ -32,10 +32,14 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-/** Useful utilities to use in the wallet project for syncing things against bitcoind */
+/** Useful utilities to use in the wallet project for syncing things against
+  * bitcoind
+  */
 object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
-  /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
+  /** Has the wallet process all the blocks it has not seen up until bitcoind's
+    * chain tip
+    */
   def syncWalletToBitcoind(
       bitcoind: BitcoindRpcClient,
       wallet: NeutrinoHDWalletApi,
@@ -64,17 +68,17 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       stream = Source(heightRange).toMat(syncFlow)(Keep.right)
     } yield stream
 
-    //run the stream
+    // run the stream
     val res = streamF.flatMap(_.run())
     res.onComplete { case _ =>
       val isBitcoindInSyncF = BitcoindRpcBackendUtil.isBitcoindInSync(bitcoind)
       isBitcoindInSyncF.flatMap { isBitcoindInSync =>
         if (isBitcoindInSync) {
-          //if bitcoind is in sync, and we are in sync with bitcoind, set the syncing flag to false
+          // if bitcoind is in sync, and we are in sync with bitcoind, set the syncing flag to false
           setSyncingFlag(false, bitcoind, chainCallbacksOpt)
         } else {
-          //if bitcoind is not in sync, we cannot be done syncing. Keep the syncing flag to true
-          //so do nothing in this case
+          // if bitcoind is not in sync, we cannot be done syncing. Keep the syncing flag to true
+          // so do nothing in this case
           logger.warn(
             s"We synced against bitcoind, but bitcoind is not in sync with the network.")
           Future.unit
@@ -85,8 +89,9 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     res.map(_ => ())
   }
 
-  /** Gets the height range for syncing against bitcoind when we don't have a [[org.bitcoins.core.api.wallet.WalletStateDescriptor]]
-    * to read the sync height from.
+  /** Gets the height range for syncing against bitcoind when we don't have a
+    * [[org.bitcoins.core.api.wallet.WalletStateDescriptor]] to read the sync
+    * height from.
     */
   private def getHeightRangeNoWalletState(
       wallet: NeutrinoHDWalletApi,
@@ -146,9 +151,9 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     }
   }
 
-  /** Helper method to sync the wallet until the bitcoind height.
-    * This method returns a Sink that you can give block heights too and
-    * the sink will synchronize our bitcoin-s wallet against bitcoind
+  /** Helper method to sync the wallet until the bitcoind height. This method
+    * returns a Sink that you can give block heights too and the sink will
+    * synchronize our bitcoin-s wallet against bitcoind
     */
   private def buildBitcoindSyncSink(
       bitcoind: BitcoindRpcClient,
@@ -163,10 +168,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       .recover { case _: Throwable => false }
 
     val numParallelism = FutureUtil.getParallelism
-    //feeding blockchain hashes into this sync
-    //will sync our wallet with those blockchain hashes
-    val syncWalletSinkF: Future[
-      Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]]] = {
+    // feeding blockchain hashes into this sync
+    // will sync our wallet with those blockchain hashes
+    val syncWalletSinkF
+        : Future[Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]]] = {
 
       for {
         hasFilters <- hasFiltersF
@@ -296,9 +301,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
   private def filterSyncSink(
       bitcoindRpcClient: BlockchainRpc,
-      wallet: NeutrinoHDWalletApi)(implicit ec: ExecutionContext): Sink[
-    DoubleSha256DigestBE,
-    Future[NeutrinoHDWalletApi]] = {
+      wallet: NeutrinoHDWalletApi)(implicit ec: ExecutionContext)
+      : Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]] = {
 
     val numParallelism = FutureUtil.getParallelism
     val sink: Sink[DoubleSha256DigestBE, Future[NeutrinoHDWalletApi]] =
@@ -317,8 +321,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     sink
   }
 
-  /** Creates an anonymous [[NodeApi]] that downloads blocks using
-    * akka streams from bitcoind, and then calls [[NeutrinoWalletApi.processBlock]]
+  /** Creates an anonymous [[NodeApi]] that downloads blocks using akka streams
+    * from bitcoind, and then calls [[NeutrinoWalletApi.processBlock]]
     */
   def buildBitcoindNodeApi(
       bitcoindRpcClient: BitcoindRpcClient,
@@ -337,8 +341,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           bitcoindRpcClient = bitcoindRpcClient,
           parallelism = numParallelism)
 
-        val sinkF: Future[
-          Sink[(Block, GetBlockHeaderResult), Future[WalletApi]]] = {
+        val sinkF
+            : Future[Sink[(Block, GetBlockHeaderResult), Future[WalletApi]]] = {
           walletF.map { initWallet =>
             Sink.foldAsync[WalletApi, (Block, GetBlockHeaderResult)](
               initWallet) {
@@ -391,7 +395,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     chainCallbacksOpt match {
       case None           => Future.unit
       case Some(callback) =>
-        //this can be slow as we aren't batching headers at all
+        // this can be slow as we aren't batching headers at all
         val headerWithHeights =
           Vector((blockHeaderResult.height, blockHeaderResult.blockHeader))
         val f = callback
@@ -400,12 +404,15 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     }
   }
 
-  /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
-    * if it has changed, it will then request those blocks to process them
+  /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block
+    * count, if it has changed, it will then request those blocks to process
+    * them
     *
-    * @param startCount The starting block height of the wallet
-    * @param interval   The amount of time between polls, this should not be too aggressive
-    *                   as the wallet will need to process the new blocks
+    * @param startCount
+    *   The starting block height of the wallet
+    * @param interval
+    *   The amount of time between polls, this should not be too aggressive as
+    *   the wallet will need to process the new blocks
     */
   def startBitcoindBlockPolling(
       wallet: WalletApi,
@@ -452,7 +459,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
               BitcoindRpcBackendUtil.setSyncingFlag(false,
                                                     bitcoind,
                                                     chainCallbacksOpt)
-            } //reset polling variable
+            } // reset polling variable
             f.failed.foreach(err =>
               logger.error(s"Failed to poll bitcoind", err))
           } else {
@@ -465,7 +472,9 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
   }
 
   /** Polls bitcoind for syncing the blockchain
-    * @return None if there was nothing to sync, else the Future[Done] that is completed when the sync is finished.
+    * @return
+    *   None if there was nothing to sync, else the Future[Done] that is
+    *   completed when the sync is finished.
     */
   private def pollBitcoind(
       wallet: WalletApi,
@@ -539,7 +548,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         }
       }
     } yield {
-      queue.complete() //complete the stream after offering all heights we need to sync
+      queue.complete() // complete the stream after offering all heights we need to sync
       retval
     }
     resF.map(_ => Some(doneF))
@@ -570,7 +579,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         logger.debug("Polling bitcoind for mempool")
         val numParallelism = FutureUtil.getParallelism
 
-        //don't want to execute these in parallel
+        // don't want to execute these in parallel
         val processTxFlow = Sink.foreachAsync[Option[Transaction]](1) {
           case Some(tx) => processTx(tx)
           case None     => Future.unit
@@ -625,7 +634,9 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     }
   }
 
-  /** Checks if bitcoind has all blocks for the headers it has seen on the network */
+  /** Checks if bitcoind has all blocks for the headers it has seen on the
+    * network
+    */
   private def isBitcoindInSync(bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     for {

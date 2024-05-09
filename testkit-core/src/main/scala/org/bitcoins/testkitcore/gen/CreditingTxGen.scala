@@ -49,7 +49,7 @@ sealed abstract class CreditingTxGen {
   }
 
   def nonP2WSHOutput: Gen[ScriptSignatureParams[InputInfo]] = {
-    //note, cannot put a p2wpkh here
+    // note, cannot put a p2wpkh here
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
               /*p2pkWithTimeoutOutput,*/
@@ -126,7 +126,9 @@ sealed abstract class CreditingTxGen {
   def output: Gen[ScriptSignatureParams[InputInfo]] =
     Gen.oneOf(nonCltvOutputGens).flatMap(identity)
 
-  /** Either a list of non-CLTV outputs or a single CLTV output, with proportional probability */
+  /** Either a list of non-CLTV outputs or a single CLTV output, with
+    * proportional probability
+    */
   def outputs: Gen[Seq[ScriptSignatureParams[InputInfo]]] = {
     val cltvGen = Gen
       .oneOf(cltvOutput, p2pkWithTimeoutOutput)
@@ -165,8 +167,8 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2pkWithTimeoutOutput))
   }
 
-  /** Generates a transaction that has a p2pkh output at the returned index. This
-    * output can be spent by the returned ECPrivateKey
+  /** Generates a transaction that has a p2pkh output at the returned index.
+    * This output can be spent by the returned ECPrivateKey
     */
   def p2pkhOutput: Gen[ScriptSignatureParams[InputInfo]] =
     ScriptGenerators.p2pkhScriptPubKey.flatMap { p2pkh =>
@@ -194,8 +196,8 @@ sealed abstract class CreditingTxGen {
     }
   }
 
-  def multiSignatureWithTimeoutOutputs: Gen[
-    Seq[ScriptSignatureParams[InputInfo]]] = {
+  def multiSignatureWithTimeoutOutputs
+      : Gen[Seq[ScriptSignatureParams[InputInfo]]] = {
     Gen
       .choose(min, max)
       .flatMap(n => Gen.listOfN(n, multiSignatureWithTimeoutOutput))
@@ -431,8 +433,8 @@ sealed abstract class CreditingTxGen {
       spk: ScriptPubKey,
       signers: Seq[Sign],
       redeemScript: Option[ScriptPubKey],
-      scriptWitness: Option[ScriptWitness]): Gen[
-    ScriptSignatureParams[InputInfo]] =
+      scriptWitness: Option[ScriptWitness])
+      : Gen[ScriptSignatureParams[InputInfo]] =
     nonEmptyOutputs.flatMap { outputs =>
       CryptoGenerators.hashType.flatMap { hashType =>
         Gen.choose(0, outputs.size - 1).map { idx =>
@@ -460,8 +462,8 @@ sealed abstract class CreditingTxGen {
   def inputsAndOutputs(
       outputsToUse: Gen[Seq[ScriptSignatureParams[InputInfo]]] = outputs,
       destinationGenerator: CurrencyUnit => Gen[Seq[TransactionOutput]] =
-        TransactionGenerators.smallOutputs): Gen[
-    (Seq[ScriptSignatureParams[InputInfo]], Seq[TransactionOutput])] = {
+        TransactionGenerators.smallOutputs)
+      : Gen[(Seq[ScriptSignatureParams[InputInfo]], Seq[TransactionOutput])] = {
     inputsAndP2SHOutputs(
       outputsToUse,
       destinationGenerator.andThen(_.map(_.map(x => (x, ScriptPubKey.empty)))))
@@ -472,9 +474,9 @@ sealed abstract class CreditingTxGen {
       outputsToUse: Gen[Seq[ScriptSignatureParams[InputInfo]]] = outputs,
       destinationGenerator: CurrencyUnit => Gen[
         Seq[(TransactionOutput, ScriptPubKey)]] =
-        TransactionGenerators.smallP2SHOutputs): Gen[(
-      Seq[ScriptSignatureParams[InputInfo]],
-      Seq[(TransactionOutput, ScriptPubKey)])] = {
+        TransactionGenerators.smallP2SHOutputs)
+      : Gen[(Seq[ScriptSignatureParams[InputInfo]],
+             Seq[(TransactionOutput, ScriptPubKey)])] = {
     outputsToUse
       .flatMap { creditingTxsInfo =>
         val creditingOutputs = creditingTxsInfo.map(c => c.output)

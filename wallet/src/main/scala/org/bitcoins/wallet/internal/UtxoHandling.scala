@@ -14,10 +14,9 @@ import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
 
-/** Provides functionality related to handling UTXOs in our wallet.
-  * The most notable examples of functionality here are enumerating
-  * UTXOs in the wallet and importing a UTXO into the wallet for later
-  * spending.
+/** Provides functionality related to handling UTXOs in our wallet. The most
+  * notable examples of functionality here are enumerating UTXOs in the wallet
+  * and importing a UTXO into the wallet for later spending.
   */
 private[wallet] trait UtxoHandling extends WalletLogger {
   self: Wallet =>
@@ -38,8 +37,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   /** Returns all the utxos originating from the given outpoints */
-  def listUtxos(outPoints: Vector[TransactionOutPoint]): Future[
-    Vector[SpendingInfoDb]] = {
+  def listUtxos(outPoints: Vector[TransactionOutPoint])
+      : Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO
       .findAllSpendingInfos()
       .map(_.filter(spendingInfo => outPoints.contains(spendingInfo.outPoint)))
@@ -94,15 +93,15 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     updateUtxoStates(txos, UtxoHandling.updateReceivedTxoWithConfs)
   }
 
-  /** Returns a map of the SpendingInfoDbs with their relevant block.
-    * If the block hash is None, then it is a mempool transaction.
-    * The relevant block is determined by if the utxo has been spent or not.
-    * If it has been spent it uses the block that included the spending transaction,
-    * otherwise it uses the block that included the receiving transaction.
+  /** Returns a map of the SpendingInfoDbs with their relevant block. If the
+    * block hash is None, then it is a mempool transaction. The relevant block
+    * is determined by if the utxo has been spent or not. If it has been spent
+    * it uses the block that included the spending transaction, otherwise it
+    * uses the block that included the receiving transaction.
     */
   private[wallet] def getDbsByRelevantBlock(
-      spendingInfoDbs: Vector[SpendingInfoDb]): Future[
-    Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
+      spendingInfoDbs: Vector[SpendingInfoDb])
+      : Future[Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
     val txIds =
       spendingInfoDbs.map { db =>
         db.spendingTxIdOpt match {
@@ -131,24 +130,27 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
-  /** Updates all the given SpendingInfoDbs to the correct state
-    * based on how many confirmations they have received
-    * @param spendingInfoDbs the utxos we need to update
-    * @param fn the function used to transition the [[TxoState]] given a utxo and number of confirmations
+  /** Updates all the given SpendingInfoDbs to the correct state based on how
+    * many confirmations they have received
+    * @param spendingInfoDbs
+    *   the utxos we need to update
+    * @param fn
+    *   the function used to transition the [[TxoState]] given a utxo and number
+    *   of confirmations
     */
   private def updateUtxoStates(
       spendingInfoDbs: Vector[SpendingInfoDb],
-      fn: (SpendingInfoDb, Int, Int) => SpendingInfoDb): Future[
-    Vector[SpendingInfoDb]] = {
-    val relevantBlocksF: Future[
-      Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
+      fn: (SpendingInfoDb, Int, Int) => SpendingInfoDb)
+      : Future[Vector[SpendingInfoDb]] = {
+    val relevantBlocksF
+        : Future[Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
       getDbsByRelevantBlock(spendingInfoDbs)
     }
 
-    //fetch all confirmations for those blocks, do it in parallel
-    //as an optimzation, previously we would fetch sequentially
-    val blocksWithConfsF: Future[
-      Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
+    // fetch all confirmations for those blocks, do it in parallel
+    // as an optimzation, previously we would fetch sequentially
+    val blocksWithConfsF
+        : Future[Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
       for {
         relevantBlocks <- relevantBlocksF
         blocksWithConfirmations <- getConfirmationsForBlocks(relevantBlocks)
@@ -187,10 +189,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   /** Fetches confirmations for the given blocks in parallel */
   private def getConfirmationsForBlocks(
-      relevantBlocks: Map[
-        Option[DoubleSha256DigestBE],
-        Vector[SpendingInfoDb]]): Future[
-    Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
+      relevantBlocks: Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]])
+      : Future[Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
 
     val resultF = Source(relevantBlocks)
       .mapAsync(FutureUtil.getParallelism) {
@@ -210,7 +210,9 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     resultF.map(_.toMap)
   }
 
-  /** Constructs a DB level representation of the given UTXO, and persist it to disk */
+  /** Constructs a DB level representation of the given UTXO, and persist it to
+    * disk
+    */
   protected def writeUtxo(
       tx: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
@@ -229,7 +231,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                 s"Could not find block with our chain data source, hash=${blockHash}")
           }
       case None =>
-        Future.successful(0) //no confirmations on the tx
+        Future.successful(0) // no confirmations on the tx
     }
 
     val stateF: Future[TxoState] = confirmationsF.map { confs =>
@@ -299,11 +301,10 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     } yield utxos
   }
 
-  protected def markUTXOsAsReservedAction(
-      utxos: Vector[SpendingInfoDb]): DBIOAction[
-    (Vector[SpendingInfoDb], Future[Unit]),
-    NoStream,
-    Effect.Read with Effect.Write] = {
+  protected def markUTXOsAsReservedAction(utxos: Vector[SpendingInfoDb])
+      : DBIOAction[(Vector[SpendingInfoDb], Future[Unit]),
+                   NoStream,
+                   Effect.Read with Effect.Write] = {
     val outPoints = utxos.map(_.outPoint)
     logger.info(s"Reserving utxos=$outPoints")
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
@@ -326,8 +327,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     logger.info(s"Unreserving utxos ${utxos.map(_.outPoint)}")
     val updatedUtxosF = Future {
-      //make sure exception isn't thrown outside of a future to fix
-      //see: https://github.com/bitcoin-s/bitcoin-s/issues/3813
+      // make sure exception isn't thrown outside of a future to fix
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/3813
       val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
       require(unreserved.isEmpty,
               s"Some utxos are not reserved, got $unreserved")
@@ -378,8 +379,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
 object UtxoHandling {
 
-  /** Updates the SpendingInfoDb to the correct state based
-    * on the number of confirmations it has received
+  /** Updates the SpendingInfoDb to the correct state based on the number of
+    * confirmations it has received
     */
   def updateReceivedTxoWithConfs(
       txo: SpendingInfoDb,
@@ -398,7 +399,7 @@ object UtxoHandling {
         val state = getReceiveConfsState(confs, requiredConfirmations)
         txo.copyWithState(state)
       case TxoState.Reserved =>
-        //do nothing if we have reserved the utxo
+        // do nothing if we have reserved the utxo
         txo
       case state: SpentState =>
         sys.error(s"Cannot update spendingInfoDb in spent state=$state")
@@ -406,8 +407,9 @@ object UtxoHandling {
     }
   }
 
-  /** Given a number of confirmations and the required confirmations for the wallet
-    * this method returns the appropriate [[ReceivedState]] for the number of confirmations
+  /** Given a number of confirmations and the required confirmations for the
+    * wallet this method returns the appropriate [[ReceivedState]] for the
+    * number of confirmations
     */
   def getReceiveConfsState(
       confs: Int,

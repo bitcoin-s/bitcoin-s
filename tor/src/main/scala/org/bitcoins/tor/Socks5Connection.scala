@@ -18,8 +18,10 @@ import scala.util.{Failure, Success, Try}
   *
   * Created by rorp
   *
-  * @param connection      underlying TcpConnection
-  * @param credentialsOpt optional username/password for authentication
+  * @param connection
+  *   underlying TcpConnection
+  * @param credentialsOpt
+  *   optional username/password for authentication
   */
 class Socks5Connection(
     connection: ActorRef,
@@ -95,7 +97,7 @@ class Socks5Connection(
   override def unhandled(message: Any): Unit = message match {
     case Terminated(actor) if actor == connection => context stop self
     case _: Tcp.ConnectionClosed                  => context stop self
-    case _                                        => log.warning(s"unhandled message=$message")
+    case _ => log.warning(s"unhandled message=$message")
   }
 
   override def postStop(): Unit = {
@@ -243,33 +245,42 @@ object Socks5Connection extends BitcoinSLogger {
 
   def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
 
-  /** @param socket the peer we are connecting to
-    * @param source the source that produces ByteStrings we need to send to our peer
-    * @param sink the sink that receives messages from our peer and performs application specific logic
-    * @param mergeHubSink a way for socks5Handler to send messages to the socks5 proxy to complete the handshake
-    * @param credentialsOpt the credentials to authenticate the socks5 proxy.
+  /** @param socket
+    *   the peer we are connecting to
+    * @param source
+    *   the source that produces ByteStrings we need to send to our peer
+    * @param sink
+    *   the sink that receives messages from our peer and performs application
+    *   specific logic
+    * @param mergeHubSink
+    *   a way for socks5Handler to send messages to the socks5 proxy to complete
+    *   the handshake
+    * @param credentialsOpt
+    *   the credentials to authenticate the socks5 proxy.
     * @param mat
-    * @tparam MatSource the materialized value of the source given to us
-    * @tparam MatSink the materialized value of the sink given to us
-    * @return a running tcp connection along with the results of the materialize source and sink
+    * @tparam MatSource
+    *   the materialized value of the source given to us
+    * @tparam MatSink
+    *   the materialized value of the sink given to us
+    * @return
+    *   a running tcp connection along with the results of the materialize
+    *   source and sink
     */
   def socks5Handler[MatSource, MatSink](
       socket: InetSocketAddress,
       source: Source[
         ByteString,
-        (
-            Future[org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection],
-            MatSource)],
+        (Future[org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection],
+         MatSource)],
       sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
       mergeHubSink: Sink[ByteString, NotUsed],
-      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Future[(
-      (org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection, MatSource),
-      MatSink)] = {
+      credentialsOpt: Option[Credentials])(implicit mat: Materializer): Future[
+    ((org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection, MatSource),
+     MatSink)] = {
 
-    val flowState: Flow[
-      ByteString,
-      Either[ByteString, Socks5ConnectionState],
-      NotUsed] = {
+    val flowState: Flow[ByteString,
+                        Either[ByteString, Socks5ConnectionState],
+                        NotUsed] = {
       Flow[ByteString]
         .statefulMap[Socks5ConnectionState,
                      Either[ByteString, Socks5ConnectionState]](() =>
@@ -346,7 +357,7 @@ object Socks5Connection extends BitcoinSLogger {
       .toMat(sink)(Keep.both)
       .run()
 
-    //send greeting to kick off stream
+    // send greeting to kick off stream
     tcpConnectionF.map { conn =>
       val passwordAuth = credentialsOpt.isDefined
       val greetingSource: Source[ByteString, NotUsed] = {

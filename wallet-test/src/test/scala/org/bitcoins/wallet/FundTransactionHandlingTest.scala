@@ -102,7 +102,7 @@ class FundTransactionHandlingTest
 
   it must "fail to fund a raw transaction if we don't have enough money in our wallet" in {
     fundedWallet: WalletWithBitcoindRpc =>
-      //our wallet should only have 6 bitcoin in it
+      // our wallet should only have 6 bitcoin in it
       val tooMuchMoney = Bitcoins(10)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
       val wallet = fundedWallet.wallet
@@ -123,7 +123,7 @@ class FundTransactionHandlingTest
 
   it must "fail to fund a raw transaction if we have the _exact_ amount of money in the wallet because of the fee" in {
     fundedWallet: WalletWithBitcoindRpc =>
-      //our wallet should only have 6 bitcoin in it
+      // our wallet should only have 6 bitcoin in it
       val tooMuchMoney = Bitcoins(6)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
       val wallet = fundedWallet.wallet
@@ -144,8 +144,8 @@ class FundTransactionHandlingTest
 
   it must "fund from a specific account" in {
     fundedWallet: WalletWithBitcoindRpc =>
-      //we want to fund from account 1, not hte default account
-      //account 1 has 1 btc in it
+      // we want to fund from account 1, not hte default account
+      // account 1 has 1 btc in it
       val amt = Bitcoins(0.1)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
@@ -169,7 +169,7 @@ class FundTransactionHandlingTest
 
   it must "fail to fund from an account that does not have the funds" in {
     fundedWallet: WalletWithBitcoindRpc =>
-      //account 1 should only have 1 btc in it
+      // account 1 should only have 1 btc in it
       val amt = Bitcoins(1.1)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet

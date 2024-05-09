@@ -31,10 +31,8 @@ case class DLCCETSignaturesDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[DLCCETSignaturesPrimaryKey]): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] = {
+      ids: Vector[DLCCETSignaturesPrimaryKey])
+      : Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] = {
     // is there a better way to do this?
     val starting = table.filter(_.dlcId =!= Sha256Digest.empty)
 
@@ -49,39 +47,31 @@ case class DLCCETSignaturesDAO()(implicit
       }
   }
 
-  override def findByPrimaryKey(id: DLCCETSignaturesPrimaryKey): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] = {
+  override def findByPrimaryKey(id: DLCCETSignaturesPrimaryKey)
+      : Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] = {
     table.filter(t => t.dlcId === id.dlcId && t.index === id.contractIndex)
   }
 
-  override def find(t: DLCCETSignaturesDb): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] = {
+  override def find(t: DLCCETSignaturesDb)
+      : Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] = {
     findByPrimaryKey(DLCCETSignaturesPrimaryKey(t.dlcId, t.index))
   }
 
-  override def findAll(dlcs: Vector[DLCCETSignaturesDb]): Query[
-    DLCCETSignatureTable,
-    DLCCETSignaturesDb,
-    Seq] =
+  override def findAll(dlcs: Vector[DLCCETSignaturesDb])
+      : Query[DLCCETSignatureTable, DLCCETSignaturesDb, Seq] =
     findByPrimaryKeys(
       dlcs.map(sig => DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index)))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Vector[DLCCETSignaturesDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdAction(
+      dlcId: Sha256Digest): DBIOAction[Vector[DLCCETSignaturesDb],
+                                       profile.api.NoStream,
+                                       profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest)
+      : DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }

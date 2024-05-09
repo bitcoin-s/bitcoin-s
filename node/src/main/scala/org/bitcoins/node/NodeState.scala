@@ -61,9 +61,8 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def replacePeers(
-      peerWithServicesDataMap: Map[
-        PeerWithServices,
-        PersistentPeerData]): NodeRunningState = {
+      peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData])
+      : NodeRunningState = {
     this match {
       case h: NodeState.HeaderSync =>
         h.copy(peerWithServicesDataMap = peerWithServicesDataMap)
@@ -86,8 +85,8 @@ sealed trait NodeRunningState extends NodeState {
     val peerDataOpt = peerFinder.popFromCache(peer)
     peerDataOpt match {
       case None =>
-        //do we just want to ignore the attempt if
-        //the peer does not exist??
+        // do we just want to ignore the attempt if
+        // the peer does not exist??
         this
       case Some(peerData) =>
         val persistentPeerData = peerData match {
@@ -150,7 +149,7 @@ sealed trait NodeRunningState extends NodeState {
     val filteredPeers =
       peersWithServices
         .filterNot(p => excludePeers.exists(_ == p.peer))
-        //don't give peer a peer that we are waiting to disconnect
+        // don't give peer a peer that we are waiting to disconnect
         .filterNot(p => waitingForDisconnection.exists(_ == p.peer))
         .filter(p => p.services.hasServicesOf(services))
         .toVector
@@ -209,8 +208,8 @@ sealed abstract class SyncNodeState extends NodeRunningState {
     }
   }
 
-  /** Replaces the current sync peer with a new sync peer,
-    * returns None if there is not a new peer available
+  /** Replaces the current sync peer with a new sync peer, returns None if there
+    * is not a new peer available
     */
   def replaceSyncPeer: Option[SyncNodeState] = {
     randomPeer(excludePeers = Set(syncPeer),
@@ -253,7 +252,9 @@ sealed abstract class SyncNodeState extends NodeRunningState {
   }
 }
 
-/** Either we are syncing [[NodeState.FilterHeaderSync]] or [[NodeState.FilterSync]] */
+/** Either we are syncing [[NodeState.FilterHeaderSync]] or
+  * [[NodeState.FilterSync]]
+  */
 sealed trait FilterOrFilterHeaderSync extends SyncNodeState
 
 object NodeState {
@@ -295,7 +296,7 @@ object NodeState {
       peerFinder: PeerFinder)
       extends NodeRunningState {
     if (peers.nonEmpty) {
-      //needed for the case where the last peer we are connected to is the bad peer
+      // needed for the case where the last peer we are connected to is the bad peer
       require(
         peers.exists(_ == badPeer),
         s"MisbehavingPeer must be in peers, badPeer=$badPeer peers=$peers")
@@ -324,8 +325,8 @@ object NodeState {
       extends NodeRunningState {
     override val isSyncing: Boolean = false
 
-    /** Selects a random peer and returns us a header sync state
-      * returns None if we don't have a peer ot sync with
+    /** Selects a random peer and returns us a header sync state returns None if
+      * we don't have a peer ot sync with
       */
     def toHeaderSync: Option[HeaderSync] = {
       val syncPeerOpt =

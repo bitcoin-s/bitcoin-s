@@ -47,9 +47,9 @@ case class NeutrinoNode(
 
   implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
-  private val dataMessageStreamSource: Source[
-    NodeStreamMessage,
-    SourceQueueWithComplete[NodeStreamMessage]] = {
+  private val dataMessageStreamSource
+      : Source[NodeStreamMessage,
+               SourceQueueWithComplete[NodeStreamMessage]] = {
     Source
       .queue[NodeStreamMessage](
         100 * nodeAppConfig.maxConnectedPeers,
@@ -63,8 +63,8 @@ case class NeutrinoNode(
                 queue = this)
   }
 
-  private[this] var queueOpt: Option[
-    SourceQueueWithComplete[NodeStreamMessage]] =
+  private[this] var queueOpt
+      : Option[SourceQueueWithComplete[NodeStreamMessage]] =
     None
 
   private[this] var streamDoneFOpt: Option[Future[NodeState]] = None
@@ -76,8 +76,8 @@ case class NeutrinoNode(
 
   private def buildDataMessageStreamGraph(
       initState: NodeState,
-      source: Source[NodeStreamMessage, NotUsed]): RunnableGraph[
-    Future[NodeState]] = {
+      source: Source[NodeStreamMessage, NotUsed])
+      : RunnableGraph[Future[NodeState]] = {
     val graph = source
       .toMat(peerManager.buildP2PMessageHandlerSink(initState))(Keep.right)
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
@@ -145,7 +145,7 @@ case class NeutrinoNode(
           finishedF
         }
         _ = {
-          //reset all variables
+          // reset all variables
           streamDoneFOpt = None
           inactivityCancellableOpt = None
           queueOpt = None
@@ -162,17 +162,16 @@ case class NeutrinoNode(
 
   }
 
-  /** Starts to sync our node with our peer
-    * If our local best block hash is the same as our peers
-    * we will not sync, otherwise we will keep syncing
-    * until our best block hashes match up
+  /** Starts to sync our node with our peer If our local best block hash is the
+    * same as our peers we will not sync, otherwise we will keep syncing until
+    * our best block hashes match up
     *
     * @return
     */
   override def sync(): Future[Unit] = {
-    //wait for a peer to be available to sync from...
-    //due to underlying mutability in PeerManager/PeerFinder
-    //we may not have a peer available for selection immediately
+    // wait for a peer to be available to sync from...
+    // due to underlying mutability in PeerManager/PeerFinder
+    // we may not have a peer available for selection immediately
     val peerAvailableF =
       AsyncUtil.retryUntilSatisfiedF(() => getConnectionCount.map(_ > 0))
     for {

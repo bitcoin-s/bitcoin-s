@@ -27,9 +27,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val segwitConfig = BaseWalletTest.segwitWalletConf
     val randomHex = CryptoUtil.randomBytes(3).toHex
-    //with postgres, we need unique wallet names as postgres wallets
-    //share the same database. They have a unique schema with the database
-    //based on wallet name which is why we set this here.
+    // with postgres, we need unique wallet names as postgres wallets
+    // share the same database. They have a unique schema with the database
+    // based on wallet name which is why we set this here.
     val walletNameConfig =
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
     val extraConfig = segwitConfig.withFallback(walletNameConfig)
@@ -60,9 +60,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     super.beforeAll()
   }
 
-  /** Creates two segwit wallets that are funded with some bitcoin, these wallets are NOT
-    * peered with a bitcoind so the funds in the wallets are not tied to an
-    * underlying blockchain
+  /** Creates two segwit wallets that are funded with some bitcoin, these
+    * wallets are NOT peered with a bitcoind so the funds in the wallets are not
+    * tied to an underlying blockchain
     */
   def withDualFundedDLCWallets(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
@@ -100,8 +100,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
 
   private def createDualFundedDLCWallet(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi): Future[
-    (FundedDLCWallet, FundedDLCWallet)] = {
+      chainQueryApi: ChainQueryApi)
+      : Future[(FundedDLCWallet, FundedDLCWallet)] = {
     val walletAF = FundWalletUtil.createFundedDLCWallet(nodeApi = nodeApi,
                                                         chainQueryApi =
                                                           chainQueryApi)
@@ -160,8 +160,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
 
   private def createDualWalletsWithDLC(
       contractOraclePair: ContractOraclePair,
-      bitcoind: BitcoindRpcClient): Future[
-    (InitializedDLCWallet, InitializedDLCWallet)] = {
+      bitcoind: BitcoindRpcClient)
+      : Future[(InitializedDLCWallet, InitializedDLCWallet)] = {
     for {
       walletA <- FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
       walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
@@ -176,8 +176,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   private def createDualWalletsWithDLC(
       contractOraclePair: ContractOraclePair,
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi): Future[
-    (InitializedDLCWallet, InitializedDLCWallet)] = {
+      chainQueryApi: ChainQueryApi)
+      : Future[(InitializedDLCWallet, InitializedDLCWallet)] = {
     for {
       walletA <- FundWalletUtil.createFundedDLCWallet(nodeApi = nodeApi,
                                                       chainQueryApi =

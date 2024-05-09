@@ -24,15 +24,21 @@ import org.bitcoins.crypto._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** This case class allows for the construction and execution of
-  * Discreet Log Contracts between two parties running on this machine (for tests).
+/** This case class allows for the construction and execution of Discreet Log
+  * Contracts between two parties running on this machine (for tests).
   *
-  * @param offer The DLCOffer associated with this DLC
-  * @param accept The DLCAccept (without sigs) associated with this DLC
-  * @param isInitiator True if this client sends the offer message
-  * @param fundingPrivKey This client's funding private key for this event
-  * @param payoutPrivKey This client's payout private key for this event
-  * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
+  * @param offer
+  *   The DLCOffer associated with this DLC
+  * @param accept
+  *   The DLCAccept (without sigs) associated with this DLC
+  * @param isInitiator
+  *   True if this client sends the offer message
+  * @param fundingPrivKey
+  *   This client's funding private key for this event
+  * @param payoutPrivKey
+  *   This client's payout private key for this event
+  * @param fundingUtxos
+  *   This client's funding BitcoinUTXOSpendingInfo collection
   */
 case class TestDLCClient(
     offer: DLCMessage.DLCOffer,
@@ -61,15 +67,14 @@ case class TestDLCClient(
 
   lazy val fundingTxIdBE: DoubleSha256DigestBE = fundingTx.txIdBE
 
-  /** Sets up the non-initiator's DLC given functions for sending
-    * CETSignatures to the initiator as well as receiving CETSignatures
-    * and FundingSignatures from them
+  /** Sets up the non-initiator's DLC given functions for sending CETSignatures
+    * to the initiator as well as receiving CETSignatures and FundingSignatures
+    * from them
     */
   def setupDLCAccept(
       sendSigs: (CETSignatures, PartialSignature) => Future[Unit],
-      getSigs: Future[
-        (CETSignatures, PartialSignature, FundingSignatures)]): Future[
-    SetupDLC] = {
+      getSigs: Future[(CETSignatures, PartialSignature, FundingSignatures)])
+      : Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
     for {
@@ -85,9 +90,9 @@ case class TestDLCClient(
     }
   }
 
-  /** Sets up the initiator's DLC given functions for getting CETSignatures
-    * from the non-initiator as well as sending signatures to them, and lastly
-    * a Future which will be populated with the broadcasted (or relayed) fully
+  /** Sets up the initiator's DLC given functions for getting CETSignatures from
+    * the non-initiator as well as sending signatures to them, and lastly a
+    * Future which will be populated with the broadcasted (or relayed) fully
     * signed funding transaction
     */
   def setupDLCOffer(
@@ -120,8 +125,8 @@ case class TestDLCClient(
 
   def executeDLC(
       dlcSetup: SetupDLC,
-      oracleSigsF: Future[Vector[OracleSignatures]]): Future[
-    ExecutedDLCOutcome] = {
+      oracleSigsF: Future[Vector[OracleSignatures]])
+      : Future[ExecutedDLCOutcome] = {
     oracleSigsF.map { oracleSigs =>
       dlcExecutor.executeDLC(dlcSetup, oracleSigs)
     }

@@ -168,7 +168,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         Wallet
           .initialize(wallet, bip39PasswordOpt)
           .flatMap { _ =>
-            //use a BIP39 password to make the key-managers different
+            // use a BIP39 password to make the key-managers different
             Wallet.initialize(
               wallet,
               Some("random-password-to-make-key-managers-different"))
@@ -178,8 +178,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to detect different master xpubs on wallet startup" in {
     wallet: Wallet =>
-      //create new config with different entropy
-      //to make the keymanagers differetn
+      // create new config with different entropy
+      // to make the keymanagers differetn
       val config = ConfigFactory.parseString(
         s"bitcoin-s.keymanager.entropy=${CryptoUtil.randomBytes(16).toHex}")
       val uniqueEntropyWalletConfig = wallet.walletConfig.withOverrides(config)
@@ -325,24 +325,24 @@ class WalletUnitTest extends BitcoinSWalletTest {
       for {
         isEmpty <- wallet.isEmpty()
         _ = assert(isEmpty)
-        //manually override the seeds creation time
+        // manually override the seeds creation time
         seedPath = wallet.walletConfig.kmConf.seedPath
         mnemonic = WalletStorage
           .decryptSeedFromDisk(seedPath = seedPath, passphraseOpt = None)
           .getOrElse(sys.error(s"failed to decrypt seed for unit test"))
           .asInstanceOf[DecryptedMnemonic]
         _ = {
-          //delete old seed file because we do not allow overwriting a seed file
+          // delete old seed file because we do not allow overwriting a seed file
           Files.delete(wallet.walletConfig.seedPath)
         }
         modifiedMnemonic = mnemonic.copy(creationTime =
-          Instant.now.minusSeconds(60 * 60 + 1)) //1 hour and 1 minute
+          Instant.now.minusSeconds(60 * 60 + 1)) // 1 hour and 1 minute
 
         _ = WalletStorage.writeSeedToDisk(seedPath, modifiedMnemonic)
-        //delete old wallet database
+        // delete old wallet database
         _ = {
           if (pgEnabled) {
-            //cannot delete database file if using postgres
+            // cannot delete database file if using postgres
             ()
           } else {
             val path = wallet.walletConfig.datadir
@@ -353,7 +353,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         }
         _ = wallet.walletConfig.migrate()
-        //initialize it
+        // initialize it
         initOldWallet <- Wallet.initialize(
           wallet = wallet,
           bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt)

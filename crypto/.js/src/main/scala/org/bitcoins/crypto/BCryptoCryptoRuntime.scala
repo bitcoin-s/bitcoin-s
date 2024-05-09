@@ -8,8 +8,8 @@ import scala.scalajs.js
 import scala.scalajs.js.JSStringOps._
 import scala.scalajs.js.{JavaScriptException, UnicodeNormalizationForm}
 
-/** This is an implementation of [[CryptoRuntime]] that defaults to
-  * Bcrypto (https://github.com/bcoin-org/bcrypto) when possible.
+/** This is an implementation of [[CryptoRuntime]] that defaults to Bcrypto
+  * (https://github.com/bcoin-org/bcrypto) when possible.
   */
 trait BCryptoCryptoRuntime extends CryptoRuntime {
   override val cryptoContext: CryptoContext = CryptoContext.BCrypto
@@ -59,8 +59,10 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   /** Converts a private key -> public key
     *
-    * @param privateKey   the private key we want the corresponding public key for
-    * @param isCompressed whether the returned public key should be compressed or not
+    * @param privateKey
+    *   the private key we want the corresponding public key for
+    * @param isCompressed
+    *   whether the returned public key should be compressed or not
     */
   override def toPublicKey(privateKey: ECPrivateKeyBytes): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
@@ -135,13 +137,19 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def normalize(str: String): String =
     str.normalize(UnicodeNormalizationForm.NFC)
 
-  /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
-    * can be verified with both, but only one of them matches that private key that was used to generate the signature.
+  /** Recover public keys from a signature and the message that was signed. This
+    * method will return 2 public keys, and the signature can be verified with
+    * both, but only one of them matches that private key that was used to
+    * generate the signature.
     *
-    * @param signature signature
-    * @param message   message that was signed
-    * @return a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If you have the recovery id  then use
-    *         pub1 if the recovery id is even and pub2 if it is odd
+    * @param signature
+    *   signature
+    * @param message
+    *   message that was signed
+    * @return
+    *   a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If
+    *   you have the recovery id then use pub1 if the recovery id is even and
+    *   pub2 if it is odd
     */
   override def recoverPublicKey(
       signature: ECDigitalSignature,

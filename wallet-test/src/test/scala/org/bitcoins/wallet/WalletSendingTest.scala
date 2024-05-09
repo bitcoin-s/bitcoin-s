@@ -499,7 +499,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it must "it must not double spend utxos used to fund other txs in the wallet" in {
     fundedWallet =>
-      //i expected an error saying insufficient balance
+      // i expected an error saying insufficient balance
 
       val addr1F = fundedWallet.wallet.getNewAddress()
       val addr2F = fundedWallet.wallet.getNewAddress()
@@ -513,10 +513,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
           500000
         ) // for fee, fee rates are random so we might need a lot
 
-        //build these transactions in parallel intentionally
+        // build these transactions in parallel intentionally
         tx1F = fundedWallet.wallet.sendToAddress(addr1, amt, None)
         tx2F = fundedWallet.wallet.sendToAddress(addr2, amt, None)
-        //one of these should fail because we don't have enough money
+        // one of these should fail because we don't have enough money
         _ <- tx1F
         _ <- tx2F
       } yield ()

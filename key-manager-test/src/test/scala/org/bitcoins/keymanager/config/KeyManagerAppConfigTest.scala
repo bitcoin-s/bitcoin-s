@@ -131,11 +131,11 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
       _ <- started1F
       _ <- started2F
     } yield {
-      //make sure they are internally consistent
+      // make sure they are internally consistent
       assert(
         appConfig1.toBip39KeyManager.getRootXPub == appConfig2.toBip39KeyManager.getRootXPub)
 
-      //manually build the xpub to make sure we are correct
+      // manually build the xpub to make sure we are correct
       val mnemonic = MnemonicCode.fromEntropy(entropy)
       val bip39Seed = BIP39Seed.fromMnemonic(mnemonic, None)
       val xpriv = bip39Seed.toExtPrivateKey(ExtKeyVersion.LegacyTestNet3Priv)
@@ -219,11 +219,11 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     assert(KeyManagerAppConfig.validateWalletName(""))
     assert(KeyManagerAppConfig.validateWalletName("old_wallet"))
 
-    //weird whitespace
+    // weird whitespace
     assert(!KeyManagerAppConfig.validateWalletName("       "))
     assert(!KeyManagerAppConfig.validateWalletName(" old_wallet"))
 
-    //no non alpha-numeric
+    // no non alpha-numeric
     assert(!KeyManagerAppConfig.validateWalletName("@@@"))
     assert(!KeyManagerAppConfig.validateWalletName("old-wallet."))
 

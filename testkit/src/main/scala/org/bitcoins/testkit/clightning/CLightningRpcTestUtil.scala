@@ -67,11 +67,11 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
        |addr=127.0.0.1:$port
        |bitcoin-cli=${bitcoinCliPath.toAbsolutePath}
        |bitcoin-rpcuser=${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .username}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .username}
        |bitcoin-rpcpassword=${bitcoindInstance.authCredentials
-      .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
-      .password}
+        .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+        .password}
        |bitcoin-rpcconnect=127.0.0.1
        |bitcoin-rpcport=${bitcoindInstance.rpcUri.getPort}
        |log-file=${datadir.resolve("clightning.log")}
@@ -85,7 +85,7 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
     if (isCanonical) {
       canonicalDatadir
     } else {
-      //creates a random clightning datadir, but still assumes that a bitcoind instance is running right now
+      // creates a random clightning datadir, but still assumes that a bitcoind instance is running right now
       val datadir = randomCLightningDatadir()
       datadir.mkdirs()
       logger.trace(s"Creating temp clightning dir ${datadir.getAbsolutePath}")
@@ -111,8 +111,9 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
     CLightningInstanceLocal.fromDataDir(datadir)
   }
 
-  /** Returns a `Future` that is completed when both clightning and bitcoind have the same block height
-    * Fails the future if they are not synchronized within the given timeout.
+  /** Returns a `Future` that is completed when both clightning and bitcoind
+    * have the same block height Fails the future if they are not synchronized
+    * within the given timeout.
     */
   def awaitInSync(clightning: CLightningRpcClient, bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
@@ -131,7 +132,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
       info <- client.getInfo
     } yield info.blockheight == blockCount
 
-  /** Shuts down an clightning daemon and the bitcoind daemon it is associated with
+  /** Shuts down an clightning daemon and the bitcoind daemon it is associated
+    * with
     */
   def shutdown(CLightningRpcClient: CLightningRpcClient)(implicit
       system: ActorSystem): Future[Unit] = {
@@ -196,10 +198,11 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
   }
 
   /** Creates two clightning nodes that are connected together and returns their
-    * respective [[com.bitcoins.clightning.rpc.CLightningRpcClient CLightningRpcClient]]s
+    * respective
+    * [[com.bitcoins.clightning.rpc.CLightningRpcClient CLightningRpcClient]]s
     */
-  def createNodePair(bitcoind: BitcoindRpcClient)(implicit
-  system: ActorSystem): Future[(CLightningRpcClient, CLightningRpcClient)] = {
+  def createNodePair(bitcoind: BitcoindRpcClient)(implicit system: ActorSystem)
+      : Future[(CLightningRpcClient, CLightningRpcClient)] = {
     import system.dispatcher
     val clientA = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
     val clientB = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))

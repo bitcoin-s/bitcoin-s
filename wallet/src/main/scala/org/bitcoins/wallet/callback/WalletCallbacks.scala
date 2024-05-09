@@ -11,27 +11,23 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Callbacks for responding to events in the wallet.
-  * The appropriate callback is executed whenever the wallet finishes,
-  * the corresponding function.
+/** Callbacks for responding to events in the wallet. The appropriate callback
+  * is executed whenever the wallet finishes, the corresponding function.
   */
 trait WalletCallbacks
     extends ModuleCallbacks[WalletCallbacks]
     with BitcoinSLogger {
 
-  def onTransactionProcessed: CallbackHandler[
-    Transaction,
-    OnTransactionProcessed]
+  def onTransactionProcessed
+      : CallbackHandler[Transaction, OnTransactionProcessed]
 
-  def onTransactionBroadcast: CallbackHandler[
-    Transaction,
-    OnTransactionBroadcast]
+  def onTransactionBroadcast
+      : CallbackHandler[Transaction, OnTransactionBroadcast]
 
   def onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos]
 
-  def onNewAddressGenerated: CallbackHandler[
-    BitcoinAddress,
-    OnNewAddressGenerated]
+  def onNewAddressGenerated
+      : CallbackHandler[BitcoinAddress, OnNewAddressGenerated]
 
   def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
@@ -112,16 +108,13 @@ trait WalletCallbacks
 object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
 
   private case class WalletCallbacksImpl(
-      onTransactionProcessed: CallbackHandler[
-        Transaction,
-        OnTransactionProcessed],
-      onTransactionBroadcast: CallbackHandler[
-        Transaction,
-        OnTransactionBroadcast],
+      onTransactionProcessed: CallbackHandler[Transaction,
+                                              OnTransactionProcessed],
+      onTransactionBroadcast: CallbackHandler[Transaction,
+                                              OnTransactionBroadcast],
       onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos],
-      onNewAddressGenerated: CallbackHandler[
-        BitcoinAddress,
-        OnNewAddressGenerated],
+      onNewAddressGenerated: CallbackHandler[BitcoinAddress,
+                                             OnNewAddressGenerated],
       onBlockProcessed: CallbackHandler[Block, OnBlockProcessed],
       onRescanComplete: CallbackHandler[String, OnRescanComplete],
       onFeeRateChanged: CallbackHandler[FeeUnit, OnFeeRateChanged]
@@ -150,7 +143,9 @@ object WalletCallbacks extends CallbackFactory[WalletCallbacks] {
   def onTransactionBroadcast(f: OnTransactionBroadcast): WalletCallbacks =
     WalletCallbacks(onTransactionBroadcast = Vector(f))
 
-  /** Constructs a set of callbacks that only acts on utxos becoming reserved or unreserved */
+  /** Constructs a set of callbacks that only acts on utxos becoming reserved or
+    * unreserved
+    */
   def onReservedUtxos(f: OnReservedUtxos): WalletCallbacks =
     WalletCallbacks(onReservedUtxos = Vector(f))
 

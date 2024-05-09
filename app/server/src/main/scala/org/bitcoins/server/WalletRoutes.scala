@@ -375,7 +375,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             if (!announcements.forall(_.validateSignature)) {
               throw new RuntimeException(
                 s"Received Oracle announcement with invalid signature! ${announcements
-                  .map(_.hex)}")
+                    .map(_.hex)}")
             }
 
             val offerF = locktimeOpt match {
@@ -973,7 +973,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
         feeRateF.map { f =>
           logger.info(s"Retrieved fee rate ${f.toSatsPerVByte}, it took ${System
-            .currentTimeMillis() - start}ms")
+              .currentTimeMillis() - start}ms")
           Server.httpSuccess(f.toSatsPerVByte)
         }
       }
@@ -1066,7 +1066,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     }
   }
 
-  /** Gets the fee rate for the wallet with a timeout on the request of 1 second */
+  /** Gets the fee rate for the wallet with a timeout on the request of 1 second
+    */
   private def getFeeRate(): Future[FeeUnit] = {
     val resultF = wallet
       .getFeeRate()
@@ -1076,9 +1077,9 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           exn)
         SatoshisPerVirtualByte.negativeOne
       }
-    //due to tor variability, we need to make sure we give a prompt response.
-    //timeout the fee rate request after 1 second
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4460#issuecomment-1182325014
+    // due to tor variability, we need to make sure we give a prompt response.
+    // timeout the fee rate request after 1 second
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/4460#issuecomment-1182325014
     try {
       val result = Await.result(resultF, 1.second)
       Future.successful(result)
@@ -1097,15 +1098,15 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               val stateF: Future[RescanState] = rescanState match {
                 case started: RescanState.RescanStarted =>
                   if (started.isStopped) {
-                    //means rescan is done, reset the variable
+                    // means rescan is done, reset the variable
                     rescanStateOpt = Some(RescanDone)
                     Future.successful(RescanDone)
                   } else {
-                    //do nothing, we don't want to reset/stop a rescan that is running
+                    // do nothing, we don't want to reset/stop a rescan that is running
                     Future.successful(started)
                   }
                 case RescanState.RescanDone | RescanState.RescanNotNeeded =>
-                  //if the previous rescan is done, start another rescan
+                  // if the previous rescan is done, start another rescan
                   startRescan(rescan)
                 case RescanState.RescanAlreadyStarted =>
                   Future.successful(RescanState.RescanAlreadyStarted)
@@ -1149,7 +1150,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         }
       case RescanState.RescanAlreadyStarted | RescanState.RescanDone |
           RescanState.RescanNotNeeded =>
-      //do nothing in these cases, no state needs to be reset
+      // do nothing in these cases, no state needs to be reset
     }
 
     stateF

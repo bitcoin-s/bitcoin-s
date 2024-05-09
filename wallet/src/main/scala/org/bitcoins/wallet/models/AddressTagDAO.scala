@@ -29,18 +29,18 @@ case class AddressTagDAO()(implicit
   override val table: profile.api.TableQuery[AddressTagTable] =
     TableQuery[AddressTagTable]
 
-  private lazy val spendingInfoTable: slick.lifted.TableQuery[
-    SpendingInfoDAO#SpendingInfoTable] = {
+  private lazy val spendingInfoTable
+      : slick.lifted.TableQuery[SpendingInfoDAO#SpendingInfoTable] = {
     SpendingInfoDAO().table
   }
 
-  private lazy val addressTable: slick.lifted.TableQuery[
-    AddressDAO#AddressTable] = {
+  private lazy val addressTable
+      : slick.lifted.TableQuery[AddressDAO#AddressTable] = {
     AddressDAO().table
   }
 
-  private lazy val spkTable: profile.api.TableQuery[
-    ScriptPubKeyDAO#ScriptPubKeyTable] = {
+  private lazy val spkTable
+      : profile.api.TableQuery[ScriptPubKeyDAO#ScriptPubKeyTable] = {
     ScriptPubKeyDAO().table
   }
 
@@ -49,20 +49,15 @@ case class AddressTagDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   /** Finds the rows that correlate to the given primary keys */
-  override def findByPrimaryKeys(
-      ids: Vector[(BitcoinAddress, AddressTagType)]): Query[
-    AddressTagTable,
-    AddressTagDb,
-    Seq] = {
+  override def findByPrimaryKeys(ids: Vector[(BitcoinAddress, AddressTagType)])
+      : Query[AddressTagTable, AddressTagDb, Seq] = {
     val addresses = ids.map(_._1)
     val tagTypes = ids.map(_._2)
     table.filter(t => t.address.inSet(addresses) && t.tagType.inSet(tagTypes))
   }
 
-  override def findByPrimaryKey(id: (BitcoinAddress, AddressTagType)): Query[
-    Table[AddressTagDb],
-    AddressTagDb,
-    Seq] = {
+  override def findByPrimaryKey(id: (BitcoinAddress, AddressTagType))
+      : Query[Table[AddressTagDb], AddressTagDb, Seq] = {
     val (address, tagType) = id
     table
       .filter(_.address === address)
@@ -73,10 +68,8 @@ case class AddressTagDAO()(implicit
       ts: Vector[AddressTagDb]): Query[Table[AddressTagDb], AddressTagDb, Seq] =
     findByPrimaryKeys(ts.map(t => (t.address, t.tagType)))
 
-  def findByAddressAction(address: BitcoinAddress): DBIOAction[
-    Vector[AddressTagDb],
-    NoStream,
-    Effect.Read] = {
+  def findByAddressAction(address: BitcoinAddress)
+      : DBIOAction[Vector[AddressTagDb], NoStream, Effect.Read] = {
     table.filter(_.address === address).result.map(_.toVector)
   }
 
@@ -139,10 +132,8 @@ case class AddressTagDAO()(implicit
     safeDatabase.run(query.delete)
   }
 
-  def findTxAction(tx: Transaction, network: NetworkParameters): DBIOAction[
-    Vector[AddressTagDb],
-    NoStream,
-    Effect.Read] = {
+  def findTxAction(tx: Transaction, network: NetworkParameters)
+      : DBIOAction[Vector[AddressTagDb], NoStream, Effect.Read] = {
     val txIds = tx.inputs.map(_.previousOutput.txIdBE)
 
     val findUtxosA = {
@@ -187,10 +178,8 @@ case class AddressTagDAO()(implicit
     safeDatabase.run(findTxAction(tx, network))
   }
 
-  def deleteByAddressesAction(addresses: Vector[BitcoinAddress]): DBIOAction[
-    Int,
-    NoStream,
-    Effect.Write] = {
+  def deleteByAddressesAction(addresses: Vector[BitcoinAddress])
+      : DBIOAction[Int, NoStream, Effect.Write] = {
     table.filter(t => t.address.inSet(addresses)).delete
   }
 

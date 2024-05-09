@@ -8,11 +8,12 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** This trait defines functionality related to
-  * UTXOs (unspent transaction outputs).
+/** This trait defines functionality related to UTXOs (unspent transaction
+  * outputs).
   *
-  * @see [[https://bitcoin.org/en/developer-guide#term-utxo Bitcoin.org]]
-  *     developer guide article on UTXOs
+  * @see
+  *   [[https://bitcoin.org/en/developer-guide#term-utxo Bitcoin.org]] developer
+  *   guide article on UTXOs
   */
 trait UTXORpc { self: Client =>
 

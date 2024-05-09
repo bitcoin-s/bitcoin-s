@@ -38,14 +38,12 @@ sealed trait DLCDbState {
   final def state: DLCState = dlcDb.state
 }
 
-/** Represents a DLC in the database that
-  * has not had its funding transaction published.
-  * This means we are still setting up the DLC
+/** Represents a DLC in the database that has not had its funding transaction
+  * published. This means we are still setting up the DLC
   */
 sealed trait DLCSetupDbState extends DLCDbState
 
-/** Represents a DLC in the database that has
-  * been fully setup and settled
+/** Represents a DLC in the database that has been fully setup and settled
   */
 sealed trait DLCClosedDbState extends DLCDbState
 
@@ -62,7 +60,8 @@ case class OfferedDbState(
     * @param acceptDb
     * @param acceptFundingInputsDb
     * @param acceptPrevTxsDb
-    * @param cetSignaturesOpt the cet signatures, if we haven't pruned them from the database
+    * @param cetSignaturesOpt
+    *   the cet signatures, if we haven't pruned them from the database
     */
   def toAcceptDb(
       acceptDb: DLCAcceptDb,
@@ -138,9 +137,9 @@ sealed trait SetupCompleteDLCDbState extends DLCSetupDbState {
     }
   }
 
-  /** Reconstructs the [[DLCAccept]] message if we have [[CETSignatures]]
-    * in the database. If we don't have the signatures because we have pruned
-    * them we return None as we can't reconstruct the message
+  /** Reconstructs the [[DLCAccept]] message if we have [[CETSignatures]] in the
+    * database. If we don't have the signatures because we have pruned them we
+    * return None as we can't reconstruct the message
     */
   def acceptOpt: Option[DLCAccept] = {
     acceptCETSigsOpt.map { cetSignatures =>
@@ -179,20 +178,20 @@ case class AcceptDbState(
     else acceptPrevTxs
   }
 
-  /** Converts the AcceptDbState -> SignDbState if we have
-    * all parties CET signatures and refund signatures
+  /** Converts the AcceptDbState -> SignDbState if we have all parties CET
+    * signatures and refund signatures
     */
   def toSignDbOpt: Option[SignDbState] = {
 
-    //if we haven't pruned CET signatures from the db
-    //they must have the offerer's CET signatures defined
+    // if we haven't pruned CET signatures from the db
+    // they must have the offerer's CET signatures defined
     cetSigsOpt.map { cetSigs =>
       require(cetSigs.forall(_.initiatorSig.isDefined),
               s"CET signatures must be defined for the offerer")
     }
 
-    //if we don't have a refund signature from the offerer
-    //yet we haven't completed the sign message
+    // if we don't have a refund signature from the offerer
+    // yet we haven't completed the sign message
     refundSigDb.initiatorSig.map { _ =>
       val sign = SignDbState(
         dlcDb,
@@ -228,7 +227,7 @@ case class SignDbState(
   require(refundSigDb.initiatorSig.isDefined,
           s"Refund signature for offerer must be defined")
 
-  //If we have not prune CET signatures, the offerer CET signatures must be defined
+  // If we have not prune CET signatures, the offerer CET signatures must be defined
   cetSigsOpt.map(cetSigs =>
     require(cetSigs.forall(_.initiatorSig.isDefined),
             s"Offerer CET signatures must be defined when in SignDbState"))
@@ -255,8 +254,8 @@ case class ClosedDbStateWithCETSigs(
     offerFundingInputsDb ++ acceptFundingInputsDb
 }
 
-/** Sometimes we prune CET sigs from the database to save on disk space.
-  * We need to handle this different than [[ClosedDbStateWithCETSigs]]
+/** Sometimes we prune CET sigs from the database to save on disk space. We need
+  * to handle this different than [[ClosedDbStateWithCETSigs]]
   */
 case class ClosedDbStateNoCETSigs(
     dlcDb: DLCDb,

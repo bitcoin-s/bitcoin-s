@@ -60,7 +60,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         assert(marker.stopBlockHash == genesisHeader.hash)
       }
 
-      //let's process a block header, and then be able to fetch that header as the last stopHash
+      // let's process a block header, and then be able to fetch that header as the last stopHash
       val blockHeaderDb = {
         BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                             chainWork =
@@ -96,8 +96,8 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
       val newHeaderCF = reorgFixtureF.map(_.headerDb2)
       val batchSize = 100
 
-      //two competing headers B,C built off of A
-      //so just pick the first headerB to be our next block header batch
+      // two competing headers B,C built off of A
+      // so just pick the first headerB to be our next block header batch
       val assert0F = for {
         chainHandler <- chainHandlerF
         newHeaderB <- newHeaderBF
@@ -115,8 +115,8 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         assert(newHeaderB.height == marker.startHeight)
       }
 
-      //two competing headers B,C built off of A
-      //pick headerC to be our next block header batch
+      // two competing headers B,C built off of A
+      // pick headerC to be our next block header batch
       val assert1F = for {
         _ <- assert0F
         chainHandler <- chainHandlerF
@@ -135,9 +135,9 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         assert(newHeaderC.height == marker.startHeight)
       }
 
-      //now let's build a new block header ontop of C and process it
-      //when we call chainHandler.nextBlockHeaderBatchRange it
-      //should be C's hash instead of B's hash
+      // now let's build a new block header ontop of C and process it
+      // when we call chainHandler.nextBlockHeaderBatchRange it
+      // should be C's hash instead of B's hash
       for {
         _ <- assert1F
         chainHandler <- chainHandlerF

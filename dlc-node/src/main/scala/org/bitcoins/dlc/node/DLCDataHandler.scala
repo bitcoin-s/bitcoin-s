@@ -48,7 +48,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         Future.unit // todo init logic
       case error: ErrorTLV =>
         log.error(error.toString)
-        Future.unit //is this right?
+        Future.unit // is this right?
       case ping: PingTLV =>
         val pong = PongTLV.forIgnored(ping.ignored)
         send(LnMessage(pong))

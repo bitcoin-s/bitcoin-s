@@ -68,7 +68,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         val expected = 6
         assert(result.migrationsExecuted == expected)
         val flywayInfo = chainDbManagement.info()
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -93,7 +93,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = dlcAppConfig.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -116,7 +116,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = walletDbManagement.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -142,7 +142,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = nodeDbManagement.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }
@@ -166,7 +166,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(result.migrationsExecuted == expected)
         val flywayInfo = oracleAppConfig.info()
 
-        //+1 for << Flyway Schema Creation >>
+        // +1 for << Flyway Schema Creation >>
         assert(flywayInfo.applied().length == expected + 1)
         assert(flywayInfo.pending().length == 0)
     }

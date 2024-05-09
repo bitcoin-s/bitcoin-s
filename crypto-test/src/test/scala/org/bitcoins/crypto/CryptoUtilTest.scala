@@ -22,7 +22,7 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
   }
 
   it must "perform a RIPEMD160 on a SHA256 hash to generate a bitcoin address" in {
-    //https://bitcoin.stackexchange.com/questions/37040/ripemd160sha256publickey-where-am-i-going-wrong
+    // https://bitcoin.stackexchange.com/questions/37040/ripemd160sha256publickey-where-am-i-going-wrong
     val bytes =
       hex"ea571f53cb3a9865d3dc74735e0c16643d319c6ad81e199b9c8408cecbcec7bb"
     val expected = "5238c71458e464d9ff90299abca4a1d7b9cb76ab"
@@ -228,7 +228,7 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
     assert(!CryptoUtil.checkEntropy(sameBytes1.toBitVector))
     assert(!CryptoUtil.checkEntropy(sameBytes2.toBitVector))
 
-    //to short of entropy
+    // to short of entropy
     val toShort = ByteVector.fromValidHex("0123456789abcdef")
     assert(!CryptoUtil.checkEntropy(toShort.toBitVector))
   }

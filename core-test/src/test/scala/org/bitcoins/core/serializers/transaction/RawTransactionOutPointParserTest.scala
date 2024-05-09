@@ -9,7 +9,7 @@ import scodec.bits.ByteVector
   */
 class RawTransactionOutPointParserTest extends BitcoinSUnitTest {
 
-  //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
+  // txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawOutPoint =
     "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000"
 
@@ -44,7 +44,7 @@ class RawTransactionOutPointParserTest extends BitcoinSUnitTest {
   }
 
   it must "write this outpoint with vout index 1" in {
-    //from txid bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
+    // from txid bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
     val rawOutPoint =
       "fc37adbd036fb51b3f4f6f70474270939d6ff8c4ea697639f2b57dd6359e307001000000"
 
@@ -57,7 +57,7 @@ class RawTransactionOutPointParserTest extends BitcoinSUnitTest {
   }
 
   it must "determine the correct size of a transaction outpoint" in {
-    //cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
+    // cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
     val rawOutPoint =
       "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000"
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
@@ -65,7 +65,7 @@ class RawTransactionOutPointParserTest extends BitcoinSUnitTest {
   }
 
   it must "parse a outpoint with extremely large vout" in {
-    //vout should be 20183580
+    // vout should be 20183580
     val rawOutPoint =
       "4435c4ea162d51135c9b2bbb867a86f25001c246224b60e8ab2307edce7fc28a0ca13f13"
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)

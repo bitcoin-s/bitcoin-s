@@ -145,8 +145,8 @@ case class SerializedContractInfoEntry(
 
 object SerializedContractInfoEntry {
 
-  def fromContractDescriptor(contractInfo: EnumContractDescriptor): Vector[
-    SerializedContractInfoEntry] = {
+  def fromContractDescriptor(contractInfo: EnumContractDescriptor)
+      : Vector[SerializedContractInfoEntry] = {
     contractInfo.map { case (EnumOutcome(str), amt) =>
       SerializedContractInfoEntry(str,
                                   CryptoUtil.sha256DLCAttestation(str),

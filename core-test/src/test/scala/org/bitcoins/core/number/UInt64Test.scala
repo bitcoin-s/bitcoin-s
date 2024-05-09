@@ -23,7 +23,7 @@ class UInt64Test extends BitcoinSUnitTest {
   }
 
   it must "hold the max for a uint32_t" in {
-    //this is UInt32_t's max value
+    // this is UInt32_t's max value
     val uInt64 =
       UInt64(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt64.toBigInt must be(4294967295L)

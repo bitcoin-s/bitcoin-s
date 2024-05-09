@@ -23,8 +23,8 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.Future
 
 /** Test trait for using a bitcoin-s [[Node]] that requires a cached bitcoind.
-  * The cached bitcoind will be share across tests in the test suite that extends
-  * this trait.
+  * The cached bitcoind will be share across tests in the test suite that
+  * extends this trait.
   */
 trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
   _: CachedBitcoind[_] =>
@@ -34,8 +34,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         peer <- NodeUnitTest.createPeer(bitcoind)
@@ -60,8 +60,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -83,8 +83,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -109,8 +109,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -134,8 +134,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+    val nodeWithBitcoindBuilder
+        : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         _ <- appConfig.walletConf.kmConf.start()
@@ -201,7 +201,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     val destroyNodeF = NodeUnitTest.destroyNode(node, appConfig)
     for {
       _ <- destroyNodeF
-      //need to stop chainAppConfig too since this is a test
+      // need to stop chainAppConfig too since this is a test
       _ <- node.chainAppConfig.stop()
     } yield ()
   }

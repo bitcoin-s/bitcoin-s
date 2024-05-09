@@ -32,10 +32,10 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
         address <- bitcoind.getNewAddress
         hash +: _ <- bitcoind.generateToAddress(1, address)
         _ <- {
-          //test case is totally async since we
-          //can't monitor processing flow for zmq
-          //so we just need to await until we
-          //have fully processed the header
+          // test case is totally async since we
+          // can't monitor processing flow for zmq
+          // so we just need to await until we
+          // have fully processed the header
           AsyncUtil.awaitConditionF(
             () => chainHandler.getHeader(hash).map(_.isDefined),
             interval = 250.millis)

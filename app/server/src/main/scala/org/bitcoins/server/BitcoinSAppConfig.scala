@@ -27,14 +27,15 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-/** A unified config class for all submodules of Bitcoin-S
-  * that accepts configuration. Thanks to implicit definitions
-  * in this case class' companion object an instance
-  * of this class can be passed in anywhere a wallet,
-  * chain or node config is required.
+/** A unified config class for all submodules of Bitcoin-S that accepts
+  * configuration. Thanks to implicit definitions in this case class' companion
+  * object an instance of this class can be passed in anywhere a wallet, chain
+  * or node config is required.
   *
-  * @param directory The data directory of this app configuration
-  * @param confs A sequence of optional configuration overrides
+  * @param directory
+  *   The data directory of this app configuration
+  * @param confs
+  *   A sequence of optional configuration overrides
   */
 case class BitcoinSAppConfig(
     baseDatadir: Path,
@@ -73,8 +74,8 @@ case class BitcoinSAppConfig(
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[StartedBitcoinSAppConfig] = {
     val start = TimeUtil.currentEpochMs
-    //configurations that don't depend on tor startup
-    //start these in parallel as an optimization
+    // configurations that don't depend on tor startup
+    // start these in parallel as an optimization
     val nonTorConfigs = Vector(kmConf, chainConf, walletConf, dlcConf)
 
     val torConfig = torConf.start()
@@ -84,10 +85,10 @@ case class BitcoinSAppConfig(
     val dbConfigsDependentOnTor: Vector[DbManagement] =
       Vector(nodeConf)
 
-    //run migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
-    //since we don't require tor dependent configs
-    //to be fully started before completing the Future returned by this
-    //method, we need to run them on their own
+    // run migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
+    // since we don't require tor dependent configs
+    // to be fully started before completing the Future returned by this
+    // method, we need to run them on their own
     val migrateTorDependentDbConfigsF =
       Future.traverse(dbConfigsDependentOnTor)(dbConfig =>
         Future(dbConfig.migrate()))
@@ -146,8 +147,8 @@ case class BitcoinSAppConfig(
 
   def wsPort: Int = config.getIntOrElse("bitcoin-s.server.wsport", 19999)
 
-  /** How long until we forcefully terminate connections to the server
-    * when shutting down the server
+  /** How long until we forcefully terminate connections to the server when
+    * shutting down the server
     */
   def terminationDeadline: FiniteDuration = {
     val opt = config.getDurationOpt("bitcoin-s.server.termination-deadline")
@@ -159,7 +160,7 @@ case class BitcoinSAppConfig(
           sys.error(
             s"Can only have a finite duration for termination deadline, got=$duration")
         }
-      case None => 5.seconds //5 seconds by default
+      case None => 5.seconds // 5 seconds by default
     }
   }
 
@@ -190,8 +191,8 @@ case class BitcoinSAppConfig(
   }
 }
 
-/** Implicit conversions that allow a unified configuration
-  * to be passed in wherever a specializes one is required
+/** Implicit conversions that allow a unified configuration to be passed in
+  * wherever a specializes one is required
   */
 object BitcoinSAppConfig extends BitcoinSLogger {
 
@@ -217,8 +218,8 @@ object BitcoinSAppConfig extends BitcoinSLogger {
     fromDatadir(datadir, serverArgsParser.toConfig)
   }
 
-  /** Constructs an app configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs an app configuration from the default Bitcoin-S data directory
+    * and given list of configuration overrides.
     */
   def fromDefaultDatadir(confs: Config*)(implicit
       system: ActorSystem): BitcoinSAppConfig =
@@ -250,11 +251,8 @@ object BitcoinSAppConfig extends BitcoinSLogger {
   }
 
   /** Resolve BitcoinSAppConfig in the following order of precedence
-    * 1. Server args
-    * 2. bitcoin-s-bundle.conf
-    * 3. bitcoin-s.conf
-    * 4. application.conf
-    * 5. reference.conf
+    *   1. Server args 2. bitcoin-s-bundle.conf 3. bitcoin-s.conf 4.
+    *      application.conf 5. reference.conf
     */
   def fromDatadirWithBundleConfWithServerArgs(
       datadir: Path,

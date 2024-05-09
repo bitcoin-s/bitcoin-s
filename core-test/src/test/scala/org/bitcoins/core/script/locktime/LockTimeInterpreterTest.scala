@@ -148,8 +148,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val baseProgram = basePreProgram.toExecutionInProgress
     val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
-    //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
-    //if an error is not hit it will still be a ExecutionInProgressScriptProgram
+    // if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
+    // if an error is not hit it will still be a ExecutionInProgressScriptProgram
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
       Some(ScriptErrorUnsatisfiedLocktime))
@@ -178,8 +178,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val baseProgram = basePreProgram.toExecutionInProgress
     val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
-    //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
-    //if an error is not hit it will still be a ExecutionInProgressScriptProgram
+    // if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
+    // if an error is not hit it will still be a ExecutionInProgressScriptProgram
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(false)
   }
 
@@ -206,8 +206,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val baseProgram = basePreProgram.toExecutionInProgress
     val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
-    //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
-    //if an error is not hit it will still be a ExecutionInProgressScriptProgram
+    // if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
+    // if an error is not hit it will still be a ExecutionInProgressScriptProgram
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(false)
   }
 

@@ -593,7 +593,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
       assert(walletConf.kmConf.seedExists())
 
       assertThrows[RuntimeException] {
-        //attempt to write another mnemonic
+        // attempt to write another mnemonic
         getAndWriteMnemonic(walletConf)
       }
   }

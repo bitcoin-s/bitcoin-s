@@ -39,7 +39,7 @@ class Bech32mTest extends BitcoinSUnitTest {
     forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
-      //should fail because we we switched the case of a random char
+      // should fail because we we switched the case of a random char
       val actual = Bech32mAddress.fromStringT(replaced)
       actual.isFailure
     }
@@ -220,7 +220,7 @@ class Bech32mTest extends BitcoinSUnitTest {
       val (f, l) = old.splitAt(idx)
       val replacementChar = pickReplacementChar(l.head)
       val replaced = s"$f$replacementChar${l.tail}"
-      //should fail because we replaced a char in the addr, so checksum invalid
+      // should fail because we replaced a char in the addr, so checksum invalid
       assert(Bech32mAddress.fromStringT(replaced).isFailure)
     }
   }
@@ -229,7 +229,7 @@ class Bech32mTest extends BitcoinSUnitTest {
     forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
-      //should fail because we we switched the case of a random char
+      // should fail because we we switched the case of a random char
       val actual = Bech32mAddress.fromStringT(replaced)
       assert(actual.isFailure)
     }
@@ -239,7 +239,7 @@ class Bech32mTest extends BitcoinSUnitTest {
   private def pickReplacementChar(oldChar: Char): Char = {
     val rand = Math.abs(Random.nextInt())
     val newChar = Bech32.charset(rand % Bech32.charset.size)
-    //make sure we don't pick the same char we are replacing in the bech32m address
+    // make sure we don't pick the same char we are replacing in the bech32m address
     if (oldChar == newChar) pickReplacementChar(oldChar)
     else newChar
   }

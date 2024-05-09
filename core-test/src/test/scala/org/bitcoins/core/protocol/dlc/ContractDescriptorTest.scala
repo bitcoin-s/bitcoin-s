@@ -104,9 +104,9 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
   }
 
   it should "parse a numeric contract descriptor pre 144" in {
-    //we have to be able to parse old numeric contract descriptors
-    //pre pr 144 on the DLC spec as we have old wallets deployed with this
-    //https://github.com/discreetlogcontracts/dlcspecs/pull/144
+    // we have to be able to parse old numeric contract descriptors
+    // pre pr 144 on the DLC spec as we have old wallets deployed with this
+    // https://github.com/discreetlogcontracts/dlcspecs/pull/144
     val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
         PiecewisePolynomialPoint(outcome = 0,

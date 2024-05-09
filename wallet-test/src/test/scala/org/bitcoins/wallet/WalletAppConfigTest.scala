@@ -102,7 +102,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
     val seedFile = config.seedPath
     val startedF = config.start()
 
-    //stop old oracle
+    // stop old oracle
     val stoppedF = for {
       _ <- startedF
       _ <- config.stop()
@@ -111,7 +111,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
     val deletedF = for {
       _ <- stoppedF
     } yield {
-      //delete the seed so we start with a new seed
+      // delete the seed so we start with a new seed
       Files.delete(seedFile)
     }
 
@@ -120,7 +120,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
       _ <- config.start()
     } yield ()
 
-    //start it again and except an exception
+    // start it again and except an exception
     recoverToSucceededIf[RuntimeException] {
       start2F
     }

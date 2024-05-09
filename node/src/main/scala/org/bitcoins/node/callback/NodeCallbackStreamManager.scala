@@ -37,9 +37,8 @@ case class NodeCallbackStreamManager(
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
-  private val filterSink: Sink[
-    Vector[(DoubleSha256DigestBE, GolombFilter)],
-    Future[Done]] = {
+  private val filterSink
+      : Sink[Vector[(DoubleSha256DigestBE, GolombFilter)], Future[Done]] = {
     Sink.foreachAsync(1) { case vec =>
       callbacks.executeOnCompactFiltersReceivedCallbacks(vec)
     }
@@ -48,9 +47,8 @@ case class NodeCallbackStreamManager(
   private val (filterQueue, filterSinkCompleteF) =
     matSourceAndQueue(filterQueueSource, filterSink)
 
-  private val txQueueSource: Source[
-    Transaction,
-    SourceQueueWithComplete[Transaction]] = {
+  private val txQueueSource
+      : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -63,9 +61,9 @@ case class NodeCallbackStreamManager(
   private val (txQueue, txSinkCompleteF) =
     matSourceAndQueue(txQueueSource, txSink)
 
-  private val headerQueueSource: Source[
-    Vector[BlockHeader],
-    SourceQueueWithComplete[Vector[BlockHeader]]] = {
+  private val headerQueueSource
+      : Source[Vector[BlockHeader],
+               SourceQueueWithComplete[Vector[BlockHeader]]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -78,9 +76,8 @@ case class NodeCallbackStreamManager(
   private val (headerQueue, headerSinkCompleteF) =
     matSourceAndQueue(headerQueueSource, headerSink)
 
-  private val blockQueueSource: Source[
-    Block,
-    SourceQueueWithComplete[Block]] = {
+  private val blockQueueSource
+      : Source[Block, SourceQueueWithComplete[Block]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
@@ -93,15 +90,14 @@ case class NodeCallbackStreamManager(
   private val (blockQueue, blockSinkCompleteF) =
     matSourceAndQueue(blockQueueSource, blockSink)
 
-  private val merkleBlockQueueSource: Source[
-    (MerkleBlock, Vector[Transaction]),
-    SourceQueueWithComplete[(MerkleBlock, Vector[Transaction])]] = {
+  private val merkleBlockQueueSource
+      : Source[(MerkleBlock, Vector[Transaction]),
+               SourceQueueWithComplete[(MerkleBlock, Vector[Transaction])]] = {
     Source.queue(maxBufferSize, overflowStrategy)
   }
 
-  private val merkleBlockSink: Sink[
-    (MerkleBlock, Vector[Transaction]),
-    Future[Done]] = {
+  private val merkleBlockSink
+      : Sink[(MerkleBlock, Vector[Transaction]), Future[Done]] = {
     Sink.foreachAsync(1) { case tuple =>
       callbacks.executeOnMerkleBlockReceivedCallbacks(merkleBlock = tuple._1,
                                                       txs = tuple._2)
@@ -119,9 +115,9 @@ case class NodeCallbackStreamManager(
   override def stop(): Future[Unit] = {
     val start = System.currentTimeMillis()
 
-    //can't complete a stream twice
+    // can't complete a stream twice
     if (!isStopped.get()) {
-      //complete all queues
+      // complete all queues
       filterQueue.complete()
       txQueue.complete()
       headerQueue.complete()
@@ -142,24 +138,23 @@ case class NodeCallbackStreamManager(
     } yield {
       logger.info(
         s"Done draining akka streams for NodeCallbackStreamManager, it took=${System
-          .currentTimeMillis() - start}ms")
+            .currentTimeMillis() - start}ms")
       ()
     }
   }
 
   private def matSourceAndQueue[T](
       source: Source[T, SourceQueueWithComplete[T]],
-      sink: Sink[T, Future[Done]]): (
-      SourceQueueWithComplete[T],
-      Future[Done]) = {
+      sink: Sink[T, Future[Done]])
+      : (SourceQueueWithComplete[T], Future[Done]) = {
     source
       .toMat(sink)(Keep.both)
       .run()
   }
 
-  override def onCompactFiltersReceived: CallbackHandler[
-    Vector[(DoubleSha256DigestBE, GolombFilter)],
-    OnCompactFiltersReceived] = {
+  override def onCompactFiltersReceived
+      : CallbackHandler[Vector[(DoubleSha256DigestBE, GolombFilter)],
+                        OnCompactFiltersReceived] = {
     callbacks.onCompactFiltersReceived
   }
 
@@ -170,13 +165,13 @@ case class NodeCallbackStreamManager(
   override def onBlockReceived: CallbackHandler[Block, OnBlockReceived] =
     callbacks.onBlockReceived
 
-  override def onMerkleBlockReceived: CallbackHandler[
-    (MerkleBlock, Vector[Transaction]),
-    OnMerkleBlockReceived] = callbacks.onMerkleBlockReceived
+  override def onMerkleBlockReceived
+      : CallbackHandler[(MerkleBlock, Vector[Transaction]),
+                        OnMerkleBlockReceived] = callbacks.onMerkleBlockReceived
 
-  override def onBlockHeadersReceived: CallbackHandler[
-    Vector[BlockHeader],
-    OnBlockHeadersReceived] = callbacks.onBlockHeadersReceived
+  override def onBlockHeadersReceived
+      : CallbackHandler[Vector[BlockHeader], OnBlockHeadersReceived] =
+    callbacks.onBlockHeadersReceived
 
   override def executeOnTxReceivedCallbacks(tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {

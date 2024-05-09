@@ -5,12 +5,8 @@ import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
-/** A trait that contains a reorg scenario that looks like this
-  *                       headerDb1
-  *                    /
-  * oldBestBlockHeader
-  *                    \
-  *                      headerDb2
+/** A trait that contains a reorg scenario that looks like this headerDb1 /
+  * oldBestBlockHeader \ headerDb2
   */
 sealed trait ReorgFixture {
   def headerDb1: BlockHeaderDb

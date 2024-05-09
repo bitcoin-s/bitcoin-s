@@ -91,7 +91,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // note: 100 because the very first coinbase utxo is now confirmed
       assert(coinbaseUtxos.size == 100)
-      //block reward is still 50 bitcoin per block
+      // block reward is still 50 bitcoin per block
       assert(balance == Bitcoins(50))
       assert(confirmedUtxos.length == 1)
     }
@@ -127,9 +127,9 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       // note: 100 because the very first coinbase utxo is now confirmed
       assert(coinbaseUtxos.size == 100)
 
-      //note: This is 50 bitcoins because the block reward on regtest
-      //is now 25 bitcoin per block due to blocks being mined
-      //in prior test cases in this test suite.
+      // note: This is 50 bitcoins because the block reward on regtest
+      // is now 25 bitcoin per block due to blocks being mined
+      // in prior test cases in this test suite.
       assert(balance == Bitcoins(50))
       assert(confirmedUtxos.length == 2)
     }

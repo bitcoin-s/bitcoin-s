@@ -107,8 +107,8 @@ trait TLVGen {
     } yield EnumEventDescriptorV0TLV(outcomes.toVector)
   }
 
-  def digitDecompositionEventDescriptorV0TLV: Gen[
-    DigitDecompositionEventDescriptorV0TLV] = {
+  def digitDecompositionEventDescriptorV0TLV
+      : Gen[DigitDecompositionEventDescriptorV0TLV] = {
     for {
       base <- NumberGenerator.uInt16
       isSigned <- NumberGenerator.bool
@@ -165,8 +165,8 @@ trait TLVGen {
     } yield OracleAttestmentV0TLV(eventId, pubkey, sigs.toVector, outcomes)
   }
 
-  def contractDescriptorV0TLVWithTotalCollateral: Gen[
-    (ContractDescriptorV0TLV, Satoshis)] = {
+  def contractDescriptorV0TLVWithTotalCollateral
+      : Gen[(ContractDescriptorV0TLV, Satoshis)] = {
     for {
       numOutcomes <- Gen.choose(2, 10)
       outcomes <- Gen.listOfN(numOutcomes, StringGenerators.genString)
@@ -185,8 +185,8 @@ trait TLVGen {
     contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
-  def contractDescriptorV1TLVWithTotalCollateral: Gen[
-    (ContractDescriptorV1TLV, Satoshis)] = {
+  def contractDescriptorV1TLVWithTotalCollateral
+      : Gen[(ContractDescriptorV1TLV, Satoshis)] = {
     for {
       numDigits <- Gen.choose(3, 7)
       totalInput <-
@@ -204,8 +204,8 @@ trait TLVGen {
     contractDescriptorV1TLVWithTotalCollateral.map(_._1)
   }
 
-  def contractDescriptorTLVWithTotalCollateral: Gen[
-    (ContractDescriptorTLV, Satoshis)] = {
+  def contractDescriptorTLVWithTotalCollateral
+      : Gen[(ContractDescriptorTLV, Satoshis)] = {
     Gen.oneOf(contractDescriptorV0TLVWithTotalCollateral,
               contractDescriptorV1TLVWithTotalCollateral)
   }
@@ -311,8 +311,8 @@ trait TLVGen {
     }
   }
 
-  def oracleInfoV0TLVWithKeys: Gen[
-    (OracleInfoV0TLV, ECPrivateKey, ECPrivateKey)] = {
+  def oracleInfoV0TLVWithKeys
+      : Gen[(OracleInfoV0TLV, ECPrivateKey, ECPrivateKey)] = {
     for {
       privKey <- CryptoGenerators.privateKey
       kValue <- CryptoGenerators.privateKey
@@ -328,8 +328,8 @@ trait TLVGen {
     }
   }
 
-  def fundingInputP2WPKHTLV(ignoreSerialIds: Vector[UInt64] =
-    Vector.empty): Gen[FundingInputV0TLV] = {
+  def fundingInputP2WPKHTLV(ignoreSerialIds: Vector[UInt64] = Vector.empty)
+      : Gen[FundingInputV0TLV] = {
     for {
       prevTx <- TransactionGenerators.realisticTransactionWitnessOut
       prevTxVout <- Gen.choose(0, prevTx.outputs.length - 1)
@@ -353,15 +353,15 @@ trait TLVGen {
     }
   }
 
-  def fundingInputV0TLV(ignoreSerialIds: Vector[UInt64] = Vector.empty): Gen[
-    FundingInputV0TLV] = {
+  def fundingInputV0TLV(ignoreSerialIds: Vector[UInt64] = Vector.empty)
+      : Gen[FundingInputV0TLV] = {
     fundingInputP2WPKHTLV(ignoreSerialIds) // Soon to be Gen.oneOf
   }
 
   def fundingInputV0TLVs(
       collateralNeeded: CurrencyUnit,
-      ignoreSerialIds: Vector[UInt64] = Vector.empty): Gen[
-    Vector[FundingInputV0TLV]] = {
+      ignoreSerialIds: Vector[UInt64] = Vector.empty)
+      : Gen[Vector[FundingInputV0TLV]] = {
     for {
       numInputs <- Gen.choose(0, 5)
       inputs <- Gen.listOfN(numInputs, fundingInputV0TLV(ignoreSerialIds))
@@ -442,7 +442,7 @@ trait TLVGen {
       }
 
       DLCOfferTLV(
-        protocolVersionOpt = None, //TODO: Comeback and change this
+        protocolVersionOpt = None, // TODO: Comeback and change this
         contractFlags = 0.toByte,
         chainHash = chainHash,
         contractInfo = contractInfo,
@@ -461,8 +461,8 @@ trait TLVGen {
     }
   }
 
-  def dlcOfferTLVWithOracleKeys: Gen[
-    (DLCOfferTLV, ECPrivateKey, ECPrivateKey)] = {
+  def dlcOfferTLVWithOracleKeys
+      : Gen[(DLCOfferTLV, ECPrivateKey, ECPrivateKey)] = {
     for {
       offer <- dlcOfferTLV
       (oracleInfo, oraclePrivKey, oracleRValue) <- oracleInfoV0TLVWithKeys
@@ -546,8 +546,8 @@ trait TLVGen {
     } yield (offer, accept)
   }
 
-  def dlcOfferTLVAcceptTLVWithOracleKeys: Gen[
-    (DLCOfferTLV, DLCAcceptTLV, ECPrivateKey, ECPrivateKey)] = {
+  def dlcOfferTLVAcceptTLVWithOracleKeys
+      : Gen[(DLCOfferTLV, DLCAcceptTLV, ECPrivateKey, ECPrivateKey)] = {
     for {
       (offer, privKey, kVal) <- dlcOfferTLVWithOracleKeys
       accept <- dlcAcceptTLV(offer)
@@ -584,8 +584,8 @@ trait TLVGen {
     }
   }
 
-  def dlcOfferTLVAcceptTLVSignTLV: Gen[
-    (DLCOfferTLV, DLCAcceptTLV, DLCSignTLV)] = {
+  def dlcOfferTLVAcceptTLVSignTLV
+      : Gen[(DLCOfferTLV, DLCAcceptTLV, DLCSignTLV)] = {
     for {
       (offer, accept) <- dlcOfferTLVAcceptTLV
       sign <- dlcSignTLV(offer, accept)

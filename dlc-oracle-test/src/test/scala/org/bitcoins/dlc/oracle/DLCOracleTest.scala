@@ -516,8 +516,8 @@ class DLCOracleTest extends DLCOracleFixture {
 
   it must "create and sign a decomp event with a large num digits" in {
     dlcOracle: DLCOracle =>
-      //trying make sure we don't regress on
-      //https://github.com/bitcoin-s/bitcoin-s/issues/3431
+      // trying make sure we don't regress on
+      // https://github.com/bitcoin-s/bitcoin-s/issues/3431
 
       val outcome = 30816
       val numDigits = 18
@@ -928,7 +928,7 @@ class DLCOracleTest extends DLCOracleFixture {
     for {
       c <- createdF
       _ <- dlcOracle.deleteAnnouncement(c)
-      //make sure we can't find it
+      // make sure we can't find it
       annOpt <- dlcOracle.findEvent(eventName)
     } yield {
       assert(annOpt.isEmpty)
@@ -948,7 +948,7 @@ class DLCOracleTest extends DLCOracleFixture {
     for {
       c <- createdF
       _ <- dlcOracle.deleteAnnouncement(c)
-      //make sure we can't find it
+      // make sure we can't find it
       annOpt <- dlcOracle.findEvent(eventName)
     } yield {
       assert(annOpt.isEmpty)

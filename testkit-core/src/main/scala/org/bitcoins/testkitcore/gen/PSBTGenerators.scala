@@ -136,8 +136,8 @@ object PSBTGenerators {
     }
   }
 
-  def psbtToBeSigned: Gen[
-    (PSBT, Seq[ScriptSignatureParams[InputInfo]], FeeUnit)] = {
+  def psbtToBeSigned
+      : Gen[(PSBT, Seq[ScriptSignatureParams[InputInfo]], FeeUnit)] = {
     psbtWithBuilder(finalized = false).map {
       case (psbt, FinalizedTxWithSigningInfo(_, infos), fee) =>
         val newInputsMaps = psbt.inputMaps.map { map =>
@@ -151,8 +151,8 @@ object PSBTGenerators {
 
   def orderSpendingInfos(
       unsignedTx: Transaction,
-      creditingTxsInfo: Vector[ScriptSignatureParams[InputInfo]]): Vector[
-    ScriptSignatureParams[InputInfo]] = {
+      creditingTxsInfo: Vector[ScriptSignatureParams[InputInfo]])
+      : Vector[ScriptSignatureParams[InputInfo]] = {
     unsignedTx.inputs.toVector.map { input =>
       val infoOpt =
         creditingTxsInfo.find(_.outPoint == input.previousOutput)
@@ -224,8 +224,8 @@ object PSBTGenerators {
   def psbtWithBuilderAndP2SHOutputs(
       finalized: Boolean,
       outputGen: CurrencyUnit => Gen[Seq[(TransactionOutput, ScriptPubKey)]] =
-        TransactionGenerators.smallP2SHOutputs): Gen[
-    (PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])] = {
+        TransactionGenerators.smallP2SHOutputs)
+      : Gen[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])] = {
     for {
       (creditingTxsInfo, outputs) <-
         CreditingTxGen.inputsAndP2SHOutputs(destinationGenerator = outputGen)
@@ -249,13 +249,13 @@ object PSBTGenerators {
     }
   }
 
-  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean): Gen[
-    (PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])] =
+  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean)
+      : Gen[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])] =
     psbtWithBuilderAndP2SHOutputs(finalized,
                                   TransactionGenerators.smallP2WSHOutputs)
 
-  def finalizedPSBTWithBuilder: Gen[
-    (PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
+  def finalizedPSBTWithBuilder
+      : Gen[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
     psbtWithBuilder(finalized = true)
   }
 
@@ -263,7 +263,9 @@ object PSBTGenerators {
     finalizedPSBTWithBuilder.map(_._1)
   }
 
-  /** Generates a PSBT that is ready to be finalized but where no input map has been finalized */
+  /** Generates a PSBT that is ready to be finalized but where no input map has
+    * been finalized
+    */
   def fullNonFinalizedPSBT: Gen[PSBT] = {
     psbtWithBuilder(finalized = false).map(_._1)
   }
@@ -285,8 +287,8 @@ object PSBTGenerators {
     }
   }
 
-  /** Generates an arbitrary unfinalized PSBT by generating a full unfinalized PSBT
-    * and randomly removing records
+  /** Generates an arbitrary unfinalized PSBT by generating a full unfinalized
+    * PSBT and randomly removing records
     */
   def arbitraryPSBT: Gen[PSBT] = {
     psbtWithUnknowns.map { psbt =>

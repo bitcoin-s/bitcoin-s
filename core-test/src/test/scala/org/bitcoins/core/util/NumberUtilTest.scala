@@ -22,8 +22,8 @@ class NumberUtilTest extends BitcoinSUnitTest {
 
   it must "expand nbits to 0 difficulty threshold" in {
 
-    //from the examples table on bitcoin developer reference site
-    //https://bitcoin.org/en/developer-reference#target-nbits
+    // from the examples table on bitcoin developer reference site
+    // https://bitcoin.org/en/developer-reference#target-nbits
     val nBits1 = UInt32.fromHex("01003456")
     val expected1 = BigInteger.valueOf(0)
     val diffHelper1 = {
@@ -92,7 +92,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
   }
 
   it must "expand the minimum difficulty on bitcoin main network" in {
-    //https://stackoverflow.com/questions/22059359/trying-to-understand-nbits-value-from-stratum-protocol
+    // https://stackoverflow.com/questions/22059359/trying-to-understand-nbits-value-from-stratum-protocol
     val nBits = UInt32.fromHex("1d00ffff")
     val expected = new BigInteger(
       "00ffff0000000000000000000000000000000000000000000000000000",
@@ -128,7 +128,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
   behavior of "NumberUtil.targetCompression"
 
   it must "handle all cases as enumerated in bitcoin core" in {
-    //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/test/arith_uint256_tests.cpp#L405
+    // https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/test/arith_uint256_tests.cpp#L405
     val expanded = NumberUtil.targetExpansion(UInt32.zero)
     NumberUtil.targetCompression(expanded) must be(UInt32.zero)
 

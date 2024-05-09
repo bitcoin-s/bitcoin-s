@@ -25,15 +25,14 @@ case class CLightningRpcTestClient(
           s"Path did not exist! got=${binary.toAbsolutePath.toString}")
   import system.dispatcher
 
-  /** Cached client. This is defined if start() has been called
-    * else None
+  /** Cached client. This is defined if start() has been called else None
     */
   private var clientOpt: Option[CLightningRpcClient] = None
 
   private lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     bitcoindOpt match {
       case Some(bitcoindRpcClient) => Future.successful(bitcoindRpcClient)
-      case None                    => CLightningRpcTestUtil.startedBitcoindRpcClient()
+      case None => CLightningRpcTestUtil.startedBitcoindRpcClient()
     }
   }
 

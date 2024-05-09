@@ -23,8 +23,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
-  * @param directory The data directory of the node
-  * @param confs Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the node
+  * @param confs
+  *   Optional sequence of configuration overrides
   */
 case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     implicit val system: ActorSystem)
@@ -45,8 +47,8 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override lazy val callbackFactory: NodeCallbacks.type = NodeCallbacks
 
-  /** Ensures correct tables and other required information is in
-    * place for our node.
+  /** Ensures correct tables and other required information is in place for our
+    * node.
     */
   override def start(): Future[Unit] = {
     for {
@@ -72,7 +74,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       logger.info(s"Initializing node setup")
       val numMigrations = migrate()
       val _ = if (isHikariLoggingEnabled) {
-        //.get is safe because hikari logging is enabled
+        // .get is safe because hikari logging is enabled
         startHikariLogger(hikariLoggingInterval.get)
         ()
       } else {
@@ -151,7 +153,9 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 12.hour
   }
 
-  /** timeout to wait for response the messages extend [[org.bitcoins.core.p2p.ExpectsResponse]] */
+  /** timeout to wait for response the messages extend
+    * [[org.bitcoins.core.p2p.ExpectsResponse]]
+    */
   lazy val queryWaitTime: FiniteDuration = {
     if (config.hasPath("bitcoin-s.node.query-wait-time")) {
       val duration = config.getDuration("bitcoin-s.node.query-wait-time")
@@ -159,7 +163,8 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 120.seconds
   }
 
-  /** maximum consecutive number of invalid responses allowed from the same peer */
+  /** maximum consecutive number of invalid responses allowed from the same peer
+    */
   lazy val maxInvalidResponsesAllowed: Int = {
     if (config.hasPath("bitcoin-s.node.max-invalid-response-count")) {
       config.getInt("bitcoin-s.node.max-invalid-response-count")
@@ -188,7 +193,9 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 5.minute
   }
 
-  /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
+  /** Creates either a neutrino node or a spv node based on the
+    * [[NodeAppConfig]] given
+    */
   def createNode(peers: Vector[Peer], walletCreationTimeOpt: Option[Instant])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
@@ -202,14 +209,16 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
 
   override val moduleName: String = "node"
 
-  /** Constructs a node configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a node configuration from the default Bitcoin-S data directory
+    * and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): NodeAppConfig =
     NodeAppConfig(datadir, confs)
 
-  /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
+  /** Creates either a neutrino node or a spv node based on the
+    * [[NodeAppConfig]] given
+    */
   def createNode(peers: Vector[Peer], walletCreationTimeOpt: Option[Instant])(
       implicit
       nodeConf: NodeAppConfig,

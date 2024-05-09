@@ -38,7 +38,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       dlcDAO: DLCDAO): Future[Assertion] = {
     for {
       _ <- dlcDAO.create(dlcDb)
-      _ <- dao.upsert(element) //upsert in case we are testing the dlcDAO
+      _ <- dao.upsert(element) // upsert in case we are testing the dlcDAO
 
       read <- dao.read(key)
     } yield {

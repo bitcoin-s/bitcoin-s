@@ -31,10 +31,8 @@ case class DLCContractDataDAO()(implicit
       ts: Vector[DLCContractDataDb]): Future[Vector[DLCContractDataDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
-    DLCContractDataTable,
-    DLCContractDataDb,
-    Seq] =
+  override def findByPrimaryKeys(ids: Vector[Sha256Digest])
+      : Query[DLCContractDataTable, DLCContractDataDb, Seq] =
     table.filter(_.dlcId.inSet(ids))
 
   override def findByPrimaryKey(
@@ -43,24 +41,20 @@ case class DLCContractDataDAO()(implicit
       .filter(_.dlcId === id)
   }
 
-  override def findAll(dlcs: Vector[DLCContractDataDb]): Query[
-    DLCContractDataTable,
-    DLCContractDataDb,
-    Seq] =
+  override def findAll(dlcs: Vector[DLCContractDataDb])
+      : Query[DLCContractDataTable, DLCContractDataDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
-    Vector[DLCContractDataDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdsAction(
+      dlcIds: Vector[Sha256Digest]): DBIOAction[Vector[DLCContractDataDb],
+                                                profile.api.NoStream,
+                                                profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId.inSet(dlcIds))
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest)
+      : DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }

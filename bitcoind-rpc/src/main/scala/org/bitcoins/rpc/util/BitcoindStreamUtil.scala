@@ -11,13 +11,13 @@ import scala.concurrent.ExecutionContext
 
 object BitcoindStreamUtil {
 
-  /** Creates a flow that you can feed block hashes too and the block header and block will get emitted downstream */
+  /** Creates a flow that you can feed block hashes too and the block header and
+    * block will get emitted downstream
+    */
   def fetchBlocksBitcoind(
       bitcoindRpcClient: BitcoindRpcClient,
-      parallelism: Int)(implicit ec: ExecutionContext): Flow[
-    DoubleSha256DigestBE,
-    (Block, GetBlockHeaderResult),
-    NotUsed] = {
+      parallelism: Int)(implicit ec: ExecutionContext)
+      : Flow[DoubleSha256DigestBE, (Block, GetBlockHeaderResult), NotUsed] = {
     Flow[DoubleSha256DigestBE].mapAsync(parallelism = parallelism) { hash =>
       val blockF = bitcoindRpcClient.getBlockRaw(hash)
       val blockHeaderResultF = bitcoindRpcClient.getBlockHeader(hash)

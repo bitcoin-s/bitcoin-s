@@ -44,8 +44,8 @@ object DLCTLVGen {
   def genOracleInfo(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
       oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
-      events: Vector[String] =
-        Vector("dummy1", "dummy2")): EnumSingleOracleInfo = {
+      events: Vector[String] = Vector("dummy1", "dummy2"))
+      : EnumSingleOracleInfo = {
     EnumSingleOracleInfo(
       OracleAnnouncementV0TLV.dummyForEventsAndKeys(
         oraclePrivKey,
@@ -89,8 +89,8 @@ object DLCTLVGen {
   def oracleInfoParsingTestVector(
       oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
       oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
-      events: Vector[String] =
-        Vector("dummy1", "dummy2")): DLCParsingTestVector = {
+      events: Vector[String] = Vector("dummy1", "dummy2"))
+      : DLCParsingTestVector = {
     DLCParsingTestVector(
       genOracleInfo(oraclePrivKey, oracleRValue, events).toTLV)
   }
@@ -125,8 +125,8 @@ object DLCTLVGen {
 
   def outputReference(
       input: CurrencyUnit = defaultAmt,
-      spk: ScriptPubKey =
-        P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)): OutputReference = {
+      spk: ScriptPubKey = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey))
+      : OutputReference = {
     val tx = inputTransaction(input, spk)
     OutputReference(TransactionOutPoint(tx.txIdBE, UInt32.zero),
                     tx.outputs.head)
@@ -153,8 +153,8 @@ object DLCTLVGen {
       prevTxVout: UInt32 = UInt32.zero,
       sequence: UInt32 = TransactionConstants.enableRBFSequence,
       maxWitnessLen: UInt16 = UInt16(107),
-      redeemScriptOpt: Option[WitnessScriptPubKey] =
-        None): DLCParsingTestVector = {
+      redeemScriptOpt: Option[WitnessScriptPubKey] = None)
+      : DLCParsingTestVector = {
     DLCParsingTestVector(
       fundingInput(inputSerialId,
                    prevTx,
@@ -208,9 +208,8 @@ object DLCTLVGen {
     )
   }
 
-  def refundSigs(
-      fundingPubKey: ECPublicKey =
-        ECPublicKey.freshPublicKey): PartialSignature = {
+  def refundSigs(fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey)
+      : PartialSignature = {
     partialSig(fundingPubKey, sigHashByte = false)
   }
 
@@ -304,8 +303,8 @@ object DLCTLVGen {
       fundOutputSerialId: UInt64 = DLCMessage.genSerialId(),
       feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
-      contractTimeout: BlockTimeStamp =
-        BlockTimeStamp(200)): DLCParsingTestVector = {
+      contractTimeout: BlockTimeStamp = BlockTimeStamp(200))
+      : DLCParsingTestVector = {
     DLCParsingTestVector(
       dlcOfferTLV(
         protocolVersionOpt,

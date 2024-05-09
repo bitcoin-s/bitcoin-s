@@ -10,7 +10,9 @@ import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import java.nio.file.Paths
 import scala.concurrent.Future
 
-/** This script zips your $HOME/.bitcoin-s/ directory to a specified path, excluding chaindb.sqlite */
+/** This script zips your $HOME/.bitcoin-s/ directory to a specified path,
+  * excluding chaindb.sqlite
+  */
 class ZipDatadir(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     conf: BitcoinSAppConfig)
@@ -18,7 +20,7 @@ class ZipDatadir(override val serverArgParser: ServerArgParser)(implicit
 
   override def start(): Future[Unit] = {
 
-    //replace the line below with where you want to zip too
+    // replace the line below with where you want to zip too
     val path = Paths.get("/tmp", "bitcoin-s.zip")
     val target = DatadirUtil.zipDatadir(conf.baseDatadir, path)
     logger.info(s"Done zipping to $target!")

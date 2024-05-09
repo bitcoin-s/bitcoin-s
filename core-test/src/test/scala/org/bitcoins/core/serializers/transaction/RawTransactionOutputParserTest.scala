@@ -17,7 +17,7 @@ import scodec.bits.ByteVector
   */
 class RawTransactionOutputParserTest extends BitcoinSUnitTest {
 
-  //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
+  // txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxOutput =
     "204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87"
   val encode = BytesUtil.encodeHex(_: ByteVector)
@@ -44,8 +44,8 @@ class RawTransactionOutputParserTest extends BitcoinSUnitTest {
   }
 
   it must "serialize an older raw transaction output" in {
-    //from this question
-    //https://bitcoin.stackexchange.com/questions/2859/how-are-transaction-hashes-calculated
+    // from this question
+    // https://bitcoin.stackexchange.com/questions/2859/how-are-transaction-hashes-calculated
     val txOutput =
       "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac"
     val output = RawTransactionOutputParser.read(txOutput)

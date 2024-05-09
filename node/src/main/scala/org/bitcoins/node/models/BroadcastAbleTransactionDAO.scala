@@ -22,22 +22,19 @@ case class BroadcastAbleTransactionDAO()(implicit
   override val table: profile.api.TableQuery[BroadcastAbleTransactionTable] =
     profile.api.TableQuery[BroadcastAbleTransactionTable]
 
-  override def createAll(ts: Vector[BroadcastAbleTransaction]): Future[
-    Vector[BroadcastAbleTransaction]] = createAllNoAutoInc(ts, safeDatabase)
+  override def createAll(ts: Vector[BroadcastAbleTransaction])
+      : Future[Vector[BroadcastAbleTransaction]] =
+    createAllNoAutoInc(ts, safeDatabase)
 
   /** Finds the rows that correlate to the given primary keys */
-  override protected def findByPrimaryKeys(
-      txIds: Vector[DoubleSha256DigestBE]): Query[
-    BroadcastAbleTransactionTable,
-    BroadcastAbleTransaction,
-    Seq] = {
+  override protected def findByPrimaryKeys(txIds: Vector[DoubleSha256DigestBE])
+      : Query[BroadcastAbleTransactionTable, BroadcastAbleTransaction, Seq] = {
     table.filter(_.txid.inSet(txIds))
   }
 
-  override protected def findAll(ts: Vector[BroadcastAbleTransaction]): Query[
-    BroadcastAbleTransactionTable,
-    BroadcastAbleTransaction,
-    Seq] = findByPrimaryKeys(ts.map(_.transaction.txIdBE))
+  override protected def findAll(ts: Vector[BroadcastAbleTransaction])
+      : Query[BroadcastAbleTransactionTable, BroadcastAbleTransaction, Seq] =
+    findByPrimaryKeys(ts.map(_.transaction.txIdBE))
 
   def findByHash(
       hash: DoubleSha256DigestBE): Future[Option[BroadcastAbleTransaction]] =

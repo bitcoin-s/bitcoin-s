@@ -64,7 +64,9 @@ object BitcoinSTestAppConfig {
 
   /** @param pgUrl
     * @param config
-    * @param forceNamedWallet forces a wallet to have a name, if false there is a 50% chance the wallet will have a name
+    * @param forceNamedWallet
+    *   forces a wallet to have a name, if false there is a 50% chance the
+    *   wallet will have a name
     * @return
     */
   def getNeutrinoWithEmbeddedDbTestConfig(
@@ -97,7 +99,9 @@ object BitcoinSTestAppConfig {
 
   /** @param pgUrl
     * @param config
-    * @param forceNamedWallet forces a wallet to have a name, if false there is a 50% chance the wallet will have a name
+    * @param forceNamedWallet
+    *   forces a wallet to have a name, if false there is a 50% chance the
+    *   wallet will have a name
     * @return
     */
   def getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
@@ -179,9 +183,8 @@ object BitcoinSTestAppConfig {
     val all = List(Wallet, Node, Chain, Oracle, DLC, Test)
   }
 
-  /** Generates a Typesafe config with DBs set to memory
-    * databases for the given project (or all, if no
-    * project is given). This configuration can then be
+  /** Generates a Typesafe config with DBs set to memory databases for the given
+    * project (or all, if no project is given). This configuration can then be
     * given as a override to other configs.
     */
   def configWithEmbeddedDb(

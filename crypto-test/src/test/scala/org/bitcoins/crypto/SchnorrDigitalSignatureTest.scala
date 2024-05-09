@@ -69,14 +69,13 @@ class SchnorrDigitalSignatureTest extends BitcoinSCryptoTest {
     }
   }
 
-  /** Schnorr signatures have the property that if two messages are signed with the same key
-    * and nonce, then they are leaked:
+  /** Schnorr signatures have the property that if two messages are signed with
+    * the same key and nonce, then they are leaked:
     *
-    * sig1 = nonce + message1*privKey
-    * sig2 = nonce + message2*privKey
+    * sig1 = nonce + message1*privKey sig2 = nonce + message2*privKey
     *
-    * => sig1 - sig2 = (message1 - message2)*privKey
-    * => privKey = (sig1 - sig2) * inverse(message1 - message2)
+    * \=> sig1 - sig2 = (message1 - message2)*privKey \=> privKey = (sig1 -
+    * sig2) * inverse(message1 - message2)
     */
   it must "leak keys if two messages are signed" in {
     forAll(CryptoGenerators.nonZeroPrivKey,

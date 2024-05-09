@@ -56,7 +56,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   val sink: Sink[Message, Future[Seq[WsNotification[_]]]] = Flow[Message]
     .map {
       case message: TextMessage.Strict =>
-        //we should be able to parse the address message
+        // we should be able to parse the address message
         val text = message.text
         val dlcNodeNotificationOpt: Option[DLCNodeNotification[_]] = Try(
           upickle.default.read[DLCNodeNotification[_]](text)(
@@ -85,10 +85,10 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                      extraHeaders = headers)
   }
 
-  val websocketFlow: Flow[
-    Message,
-    Message,
-    (Future[Seq[WsNotification[_]]], Promise[Option[Message]])] = {
+  val websocketFlow
+      : Flow[Message,
+             Message,
+             (Future[Seq[WsNotification[_]]], Promise[Option[Message]])] = {
     Flow
       .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
   }
@@ -150,9 +150,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                              rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
-      val notificationsF: (
-          Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      val notificationsF
+          : (Future[WebSocketUpgradeResponse],
+             (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -182,9 +182,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                              rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
-      val tuple: (
-          Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      val tuple
+          : (Future[WebSocketUpgradeResponse],
+             (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -221,9 +221,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                              rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
-      val tuple: (
-          Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      val tuple
+          : (Future[WebSocketUpgradeResponse],
+             (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -259,9 +259,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                            rpcPassword = server.conf.rpcPassword)
 
     val req = buildReq(server.conf)
-    val tuple: (
-        Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+    val tuple: (Future[WebSocketUpgradeResponse],
+                (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -271,7 +270,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
     val addressF = bitcoind.getNewAddress
     val timeout =
-      15.seconds //any way we can remove this timeout and just check?
+      15.seconds // any way we can remove this timeout and just check?
     for {
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
@@ -296,9 +295,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                              rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
-      val tuple: (
-          Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      val tuple
+          : (Future[WebSocketUpgradeResponse],
+             (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -306,11 +305,11 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val notificationsF: Future[Seq[WsNotification[_]]] = tuple._2._1
       val promise = tuple._2._2
 
-      //lock all utxos
+      // lock all utxos
       val lockCmd = LockUnspent(unlock = false, Vector.empty)
       ConsoleCli.exec(lockCmd, cliConfig)
 
-      //unlock all utxos
+      // unlock all utxos
       val unlockCmd = LockUnspent(unlock = true, Vector.empty)
       ConsoleCli.exec(unlockCmd, cliConfig)
 
@@ -319,7 +318,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
-        //should have two notifications for locking and then unlocking the utxos
+        // should have two notifications for locking and then unlocking the utxos
         assert(notifications.count(_.`type` == WalletWsType.ReservedUtxos) == 2)
       }
   }
@@ -331,9 +330,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                              rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
-      val notificationsF: (
-          Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      val notificationsF
+          : (Future[WebSocketUpgradeResponse],
+             (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -380,9 +379,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                            rpcPassword = server.conf.rpcPassword)
 
     val req = buildReq(server.conf)
-    val tuple: (
-        Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+    val tuple: (Future[WebSocketUpgradeResponse],
+                (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -408,9 +406,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val ServerWithBitcoind(_, server) = serverWithBitcoind
 
     val req = buildReq(server.conf)
-    val tuple: (
-        Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+    val tuple: (Future[WebSocketUpgradeResponse],
+                (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -432,9 +429,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val ServerWithBitcoind(_, server) = serverWithBitcoind
 
     val req = buildReq(server.conf)
-    val tuple: (
-        Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+    val tuple: (Future[WebSocketUpgradeResponse],
+                (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -457,9 +453,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
                            rpcPassword = server.conf.rpcPassword)
 
     val req = buildReq(server.conf)
-    val notificationsF: (
-        Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+    val notificationsF
+        : (Future[WebSocketUpgradeResponse],
+           (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }

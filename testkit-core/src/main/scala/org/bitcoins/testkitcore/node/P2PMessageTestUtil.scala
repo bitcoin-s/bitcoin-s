@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.transaction.Transaction
 
 abstract class P2PMessageTestUtil {
 
-  //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
-  //this tx has multiple inputs and outputs
+  // txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
+  // this tx has multiple inputs and outputs
   def rawTransaction =
     "01000000" +
       "02df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd040011b0000006a473044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26012102c114f376c98d12a0540c3a81ab99bb1c5234245c05e8239d09f48229f9ebf011ffffffff" +
@@ -24,15 +24,16 @@ abstract class P2PMessageTestUtil {
     "7c1101000000000000000000d805833655010000000000000000000000000000000000000000ffff0a940106479d010000000000000000000000000000000000ffff739259bb479d0000000000000000182f626974636f696e732d7370762d6e6f64652f302e302e310000000000"
   def versionMessage = VersionMessage(rawVersionMessage)
 
-  /** This is a raw network message indicating the version a node is using on the p2p network
-    * This has BOTH the header and the payload
+  /** This is a raw network message indicating the version a node is using on
+    * the p2p network This has BOTH the header and the payload
     * @return
     */
   def rawNetworkMessage =
     "0b11090776657273696f6e0000000000660000002f6743da721101000100000000000000e0165b5700000000010000000000000000000000000000000000ffffad1f27a8479d010000000000000000000000000000000000ffff00000000479d68dc32a9948d149b102f5361746f7368693a302e31312e322f7f440d0001"
   def networkMessage = NetworkMessage(rawNetworkMessage)
 
-  /** This is a get headers message taken from wireshark off of a node that sent the message
+  /** This is a get headers message taken from wireshark off of a node that sent
+    * the message
     * @return
     */
   def rawGetHeadersMsg =
@@ -42,7 +43,9 @@ abstract class P2PMessageTestUtil {
   val emptyBloomFilter: BloomFilter =
     BloomFilter(numElements = 1, falsePositiveRate = 1, flags = BloomUpdateAll)
 
-  /** These are the first 5 block headers on testnet, this does NOT include the genesis block header */
+  /** These are the first 5 block headers on testnet, this does NOT include the
+    * genesis block header
+    */
   lazy val firstFiveTestNetBlockHeaders: List[BlockHeader] = {
     List(
       BlockHeader(

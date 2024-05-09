@@ -62,9 +62,8 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
     withDualDLCWallets(test, contractOraclePair)
   }
 
-  def getSigs(contractInfo: ContractInfo): (
-      Vector[OracleAttestmentTLV],
-      Vector[OracleAttestmentTLV]) = {
+  def getSigs(contractInfo: ContractInfo)
+      : (Vector[OracleAttestmentTLV], Vector[OracleAttestmentTLV]) = {
     contractInfo.contractDescriptors.head match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>

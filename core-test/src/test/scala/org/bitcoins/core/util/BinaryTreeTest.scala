@@ -14,7 +14,7 @@ class BinaryTreeTest extends BitcoinSUnitTest {
   }
 
   it must "convert a binary tree to to a list with node values" in {
-    //val script = List(OP_IF, OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF, OP_ELSE, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF)
+    // val script = List(OP_IF, OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF, OP_ELSE, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF)
     val bTree: BinaryTree[ScriptToken] =
       Node[ScriptToken](
         OP_IF,

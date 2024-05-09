@@ -98,7 +98,7 @@ object WebsocketUtil extends BitcoinSLogger {
           chainAppConfig.ibdBlockProcessedEvents
         isIBDF.flatMap { isIBD =>
           if (isIBD && !emitBlockProccessedWhileIBDOnGoing) {
-            //only emit the last header so that we don't overwhelm the UI
+            // only emit the last header so that we don't overwhelm the UI
             for {
               results <- resultsF
               notification = BlockProcessedNotification(results.last)

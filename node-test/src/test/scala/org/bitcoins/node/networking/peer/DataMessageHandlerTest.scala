@@ -223,11 +223,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           )
         )(node.executionContext, node.nodeAppConfig, node.chainConfig)
 
-        //disconnect our node from bitcoind, then
-        //use bitcoind to generate 2 blocks, and then try to send the headers
-        //via directly via our queue. We should still be able to process
-        //the second header even though our NodeState is FilterHeaderSync
-        //this is because the getcfheaders timed out
+        // disconnect our node from bitcoind, then
+        // use bitcoind to generate 2 blocks, and then try to send the headers
+        // via directly via our queue. We should still be able to process
+        // the second header even though our NodeState is FilterHeaderSync
+        // this is because the getcfheaders timed out
         peerData = peerManager.getPeerData(peer).get
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         initBlockCount <- chainApi.getBlockCount()
@@ -240,16 +240,16 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         newDmh0 <- dataMessageHandler.handleDataPayload(payload0, peerData)
         _ = assert(newDmh0.state.isInstanceOf[FilterHeaderSync])
         _ <- AsyncUtil.nonBlockingSleep(queryWaitTime)
-        //now process another header, even though we are in FilterHeaderSync
-        //state, we should process the block header since our query timed out
+        // now process another header, even though we are in FilterHeaderSync
+        // state, we should process the block header since our query timed out
         newDmh1 <- newDmh0.handleDataPayload(payload1, peerData)
         blockCount <- chainApi.getBlockCount()
         _ <- node.stop()
         _ <- node.nodeConfig.stop()
       } yield {
-        //we should have processed both headers
+        // we should have processed both headers
         assert(blockCount == initBlockCount + 2)
-        //should still be FilterHeaderSync state
+        // should still be FilterHeaderSync state
         assert(newDmh1.state.isInstanceOf[FilterHeaderSync])
       }
   }
@@ -260,8 +260,8 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
 
     require(initNode.nodeConfig.queryWaitTime != queryWaitTime,
             s"maxConnectedPeers must be different")
-    //make a custom config, set the inactivity timeout very low
-    //so we will disconnect our peer organically
+    // make a custom config, set the inactivity timeout very low
+    // so we will disconnect our peer organically
     val str =
       s"""
          |bitcoin-s.node.query-wait-time = $queryWaitTime

@@ -18,8 +18,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 abstract class NodeTestUtil extends P2PLogger {
 
-  /** Helper method to get the [[java.net.InetSocketAddress]]
-    * we need to connect to to make a p2p connection with bitcoind
+  /** Helper method to get the [[java.net.InetSocketAddress]] we need to connect
+    * to to make a p2p connection with bitcoind
     * @param bitcoindRpcClient
     * @return
     */
@@ -56,8 +56,8 @@ abstract class NodeTestUtil extends P2PLogger {
     } else None
   }
 
-  /** Gets the [[Peer]] that
-    * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
+  /** Gets the [[Peer]] that corresponds to
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
     */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient)(implicit
       executionContext: ExecutionContext): Future[Peer] =
@@ -128,8 +128,8 @@ abstract class NodeTestUtil extends P2PLogger {
     }
   }
 
-  /** Checks if the given light client and bitcoind
-    * has the same number of blocks in their blockchains
+  /** Checks if the given light client and bitcoind has the same number of
+    * blocks in their blockchains
     */
   def isSameBlockCount(node: Node, rpc: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
@@ -206,11 +206,15 @@ abstract class NodeTestUtil extends P2PLogger {
     )
   }
 
-  /** Awaits header, filter header and filter sync between the neutrino node and rpc client
-    * @param the node we are syncing
-    * @param bitcoind the node we are syncing against
-    * @param bestBlockHashBE the best block hash we are expected to sync to, this is useful for reorg situations.
-    *                        If None given, we use bitcoind's best block header
+  /** Awaits header, filter header and filter sync between the neutrino node and
+    * rpc client
+    * @param the
+    *   node we are syncing
+    * @param bitcoind
+    *   the node we are syncing against
+    * @param bestBlockHashBE
+    *   the best block hash we are expected to sync to, this is useful for reorg
+    *   situations. If None given, we use bitcoind's best block header
     */
   def awaitAllSync(
       node: NeutrinoNode,
@@ -250,7 +254,9 @@ abstract class NodeTestUtil extends P2PLogger {
 
   }
 
-  /** returns a Future that isn't completed until the peer manager has [[expectedConnectionCount]] connections */
+  /** returns a Future that isn't completed until the peer manager has
+    * [[expectedConnectionCount]] connections
+    */
   def awaitConnectionCount(
       node: Node,
       expectedConnectionCount: Int,
@@ -262,8 +268,8 @@ abstract class NodeTestUtil extends P2PLogger {
       maxTries = maxTries)
   }
 
-  /** get our neutrino node's uri from a test bitcoind instance to send rpc commands for our node.
-    * The peer must be initialized by the node.
+  /** get our neutrino node's uri from a test bitcoind instance to send rpc
+    * commands for our node. The peer must be initialized by the node.
     */
   def getNodeURIFromBitcoind(
       bitcoind: BitcoindRpcClient,

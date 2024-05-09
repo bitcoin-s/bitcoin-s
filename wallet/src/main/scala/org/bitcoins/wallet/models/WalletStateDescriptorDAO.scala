@@ -35,28 +35,22 @@ case class WalletStateDescriptorDAO()(implicit
   override val table: profile.api.TableQuery[WalletStateDescriptorTable] =
     TableQuery[WalletStateDescriptorTable]
 
-  override def createAll(ts: Vector[WalletStateDescriptorDb]): Future[
-    Vector[WalletStateDescriptorDb]] =
+  override def createAll(ts: Vector[WalletStateDescriptorDb])
+      : Future[Vector[WalletStateDescriptorDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findByPrimaryKeys(ids: Vector[WalletStateDescriptorType]): Query[
-    WalletStateDescriptorTable,
-    WalletStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKeys(ids: Vector[WalletStateDescriptorType])
+      : Query[WalletStateDescriptorTable, WalletStateDescriptorDb, Seq] = {
     table.filter(_.tpe.inSet(ids))
   }
 
-  override def findByPrimaryKey(id: WalletStateDescriptorType): Query[
-    Table[WalletStateDescriptorDb],
-    WalletStateDescriptorDb,
-    Seq] = {
+  override def findByPrimaryKey(id: WalletStateDescriptorType)
+      : Query[Table[WalletStateDescriptorDb], WalletStateDescriptorDb, Seq] = {
     table.filter(_.tpe === id)
   }
 
-  override def findAll(ts: Vector[WalletStateDescriptorDb]): Query[
-    Table[WalletStateDescriptorDb],
-    WalletStateDescriptorDb,
-    Seq] =
+  override def findAll(ts: Vector[WalletStateDescriptorDb])
+      : Query[Table[WalletStateDescriptorDb], WalletStateDescriptorDb, Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
 
   def getSyncHeight(): Future[Option[SyncHeightDescriptor]] = {

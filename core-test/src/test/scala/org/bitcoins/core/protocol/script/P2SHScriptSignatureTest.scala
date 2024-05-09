@@ -18,7 +18,7 @@ class P2SHScriptSignatureTest extends BitcoinSJvmTest {
     val p2shScriptSig: P2SHScriptSignature =
       ScriptSignature(rawP2SHScriptSig) match {
         case x: P2SHScriptSignature => x
-        case y                      => throw new RuntimeException("Must be p2sh script sig: " + y)
+        case y => throw new RuntimeException("Must be p2sh script sig: " + y)
       }
     p2shScriptSig.publicKeys must be(
       Seq(
@@ -34,7 +34,7 @@ class P2SHScriptSignatureTest extends BitcoinSJvmTest {
 
     val p2shScriptSig = TestUtil.p2shInputScript2Of2 match {
       case s: P2SHScriptSignature => s
-      case _                      => throw new RuntimeException("Should be p2sh scriptSig")
+      case _ => throw new RuntimeException("Should be p2sh scriptSig")
     }
 
     p2shScriptSig.scriptSignatureNoRedeemScript.asm must be(

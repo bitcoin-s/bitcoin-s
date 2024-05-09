@@ -29,10 +29,8 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
       Future.unit
   }
 
-  private val handleWriteErrorFn: (
-      BigSizeUInt,
-      ByteVector,
-      Throwable) => Future[Unit] = {
+  private val handleWriteErrorFn
+      : (BigSizeUInt, ByteVector, Throwable) => Future[Unit] = {
     case (_: BigSizeUInt, _: ByteVector, _: Throwable) =>
       Future.unit
   }

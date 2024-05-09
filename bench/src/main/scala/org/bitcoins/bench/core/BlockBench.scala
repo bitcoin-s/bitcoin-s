@@ -35,5 +35,5 @@ object BlockBench extends App {
 
   0.until(10).foreach(_ => bench1())
 
-  //bench2()
+  // bench2()
 }

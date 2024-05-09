@@ -16,8 +16,8 @@ sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
   }
 }
 
-/** Makes a bitcoin-s app config with proper bitcoind credentials
-  * and bitcoin-s.node.mode=bitcoind to use bitcoin as the backend
+/** Makes a bitcoin-s app config with proper bitcoind credentials and
+  * bitcoin-s.node.mode=bitcoind to use bitcoin as the backend
   *
   * The [[BitcoinSAppConfig]] is not started
   */

@@ -41,7 +41,9 @@ case class DLCOracleAppConfig(
   override def newConfigOfType(configs: Vector[Config]): DLCOracleAppConfig =
     DLCOracleAppConfig(baseDatadir, configs)
 
-  /** DLC oracles are not network specific, so just hard code the testnet chain params */
+  /** DLC oracles are not network specific, so just hard code the testnet chain
+    * params
+    */
   final override lazy val chain: BitcoinChainParams = TestNetChainParams
 
   /** DLC oracles are not network specific, so just hard code the network */
@@ -100,7 +102,7 @@ case class DLCOracleAppConfig(
         _ <- migrationWorkAroundF
       } yield {
         if (isHikariLoggingEnabled) {
-          //.get is safe because hikari logging is enabled
+          // .get is safe because hikari logging is enabled
           startHikariLogger(hikariLoggingInterval.get)
           ()
         } else {

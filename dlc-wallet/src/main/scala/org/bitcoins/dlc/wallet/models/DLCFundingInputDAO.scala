@@ -36,38 +36,30 @@ case class DLCFundingInputDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      outPoints: Vector[TransactionOutPoint]): Query[
-    DLCFundingInputsTable,
-    DLCFundingInputDb,
-    Seq] =
+      outPoints: Vector[TransactionOutPoint])
+      : Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] =
     table.filter(_.outPoint.inSet(outPoints))
 
-  override def findByPrimaryKey(outPoint: TransactionOutPoint): Query[
-    DLCFundingInputsTable,
-    DLCFundingInputDb,
-    Seq] = {
+  override def findByPrimaryKey(outPoint: TransactionOutPoint)
+      : Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] = {
     table
       .filter(_.outPoint === outPoint)
   }
 
-  override def findAll(dlcs: Vector[DLCFundingInputDb]): Query[
-    DLCFundingInputsTable,
-    DLCFundingInputDb,
-    Seq] =
+  override def findAll(dlcs: Vector[DLCFundingInputDb])
+      : Query[DLCFundingInputsTable, DLCFundingInputDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Vector[DLCFundingInputDb],
-    profile.api.NoStream,
-    profile.api.Effect.Read] = {
+  override def findByDLCIdAction(
+      dlcId: Sha256Digest): DBIOAction[Vector[DLCFundingInputDb],
+                                       profile.api.NoStream,
+                                       profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
     q.result.map(_.toVector)
   }
 
-  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Int,
-    profile.api.NoStream,
-    profile.api.Effect.Write] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest)
+      : DBIOAction[Int, profile.api.NoStream, profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
     q.delete
   }

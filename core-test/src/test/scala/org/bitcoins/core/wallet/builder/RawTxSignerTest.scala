@@ -62,7 +62,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
                                          utxos = utxos,
                                          feeRate = feeUnit,
                                          changeSPK = EmptyScriptPubKey)
-    //trivially false
+    // trivially false
     val f = (_: Seq[ScriptSignatureParams[InputInfo]], _: Transaction) => false
 
     assertThrows[IllegalArgumentException] {

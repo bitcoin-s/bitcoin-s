@@ -56,7 +56,7 @@ class BitwiseInterpreterTest extends BitcoinSUnitTest {
       TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
                                                                    script)
     val result = BI.opEqualVerify(program)
-    //if verification fails it will transform the script to a ExecutedProgram with an error set
+    // if verification fails it will transform the script to a ExecutedProgram with an error set
     result.isInstanceOf[ExecutedScriptProgram] must be(false)
   }
 

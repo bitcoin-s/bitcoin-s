@@ -30,11 +30,10 @@ case class OracleNonceDAO()(implicit
       ts: Vector[OracleNonceDb]): Future[Vector[OracleNonceDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(
-      ids: Vector[OracleNoncePrimaryKey]): profile.api.Query[
-    profile.api.Table[OracleNonceDb],
-    OracleNonceDb,
-    Seq] = {
+  override protected def findByPrimaryKeys(ids: Vector[OracleNoncePrimaryKey])
+      : profile.api.Query[profile.api.Table[OracleNonceDb],
+                          OracleNonceDb,
+                          Seq] = {
 
     // is there a better way to do this?
     val starting = table.filterNot(_.announcementId === -1L)
@@ -47,11 +46,10 @@ case class OracleNonceDAO()(implicit
     }
   }
 
-  override protected def findByPrimaryKey(
-      id: OracleNoncePrimaryKey): profile.api.Query[
-    profile.api.Table[OracleNonceDb],
-    OracleNonceDb,
-    Seq] = {
+  override protected def findByPrimaryKey(id: OracleNoncePrimaryKey)
+      : profile.api.Query[profile.api.Table[OracleNonceDb],
+                          OracleNonceDb,
+                          Seq] = {
     table.filter(t =>
       t.announcementId === id.announcementId && t.index === id.index)
   }
@@ -61,10 +59,8 @@ case class OracleNonceDAO()(implicit
     findByPrimaryKey(OracleNoncePrimaryKey(t.announcementId, t.index))
   }
 
-  override protected def findAll(ts: Vector[OracleNonceDb]): Query[
-    Table[OracleNonceDb],
-    OracleNonceDb,
-    Seq] =
+  override protected def findAll(ts: Vector[OracleNonceDb])
+      : Query[Table[OracleNonceDb], OracleNonceDb, Seq] =
     findByPrimaryKeys(
       ts.map(t => OracleNoncePrimaryKey(t.announcementId, t.index)))
 
@@ -72,10 +68,8 @@ case class OracleNonceDAO()(implicit
     findByNonces(Vector(nonce)).map(_.headOption)
   }
 
-  def findByNoncesAction(nonces: Vector[SchnorrNonce]): DBIOAction[
-    Vector[OracleNonceDb],
-    NoStream,
-    Effect.Read] = {
+  def findByNoncesAction(nonces: Vector[SchnorrNonce])
+      : DBIOAction[Vector[OracleNonceDb], NoStream, Effect.Read] = {
     val query = table.filter(_.nonce.inSet(nonces))
     query.result.map(_.toVector)
   }
@@ -95,10 +89,8 @@ case class OracleNonceDAO()(implicit
     safeDatabase.run(findByAnnouncementIdsAction(ids))
   }
 
-  def findByAnnouncementIdsAction(ids: Vector[Long]): DBIOAction[
-    Vector[OracleNonceDb],
-    NoStream,
-    Effect.Read] = {
+  def findByAnnouncementIdsAction(ids: Vector[Long])
+      : DBIOAction[Vector[OracleNonceDb], NoStream, Effect.Read] = {
     table.filter(_.announcementId.inSet(ids)).result.map(_.toVector)
   }
 

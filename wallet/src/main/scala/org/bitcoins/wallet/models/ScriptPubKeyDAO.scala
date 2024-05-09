@@ -21,7 +21,9 @@ case class ScriptPubKeyDAO()(implicit
   override val table: profile.api.TableQuery[ScriptPubKeyTable] =
     TableQuery[ScriptPubKeyTable]
 
-  /** Creates a new row in the database only if the given SPK (not ID) does not exists. */
+  /** Creates a new row in the database only if the given SPK (not ID) does not
+    * exists.
+    */
   def createIfNotExists(spkDb: ScriptPubKeyDb): Future[ScriptPubKeyDb] = {
     val spkFind = table.filter(_.scriptPubKey === spkDb.scriptPubKey).result
     val actions = for {
@@ -47,12 +49,10 @@ case class ScriptPubKeyDAO()(implicit
     foundVecF.map(_.headOption)
   }
 
-  def findScriptPubKeysAction(spks: Vector[ScriptPubKey]): DBIOAction[
-    Vector[ScriptPubKeyDb],
-    NoStream,
-    Effect.Read] = {
+  def findScriptPubKeysAction(spks: Vector[ScriptPubKey])
+      : DBIOAction[Vector[ScriptPubKeyDb], NoStream, Effect.Read] = {
     val hashes = spks.map(ScriptPubKeyDb.hash)
-    //group hashes to avoid https://github.com/bitcoin-s/bitcoin-s/issues/4220
+    // group hashes to avoid https://github.com/bitcoin-s/bitcoin-s/issues/4220
     val groupedHashes: Vector[Vector[Sha256Digest]] =
       hashes.grouped(1000).toVector
     val actions =
@@ -60,7 +60,9 @@ case class ScriptPubKeyDAO()(implicit
     DBIO.sequence(actions).map(_.flatten.toVector)
   }
 
-  /** Searches for the given set of spks and returns the ones that exist in the db */
+  /** Searches for the given set of spks and returns the ones that exist in the
+    * db
+    */
   def findScriptPubKeys(
       spks: Vector[ScriptPubKey]): Future[Vector[ScriptPubKeyDb]] = {
     val action = findScriptPubKeysAction(spks)

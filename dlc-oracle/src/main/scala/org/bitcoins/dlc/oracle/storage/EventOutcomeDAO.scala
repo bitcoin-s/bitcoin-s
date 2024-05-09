@@ -31,16 +31,14 @@ case class EventOutcomeDAO()(implicit
       ts: Vector[EventOutcomeDb]): Future[Vector[EventOutcomeDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(ids: Vector[
-    (SchnorrNonce, String)]): Query[EventOutcomeTable, EventOutcomeDb, Seq] =
+  override protected def findByPrimaryKeys(ids: Vector[(SchnorrNonce, String)])
+      : Query[EventOutcomeTable, EventOutcomeDb, Seq] =
     table
       .filter(_.nonce.inSet(ids.map(_._1)))
       .filter(_.message.inSet(ids.map(_._2)))
 
-  override protected def findAll(ts: Vector[EventOutcomeDb]): Query[
-    EventOutcomeTable,
-    EventOutcomeDb,
-    Seq] = {
+  override protected def findAll(ts: Vector[EventOutcomeDb])
+      : Query[EventOutcomeTable, EventOutcomeDb, Seq] = {
     val ids = ts.map(t => (t.nonce, t.message))
     findByPrimaryKeys(ids)
   }

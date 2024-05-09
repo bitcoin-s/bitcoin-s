@@ -86,12 +86,13 @@ object SchnorrSigPointTestVector
   implicit val pubKeyFromat: Format[ECPublicKey] = networkElementFormat(
     ECPublicKey)
 
-  implicit val schnorrSigPointTestVectorInputFormat: Format[
-    SchnorrSigPointTestVectorInput] =
+  implicit val schnorrSigPointTestVectorInputFormat
+      : Format[SchnorrSigPointTestVectorInput] =
     Json.format[SchnorrSigPointTestVectorInput]
 
-  implicit val schnorrSigPointTestVectorFormat: Format[
-    SchnorrSigPointTestVector] = Json.format[SchnorrSigPointTestVector]
+  implicit val schnorrSigPointTestVectorFormat
+      : Format[SchnorrSigPointTestVector] =
+    Json.format[SchnorrSigPointTestVector]
 
   override def fromJson(json: JsValue): JsResult[SchnorrSigPointTestVector] = {
     json.validate[SchnorrSigPointTestVector]

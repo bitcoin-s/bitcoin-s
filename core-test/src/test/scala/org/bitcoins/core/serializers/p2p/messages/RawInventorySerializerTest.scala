@@ -9,8 +9,8 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
   */
 class RawInventorySerializerTest extends BitcoinSUnitTest {
 
-  //from bitcoin developer reference example section
-  //https://bitcoin.org/en/developer-reference#inv
+  // from bitcoin developer reference example section
+  // https://bitcoin.org/en/developer-reference#inv
   val hex =
     "01000000de55ffd709ac1f5dc509a0925d0b1fc442ca034f224732e429081da1b621f55a"
   "RawInventorySerializer" must "read a inventory object from its hex representation" in {

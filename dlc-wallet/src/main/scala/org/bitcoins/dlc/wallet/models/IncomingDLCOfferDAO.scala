@@ -25,22 +25,16 @@ case class IncomingDLCOfferDAO()(implicit
       ts: Vector[IncomingDLCOfferDb]): Future[Vector[IncomingDLCOfferDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override def findAllAction(): DBIOAction[
-    Vector[IncomingDLCOfferDb],
-    NoStream,
-    Effect.Read] =
+  override def findAllAction()
+      : DBIOAction[Vector[IncomingDLCOfferDb], NoStream, Effect.Read] =
     table.sortBy(_.receivedAt.desc).result.map(_.toVector)
 
-  override protected def findByPrimaryKeys(ids: Vector[Sha256Digest]): Query[
-    Table[IncomingDLCOfferDb],
-    IncomingDLCOfferDb,
-    Seq] =
+  override protected def findByPrimaryKeys(ids: Vector[Sha256Digest])
+      : Query[Table[IncomingDLCOfferDb], IncomingDLCOfferDb, Seq] =
     table.filter(_.hash.inSet(ids))
 
-  override protected def findAll(ts: Vector[IncomingDLCOfferDb]): Query[
-    Table[IncomingDLCOfferDb],
-    IncomingDLCOfferDb,
-    Seq] =
+  override protected def findAll(ts: Vector[IncomingDLCOfferDb])
+      : Query[Table[IncomingDLCOfferDb], IncomingDLCOfferDb, Seq] =
     findByPrimaryKeys(ts.map(_.hash))
 
   def delete(pk: Sha256Digest): Future[Int] = {

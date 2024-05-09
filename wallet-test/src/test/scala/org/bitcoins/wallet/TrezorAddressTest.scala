@@ -191,14 +191,13 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       .map(_ => ())
   }
 
-  /** Iterates over the given list of accounts and test vectors, and
-    * fetches all the
-    * addresses needed to verify the test vector
+  /** Iterates over the given list of accounts and test vectors, and fetches all
+    * the addresses needed to verify the test vector
     */
   def getAccountsWithAddressesAndVectors(
       wallet: Wallet,
-      accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
-    Seq[AccountAndAddrsAndVector]] = {
+      accountsWithVectors: Seq[(AccountDb, TestVector)])
+      : Future[Seq[AccountAndAddrsAndVector]] = {
     FutureUtil.sequentially(accountsWithVectors) { case (acc, vec) =>
       val addrFutures: Future[Seq[AddressDb]] =
         FutureUtil.sequentially(vec.addresses) { vector =>

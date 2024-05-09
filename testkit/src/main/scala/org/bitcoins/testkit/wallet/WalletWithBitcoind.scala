@@ -11,8 +11,8 @@ sealed trait WalletWithBitcoind[T <: BitcoindRpcClient] {
   def walletConfig: WalletAppConfig
 }
 
-/** General pairing of a wallet with a bitcoind rpc. If you don't care about
-  * the version of bitcoind, you should use this.
+/** General pairing of a wallet with a bitcoind rpc. If you don't care about the
+  * version of bitcoind, you should use this.
   */
 case class WalletWithBitcoindRpc(
     wallet: NeutrinoHDWalletApi,

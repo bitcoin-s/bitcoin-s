@@ -10,11 +10,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait WalletSync extends BitcoinSLogger {
 
-  /** Synchronizes the bitcoin-s' wallet by retrieving each block and then calling
-    * [[Wallet.processBlock()]] on the block retrieved
+  /** Synchronizes the bitcoin-s' wallet by retrieving each block and then
+    * calling [[Wallet.processBlock()]] on the block retrieved
     *
-    * WARNING: This should not be used on resource constrained devices
-    * as fetching full blocks will use a lot of bandwidth on live networks
+    * WARNING: This should not be used on resource constrained devices as
+    * fetching full blocks will use a lot of bandwidth on live networks
     */
   def syncFullBlocks(
       wallet: WalletApi,
@@ -49,7 +49,9 @@ trait WalletSync extends BitcoinSLogger {
     syncedWalletF
   }
 
-  /** Syncs the wallet by walking backwards from the currentTip until we reach our wallet's best blockHash */
+  /** Syncs the wallet by walking backwards from the currentTip until we reach
+    * our wallet's best blockHash
+    */
   private def getBlocksToSync(
       wallet: WalletApi,
       currentTipBlockHashBE: DoubleSha256DigestBE,
@@ -77,7 +79,7 @@ trait WalletSync extends BitcoinSLogger {
       blocks <- {
         currentBlockOpt match {
           case Some(currentBlock) =>
-            //loop again as we need to keep syncing
+            // loop again as we need to keep syncing
             getBlocksToSync(
               wallet = wallet,
               currentTipBlockHashBE =
@@ -87,7 +89,7 @@ trait WalletSync extends BitcoinSLogger {
               genesisBlockHashBE = genesisBlockHashBE
             )
           case None =>
-            //yay! Done syncing, return all blocks our wallet needs to be synced with
+            // yay! Done syncing, return all blocks our wallet needs to be synced with
             Future.successful(accum)
         }
       }

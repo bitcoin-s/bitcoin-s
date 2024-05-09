@@ -36,8 +36,8 @@ class ControlOperationsInterpreterTest extends BitcoinSJvmTest {
   }
 
   it must "have OP_VERIFY evaluate to true when there are multiple items on the stack that can be cast to an int" in {
-    //for this test case in bitcoin core's script test suite
-    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21
+    // for this test case in bitcoin core's script test suite
+    // https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21
     val stack = ScriptParser.fromString("0x09 0x00000000 0x00000000 0x10")
     val script = List(OP_VERIFY)
     val program =

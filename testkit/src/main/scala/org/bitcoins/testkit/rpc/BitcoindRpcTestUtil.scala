@@ -89,11 +89,11 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     /* pruning and txindex are not compatible */
     val txindex = if (pruneMode) 0 else 1
-    //windows environments don't allow the -daemon flag
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/3684
+    // windows environments don't allow the -daemon flag
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/3684
     val isDaemon = if (EnvUtil.isWindows) 0 else 1
-    //if bitcoind is not a daemon, we get a ton of logs
-    //from bitcoind written to stdout, so turn off debug if we are not a daemon
+    // if bitcoind is not a daemon, we get a ton of logs
+    // from bitcoind written to stdout, so turn off debug if we are not a daemon
     val isDebug = if (isDaemon == 1) 1 else 0
     val conf = s"""
                   |regtest=1
@@ -140,9 +140,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     BitcoindConfig(config = configTor, datadir = FileUtil.tmpDir())
   }
 
-  /** Creates a `bitcoind` config within the system temp
-    * directory, writes the file and returns the written
-    * file
+  /** Creates a `bitcoind` config within the system temp directory, writes the
+    * file and returns the written file
     */
   def writtenConfig(
       uri: URI,
@@ -380,8 +379,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   /** Return index of output of TX `txid` with value `amount`
     *
-    * @see function we're mimicking in
-    *      [[https://github.com/bitcoin/bitcoin/blob/master/test/functional/test_framework/util.py#L410 Core test suite]]
+    * @see
+    *   function we're mimicking in
+    *   [[https://github.com/bitcoin/bitcoin/blob/master/test/functional/test_framework/util.py#L410 Core test suite]]
     */
   def findOutput(
       client: BitcoindRpcClient,
@@ -400,11 +400,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  /** Generates the specified amount of blocks with all provided clients
-    * and waits until they are synced.
+  /** Generates the specified amount of blocks with all provided clients and
+    * waits until they are synced.
     *
-    * @return Vector of Blockhashes of generated blocks, with index corresponding to the
-    *         list of provided clients
+    * @return
+    *   Vector of Blockhashes of generated blocks, with index corresponding to
+    *   the list of provided clients
     */
   def generateAllAndSync(
       clients: Vector[BitcoindRpcClient],
@@ -428,10 +429,11 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     genereratedHashesF.map(_.reverse.toVector)
   }
 
-  /** Generates the specified amount of blocks and waits until
-    * the provided clients are synced.
+  /** Generates the specified amount of blocks and waits until the provided
+    * clients are synced.
     *
-    * @return Blockhashes of generated blocks
+    * @return
+    *   Blockhashes of generated blocks
     */
   def generateAndSync(clients: Vector[BitcoindRpcClient], blocks: Int = 6)(
       implicit system: ActorSystem): Future[Vector[DoubleSha256DigestBE]] = {
@@ -669,7 +671,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  /** Returns a pair of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+  /** Returns a pair of
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are connected with some blocks in the chain
     */
   def createNodePair[T <: BitcoindRpcClient](
@@ -685,7 +688,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     createNodePairInternal(version)
   }
 
-  /** Returns a pair of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+  /** Returns a pair of
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are not connected but have the same blocks in the chain
     */
   def createUnconnectedNodePairWithBlocks[T <: BitcoindRpcClient](
@@ -706,17 +710,20 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def createNodePairV22(clientAccum: RpcClientAccum)(implicit
       system: ActorSystem): Future[
     (BitcoindV22RpcClient, BitcoindV22RpcClient)
-  ] = //shouldn't this be V22
+  ] = // shouldn't this be V22
     createNodePairInternal(BitcoindVersion.V22, clientAccum)
 
-  /** Returns a pair of [[org.bitcoins.rpc.client.v23.BitcoindV23RpcClient BitcoindV23RpcClient]]
+  /** Returns a pair of
+    * [[org.bitcoins.rpc.client.v23.BitcoindV23RpcClient BitcoindV23RpcClient]]
     * that are connected with some blocks in the chain
     */
   def createNodePairV23(clientAccum: RpcClientAccum)(implicit
-  system: ActorSystem): Future[(BitcoindV23RpcClient, BitcoindV23RpcClient)] =
+      system: ActorSystem)
+      : Future[(BitcoindV23RpcClient, BitcoindV23RpcClient)] =
     createNodePairInternal(BitcoindVersion.V23, clientAccum)
 
-  /** Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+  /** Returns a triple of
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are connected with some blocks in the chain
     */
   private def createNodeTripleInternal[T <: BitcoindRpcClient](
@@ -733,7 +740,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  /** Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+  /** Returns a triple of
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are connected with some blocks in the chain
     */
   private def createNodeTripleInternal[T <: BitcoindRpcClient](
@@ -748,18 +756,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient
-    * that are connected with some blocks in the chain
+  /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient
+    * BitcoindRpcClient that are connected with some blocks in the chain
     */
   def createNodeTriple(
       clientAccum: RpcClientAccum
-  )(implicit system: ActorSystem): Future[
-    (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
+  )(implicit system: ActorSystem)
+      : Future[(BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.Unknown, clientAccum)
   }
 
-  /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient
-    * that are connected with some blocks in the chain
+  /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient
+    * BitcoindRpcClient that are connected with some blocks in the chain
     */
   def createNodeTriple[T <: BitcoindRpcClient](version: BitcoindVersion)(
       implicit system: ActorSystem): Future[(T, T, T)] = {
@@ -795,12 +803,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   /** Bitcoin Core 0.16 and 0.17 has diffrent APIs for signing raw transactions.
     * This method tries to construct either a
     * [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
-    * or a [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
-    * from the provided `signer`, and then calls the appropriate method on the result.
+    * or a
+    * [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
+    * from the provided `signer`, and then calls the appropriate method on the
+    * result.
     *
-    * @throws RuntimeException if no versioned
-    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
-    * can be constructed.
+    * @throws RuntimeException
+    *   if no versioned
+    *   [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+    *   can be constructed.
     */
   def signRawTransaction(
       signer: BitcoindRpcClient,
@@ -819,8 +830,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
           s"Cannot sign tx with unknown version of bitcoind, got=$unknown")
     }
 
-  /** Gets the pubkey (if it exists) asscociated with a given
-    * bitcoin address in a version-agnostic manner
+  /** Gets the pubkey (if it exists) asscociated with a given bitcoin address in
+    * a version-agnostic manner
     */
   def getPubkey(client: BitcoindRpcClient, address: BitcoinAddress)(implicit
       system: ActorSystem): Future[Option[ECPublicKey]] = {
@@ -851,12 +862,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     } yield transaction
   }
 
-  /** @return The first block (after genesis) in the
-    *         given node's blockchain
+  /** @return
+    *   The first block (after genesis) in the given node's blockchain
     */
   def getFirstBlock(node: BitcoindRpcClient)(implicit
-      executionContext: ExecutionContext): Future[
-    GetBlockWithTransactionsResult] = {
+      executionContext: ExecutionContext)
+      : Future[GetBlockWithTransactionsResult] = {
     node
       .getBlockHash(1)
       .flatMap(node.getBlockWithTransactions)
@@ -875,8 +886,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     } yield ()
   }
 
-  /** Produces a confirmed transaction from `sender` to `address`
-    * for `amount`
+  /** Produces a confirmed transaction from `sender` to `address` for `amount`
     */
   def fundBlockChainTransaction(
       sender: BitcoindRpcClient,
@@ -907,8 +917,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  /** Produces a unconfirmed transaction from `sender` to `address`
-    * for `amount`
+  /** Produces a unconfirmed transaction from `sender` to `address` for `amount`
     */
   def fundMemPoolTransaction(
       sender: BitcoindRpcClient,
@@ -960,8 +969,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     hasSeenBlock(client1, hash.flip)
   }
 
-  /** @param clientAccum If provided, the generated client is added to
-    *                    this vectorbuilder.
+  /** @param clientAccum
+    *   If provided, the generated client is added to this vectorbuilder.
     */
   def startedBitcoindRpcClient(
       instanceOpt: Option[BitcoindInstanceLocal] = None,
@@ -975,12 +984,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       instance.datadir.getPath.startsWith(Properties.tmpDir),
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")
 
-    //start the bitcoind instance so eclair can properly use it
+    // start the bitcoind instance so eclair can properly use it
     val rpc = BitcoindRpcClient.withActorSystem(instance)
     val startedF = startServers(Vector(rpc))
 
     val blocksToGenerate = 102
-    //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
+    // fund the wallet by generating 102 blocks, need this to get over coinbase maturity
     val generatedF = startedF.flatMap { _ =>
       clientAccum += rpc
       rpc.generate(blocksToGenerate)

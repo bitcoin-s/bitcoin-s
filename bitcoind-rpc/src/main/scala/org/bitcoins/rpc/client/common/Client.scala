@@ -44,12 +44,10 @@ import scala.concurrent.duration.DurationInt
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-/** This is the base trait for Bitcoin Core
-  * RPC clients. It defines no RPC calls
-  * except for the a ping. It contains functionality
-  * and utilities useful when working with an RPC
-  * client, like data directories, log files
-  * and whether or not the client is started.
+/** This is the base trait for Bitcoin Core RPC clients. It defines no RPC calls
+  * except for the a ping. It contains functionality and utilities useful when
+  * working with an RPC client, like data directories, log files and whether or
+  * not the client is started.
   */
 trait Client
     extends BitcoinSLogger
@@ -61,10 +59,9 @@ trait Client
   protected def walletExtension(walletName: String): String =
     s"/wallet/$walletName"
 
-  /** The log file of the Bitcoin Core daemon.
-    * This returns the log file if the underlying instance is
-    * [[org.bitcoins.rpc.config.BitcoindInstanceLocal]], and
-    * None if the underlying instance is [[BitcoindInstanceRemote]]
+  /** The log file of the Bitcoin Core daemon. This returns the log file if the
+    * underlying instance is [[org.bitcoins.rpc.config.BitcoindInstanceLocal]],
+    * and None if the underlying instance is [[BitcoindInstanceRemote]]
     */
   lazy val logFileOpt: Option[Path] = {
     instance match {
@@ -81,10 +78,9 @@ trait Client
     }
   }
 
-  /** The configuration file of the Bitcoin Core daemon
-    * This returns the conf file is the underlying instance is
-    * [[BitcoindInstanceLocal]] and None if the underlying
-    * instance is [[BitcoindInstanceRemote]]
+  /** The configuration file of the Bitcoin Core daemon This returns the conf
+    * file is the underlying instance is [[BitcoindInstanceLocal]] and None if
+    * the underlying instance is [[BitcoindInstanceRemote]]
     */
   lazy val confFileOpt: Option[Path] = {
     instance match {
@@ -102,8 +98,8 @@ trait Client
     system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
-  /** This is here (and not in JsonWrriters)
-    * so that the implicit network val is accessible
+  /** This is here (and not in JsonWrriters) so that the implicit network val is
+    * accessible
     */
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
 
@@ -113,8 +109,8 @@ trait Client
 
   implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
 
-  /** This is here (and not in JsonWrriters)
-    * so that the implicit network val is accessible
+  /** This is here (and not in JsonWrriters) so that the implicit network val is
+    * accessible
     */
   implicit object ECPrivateKeyBytesWrites extends Writes[ECPrivateKeyBytes] {
 
@@ -156,9 +152,9 @@ trait Client
   }
 
   /** Starts bitcoind on the local system.
-    * @return a future that completes when bitcoind is fully started.
-    *         This future times out after 60 seconds if the client
-    *         cannot be started
+    * @return
+    *   a future that completes when bitcoind is fully started. This future
+    *   times out after 60 seconds if the client cannot be started
     */
   override def start(): Future[BitcoindRpcClient] = {
     logger.info(s"Client.start() instance=$instance")
@@ -271,7 +267,7 @@ trait Client
           if exc.getMessage.contains("Connection refused") =>
         false
       case _: JsonParseException =>
-        //see https://github.com/bitcoin-s/bitcoin-s/issues/527
+        // see https://github.com/bitcoin-s/bitcoin-s/issues/527
         false
     }
   }
@@ -289,12 +285,12 @@ trait Client
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
         instance match {
           case _: BitcoindInstanceRemote =>
-            //we cannot check locally if it has been started
-            //so best we can do is try to ping
+            // we cannot check locally if it has been started
+            // so best we can do is try to ping
             tryPing()
           case _: BitcoindInstanceLocal =>
-            //check if the binary has been started
-            //and then tryPing() if it has
+            // check if the binary has been started
+            // and then tryPing() if it has
             if (isStartedFlag.get) {
               tryPing()
             } else {
@@ -305,16 +301,18 @@ trait Client
     }
   }
 
-  /** Stop method for BitcoindRpcClient that is stopped, inherits from the StartStop trait
-    * @return A future stopped bitcoindRPC client
+  /** Stop method for BitcoindRpcClient that is stopped, inherits from the
+    * StartStop trait
+    * @return
+    *   A future stopped bitcoindRPC client
     */
   def stop(): Future[BitcoindRpcClient] = {
     for {
       _ <- bitcoindCall[String]("stop")
       _ = isStartedFlag.set(false)
-      //do we want to call this right away?
-      //i think bitcoind stops asynchronously
-      //so it returns fast from the 'stop' rpc command
+      // do we want to call this right away?
+      // i think bitcoind stops asynchronously
+      // so it returns fast from the 'stop' rpc command
       _ <- stopBinary()
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
@@ -325,7 +323,8 @@ trait Client
   }
 
   /** Checks whether the underlyind bitcoind daemon is stopped
-    * @return A future boolean which represents isstopped or not
+    * @return
+    *   A future boolean which represents isstopped or not
     */
   def isStoppedF: Future[Boolean] = {
     isStartedF.map(started => !started)
@@ -353,8 +352,8 @@ trait Client
       /** These lines are handy if you want to inspect what's being sent to and
         * returned from bitcoind before it's parsed into a Scala type. However,
         * there will sensitive material in some of those calls (private keys,
-        * XPUBs, balances, etc). It's therefore not a good idea to enable
-        * this logging in production.
+        * XPUBs, balances, etc). It's therefore not a good idea to enable this
+        * logging in production.
         */
 //      logger.info(
 //        s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
@@ -413,8 +412,8 @@ trait Client
 
   /** Parses the payload of the given response into JSON.
     *
-    * The command, parameters and request are given as debug parameters,
-    * and only used for printing diagnostics if things go belly-up.
+    * The command, parameters and request are given as debug parameters, and
+    * only used for printing diagnostics if things go belly-up.
     */
   protected def getPayload(response: HttpResponse): Future[JsValue] = {
     try {

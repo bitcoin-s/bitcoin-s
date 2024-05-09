@@ -10,9 +10,9 @@ import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
 
-/** This class is designed to consume a zmq stream from a cryptocurrency's daemon.
-  * An example of this is  bitcoind. For information on how to setup your coin's  conf
-  * file to be able to consume a zmq stream please see
+/** This class is designed to consume a zmq stream from a cryptocurrency's
+  * daemon. An example of this is bitcoind. For information on how to setup your
+  * coin's conf file to be able to consume a zmq stream please see
   * [[https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md#usage]]
   * [[http://zguide.zeromq.org/java:psenvsub]]
   * @param socket
@@ -67,7 +67,7 @@ class ZMQSubscriber(
 
   private val subscriberThread = new Thread(SubscriberRunnable)
   subscriberThread.setName(s"ZMQSubscriber-thread-${System
-    .currentTimeMillis()}")
+      .currentTimeMillis()}")
   subscriberThread.setDaemon(true)
 
   override def start(): Unit = {
@@ -110,9 +110,9 @@ class ZMQSubscriber(
     */
   override def stop(): Unit = {
     logger.info(s"Stopping zmq")
-    //i think this could technically not work, because currently we are blocking
-    //on Zmsg.recvMsg in our while loop. If we don't get another message we won't
-    //be able toe evaluate the while loop again. Moving forward with this for now.
+    // i think this could technically not work, because currently we are blocking
+    // on Zmsg.recvMsg in our while loop. If we don't get another message we won't
+    // be able toe evaluate the while loop again. Moving forward with this for now.
     isConnected = false
     subscriber.close()
     context.term()
@@ -120,8 +120,8 @@ class ZMQSubscriber(
     ()
   }
 
-  /** Processes a message that we received the from the cryptocurrency daemon and then
-    * applies the appropriate listener to that message.
+  /** Processes a message that we received the from the cryptocurrency daemon
+    * and then applies the appropriate listener to that message.
     */
   private def processMsg(topic: String, body: Array[Byte]): Unit = {
     val notification = ZMQNotification.fromString(topic)

@@ -41,8 +41,8 @@ case class DLCContactDAO()(implicit
     safeDatabase.run(action)
   }
 
-  override protected def findByPrimaryKeys(ids: Vector[
-    InetSocketAddress]): Query[DLCContactTable, DLCContactDb, Seq] =
+  override protected def findByPrimaryKeys(ids: Vector[InetSocketAddress])
+      : Query[DLCContactTable, DLCContactDb, Seq] =
     table.filter(_.address.inSet(ids)).sortBy(_.alias)
 
   override def findByPrimaryKey(
@@ -51,10 +51,8 @@ case class DLCContactDAO()(implicit
       .filter(_.address === id)
   }
 
-  override def findAll(contacts: Vector[DLCContactDb]): Query[
-    DLCContactTable,
-    DLCContactDb,
-    Seq] =
+  override def findAll(contacts: Vector[DLCContactDb])
+      : Query[DLCContactTable, DLCContactDb, Seq] =
     findByPrimaryKeys(contacts.map(_.address))
 
   def delete(address: InetSocketAddress): Future[Int] = {

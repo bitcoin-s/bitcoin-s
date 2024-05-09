@@ -11,59 +11,59 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
     val long = ScriptNumberUtil.toLong(hex)
     long must be(1)
 
-    //127
+    // 127
     val hex1 = "7f"
     val long1 = ScriptNumberUtil.toLong(hex1)
     long1 must be(127)
 
-    //128
+    // 128
     val hex2 = "8000"
     val long2 = ScriptNumberUtil.toLong(hex2)
     long2 must be(128)
 
-    //32767
+    // 32767
     val hex3 = "ff7f"
     val long3 = ScriptNumberUtil.toLong(hex3)
     long3 must be(32767)
 
-    //32768
+    // 32768
     val hex4 = "008000"
     val long4 = ScriptNumberUtil.toLong(hex4)
     long4 must be(32768)
 
-    //20
+    // 20
     val hex5 = "14"
     val long5 = ScriptNumberUtil.toLong(hex5)
     long5 must be(20)
 
-    //0
+    // 0
     val hex6 = "00"
     val long6 = ScriptNumberUtil.toLong(hex6)
     long6 must be(0)
   }
 
   it must "convert a negative hex number to its corresponding long number" in {
-    //-1
+    // -1
     val hex = "81"
     val long = ScriptNumberUtil.toLong(hex)
     long must be(-1)
 
-    //-127
+    // -127
     val hex1 = "ff"
     val long1 = ScriptNumberUtil.toLong(hex1)
     long1 must be(-127)
 
-    //-128
+    // -128
     val hex2 = "8080"
     val long2 = ScriptNumberUtil.toLong(hex2)
     long2 must be(-128)
 
-    //-32767
+    // -32767
     val hex3 = "ffff"
     val long3 = ScriptNumberUtil.toLong(hex3)
     long3 must be(-32767)
 
-    //-32768
+    // -32768
     val hex4 = "008080"
     val long4 = ScriptNumberUtil.toLong(hex4)
     long4 must be(-32768)
@@ -74,7 +74,7 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
     val hexIsPositive = ScriptNumberUtil.isPositive(hex)
     hexIsPositive must be(true)
 
-    //128
+    // 128
     val hex1 = "8000"
     val hexIsPositive1 = ScriptNumberUtil.isPositive(hex1)
     hexIsPositive1 must be(true)
@@ -86,22 +86,22 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
   }
 
   it must "determine if a hex string is a negative number" in {
-    //-1
+    // -1
     val hex = "81"
     val hexIsNegative = ScriptNumberUtil.isNegative(hex)
     hexIsNegative must be(true)
 
-    //-128
+    // -128
     val hex1 = "8080"
     val hexIsNegative1 = ScriptNumberUtil.isNegative(hex1)
     hexIsNegative1 must be(true)
 
-    //-32767
+    // -32767
     val hex2 = "ffff"
     val hexIsNegative2 = ScriptNumberUtil.isNegative(hex2)
     hexIsNegative2 must be(true)
 
-    //must also work for bytes
+    // must also work for bytes
     ScriptNumberUtil.isNegative(BytesUtil.decodeHex(hex2)) must be(true)
   }
 
@@ -112,7 +112,7 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
       ScriptNumberUtil
         .changeSignBitToPositive(BytesUtil.decodeHex(hex))) must be(expectedHex)
 
-    //-32767
+    // -32767
     val hex1 = "ffff"
     val expectedHex1 = "7fff"
     BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToPositive(hex1)) must be(
@@ -126,13 +126,13 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
     BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex)) must be(
       expectedHex)
 
-    //32767
+    // 32767
     val hex1 = "7fff"
     val expectedHex1 = "ffff"
     BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex1)) must be(
       expectedHex1)
 
-    //128
+    // 128
     val hex2 = "8000"
     val expectedHex2 = "8000"
     BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex2)) must be(
@@ -205,8 +205,8 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
 
   it must "convert a sequence of bytes to  the min value for an int" in {
     val min = Int.MinValue + 1
-    //the minimum number we can represent in ScriptNumbers i
-    //is Int.MinValue + 1 since we have a negative zero and zero
+    // the minimum number we can represent in ScriptNumbers i
+    // is Int.MinValue + 1 since we have a negative zero and zero
     ScriptNumberUtil.toInt("ffffffff") must be(min)
   }
 

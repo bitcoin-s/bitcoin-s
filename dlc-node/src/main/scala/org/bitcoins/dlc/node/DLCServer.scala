@@ -33,7 +33,7 @@ class DLCServer(
 
   IO(Tcp) ! Tcp.Bind(self, bindAddress)
 
-  private[this] var socketOpt: Option[ActorRef] = None
+  private var socketOpt: Option[ActorRef] = None
 
   override def receive: Receive = LoggingReceive {
     case Tcp.Bound(localAddress) =>
@@ -88,10 +88,8 @@ object DLCServer extends BitcoinSLogger {
       boundAddress: Option[Promise[InetSocketAddress]] = None,
       dataHandlerFactory: DLCDataHandler.Factory,
       handleWrite: (BigSizeUInt, ByteVector) => Future[Unit],
-      handleWriteError: (
-          BigSizeUInt,
-          ByteVector,
-          Throwable) => Future[Unit]): Props =
+      handleWriteError: (BigSizeUInt, ByteVector, Throwable) => Future[Unit])
+      : Props =
     Props(
       new DLCServer(dlcWalletApi,
                     bindAddress,

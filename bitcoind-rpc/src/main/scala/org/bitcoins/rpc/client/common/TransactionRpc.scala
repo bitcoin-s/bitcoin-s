@@ -11,9 +11,9 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-/** This trait defines RPC calls related to transactions
-  * in Bitcoin Core. These RPC calls generally provide a
-  * higher level of abstraction than the ones found in
+/** This trait defines RPC calls related to transactions in Bitcoin Core. These
+  * RPC calls generally provide a higher level of abstraction than the ones
+  * found in
   * [[org.bitcoins.rpc.client.common.RawTransactionRpc RawTransactionRpc]].
   */
 trait TransactionRpc { self: Client =>
@@ -59,8 +59,8 @@ trait TransactionRpc { self: Client =>
   // Needs manual testing!
   def estimateSmartFee(
       blocks: Int,
-      mode: FeeEstimationMode = FeeEstimationMode.Ecnomical): Future[
-    EstimateSmartFeeResult] = {
+      mode: FeeEstimationMode = FeeEstimationMode.Ecnomical)
+      : Future[EstimateSmartFeeResult] = {
     bitcoindCall[EstimateSmartFeeResult](
       "estimatesmartfee",
       List(JsNumber(blocks), JsString(mode.toString)))

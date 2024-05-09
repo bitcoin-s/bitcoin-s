@@ -10,9 +10,8 @@ import play.api.libs.json.{JsBoolean, JsString}
 
 import scala.concurrent.Future
 
-/** This trait defines RPC calls related to
-  * the mempool of a Bitcoin Core node. The
-  * mempool contains all unconfirmed transactions.
+/** This trait defines RPC calls related to the mempool of a Bitcoin Core node.
+  * The mempool contains all unconfirmed transactions.
   */
 trait MempoolRpc { self: Client =>
 
@@ -28,8 +27,8 @@ trait MempoolRpc { self: Client =>
     getMemPoolAncestors(txid.flip)
   }
 
-  def getMemPoolAncestorsVerbose(txid: DoubleSha256DigestBE): Future[
-    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+  def getMemPoolAncestorsVerbose(txid: DoubleSha256DigestBE)
+      : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
 
     self.version.flatMap {
       case V24 | V23 | V24 | Unknown =>
@@ -43,8 +42,8 @@ trait MempoolRpc { self: Client =>
     }
   }
 
-  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[
-    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest)
+      : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
     getMemPoolAncestorsVerbose(txid.flip)
   }
 
@@ -60,8 +59,8 @@ trait MempoolRpc { self: Client =>
     getMemPoolDescendants(txid.flip)
   }
 
-  def getMemPoolDescendantsVerbose(txid: DoubleSha256DigestBE): Future[
-    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256DigestBE)
+      : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
     self.version.flatMap {
       case V24 | V23 | V24 | Unknown =>
         bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]](
@@ -74,8 +73,8 @@ trait MempoolRpc { self: Client =>
     }
   }
 
-  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[
-    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest)
+      : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
     getMemPoolDescendantsVerbose(txid.flip)
   }
 
@@ -121,8 +120,8 @@ trait MempoolRpc { self: Client =>
                                                List(JsBoolean(false)))
   }
 
-  def getRawMemPoolWithTransactions: Future[
-    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+  def getRawMemPoolWithTransactions
+      : Future[Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
 
     self.version.flatMap {
       case V24 | V23 | V24 | Unknown =>

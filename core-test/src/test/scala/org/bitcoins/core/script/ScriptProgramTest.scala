@@ -28,7 +28,7 @@ class ScriptProgramTest extends BitcoinSUnitTest {
     val program2 = program.updateStack(List(OP_0))
     program2.stackTopIsTrue must be(false)
 
-    //stack top should not be true for negative zero
+    // stack top should not be true for negative zero
     val program3 = program.updateStack(List(ScriptNumber.negativeZero))
     program3.stackTopIsTrue must be(false)
   }

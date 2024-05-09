@@ -9,8 +9,8 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
 
   behavior of "TaprootWitness"
 
-  //from this test case in script_assets.json with this comment 'tapscript/input80limit'
-  //in script_assets.json
+  // from this test case in script_assets.json with this comment 'tapscript/input80limit'
+  // in script_assets.json
   val controlBlockHex =
     "c1a7957acbaaf7b444c53d9e0c9436e8a8a3247fd515095d66ddf6201918b40a3668f9a4ccdffcf778da624dca2dd" +
       "a0b08e763ec52fd4ad403ec7563a3504d0cc168b9a77a410029e01dac89567c9b2e6cd726e840351df3f2f58fefe976200a19244150d04153" +
@@ -40,7 +40,7 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   val internalPubKey: XOnlyPubKey = XOnlyPubKey.fromHex(
     "a7957acbaaf7b444c53d9e0c9436e8a8a3247fd515095d66ddf6201918b40a36")
   it must "compute a tap leaf hash correctly" in {
-    //from this test case in script_assets.json with this comment 'tapscript/input80limit'
+    // from this test case in script_assets.json with this comment 'tapscript/input80limit'
     val expected =
       "8d76c657582b87b087f36579a9ea78816d7e2a94098bc3e3c6113ed4b6315bb4"
     val asmHex =
@@ -53,7 +53,7 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   }
 
   it must "compute a merkle root for a tapscript tree" in {
-    //expected from the 'compute a tap leaf hash correctly' test case referenced above
+    // expected from the 'compute a tap leaf hash correctly' test case referenced above
 
     val merkleRoot =
       TaprootScriptPath.computeTaprootMerkleRoot(controlBlock, tapLeafHash)

@@ -152,9 +152,9 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       val receivingAddressF = wallet.getNewAddress()
       val amount = Bitcoins.one
 
-      val amtWithFee = amount + Satoshis(175) //for fee
+      val amtWithFee = amount + Satoshis(175) // for fee
 
-      //build funding tx
+      // build funding tx
       val fundingTxF: Future[(Transaction, UInt32)] = for {
         fundingAddr <- fundingAddressF
         output = TransactionOutput(amtWithFee, fundingAddr.scriptPubKey)
@@ -166,7 +166,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
 
       val processedFundingTxF: Future[WalletApi] = for {
         (fundingTx, _) <- fundingTxF
-        //make sure wallet is empty
+        // make sure wallet is empty
         balance <- wallet.getBalance()
         _ = assert(balance == Bitcoins.zero)
         processed <- wallet.processTransaction(fundingTx, None)
@@ -174,7 +174,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         _ = assert(balance == amtWithFee)
       } yield processed
 
-      //build spending tx
+      // build spending tx
       val spendingTxF = for {
         receivingAddress <- receivingAddressF
         wallet <- processedFundingTxF

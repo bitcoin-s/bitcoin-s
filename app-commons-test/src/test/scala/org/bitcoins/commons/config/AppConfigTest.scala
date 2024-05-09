@@ -80,10 +80,10 @@ class AppConfigTest extends BitcoinSAsyncTest {
     for {
       _ <- walletAppConfig.start()
     } yield {
-      //this should get substituted as all default sqlite
-      //configuration is saved in the "bitcoin-s.sqlite" key
-      //if in the future we change our default database behavior
-      //this test case will need to change to check that the profile is correct
+      // this should get substituted as all default sqlite
+      // configuration is saved in the "bitcoin-s.sqlite" key
+      // if in the future we change our default database behavior
+      // this test case will need to change to check that the profile is correct
       assert(walletAppConfig.dbConfig.profile.isInstanceOf[SQLiteProfile])
     }
   }
@@ -92,8 +92,8 @@ class AppConfigTest extends BitcoinSAsyncTest {
     val datadir = BitcoinSTestAppConfig.tmpDir()
     System.setProperty("bitcoin-s.wallet.requiredConfirmations", "1")
 
-    //need to invalidate the config cache to force typesafe config
-    //to freshly load all system properties
+    // need to invalidate the config cache to force typesafe config
+    // to freshly load all system properties
     ConfigFactory.invalidateCaches()
 
     val walletAppConfig =

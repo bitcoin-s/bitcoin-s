@@ -109,10 +109,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
     sendRequestAndParse[Vector[EsploraTransaction]](request)
   }
 
-  def getAddressTxs(
-      addr: BitcoinAddress,
-      lastSeenTxId: DoubleSha256DigestBE): Future[
-    Vector[EsploraTransaction]] = {
+  def getAddressTxs(addr: BitcoinAddress, lastSeenTxId: DoubleSha256DigestBE)
+      : Future[Vector[EsploraTransaction]] = {
     val url = baseUrl + s"/address/$addr/txs/chain/${lastSeenTxId.hex}"
     val request = HttpRequest(uri = url, method = HttpMethods.GET)
 

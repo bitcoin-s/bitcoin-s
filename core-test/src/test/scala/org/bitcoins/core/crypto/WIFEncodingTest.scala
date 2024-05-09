@@ -45,7 +45,7 @@ class WIFEncodingTest extends BitcoinSUnitTest {
   it must "correctly decode a private key from WIF" in {
     val privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
-    //derived hex on bitcore's playground
+    // derived hex on bitcore's playground
     privateKey.hex must be(
       "ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac")
   }

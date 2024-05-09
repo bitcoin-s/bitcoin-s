@@ -41,8 +41,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
   *
-  * @param directory The data directory of the wallet
-  * @param conf Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the wallet
+  * @param conf
+  *   Optional sequence of configuration overrides
   */
 case class DLCAppConfig(
     baseDatadir: Path,
@@ -70,7 +72,7 @@ case class DLCAppConfig(
       Files.createDirectories(datadir)
     }
 
-    //get migrations applied the last time the wallet was started
+    // get migrations applied the last time the wallet was started
     val initMigrations = migrationsApplied()
 
     val numMigrations = {
@@ -78,15 +80,15 @@ case class DLCAppConfig(
     }
 
     val f = if (initMigrations != 0 && initMigrations <= 9) {
-      //means we have an old wallet that we need to migrate
+      // means we have an old wallet that we need to migrate
 
       serializationVersionMigration()
         .flatMap { _ =>
           deleteAlphaVersionDLCs()
         }
     } else {
-      //the wallet is new enough where we cannot have any old
-      //DLCs in the database with a broken contractId
+      // the wallet is new enough where we cannot have any old
+      // DLCs in the database with a broken contractId
       Future.unit
     }
 
@@ -158,7 +160,9 @@ case class DLCAppConfig(
   override lazy val callbackFactory: DLCWalletCallbacks.type =
     DLCWalletCallbacks
 
-  /** Delete alpha version DLCs, these are old protocol format DLCs that cannot be safely updated to the new protocol version of DLCs */
+  /** Delete alpha version DLCs, these are old protocol format DLCs that cannot
+    * be safely updated to the new protocol version of DLCs
+    */
   private def deleteAlphaVersionDLCs(): Future[Unit] = {
     logger.info(s"Deleting alpha version DLCs")
     val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
@@ -184,22 +188,22 @@ case class DLCAppConfig(
     } yield ()
   }
 
-  /** Correctly populates the serialization version for existing DLCs
-    * in our wallet database
+  /** Correctly populates the serialization version for existing DLCs in our
+    * wallet database
     */
   private def serializationVersionMigration(): Future[Unit] = {
     logger.info(s"Fixing serialization version for false positive Beta DLCs")
     val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
     val dlcDAO = dlcManagement.dlcDAO
-    //read all existing DLCs
+    // read all existing DLCs
     val allDlcsF = dlcDAO.findAll()
 
-    //ugh, this is kinda nasty, idk how to make better though
+    // ugh, this is kinda nasty, idk how to make better though
     val walletAppConfig =
       WalletAppConfig(baseDatadir, configOverrides)
     val txDAO: TransactionDAO =
       TransactionDAO()(ec = ec, appConfig = walletAppConfig)
-    //get the offers so we can figure out what the serialization version is
+    // get the offers so we can figure out what the serialization version is
     val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
       for {
         allDlcs <- allDlcsF
@@ -208,7 +212,7 @@ case class DLCAppConfig(
             dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
 
           setupDbOptF.foreach {
-            case Some(_) => //happy path, do nothing
+            case Some(_) => // happy path, do nothing
             case None =>
               logger.warn(s"Corrupted dlcId=${a.dlcId.hex} state=${a.state}, " +
                 s"this is likely because of issue 4001 https://github.com/bitcoin-s/bitcoin-s/issues/4001 . " +
@@ -222,8 +226,8 @@ case class DLCAppConfig(
       }
     }
 
-    //now we need to insert the serialization type
-    //into global_dlc_data
+    // now we need to insert the serialization type
+    // into global_dlc_data
     val updatedDLCDbsF = for {
       dlcDbContractInfoOffer <- dlcDbContractInfoOfferF
     } yield setSerializationVersions(dlcDbContractInfoOffer)
@@ -233,7 +237,9 @@ case class DLCAppConfig(
     updatedInDbF.map(_ => ())
   }
 
-  /** Sets serialization versions on [[DLCDb]] based on the corresponding [[ContractInfo]] */
+  /** Sets serialization versions on [[DLCDb]] based on the corresponding
+    * [[ContractInfo]]
+    */
   private def setSerializationVersions(
       vec: Vector[DLCSetupDbState]): Vector[DLCDb] = {
     vec.map { case state: DLCSetupDbState =>
@@ -257,7 +263,7 @@ case class DLCAppConfig(
               }
           }
         case offerDbState: OfferedDbState =>
-          //if we don't have an accept message, we can only calculate tempContractId
+          // if we don't have an accept message, we can only calculate tempContractId
           val dlcDb = offerDbState.dlcDb
           val offer = offerDbState.offer
 
@@ -288,8 +294,8 @@ object DLCAppConfig
 
   override val moduleName: String = "dlc"
 
-  /** Constructs a wallet configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a wallet configuration from the default Bitcoin-S data
+    * directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): DLCAppConfig =

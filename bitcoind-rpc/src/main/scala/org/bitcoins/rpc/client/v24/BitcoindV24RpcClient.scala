@@ -29,8 +29,8 @@ class BitcoindV24RpcClient(override val instance: BitcoindInstance)(implicit
     getTxSpendingPrevOut(Vector(prevout)).map(_.head)
   }
 
-  def getTxSpendingPrevOut(prevouts: Vector[TransactionOutPoint]): Future[
-    Vector[GetTxSpendingPrevOutResult]] = {
+  def getTxSpendingPrevOut(prevouts: Vector[TransactionOutPoint])
+      : Future[Vector[GetTxSpendingPrevOutResult]] = {
     val json = JsArray(prevouts.map { prev =>
       Json.obj("txid" -> prev.txIdBE.hex, "vout" -> prev.vout.toLong)
     })
@@ -61,9 +61,9 @@ object BitcoindV24RpcClient {
 
   /** Creates an RPC client from the given instance.
     *
-    * Behind the scenes, we create an actor system for
-    * you. You can use `withActorSystem` if you want to
-    * manually specify an actor system for the RPC client.
+    * Behind the scenes, we create an actor system for you. You can use
+    * `withActorSystem` if you want to manually specify an actor system for the
+    * RPC client.
     */
   def apply(instance: BitcoindInstance): BitcoindV24RpcClient = {
     implicit val system: ActorSystem =
@@ -71,10 +71,9 @@ object BitcoindV24RpcClient {
     withActorSystem(instance)
   }
 
-  /** Creates an RPC client from the given instance,
-    * together with the given actor system. This is for
-    * advanced users, where you need fine grained control
-    * over the RPC client.
+  /** Creates an RPC client from the given instance, together with the given
+    * actor system. This is for advanced users, where you need fine grained
+    * control over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(implicit
       system: ActorSystem): BitcoindV24RpcClient =

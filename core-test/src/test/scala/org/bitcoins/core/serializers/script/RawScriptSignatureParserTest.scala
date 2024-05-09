@@ -11,8 +11,8 @@ import scodec.bits.ByteVector
   */
 class RawScriptSignatureParserTest extends BitcoinSUnitTest {
 
-  //from bitcoin developer examples
-  //https://bitcoin.org/en/developer-reference#raw-transaction-format
+  // from bitcoin developer examples
+  // https://bitcoin.org/en/developer-reference#raw-transaction-format
   val rawScriptSig =
     "4a494830450221008949f0cb400094ad2b5eb399d59d01c14d73d8fe6e96df1a7150deb388ab8935022079656090d7f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
   val encode = BytesUtil.encodeHex(_: ByteVector)
@@ -27,8 +27,8 @@ class RawScriptSignatureParserTest extends BitcoinSUnitTest {
   }
 
   it must "read then write a raw script sig" in {
-    //from this tx
-    //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
+    // from this tx
+    // https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
     val rawScriptSig = TestUtil.rawScriptSig
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
     encode(RawScriptSignatureParser.write(scriptSig)) must be(rawScriptSig)
@@ -85,7 +85,7 @@ class RawScriptSignatureParserTest extends BitcoinSUnitTest {
   }
 
   it must "parse hex to a p2pkh scriptSig and then write that p2pkh scriptSig to hex" in {
-    //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+    // from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val rawScriptSig =
       "6a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"
 

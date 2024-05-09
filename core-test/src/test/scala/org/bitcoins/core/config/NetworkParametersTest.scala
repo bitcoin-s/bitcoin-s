@@ -7,8 +7,8 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
   */
 class NetworkParametersTest extends BitcoinSUnitTest {
 
-  //test case answers are from this link
-  //https://en.bitcoin.it/wiki/Protocol_documentation#Common_structures
+  // test case answers are from this link
+  // https://en.bitcoin.it/wiki/Protocol_documentation#Common_structures
   "NetworkParameters" must "create the correct magic network bytes for mainnet" in {
     BytesUtil.encodeHex(MainNet.magicBytes) must be("f9beb4d9")
   }

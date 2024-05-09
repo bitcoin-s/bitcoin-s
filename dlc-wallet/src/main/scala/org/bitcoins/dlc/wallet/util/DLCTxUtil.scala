@@ -6,9 +6,11 @@ import org.bitcoins.dlc.wallet.models.DLCFundingInputDb
 
 object DLCTxUtil {
 
-  /** Takes in a list of inputs to fund DLCs, and pairs them with the full funding transaction for this input
-    * and then converts the input tx pair to a [[DLCFundingInput]]
-    * @throws NoSuchElementException when we have an input we cannot find the funding transaction for
+  /** Takes in a list of inputs to fund DLCs, and pairs them with the full
+    * funding transaction for this input and then converts the input tx pair to
+    * a [[DLCFundingInput]]
+    * @throws NoSuchElementException
+    *   when we have an input we cannot find the funding transaction for
     */
   def matchPrevTxsWithInputs(
       inputs: Vector[DLCFundingInputDb],

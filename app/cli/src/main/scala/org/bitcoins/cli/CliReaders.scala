@@ -103,8 +103,8 @@ object CliReaders {
         EnumEventDescriptorV0TLV.fromHex
     }
 
-  implicit val digitDecompEventDescriptorReads: Read[
-    DigitDecompositionEventDescriptorV0TLV] =
+  implicit val digitDecompEventDescriptorReads
+      : Read[DigitDecompositionEventDescriptorV0TLV] =
     new Read[DigitDecompositionEventDescriptorV0TLV] {
       override def arity: Int = 1
 
@@ -124,7 +124,7 @@ object CliReaders {
       override def arity: Int = 1
       override def reads: String => ContractDescriptorTLV = { str =>
         upickle.default.read[ContractDescriptorV0TLV](str)(
-          Picklers.contractDescriptorV0)
+          using Picklers.contractDescriptorV0)
       }
     }
   }
@@ -310,8 +310,8 @@ object CliReaders {
       val reads: String => Sha256DigestBE = Sha256DigestBE.fromHex
     }
 
-  implicit val lockUnspentOutputParametersReads: Read[
-    Vector[LockUnspentOutputParameter]] =
+  implicit val lockUnspentOutputParametersReads
+      : Read[Vector[LockUnspentOutputParameter]] =
     new Read[Vector[LockUnspentOutputParameter]] {
       override val arity: Int = 1
 

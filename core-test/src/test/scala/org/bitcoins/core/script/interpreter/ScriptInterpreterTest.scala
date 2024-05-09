@@ -79,7 +79,7 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
                                  flags = flags)
           }
         case None =>
-          //value in the output does not matter here since it isn't covered by the digital signature
+          // value in the output does not matter here since it isn't covered by the digital signature
           val output = TransactionOutput(CurrencyUnits.zero, scriptPubKey)
           BaseTxSigComponent(transaction = tx,
                              inputIndex = inputIndex,

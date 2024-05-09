@@ -50,7 +50,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
         case DLCState.Claimed =>
           Future.successful(claimedP.success(status))
         case DLCState.Broadcasted =>
-          //ignore broadcast from this wallet
+          // ignore broadcast from this wallet
           Future.unit
         case x @ (DLCState.Accepted | DLCState.AcceptComputingAdaptorSigs |
             DLCState.RemoteClaimed | DLCState.Refunded) =>
@@ -73,7 +73,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
             DLCState.SignComputingAdaptorSigs) =>
           sys.error(s"Shouldn't receive state=$x for callback")
         case DLCState.Confirmed | DLCState.Claimed | DLCState.Refunded =>
-          //do nothing, we are doing assertions for these on walletACallback
+          // do nothing, we are doing assertions for these on walletACallback
           Future.unit
       }
     }
@@ -85,7 +85,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
     walletA.dlcConfig.addCallbacks(walletACallbacks)
     walletB.dlcConfig.addCallbacks(walletBCallbacks)
 
-    //run init DLC and make sure we get the callback hit
+    // run init DLC and make sure we get the callback hit
 
     val initF = DLCWalletUtil.initDLC(wallets._1,
                                       wallets._2,
@@ -154,7 +154,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
         case DLCState.Signed =>
           Future.successful(signedP.success(status))
         case DLCState.Broadcasted | DLCState.Confirmed =>
-          //ignore them from this wallet
+          // ignore them from this wallet
           Future.unit
         case DLCState.Refunded =>
           Future.successful(refundedP.success(status))
@@ -177,7 +177,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
             DLCState.SignComputingAdaptorSigs | DLCState.Signed) =>
           sys.error(s"Shouldn't receive state=$x for callback")
         case DLCState.Confirmed | DLCState.Claimed | DLCState.RemoteClaimed =>
-          //do nothing, we are doing assertions for these on walletACallback
+          // do nothing, we are doing assertions for these on walletACallback
           Future.unit
       }
 
@@ -190,7 +190,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
     walletA.dlcConfig.addCallbacks(walletACallbacks)
     walletB.dlcConfig.addCallbacks(walletBCallbacks)
 
-    //run init DLC and make sure we get the callback hit
+    // run init DLC and make sure we get the callback hit
 
     val initF = DLCWalletUtil.initDLC(wallets._1,
                                       wallets._2,

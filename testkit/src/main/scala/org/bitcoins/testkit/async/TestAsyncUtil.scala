@@ -29,11 +29,12 @@ abstract class TestAsyncUtil extends AsyncUtil with Serializable {
 
 object TestAsyncUtil extends TestAsyncUtil {
 
-  /** As opposed to the AsyncUtil in the rpc project, in the testkit, we can assume that
-    * TestAsyncUtil methods are being called from tests and as such, we want to trim the stack
-    * trace to exclude stack elements that occur before the beginning of a test.
-    * Additionally, we want to transform RpcRetryExceptions to TestFailedExceptions which
-    * conveniently mention the line that called the TestAsyncUtil method.
+  /** As opposed to the AsyncUtil in the rpc project, in the testkit, we can
+    * assume that TestAsyncUtil methods are being called from tests and as such,
+    * we want to trim the stack trace to exclude stack elements that occur
+    * before the beginning of a test. Additionally, we want to transform
+    * RpcRetryExceptions to TestFailedExceptions which conveniently mention the
+    * line that called the TestAsyncUtil method.
     */
   def transformRetryToTestFailure[T](fut: Future[T])(implicit
       ec: ExecutionContext): Future[T] = {

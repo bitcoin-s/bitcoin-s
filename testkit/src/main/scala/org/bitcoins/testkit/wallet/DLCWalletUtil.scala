@@ -104,7 +104,8 @@ object DLCWalletUtil extends BitcoinSLogger {
   lazy val sampleContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
-  lazy val sampleContractOraclePairNonWinnerTakeAll: ContractOraclePair.EnumPair = {
+  lazy val sampleContractOraclePairNonWinnerTakeAll
+      : ContractOraclePair.EnumPair = {
     ContractOraclePair.EnumPair(sampleContractDescriptorNonWinnerTakeAll,
                                 sampleOracleInfoNonWinnerTakeAll)
   }
@@ -346,8 +347,8 @@ object DLCWalletUtil extends BitcoinSLogger {
       changeAddressAOpt: Option[BitcoinAddress] = None,
       payoutAddressBOpt: Option[BitcoinAddress] = None,
       changeAddressBOpt: Option[BitcoinAddress] = None)(implicit
-      ec: ExecutionContext): Future[
-    (InitializedDLCWallet, InitializedDLCWallet)] = {
+      ec: ExecutionContext)
+      : Future[(InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
     for {
@@ -477,9 +478,8 @@ object DLCWalletUtil extends BitcoinSLogger {
     }
   }
 
-  def getSigs(contractInfo: SingleContractInfo): (
-      OracleAttestmentTLV,
-      OracleAttestmentTLV) = {
+  def getSigs(contractInfo: SingleContractInfo)
+      : (OracleAttestmentTLV, OracleAttestmentTLV) = {
     val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
       case desc: EnumContractDescriptor => desc
       case _: NumericContractDescriptor =>

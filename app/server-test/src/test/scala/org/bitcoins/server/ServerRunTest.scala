@@ -18,8 +18,8 @@ class ServerRunTest extends BitcoinSAsyncTest {
   // Note: on this test passing it will output a stack trace
   // because runMain calls err.printStackTrace() on failure
   it must "throw errors" in {
-    //custom configuration to make peers empty
-    //this should cause an exception in startBitcoinSBackend()
+    // custom configuration to make peers empty
+    // this should cause an exception in startBitcoinSBackend()
     val noPeersConfig =
       ConfigFactory.parseString(s"""bitcoin-s.node.peers=[]""")
     implicit val config =

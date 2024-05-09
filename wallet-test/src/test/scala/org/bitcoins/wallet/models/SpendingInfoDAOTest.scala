@@ -101,7 +101,7 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     } yield read match {
       case None                          => fail(s"Did not read back a UTXO")
       case Some(_: SegwitV0SpendingInfo) => succeed
-      case Some(other)                   => fail(s"did not get segwit UTXO: $other")
+      case Some(other) => fail(s"did not get segwit UTXO: $other")
     }
   }
 
@@ -116,7 +116,7 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     } yield read match {
       case None                        => fail(s"Did not read back a UTXO")
       case Some(_: LegacySpendingInfo) => succeed
-      case Some(other)                 => fail(s"did not get a legacy UTXO: $other")
+      case Some(other) => fail(s"did not get a legacy UTXO: $other")
     }
   }
 
@@ -214,9 +214,9 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       spk = created.output.scriptPubKey
       read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
-      case None                                => fail(s"Did not read back a UTXO")
+      case None => fail(s"Did not read back a UTXO")
       case Some(_: NestedSegwitV0SpendingInfo) => succeed
-      case Some(other)                         => fail(s"did not get a nested segwit UTXO: $other")
+      case Some(other) => fail(s"did not get a nested segwit UTXO: $other")
     }
   }
 

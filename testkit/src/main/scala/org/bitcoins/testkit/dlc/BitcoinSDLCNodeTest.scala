@@ -24,8 +24,8 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
   }
 
   /** Creates two DLC nodes with wallets that are funded with some bitcoin,
-    * these wallets are NOT peered with a bitcoind so the funds in
-    * the wallets are not tied to an underlying blockchain.
+    * these wallets are NOT peered with a bitcoind so the funds in the wallets
+    * are not tied to an underlying blockchain.
     */
   def witTwoFundedDLCNodes(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(

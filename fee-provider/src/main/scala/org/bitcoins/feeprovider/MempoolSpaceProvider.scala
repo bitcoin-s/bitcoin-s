@@ -12,8 +12,8 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}
 
-/** Fetches fee rate from mempool.space's API
-  * Documentation found here: https://mempool.space/about
+/** Fetches fee rate from mempool.space's API Documentation found here:
+  * https://mempool.space/about
   */
 case class MempoolSpaceProvider(
     target: MempoolSpaceTarget,

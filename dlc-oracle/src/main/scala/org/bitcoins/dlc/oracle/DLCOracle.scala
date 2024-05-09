@@ -217,8 +217,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventName: String,
       maturationTime: Instant,
       descriptor: EventDescriptorTLV,
-      signingVersion: SigningVersion = SigningVersion.latest): Future[
-    OracleAnnouncementTLV] = {
+      signingVersion: SigningVersion = SigningVersion.latest)
+      : Future[OracleAnnouncementTLV] = {
     require(maturationTime.isAfter(TimeUtil.now),
             s"Event cannot mature in the past, got $maturationTime")
 
@@ -309,8 +309,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   private def createAttestationActionF(
       nonce: SchnorrNonce,
-      outcome: DLCAttestationType): Future[
-    DBIOAction[EventDb, NoStream, Effect.Write]] = {
+      outcome: DLCAttestationType)
+      : Future[DBIOAction[EventDb, NoStream, Effect.Write]] = {
     for {
       rValDbOpt <- rValueDAO.read(nonce)
       rValDb <- rValDbOpt match {
@@ -361,8 +361,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     } yield eventUpdateA
   }
 
-  /** Signs the event for the single nonce
-    * This will be called multiple times by signDigits for each nonce
+  /** Signs the event for the single nonce This will be called multiple times by
+    * signDigits for each nonce
     */
   override def createAttestation(
       nonce: SchnorrNonce,
@@ -433,15 +433,16 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         oracleEventNonces.tail
     }
 
-    val digitSigAVecF: Future[
-      Vector[DBIOAction[EventDb, NoStream, Effect.Write]]] = Future.sequence {
-      nonces.zipWithIndex.map { case (nonce, index) =>
-        val digit = decomposed(index)
-        createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
-      }.toVector
-    }
-    val digitSigAF: Future[
-      DBIOAction[Vector[EventDb], NoStream, Effect.Write]] = {
+    val digitSigAVecF
+        : Future[Vector[DBIOAction[EventDb, NoStream, Effect.Write]]] =
+      Future.sequence {
+        nonces.zipWithIndex.map { case (nonce, index) =>
+          val digit = decomposed(index)
+          createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
+        }.toVector
+      }
+    val digitSigAF
+        : Future[DBIOAction[Vector[EventDb], NoStream, Effect.Write]] = {
       digitSigAVecF.map(digitSigs => DBIO.sequence(digitSigs))
     }
 
@@ -488,8 +489,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   /** Deletes attestations for the given event
     *
-    * WARNING: if previous signatures have been made public
-    * the oracle private key will be revealed.
+    * WARNING: if previous signatures have been made public the oracle private
+    * key will be revealed.
     */
   override def deleteAttestation(eventName: String): Future[OracleEvent] = {
     for {
@@ -502,8 +503,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   /** Deletes attestations for the given event
     *
-    * WARNING: if previous signatures have been made public
-    * the oracle private key will be revealed.
+    * WARNING: if previous signatures have been made public the oracle private
+    * key will be revealed.
     */
   override def deleteAttestation(
       oracleEventTLV: OracleEventTLV): Future[OracleEvent] = {

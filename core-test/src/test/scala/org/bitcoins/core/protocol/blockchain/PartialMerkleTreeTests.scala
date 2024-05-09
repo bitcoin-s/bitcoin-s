@@ -12,7 +12,7 @@ import scodec.bits.BitVector
   */
 class PartialMerkleTreeTests extends BitcoinSUnitTest {
   "PartialMerkleTree" must "from a list of txs and a bit indicating if the tx matched the filter" in {
-    //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L185
+    // https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L185
     val block = Block(
       "0100000090f0a9f110702f808219ebea1173056042a714bad51b916cb68000000000000052752895" +
         "58f51c9966699404ae2294730c3c9f9bda53523ce50e9b95e558da2fdb261b4d4c86041b1ab1bf930901000000010000" +
@@ -51,11 +51,11 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
       BytesUtil.flipEndianness(
         "dd1fd2a6fc16404faf339881a90adbde7f4f728691ac62e8f168809cdfae1053"))
 
-    //5ef2374cf1cd1c0b8c1b795950c077fc571cca44866c375a1ed17ace665cfaaa
-    //d403489f6b1a2f7de72c6e4573e1cc7ac15745518e42a0bf884f58dc48f45533
-    //8719e60a59869e70a7a7a5d4ff6ceb979cd5abe60721d4402aaf365719ebd221
-    //5310aedf9c8068f1e862ac9186724f7fdedb0aa9819833af4f4016fca6d21fdd
-    //201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674
+    // 5ef2374cf1cd1c0b8c1b795950c077fc571cca44866c375a1ed17ace665cfaaa
+    // d403489f6b1a2f7de72c6e4573e1cc7ac15745518e42a0bf884f58dc48f45533
+    // 8719e60a59869e70a7a7a5d4ff6ceb979cd5abe60721d4402aaf365719ebd221
+    // 5310aedf9c8068f1e862ac9186724f7fdedb0aa9819833af4f4016fca6d21fdd
+    // 201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674
 
     val filter = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll)
       .insert(hash1)
@@ -87,8 +87,8 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
   }
 
   it must "detect if a node at a given height and position matches a tx that the bloom filter matched" in {
-    //these values are related to this test case for merkle block inside of core
-    //https://github.com/bitcoin/bitcoin/blob/f17032f703288d43a76cffe8fa89b87ade9e3074/src/test/bloom_tests.cpp#L185
+    // these values are related to this test case for merkle block inside of core
+    // https://github.com/bitcoin/bitcoin/blob/f17032f703288d43a76cffe8fa89b87ade9e3074/src/test/bloom_tests.cpp#L185
     val maxHeight = 4
     val matchedTxs = List(
       (false,
@@ -127,14 +127,14 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
     PartialMerkleTree.matchesTx(maxHeight, 1, 0, matchedTxs) must be(true)
     PartialMerkleTree.matchesTx(maxHeight, 1, 1, matchedTxs) must be(true)
 
-    //it must match the 2nd and 3rd grandchild of the merkle root, and must NOT match the 1st and 4th grand child
+    // it must match the 2nd and 3rd grandchild of the merkle root, and must NOT match the 1st and 4th grand child
     PartialMerkleTree.matchesTx(maxHeight, 2, 0, matchedTxs) must be(false)
     PartialMerkleTree.matchesTx(maxHeight, 2, 1, matchedTxs) must be(true)
 
     PartialMerkleTree.matchesTx(maxHeight, 2, 2, matchedTxs) must be(true)
     PartialMerkleTree.matchesTx(maxHeight, 2, 3, matchedTxs) must be(false)
 
-    //it must match the match the 4th and 5th great grand child merkle root, an must NOT  match the 1st,2nd,3rd,6th
+    // it must match the match the 4th and 5th great grand child merkle root, an must NOT  match the 1st,2nd,3rd,6th
     PartialMerkleTree.matchesTx(maxHeight, 3, 0, matchedTxs) must be(false)
     PartialMerkleTree.matchesTx(maxHeight, 3, 1, matchedTxs) must be(false)
     PartialMerkleTree.matchesTx(maxHeight, 3, 2, matchedTxs) must be(false)
@@ -144,7 +144,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
 
     PartialMerkleTree.matchesTx(maxHeight, 3, 5, matchedTxs) must be(false)
 
-    //it must match the the correct leaf nodes (great-great-grand-children), which are indexes 7 and 8
+    // it must match the the correct leaf nodes (great-great-grand-children), which are indexes 7 and 8
     PartialMerkleTree.matchesTx(maxHeight, 4, 0, matchedTxs) must be(false)
     PartialMerkleTree.matchesTx(maxHeight, 4, 1, matchedTxs) must be(false)
     PartialMerkleTree.matchesTx(maxHeight, 4, 2, matchedTxs) must be(false)
@@ -229,8 +229,8 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
   }
 
   it must "correctly compute a merkle tree that has an odd amount of txids on the merkle tree" in {
-    //this test is meant to prevent these failures on travis ci
-    //https://travis-ci.org/bitcoin-s/bitcoin-s-core/builds/205812075#L2774
+    // this test is meant to prevent these failures on travis ci
+    // https://travis-ci.org/bitcoin-s/bitcoin-s-core/builds/205812075#L2774
     val hashes: Seq[DoubleSha256Digest] = List(
       DoubleSha256Digest(
         "1563b82f187da1067f5000dabe3a4f4ae8650e207aa163e1d25ded8175e2bae1"),
@@ -272,9 +272,9 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
     val numTransactions = UInt32(20)
     val bits = BitVector.bits(
       List(true, true, true, true, true, true, true, false, true, true, false,
-        true, true, true, false, true, true, true, true, false, true, true,
-        true, true, true, true, true, false, true, true, true, true, false,
-        true, true, true, true, false, false, false))
+           true, true, true, false, true, true, true, true, false, true, true,
+           true, true, true, true, true, false, true, true, true, true, false,
+           true, true, true, true, false, false, false))
     val tree = PartialMerkleTree(numTransactions, hashes, bits)
     tree.extractMatches.contains(DoubleSha256Digest(
       "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")) must be(

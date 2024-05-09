@@ -32,7 +32,9 @@ class LnMessageTest extends BitcoinSUnitTest {
       "001000022200000302aaa2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f")).isSuccess)
   }
 
-  /** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#appendix-c-message-extension */
+  /** @see
+    *   https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#appendix-c-message-extension
+    */
   "InitMessage" must "pass static test vectors" in {
     assert(Try(LnMessageFactory(InitTLV)(hex"001000000000")).isSuccess)
     assert(

@@ -3,7 +3,8 @@ package org.bitcoins.crypto
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
-/** Executes tests at https://github.com/discreetlogcontracts/dlcspecs/blob/9b11bcc99341ad40d8ae146d5d3ead116d5bb131/test/ecdsa_adaptor.json
+/** Executes tests at
+  * https://github.com/discreetlogcontracts/dlcspecs/blob/9b11bcc99341ad40d8ae146d5d3ead116d5bb131/test/ecdsa_adaptor.json
   * along with some static signing tests Jesse generated.
   */
 class ECAdaptorSignatureTest extends BitcoinSCryptoTest {

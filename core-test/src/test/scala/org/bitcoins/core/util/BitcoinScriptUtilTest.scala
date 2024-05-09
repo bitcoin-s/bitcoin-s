@@ -17,7 +17,7 @@ import scodec.bits.ByteVector
   */
 class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
-  //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+  // from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   val asm = TestUtil.p2pkhScriptPubKey.asm
   val expectedHex = TestUtil.rawP2PKHScriptPubKey
   "BitcoinScriptUtil" must "give us the correct hexadecimal value of an asm script" in {
@@ -270,7 +270,7 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
   }
 
   it must "check a public key's encoding" in {
-    //pubkeys must be compressed or uncompressed or else that are not validly encoded
+    // pubkeys must be compressed or uncompressed or else that are not validly encoded
     val key = ECPublicKeyBytes("00")
     val program = TestUtil.testProgramExecutionInProgress
     BitcoinScriptUtil.checkPubKeyEncoding(key, program) must be(false)

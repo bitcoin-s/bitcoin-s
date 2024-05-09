@@ -59,10 +59,10 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   private[this] val reconnectionDelay = 500.millis
   private[this] var reconnectionCancellableOpt: Option[Cancellable] = None
 
-  private lazy val connection: Flow[
-    ByteString,
-    ByteString,
-    (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] = {
+  private lazy val connection
+      : Flow[ByteString,
+             ByteString,
+             (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] = {
     val base = Tcp(system)
       .outgoingConnection(remoteAddress = socket,
                           halfClose = false,
@@ -102,10 +102,8 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     (ByteString.fromArray(newUnalignedBytes.toArray), messages)
   }
 
-  private val parseToNetworkMsgFlow: Flow[
-    ByteString,
-    Vector[NetworkMessage],
-    NotUsed] = {
+  private val parseToNetworkMsgFlow
+      : Flow[ByteString, Vector[NetworkMessage], NotUsed] = {
     Flow[ByteString]
       .statefulMap(() => ByteString.empty)(parseHelper,
                                            { _: ByteString => None })
@@ -121,12 +119,11 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Flow.apply
   }
 
-  private val bidiFlow: BidiFlow[
-    ByteString,
-    Vector[NetworkMessage],
-    ByteString,
-    ByteString,
-    NotUsed] = {
+  private val bidiFlow: BidiFlow[ByteString,
+                                 Vector[NetworkMessage],
+                                 ByteString,
+                                 ByteString,
+                                 NotUsed] = {
     BidiFlow.fromFlows(parseToNetworkMsgFlow, writeNetworkMsgFlow)
   }
 
@@ -137,19 +134,18 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       .preMaterialize()
   }
 
-  private val connectionFlow: Flow[
-    ByteString,
-    Vector[NetworkMessage],
-    (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
+  private val connectionFlow
+      : Flow[ByteString,
+             Vector[NetworkMessage],
+             (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
     connection
       .idleTimeout(nodeAppConfig.peerTimeout)
       .joinMat(bidiFlow)(Keep.left)
 
   private def connectionGraph(
-      handleNetworkMsgSink: Sink[
-        Vector[NetworkMessage],
-        Future[Done]]): RunnableGraph[
-    ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])] = {
+      handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]])
+      : RunnableGraph[((Future[Tcp.OutgoingConnection], UniqueKillSwitch),
+                       Future[Done])] = {
     val result = mergeHubSource
       .viaMat(connectionFlow)(Keep.right)
       .toMat(handleNetworkMsgSink)(Keep.both)
@@ -157,8 +153,8 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     result
   }
 
-  private def buildConnectionGraph(): Future[
-    ((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
+  private def buildConnectionGraph()
+      : Future[((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
 
     val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
       Flow[Vector[NetworkMessage]]
@@ -175,8 +171,8 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         .toMat(Sink.ignore)(Keep.right)
     }
 
-    val runningStream: Future[
-      ((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
+    val runningStream
+        : Future[((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
       nodeAppConfig.socks5ProxyParams match {
         case Some(s) =>
           val connectionSink =
@@ -186,8 +182,8 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                 case Right(state) =>
                   state match {
                     case Socks5ConnectionState.Connected =>
-                      //need to send version message when we are first
-                      //connected to initiate bitcoin protocol handshake
+                      // need to send version message when we are first
+                      // connected to initiate bitcoin protocol handshake
                       sendVersionMsg().map(_ => ByteString.empty)
                     case Socks5ConnectionState.Disconnected |
                         Socks5ConnectionState.Authenticating |
@@ -198,9 +194,9 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               .viaMat(parseToNetworkMsgFlow)(Keep.left)
               .toMat(handleNetworkMsgSink)(Keep.right)
 
-          val source: Source[
-            ByteString,
-            (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
+          val source
+              : Source[ByteString,
+                       (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
             mergeHubSource.viaMat(connection)(Keep.right)
           Socks5Connection
             .socks5Handler(
@@ -301,7 +297,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
 
   /** resets reconnect state after connecting to a peer */
   private def resetReconnect(): Unit = {
-    //cancel the job for reconnecting in case we were attempting to reconnect
+    // cancel the job for reconnecting in case we were attempting to reconnect
     reconnectionCancellableOpt.map(_.cancel())
     reconnectionCancellableOpt = None
     reconnectionTry = 0
@@ -358,9 +354,9 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 
   private[node] def sendMsg(msg: NetworkPayload): Future[Unit] = {
-    //version or verack messages are the only messages that
-    //can be sent before we are fully initialized
-    //as they are needed to complete our handshake with our peer
+    // version or verack messages are the only messages that
+    // can be sent before we are fully initialized
+    // as they are needed to complete our handshake with our peer
     val networkMsg = NetworkMessage(nodeAppConfig.network, msg)
     sendMsg(networkMsg)
   }

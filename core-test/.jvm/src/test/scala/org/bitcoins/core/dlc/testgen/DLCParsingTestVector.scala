@@ -84,8 +84,8 @@ object ByteVectorWrapper {
 
     override def toString: String = {
       s"NamedMultiElement(${elements
-        .map { case (name, bytes) => s"$name -> $bytes" }
-        .mkString(",")})"
+          .map { case (name, bytes) => s"$name -> $bytes" }
+          .mkString(",")})"
     }
 
     override def toJson: JsValue = {

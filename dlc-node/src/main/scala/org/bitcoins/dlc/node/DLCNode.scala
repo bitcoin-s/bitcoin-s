@@ -66,8 +66,8 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       peerAddress: InetSocketAddress,
       dlcOffer: LnMessage[DLCOfferTLV],
       externalPayoutAddress: Option[BitcoinAddress],
-      externalChangeAddress: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCAccept] = {
+      externalChangeAddress: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCAccept] = {
     val f = for {
       handler <- connectToPeer(peerAddress)
       accept <- wallet.acceptDLCOffer(dlcOffer.tlv,

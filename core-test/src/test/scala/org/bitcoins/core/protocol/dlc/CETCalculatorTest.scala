@@ -351,9 +351,8 @@ class CETCalculatorTest extends BitcoinSUnitTest {
       numDigits: Int,
       cetDigits: Vector[Int],
       maxErrorExp: Int,
-      minFailExp: Int): (
-      Vector[(Vector[Int], Vector[Int])],
-      Vector[(Vector[Int], Vector[Int])]) = {
+      minFailExp: Int): (Vector[(Vector[Int], Vector[Int])],
+                         Vector[(Vector[Int], Vector[Int])]) = {
     val coveringCETsMax =
       CETCalculator.computeCoveringCETsBinary(numDigits = numDigits,
                                               cetDigits = cetDigits,

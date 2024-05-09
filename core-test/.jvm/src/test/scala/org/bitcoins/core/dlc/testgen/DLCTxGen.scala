@@ -23,8 +23,8 @@ object DLCTxGen {
       contractDescriptor: EnumContractDescriptor = genContractDescriptor(),
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200),
-      feeRate: SatoshisPerVirtualByte =
-        SatoshisPerVirtualByte(Satoshis(5))): DLCParams = {
+      feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis(5)))
+      : DLCParams = {
     val privKey = ECPrivateKey.freshPrivateKey
     val kVal = ECPrivateKey.freshPrivateKey
     val oracleInfo = EnumSingleOracleInfo(

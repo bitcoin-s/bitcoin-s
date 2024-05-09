@@ -31,15 +31,15 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
     CompactSizeUInt.calculateCompactSizeUInt("00") must be(
       CompactSizeUInt(UInt64.one, 1))
 
-    //for a string that is 256 bytes long
+    // for a string that is 256 bytes long
     val byteSeq256Size = ByteVector(Array.fill(256)(0.toByte))
     CompactSizeUInt.calculateCompactSizeUInt(byteSeq256Size) must be(
       CompactSizeUInt(UInt64(256), 3))
   }
 
   it must "calculate the correct compact size uint for a number 515 bytes long" in {
-    //from the bitcoin developer reference
-    //https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+    // from the bitcoin developer reference
+    // https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
     val byteSeq515Size = ByteVector(Array.fill(515)(0.toByte))
     val compactSizeUInt =
       CompactSizeUInt.calculateCompactSizeUInt(byteSeq515Size)

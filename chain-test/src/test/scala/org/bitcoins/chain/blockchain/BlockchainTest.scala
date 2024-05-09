@@ -53,13 +53,13 @@ class BlockchainTest extends ChainUnitTest {
     case ChainFixture.Empty =>
       val accum = new mutable.ArrayBuffer[BlockHeaderDb](5)
       accum.+=(ChainTestUtil.genesisHeaderDb)
-      //generate 4 headers
+      // generate 4 headers
       0.until(4).foreach { _ =>
         val newHeader = BlockHeaderHelper.buildNextHeader(accum.last)
         accum.+=(newHeader)
       }
 
-      //now given the last header, and the other headers we should reconstruct the blockchain
+      // now given the last header, and the other headers we should reconstruct the blockchain
       val headers = accum.dropRight(1).toVector
       val tip = accum.last
 

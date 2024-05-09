@@ -25,8 +25,8 @@ case class TaprootTestCase(
     buildSigComponent(successTx)
   }
 
-  /** Returns the failed tx sig component iff an exception wasn't
-    * thrown during constructino of the tx sig component
+  /** Returns the failed tx sig component iff an exception wasn't thrown during
+    * constructino of the tx sig component
     */
   def failureTxSigComponentsOpt: Option[TxSigComponent] = {
     failureTxT.map { witTx =>
@@ -195,7 +195,7 @@ object TaprootTestCase {
         val flags = ScriptFlagFactory.fromList(obj("flags").str).toVector
         val finals = obj.value.get("final").map {
           case b: ujson.Bool => b.bool
-          case x             => sys.error(s"Expected bool for failure object, got=$x")
+          case x => sys.error(s"Expected bool for failure object, got=$x")
         }
         val comment = obj("comment").str
 

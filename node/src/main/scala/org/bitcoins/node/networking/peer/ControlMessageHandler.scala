@@ -18,8 +18,8 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
 
   def handleControlPayload(
       payload: ControlPayload,
-      peerMsgSenderApi: PeerMessageSenderApi): Future[
-    Option[ControlMessageHandlerState]] = {
+      peerMsgSenderApi: PeerMessageSenderApi)
+      : Future[Option[ControlMessageHandlerState]] = {
     val peer = peerMsgSenderApi.peer
     payload match {
 
@@ -38,8 +38,8 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
           .sendPong(ping)
           .map(_ => None)
       case SendHeadersMessage =>
-        //we want peers to just send us headers
-        //we don't want to have to request them manually
+        // we want peers to just send us headers
+        // we don't want to have to request them manually
         peerMsgSenderApi
           .sendHeadersMessage()
           .map(_ => None)

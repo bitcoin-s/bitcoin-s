@@ -31,8 +31,8 @@ object OracleNonceDbHelper {
   }
 
   def fromAnnouncements(
-      announcementsWithId: Vector[(OracleAnnouncementTLV, Long)]): Vector[
-    OracleNonceDb] = {
+      announcementsWithId: Vector[(OracleAnnouncementTLV, Long)])
+      : Vector[OracleNonceDb] = {
     announcementsWithId.flatMap { case (announcement, id) =>
       fromAnnouncement(id, announcement)
     }

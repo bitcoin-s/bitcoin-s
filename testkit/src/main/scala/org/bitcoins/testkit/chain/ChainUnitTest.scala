@@ -47,8 +47,7 @@ trait ChainUnitTest
     with ChainFixtureHelper
     with CachedChainAppConfig {
 
-  /** Behaves exactly like the default conf, execpt
-    * network is set to mainnet
+  /** Behaves exactly like the default conf, execpt network is set to mainnet
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
@@ -80,9 +79,9 @@ trait ChainUnitTest
   }
 
   /** This is a wrapper for a tagged test statement that adds a def inFixtured
-    * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
-    * whereas inFixtured accepts a PartialFunction and fails the test if it is not
-    * defined on the input.
+    * to replace the use of in, which only accepts a FixtureParam =>
+    * Future[Assertion], whereas inFixtured accepts a PartialFunction and fails
+    * the test if it is not defined on the input.
     *
     * This is nothing more than syntactic sugar.
     *
@@ -92,9 +91,8 @@ trait ChainUnitTest
       itVerbStringTaggedAs: ItVerbStringTaggedAs) {
 
     def inFixtured(
-        partialTestFun: PartialFunction[
-          FixtureParam,
-          Future[compatible.Assertion]])(implicit
+        partialTestFun: PartialFunction[FixtureParam,
+                                        Future[compatible.Assertion]])(implicit
         pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
         fixture: FixtureParam =>
@@ -110,9 +108,9 @@ trait ChainUnitTest
   }
 
   /** This is a wrapper for a tagged test statement that adds a def inFixtured
-    * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
-    * whereas inFixtured accepts a PartialFunction and fails the test if it is not
-    * defined on the input.
+    * to replace the use of in, which only accepts a FixtureParam =>
+    * Future[Assertion], whereas inFixtured accepts a PartialFunction and fails
+    * the test if it is not defined on the input.
     *
     * This is nothing more than syntactic sugar.
     *
@@ -121,9 +119,8 @@ trait ChainUnitTest
   final class SugaryItVerbString(itVerbString: ItVerbString) {
 
     def inFixtured(
-        partialTestFun: PartialFunction[
-          FixtureParam,
-          Future[compatible.Assertion]])(implicit
+        partialTestFun: PartialFunction[FixtureParam,
+                                        Future[compatible.Assertion]])(implicit
         pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
         fixture: FixtureParam =>
@@ -148,8 +145,8 @@ trait ChainUnitTest
       itVerbString: ItVerbString): SugaryItVerbString =
     new SugaryItVerbString(itVerbString)
 
-  /** Fixture that creates a block header table
-    * with one row inserted into it, the [[org.bitcoins.core.protocol.blockchain.RegTestNetChainParams]]
+  /** Fixture that creates a block header table with one row inserted into it,
+    * the [[org.bitcoins.core.protocol.blockchain.RegTestNetChainParams]]
     * genesis block
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
@@ -200,7 +197,8 @@ trait ChainUnitTest
                 destroy = () => ChainUnitTest.destroyChainApi())(test)
   }
 
-  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
+  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375
+    */
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
@@ -226,8 +224,8 @@ trait ChainUnitTest
     } yield filterChainApi.asInstanceOf[ChainHandler]
   }
 
-  def createChainHandlerCachedWithGenesisFilter(): Future[
-    ChainHandlerCached] = {
+  def createChainHandlerCachedWithGenesisFilter()
+      : Future[ChainHandlerCached] = {
     for {
       chainHandler <- createChainHandlerCached()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
@@ -273,12 +271,12 @@ trait ChainUnitTest
 
     val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
 
-    //generate a block and make sure we see it so we know the subscription is complete
+    // generate a block and make sure we see it so we know the subscription is complete
     val subscribedF = for {
       chainHandler <- chainHandlerF
       addr <- bitcoind.getNewAddress
       hash +: _ <- bitcoind.generateToAddress(1, addr)
-      //wait until we see the hash, to make sure the subscription is started
+      // wait until we see the hash, to make sure the subscription is started
       _ <- AsyncUtil.retryUntilSatisfiedF(
         () => {
           chainHandler.getHeader(hash).map(_.isDefined)
@@ -298,7 +296,7 @@ trait ChainUnitTest
   def destroyBitcoindChainHandlerViaZmq(
       bitcoindChainHandler: BitcoindChainHandlerViaZmq): Future[Unit] = {
 
-    //piggy back off of rpc destructor
+    // piggy back off of rpc destructor
     val rpc = chain.fixture.BitcoindBaseVersionChainHandlerViaRpc(
       bitcoindChainHandler.bitcoindRpc,
       bitcoindChainHandler.chainHandler)
@@ -308,10 +306,14 @@ trait ChainUnitTest
     }
   }
 
-  /** Creates a [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]] that is linked to our [[org.bitcoins.chain.blockchain.ChainHandler ChainHandler]]
-    * via a [[org.bitcoins.zmq.ZMQSubscriber zmq]]. This means messages are passed between bitcoin and our chain handler
-    * with a zmq pub/sub message passing
-    * @param test the test to be executed with bitcoind and chain handler via zmq
+  /** Creates a
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+    * that is linked to our
+    * [[org.bitcoins.chain.blockchain.ChainHandler ChainHandler]] via a
+    * [[org.bitcoins.zmq.ZMQSubscriber zmq]]. This means messages are passed
+    * between bitcoin and our chain handler with a zmq pub/sub message passing
+    * @param test
+    *   the test to be executed with bitcoind and chain handler via zmq
     * @param system
     * @return
     */
@@ -406,7 +408,9 @@ trait ChainUnitTest
     }
   }
 
-  /** Builds two competing headers off of the [[ChainHandler.getBestBlockHash best chain tip]] */
+  /** Builds two competing headers off of the
+    * [[ChainHandler.getBestBlockHash best chain tip]]
+    */
   def buildChainHandlerCompetingHeaders(
       chainHandler: ChainHandler): Future[ReorgFixtureChainApi] = {
     for {
@@ -515,7 +519,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     createFilterDAO()
   }
 
-  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
+  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375
+    */
   def createPopulatedBlockHeaderDAO()(implicit
       appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[BlockHeaderDAO] = {
@@ -554,8 +559,8 @@ object ChainUnitTest extends ChainVerificationLogger {
         def splitIntoBatches(
             batchSize: Int,
             dbHeaders: Vector[BlockHeaderDb],
-            batchesSoFar: Vector[Vector[BlockHeaderDb]]): Vector[
-          Vector[BlockHeaderDb]] = {
+            batchesSoFar: Vector[Vector[BlockHeaderDb]])
+            : Vector[Vector[BlockHeaderDb]] = {
           if (dbHeaders.isEmpty) {
             batchesSoFar
           } else if (dbHeaders.length < batchSize) {
@@ -591,8 +596,8 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext,
-      chainAppConfig: ChainAppConfig): Future[
-    BitcoindBaseVersionChainHandlerViaRpc] = {
+      chainAppConfig: ChainAppConfig)
+      : Future[BitcoindBaseVersionChainHandlerViaRpc] = {
     val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
 
@@ -641,8 +646,8 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   def setupHeaderTableWithGenesisHeader()(implicit
       ec: ExecutionContext,
-      appConfig: ChainAppConfig): Future[
-    (ChainHandlerCached, BlockHeaderDb)] = {
+      appConfig: ChainAppConfig)
+      : Future[(ChainHandlerCached, BlockHeaderDb)] = {
     val tableSetupF = setupAllTables()
 
     val genesisHeaderF = tableSetupF.flatMap { _ =>
@@ -678,8 +683,8 @@ object ChainUnitTest extends ChainVerificationLogger {
   /** Syncs the given chain handler to the given bitcoind */
   def syncFromBitcoind(bitcoind: BitcoindRpcClient, chainHandler: ChainHandler)(
       implicit ec: ExecutionContext): Future[ChainApi] = {
-    //sync headers
-    //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+    // sync headers
+    // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
     val getBestBlockHashFunc = { () =>
       bitcoind.getBestBlockHash()
     }
@@ -691,8 +696,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
   }
 
-  /** Destroys the chain api, but leaves the bitcoind instance running
-    * so we can cache it
+  /** Destroys the chain api, but leaves the bitcoind instance running so we can
+    * cache it
     */
   def destroyChainApi()(implicit
       system: ActorSystem,

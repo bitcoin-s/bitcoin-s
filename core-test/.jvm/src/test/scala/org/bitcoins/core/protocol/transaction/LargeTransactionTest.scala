@@ -9,7 +9,7 @@ class LargeTransactionTest extends BitcoinSUnitTest {
   behavior of "LargeTransactionTest"
 
   it must "parse a536e7f60a493a258d9adc77d913f7798baf60c808c16898b04579d8c0652681" in {
-    //from https://mempool.space/testnet/tx/a536e7f60a493a258d9adc77d913f7798baf60c808c16898b04579d8c0652681
+    // from https://mempool.space/testnet/tx/a536e7f60a493a258d9adc77d913f7798baf60c808c16898b04579d8c0652681
     val fileName =
       "/a536e7f60a493a258d9adc77d913f7798baf60c808c16898b04579d8c0652681.txt"
     val lines =

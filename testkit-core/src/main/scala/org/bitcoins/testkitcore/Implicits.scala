@@ -6,9 +6,8 @@ import org.scalatest.exceptions.TestFailedException
 
 import scala.annotation.tailrec
 
-/** Provides extension methods, syntax
-  * and other handy implicit values that
-  * aid in testing.
+/** Provides extension methods, syntax and other handy implicit values that aid
+  * in testing.
   */
 object Implicits {
 

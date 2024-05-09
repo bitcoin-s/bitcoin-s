@@ -66,7 +66,7 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
       isIBDOpt3 <- dao.getIsIBD()
       _ = assert(isIBDOpt3.isDefined && isIBDOpt3.get.isIBDRunning == false)
 
-      //cannot revert IBD
+      // cannot revert IBD
       _ <- dao.updateIsIbd(true)
 
       read3 <- dao.read(IsInitialBlockDownload.tpe)

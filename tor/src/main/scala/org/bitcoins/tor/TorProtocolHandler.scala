@@ -21,13 +21,20 @@ case class TorException(private val msg: String)
 
 /** Created by rorp
   *
-  * Specification: https://gitweb.torproject.org/torspec.git/tree/control-spec.txt
+  * Specification:
+  * https://gitweb.torproject.org/torspec.git/tree/control-spec.txt
   *
-  * @param authentication      Tor controller auth mechanism (password or safecookie)
-  * @param privateKeyPath      path to a file that contains a Tor private key
-  * @param virtualPort         port for the public hidden service (typically 9735)
-  * @param targets             address of our protected server (format [host:]port), 127.0.0.1:[[virtualPort]] if empty
-  * @param onionAdded          a Promise to track creation of the endpoint
+  * @param authentication
+  *   Tor controller auth mechanism (password or safecookie)
+  * @param privateKeyPath
+  *   path to a file that contains a Tor private key
+  * @param virtualPort
+  *   port for the public hidden service (typically 9735)
+  * @param targets
+  *   address of our protected server (format [host:]port),
+  *   127.0.0.1:[[virtualPort]] if empty
+  * @param onionAdded
+  *   a Promise to track creation of the endpoint
   */
 class TorProtocolHandler(
     authentication: Authentication,
@@ -41,7 +48,7 @@ class TorProtocolHandler(
 
   import TorProtocolHandler._
 
-  private var receiver: ActorRef = _
+  private var receiver: ActorRef = scala.compiletime.uninitialized
 
   private var address: Option[InetSocketAddress] = None
 
@@ -285,7 +292,7 @@ object TorProtocolHandler {
       .map {
         case r1(c, msg) => (c.toInt, msg)
         case r2(c, msg) => (c.toInt, msg)
-        case x @ _      => throw TorException(s"unknown response line format: `$x`")
+        case x @ _ => throw TorException(s"unknown response line format: `$x`")
       }
       .toSeq
     if (!ok(lines)) {

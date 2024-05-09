@@ -22,7 +22,7 @@ class DERSignatureUtilTest extends BitcoinSCryptoTest {
   }
 
   it must "say that signature taken from a p2pkh transaction is a valid DER encoded signature" in {
-    //need to remove the hash type byte to check for der encoding
+    // need to remove the hash type byte to check for der encoding
     val hashTypeByteRemoved =
       p2pkhSignature.bytes.slice(0, p2pkhSignature.bytes.size - 1)
     DERSignatureUtil.isDEREncoded(hashTypeByteRemoved) must be(true)

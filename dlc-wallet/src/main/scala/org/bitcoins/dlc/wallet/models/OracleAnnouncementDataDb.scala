@@ -32,9 +32,8 @@ object OracleAnnouncementDbHelper {
 
   }
 
-  def fromAnnouncements(
-      announcementTLVs: Vector[OracleAnnouncementTLV]): Vector[
-    OracleAnnouncementDataDb] = {
+  def fromAnnouncements(announcementTLVs: Vector[OracleAnnouncementTLV])
+      : Vector[OracleAnnouncementDataDb] = {
     announcementTLVs.map(fromAnnouncement)
   }
 }

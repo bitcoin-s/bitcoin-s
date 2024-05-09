@@ -39,8 +39,10 @@ import scala.concurrent.duration.{
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
-  * @param directory The data directory of the wallet
-  * @param conf Optional sequence of configuration overrides
+  * @param directory
+  *   The data directory of the wallet
+  * @param conf
+  *   Optional sequence of configuration overrides
   */
 case class WalletAppConfig(
     baseDatadir: Path,
@@ -221,7 +223,7 @@ case class WalletAppConfig(
     } yield {
       logger.debug(s"Initializing wallet setup")
       if (isHikariLoggingEnabled) {
-        //.get is safe because hikari logging is enabled
+        // .get is safe because hikari logging is enabled
         startHikariLogger(hikariLoggingInterval.get)
       }
       logger.info(s"Applied $numMigrations to the wallet project")
@@ -241,9 +243,9 @@ case class WalletAppConfig(
     stopCallbacksF.flatMap { _ =>
       clearCallbacks()
       stopRebroadcastTxsScheduler()
-      //this eagerly shuts down all scheduled tasks on the scheduler
-      //in the future, we should actually cancel all things that are scheduled
-      //manually, and then shutdown the scheduler
+      // this eagerly shuts down all scheduled tasks on the scheduler
+      // in the future, we should actually cancel all things that are scheduled
+      // manually, and then shutdown the scheduler
       scheduler.shutdownNow()
       rescanThreadPool.shutdownNow()
       super.stop()
@@ -257,7 +259,8 @@ case class WalletAppConfig(
   def kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath, defaultAccountKind, network)
 
-  /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
+  /** How much elements we can have in
+    * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we throw an exception
     */
   def addressQueueSize: Int = {
@@ -268,7 +271,8 @@ case class WalletAppConfig(
     }
   }
 
-  /** How long we wait while generating an address in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
+  /** How long we wait while generating an address in
+    * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
     * before we timeout
     */
   def addressQueueTimeout: Duration = {
@@ -282,9 +286,7 @@ case class WalletAppConfig(
   }
 
   /** Checks if the following exist
-    *  1. A seed exists
-    *  2. wallet exists
-    *  3. The account exists
+    *   1. A seed exists 2. wallet exists 3. The account exists
     */
   def hasWallet()(implicit
       walletConf: WalletAppConfig,
@@ -315,14 +317,14 @@ case class WalletAppConfig(
                                    feeRateApi = feeRateApi)(this, system)
   }
 
-  private[this] var rebroadcastTransactionsCancelOpt: Option[
-    ScheduledFuture[_]] = None
+  private[this] var rebroadcastTransactionsCancelOpt
+      : Option[ScheduledFuture[_]] = None
 
   /** Starts the wallet's rebroadcast transaction scheduler */
   def startRebroadcastTxsScheduler(wallet: Wallet): Unit = synchronized {
     rebroadcastTransactionsCancelOpt match {
       case Some(_) =>
-        //already scheduled, do nothing
+        // already scheduled, do nothing
         ()
       case None =>
         logger.info(s"Starting wallet rebroadcast task")
@@ -354,8 +356,8 @@ case class WalletAppConfig(
     }
   }
 
-  /** The creation time of the mnemonic seed
-    * If we cannot decrypt the seed because of invalid passwords, we return None
+  /** The creation time of the mnemonic seed If we cannot decrypt the seed
+    * because of invalid passwords, we return None
     */
   def creationTime: Instant = {
     kmConf.creationTime
@@ -371,8 +373,8 @@ object WalletAppConfig
 
   val moduleName: String = "wallet"
 
-  /** Constructs a wallet configuration from the default Bitcoin-S
-    * data directory and given list of configuration overrides.
+  /** Constructs a wallet configuration from the default Bitcoin-S data
+    * directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): WalletAppConfig =

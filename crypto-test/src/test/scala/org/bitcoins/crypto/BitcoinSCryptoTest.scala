@@ -105,13 +105,11 @@ trait BitcoinSCryptoAsyncTest
 
 object BitcoinSCryptoTest {
 
-  /** The number of times new code
-    * should be executed in a property based test
+  /** The number of times new code should be executed in a property based test
     */
   val NEW_CODE_EXECUTIONS = 100
 
-  /** The number of times old code should be executed
-    * in a property based test
+  /** The number of times old code should be executed in a property based test
     */
   val OLD_CODE_EXECUTIONS = 20
 

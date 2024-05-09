@@ -35,11 +35,17 @@ abstract class AsyncUtil extends AsyncUtilApi {
   case object Exponential extends RetryMode
 
   /** The returned Future completes when condition becomes true
-    * @param conditionF The condition being waited on
-    * @param duration The interval between calls to check condition
-    * @param maxTries If condition is tried this many times, the Future fails
-    * @param system An ActorSystem to schedule calls to condition
-    * @return A Future[Unit] that succeeds if condition becomes true and fails otherwise
+    * @param conditionF
+    *   The condition being waited on
+    * @param duration
+    *   The interval between calls to check condition
+    * @param maxTries
+    *   If condition is tried this many times, the Future fails
+    * @param system
+    *   An ActorSystem to schedule calls to condition
+    * @return
+    *   A Future[Unit] that succeeds if condition becomes true and fails
+    *   otherwise
     */
   def retryUntilSatisfiedF(
       conditionF: () => Future[Boolean],
@@ -103,12 +109,16 @@ abstract class AsyncUtil extends AsyncUtilApi {
     }
   }
 
-  /** Returns a future that resolved when the condition becomes true, the condition
-    * is checked maxTries times, or overallTimeout is reached
-    * @param condition The blocking condition
-    * @param duration The interval between calls to check condition
-    * @param maxTries If condition is tried this many times, an exception is thrown
-    * @param system An ActorSystem to schedule calls to condition
+  /** Returns a future that resolved when the condition becomes true, the
+    * condition is checked maxTries times, or overallTimeout is reached
+    * @param condition
+    *   The blocking condition
+    * @param duration
+    *   The interval between calls to check condition
+    * @param maxTries
+    *   If condition is tried this many times, an exception is thrown
+    * @param system
+    *   An ActorSystem to schedule calls to condition
     */
   def awaitCondition(
       condition: () => Boolean,
@@ -116,8 +126,8 @@ abstract class AsyncUtil extends AsyncUtilApi {
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
       ec: ExecutionContext): Future[Unit] = {
 
-    //type hackery here to go from () => Boolean to () => Future[Boolean]
-    //to make sure we re-evaluate every time retryUntilSatisfied is called
+    // type hackery here to go from () => Boolean to () => Future[Boolean]
+    // to make sure we re-evaluate every time retryUntilSatisfied is called
     def conditionDef: Boolean = condition()
     val conditionF: () => Future[Boolean] = () => Future(conditionDef)
 
@@ -182,7 +192,9 @@ object AsyncUtil extends AsyncUtil {
     */
   private[bitcoins] val DEFAULT_MAX_TRIES: Int = 50
 
-  /** Gives you a thread factory with the given prefix with a counter appended to the name */
+  /** Gives you a thread factory with the given prefix with a counter appended
+    * to the name
+    */
   def getNewThreadFactory(prefix: String): ThreadFactory = {
     new ThreadFactory {
       private val atomicInteger = new AtomicInteger(0)

@@ -21,7 +21,7 @@ class TipValidationTest extends ChainDbUnitTest {
 
   behavior of "TipValidation"
 
-  //blocks 566,092 and 566,093
+  // blocks 566,092 and 566,093
   val newValidTip = BlockHeaderHelper.header1
   val currentTipDb = BlockHeaderHelper.header2Db
   val blockchain = Blockchain.fromHeaders(Vector(currentTipDb))

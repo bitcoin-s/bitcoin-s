@@ -41,7 +41,9 @@ case class PeerFinder(
   val controlMessageHandler: ControlMessageHandler =
     ControlMessageHandler(this)
 
-  /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
+  /** Returns peers by querying each dns seed once. These will be IPv4
+    * addresses.
+    */
   private def getPeersFromDnsSeeds: Future[Vector[Peer]] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
     val addressesF: Future[Vector[String]] = Future
@@ -64,7 +66,9 @@ case class PeerFinder(
 
   }
 
-  /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
+  /** Returns peers from hardcoded addresses taken from
+    * https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt
+    */
   private def getPeersFromResources: Vector[Peer] = {
     val source = Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
     val addresses = source
@@ -75,7 +79,9 @@ case class PeerFinder(
     Random.shuffle(peers)
   }
 
-  /** Returns tuple (non-filter peer, filter peers) from all peers stored in database */
+  /** Returns tuple (non-filter peer, filter peers) from all peers stored in
+    * database
+    */
   private def getPeersFromDb: Future[(Vector[PeerDb], Vector[PeerDb])] = {
     val dbF: Future[Vector[PeerDb]] =
       PeerDAO().findAllWithTorFilter(nodeAppConfig.torConf.enabled)
@@ -90,8 +96,8 @@ case class PeerFinder(
     }
   }
 
-  /** Gets last seen peers before a given cool down a period so we don't keep automatically
-    * reconnecting to peers we just disconnected
+  /** Gets last seen peers before a given cool down a period so we don't keep
+    * automatically reconnecting to peers we just disconnected
     */
   private def getLastSeenBlockFilterPeers(
       dbSlots: Int): Future[Vector[PeerDb]] = {
@@ -104,8 +110,8 @@ case class PeerFinder(
     } yield Random.shuffle(filtered).take(dbSlots)
   }
 
-  /** Returns peers from bitcoin-s.config file unless peers are supplied as an argument to [[PeerManager]] in which
-    * case it returns those.
+  /** Returns peers from bitcoin-s.config file unless peers are supplied as an
+    * argument to [[PeerManager]] in which case it returns those.
     */
   private def getPeersFromConfig: Vector[Peer] = {
     val addresses = nodeAppConfig.peers.filter(p =>
@@ -113,7 +119,7 @@ case class PeerFinder(
     addresses
   }
 
-  //for the peers we try
+  // for the peers we try
   private val _peerData: mutable.Map[Peer, PeerData] = {
     mutable.Map.empty
   }
@@ -147,7 +153,7 @@ case class PeerFinder(
       isStarted.set(true)
       val peersToTry = (paramPeers ++ getPeersFromConfig).distinct
       val pds = peersToTry.map(p => buildPeerData(p, isPersistent = true))
-      //higher priority for param peers
+      // higher priority for param peers
       _peersToTry.pushAll(pds, priority = 2)
 
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
@@ -210,10 +216,10 @@ case class PeerFinder(
     if (isStarted.get()) {
       logger.info(s"Stopping PeerFinder")
       isStarted.set(false)
-      //stop scheduler
+      // stop scheduler
       peerConnectionCancellableOpt.map(_.cancel())
       peerConnectionCancellableOpt = None
-      //delete try queue
+      // delete try queue
       _peersToTry.clear()
 
       val stopF = for {
@@ -221,8 +227,8 @@ case class PeerFinder(
         _ <- AsyncUtil
           .retryUntilSatisfied(
             {
-              //there seems to be some sort of bug in mutable.Map.isEmpty
-              //convert it to an immutable Map with .toMap and then check isEmpty
+              // there seems to be some sort of bug in mutable.Map.isEmpty
+              // convert it to an immutable Map with .toMap and then check isEmpty
               _peerData.toMap.isEmpty
             },
             interval = 1.seconds,
@@ -269,7 +275,7 @@ case class PeerFinder(
   def removePeer(peer: Peer): Future[Option[PeerData]] = {
     Future.successful {
       logger.debug(s"Removing peer=$peer")
-      _peerData.remove(peer) //peer must be a member of _peerData
+      _peerData.remove(peer) // peer must be a member of _peerData
     }
   }
 
@@ -313,7 +319,9 @@ case class PeerFinder(
     }
   }
 
-  /** Attempts to connect to various peers on the p2p network. Try to get more peers for our node. */
+  /** Attempts to connect to various peers on the p2p network. Try to get more
+    * peers for our node.
+    */
   def queryForPeerConnections(excludePeers: Set[Peer]): Option[Unit] = {
     if (
       isConnectionSchedulerRunning.compareAndSet(false, true) && isStarted.get()
@@ -345,11 +353,11 @@ case class PeerFinder(
       }
 
       val peersToTryF = paramPdsF.map { _ =>
-        //in case of less _peersToTry.size than maxPeerSearchCount
+        // in case of less _peersToTry.size than maxPeerSearchCount
         val max = Math.min(maxPeerSearchCount, _peersToTry.size)
-        val peers = (
-          0.until(max)
-            .map(_ => _peersToTry.pop()))
+        val peers = (0
+          .until(max)
+          .map(_ => _peersToTry.pop()))
           .distinct
           .filterNot(p => excludePeers.exists(_ == p.peer))
         peers
@@ -360,7 +368,7 @@ case class PeerFinder(
           _ = logger.debug(s"Trying next set of peers $peers")
           _ <- {
             Future.traverse(peers) { p =>
-              //check if we already have an active connection
+              // check if we already have an active connection
               val isDisconnectedF = peerManagerApi.isDisconnected(p.peer)
               for {
                 isDisconnected <- isDisconnectedF
@@ -369,7 +377,7 @@ case class PeerFinder(
                     tryPeer(peer = p.peer,
                             isPersistent = p.isInstanceOf[PersistentPeerData])
                   } else {
-                    //do nothing, we are already connected
+                    // do nothing, we are already connected
                     Future.unit
                   }
                 }

@@ -97,8 +97,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       res
     }
 
-  private def delegate[T]: (
-      DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
+  private def delegate[T]
+      : (DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
     Future(wallet).flatMap[T](_)
   }
 
@@ -106,8 +106,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     delegate(_.processBlock(block))
 
   override def processCompactFilters(
-      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]): Future[
-    NeutrinoHDWalletApi] = {
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])
+      : Future[NeutrinoHDWalletApi] = {
     delegate(_.processCompactFilters(blockFilters))
   }
 
@@ -158,16 +158,16 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
     _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved))
 
   override def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean): Future[
-    FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     delegate(
       _.fundRawTransaction(destinations, feeRate, fromAccount, markAsReserved))
   }
@@ -205,8 +205,9 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def listSpentAddresses(): Future[Vector[AddressDb]] = delegate(
     _.listSpentAddresses())
 
-  override def listFundedAddresses(): Future[
-    Vector[(AddressDb, CurrencyUnit)]] = delegate(_.listFundedAddresses())
+  override def listFundedAddresses()
+      : Future[Vector[(AddressDb, CurrencyUnit)]] = delegate(
+    _.listFundedAddresses())
 
   override def listUnusedAddresses(): Future[Vector[AddressDb]] = delegate(
     _.listUnusedAddresses())
@@ -337,8 +338,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       refundLT: UInt32,
       peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCOffer] = delegate(
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCOffer] = delegate(
     _.createDLCOffer(contractInfo,
                      collateral,
                      feeRateOpt,
@@ -355,8 +356,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       refundLT: UInt32,
       peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCOffer] = delegate(
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCOffer] = delegate(
     _.createDLCOffer(contractInfo,
                      collateral,
                      feeRateOpt,
@@ -370,8 +371,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       dlcOffer: DLCMessage.DLCOffer,
       peerAddress: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCAccept] = delegate(
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCAccept] = delegate(
     _.acceptDLCOffer(dlcOffer,
                      peerAddress,
                      externalPayoutAddressOpt,
@@ -904,8 +905,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       refundLT: UInt32,
       peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCOffer] = delegate(
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCOffer] = delegate(
     _.createDLCOffer(contractInfoTLV,
                      collateral,
                      feeRateOpt,
@@ -922,8 +923,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       refundLT: UInt32,
       peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCOffer] = delegate(
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCOffer] = delegate(
     _.createDLCOffer(contractInfoTLV,
                      collateral,
                      feeRateOpt,
@@ -937,8 +938,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       dlcOfferTLV: DLCOfferTLV,
       peerAddress: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
-      externalChangeAddressOpt: Option[BitcoinAddress]): Future[
-    DLCMessage.DLCAccept] = delegate(
+      externalChangeAddressOpt: Option[BitcoinAddress])
+      : Future[DLCMessage.DLCAccept] = delegate(
     _.acceptDLCOffer(dlcOfferTLV,
                      peerAddress,
                      externalPayoutAddressOpt,
@@ -954,8 +955,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       oracleSig: OracleSignatures): Future[Option[Transaction]] =
     delegate(_.executeDLC(contractId, oracleSig))
 
-  override def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
-    Vector[SpendingInfoDb]] = {
+  override def findByOutPoints(outPoints: Vector[TransactionOutPoint])
+      : Future[Vector[SpendingInfoDb]] = {
     delegate(_.findByOutPoints(outPoints))
   }
 

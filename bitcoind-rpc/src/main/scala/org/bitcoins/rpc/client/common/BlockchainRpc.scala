@@ -83,8 +83,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     getBlockRaw(headerHash.flip)
   }
 
-  def getBlockWithTransactions(headerHash: DoubleSha256DigestBE): Future[
-    GetBlockWithTransactionsResultV22] = {
+  def getBlockWithTransactions(headerHash: DoubleSha256DigestBE)
+      : Future[GetBlockWithTransactionsResultV22] = {
     val isVerboseJsonObject = JsNumber(2)
     self.version.flatMap { case V22 | V23 | V24 | Unknown =>
       bitcoindCall[GetBlockWithTransactionsResultV22](
@@ -94,8 +94,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   }
 
-  def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[
-    GetBlockWithTransactionsResult] = {
+  def getBlockWithTransactions(headerHash: DoubleSha256Digest)
+      : Future[GetBlockWithTransactionsResult] = {
     getBlockWithTransactions(headerHash.flip)
   }
 
@@ -108,8 +108,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   private def getChainTxStats(
       blocks: Option[Int],
-      blockHash: Option[DoubleSha256DigestBE]): Future[
-    GetChainTxStatsResult] = {
+      blockHash: Option[DoubleSha256DigestBE])
+      : Future[GetChainTxStatsResult] = {
     val params =
       if (blocks.isEmpty) {
         List.empty
@@ -207,8 +207,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
       account: String = "*",
       count: Int = 10,
       skip: Int = 0,
-      includeWatchOnly: Boolean = false): Future[
-    Vector[ListTransactionsResult]] = {
+      includeWatchOnly: Boolean = false)
+      : Future[Vector[ListTransactionsResult]] = {
     bitcoindCall[Vector[ListTransactionsResult]](
       "listtransactions",
       List(JsString(account),
@@ -257,24 +257,26 @@ trait BlockchainRpc extends ChainApi { self: Client =>
                           List(JsNumber(level), JsNumber(blocks)))
   }
 
-  /** Waits for the validation interface queue to catch up on everything that was there when we entered this function
-    * @see [[https://github.com/bitcoin/bitcoin/issues/27085]]
+  /** Waits for the validation interface queue to catch up on everything that
+    * was there when we entered this function
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/issues/27085]]
     * @return
     */
   def syncWithValidationInterfaceQueue(): Future[Unit] = {
     bitcoindCall[Unit](command = "syncwithvalidationinterfacequeue", List.empty)
   }
 
-  /** This is needed because we need the block hash to create a GolombFilter.
-    * We use an intermediary data type to hold our data so we can add the block hash
-    * we were given after the RPC call
+  /** This is needed because we need the block hash to create a GolombFilter. We
+    * use an intermediary data type to hold our data so we can add the block
+    * hash we were given after the RPC call
     */
   private case class TempBlockFilterResult(
       filter: String,
       header: DoubleSha256DigestBE)
 
-  implicit
-  private val tempBlockFilterResultReads: Reads[TempBlockFilterResult] =
+  implicit private val tempBlockFilterResultReads
+      : Reads[TempBlockFilterResult] =
     Json.reads[TempBlockFilterResult]
 
   def getBlockFilter(
@@ -324,8 +326,8 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     } yield fhOpt
   }
 
-  override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
-    Option[CompactFilterHeaderDb]] = {
+  override def getFilterHeader(blockHash: DoubleSha256DigestBE)
+      : Future[Option[CompactFilterHeaderDb]] = {
     for {
       blockHeaderOpt <- getHeader(blockHash)
       (filterOpt, prevFilterOpt) <- blockHeaderOpt match {
@@ -345,7 +347,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
             height = filter.height)
           Some(c)
         case (Some(filter), None) =>
-          //must be genesis filter
+          // must be genesis filter
           val fh = FilterHeader(filter.hashBE, DoubleSha256DigestBE.empty)
           val c = CompactFilterHeaderDbHelper.fromFilterHeader(
             filterHeader = fh,
@@ -353,7 +355,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
             height = filter.height)
           Some(c)
         case (None, Some(_)) =>
-          //could find previous filter, but couldn't find compact filter?
+          // could find previous filter, but couldn't find compact filter?
           None
         case (None, None) => None
       }

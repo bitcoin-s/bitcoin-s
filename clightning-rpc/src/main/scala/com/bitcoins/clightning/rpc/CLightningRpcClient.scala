@@ -200,8 +200,8 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
     clightningCall[CLightningPayResult]("pay", params)
   }
 
-  def lookupInvoice(paymentHash: Sha256Digest): Future[
-    Option[CLightningLookupInvoiceResult]] = {
+  def lookupInvoice(paymentHash: Sha256Digest)
+      : Future[Option[CLightningLookupInvoiceResult]] = {
     val params = JsObject(Vector("payment_hash" -> JsString(paymentHash.hex)))
     clightningCall[CLightningListInvoicesResult]("listinvoices", params).map(
       _.invoices.headOption)

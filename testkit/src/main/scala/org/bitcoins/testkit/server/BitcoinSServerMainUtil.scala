@@ -17,8 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object BitcoinSServerMainUtil {
 
-  /** Builds a configuration with the proper bitcoind credentials and bitcoin-s node mode set to bitcoind
-    * and sets tor config
+  /** Builds a configuration with the proper bitcoind credentials and bitcoin-s
+    * node mode set to bitcoind and sets tor config
     */
   def buildBitcoindConfig(instance: BitcoindInstance): Config = {
     val version = instance match {

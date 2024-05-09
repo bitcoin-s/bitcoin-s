@@ -21,9 +21,11 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-/** This trait defines methods to interact with the Eclair lightning node via its API.
+/** This trait defines methods to interact with the Eclair lightning node via
+  * its API.
   *
-  * @see [[https://acinq.github.io/eclair/]]
+  * @see
+  *   [[https://acinq.github.io/eclair/]]
   */
 trait EclairApi {
 
@@ -38,8 +40,10 @@ trait EclairApi {
   def audit(): Future[AuditResult]
 
   /** List all sent/received/relayed payments in the given interval
-    * @param from start timestamp
-    * @param to end timestamp
+    * @param from
+    *   start timestamp
+    * @param to
+    *   end timestamp
     */
   def audit(from: Option[Instant], to: Option[Instant]): Future[AuditResult]
 
@@ -113,9 +117,9 @@ trait EclairApi {
       channelFlags: Option[Byte],
       openTimeout: Option[FiniteDuration]): Future[FundedChannelId]
 
-  /** The network that this [[org.bitcoins.eclair.rpc.api.EclairApi EclairApi]] is
-    * running on. This is not available directly from the eclair api, but is a very
-    * useful helper method
+  /** The network that this [[org.bitcoins.eclair.rpc.api.EclairApi EclairApi]]
+    * is running on. This is not available directly from the eclair api, but is
+    * a very useful helper method
     * @return
     */
   def network: LnParams
@@ -158,11 +162,14 @@ trait EclairApi {
       paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
 
   /** Returns a future that is completed when this invoice has been paid too.
-    * This also publishes the [[IncomingPayment received payment result]] to the event bush
-    * when the payment is received
+    * This also publishes the [[IncomingPayment received payment result]] to the
+    * event bush when the payment is received
     *
-    * @param lnInvoice the invoice to monitor
-    * @param maxAttempts the number of attempts we ping eclair until we fail the returned future. Pinging occurrs every 1 second
+    * @param lnInvoice
+    *   the invoice to monitor
+    * @param maxAttempts
+    *   the number of attempts we ping eclair until we fail the returned future.
+    *   Pinging occurrs every 1 second
     */
   def monitorInvoice(
       lnInvoice: LnInvoice,
@@ -202,11 +209,16 @@ trait EclairApi {
       maxFeePct: Option[Int],
       externalId: Option[String]): Future[PaymentId]
 
-  /** Pings eclair to see if a invoice has been paid and returns [[OutgoingPayment PaymentResult]]
+  /** Pings eclair to see if a invoice has been paid and returns
+    * [[OutgoingPayment PaymentResult]]
     *
-    * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
-    * @param interval the ping interval
-    * @param maxAttempts the maximum number of pings
+    * @param paymentId
+    *   the payment id returnned by
+    *   [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
+    * @param interval
+    *   the ping interval
+    * @param maxAttempts
+    *   the maximum number of pings
     */
   def monitorSentPayment(
       paymentId: PaymentId,
@@ -265,7 +277,9 @@ trait EclairApi {
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
 
-  /** Connects to the Eclair web socket end point and passes [[WebSocketEvent]]s to the given [[eventHandler]] */
+  /** Connects to the Eclair web socket end point and passes [[WebSocketEvent]]s
+    * to the given [[eventHandler]]
+    */
   def connectToWebSocket(eventHandler: WebSocketEvent => Unit): Future[Unit]
 
   def getNewAddress(): Future[BitcoinAddress]

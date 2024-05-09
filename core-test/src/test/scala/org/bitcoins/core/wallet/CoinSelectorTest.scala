@@ -147,19 +147,20 @@ class CoinSelectorTest extends BitcoinSUnitTest {
     result
   }
 
-  /** The test assumes feeRate is greater than longTermFeeRate
-    * After generating fee rates this will order them correctly
-    * so the tests will pass
+  /** The test assumes feeRate is greater than longTermFeeRate After generating
+    * fee rates this will order them correctly so the tests will pass
     *
-    * @param feeRateA first fee rate generated
-    * @param feeRateB second fee rate generated
-    * @return (feeRate, longTermFeeRate)
+    * @param feeRateA
+    *   first fee rate generated
+    * @param feeRateB
+    *   second fee rate generated
+    * @return
+    *   (feeRate, longTermFeeRate)
     */
   def correctFeeRates(
       feeRateA: SatoshisPerVirtualByte,
-      feeRateB: SatoshisPerVirtualByte): (
-      SatoshisPerVirtualByte,
-      SatoshisPerVirtualByte) = {
+      feeRateB: SatoshisPerVirtualByte)
+      : (SatoshisPerVirtualByte, SatoshisPerVirtualByte) = {
     if (feeRateA.toLong > feeRateB.toLong) {
       (feeRateA, feeRateB)
     } else if (feeRateA.toLong < feeRateB.toLong) {

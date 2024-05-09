@@ -46,7 +46,7 @@ class SpliceInterpreterTest extends BitcoinSUnitTest {
   }
 
   it must "evaluate an OP_SIZE correctly with 0x8000" in {
-    //0x8000 == 128 in bitcoin
+    // 0x8000 == 128 in bitcoin
     val stack = List(ScriptNumber(128))
     val script = List(OP_SIZE)
     val program =

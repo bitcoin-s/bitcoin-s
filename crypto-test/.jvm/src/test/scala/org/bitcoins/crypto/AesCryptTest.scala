@@ -24,8 +24,7 @@ class AesCryptTest extends BitcoinSCryptoTest {
     *
     * Here's a link to the first test vector:
     * https://gchq.github.io/CyberChef/#recipe=AES_Encrypt(%7B'option':'Hex','string':'2eefdf6ee2dbca83e7b7648a8f9d1897'%7D,%7B'option':'Hex','string':'889dc64377f6d993ef713c995f9c1ee5'%7D,'CFB','Hex','Hex')&input=NzZmZTM1ODgwMDU1ZTFmYWM5NTBmNDg0YTgxNWNkMjI
-    * The other vectors can be replicated by tweaking the values
-    * in the UI.
+    * The other vectors can be replicated by tweaking the values in the UI.
     */
   it must "decrypt and encrypt some hard coded test vectors" in {
     case class TestVector(
@@ -99,7 +98,7 @@ class AesCryptTest extends BitcoinSCryptoTest {
       case Right(b) => b
     }
     val iv = getIV(hex"455014871CD34F8DCFD7C1E387987BFF")
-    //val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
+    // val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
 
     val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
 
@@ -124,23 +123,19 @@ class AesCryptTest extends BitcoinSCryptoTest {
 
   }
 
-  /** REPL.it: https://repl.it/@torkelrogstad/aes-test
-    * To replicate:
-    * const CryptoJS = require("crypto-js")
-    * const text = "The quick brown fox jumps over the lazy dog. 👻 👻";
+  /** REPL.it: https://repl.it/@torkelrogstad/aes-test To replicate: const
+    * CryptoJS = require("crypto-js") const text = "The quick brown fox jumps
+    * over the lazy dog. 👻 👻";
     *
     * const key = CryptoJS.enc.Hex.parse("12345678123456781234567812345678")
     *
     * const iv = CryptoJS.enc.Hex.parse("87654321876543218765432187654321")
     *
-    * const encrypted = CryptoJS.AES.encrypt(text, key, {
-    *   mode: CryptoJS.mode.CFB,
-    *   padding: CryptoJS.pad.NoPadding,
-    *   iv: iv
-    * })
+    * const encrypted = CryptoJS.AES.encrypt(text, key, { mode:
+    * CryptoJS.mode.CFB, padding: CryptoJS.pad.NoPadding, iv: iv })
     *
-    * console.log(encrypted.toString())
-    * // KKbLXDQUy7ajmuIJm7ZR7ugaRubqGl1JwG+x5C451JXIFofnselHVTy/u8u0Or9nV2d7Kjy0
+    * console.log(encrypted.toString()) //
+    * KKbLXDQUy7ajmuIJm7ZR7ugaRubqGl1JwG+x5C451JXIFofnselHVTy/u8u0Or9nV2d7Kjy0
     */
   it must "pass a hardcoded crypto-js vector where we decrypt with a key" in {
     val key = getKey(hex"12345678123456781234567812345678")
@@ -201,73 +196,52 @@ class AesCryptTest extends BitcoinSCryptoTest {
 
   /** To replicate:
     *
-    * from Crypto import Random
-    * from Crypto.Cipher import AES
-    * import base64
-    * from binascii import unhexlify
-    * import binascii
-    * import math
+    * from Crypto import Random from Crypto.Cipher import AES import base64 from
+    * binascii import unhexlify import binascii import math
     *
     * text = "The quick brown fox jumps over the lazy dog."
     *
     * SEGMENT_SIZE = 128
     *
-    * # BLOCK_SIZE can be 16, 24 or 32
-    * # key must be same number of bytes
-    * BLOCK_SIZE = 16
-    * key = "e67a00b510bcff7f4a0101ff5f7fb690"
-    * assert len(bytes.fromhex(key)) == BLOCK_SIZE
+    * # BLOCK_SIZE can be 16, 24 or 32 # key must be same number of bytes
+    * BLOCK_SIZE = 16 key = "e67a00b510bcff7f4a0101ff5f7fb690" assert
+    * len(bytes.fromhex(key)) == BLOCK_SIZE
     *
-    * # IV must always be 16 bytes in CFB mode
-    * IV_SIZE = 16
-    * iv = "f43b7f80624e7f01123ac272beb1ff7f"
-    * assert len(bytes.fromhex(iv)) == IV_SIZE
+    * # IV must always be 16 bytes in CFB mode IV_SIZE = 16 iv =
+    * "f43b7f80624e7f01123ac272beb1ff7f" assert len(bytes.fromhex(iv)) ==
+    * IV_SIZE
     *
-    * def pad(value):
-    *     """Pads the given string with zero-bytes"""
-    *     length = len(value)
+    * def pad(value): """Pads the given string with zero-bytes""" length =
+    * len(value)
     *
-    *     pad_size = BLOCK_SIZE - (length % BLOCK_SIZE)
+    * pad_size = BLOCK_SIZE - (length % BLOCK_SIZE)
     *
-    *     return value.ljust(length + pad_size, "\x00")
+    * return value.ljust(length + pad_size, "\x00")
     *
-    * def unpad(value):
-    *     """Removes trailing zero-bytes from the given string"""
-    *     while value[-1] == "\x00":
-    *         value = value[:-1]
+    * def unpad(value): """Removes trailing zero-bytes from the given string"""
+    * while value[-1] == "\x00": value = value[:-1]
     *
-    *     return value
+    * return value
     *
-    * def encrypt(in_string, key, iv):
-    *     """
-    *     Takes in a plain string to encrypt, as well as
-    *     hex representations of the key and IV
-    *     """
-    *     key = unhexlify(key)
-    *     iv = unhexlify(iv)
-    *     aes = AES.new(key, AES.MODE_CFB, IV=iv, segment_size=SEGMENT_SIZE)
-    *     padded = pad(in_string)
-    *     return aes.encrypt(padded)
+    * def encrypt(in_string, key, iv): """ Takes in a plain string to encrypt,
+    * as well as hex representations of the key and IV """ key = unhexlify(key)
+    * iv = unhexlify(iv) aes = AES.new(key, AES.MODE_CFB, IV=iv,
+    * segment_size=SEGMENT_SIZE) padded = pad(in_string) return
+    * aes.encrypt(padded)
     *
-    * def decrypt(encrypted, key, iv):
-    *     """
-    *     Takes in a bytes object to decrypt, as well as
-    *     hex representations of the key and IV
-    *     """
-    *     key = unhexlify(key)
-    *     iv = unhexlify(iv)
-    *     aes = AES.new(key, AES.MODE_CFB, IV=iv, segment_size=SEGMENT_SIZE)
-    *     decrypted = aes.decrypt(encrypted)
-    *     return unpad(decrypted)
+    * def decrypt(encrypted, key, iv): """ Takes in a bytes object to decrypt,
+    * as well as hex representations of the key and IV """ key = unhexlify(key)
+    * iv = unhexlify(iv) aes = AES.new(key, AES.MODE_CFB, IV=iv,
+    * segment_size=SEGMENT_SIZE) decrypted = aes.decrypt(encrypted) return
+    * unpad(decrypted)
     *
-    * encrypted = encrypt(text, key, iv)
-    * print(f"encrypted: {encrypted.hex()}")
+    * encrypted = encrypt(text, key, iv) print(f"encrypted: {encrypted.hex()}")
     */
   it must "pass a hard coded test vector from pycrypto" in {
 
     /** Asserts that the two bytevectors are equal expect for trailing padding.
-      * Pycrypto has issues with encrypting plaintexts that don't line up
-      * with block size, so this is only used here.
+      * Pycrypto has issues with encrypting plaintexts that don't line up with
+      * block size, so this is only used here.
       */
     def assertPaddedEqual(first: ByteVector, second: ByteVector): Assertion = {
       if (first.length == second.length) {
@@ -322,12 +296,10 @@ class AesCryptTest extends BitcoinSCryptoTest {
         case Right(b) => b
       }
 
-      /** The AES implementation in pycrypto refuses to work with
-        * data that's not padded to the block size (although this
-        * should be possible with AES CFB encryption...). On
-        * the pycrypto side we therefore have to add some
-        * padding, which leads to trailing zero bytes in the
-        * plaintext
+      /** The AES implementation in pycrypto refuses to work with data that's
+        * not padded to the block size (although this should be possible with
+        * AES CFB encryption...). On the pycrypto side we therefore have to add
+        * some padding, which leads to trailing zero bytes in the plaintext
         */
       assertPaddedEqual(decrypted, plainbytes)
 
@@ -395,7 +367,7 @@ class AesCryptTest extends BitcoinSCryptoTest {
 
     val (first, second) = (bytevectorGens(0), bytevectorGens(1))
     val badKeyLenghts: Gen[ByteVector] =
-      Gen.oneOf(first, second, bytevectorGens: _*)
+      Gen.oneOf(first, second, bytevectorGens*)
 
     forAll(badKeyLenghts) { bytes =>
       assert(AesKey.fromBytes(bytes).isEmpty)
