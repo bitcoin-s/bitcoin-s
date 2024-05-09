@@ -69,7 +69,6 @@ object AesEncryptedData extends Factory[AesEncryptedData] {
 /** Represents a salt used to derive a AES key from a human-readable passphrase.
   */
 case class AesSalt(bytes: ByteVector) extends AnyVal
-
 object AesSalt extends Factory[AesSalt] {
 
   override def fromBytes(bytes: ByteVector): AesSalt = new AesSalt(bytes)
@@ -85,7 +84,6 @@ object AesSalt extends Factory[AesSalt] {
 // we enforce the non-empty password length in the companion object
 // to be able to make this extend AnyVal, and not be boxed at runtime
 case class AesPassword(private val value: String) extends MaskedToString {
-
   /** Converts this password into an AES key
     *
     * @return
