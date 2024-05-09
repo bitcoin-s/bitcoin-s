@@ -66,6 +66,7 @@ lazy val cryptoJVM = crypto.jvm
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(name := "bitcoin-s-core")
+  .settings(scalacOptions += "-Xsource:3")
   .settings(libraryDependencies ++= Deps.core.value)
   .settings(CommonSettings.prodSettings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
