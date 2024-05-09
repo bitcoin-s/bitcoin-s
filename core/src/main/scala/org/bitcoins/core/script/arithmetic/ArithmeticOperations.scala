@@ -146,7 +146,10 @@ case object OP_RSHIFT extends ArithmeticOperation {
 
 object ArithmeticOperation extends ScriptOperationFactory[ArithmeticOperation] {
 
-  override val operations = Vector(
+  override val operations: scala.collection.immutable.Vector[
+    org.bitcoins.core.script.arithmetic.ArithmeticOperation
+      with Product
+      with java.io.Serializable] = Vector(
     OP_0NOTEQUAL,
     OP_1ADD,
     OP_1SUB,

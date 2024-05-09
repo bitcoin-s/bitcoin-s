@@ -37,6 +37,9 @@ case object OP_CHECKSEQUENCEVERIFY extends LocktimeOperation {
 
 object LocktimeOperation extends ScriptOperationFactory[LocktimeOperation] {
 
-  override val operations =
+  override val operations: scala.collection.immutable.Vector[
+    org.bitcoins.core.script.locktime.LocktimeOperation
+      with Product
+      with java.io.Serializable] =
     Vector(OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY)
 }

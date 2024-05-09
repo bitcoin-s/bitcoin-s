@@ -29,6 +29,9 @@ case object OP_SIZE extends SpliceOperation {
 
 object SpliceOperation extends ScriptOperationFactory[SpliceOperation] {
 
-  override val operations =
+  override val operations: scala.collection.immutable.Vector[
+    org.bitcoins.core.script.splice.SpliceOperation
+      with Product
+      with java.io.Serializable] =
     Vector(OP_CAT, OP_LEFT, OP_RIGHT, OP_SIZE, OP_SUBSTR)
 }

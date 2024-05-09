@@ -607,7 +607,7 @@ object ConditionalScriptSignature
 /** Represents the empty script signature */
 case object EmptyScriptSignature extends ScriptSignature {
   override def asm: Seq[ScriptToken] = Vector.empty
-  def signatures = Vector.empty
+  def signatures: scala.collection.immutable.Vector[Nothing] = Vector.empty
 }
 
 object ScriptSignature extends ScriptFactory[ScriptSignature] {

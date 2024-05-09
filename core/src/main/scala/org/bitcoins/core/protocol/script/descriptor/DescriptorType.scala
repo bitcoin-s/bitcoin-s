@@ -15,42 +15,55 @@ sealed abstract class ScriptDescriptorType extends DescriptorType {
 object DescriptorType extends StringFactory[DescriptorType] {
 
   case object PK extends ScriptDescriptorType {
-    override val scriptType = ScriptType.PUBKEY
+    override val scriptType: org.bitcoins.core.script.ScriptType.PUBKEY.type =
+      ScriptType.PUBKEY
     override val toString: String = "pk"
   }
 
   case object PKH extends ScriptDescriptorType {
-    override val scriptType = ScriptType.PUBKEYHASH
+    override val scriptType
+        : org.bitcoins.core.script.ScriptType.PUBKEYHASH.type =
+      ScriptType.PUBKEYHASH
     override val toString: String = "pkh"
   }
 
   case object SH extends ScriptDescriptorType {
-    override val scriptType = ScriptType.SCRIPTHASH
+    override val scriptType
+        : org.bitcoins.core.script.ScriptType.SCRIPTHASH.type =
+      ScriptType.SCRIPTHASH
     override val toString: String = "sh"
   }
 
   case object WPKH extends ScriptDescriptorType {
-    override val scriptType = ScriptType.WITNESS_V0_KEYHASH
+    override val scriptType
+        : org.bitcoins.core.script.ScriptType.WITNESS_V0_KEYHASH.type =
+      ScriptType.WITNESS_V0_KEYHASH
     override val toString: String = "wpkh"
   }
 
   case object WSH extends ScriptDescriptorType {
-    override val scriptType = ScriptType.WITNESS_V0_SCRIPTHASH
+    override val scriptType
+        : org.bitcoins.core.script.ScriptType.WITNESS_V0_SCRIPTHASH.type =
+      ScriptType.WITNESS_V0_SCRIPTHASH
     override val toString: String = "wsh"
   }
 
   case object TR extends ScriptDescriptorType {
-    override val scriptType = ScriptType.WITNESS_V1_TAPROOT
+    override val scriptType
+        : org.bitcoins.core.script.ScriptType.WITNESS_V1_TAPROOT.type =
+      ScriptType.WITNESS_V1_TAPROOT
     override val toString: String = "tr"
   }
 
   case object Multi extends ScriptDescriptorType {
-    override val scriptType = ScriptType.MULTISIG
+    override val scriptType: org.bitcoins.core.script.ScriptType.MULTISIG.type =
+      ScriptType.MULTISIG
     override val toString: String = "multi"
   }
 
   case object SortedMulti extends ScriptDescriptorType {
-    override val scriptType = ScriptType.MULTISIG
+    override val scriptType: org.bitcoins.core.script.ScriptType.MULTISIG.type =
+      ScriptType.MULTISIG
     override val toString: String = "sortedmulti"
   }
 

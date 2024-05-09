@@ -19,8 +19,12 @@ sealed abstract class TransactionInput extends NetworkElement {
 }
 
 case object EmptyTransactionInput extends TransactionInput {
-  override def previousOutput = EmptyTransactionOutPoint
-  override def scriptSignature = EmptyScriptSignature
+  override def previousOutput
+      : org.bitcoins.core.protocol.transaction.EmptyTransactionOutPoint.type =
+    EmptyTransactionOutPoint
+  override def scriptSignature
+      : org.bitcoins.core.protocol.script.EmptyScriptSignature.type =
+    EmptyScriptSignature
   override def sequence = TransactionConstants.sequence
 }
 
@@ -28,7 +32,9 @@ case object EmptyTransactionInput extends TransactionInput {
   * EmptyTransactionOutPoint and arbitrary data inside the script signature
   */
 sealed abstract class CoinbaseInput extends TransactionInput {
-  override def previousOutput = EmptyTransactionOutPoint
+  override def previousOutput
+      : org.bitcoins.core.protocol.transaction.EmptyTransactionOutPoint.type =
+    EmptyTransactionOutPoint
 }
 
 object TransactionInput extends Factory[TransactionInput] {

@@ -323,7 +323,7 @@ case class MultisigKeyExpression(
     // cannot directly mixin ECPublicKeyExpression
     // because we don't have a single pubKey to represent multisig
     with PubKeyTypeExpression[ECPublicKey] {
-  override val originOpt = None
+  override val originOpt: None.type = None
 
   def pubKeys: Vector[ECPublicKey] = {
     keyExpressions.map(_.key).map {

@@ -37,8 +37,12 @@ case class SegWitAddressDb(
 ) extends AddressDb {
   override type PathType = SegWitHDPath
 
-  override val scriptType = ScriptType.WITNESS_V0_KEYHASH
-  override val witnessScriptOpt = Some(witnessScript)
+  override val scriptType
+      : org.bitcoins.core.script.ScriptType.WITNESS_V0_KEYHASH.type =
+    ScriptType.WITNESS_V0_KEYHASH
+  override val witnessScriptOpt
+      : Some[org.bitcoins.core.protocol.script.ScriptWitness] = Some(
+    witnessScript)
 }
 
 /** Segwit P2PKH-in-P2SH */
@@ -52,8 +56,11 @@ case class NestedSegWitAddressDb(
 ) extends AddressDb {
   override type PathType = NestedSegWitHDPath
 
-  override val scriptType = ScriptType.SCRIPTHASH
-  override val witnessScriptOpt = Some(witnessScript)
+  override val scriptType: org.bitcoins.core.script.ScriptType.SCRIPTHASH.type =
+    ScriptType.SCRIPTHASH
+  override val witnessScriptOpt
+      : Some[org.bitcoins.core.protocol.script.ScriptWitness] = Some(
+    witnessScript)
 }
 
 /** P2PKH */
@@ -66,8 +73,9 @@ case class LegacyAddressDb(
 ) extends AddressDb {
   override type PathType = LegacyHDPath
 
-  override val scriptType = ScriptType.PUBKEYHASH
-  override val witnessScriptOpt = None
+  override val scriptType: org.bitcoins.core.script.ScriptType.PUBKEYHASH.type =
+    ScriptType.PUBKEYHASH
+  override val witnessScriptOpt: None.type = None
 }
 // todo: make ADT for different addresses in DB, seeing as they have different fields
 // todo: indicate whether or not address has been spent to

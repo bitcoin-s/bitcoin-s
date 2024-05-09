@@ -8,7 +8,10 @@ trait CryptoSignatureEvaluationFactory
     extends ScriptOperationFactory[CryptoSignatureEvaluation] {
 
   /** The current [[CryptoSignatureEvaluation]] operations. */
-  override val operations =
+  override val operations: scala.collection.immutable.Vector[
+    org.bitcoins.core.script.crypto.CryptoSignatureEvaluation
+      with Product
+      with java.io.Serializable] =
     Vector(OP_CHECKMULTISIG,
            OP_CHECKMULTISIGVERIFY,
            OP_CHECKSIG,

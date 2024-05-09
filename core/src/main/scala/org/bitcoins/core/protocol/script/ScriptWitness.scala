@@ -261,7 +261,7 @@ object TaprootWitness extends Factory[TaprootWitness] {
 }
 
 /** Spending a taproot output via the key path spend */
-case class TaprootKeyPath private (
+case class TaprootKeyPath(
     signature: SchnorrDigitalSignature,
     hashTypeOpt: Option[HashType],
     annexOpt: Option[ByteVector])

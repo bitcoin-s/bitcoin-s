@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 /** Created by chris on 1/27/16.
   */
-trait BinaryTree[T] {
+trait BinaryTree[+T] {
 
   def value: Option[T] =
     this match {

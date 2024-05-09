@@ -4,7 +4,6 @@ import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.{CryptoUtil, SipHashKey}
 import scodec.bits.{BitVector, ByteVector}
-import scodec.bits.bin
 
 import scala.annotation.tailrec
 
@@ -100,7 +99,7 @@ object GCS {
     */
   def toUnary(num: UInt64): BitVector = {
     if (num == UInt64.zero) {
-      bin"0"
+      BitVector.fromValidHex("0")
     } else {
       /*
        * We use the fact that 2^n - 1 = 111...1 (in binary) where there are n 1 digits

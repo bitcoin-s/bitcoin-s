@@ -8,7 +8,6 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
-import scodec.bits.hex
 
 /** Represents an extended key as defined by BIP32
   * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki]]
@@ -112,7 +111,7 @@ sealed abstract class ExtKey extends NetworkElement {
 object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
   val hardenedIdx: UInt32 = UInt32(NumberUtil.pow2(31).toLong)
 
-  val masterFingerprint: ByteVector = hex"00000000"
+  val masterFingerprint: ByteVector = ByteVector.fromValidHex("00000000")
 
   val prefixes: Vector[String] = Vector("xprv", "xpub", "tprv", "tpub")
 
@@ -199,7 +198,7 @@ sealed abstract class ExtPrivateKey
   def deriveChildPrivKey(idx: UInt32): ExtPrivateKey = {
     val data: ByteVector = if (idx >= ExtKey.hardenedIdx) {
       // derive hardened key
-      hex"0" ++ key.bytes ++ idx.bytes
+      ByteVector.fromValidHex("0") ++ key.bytes ++ idx.bytes
     } else {
       // derive non hardened key
       key.publicKey.bytes ++ idx.bytes
@@ -586,6 +585,6 @@ object ExtPublicKey
                            pubKey) = extPubKey match {
         case impl: ExtPublicKeyImpl => impl
       }
-      Some(version, depth, fingerprint, childNum, chainCode, pubKey)
+      Some((version, depth, fingerprint, childNum, chainCode, pubKey))
   }
 }

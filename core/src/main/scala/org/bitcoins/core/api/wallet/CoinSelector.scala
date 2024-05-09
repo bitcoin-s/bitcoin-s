@@ -8,7 +8,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 
 import scala.annotation.tailrec
 import scala.util.{Random, Try}
-import org.bitcoins.core.currency.currencyUnitOrdering
 
 /** Implements algorithms for selecting from a UTXO set to spend to an output
   * set at a given fee rate.
