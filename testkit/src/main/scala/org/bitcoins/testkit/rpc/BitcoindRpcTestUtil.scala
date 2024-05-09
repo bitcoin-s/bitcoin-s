@@ -10,7 +10,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   SignRawTransactionResult
 }
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
@@ -44,6 +43,7 @@ import java.nio.file.{Files, Path}
 import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util._
 
 //noinspection AccessorLikeMethodIsEmptyParen

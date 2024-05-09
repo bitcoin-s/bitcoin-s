@@ -7,6 +7,7 @@ import org.bitcoins.core.config._
 import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path, Paths}
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Properties
 
 /** This class represents a parsed `bitcoin.conf` file. It respects the
@@ -309,7 +310,6 @@ object BitcoindConfig
       config: File,
       datadir: File = DEFAULT_DATADIR
   ): BitcoindConfig = {
-    import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
       .iterator()

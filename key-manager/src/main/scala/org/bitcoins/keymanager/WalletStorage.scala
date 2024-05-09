@@ -8,6 +8,7 @@ import ujson._
 import java.nio.file.{Files, Path}
 import java.time.Instant
 import java.util.NoSuchElementException
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
 object WalletStorage extends KeyManagerLogger {
@@ -16,8 +17,6 @@ object WalletStorage extends KeyManagerLogger {
 
   val ENCRYPTED_SEED_FILE_NAME: String =
     "encrypted-bitcoin-s-seed.json"
-
-  import org.bitcoins.core.compat.JavaConverters._
 
   /** Epoch time of the mainnet Genesis Block */
   val GENESIS_TIME = 1231006505L

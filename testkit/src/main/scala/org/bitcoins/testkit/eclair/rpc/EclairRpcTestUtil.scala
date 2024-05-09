@@ -9,7 +9,6 @@ import org.bitcoins.commons.jsonmodels.eclair.{
   PaymentId
 }
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -39,6 +38,7 @@ import java.net.URI
 import java.nio.file.Path
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
