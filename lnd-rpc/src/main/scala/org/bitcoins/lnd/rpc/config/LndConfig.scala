@@ -8,6 +8,7 @@ import scodec.bits.ByteVector
 import java.io.File
 import java.net.URI
 import java.nio.file.{Files, Path, Paths}
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Properties
 
 /** This class represents a parsed `lnd.conf` file. It respects the different
@@ -191,7 +192,6 @@ object LndConfig extends ConfigFactory[LndConfig] with BitcoinSLogger {
       config: File,
       datadir: File = DEFAULT_DATADIR
   ): LndConfig = {
-    import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
       .iterator()

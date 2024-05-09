@@ -7,6 +7,8 @@ import java.nio.file.{Files, Paths}
 import org.bitcoins.core.config._
 import org.bitcoins.crypto.MaskedToString
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 /** This trait contains the information we need to authenticate to a `bitcoind`
   * node.
   */
@@ -17,7 +19,6 @@ sealed trait BitcoindAuthCredentials {
 }
 
 object BitcoindAuthCredentials extends BitcoinSLogger {
-  import org.bitcoins.core.compat.JavaConverters._
 
   /** Authenticate by providing a username and password. If you are connecting
     * to a local `bitcoind` you should instead use cookie based authentication.

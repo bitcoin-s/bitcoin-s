@@ -8,6 +8,7 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.io.File
 import java.net.URI
 import java.nio.file.{Files, Path, Paths}
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Properties
 
 /** This class represents a parsed `lightning.conf` file. It respects the
@@ -167,7 +168,6 @@ object CLightningConfig
       config: File,
       datadir: File = DEFAULT_DATADIR
   ): CLightningConfig = {
-    import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
       .iterator()
