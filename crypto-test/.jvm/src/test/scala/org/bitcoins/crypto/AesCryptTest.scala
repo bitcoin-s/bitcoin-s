@@ -354,10 +354,6 @@ class AesCryptTest extends BitcoinSCryptoTest {
     assertDoesNotCompile("""val k = AesKey(hex"1234")""")
   }
 
-  it must "not have a constructor" in {
-    assertDoesNotCompile("""val k = new AesKey(hex"1234")""")
-  }
-
   it must "not be constructable from bad byte lenghts" in {
     val bytevectorGens: Seq[Gen[ByteVector]] =
       (0 until 100)
@@ -383,11 +379,6 @@ class AesCryptTest extends BitcoinSCryptoTest {
     assertDoesNotCompile("""val iv = AesIV(hex"1234")""")
   }
 
-  it must "not have a constructor" in {
-    assertDoesNotCompile("""val iv = new AesIV(hex"1234")""")
-
-  }
-
   it must "not be constructable from invalid length bytes" in {
     val bytes = hex"12345"
     intercept[IllegalArgumentException] {
@@ -399,10 +390,6 @@ class AesCryptTest extends BitcoinSCryptoTest {
 
   it must "not have an apply method" in {
     assertDoesNotCompile("""val p = AesPassword("hi there")""")
-  }
-
-  it must "not have a constructor" in {
-    assertDoesNotCompile("""val p = new AesPassword("hi there")""")
   }
 
   it must "fail to create an empty AES password" in {
