@@ -1,6 +1,10 @@
 name: Release
 on:
-  pull_request:
+  push:
+    branches: [master, main, feature_electron_build]
+    tags: ["*"]
+  release:
+    types: [ published ]
 
 jobs:
   publish:
