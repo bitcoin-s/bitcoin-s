@@ -715,7 +715,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
     val privKey = ECPrivateKey.freshPrivateKey
     val p2wpkh = P2PKHScriptPubKey(privKey.publicKey)
-    val descriptor = P2SHDescriptor(p2wpkh)
+    val descriptor = P2SHDescriptor(p2wpkh, None)
 
     val imp: DescriptorsResult = DescriptorsResult(
       desc = descriptor,
