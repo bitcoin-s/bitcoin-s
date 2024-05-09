@@ -45,7 +45,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
       Gen
         .listOfN(16, NumberGenerator.byte)
         .map(ByteVector(_))
-        .map(SipHashKey)
+        .map(SipHashKey.apply)
 
     val genData: Gen[Vector[ByteVector]] =
       Gen.chooseNum(1, 10000).flatMap { size =>

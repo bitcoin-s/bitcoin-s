@@ -76,13 +76,13 @@ class Int32Test extends BitcoinSUnitTest {
   }
 
   it must "Serialization symmetry" in {
-    forAll(NumberGenerator.int32s) { int32: Int32 =>
+    forAll(NumberGenerator.int32s) { (int32: Int32) =>
       assert(Int32(int32.hex) == int32)
     }
   }
 
   it must "Additive identity" in {
-    forAll(NumberGenerator.int32s) { int32: Int32 =>
+    forAll(NumberGenerator.int32s) { (int32: Int32) =>
       assert(int32 + Int32.zero == int32)
     }
   }
@@ -100,7 +100,7 @@ class Int32Test extends BitcoinSUnitTest {
   }
 
   it must "Subtractive identity" in {
-    forAll(NumberGenerator.int32s) { int32: Int32 =>
+    forAll(NumberGenerator.int32s) { (int32: Int32) =>
       assert(int32 - Int32.zero == int32)
     }
   }
@@ -118,13 +118,13 @@ class Int32Test extends BitcoinSUnitTest {
   }
 
   it must "Multiplying by zero" in {
-    forAll(NumberGenerator.int32s) { int32: Int32 =>
+    forAll(NumberGenerator.int32s) { (int32: Int32) =>
       assert(int32 * Int32.zero == Int32.zero)
     }
   }
 
   it must "Multiplicative identity" in {
-    forAll(NumberGenerator.int32s) { int32: Int32 =>
+    forAll(NumberGenerator.int32s) { (int32: Int32) =>
       assert(int32 * Int32.one == int32)
     }
   }

@@ -421,8 +421,9 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
         output = TransactionOutput(CurrencyUnits.zero, redeemScript),
         flags = Policy.standardScriptVerifyFlags
       )
-    val sign: ByteVector => Future[ECDigitalSignature] = { bytes: ByteVector =>
-      Future(privateKey.sign(bytes))
+    val sign: ByteVector => Future[ECDigitalSignature] = {
+      (bytes: ByteVector) =>
+        Future(privateKey.sign(bytes))
     }
     @nowarn val txSignature =
       TransactionSignatureCreator.createSig(

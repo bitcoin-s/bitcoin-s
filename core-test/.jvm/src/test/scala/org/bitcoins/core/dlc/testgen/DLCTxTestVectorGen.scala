@@ -21,7 +21,7 @@ object DLCTxTestVectorGen
   override val inputStr: String = "inputs"
 
   override def generateFromInput: ValidTestInputs => Future[DLCTxTestVector] = {
-    inputs: ValidTestInputs =>
+    (inputs: ValidTestInputs) =>
       Future.successful(DLCTxTestVector.fromInputs(inputs))
   }
 

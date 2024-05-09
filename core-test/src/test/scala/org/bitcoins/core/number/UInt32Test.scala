@@ -90,20 +90,20 @@ class UInt32Test extends BitcoinSUnitTest {
   }
 
   it must "serialization symmetry" in {
-    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+    forAll(NumberGenerator.uInt32s) { (uInt32: UInt32) =>
       assert(UInt32(uInt32.hex) == uInt32)
       assert(UInt32(uInt32.hex).hex == uInt32.hex)
     }
   }
 
   it must "additive identity" in {
-    forAll(NumberGenerator.uInt32s) { num: UInt32 =>
+    forAll(NumberGenerator.uInt32s) { (num: UInt32) =>
       assert(num + UInt32.zero == num)
     }
   }
 
   it must "Negative numbers in UInt32 throw an exception" in {
-    forAll(NumberGenerator.negativeLongs) { num: Long =>
+    forAll(NumberGenerator.negativeLongs) { (num: Long) =>
       val uint32 = Try(UInt32(num))
       assert(uint32.isFailure)
     }
@@ -121,7 +121,7 @@ class UInt32Test extends BitcoinSUnitTest {
   }
 
   it must "subtractive identity" in {
-    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+    forAll(NumberGenerator.uInt32s) { (uInt32: UInt32) =>
       assert(uInt32 - UInt32.zero == uInt32)
     }
   }
@@ -138,13 +138,13 @@ class UInt32Test extends BitcoinSUnitTest {
   }
 
   it must "multiplying by zero gives us zero" in {
-    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+    forAll(NumberGenerator.uInt32s) { (uInt32: UInt32) =>
       assert(uInt32 * UInt32.zero == UInt32.zero)
     }
   }
 
   it must "multiplicative identity" in {
-    forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
+    forAll(NumberGenerator.uInt32s) { (uInt32: UInt32) =>
       assert(uInt32 * UInt32.one == uInt32)
     }
   }

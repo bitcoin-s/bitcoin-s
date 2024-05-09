@@ -7,15 +7,15 @@ import org.scalacheck.{Prop, Properties}
   */
 class ScriptNumberSpec extends Properties("ScriptNumberSpec") {
   property("Additive identity") = Prop.forAll(NumberGenerator.scriptNumbers) {
-    num: ScriptNumber =>
+    (num: ScriptNumber) =>
       num + ScriptNumber.zero == num
   }
   property("Subtraction identity") =
-    Prop.forAll(NumberGenerator.scriptNumbers) { num: ScriptNumber =>
+    Prop.forAll(NumberGenerator.scriptNumbers) { (num: ScriptNumber) =>
       num - ScriptNumber.zero == num
     }
   property("Multiplicative identity") =
-    Prop.forAll(NumberGenerator.scriptNumbers) { num: ScriptNumber =>
+    Prop.forAll(NumberGenerator.scriptNumbers) { (num: ScriptNumber) =>
       num * ScriptNumber.one == num
     }
   property("< >=") =

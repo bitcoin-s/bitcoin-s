@@ -8,7 +8,8 @@ import org.scalacheck.{Prop, Properties}
 class CompactSizeUIntSpec extends Properties("CompactSizeUIntSpec") {
 
   property("Serialization symmetry") =
-    Prop.forAll(NumberGenerator.compactSizeUInts) { compact: CompactSizeUInt =>
-      CompactSizeUInt.parseCompactSizeUInt(compact.hex) == compact
+    Prop.forAll(NumberGenerator.compactSizeUInts) {
+      (compact: CompactSizeUInt) =>
+        CompactSizeUInt.parseCompactSizeUInt(compact.hex) == compact
     }
 }

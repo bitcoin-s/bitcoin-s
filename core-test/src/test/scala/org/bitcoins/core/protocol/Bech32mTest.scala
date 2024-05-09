@@ -39,7 +39,7 @@ class Bech32mTest extends BitcoinSUnitTest {
   }
 
   it must "must fail if we have a mixed case" in {
-    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+    forAll(AddressGenerator.bech32mAddress) { (addr: Bech32mAddress) =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
       // should fail because we we switched the case of a random char
@@ -264,7 +264,7 @@ class Bech32mTest extends BitcoinSUnitTest {
   }
 
   it must "checksum must not work if we modify a char" in {
-    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+    forAll(AddressGenerator.bech32mAddress) { (addr: Bech32mAddress) =>
       val old = addr.value
       val rand = Math.abs(Random.nextInt())
       val idx = rand % old.length
@@ -277,7 +277,7 @@ class Bech32mTest extends BitcoinSUnitTest {
   }
 
   it must "fail if we have a mixed case" in {
-    forAll(AddressGenerator.bech32mAddress) { addr: Bech32mAddress =>
+    forAll(AddressGenerator.bech32mAddress) { (addr: Bech32mAddress) =>
       val old = addr.value
       val replaced = switchCaseRandChar(old)
       // should fail because we we switched the case of a random char

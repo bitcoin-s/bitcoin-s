@@ -135,20 +135,20 @@ class Int64Test extends BitcoinSUnitTest {
   }
 
   it must "^" in {
-    forAll(NumberGenerator.int64s) { i64: Int64 =>
+    forAll(NumberGenerator.int64s) { (i64: Int64) =>
       assert(i64.^(Int64.zero) == i64)
       assert(i64.xor(i64) == Int64.zero)
     }
   }
 
   it must "Symmetrical serialization" in {
-    forAll(NumberGenerator.int64s) { int64: Int64 =>
+    forAll(NumberGenerator.int64s) { (int64: Int64) =>
       assert(Int64(int64.hex) == int64)
     }
   }
 
   it must "Additive identity" in {
-    forAll(NumberGenerator.int64s) { int64: Int64 =>
+    forAll(NumberGenerator.int64s) { (int64: Int64) =>
       assert(int64 + Int64.zero == int64)
     }
   }
@@ -163,7 +163,7 @@ class Int64Test extends BitcoinSUnitTest {
   }
 
   it must "Subtractive identity" in {
-    forAll(NumberGenerator.int64s) { int64: Int64 =>
+    forAll(NumberGenerator.int64s) { (int64: Int64) =>
       assert(int64 - Int64.zero == int64)
     }
   }
@@ -179,13 +179,13 @@ class Int64Test extends BitcoinSUnitTest {
   }
 
   it must "Multiplying by zero" in {
-    forAll(NumberGenerator.int64s) { int64: Int64 =>
+    forAll(NumberGenerator.int64s) { (int64: Int64) =>
       assert(int64 * Int64.zero == Int64.zero)
     }
   }
 
   it must "Multiplicative identity" in {
-    forAll(NumberGenerator.int64s) { int64: Int64 =>
+    forAll(NumberGenerator.int64s) { (int64: Int64) =>
       assert(int64 * Int64.one == int64)
     }
   }
