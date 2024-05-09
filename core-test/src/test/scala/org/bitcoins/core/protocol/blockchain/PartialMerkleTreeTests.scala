@@ -2,7 +2,11 @@ package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.util.{BytesUtil, Leaf, Node}
+import org.bitcoins.core.util.{
+  BytesUtil,
+  LeafDoubleSha256Digest,
+  NodeDoubleSha256Digest
+}
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.gen.MerkleGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -234,7 +238,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
       Seq(false, false, false, false, false, false, false, false)
     )
     partialMerkleTree.tree must be(
-      Leaf(
+      LeafDoubleSha256Digest(
         DoubleSha256Digest(
           "01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552"
         )
@@ -264,16 +268,16 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
       Seq(true, false, true, false, false, false, false, false)
     )
     partialMerkleTree.tree must be(
-      Node(
+      NodeDoubleSha256Digest(
         DoubleSha256Digest(
           "b130d701e65ac8c65f30dc4b20aabf349036b7c87f11f012f4f3f53f666791e6"
         ),
-        Leaf(
+        LeafDoubleSha256Digest(
           DoubleSha256Digest(
             "01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552"
           )
         ),
-        Leaf(
+        LeafDoubleSha256Digest(
           DoubleSha256Digest(
             "076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9"
           )
@@ -300,7 +304,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
     )
     val partialMerkleTree = PartialMerkleTree(matches)
     partialMerkleTree.tree must be(
-      Leaf(
+      LeafDoubleSha256Digest(
         DoubleSha256Digest(
           "caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2"
         )
