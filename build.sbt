@@ -328,6 +328,7 @@ val testAndCompile = "compile->compile;test->test"
 lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("crypto-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
