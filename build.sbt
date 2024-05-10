@@ -110,6 +110,7 @@ lazy val asyncUtilsTestJS = asyncUtilsTest.js
 lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit-core"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-testkit-core",
             libraryDependencies ++= Deps.testkitCore.value)

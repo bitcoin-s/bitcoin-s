@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.scalatest.{Assertion, Assertions}
 
 object DLCFeeTestUtil extends Assertions {
-
+  import org.bitcoins.core.currency.currencyUnitNumeric
   def validateFees(
       builder: DLCTxBuilder,
       fundingTx: Transaction,
