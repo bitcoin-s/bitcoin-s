@@ -625,7 +625,7 @@ object JsonReaders {
       if ((json \ "hex").isDefined) {
         JsError("PSBT was submitted as a serialized hex transaction!")
       } else {
-        (json \ "psbt").validate[PSBT].map(NonFinalizedPsbt)
+        (json \ "psbt").validate[PSBT].map(NonFinalizedPsbt.apply)
       }
   }
 
@@ -864,7 +864,7 @@ object JsonReaders {
   }
 
   implicit val channelStateReads: Reads[ChannelState] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsStringOpt(ChannelState.fromStringOpt)(jsValue)
     }
   }
@@ -881,19 +881,19 @@ object JsonReaders {
     }
 
   implicit val peerStateReads: Reads[PeerState] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsStringOpt(PeerState.fromString)(jsValue)
     }
   }
 
   implicit val picoBitcoinsReads: Reads[PicoBitcoins] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsNumberBigInt(PicoBitcoins.apply)(jsValue)
     }
   }
 
   implicit val msatReads: Reads[MilliSatoshis] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil
         .processJsNumberBigInt(MilliSatoshis.apply)(jsValue)
         .orElse {
@@ -908,7 +908,7 @@ object JsonReaders {
   }
 
   implicit val nodeIdReads: Reads[NodeId] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsString(NodeId.fromHex)(jsValue)
     }
   }
@@ -1039,19 +1039,19 @@ object JsonReaders {
   }
 
   implicit val paymentPreimageReads: Reads[PaymentPreimage] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsString(PaymentPreimage.fromHex)(jsValue)
     }
   }
 
   implicit val paymentSecretReads: Reads[PaymentSecret] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsString(PaymentSecret.fromHex)(jsValue)
     }
   }
 
   implicit val fundedChannelIdReads: Reads[FundedChannelId] = {
-    Reads { jsValue: JsValue =>
+    Reads { (jsValue: JsValue) =>
       SerializerUtil.processJsString(FundedChannelId.fromHex)(jsValue)
     }
   }
