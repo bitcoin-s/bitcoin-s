@@ -136,7 +136,7 @@ set of users but all with different ids.</p>
 
   <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> all: <span class="hljs-type">Vector</span>[<span class="hljs-type">UserIdTag</span>] = <span class="hljs-type">Vector</span>(<span class="hljs-type">Company</span>, <span class="hljs-type">InsuranceFund</span>)
 
-  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> tagNames = <span class="hljs-type">Vector</span>(<span class="hljs-type">CompanyTagName</span>, <span class="hljs-type">InsuranceFundTagName</span>)
+  <span class="hljs-keyword">override</span> <span class="hljs-keyword">val</span> tagNames: <span class="hljs-type">Vector</span>[<span class="hljs-type">AddressTagName</span>] = <span class="hljs-type">Vector</span>(<span class="hljs-type">CompanyTagName</span>, <span class="hljs-type">InsuranceFundTagName</span>)
 
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fromStringOpt</span></span>(str: <span class="hljs-type">String</span>): <span class="hljs-type">Option</span>[<span class="hljs-type">UserIdTag</span>] = {
     all.find(tag =&gt; str.toLowerCase() == tag.toString.toLowerCase) <span class="hljs-keyword">match</span> {

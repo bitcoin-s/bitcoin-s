@@ -72,8 +72,8 @@
 A quick example of a useful utility method is <a href="/api/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil">BitcoindRpcTestUtil.startedBitcoindRpcClient()</a>.
 This spins up a bitcoind regtest instance on machine and generates 101 blocks on that node.</p>
 <p>This gives you the ability to start spending money immediately with that bitcoind node.</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"bitcoind-testkit-example"</span>)
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"bitcoind-testkit-example"</span>)
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = system.dispatcher
 
 <span class="hljs-comment">//pick our bitcoind version we want to spin up</span>
 <span class="hljs-keyword">val</span> bitcoindV = <span class="hljs-type">BitcoindVersion</span>.newest
@@ -129,8 +129,8 @@ These will only spin up on bitcoind per test suite, rather than one bitcoind per
 <span class="hljs-comment">//4. assert the node has received the payment</span>
 <span class="hljs-comment">//5. cleanup</span>
 
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"eclair-testkit-example"</span>)
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">"eclair-testkit-example"</span>)
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = system.dispatcher
 
 <span class="hljs-comment">//we need a bitcoind to connect eclair nodes to</span>
 <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> bitcoindRpcClientF: <span class="hljs-type">Future</span>[<span class="hljs-type">BitcoindRpcClient</span>] = {
