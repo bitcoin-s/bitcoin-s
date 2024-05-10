@@ -8,7 +8,7 @@ import java.sql.SQLException
 class MasterXPubDAOTest extends TestAppConfigFixture {
   behavior of "MasterXPubDAO"
 
-  it must "create and find a master xpub" in { testAppConfig: TestAppConfig =>
+  it must "create and find a master xpub" in { (testAppConfig: TestAppConfig) =>
     val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
     val xpub = xpriv.extPublicKey
     val masterXpub =
@@ -30,7 +30,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
     }
   }
 
-  it must "create only one master xpub" in { testAppConfig: TestAppConfig =>
+  it must "create only one master xpub" in { (testAppConfig: TestAppConfig) =>
     val masterXpubDAO =
       MasterXPubDAO()(executionContext, appConfig = testAppConfig)
 
@@ -52,7 +52,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
   }
 
   it must "validate the masterxpub and succeed in the database" in {
-    testAppConfig: TestAppConfig =>
+    (testAppConfig: TestAppConfig) =>
       val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
       val xpub = xpriv.extPublicKey
       val masterXpub =
@@ -67,7 +67,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
   }
 
   it must "throw an exception is the stored master xpub is different than the given" in {
-    testAppConfig: TestAppConfig =>
+    (testAppConfig: TestAppConfig) =>
       val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
       val xpub = xpriv.extPublicKey
       val masterXpub =
