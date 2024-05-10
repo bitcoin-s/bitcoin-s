@@ -376,6 +376,7 @@ lazy val appCommons = project
 
 lazy val appCommonsTest = project
   .in(file("app-commons-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(appCommons, testkit)
 
