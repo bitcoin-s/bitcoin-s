@@ -99,7 +99,7 @@ object GCS {
     */
   def toUnary(num: UInt64): BitVector = {
     if (num == UInt64.zero) {
-      BitVector.fromValidHex("0")
+      BitVector.zero
     } else {
       /*
        * We use the fact that 2^n - 1 = 111...1 (in binary) where there are n 1 digits
