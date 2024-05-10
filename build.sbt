@@ -722,11 +722,13 @@ lazy val docs = project
 
 lazy val keyManager = project
   .in(file("key-manager"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(coreJVM, appCommons)
 
 lazy val keyManagerTest = project
   .in(file("key-manager-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-keymanager-test",
             libraryDependencies ++= Deps.keyManagerTest)
