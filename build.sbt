@@ -673,6 +673,7 @@ lazy val testkit = project
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(CommonSettings.testSettings: _*)
+  .settings(scalacOptions += "-Xsource:3")
   .settings(libraryDependencies ++= Deps.docs.value)
   .settings(
     name := "bitcoin-s-docs",

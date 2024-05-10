@@ -303,12 +303,12 @@ You will then want to add all of the relevant accessor methods. For our case of 
 sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
 
   lazy val pubKey: ECPublicKey =
-    ECPublicKey.fromBytes(asm(2).bytes)
+    ECPublicKey.fromBytes(this.asm(2).bytes)
 
-  lazy val lockTime: ScriptNumber = ScriptNumber.fromBytes(asm(5).bytes)
+  lazy val lockTime: ScriptNumber = ScriptNumber.fromBytes(this.asm(5).bytes)
 
   lazy val timeoutPubKey: ECPublicKey =
-    ECPublicKey.fromBytes(asm(9).bytes)
+    ECPublicKey.fromBytes(this.asm(9).bytes)
 }
 ```
 ```scala mdoc:invisible
@@ -415,7 +415,7 @@ sealed trait P2PKScriptSignature extends ScriptSignature {
 
   /** The digital signatures inside of the scriptSig */
   def signatures: Seq[ECDigitalSignature] = {
-    Seq(ECDigitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
+    Seq(ECDigitalSignature(BitcoinScriptUtil.filterPushOps(this.asm).head.hex))
   }
 
   override def toString = s"P2PKScriptSignature($signature)"

@@ -27,12 +27,14 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.gcs._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.chain.blockchain.sync._
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain._
 import org.bitcoins.testkit.chain.fixture.BitcoindBaseVersionChainHandlerViaRpc
 
+import scala.concurrent.ExecutionContext
 ```
 
 ```scala mdoc:compile-only
@@ -52,9 +54,9 @@ We are going to implement `getFilterFunc` with bitcoind and then sync a few filt
 
 ```scala mdoc:compile-only
 
-implicit val system = ActorSystem(s"filter-sync-example")
-implicit val ec = system.dispatcher
-implicit val chainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
+implicit val system: ActorSystem = ActorSystem(s"filter-sync-example")
+implicit val ec: ExecutionContext = system.dispatcher
+implicit val chainAppConfig: ChainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
 
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
 val bitcoind = BitcoindRpcClient(instance)

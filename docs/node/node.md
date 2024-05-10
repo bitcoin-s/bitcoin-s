@@ -42,8 +42,10 @@ For your node to be able to service these filters you will need set
 
 ```scala mdoc:invisible
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.node._
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.node._
 import org.bitcoins.testkit.node.fixture._
@@ -55,12 +57,13 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import java.nio.file.Files
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.ExecutionContext
 ```
 
 ```scala mdoc:compile-only
 
-implicit val system = ActorSystem(s"node-example")
-implicit val ec = system.dispatcher
+implicit val system: ActorSystem = ActorSystem(s"node-example")
+implicit val ec: ExecutionContext = system.dispatcher
 
 //we also require a bitcoind instance to connect to
 //so let's start one (make sure you ran 'sbt downloadBitcoind')
@@ -93,9 +96,9 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-implicit val appConfig = BitcoinSAppConfig(datadir, Vector(config))
-implicit val chainConfig = appConfig.chainConf
-implicit val nodeConfig = appConfig.nodeConf
+implicit val appConfig: BitcoinSAppConfig = BitcoinSAppConfig(datadir, Vector(config))
+implicit val chainConfig: ChainAppConfig = appConfig.chainConf
+implicit val nodeConfig: NodeAppConfig = appConfig.nodeConf
 
 val initNodeF = nodeConfig.start()
 
@@ -116,7 +119,7 @@ val startedNodeF = nodeF.flatMap(_.start())
 
 //let's make a simple callback that print's the
 //blockhash everytime we receive a block on the network
-val blockReceivedFunc: OnBlockReceived = { block: Block =>
+val blockReceivedFunc: OnBlockReceived = { (block: Block) =>
 Future.successful(
   println(s"Received blockhash=${block.blockHeader.hashBE}"))
 }

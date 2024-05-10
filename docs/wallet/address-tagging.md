@@ -125,7 +125,7 @@ object UserIdTags extends AddressTagFactory[UserIdTag] {
 
   override val all: Vector[UserIdTag] = Vector(Company, InsuranceFund)
 
-  override val tagNames = Vector(CompanyTagName, InsuranceFundTagName)
+  override val tagNames: Vector[AddressTagName] = Vector(CompanyTagName, InsuranceFundTagName)
 
   override def fromStringOpt(str: String): Option[UserIdTag] = {
     all.find(tag => str.toLowerCase() == tag.toString.toLowerCase) match {

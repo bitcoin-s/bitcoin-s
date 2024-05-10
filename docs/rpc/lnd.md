@@ -5,7 +5,7 @@ title: LND
 
 This is an RPC client for [LND](https://github.com/LightningNetwork/lnd). It assumes that a bitcoind instance is running.
 
-Currently, this RPC client is written for [v0.17.3](https://github.com/lightningnetwork/lnd/releases/tag/v0.17.3-beta) version of LND.
+Currently, this RPC client is written for [v0.17.5](https://github.com/lightningnetwork/lnd/releases/tag/v0.17.3-beta) version of LND.
 
 ## Configuration of LND
 
@@ -17,7 +17,7 @@ You can find the configuration we use for our testing infrastructure for lnd [he
 
 You need to download the binaries from the [LND's github](https://github.com/lightningnetwork/lnd/releases/tag/v0.17.3-beta).
 
-To run lnd by unzipping the `lnd-linux-amd64-v0.17.3-beta.tar.gz` (or whichever platform you are on) and then running
+To run lnd by unzipping the `lnd-linux-amd64-v0.17.5-beta.tar.gz` (or whichever platform you are on) and then running
 
 ```bash
 $ ./lnd-linux-amd64-v0.17.3-beta/lnd
@@ -34,15 +34,16 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.lnd.rpc._
 import org.bitcoins.lnd.rpc.config._
 import java.nio.file.Paths
+import scala.concurrent.ExecutionContext
 ```
 
 ```scala mdoc:compile-only
 
-implicit val system = ActorSystem(s"lnd-rpc-${System.currentTimeMillis}")
-implicit val ec = system.dispatcher
+implicit val system: ActorSystem = ActorSystem(s"lnd-rpc-${System.currentTimeMillis}")
+implicit val ec: ExecutionContext = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
-val binaryPath = Paths.get("path", "to", "lnd-linux-amd64-v0.17.3-beta", "lnd")
+val binaryPath = Paths.get("path", "to", "lnd-linux-amd64-v0.17.5-beta", "lnd")
 val instance = LndInstanceLocal.fromDataDir(datadirPath.toFile)
 val client = new LndRpcClient(instance, Some(binaryPath.toFile))
 

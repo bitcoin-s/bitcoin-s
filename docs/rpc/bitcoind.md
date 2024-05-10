@@ -6,14 +6,9 @@ title: bitcoind/Bitcoin Core
 ## Downloading bitcoind
 
 The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core
-- 0.16
-- 0.17
-- 0.18
-- 0.19
-- 0.20
-- 0.21
-- 22
-- 23
+- 25
+- 26
+- 27
 
 version lines. It can be set up to work with both local and remote Bitcoin Core servers.
 
@@ -31,6 +26,7 @@ The binaries will be stored in `~/.bitcoin-s/binaries/bitcoind/`
 
 ### Getting started quickly, with default options:
 ```scala mdoc:invisible
+//import org.apache.pekko.actor.ActorSystem
 import scala.concurrent._
 
 import java.io._
@@ -50,7 +46,7 @@ import org.apache.pekko.actor.ActorSystem
 ```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
-implicit val system = ActorSystem("System")
+implicit val system: ActorSystem = ActorSystem("System")
 // this reads authentication credentials and
 // connection details from the default data
 // directory on your platform
@@ -70,7 +66,7 @@ To do so the wallet rpc functions have an optional `walletName` parameter.
 ```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
-implicit val system = ActorSystem("System")
+implicit val system: ActorSystem = ActorSystem("System")
 val client = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"), datadir=new File("/path/to/bitcoind-datadir"))
 
 for {
@@ -98,7 +94,7 @@ ready to create the connection with our RPC client
 ```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
-implicit val system = ActorSystem("System")
+implicit val system: ActorSystem = ActorSystem("System")
 val username = "FILL_ME_IN" //this username comes from 'rpcuser' in your bitcoin.conf file
 val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
 
@@ -135,7 +131,7 @@ handling could look:
 
 ```scala mdoc:compile-only
 
-implicit val ec = ExecutionContext.global
+implicit val ec: ExecutionContext = ExecutionContext.global
 
 // let's assume you have an already running client,
 // so there's no need to start this one
