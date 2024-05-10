@@ -21,8 +21,7 @@ sealed abstract class RawScriptWitnessParser
     def loop(
         remainingBytes: ByteVector,
         accum: Seq[ByteVector],
-        remainingStackItems: UInt64
-    ): Seq[ByteVector] = {
+        remainingStackItems: UInt64): Seq[ByteVector] = {
       if (remainingStackItems <= UInt64.zero) accum
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
@@ -31,11 +30,9 @@ sealed abstract class RawScriptWitnessParser
         val stackElement = stackElementBytes.take(elementSize.num.toInt)
         val (_, newRemainingBytes) =
           stackElementBytes.splitAt(stackElement.size)
-        loop(
-          newRemainingBytes,
-          stackElement +: accum,
-          remainingStackItems - UInt64.one
-        )
+        loop(newRemainingBytes,
+             stackElement +: accum,
+             remainingStackItems - UInt64.one)
       }
     }
     // note there is no 'reversing' the accum, in bitcoin-s we assume the top of the stack is the 'head' element in the sequence
@@ -48,8 +45,7 @@ sealed abstract class RawScriptWitnessParser
     @tailrec
     def loop(
         remainingStack: Seq[ByteVector],
-        accum: Vector[ByteVector]
-    ): Vector[ByteVector] = {
+        accum: Vector[ByteVector]): Vector[ByteVector] = {
       if (remainingStack.isEmpty) accum.reverse
       else {
         val compactSizeUInt: CompactSizeUInt =

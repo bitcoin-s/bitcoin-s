@@ -16,8 +16,7 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
   def buildScript(
       asm: Vector[ScriptToken],
       constructor: Vector[ScriptToken] => T,
-      errorMsg: String
-  ): T = {
+      errorMsg: String): T = {
     if (isValidAsm(asm)) {
       constructor(asm)
     } else throw new IllegalArgumentException(errorMsg)

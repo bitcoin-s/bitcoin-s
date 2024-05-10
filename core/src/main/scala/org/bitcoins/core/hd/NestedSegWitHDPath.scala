@@ -20,8 +20,7 @@ object NestedSegWitHDPath extends HDPathFactory[NestedSegWitHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int
-  ): NestedSegWitHDPath = {
+      addressIndex: Int): NestedSegWitHDPath = {
 
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)

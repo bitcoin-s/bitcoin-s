@@ -7,5 +7,4 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
   */
 case class BlockHashWithConfs(
     blockHash: DoubleSha256DigestBE,
-    confirmationsOpt: Option[Int]
-)
+    confirmationsOpt: Option[Int])

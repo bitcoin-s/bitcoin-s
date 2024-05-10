@@ -3,10 +3,8 @@ package org.bitcoins.core.util.sorted
 import org.bitcoins.core.protocol.tlv.TLVPoint
 
 case class OrderedTLVPoints(private val vec: Vector[TLVPoint])
-    extends SortedVec[TLVPoint, TLVPoint](
-      vec,
-      org.bitcoins.core.tlvPointOrdering
-    )
+    extends SortedVec[TLVPoint, TLVPoint](vec,
+                                          org.bitcoins.core.tlvPointOrdering)
 
 object OrderedTLVPoints extends SortedVecFactory[TLVPoint, OrderedTLVPoints] {
 

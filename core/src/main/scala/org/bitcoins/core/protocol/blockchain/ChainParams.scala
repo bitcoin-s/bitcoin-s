@@ -102,27 +102,23 @@ sealed abstract class ChainParams {
       nonce: UInt32,
       nBits: UInt32,
       version: Int32,
-      amount: CurrencyUnit
-  ): Block = {
+      amount: CurrencyUnit): Block = {
     val timestamp =
       "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
     val asm = Seq(
       BytesToPushOntoStack(65),
       ScriptConstant(
-        "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"
-      ),
+        "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"),
       OP_CHECKSIG
     )
     val genesisOutputScript = ScriptPubKey.fromAsm(asm)
-    createGenesisBlock(
-      timestamp,
-      genesisOutputScript,
-      time,
-      nonce,
-      nBits,
-      version,
-      amount
-    )
+    createGenesisBlock(timestamp,
+                       genesisOutputScript,
+                       time,
+                       nonce,
+                       nBits,
+                       version,
+                       amount)
   }
 
   /** @param timestamp
@@ -152,20 +148,17 @@ sealed abstract class ChainParams {
       nonce: UInt32,
       nBits: UInt32,
       version: Int32,
-      amount: CurrencyUnit
-  ): Block = {
+      amount: CurrencyUnit): Block = {
     val timestampBytes = ByteVector(timestamp.getBytes(StandardCharsets.UTF_8))
     // see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     // for a full breakdown of the genesis block & its script signature
     val const = ScriptConstant(timestampBytes)
 
     val asm = {
-      List(
-        BytesToPushOntoStack(4),
-        ScriptConstant("ffff001d"),
-        BytesToPushOntoStack(1),
-        ScriptConstant("04")
-      ) ++
+      List(BytesToPushOntoStack(4),
+           ScriptConstant("ffff001d"),
+           BytesToPushOntoStack(1),
+           ScriptConstant("04")) ++
         BitcoinScriptUtil.calculatePushOp(const) ++
         List(const)
     }
@@ -174,15 +167,12 @@ sealed abstract class ChainParams {
 
     val input = CoinbaseInput(scriptSignature, TransactionConstants.sequence)
     val output = TransactionOutput(amount, scriptPubKey)
-    val tx = BaseTransaction(
-      TransactionConstants.version,
-      Seq(input),
-      Seq(output),
-      TransactionConstants.lockTime
-    )
+    val tx = BaseTransaction(TransactionConstants.version,
+                             Seq(input),
+                             Seq(output),
+                             TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest(
-      "0000000000000000000000000000000000000000000000000000000000000000"
-    )
+      "0000000000000000000000000000000000000000000000000000000000000000")
     val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader =
       BlockHeader(version, prevBlockHash, merkleRootHash, time, nBits, nonce)
@@ -287,13 +277,11 @@ object MainNetChainParams extends BitcoinChainParams {
   override lazy val networkId = "main"
 
   override lazy val genesisBlock: Block =
-    createGenesisBlock(
-      UInt32(1231006505),
-      UInt32(2083236893),
-      UInt32(0x1d00ffff),
-      Int32.one,
-      Satoshis(5000000000L)
-    )
+    createGenesisBlock(UInt32(1231006505),
+                       UInt32(2083236893),
+                       UInt32(0x1d00ffff),
+                       Int32.one,
+                       Satoshis(5000000000L))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(
@@ -351,13 +339,11 @@ object TestNetChainParams extends BitcoinChainParams {
   override lazy val networkId = "test"
 
   override lazy val genesisBlock: Block =
-    createGenesisBlock(
-      UInt32(1296688602),
-      UInt32(414098458),
-      UInt32(0x1d00ffff),
-      Int32.one,
-      Satoshis(5000000000L)
-    )
+    createGenesisBlock(UInt32(1296688602),
+                       UInt32(414098458),
+                       UInt32(0x1d00ffff),
+                       Int32.one,
+                       Satoshis(5000000000L))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(
@@ -407,13 +393,11 @@ object RegTestNetChainParams extends BitcoinChainParams {
   override lazy val networkId = "regtest"
 
   override lazy val genesisBlock: Block =
-    createGenesisBlock(
-      time = UInt32(1296688602),
-      nonce = UInt32(2),
-      nBits = UInt32(0x207fffff),
-      version = Int32.one,
-      amount = Satoshis(5000000000L)
-    )
+    createGenesisBlock(time = UInt32(1296688602),
+                       nonce = UInt32(2),
+                       nBits = UInt32(0x207fffff),
+                       version = Int32.one,
+                       amount = Satoshis(5000000000L))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     TestNetChainParams.base58Prefixes
@@ -460,31 +444,24 @@ object RegTestNetChainParams extends BitcoinChainParams {
 
 case class SigNetChainParams(
     signetChallenge: ScriptPubKey = ScriptPubKey.fromAsmHex(
-      "512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae"
-    )
-) extends BitcoinChainParams {
+      "512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae"))
+    extends BitcoinChainParams {
   override lazy val networkId = "signet"
 
   override lazy val genesisBlock: Block =
-    createGenesisBlock(
-      UInt32(1598918400),
-      UInt32(52613770),
-      UInt32(0x1e0377ae),
-      Int32.one,
-      Bitcoins(50)
-    )
+    createGenesisBlock(UInt32(1598918400),
+                       UInt32(52613770),
+                       UInt32(0x1e0377ae),
+                       Int32.one,
+                       Bitcoins(50))
 
   require(
     genesisBlock.blockHeader.hashBE == DoubleSha256DigestBE(
-      "00000008819873e925422c1ff0f99f7cc9bbb232af63a077a480a3633bee1ef6"
-    )
-  )
+      "00000008819873e925422c1ff0f99f7cc9bbb232af63a077a480a3633bee1ef6"))
 
   require(
     genesisBlock.blockHeader.merkleRootHashBE == DoubleSha256DigestBE(
-      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
-    )
-  )
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(

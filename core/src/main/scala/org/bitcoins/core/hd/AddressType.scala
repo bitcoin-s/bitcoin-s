@@ -10,19 +10,19 @@ sealed abstract class AddressType {
 object AddressType extends StringFactory[AddressType] {
 
   /** Uses BIP84 address derivation, gives bech32 address (`bc1...`) */
-  final case object SegWit extends AddressType {
+  case object SegWit extends AddressType {
     override def altName: String = "bech32"
   }
 
   /** Uses BIP49 address derivation, gives SegWit addresses wrapped in P2SH
     * addresses (`3...`)
     */
-  final case object NestedSegWit extends AddressType {
+  case object NestedSegWit extends AddressType {
     override def altName: String = "p2sh-segwit"
   }
 
   /** Uses BIP44 address derivation (`1...`) */
-  final case object Legacy extends AddressType {
+  case object Legacy extends AddressType {
     override def altName: String = "legacy"
   }
 
@@ -30,7 +30,7 @@ object AddressType extends StringFactory[AddressType] {
     override def altName: String = "p2tr"
   }
 
-  private val all = Vector(SegWit, NestedSegWit, Legacy)
+  private val all = Vector(SegWit, NestedSegWit, Legacy, P2TR)
 
   override def fromStringOpt(str: String): Option[AddressType] = {
     all.find(_.toString.toLowerCase == str.toLowerCase) match {

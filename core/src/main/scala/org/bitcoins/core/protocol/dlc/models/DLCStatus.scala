@@ -36,7 +36,7 @@ sealed trait DLCStatus {
   def localCollateral: CurrencyUnit
   def remoteCollateral: CurrencyUnit = totalCollateral - localCollateral
   def payoutAddress: Option[PayoutAddress]
-  def peer(): Option[String]
+  def peer: Option[String]
 
   lazy val announcements: Vector[OracleAnnouncementTLV] = {
     oracleInfos.flatMap(_.singleOracleInfos.map(_.announcement))
@@ -63,13 +63,11 @@ sealed trait ClosedDLCStatus extends SignedDLCStatus {
   def counterPartyPayout: CurrencyUnit
 
   def accounting: DLCAccounting = {
-    DLCAccounting(
-      dlcId,
-      localCollateral,
-      remoteCollateral,
-      myPayout,
-      counterPartyPayout
-    )
+    DLCAccounting(dlcId,
+                  localCollateral,
+                  remoteCollateral,
+                  myPayout,
+                  counterPartyPayout)
   }
 
   def pnl: CurrencyUnit = accounting.pnl
@@ -114,8 +112,8 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends AcceptedDLCStatus {
+      peer: Option[String])
+      extends AcceptedDLCStatus {
 
     override val state: DLCState.AcceptComputingAdaptorSigs.type =
       DLCState.AcceptComputingAdaptorSigs
@@ -133,8 +131,8 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends AcceptedDLCStatus {
+      peer: Option[String])
+      extends AcceptedDLCStatus {
     override val state: DLCState.Accepted.type = DLCState.Accepted
   }
 
@@ -151,8 +149,8 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends SignedDLCStatus {
+      peer: Option[String])
+      extends SignedDLCStatus {
 
     override val state: DLCState.SignComputingAdaptorSigs.type =
       DLCState.SignComputingAdaptorSigs
@@ -171,8 +169,8 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends SignedDLCStatus {
+      peer: Option[String])
+      extends SignedDLCStatus {
     override val state: DLCState.Signed.type = DLCState.Signed
   }
 
@@ -189,8 +187,8 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends SignedDLCStatus {
+      peer: Option[String])
+      extends SignedDLCStatus {
     override val state: DLCState.Broadcasted.type = DLCState.Broadcasted
   }
 
@@ -207,8 +205,8 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends SignedDLCStatus {
+      peer: Option[String])
+      extends SignedDLCStatus {
     override val state: DLCState.Confirmed.type = DLCState.Confirmed
   }
 
@@ -230,8 +228,8 @@ object DLCStatus {
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends ClaimedDLCStatus {
+      peer: Option[String])
+      extends ClaimedDLCStatus {
     override val state: DLCState.Claimed.type = DLCState.Claimed
   }
 
@@ -253,8 +251,8 @@ object DLCStatus {
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends ClaimedDLCStatus {
+      peer: Option[String])
+      extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
 
     override val oracleSigs: OrderedSchnorrSignatures =
@@ -277,8 +275,8 @@ object DLCStatus {
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
       payoutAddress: Option[PayoutAddress],
-      peer: Option[String]
-  ) extends ClosedDLCStatus {
+      peer: Option[String])
+      extends ClosedDLCStatus {
     override val state: DLCState.Refunded.type = DLCState.Refunded
   }
 
@@ -311,8 +309,7 @@ object DLCStatus {
   }
 
   def getOracleSignatures(
-      status: DLCStatus
-  ): Option[OrderedSchnorrSignatures] = {
+      status: DLCStatus): Option[OrderedSchnorrSignatures] = {
     status match {
       case claimed: ClaimedDLCStatus =>
         Some(claimed.oracleSigs)
@@ -330,8 +327,8 @@ object DLCStatus {
       offer: DLCOffer,
       accept: DLCAccept,
       sign: DLCSign,
-      cet: WitnessTransaction
-  ): Option[(SchnorrDigitalSignature, OracleOutcome)] = {
+      cet: WitnessTransaction)
+      : Option[(SchnorrDigitalSignature, OracleOutcome)] = {
     val localAdaptorSigs = if (isInitiator) {
       sign.cetSigs.outcomeSigs
     } else {

@@ -59,8 +59,7 @@ case class UnknownFeature(bitIndex: Int)
 
 case class Features[T <: Feature](
     activated: Map[T, FeatureSupport],
-    unknown: Set[UnknownFeature] = Set.empty
-) {
+    unknown: Set[UnknownFeature] = Set.empty) {
 
   def isEmpty: Boolean = activated.isEmpty && unknown.isEmpty
 
@@ -95,13 +94,11 @@ case class Features[T <: Feature](
 
   def invoiceFeatures(): Features[InvoiceFeature] = Features(
     activated.collect { case (f: InvoiceFeature, s) => (f, s) },
-    unknown
-  )
+    unknown)
 
   def unscoped(): Features[Feature] = Features[Feature](
     activated.collect { case (f, s) => (f: Feature, s) },
-    unknown
-  )
+    unknown)
 
   def toByteVector: ByteVector = {
     val activatedFeatureBytes = toByteVectorFromIndex(activated.map {
@@ -110,8 +107,7 @@ case class Features[T <: Feature](
     val unknownFeatureBytes = toByteVectorFromIndex(unknown.map(_.bitIndex))
     val maxSize = activatedFeatureBytes.size.max(unknownFeatureBytes.size)
     activatedFeatureBytes.padLeft(maxSize) | unknownFeatureBytes.padLeft(
-      maxSize
-    )
+      maxSize)
   }
 
   private def toByteVectorFromIndex(indexes: Set[Int]): ByteVector = {
@@ -390,32 +386,28 @@ object Features {
       extends IllegalArgumentException(message)
 
   def validateFeatureGraph[T <: Feature](
-      features: Features[T]
-  ): Option[FeatureException] =
+      features: Features[T]): Option[FeatureException] =
     featuresDependency.collectFirst {
       case (feature, dependencies)
-          if features.unscoped().hasFeature(feature) && dependencies
-            .exists(d => !features.unscoped().hasFeature(d)) =>
+          if features.unscoped().hasFeature(feature) && dependencies.exists(d =>
+            !features.unscoped().hasFeature(d)) =>
         FeatureException(
           s"$feature is set but is missing a dependency (${dependencies
               .filter(d => !features.unscoped().hasFeature(d))
-              .mkString(" and ")})"
-        )
+              .mkString(" and ")})")
     }
 
   /** Returns true if both feature sets are compatible. */
   def areCompatible[T <: Feature](
       ours: Features[T],
-      theirs: Features[T]
-  ): Boolean =
+      theirs: Features[T]): Boolean =
     ours.areSupported(theirs) && theirs.areSupported(ours)
 
   /** returns true if both have at least optional support */
   def canUseFeature[T <: Feature](
       localFeatures: Features[T],
       remoteFeatures: Features[T],
-      feature: T
-  ): Boolean = {
+      feature: T): Boolean = {
     localFeatures.hasFeature(feature) && remoteFeatures.hasFeature(feature)
   }
 

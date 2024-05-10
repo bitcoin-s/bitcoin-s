@@ -27,60 +27,45 @@ case class AddressRecord(
     (purpose, address, scriptWitnessOpt) match {
       case (HDPurposes.SegWit, bechAddr: Bech32Address, Some(scriptWitness)) =>
         val path =
-          SegWitHDPath(
-            coinType = accountCoin,
-            accountIndex = accountIndex,
-            chainType = accountChain,
-            addressIndex = addressIndex
-          )
+          SegWitHDPath(coinType = accountCoin,
+                       accountIndex = accountIndex,
+                       chainType = accountChain,
+                       addressIndex = addressIndex)
 
-        SegWitAddressDb(
-          path,
-          ecPublicKey = pubKey,
-          hashedPubKey = hashedPubKey,
-          address = bechAddr,
-          witnessScript = scriptWitness,
-          scriptPubKey = scriptPubKey
-        )
+        SegWitAddressDb(path,
+                        ecPublicKey = pubKey,
+                        hashedPubKey = hashedPubKey,
+                        address = bechAddr,
+                        witnessScript = scriptWitness,
+                        scriptPubKey = scriptPubKey)
 
       case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
-        val path = LegacyHDPath(
-          coinType = accountCoin,
-          accountIndex = accountIndex,
-          chainType = accountChain,
-          addressIndex = addressIndex
-        )
-        LegacyAddressDb(
-          path,
-          pubKey,
-          hashedPubKey,
-          legacyAddr,
-          scriptPubKey = scriptPubKey
-        )
+        val path = LegacyHDPath(coinType = accountCoin,
+                                accountIndex = accountIndex,
+                                chainType = accountChain,
+                                addressIndex = addressIndex)
+        LegacyAddressDb(path,
+                        pubKey,
+                        hashedPubKey,
+                        legacyAddr,
+                        scriptPubKey = scriptPubKey)
 
-      case (
-            HDPurposes.NestedSegWit,
+      case (HDPurposes.NestedSegWit,
             address: P2SHAddress,
-            Some(scriptWitness)
-          ) =>
-        val path = NestedSegWitHDPath(
-          coinType = accountCoin,
-          accountIndex = accountIndex,
-          chainType = accountChain,
-          addressIndex = addressIndex
-        )
-        NestedSegWitAddressDb(
-          path,
-          pubKey,
-          hashedPubKey,
-          address,
-          witnessScript = scriptWitness,
-          scriptPubKey = scriptPubKey
-        )
+            Some(scriptWitness)) =>
+        val path = NestedSegWitHDPath(coinType = accountCoin,
+                                      accountIndex = accountIndex,
+                                      chainType = accountChain,
+                                      addressIndex = addressIndex)
+        NestedSegWitAddressDb(path,
+                              pubKey,
+                              hashedPubKey,
+                              address,
+                              witnessScript = scriptWitness,
+                              scriptPubKey = scriptPubKey)
       case (purpose: HDPurpose, address: BitcoinAddress, scriptWitnessOpt) =>
         throw new IllegalArgumentException(
-          s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt"
-        )
+          s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt")
     }
   }
 }
@@ -89,14 +74,12 @@ object AddressRecord {
 
   def fromAddressDb(addressDb: AddressDb, scriptPubKeyId: Long): AddressRecord =
     addressDb match {
-      case SegWitAddressDb(
-            path,
-            pubKey,
-            hashedPubKey,
-            address,
-            scriptWitness,
-            _
-          ) =>
+      case SegWitAddressDb(path,
+                           pubKey,
+                           hashedPubKey,
+                           address,
+                           scriptWitness,
+                           _) =>
         AddressRecord(
           path.purpose,
           path.coin.coinType,
@@ -122,14 +105,12 @@ object AddressRecord {
           scriptPubKeyId,
           None // scriptwitness
         )
-      case NestedSegWitAddressDb(
-            path,
-            pubKey,
-            hashedPubKey,
-            address,
-            scriptWitness,
-            _
-          ) =>
+      case NestedSegWitAddressDb(path,
+                                 pubKey,
+                                 hashedPubKey,
+                                 address,
+                                 scriptWitness,
+                                 _) =>
         AddressRecord(
           path.purpose,
           path.coin.coinType,

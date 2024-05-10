@@ -37,8 +37,12 @@ case class SegWitAddressDb(
 ) extends AddressDb {
   override type PathType = SegWitHDPath
 
-  override val scriptType = ScriptType.WITNESS_V0_KEYHASH
-  override val witnessScriptOpt = Some(witnessScript)
+  override val scriptType
+      : org.bitcoins.core.script.ScriptType.WITNESS_V0_KEYHASH.type =
+    ScriptType.WITNESS_V0_KEYHASH
+  override val witnessScriptOpt
+      : Some[org.bitcoins.core.protocol.script.ScriptWitness] = Some(
+    witnessScript)
 }
 
 /** Segwit P2PKH-in-P2SH */
@@ -52,8 +56,11 @@ case class NestedSegWitAddressDb(
 ) extends AddressDb {
   override type PathType = NestedSegWitHDPath
 
-  override val scriptType = ScriptType.SCRIPTHASH
-  override val witnessScriptOpt = Some(witnessScript)
+  override val scriptType: org.bitcoins.core.script.ScriptType.SCRIPTHASH.type =
+    ScriptType.SCRIPTHASH
+  override val witnessScriptOpt
+      : Some[org.bitcoins.core.protocol.script.ScriptWitness] = Some(
+    witnessScript)
 }
 
 /** P2PKH */
@@ -66,8 +73,9 @@ case class LegacyAddressDb(
 ) extends AddressDb {
   override type PathType = LegacyHDPath
 
-  override val scriptType = ScriptType.PUBKEYHASH
-  override val witnessScriptOpt = None
+  override val scriptType: org.bitcoins.core.script.ScriptType.PUBKEYHASH.type =
+    ScriptType.PUBKEYHASH
+  override val witnessScriptOpt: None.type = None
 }
 // todo: make ADT for different addresses in DB, seeing as they have different fields
 // todo: indicate whether or not address has been spent to
@@ -78,8 +86,7 @@ object AddressDbHelper {
   def getSegwitAddress(
       pub: ECPublicKey,
       path: SegWitHDPath,
-      np: NetworkParameters
-  ): SegWitAddressDb = {
+      np: NetworkParameters): SegWitAddressDb = {
 
     val witnessSpk = P2WPKHWitnessSPKV0(pub)
     val scriptWitness = P2WPKHWitnessV0(pub)
@@ -98,37 +105,31 @@ object AddressDbHelper {
   def getLegacyAddress(
       pub: ECPublicKey,
       path: LegacyHDPath,
-      np: NetworkParameters
-  ): LegacyAddressDb = {
+      np: NetworkParameters): LegacyAddressDb = {
     val spk = P2PKHScriptPubKey(pub)
     val addr = P2PKHAddress(spk, np)
-    LegacyAddressDb(
-      path = path,
-      ecPublicKey = pub,
-      hashedPubKey = spk.pubKeyHash,
-      address = addr,
-      scriptPubKey = spk
-    )
+    LegacyAddressDb(path = path,
+                    ecPublicKey = pub,
+                    hashedPubKey = spk.pubKeyHash,
+                    address = addr,
+                    scriptPubKey = spk)
   }
 
   /** Get a nested Segwit pay-to-pubkeyhash address */
   def getNestedSegwitAddress(
       pub: ECPublicKey,
       path: NestedSegWitHDPath,
-      np: NetworkParameters
-  ): NestedSegWitAddressDb = {
+      np: NetworkParameters): NestedSegWitAddressDb = {
     val redeem = P2WPKHWitnessSPKV0(pub)
     val spk = P2SHScriptPubKey(redeem)
     val scriptWitness = P2WPKHWitnessV0(pub)
     val addr = P2SHAddress(spk, np)
-    NestedSegWitAddressDb(
-      path = path,
-      ecPublicKey = pub,
-      hashedPubKey = redeem.pubKeyHash,
-      address = addr,
-      witnessScript = scriptWitness,
-      scriptPubKey = spk
-    )
+    NestedSegWitAddressDb(path = path,
+                          ecPublicKey = pub,
+                          hashedPubKey = redeem.pubKeyHash,
+                          address = addr,
+                          witnessScript = scriptWitness,
+                          scriptPubKey = spk)
   }
 
   /** Gets an address. Derives the correct type by looking at the kind of path
@@ -137,8 +138,7 @@ object AddressDbHelper {
   def getAddress(
       pub: ECPublicKey,
       path: HDPath,
-      np: NetworkParameters
-  ): AddressDb =
+      np: NetworkParameters): AddressDb =
     path match {
       case legacy: LegacyHDPath       => getLegacyAddress(pub, legacy, np)
       case nested: NestedSegWitHDPath => getNestedSegwitAddress(pub, nested, np)

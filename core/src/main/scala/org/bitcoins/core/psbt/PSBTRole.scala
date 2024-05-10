@@ -12,38 +12,36 @@ abstract class PSBTRole {
   */
 object PSBTRole extends StringFactory[PSBTRole] {
 
-  final case object CreatorPSBTRole extends PSBTRole {
+  case object CreatorPSBTRole extends PSBTRole {
     override def shortName: String = "creator"
     override def order: Int = 0
   }
 
-  final case object UpdaterPSBTRole extends PSBTRole {
+  case object UpdaterPSBTRole extends PSBTRole {
     override def shortName: String = "updater"
     override def order: Int = 1
   }
 
-  final case object SignerPSBTRole extends PSBTRole {
+  case object SignerPSBTRole extends PSBTRole {
     override def shortName: String = "signer"
     override def order: Int = 2
   }
 
-  final case object FinalizerPSBTRole extends PSBTRole {
+  case object FinalizerPSBTRole extends PSBTRole {
     override def shortName: String = "finalizer"
     override def order: Int = 3
   }
 
-  final case object ExtractorPSBTRole extends PSBTRole {
+  case object ExtractorPSBTRole extends PSBTRole {
     override def shortName: String = "extractor"
     override def order: Int = 4
   }
 
-  val all: Vector[PSBTRole] = Vector(
-    CreatorPSBTRole,
-    UpdaterPSBTRole,
-    SignerPSBTRole,
-    FinalizerPSBTRole,
-    ExtractorPSBTRole
-  )
+  val all: Vector[PSBTRole] = Vector(CreatorPSBTRole,
+                                     UpdaterPSBTRole,
+                                     SignerPSBTRole,
+                                     FinalizerPSBTRole,
+                                     ExtractorPSBTRole)
 
   override def fromStringOpt(string: String): Option[PSBTRole] = {
     all.find(_.toString.toLowerCase == string.toLowerCase)

@@ -20,6 +20,7 @@ sealed abstract class Number[T <: Number[T]]
   /** The underlying scala number used to to hold the number */
   protected def underlying: A
 
+  def toByte: Byte = toBigInt.bigInteger.byteValueExact()
   def toInt: Int = toBigInt.bigInteger.intExact
   def toLong: Long = toBigInt.bigInteger.longExact
   def toBigInt: BigInt = underlying
@@ -236,10 +237,8 @@ object UInt5
     with NumberCache[UInt5] {
 
   private case class UInt5Impl(underlying: BigInt) extends UInt5 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = checkCached(0)
@@ -266,8 +265,7 @@ object UInt5
   def apply(bigInt: BigInt): UInt5 = {
     require(
       bigInt.toByteArray.length == 1,
-      s"To create a uint5 from a BigInt it must be less than 32. Got: ${bigInt.toString}"
-    )
+      s"To create a uint5 from a BigInt it must be less than 32. Got: ${bigInt.toString}")
 
     UInt5.fromByte(bigInt.toByteArray.head)
   }
@@ -275,8 +273,7 @@ object UInt5
   override def fromBytes(bytes: ByteVector): UInt5 = {
     require(
       bytes.size == 1,
-      s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}"
-    )
+      s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}")
     UInt5.fromByte(bytes.head)
   }
 
@@ -300,10 +297,8 @@ object UInt8
     with NumberCache[UInt8] {
 
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
   lazy val zero = checkCached(0.toShort)
   lazy val one = checkCached(1.toShort)
@@ -330,8 +325,7 @@ object UInt8
   override def fromBytes(bytes: ByteVector): UInt8 = {
     require(
       bytes.size == 1,
-      "Can only create a uint8 from a byte array of size one, got: " + bytes
-    )
+      "Can only create a uint8 from a byte array of size one, got: " + bytes)
     UInt8(NumberUtil.toUnsignedInt(bytes))
   }
 
@@ -358,10 +352,8 @@ object UInt16
     with NumberCache[UInt16] {
 
   private case class UInt16Impl(underlying: BigInt) extends UInt16 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = checkCached(0)
@@ -384,8 +376,7 @@ object UInt16
   override def fromBytes(bytes: ByteVector): UInt16 = {
     require(
       bytes.size <= 2,
-      "UInt16 byte array was too large, got: " + BytesUtil.encodeHex(bytes)
-    )
+      "UInt16 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
     UInt16(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
@@ -409,10 +400,8 @@ object UInt32
     with NumberCache[UInt32] {
 
   private case class UInt32Impl(underlying: BigInt) extends UInt32 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero: UInt32 = checkCached(0)
@@ -435,8 +424,7 @@ object UInt32
   override def fromBytes(bytes: ByteVector): UInt32 = {
     require(
       bytes.size <= 4,
-      "UInt32 byte array was too large, got: " + BytesUtil.encodeHex(bytes)
-    )
+      "UInt32 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
     UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
@@ -464,10 +452,8 @@ object UInt64
     with NumberCacheBigInt[UInt64] {
 
   private case class UInt64Impl(underlying: BigInt) extends UInt64 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = checkCached(0)
@@ -519,10 +505,8 @@ object Int32
     with NumberCache[Int32] {
 
   private case class Int32Impl(underlying: BigInt) extends Int32 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
   val negOne = Int32(-1)
 
@@ -562,10 +546,8 @@ object Int64
     with NumberCache[Int64] {
 
   private case class Int64Impl(underlying: BigInt) extends Int64 {
-    require(
-      isInBound(underlying),
-      s"Cannot create ${super.getClass.getSimpleName} from $underlying"
-    )
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = checkCached(0)

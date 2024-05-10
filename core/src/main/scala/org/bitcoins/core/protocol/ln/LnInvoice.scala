@@ -17,15 +17,12 @@ import scala.util.{Failure, Success, Try}
 
 sealed abstract class LnInvoice {
 
-  require(
-    timestamp < LnInvoice.MAX_TIMESTAMP_U64,
-    s"timestamp ${timestamp.toBigInt} < ${LnInvoice.MAX_TIMESTAMP}"
-  )
+  require(timestamp < LnInvoice.MAX_TIMESTAMP_U64,
+          s"timestamp ${timestamp.toBigInt} < ${LnInvoice.MAX_TIMESTAMP}")
 
   require(
     isValidSignature,
-    s"Did not receive a valid digital signature for the invoice $toString"
-  )
+    s"Did not receive a valid digital signature for the invoice $toString")
 
   def hrp: LnHumanReadablePart
 
@@ -123,8 +120,8 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      signature: LnInvoiceSignature
-  ) extends LnInvoice
+      signature: LnInvoiceSignature)
+      extends LnInvoice
 
   val MAX_TIMESTAMP: BigInt = NumberUtil.pow2(35)
 
@@ -140,8 +137,7 @@ object LnInvoice extends StringFactory[LnInvoice] {
 
   def createChecksum(
       hrp: LnHumanReadablePart,
-      data: Vector[UInt5]
-  ): Vector[UInt5] = {
+      data: Vector[UInt5]): Vector[UInt5] = {
     val hrpBytes = hrpExpand(hrp)
     val u5s = Bech32.createChecksum(hrpBytes ++ data, Bech32Encoding.Bech32)
     u5s
@@ -161,8 +157,7 @@ object LnInvoice extends StringFactory[LnInvoice] {
     val MIN_LENGTH = TIMESTAMP_LEN + SIGNATURE_LEN
     if (data.length < MIN_LENGTH) {
       throw new IllegalArgumentException(
-        s"Cannot create invoice with data length less then $MIN_LENGTH, got ${data.length}"
-      )
+        s"Cannot create invoice with data length less then $MIN_LENGTH, got ${data.length}")
     } else {
       // first 35 bits is time stamp
       val timestampU5s = data.take(TIMESTAMP_LEN)
@@ -178,12 +173,10 @@ object LnInvoice extends StringFactory[LnInvoice] {
 
       val taggedFields = LnTaggedFields.fromUInt5s(tags)
 
-      LnInvoice(
-        hrp = hrp,
-        timestamp = timestamp,
-        lnTags = taggedFields,
-        signature = signature
-      )
+      LnInvoice(hrp = hrp,
+                timestamp = timestamp,
+                lnTags = taggedFields,
+                signature = signature)
     }
 
   }
@@ -196,8 +189,7 @@ object LnInvoice extends StringFactory[LnInvoice] {
     }
     if (sepIndexes.isEmpty) {
       throw new IllegalArgumentException(
-        "LnInvoice did not have the correct separator"
-      )
+        "LnInvoice did not have the correct separator")
     } else {
       val (_, sepIndex) = sepIndexes.last
 
@@ -216,13 +208,13 @@ object LnInvoice extends StringFactory[LnInvoice] {
         val dataValid = Bech32.checkDataValidity(data)
 
         val isChecksumValid: Try[Vector[UInt5]] = hrpValid.flatMap {
-          h: LnHumanReadablePart =>
-            dataValid.flatMap { d: Vector[UInt5] =>
+          (h: LnHumanReadablePart) =>
+            dataValid.flatMap { (d: Vector[UInt5]) =>
               stripChecksumIfValid(h, d)
             }
         }
 
-        val invoiceT = isChecksumValid.flatMap { d: Vector[UInt5] =>
+        val invoiceT = isChecksumValid.flatMap { (d: Vector[UInt5]) =>
           hrpValid.map(h => LnInvoice(h, d))
         }
 
@@ -238,37 +230,30 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      signature: LnInvoiceSignature
-  ): LnInvoice = {
-    LnInvoiceImpl(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = lnTags,
-      signature = signature
-    )
+      signature: LnInvoiceSignature): LnInvoice = {
+    LnInvoiceImpl(hrp = hrp,
+                  timestamp = timestamp,
+                  lnTags = lnTags,
+                  signature = signature)
   }
 
   def apply(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey
-  ): LnInvoice = {
+      privateKey: ECPrivateKey): LnInvoice = {
 
     val signature = buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
-    LnInvoiceImpl(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = lnTags,
-      signature = signature
-    )
+    LnInvoiceImpl(hrp = hrp,
+                  timestamp = timestamp,
+                  lnTags = lnTags,
+                  signature = signature)
   }
 
   def buildSignatureData(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
-      lnTags: LnTaggedFields
-  ): ByteVector = {
+      lnTags: LnTaggedFields): ByteVector = {
     val tsu5 = uInt64ToBase32(timestamp)
     val payloadU5 = tsu5 ++ lnTags.data
     val payloadU8 = Bech32.from5bitTo8bit(payloadU5, pad = true)
@@ -279,8 +264,7 @@ object LnInvoice extends StringFactory[LnInvoice] {
   def buildSigHashData(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
-      lnTags: LnTaggedFields
-  ): Sha256Digest = {
+      lnTags: LnTaggedFields): Sha256Digest = {
     val sigdata = buildSignatureData(hrp, timestamp, lnTags)
     CryptoUtil.sha256(sigdata)
   }
@@ -289,8 +273,7 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey
-  ): LnInvoiceSignature = {
+      privateKey: ECPrivateKey): LnInvoiceSignature = {
     val sigHash = buildSigHashData(hrp, timestamp, lnTags)
     val sig = privateKey.sign(sigHash)
 
@@ -319,17 +302,14 @@ object LnInvoice extends StringFactory[LnInvoice] {
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey
-  ): LnInvoice = {
+      privateKey: ECPrivateKey): LnInvoice = {
     val lnInvoiceSignature =
       buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
 
-    LnInvoice(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = lnTags,
-      signature = lnInvoiceSignature
-    )
+    LnInvoice(hrp = hrp,
+              timestamp = timestamp,
+              lnTags = lnTags,
+              signature = lnInvoiceSignature)
   }
 
   /** The easiest way to create a
@@ -348,18 +328,15 @@ object LnInvoice extends StringFactory[LnInvoice] {
   def build(
       hrp: LnHumanReadablePart,
       lnTags: LnTaggedFields,
-      privateKey: ECPrivateKey
-  ): LnInvoice = {
+      privateKey: ECPrivateKey): LnInvoice = {
     val timestamp = UInt64(System.currentTimeMillis() / 1000L)
     val lnInvoiceSignature =
       buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
 
-    LnInvoice(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = lnTags,
-      signature = lnInvoiceSignature
-    )
+    LnInvoice(hrp = hrp,
+              timestamp = timestamp,
+              lnTags = lnTags,
+              signature = lnInvoiceSignature)
   }
 
   private def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
@@ -385,14 +362,12 @@ object LnInvoice extends StringFactory[LnInvoice] {
     */
   private def stripChecksumIfValid(
       h: LnHumanReadablePart,
-      d: Vector[UInt5]
-  ): Try[Vector[UInt5]] = {
+      d: Vector[UInt5]): Try[Vector[UInt5]] = {
     if (verifyChecksum(h, d)) {
       if (d.size < 6) Success(Vector.empty)
       else Success(d.take(d.size - 6))
     } else
       Failure(
-        new IllegalArgumentException("Checksum was invalid on the LnInvoice")
-      )
+        new IllegalArgumentException("Checksum was invalid on the LnInvoice"))
   }
 }

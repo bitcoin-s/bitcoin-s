@@ -66,6 +66,7 @@ lazy val cryptoJVM = crypto.jvm
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(name := "bitcoin-s-core")
+  .settings(scalacOptions += "-Xsource:3")
   .settings(libraryDependencies ++= Deps.core.value)
   .settings(CommonSettings.prodSettings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
@@ -327,6 +328,7 @@ val testAndCompile = "compile->compile;test->test"
 lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("crypto-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
@@ -343,6 +345,7 @@ lazy val cryptoTestJS = cryptoTest.js
 
 lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
+  .settings(scalacOptions += "-Xsource:3")
   .in(file("core-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(

@@ -18,15 +18,12 @@ sealed trait DLCTemplate {
 
   def toContractInfo: ContractInfo
 
-  require(
-    oracleThreshold > 0,
-    s"Oracle threshold must be greater than zero, got $oracleThreshold"
-  )
+  require(oracleThreshold > 0,
+          s"Oracle threshold must be greater than zero, got $oracleThreshold")
   require(oracles.nonEmpty, "Must provide at least one oracle")
   require(
     oracleThreshold <= oracles.size,
-    s"Oracle threshold ($oracleThreshold) cannot be greater than number of oracles ${oracles.size}"
-  )
+    s"Oracle threshold ($oracleThreshold) cannot be greater than number of oracles ${oracles.size}")
 }
 
 case class SingleOracleDLCTemplate(
@@ -39,8 +36,7 @@ case class SingleOracleDLCTemplate(
   override val oracleThreshold: Int = 1
 
   override val oracleInfo: NumericSingleOracleInfo = NumericSingleOracleInfo(
-    oracle
-  )
+    oracle)
 
   override val toContractInfo: ContractInfo = {
     val pair: NumericPair =
@@ -59,24 +55,19 @@ case class MultiOracleDLCTemplate(
     contractDescriptor: NumericContractDescriptor
 ) extends DLCTemplate {
 
-  require(
-    maxErrorExp > 0,
-    s"maxErrorExp must be greater than 0, got $maxErrorExp"
-  )
+  require(maxErrorExp > 0,
+          s"maxErrorExp must be greater than 0, got $maxErrorExp")
   require(minFailExp > 0, s"minFailExp must be greater than 0, got $minFailExp")
   require(
     minFailExp < maxErrorExp,
-    s"minFailExp ($minFailExp) must be less than maxErrorExp ($maxErrorExp)"
-  )
+    s"minFailExp ($minFailExp) must be less than maxErrorExp ($maxErrorExp)")
 
   override val oracleInfo: NumericMultiOracleInfo =
-    NumericMultiOracleInfo(
-      threshold = oracleThreshold,
-      announcements = OrderedAnnouncements(oracles),
-      maxErrorExp = maxErrorExp,
-      minFailExp = minFailExp,
-      maximizeCoverage = maximizeCoverage
-    )
+    NumericMultiOracleInfo(threshold = oracleThreshold,
+                           announcements = OrderedAnnouncements(oracles),
+                           maxErrorExp = maxErrorExp,
+                           minFailExp = minFailExp,
+                           maximizeCoverage = maximizeCoverage)
 
   override val toContractInfo: ContractInfo = {
     val pair: NumericPair =
@@ -95,8 +86,8 @@ object DLCTemplate {
       case EnumEventDescriptorV0TLV(outcomes) =>
         oracles.forall {
           _.eventTLV.eventDescriptor match {
-            case enum: EnumEventDescriptorV0TLV =>
-              enum.outcomes.sortBy(_.normStr) == outcomes.sortBy(_.normStr)
+            case enumEvent: EnumEventDescriptorV0TLV =>
+              enumEvent.outcomes.sortBy(_.normStr) == outcomes.sortBy(_.normStr)
             case _: DigitDecompositionEventDescriptorV0TLV => false
           }
         }

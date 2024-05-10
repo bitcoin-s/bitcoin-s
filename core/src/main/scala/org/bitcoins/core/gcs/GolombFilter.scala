@@ -22,8 +22,8 @@ case class GolombFilter(
     m: UInt64,
     p: UInt8,
     n: CompactSizeUInt,
-    encodedData: BitVector
-) extends NetworkElement {
+    encodedData: BitVector)
+    extends NetworkElement {
   lazy val f: UInt64 = n.num * m
 
   /** The hash of this serialized filter */

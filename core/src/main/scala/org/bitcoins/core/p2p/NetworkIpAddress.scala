@@ -89,15 +89,14 @@ object NetworkIpAddress extends Factory[NetworkIpAddress] {
       time: UInt32,
       services: ServiceIdentifier,
       address: InetAddress,
-      port: Int
-  ) extends NetworkIpAddress
+      port: Int)
+      extends NetworkIpAddress
 
   def apply(
       time: UInt32,
       services: ServiceIdentifier,
       address: InetAddress,
-      port: Int
-  ): NetworkIpAddress = {
+      port: Int): NetworkIpAddress = {
     NetworkIpAddressImpl(time, services, address, port)
   }
 

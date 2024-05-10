@@ -32,8 +32,7 @@ trait RawGetBlocksMessageSerializer
     getBlocksMessage.protocolVersion.bytes ++
       getBlocksMessage.hashCount.bytes ++
       RawSerializerHelper.writeNetworkElements(
-        getBlocksMessage.blockHeaderHashes
-      ) ++
+        getBlocksMessage.blockHeaderHashes) ++
       getBlocksMessage.stopHash.bytes
   }
 
@@ -49,23 +48,20 @@ trait RawGetBlocksMessageSerializer
     */
   private def parseBlockHeaders(
       bytes: ByteVector,
-      compactSizeUInt: CompactSizeUInt
-  ): (List[DoubleSha256Digest], ByteVector) = {
+      compactSizeUInt: CompactSizeUInt)
+      : (List[DoubleSha256Digest], ByteVector) = {
     @tailrec
     def loop(
         remainingHeaders: Long,
         accum: List[DoubleSha256Digest],
-        remainingBytes: ByteVector
-    ): (List[DoubleSha256Digest], ByteVector) = {
+        remainingBytes: ByteVector): (List[DoubleSha256Digest], ByteVector) = {
       if (remainingHeaders <= 0) (accum.reverse, remainingBytes)
       else {
         val dsha256 = DoubleSha256Digest(remainingBytes.slice(0, 32))
         val rem = remainingBytes.slice(32, remainingBytes.size)
-        loop(
-          remainingHeaders = remainingHeaders - 1,
-          accum = dsha256 :: accum,
-          remainingBytes = rem
-        )
+        loop(remainingHeaders = remainingHeaders - 1,
+             accum = dsha256 :: accum,
+             remainingBytes = rem)
       }
     }
     loop(compactSizeUInt.num.toInt, List.empty, bytes)

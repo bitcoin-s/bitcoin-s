@@ -13,8 +13,7 @@ import org.bitcoins.crypto.{
   */
 case class FilterHeader(
     filterHash: DoubleSha256Digest,
-    prevHeaderHash: DoubleSha256Digest
-) {
+    prevHeaderHash: DoubleSha256Digest) {
 
   val hash: DoubleSha256Digest = {
     CryptoUtil.doubleSHA256(filterHash.bytes ++ prevHeaderHash.bytes)
@@ -42,8 +41,7 @@ object FilterHeader {
 
   def apply(
       filterHash: DoubleSha256DigestBE,
-      prevHeaderHash: DoubleSha256DigestBE
-  ): FilterHeader = {
+      prevHeaderHash: DoubleSha256DigestBE): FilterHeader = {
     new FilterHeader(filterHash.flip, prevHeaderHash.flip)
   }
 

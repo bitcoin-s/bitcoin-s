@@ -31,12 +31,9 @@ sealed abstract class LockTimeInterpreter {
     */
   @tailrec
   final def opCheckLockTimeVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_CHECKLOCKTIMEVERIFY),
-      "Script top must be OP_CHECKLOCKTIMEVERIFY"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_CHECKLOCKTIMEVERIFY),
+            "Script top must be OP_CHECKLOCKTIMEVERIFY")
     val input = program.txSignatureComponent.transaction
       .inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
@@ -50,13 +47,11 @@ sealed abstract class LockTimeInterpreter {
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
-              500000000
-            ) =>
+              500000000) =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber
             if s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(
-              500000000
-            ) =>
+              500000000) =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
@@ -69,8 +64,7 @@ sealed abstract class LockTimeInterpreter {
           }
         case s: ScriptConstant =>
           opCheckLockTimeVerify(
-            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail)
-          )
+            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail))
         case _: ScriptToken => program.failExecution(ScriptErrorUnknownError)
       }
     }
@@ -90,8 +84,7 @@ sealed abstract class LockTimeInterpreter {
     */
   @tailrec
   final def opCheckSequenceVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     if (program.stack.isEmpty) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -100,16 +93,14 @@ sealed abstract class LockTimeInterpreter {
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if ScriptFlagUtil.requireMinimalData(
-              program.flags
-            ) && !s.isShortestEncoding =>
+              program.flags) && !s.isShortestEncoding =>
           program.failExecution(ScriptErrorUnknownError)
         case s: ScriptNumber if !isLockTimeBitOff(s) =>
           // see BIP68 for semantic of locktimeDisableFlag
           program.updateScript(program.script.tail)
         case s: ScriptNumber
             if isLockTimeBitOff(
-              s
-            ) && program.txSignatureComponent.transaction.version.toUInt32 < TransactionConstants.validLockVersion.toUInt32 =>
+              s) && program.txSignatureComponent.transaction.version.toUInt32 < TransactionConstants.validLockVersion.toUInt32 =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
@@ -122,12 +113,10 @@ sealed abstract class LockTimeInterpreter {
           }
         case s: ScriptConstant =>
           opCheckSequenceVerify(
-            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail)
-          )
+            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail))
         case token: ScriptToken =>
           throw new RuntimeException(
-            "Stack top must be either a ScriptConstant or a ScriptNumber, we got: " + token
-          )
+            "Stack top must be either a ScriptConstant or a ScriptNumber, we got: " + token)
 
       }
     }
@@ -151,8 +140,7 @@ sealed abstract class LockTimeInterpreter {
     */
   def checkSequence(
       program: ExecutionInProgressScriptProgram,
-      nSequence: ScriptNumber
-  ): Boolean = {
+      nSequence: ScriptNumber): Boolean = {
     val inputIndex = program.txSignatureComponent.inputIndex.toInt
     val transaction = program.txSignatureComponent.transaction
 
@@ -187,8 +175,7 @@ sealed abstract class LockTimeInterpreter {
     if (
       !(isCSVLockByBlockHeight(
         nSequence,
-        txToSequence
-      ) || isCSVLockByRelativeLockTime(nSequence, txToSequence))
+        txToSequence) || isCSVLockByRelativeLockTime(nSequence, txToSequence))
     ) {
       return false
     }
@@ -209,8 +196,7 @@ sealed abstract class LockTimeInterpreter {
     */
   def isCSVLockByBlockHeight(
       scriptNumber: ScriptNumber,
-      sequence: UInt32
-  ): Boolean = {
+      sequence: UInt32): Boolean = {
     isCSVLockByBlockHeight(scriptNumber) && isCSVLockByBlockHeight(sequence)
   }
 
@@ -227,8 +213,7 @@ sealed abstract class LockTimeInterpreter {
     */
   def isCSVLockByRelativeLockTime(
       number: ScriptNumber,
-      sequence: UInt32
-  ): Boolean = {
+      sequence: UInt32): Boolean = {
     isCSVLockByRelativeLockTime(number) && isCSVLockByRelativeLockTime(sequence)
   }
 
@@ -255,8 +240,7 @@ sealed abstract class LockTimeInterpreter {
 
   def maskSequenceNumber(sequence: UInt32): Int64 = {
     val txToSequenceMasked: Int64 = Int64(
-      (sequence & TransactionConstants.fullSequenceLockTimeMask).toLong
-    )
+      (sequence & TransactionConstants.fullSequenceLockTimeMask).toLong)
     txToSequenceMasked
   }
 
@@ -268,8 +252,7 @@ sealed abstract class LockTimeInterpreter {
     */
   private def checkLockTime(
       program: ExecutionInProgressScriptProgram,
-      locktime: ScriptNumber
-  ): Boolean = {
+      locktime: ScriptNumber): Boolean = {
     // There are two kinds of nLockTime: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether
     // nLockTime < LOCKTIME_THRESHOLD.

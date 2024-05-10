@@ -23,10 +23,8 @@ sealed abstract class LnTaggedFields
       descriptionHash.nonEmpty,
     "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice."
   )
-  require(
-    !(description.nonEmpty && descriptionHash.nonEmpty),
-    "Cannot have both description and description hash"
-  )
+  require(!(description.nonEmpty && descriptionHash.nonEmpty),
+          "Cannot have both description and description hash")
 
   def tags: Vector[LnTag]
 
@@ -99,8 +97,7 @@ object LnTaggedFields {
       cltvExpiry: Option[LnTag.MinFinalCltvExpiry] = None,
       fallbackAddress: Option[LnTag.FallbackAddressTag] = None,
       routingInfo: Option[LnTag.RoutingInfo] = None,
-      features: Option[LnTag.FeaturesTag] = None
-  ): LnTaggedFields = {
+      features: Option[LnTag.FeaturesTag] = None): LnTaggedFields = {
 
     val (description, descriptionHash)
         : (Option[LnTag.DescriptionTag], Option[LnTag.DescriptionHashTag]) = {
@@ -113,18 +110,16 @@ object LnTaggedFields {
       }
     }
 
-    val tags = Vector(
-      Some(paymentHash),
-      description,
-      nodeId,
-      descriptionHash,
-      expiryTime,
-      cltvExpiry,
-      fallbackAddress,
-      routingInfo,
-      features,
-      secret
-    ).flatten
+    val tags = Vector(Some(paymentHash),
+                      description,
+                      nodeId,
+                      descriptionHash,
+                      expiryTime,
+                      cltvExpiry,
+                      fallbackAddress,
+                      routingInfo,
+                      features,
+                      secret).flatten
     InvoiceTagImpl(tags)
   }
 
@@ -147,8 +142,7 @@ object LnTaggedFields {
           val prefix = LnTagPrefix
             .fromUInt5(h)
             .getOrElse(
-              throw new RuntimeException("Unknown LN invoice tag prefix")
-            )
+              throw new RuntimeException("Unknown LN invoice tag prefix"))
 
           // next two 5 bit increments are data_length
           val dataLengthU5s = List(h1, h2)
@@ -165,8 +159,7 @@ object LnTaggedFields {
           loop(newRemaining, fields :+ tag)
         case _ +: _ | _ +: _ +: _ =>
           throw new IllegalArgumentException(
-            "Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse"
-          )
+            "Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
         case _: Vector[_] =>
           fields
       }

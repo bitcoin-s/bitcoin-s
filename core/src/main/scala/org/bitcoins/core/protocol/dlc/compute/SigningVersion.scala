@@ -24,12 +24,11 @@ sealed abstract class SigningVersion {
 object SigningVersion extends StringFactory[SigningVersion] {
 
   /** Initial signing version that was created, not a part of any spec */
-  final case object Mock extends SigningVersion {
+  case object Mock extends SigningVersion {
 
     override def calcNonceTweak(
         nonce: SchnorrNonce,
-        eventName: String
-    ): ByteVector = {
+        eventName: String): ByteVector = {
       val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
 
       CryptoUtil.taggedSha256(bytes, "DLCv0/Nonce").bytes
@@ -43,12 +42,11 @@ object SigningVersion extends StringFactory[SigningVersion] {
   }
 
   /** Used before we had an actual signing algorithm in the spec */
-  final case object BasicSHA256SigningVersion extends SigningVersion {
+  case object BasicSHA256SigningVersion extends SigningVersion {
 
     override def calcNonceTweak(
         nonce: SchnorrNonce,
-        eventName: String
-    ): ByteVector = {
+        eventName: String): ByteVector = {
       val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
 
       CryptoUtil.taggedSha256(bytes, "BasicSHA256").bytes
@@ -65,12 +63,11 @@ object SigningVersion extends StringFactory[SigningVersion] {
   /** V0 DLC Oracle singing algo, specified in
     * https://github.com/discreetlogcontracts/dlcspecs/pull/113
     */
-  final case object DLCOracleV0SigningVersion extends SigningVersion {
+  case object DLCOracleV0SigningVersion extends SigningVersion {
 
     override def calcNonceTweak(
         nonce: SchnorrNonce,
-        eventName: String
-    ): ByteVector = {
+        eventName: String): ByteVector = {
       val bytes = nonce.bytes ++ CryptoUtil.serializeForHash(eventName)
 
       CryptoUtil.taggedSha256(bytes, "DLC/oracle/nonce/v0").bytes

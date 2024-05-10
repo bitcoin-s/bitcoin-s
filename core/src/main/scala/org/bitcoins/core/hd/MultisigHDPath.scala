@@ -20,8 +20,7 @@ object MultisigHDPath extends HDPathFactory[MultisigHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int
-  ): MultisigHDPath = {
+      addressIndex: Int): MultisigHDPath = {
 
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)

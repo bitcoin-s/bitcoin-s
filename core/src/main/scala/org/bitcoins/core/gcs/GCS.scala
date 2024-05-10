@@ -3,7 +3,7 @@ package org.bitcoins.core.gcs
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.{CryptoUtil, SipHashKey}
-import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
+import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 
@@ -22,8 +22,7 @@ object GCS {
       data: Vector[ByteVector],
       key: SipHashKey,
       p: UInt8,
-      m: UInt64
-  ): BitVector = {
+      m: UInt64): BitVector = {
     val hashedValues = hashedSetConstruct(data, key, m)
     val sortedHashedValues = hashedValues.sortWith(_ < _)
     encodeSortedSet(sortedHashedValues, p)
@@ -35,8 +34,7 @@ object GCS {
       data: Vector[ByteVector],
       key: SipHashKey,
       p: UInt8,
-      m: UInt64
-  ): GolombFilter = {
+      m: UInt64): GolombFilter = {
     val encodedData = buildGCS(data, key, p, m)
 
     GolombFilter(key, m, p, CompactSizeUInt(UInt64(data.length)), encodedData)
@@ -49,8 +47,7 @@ object GCS {
     */
   def buildBasicBlockFilter(
       data: Vector[ByteVector],
-      key: SipHashKey
-  ): GolombFilter = {
+      key: SipHashKey): GolombFilter = {
     buildGolombFilter(data, key, FilterType.Basic.P, FilterType.Basic.M)
   }
 
@@ -79,8 +76,7 @@ object GCS {
   def hashedSetConstruct(
       rawItems: Vector[ByteVector],
       key: SipHashKey,
-      m: UInt64
-  ): Vector[UInt64] = {
+      m: UInt64): Vector[UInt64] = {
     val n = rawItems.length
     val f = m * n
 
@@ -103,7 +99,7 @@ object GCS {
     */
   def toUnary(num: UInt64): BitVector = {
     if (num == UInt64.zero) {
-      bin"0"
+      BitVector.zero
     } else {
       /*
        * We use the fact that 2^n - 1 = 111...1 (in binary) where there are n 1 digits
@@ -172,8 +168,7 @@ object GCS {
     */
   private def golombDecodeItemFromSet(
       encodedData: BitVector,
-      p: UInt8
-  ): (UInt64, BitVector) = {
+      p: UInt8): (UInt64, BitVector) = {
     val head = golombDecode(encodedData, p)
 
     val prefixSize = (head >> p.toInt).toInt + 1
@@ -196,14 +191,12 @@ object GCS {
     *   [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-queryingdecompression]]
     */
   def golombDecodeSetsWithPredicate(encodedData: BitVector, p: UInt8)(
-      predicate: UInt64 => Boolean
-  ): Vector[UInt64] = {
+      predicate: UInt64 => Boolean): Vector[UInt64] = {
     @tailrec
     def loop(
         encoded: BitVector,
         lastHash: UInt64,
-        decoded: Vector[UInt64]
-    ): Vector[UInt64] = {
+        decoded: Vector[UInt64]): Vector[UInt64] = {
       if (encoded.length < p.toInt + 1) { // Only padding left
         decoded
       } else {

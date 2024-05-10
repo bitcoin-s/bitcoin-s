@@ -33,9 +33,8 @@ trait HDWalletApi extends WalletApi {
   override def keyManager: BIP39KeyManagerApi
 
   /** Gets the balance of the given account */
-  def getBalance(
-      account: HDAccount
-  )(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
+  def getBalance(account: HDAccount)(implicit
+      ec: ExecutionContext): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance(account)
     val unconfirmedF = getUnconfirmedBalance(account)
     for {
@@ -58,8 +57,7 @@ trait HDWalletApi extends WalletApi {
   def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
 
   override def getNewChangeAddress()(implicit
-      ec: ExecutionContext
-  ): Future[BitcoinAddress] = {
+      ec: ExecutionContext): Future[BitcoinAddress] = {
     for {
       account <- getDefaultAccount()
       addr <- getNewChangeAddress(account)
@@ -83,16 +81,16 @@ trait HDWalletApi extends WalletApi {
       feeRate: FeeUnit,
       algo: CoinSelectionAlgo,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       algo: CoinSelectionAlgo,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] =
     sendWithAlgo(address, amount, feeRate, algo, fromAccount, Vector.empty)
 
   def sendWithAlgo(
@@ -100,8 +98,8 @@ trait HDWalletApi extends WalletApi {
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
       algo: CoinSelectionAlgo,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendWithAlgo(address, amount, feeRate, algo, fromAccount)
@@ -112,8 +110,8 @@ trait HDWalletApi extends WalletApi {
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
-      algo: CoinSelectionAlgo
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      algo: CoinSelectionAlgo)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendWithAlgo(address, amount, feeRateOpt, algo, account)
@@ -124,8 +122,8 @@ trait HDWalletApi extends WalletApi {
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      algo: CoinSelectionAlgo
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      algo: CoinSelectionAlgo)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendWithAlgo(address, amount, feeRate, algo, account)
@@ -137,8 +135,8 @@ trait HDWalletApi extends WalletApi {
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       algo: CoinSelectionAlgo,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendWithAlgo(address, amount, feeRate, algo, account, newTags)
@@ -155,32 +153,30 @@ trait HDWalletApi extends WalletApi {
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    sendFromOutPoints(
-      outPoints,
-      address,
-      amount,
-      feeRate,
-      fromAccount,
-      Vector.empty
-    )
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] =
+    sendFromOutPoints(outPoints,
+                      address,
+                      amount,
+                      feeRate,
+                      fromAccount,
+                      Vector.empty)
 
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendFromOutPoints(outPoints, address, amount, feeRate, fromAccount)
@@ -203,8 +199,7 @@ trait HDWalletApi extends WalletApi {
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendFromOutPoints(outPoints, address, amount, feeRate, account)
@@ -216,8 +211,8 @@ trait HDWalletApi extends WalletApi {
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <-
@@ -234,23 +229,23 @@ trait HDWalletApi extends WalletApi {
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] =
     sendToAddress(address, amount, feeRate, fromAccount, Vector.empty)
 
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddress(address, amount, feeRate, fromAccount)
@@ -271,8 +266,7 @@ trait HDWalletApi extends WalletApi {
   override def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddress(address, amount, feeRate, account)
@@ -283,8 +277,8 @@ trait HDWalletApi extends WalletApi {
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddress(address, amount, feeRate, account, newTags)
@@ -300,23 +294,23 @@ trait HDWalletApi extends WalletApi {
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] =
     sendToAddresses(addresses, amounts, feeRate, fromAccount, Vector.empty)
 
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddresses(addresses, amounts, feeRate, fromAccount)
@@ -337,8 +331,7 @@ trait HDWalletApi extends WalletApi {
   override def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddresses(addresses, amounts, feeRate, account)
@@ -349,8 +342,8 @@ trait HDWalletApi extends WalletApi {
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddresses(addresses, amounts, feeRate, account, newTags)
@@ -365,21 +358,21 @@ trait HDWalletApi extends WalletApi {
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] =
     sendToOutputs(outputs, feeRate, fromAccount, Vector.empty)
 
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToOutputs(outputs, feeRate, fromAccount)
@@ -389,8 +382,8 @@ trait HDWalletApi extends WalletApi {
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      newTags: Vector[AddressTag])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendToOutputs(outputs, feeRate, account, newTags)
@@ -409,8 +402,7 @@ trait HDWalletApi extends WalletApi {
 
   override def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- sendToOutputs(outputs, feeRate, account)
@@ -423,15 +415,15 @@ trait HDWalletApi extends WalletApi {
       message: String,
       hashMessage: Boolean,
       feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
       feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      fromAccount: AccountDb)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
@@ -441,8 +433,7 @@ trait HDWalletApi extends WalletApi {
   override def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       tx <- makeOpReturnCommitment(message, hashMessage, feeRate, account)
@@ -455,21 +446,18 @@ trait HDWalletApi extends WalletApi {
 
   def listUtxos(
       hdAccount: HDAccount,
-      tag: AddressTag
-  ): Future[Vector[SpendingInfoDb]]
+      tag: AddressTag): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(
       hdAccount: HDAccount,
-      state: TxoState
-  ): Future[Vector[SpendingInfoDb]]
+      state: TxoState): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   def listSpentAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   def listFundedAddresses(
-      account: HDAccount
-  ): Future[Vector[(AddressDb, CurrencyUnit)]]
+      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
 
   def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
@@ -481,8 +469,7 @@ trait HDWalletApi extends WalletApi {
     * determined by the default account and the given chainType and addressIndex
     */
   def getAddress(chainType: HDChainType, addressIndex: Int)(implicit
-      ec: ExecutionContext
-  ): Future[AddressDb] = {
+      ec: ExecutionContext): Future[AddressDb] = {
     for {
       account <- getDefaultAccount()
       address <- getAddress(account, chainType, addressIndex)
@@ -495,8 +482,7 @@ trait HDWalletApi extends WalletApi {
   def getAddress(
       account: AccountDb,
       chainType: HDChainType,
-      addressIndex: Int
-  ): Future[AddressDb]
+      addressIndex: Int): Future[AddressDb]
 
   def listAccounts(): Future[Vector[AccountDb]]
 
@@ -506,8 +492,7 @@ trait HDWalletApi extends WalletApi {
     *   [[Future[Vector[AccountDb]]
     */
   def listAccounts(purpose: HDPurpose)(implicit
-      ec: ExecutionContext
-  ): Future[Vector[AccountDb]] =
+      ec: ExecutionContext): Future[Vector[AccountDb]] =
     listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
@@ -520,8 +505,7 @@ trait HDWalletApi extends WalletApi {
     */
   def createNewAccount(
       hdAccount: HDAccount,
-      keyManagerParams: KeyManagerParams
-  ): Future[HDWalletApi]
+      keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 
   def findAccount(account: HDAccount): Future[Option[AccountDb]]
 
@@ -529,6 +513,6 @@ trait HDWalletApi extends WalletApi {
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      markAsReserved: Boolean
-  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
 }

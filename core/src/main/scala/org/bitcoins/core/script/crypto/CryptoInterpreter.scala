@@ -29,56 +29,41 @@ sealed abstract class CryptoInterpreter {
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_HASH160),
-      "Script operation must be OP_HASH160"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_HASH160),
+            "Script operation must be OP_HASH160")
     executeHashFunction(program, CryptoUtil.sha256Hash160(_: ByteVector))
   }
 
   /** The input is hashed using RIPEMD-160. */
   def opRipeMd160(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_RIPEMD160),
-      "Script operation must be OP_RIPEMD160"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_RIPEMD160),
+            "Script operation must be OP_RIPEMD160")
     executeHashFunction(program, CryptoUtil.ripeMd160(_: ByteVector))
   }
 
   /** The input is hashed using SHA-256. */
   def opSha256(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_SHA256),
-      "Script operation must be OP_SHA256"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_SHA256),
+            "Script operation must be OP_SHA256")
     executeHashFunction(program, CryptoUtil.sha256(_: ByteVector))
   }
 
   /** The input is hashed two times with SHA-256. */
   def opHash256(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_HASH256),
-      "Script operation must be OP_HASH256"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_HASH256),
+            "Script operation must be OP_HASH256")
     executeHashFunction(program, CryptoUtil.doubleSHA256(_: ByteVector))
   }
 
   /** The input is hashed using SHA-1. */
   def opSha1(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_SHA1),
-      "Script top must be OP_SHA1"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_SHA1),
+            "Script top must be OP_SHA1")
     executeHashFunction(program, CryptoUtil.sha1(_: ByteVector))
   }
 
@@ -89,12 +74,9 @@ sealed abstract class CryptoInterpreter {
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L880]]
     */
   def opCheckSig(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_CHECKSIG),
-      "Script top must be OP_CHECKSIG"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_CHECKSIG),
+            "Script top must be OP_CHECKSIG")
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -122,14 +104,11 @@ sealed abstract class CryptoInterpreter {
               removedOpCodeSeparatorsScript,
               pubKey,
               signature,
-              flags
-            )
-            handleSignatureValidation(
-              program = updatedProgram,
-              result = result,
-              restOfStack = restOfStack,
-              numOpt = None
-            )
+              flags)
+            handleSignatureValidation(program = updatedProgram,
+                                      result = result,
+                                      restOfStack = restOfStack,
+                                      numOpt = None)
           case SigVersionTapscript =>
             val tapscriptE
                 : Either[ScriptError, TransactionSignatureCheckerResult] =
@@ -143,31 +122,26 @@ sealed abstract class CryptoInterpreter {
                   // trivially pass signature validation as required by BIP342
                   // when the public key type is not known and the
                   // SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
-                  handleSignatureValidation(
-                    program = updatedProgram,
-                    result = SignatureValidationSuccess,
-                    restOfStack = restOfStack,
-                    numOpt = None
-                  )
+                  handleSignatureValidation(program = updatedProgram,
+                                            result = SignatureValidationSuccess,
+                                            restOfStack = restOfStack,
+                                            numOpt = None)
                 } else if (err == ScriptErrorEvalFalse) {
                   // means signature validation failed, don't increment the stack counter
                   handleSignatureValidation(
                     program = updatedProgram,
                     result = SignatureValidationErrorIncorrectSignatures,
                     restOfStack = restOfStack,
-                    numOpt = None
-                  )
+                    numOpt = None)
                 } else {
                   updatedProgram.failExecution(err)
                 }
 
               case Right(result) =>
-                handleSignatureValidation(
-                  program = updatedProgram,
-                  result = result,
-                  restOfStack = restOfStack,
-                  numOpt = None
-                )
+                handleSignatureValidation(program = updatedProgram,
+                                          result = result,
+                                          restOfStack = restOfStack,
+                                          numOpt = None)
             }
 
           case SigVersionTaprootKeySpend =>
@@ -180,9 +154,8 @@ sealed abstract class CryptoInterpreter {
   /** Gets the signature and hash type, returns None if the signature is the
     * empty byte vector which trivially fails script interpreter validation
     */
-  private def getSignatureAndHashType(
-      sigBytes: ByteVector
-  ): Either[ScriptError, (SchnorrDigitalSignature, HashType)] = {
+  private def getSignatureAndHashType(sigBytes: ByteVector)
+      : Either[ScriptError, (SchnorrDigitalSignature, HashType)] = {
     val parseT = Try(if (sigBytes.length == 64) {
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
       Right((sig, HashType.sigHashDefault))
@@ -198,9 +171,8 @@ sealed abstract class CryptoInterpreter {
     parseT.getOrElse(Left(ScriptErrorSchnorrSig))
   }
 
-  private def evalChecksigTapscript(
-      program: ExecutionInProgressScriptProgram
-  ): Either[ScriptError, TransactionSignatureCheckerResult] = {
+  private def evalChecksigTapscript(program: ExecutionInProgressScriptProgram)
+      : Either[ScriptError, TransactionSignatureCheckerResult] = {
     val stack = program.stack
     val pubKeyBytes = stack.head.bytes
     val isCheckSigAdd = program.script.head == OP_CHECKSIGADD
@@ -244,12 +216,10 @@ sealed abstract class CryptoInterpreter {
         sigHashTypeE.map { case (signature, hashType) =>
           val restOfStack =
             program.stack.tail.tail // remove pubkey, signature
-          val helper = TapscriptChecksigHelper(
-            pubKey = xOnlyPubKeyT.get,
-            signature = signature,
-            hashType = hashType,
-            restOfStack = restOfStack
-          )
+          val helper = TapscriptChecksigHelper(pubKey = xOnlyPubKeyT.get,
+                                               signature = signature,
+                                               hashType = hashType,
+                                               restOfStack = restOfStack)
           helper
         }
       }
@@ -277,12 +247,9 @@ sealed abstract class CryptoInterpreter {
     * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards.
     */
   def opCheckSigVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_CHECKSIGVERIFY),
-      "Script top must be OP_CHECKSIGVERIFY"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_CHECKSIGVERIFY),
+            "Script top must be OP_CHECKSIGVERIFY")
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -303,12 +270,9 @@ sealed abstract class CryptoInterpreter {
     * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]].
     */
   def opCodeSeparator(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_CODESEPARATOR),
-      "Script top must be OP_CODESEPARATOR"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_CODESEPARATOR),
+            "Script top must be OP_CODESEPARATOR")
 
     // Filter out the constants for Tapscript OP_CODESEPARATORs
     // because we only count op codes
@@ -340,12 +304,9 @@ sealed abstract class CryptoInterpreter {
     * from the stack.
     */
   final def opCheckMultiSig(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_CHECKMULTISIG),
-      "Script top must be OP_CHECKMULTISIG"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_CHECKMULTISIG),
+            "Script top must be OP_CHECKMULTISIG")
     val flags = program.flags
 
     if (
@@ -363,8 +324,7 @@ sealed abstract class CryptoInterpreter {
         program.failExecution(ScriptErrorPubKeyCount)
       } else if (
         ScriptFlagUtil.requireMinimalData(
-          flags
-        ) && !nPossibleSignatures.isShortestEncoding
+          flags) && !nPossibleSignatures.isShortestEncoding
       ) {
         program.failExecution(ScriptErrorUnknownError)
       } else if (program.stack.size < 2) {
@@ -375,8 +335,7 @@ sealed abstract class CryptoInterpreter {
 
         if (
           ScriptFlagUtil.requireMinimalData(
-            flags
-          ) && !mRequiredSignatures.isShortestEncoding
+            flags) && !mRequiredSignatures.isShortestEncoding
         ) {
           return program.failExecution(ScriptErrorUnknownError)
         }
@@ -385,11 +344,9 @@ sealed abstract class CryptoInterpreter {
           return program.failExecution(ScriptErrorSigCount)
         }
         val (pubKeysScriptTokens, stackWithoutPubKeys) =
-          (
-            program.stack.tail.slice(0, nPossibleSignatures.toInt),
-            program.stack.tail
-              .slice(nPossibleSignatures.toInt, program.stack.tail.size)
-          )
+          (program.stack.tail.slice(0, nPossibleSignatures.toInt),
+           program.stack.tail
+             .slice(nPossibleSignatures.toInt, program.stack.tail.size))
 
         val pubKeys =
           pubKeysScriptTokens.map(key => ECPublicKeyBytes(key.bytes))
@@ -397,8 +354,7 @@ sealed abstract class CryptoInterpreter {
         // +1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
         val signaturesScriptTokens = program.stack.tail.slice(
           nPossibleSignatures.toInt + 1,
-          nPossibleSignatures.toInt + mRequiredSignatures.toInt + 1
-        )
+          nPossibleSignatures.toInt + mRequiredSignatures.toInt + 1)
         val signatures =
           signaturesScriptTokens.map(token => ECDigitalSignature(token.bytes))
 
@@ -429,17 +385,14 @@ sealed abstract class CryptoInterpreter {
               signatures,
               pubKeys,
               flags,
-              mRequiredSignatures.toLong
-            )
+              mRequiredSignatures.toLong)
 
           // remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
           val restOfStack = stackWithoutPubKeysAndSignatures.tail
-          handleSignatureValidation(
-            program = program,
-            result = isValidSignatures,
-            restOfStack = restOfStack,
-            numOpt = None
-          )
+          handleSignatureValidation(program = program,
+                                    result = isValidSignatures,
+                                    restOfStack = restOfStack,
+                                    numOpt = None)
         }
       }
     }
@@ -450,12 +403,9 @@ sealed abstract class CryptoInterpreter {
     * afterwards
     */
   def opCheckMultiSigVerify(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
-    require(
-      program.script.headOption.contains(OP_CHECKMULTISIGVERIFY),
-      "Script top must be OP_CHECKMULTISIGVERIFY"
-    )
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(OP_CHECKMULTISIGVERIFY),
+            "Script top must be OP_CHECKMULTISIGVERIFY")
     if (program.stack.size < 3) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
@@ -472,12 +422,10 @@ sealed abstract class CryptoInterpreter {
   }
 
   def opCheckSigAdd(
-      program: ExecutionInProgressScriptProgram
-  ): StartedScriptProgram = {
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(
       program.script.headOption.contains(OP_CHECKSIGADD),
-      s"Script top must be OP_CHECKSIGADD, got=${program.script.headOption}"
-    )
+      s"Script top must be OP_CHECKSIGADD, got=${program.script.headOption}")
     program.txSignatureComponent.sigVersion match {
       case SigVersionBase | SigVersionWitnessV0 =>
         program.failExecution(ScriptErrorBadOpCode)
@@ -518,20 +466,18 @@ sealed abstract class CryptoInterpreter {
                     // trivially pass signature validation as required by BIP342
                     // when the public key type is not known and the
                     // SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
-                    handleSignatureValidation(
-                      program = updatedProgram,
-                      result = SignatureValidationSuccess,
-                      restOfStack = restOfStack,
-                      numOpt = Some(numT.get)
-                    )
+                    handleSignatureValidation(program = updatedProgram,
+                                              result =
+                                                SignatureValidationSuccess,
+                                              restOfStack = restOfStack,
+                                              numOpt = Some(numT.get))
                   } else if (err == ScriptErrorEvalFalse) {
                     // means signature validation failed, don't increment the stack counter
                     handleSignatureValidation(
                       program = updatedProgram,
                       result = SignatureValidationErrorIncorrectSignatures,
                       restOfStack = restOfStack,
-                      numOpt = Some(numT.get)
-                    )
+                      numOpt = Some(numT.get))
                   } else {
                     updatedProgram.failExecution(err)
                   }
@@ -539,12 +485,10 @@ sealed abstract class CryptoInterpreter {
                   if (result == SignatureValidationErrorIncorrectSignatures) {
                     program.failExecution(ScriptErrorSchnorrSig)
                   } else {
-                    handleSignatureValidation(
-                      program = updatedProgram,
-                      result = result,
-                      restOfStack = restOfStack,
-                      numOpt = Some(numT.get)
-                    )
+                    handleSignatureValidation(program = updatedProgram,
+                                              result = result,
+                                              restOfStack = restOfStack,
+                                              numOpt = Some(numT.get))
                   }
 
               }
@@ -567,15 +511,12 @@ sealed abstract class CryptoInterpreter {
     */
   private def executeHashFunction(
       program: ExecutionInProgressScriptProgram,
-      hashFunction: ByteVector => HashDigest
-  ): StartedScriptProgram = {
+      hashFunction: ByteVector => HashDigest): StartedScriptProgram = {
     if (program.stack.nonEmpty) {
       val stackTop = program.stack.head
       val hash = ScriptConstant(hashFunction(stackTop.bytes).bytes)
-      program.updateStackAndScript(
-        hash :: program.stack.tail,
-        program.script.tail
-      )
+      program.updateStackAndScript(hash :: program.stack.tail,
+                                   program.script.tail)
     } else {
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
@@ -595,8 +536,7 @@ sealed abstract class CryptoInterpreter {
       program: ExecutionInProgressScriptProgram,
       result: TransactionSignatureCheckerResult,
       restOfStack: Seq[ScriptToken],
-      numOpt: Option[ScriptNumber]
-  ): StartedScriptProgram = {
+      numOpt: Option[ScriptNumber]): StartedScriptProgram = {
 
     val pushOp = {
       numOpt match {
@@ -654,5 +594,4 @@ case class TapscriptChecksigHelper(
     pubKey: XOnlyPubKey,
     signature: SchnorrDigitalSignature,
     hashType: HashType,
-    restOfStack: List[ScriptToken]
-)
+    restOfStack: List[ScriptToken])

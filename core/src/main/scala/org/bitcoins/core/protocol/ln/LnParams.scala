@@ -70,12 +70,10 @@ object LnParams {
     }
 
   val allNetworks: Vector[LnParams] =
-    Vector(
-      LnBitcoinMainNet,
-      LnBitcoinTestNet,
-      LnBitcoinSigNet,
-      LnBitcoinRegTest
-    )
+    Vector(LnBitcoinMainNet,
+           LnBitcoinTestNet,
+           LnBitcoinSigNet,
+           LnBitcoinRegTest)
 
   private val prefixes: Map[String, LnParams] = {
     val vec: Vector[(String, LnParams)] = {

@@ -36,10 +36,8 @@ sealed abstract class ControlBlock extends NetworkElement {
 }
 
 case class TapscriptControlBlock(bytes: ByteVector) extends ControlBlock {
-  require(
-    TapscriptControlBlock.isValid(bytes),
-    s"Invalid leaf version for tapscript control block, got=$bytes"
-  )
+  require(TapscriptControlBlock.isValid(bytes),
+          s"Invalid leaf version for tapscript control block, got=$bytes")
 }
 
 /** A control block that does not have a leaf version defined as per BIP342 This
@@ -90,8 +88,7 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
 
   def apply(
       internalKey: XOnlyPubKey,
-      leafHashes: Vector[TapLeaf]
-  ): ControlBlock = {
+      leafHashes: Vector[TapLeaf]): ControlBlock = {
     val bytes = internalKey.bytes ++ ByteVector.concat(leafHashes.map(_.bytes))
     ControlBlock(bytes)
   }

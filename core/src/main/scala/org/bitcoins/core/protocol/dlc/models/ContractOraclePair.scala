@@ -19,8 +19,8 @@ object ContractOraclePair {
 
   case class EnumPair(
       contractDescriptor: EnumContractDescriptor,
-      oracleInfo: EnumOracleInfo
-  ) extends ContractOraclePair {
+      oracleInfo: EnumOracleInfo)
+      extends ContractOraclePair {
 
     private val descriptorOutcomes =
       contractDescriptor.map(_._1).sortBy(_.outcome)
@@ -41,8 +41,8 @@ object ContractOraclePair {
 
   case class NumericPair(
       contractDescriptor: NumericContractDescriptor,
-      oracleInfo: NumericOracleInfo
-  ) extends ContractOraclePair {
+      oracleInfo: NumericOracleInfo)
+      extends ContractOraclePair {
 
     private val isValid = oracleInfo.singleOracleInfos.forall { singleInfo =>
       val announcementDescriptor =
@@ -59,8 +59,7 @@ object ContractOraclePair {
     */
   def fromDescriptorOracleOpt(
       descriptor: ContractDescriptor,
-      oracleInfo: OracleInfo
-  ): Option[ContractOraclePair] = {
+      oracleInfo: OracleInfo): Option[ContractOraclePair] = {
     (descriptor, oracleInfo) match {
       case (e: EnumContractDescriptor, o: EnumOracleInfo) =>
         Some(EnumPair(e, o))
@@ -78,14 +77,12 @@ object ContractOraclePair {
     */
   def fromDescriptorOracle(
       descriptor: ContractDescriptor,
-      oracleInfo: OracleInfo
-  ): ContractOraclePair = {
+      oracleInfo: OracleInfo): ContractOraclePair = {
     fromDescriptorOracleOpt(descriptor, oracleInfo) match {
       case Some(pair) => pair
       case None =>
         sys.error(
-          s"You passed in an incompatible contract/oracle pair, contract=$descriptor, oracle=$oracleInfo"
-        )
+          s"You passed in an incompatible contract/oracle pair, contract=$descriptor, oracle=$oracleInfo")
     }
   }
 }

@@ -126,16 +126,18 @@ trait BitcoinScriptUtil {
     val checkSigCount =
       script.count(token => token == OP_CHECKSIG || token == OP_CHECKSIGVERIFY)
     val multiSigOps = Seq(OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY)
-    val multiSigCount: Long = script.zipWithIndex.map { case (token, index) =>
-      if (multiSigOps.contains(token) && index != 0) {
-        script(index - 1) match {
-          case scriptNum: ScriptNumber => scriptNum.toLong
-          case scriptConstant: ScriptConstant =>
-            ScriptNumberUtil.toLong(scriptConstant.hex)
-          case _: ScriptToken => Consensus.maxPublicKeysPerMultiSig
-        }
-      } else 0
-    }.sum
+    val multiSigCount: Long = script.zipWithIndex
+      .map[Long] { case (token, index) =>
+        if (multiSigOps.contains(token) && index != 0) {
+          script(index - 1) match {
+            case scriptNum: ScriptNumber => scriptNum.toLong
+            case scriptConstant: ScriptConstant =>
+              ScriptNumberUtil.toLong(scriptConstant.hex)
+            case _: ScriptToken => Consensus.maxPublicKeysPerMultiSig
+          }
+        } else 0
+      }
+      .sum
     checkSigCount + multiSigCount
   }
 
@@ -145,8 +147,7 @@ trait BitcoinScriptUtil {
     * 2/3 multisignature script, it would return the number 3
     */
   def numPossibleSignaturesOnStack(
-      program: ExecutionInProgressScriptProgram
-  ): ScriptNumber = {
+      program: ExecutionInProgressScriptProgram): ScriptNumber = {
     require(
       program.script.headOption
         .contains(OP_CHECKMULTISIG) || program.script.headOption
@@ -158,8 +159,7 @@ trait BitcoinScriptUtil {
       case s: ScriptConstant => ScriptNumber(s.bytes)
       case _: ScriptToken =>
         throw new RuntimeException(
-          "n must be a script number or script constant for OP_CHECKMULTISIG"
-        )
+          "n must be a script number or script constant for OP_CHECKMULTISIG")
     }
     nPossibleSignatures
   }
@@ -168,8 +168,7 @@ trait BitcoinScriptUtil {
     * this was a 2/3 multisignature script, it would return the number 2
     */
   def numRequiredSignaturesOnStack(
-      program: ExecutionInProgressScriptProgram
-  ): ScriptNumber = {
+      program: ExecutionInProgressScriptProgram): ScriptNumber = {
     require(
       program.script.headOption
         .contains(OP_CHECKMULTISIG) || program.script.headOption
@@ -184,8 +183,7 @@ trait BitcoinScriptUtil {
       case s: ScriptConstant => ScriptNumber(s.bytes)
       case _: ScriptToken =>
         throw new RuntimeException(
-          "m must be a script number or script constant for OP_CHECKMULTISIG"
-        )
+          "m must be a script number or script constant for OP_CHECKMULTISIG")
     }
     mRequiredSignatures
   }
@@ -266,22 +264,19 @@ trait BitcoinScriptUtil {
     else if (scriptTokenSize <= UInt32(OP_PUSHDATA1.max)) {
       // we need the push op to be only 1 byte in size
       val pushConstant = ScriptConstant(
-        BytesUtil.flipEndianness(bytes.slice(bytes.length - 1, bytes.length))
-      )
+        BytesUtil.flipEndianness(bytes.slice(bytes.length - 1, bytes.length)))
       Seq(OP_PUSHDATA1, pushConstant)
     } else if (scriptTokenSize <= UInt32(OP_PUSHDATA2.max)) {
       // we need the push op to be only 2 bytes in size
       val pushConstant = ScriptConstant(
-        BytesUtil.flipEndianness(bytes.slice(bytes.length - 2, bytes.length))
-      )
+        BytesUtil.flipEndianness(bytes.slice(bytes.length - 2, bytes.length)))
       Seq(OP_PUSHDATA2, pushConstant)
     } else if (scriptTokenSize <= UInt32(OP_PUSHDATA4.max)) {
       val pushConstant = ScriptConstant(BytesUtil.flipEndianness(bytes))
       Seq(OP_PUSHDATA4, pushConstant)
     } else
       throw new IllegalArgumentException(
-        "ScriptToken is to large for pushops, size: " + scriptTokenSize
-      )
+        "ScriptToken is to large for pushops, size: " + scriptTokenSize)
   }
 
   def calculatePushOp(bytes: ByteVector): Seq[ScriptToken] =
@@ -336,14 +331,12 @@ trait BitcoinScriptUtil {
     */
   def checkPubKeyEncoding(
       key: ECPublicKeyBytes,
-      program: ExecutionInProgressScriptProgram
-  ): Boolean =
+      program: ExecutionInProgressScriptProgram): Boolean =
     checkPubKeyEncoding(key, program.flags)
 
   def checkPubKeyEncoding(
       key: ECPublicKeyBytes,
-      flags: Seq[ScriptFlag]
-  ): Boolean = {
+      flags: Seq[ScriptFlag]): Boolean = {
     if (
       ScriptFlagUtil.requireStrictEncoding(flags) &&
       !isCompressedOrUncompressedPubKey(key)
@@ -396,8 +389,7 @@ trait BitcoinScriptUtil {
   def isValidPubKeyEncoding(
       pubKey: ECPublicKeyBytes,
       sigVersion: SignatureVersion,
-      flags: Seq[ScriptFlag]
-  ): Option[ScriptError] = {
+      flags: Seq[ScriptFlag]): Option[ScriptError] = {
     if (
       ScriptFlagUtil.requireStrictEncoding(flags) &&
       !BitcoinScriptUtil.isCompressedOrUncompressedPubKey(pubKey)
@@ -406,8 +398,7 @@ trait BitcoinScriptUtil {
     } else if (
       ScriptFlagUtil.requireScriptVerifyWitnessPubKeyType(flags) &&
       !BitcoinScriptUtil.isCompressedPubKey(
-        pubKey
-      ) && sigVersion == SigVersionWitnessV0
+        pubKey) && sigVersion == SigVersionWitnessV0
     ) {
       Some(ScriptErrorWitnessPubKeyType)
     } else None
@@ -430,8 +421,7 @@ trait BitcoinScriptUtil {
   def calculateScriptForChecking(
       txSignatureComponent: TxSigComponent,
       signature: ECDigitalSignature,
-      script: Seq[ScriptToken]
-  ): Seq[ScriptToken] = {
+      script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking =
       calculateScriptForSigning(txSignatureComponent, script)
     txSignatureComponent.sigVersion match {
@@ -447,13 +437,11 @@ trait BitcoinScriptUtil {
 
   def calculateScriptForSigning(
       txSignatureComponent: TxSigComponent,
-      script: Seq[ScriptToken]
-  ): Seq[ScriptToken] =
+      script: Seq[ScriptToken]): Seq[ScriptToken] =
     txSignatureComponent.scriptPubKey match {
       case _: P2SHScriptPubKey =>
         val p2shScriptSig = P2SHScriptSignature(
-          txSignatureComponent.scriptSignature.bytes
-        )
+          txSignatureComponent.scriptSignature.bytes)
 
         p2shScriptSig.redeemScript match {
           case p2wpkh: P2WPKHWitnessSPKV0 =>
@@ -474,8 +462,7 @@ trait BitcoinScriptUtil {
           case _: ScriptPubKey =>
             val sigsRemoved = removeSignaturesFromScript(
               p2shScriptSig.signatures,
-              p2shScriptSig.redeemScript.asm
-            )
+              p2shScriptSig.redeemScript.asm)
             sigsRemoved
         }
 
@@ -502,8 +489,7 @@ trait BitcoinScriptUtil {
   def calculateScriptForSigning(
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      script: Seq[ScriptToken]
-  ): Seq[ScriptToken] = {
+      script: Seq[ScriptToken]): Seq[ScriptToken] = {
 
     val idx = TxUtil.inputIndex(signingInfo.inputInfo, spendingTransaction)
 
@@ -552,8 +538,7 @@ trait BitcoinScriptUtil {
     */
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
-      script: Seq[ScriptToken]
-  ): Seq[ScriptToken] = {
+      script: Seq[ScriptToken]): Seq[ScriptToken] = {
     if (script.contains(ScriptConstant(signature.hex))) {
       // replicates this line in bitcoin core
       // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
@@ -570,13 +555,11 @@ trait BitcoinScriptUtil {
     */
   def removeSignaturesFromScript(
       sigs: Seq[ECDigitalSignature],
-      script: Seq[ScriptToken]
-  ): Seq[ScriptToken] = {
+      script: Seq[ScriptToken]): Seq[ScriptToken] = {
     @tailrec
     def loop(
         remainingSigs: Seq[ECDigitalSignature],
-        scriptTokens: Seq[ScriptToken]
-    ): Seq[ScriptToken] = {
+        scriptTokens: Seq[ScriptToken]): Seq[ScriptToken] = {
       remainingSigs match {
         case Nil => scriptTokens
         case h +: t =>
@@ -593,8 +576,7 @@ trait BitcoinScriptUtil {
     * script.
     */
   def removeOpCodeSeparator(
-      program: ExecutionInProgressScriptProgram
-  ): Seq[ScriptToken] = {
+      program: ExecutionInProgressScriptProgram): Seq[ScriptToken] = {
     if (program.lastCodeSeparator.isDefined) {
       program.originalScript
         .slice(program.lastCodeSeparator.get + 1, program.originalScript.size)
@@ -602,14 +584,12 @@ trait BitcoinScriptUtil {
   }
 
   private def parseScriptEither(
-      scriptT: Either[ScriptError, ScriptPubKey]
-  ): Seq[ScriptToken] =
+      scriptT: Either[ScriptError, ScriptPubKey]): Seq[ScriptToken] =
     scriptT match {
       case Right(scriptPubKey) => scriptPubKey.asm
       case Left(err) =>
         throw new IllegalArgumentException(
-          s"Could not parse witness script, got err=$err"
-        )
+          s"Could not parse witness script, got err=$err")
     }
 
   /** Casts the given script token to a boolean value Mimics this function
@@ -661,8 +641,7 @@ trait BitcoinScriptUtil {
         isOnlyCompressedPubKey(l.nestedScriptPubKey)
       case conditional: ConditionalScriptPubKey =>
         isOnlyCompressedPubKey(conditional.trueSPK) && isOnlyCompressedPubKey(
-          conditional.falseSPK
-        )
+          conditional.falseSPK)
       case _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
           _: P2WSHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey |
           _: NonStandardScriptPubKey | _: WitnessCommitment |
@@ -674,25 +653,21 @@ trait BitcoinScriptUtil {
 
   def parseScript[T <: Script](
       bytes: ByteVector,
-      f: Vector[ScriptToken] => T
-  ): T = {
+      f: Vector[ScriptToken] => T): T = {
     val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
     // TODO: Figure out a better way to do this, we can theoretically have numbers larger than Int.MaxValue,
     // but scala collections don't allow you to use 'slice' with longs
     val len = Try(compactSizeUInt.num.toInt).getOrElse(Int.MaxValue)
     val scriptPubKeyBytes =
-      bytes.slice(
-        compactSizeUInt.byteSize.toInt,
-        len + compactSizeUInt.byteSize.toInt
-      )
+      bytes.slice(compactSizeUInt.byteSize.toInt,
+                  len + compactSizeUInt.byteSize.toInt)
     val script: Vector[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
     f(script)
   }
 
   def verifyScript(
       tx: Transaction,
-      utxos: Seq[ScriptSignatureParams[InputInfo]]
-  ): Boolean = {
+      utxos: Seq[ScriptSignatureParams[InputInfo]]): Boolean = {
     val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
       case (input: TransactionInput, idx: Int) =>
         val outpoint = input.previousOutput
@@ -708,12 +683,10 @@ trait BitcoinScriptUtil {
         val txSigComponent = spk match {
           case witSPK: WitnessScriptPubKeyV0 =>
             val o = TransactionOutput(amount, witSPK)
-            WitnessTxSigComponentRaw(
-              tx.asInstanceOf[WitnessTransaction],
-              UInt32(idx),
-              o,
-              Policy.standardFlags
-            )
+            WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
+                                     UInt32(idx),
+                                     o,
+                                     Policy.standardFlags)
           case _: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey =>
             ???
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
@@ -730,20 +703,17 @@ trait BitcoinScriptUtil {
             p2shScriptSig.redeemScript match {
 
               case _: WitnessScriptPubKey =>
-                WitnessTxSigComponentP2SH(
-                  transaction = tx.asInstanceOf[WitnessTransaction],
-                  inputIndex = UInt32(idx),
-                  output = output,
-                  flags = Policy.standardFlags
-                )
+                WitnessTxSigComponentP2SH(transaction =
+                                            tx.asInstanceOf[WitnessTransaction],
+                                          inputIndex = UInt32(idx),
+                                          output = output,
+                                          flags = Policy.standardFlags)
 
               case _ =>
-                BaseTxSigComponent(
-                  tx,
-                  UInt32(idx),
-                  output,
-                  Policy.standardFlags
-                )
+                BaseTxSigComponent(tx,
+                                   UInt32(idx),
+                                   output,
+                                   Policy.standardFlags)
             }
         }
 
@@ -757,19 +727,16 @@ trait BitcoinScriptUtil {
       inputMap: InputPSBTMap,
       index: Int,
       outputMap: PreviousOutputMap,
-      flags: Seq[ScriptFlag] = Policy.standardFlags
-  ): Try[Transaction] = {
+      flags: Seq[ScriptFlag] = Policy.standardFlags): Try[Transaction] = {
 
     val txIn = tx.inputs(index)
 
     val (preImages, condPath) =
       InputInfo.getHashPreImagesAndConditionalPath(tx, index)
 
-    val inputInfo = inputMap.toInputInfo(
-      txIn,
-      conditionalPath = condPath,
-      preImages = preImages
-    )
+    val inputInfo = inputMap.toInputInfo(txIn,
+                                         conditionalPath = condPath,
+                                         preImages = preImages)
 
     val txSigComponent = TxSigComponent(inputInfo, tx, outputMap, flags)
 

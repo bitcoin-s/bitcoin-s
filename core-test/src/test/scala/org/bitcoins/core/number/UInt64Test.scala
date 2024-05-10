@@ -93,14 +93,14 @@ class UInt64Test extends BitcoinSUnitTest {
   }
 
   it must "Serialization symmetry" in {
-    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+    forAll(NumberGenerator.uInt64s) { (uInt64: UInt64) =>
       assert(UInt64(uInt64.hex) == uInt64)
       assert(UInt64(uInt64.hex).hex == uInt64.hex)
     }
   }
 
   it must "additive identity" in {
-    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+    forAll(NumberGenerator.uInt64s) { (uInt64: UInt64) =>
       val result =
         if (uInt64.toBigInt <= UInt64.max.toBigInt)
           uInt64 + UInt64.zero == UInt64(uInt64.toBigInt)
@@ -121,7 +121,7 @@ class UInt64Test extends BitcoinSUnitTest {
   }
 
   it must "subtractive identity" in {
-    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+    forAll(NumberGenerator.uInt64s) { (uInt64: UInt64) =>
       val result =
         if (uInt64.toBigInt <= UInt64.max.toBigInt)
           uInt64 - UInt64.zero == UInt64(uInt64.toBigInt)
@@ -142,13 +142,13 @@ class UInt64Test extends BitcoinSUnitTest {
   }
 
   it must "multiplying by zero" in {
-    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+    forAll(NumberGenerator.uInt64s) { (uInt64: UInt64) =>
       assert(uInt64 * UInt64.zero == UInt64.zero)
     }
   }
 
   it must "multiplicative identity" in {
-    forAll(NumberGenerator.uInt64s) { uInt64: UInt64 =>
+    forAll(NumberGenerator.uInt64s) { (uInt64: UInt64) =>
       val result =
         if (uInt64 == UInt64.zero) uInt64 * UInt64.one == UInt64.zero
         else uInt64 * UInt64.one == uInt64
@@ -210,7 +210,7 @@ class UInt64Test extends BitcoinSUnitTest {
   }
 
   it must "^" in {
-    forAll(NumberGenerator.uInt64s) { u64: UInt64 =>
+    forAll(NumberGenerator.uInt64s) { (u64: UInt64) =>
       assert(u64.^(UInt64.zero) == u64)
       assert(u64.^(u64) == UInt64.zero)
     }

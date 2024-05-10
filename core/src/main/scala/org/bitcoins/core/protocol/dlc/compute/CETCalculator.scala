@@ -35,8 +35,7 @@ object CETCalculator {
     */
   case class MultiOracleOutcome(
       multiOracleDigits: MultiOracleDigits,
-      payout: Satoshis
-  )
+      payout: Satoshis)
 
   /** Given a range and a payout function with which to build CETs, the first
     * step is to split the range into sub-ranges which can be compressed or
@@ -76,8 +75,7 @@ object CETCalculator {
       to: Long,
       totalCollateral: Satoshis,
       function: DLCPayoutCurve,
-      rounding: RoundingIntervals
-  ): Vector[CETRange] = {
+      rounding: RoundingIntervals): Vector[CETRange] = {
     require(from <= to, s"from ($from) cannot be greater than to ($to).")
 
     val Indexed(firstFunc, firstFuncIndex) = function.componentFor(from)
@@ -112,8 +110,7 @@ object CETCalculator {
       nextCETRangesSoFar: Vector[CETRange],
       nextCETRange: CETRange,
       nextFunc: DLCPayoutCurvePiece,
-      nextFuncIndex: Int
-  )
+      nextFuncIndex: Int)
 
   /** Processes the constant range [currentOutcome, constantTo].
     *
@@ -131,8 +128,7 @@ object CETCalculator {
       function: DLCPayoutCurve,
       currentFunc: DLCPayoutCurvePiece,
       to: Long,
-      currentFuncIndex: Int
-  ): SplitIntoRangesLoopResult = {
+      currentFuncIndex: Int): SplitIntoRangesLoopResult = {
     val (nextCETRangesSoFar, nextCETRange) =
       if (value == prevValue) {
         currentCETRange match {
@@ -174,12 +170,10 @@ object CETCalculator {
         (currentFunc, currentFuncIndex)
       }
 
-    SplitIntoRangesLoopResult(
-      nextCETRangesSoFar,
-      nextCETRange,
-      nextFunc,
-      nextFuncIndex
-    )
+    SplitIntoRangesLoopResult(nextCETRangesSoFar,
+                              nextCETRange,
+                              nextFunc,
+                              nextFuncIndex)
   }
 
   @tailrec
@@ -193,26 +187,23 @@ object CETCalculator {
       currentCETRange: CETRange,
       prevValue: Satoshis,
       currentFunc: DLCPayoutCurvePiece,
-      currentFuncIndex: Int
-  ): Vector[CETRange] = {
+      currentFuncIndex: Int): Vector[CETRange] = {
     if (currentOutcome > to) {
       cetRangesSoFar.:+(currentCETRange)
     } else {
       val value = currentFunc(currentOutcome, rounding, totalCollateral)
 
       def processConstants(constantTo: Long): SplitIntoRangesLoopResult = {
-        processConstantsForSplitIntoRangesLoop(
-          constantTo,
-          value,
-          prevValue,
-          currentCETRange,
-          cetRangesSoFar,
-          currentOutcome,
-          function,
-          currentFunc,
-          to,
-          currentFuncIndex
-        )
+        processConstantsForSplitIntoRangesLoop(constantTo,
+                                               value,
+                                               prevValue,
+                                               currentCETRange,
+                                               cetRangesSoFar,
+                                               currentOutcome,
+                                               function,
+                                               currentFunc,
+                                               to,
+                                               currentFuncIndex)
       }
 
       currentFunc match {
@@ -224,12 +215,10 @@ object CETCalculator {
             math.min(rightEndpoint - 1, to)
           }
 
-          val SplitIntoRangesLoopResult(
-            nextCETRangesSoFar,
-            nextCETRange,
-            nextFunc,
-            nextFuncIndex
-          ) =
+          val SplitIntoRangesLoopResult(nextCETRangesSoFar,
+                                        nextCETRange,
+                                        nextFunc,
+                                        nextFuncIndex) =
             processConstants(constantTo = componentEnd)
 
           splitIntoRangesLoop(
@@ -245,12 +234,10 @@ object CETCalculator {
             currentFuncIndex = nextFuncIndex
           )
         case _: DLCPayoutCurvePiece =>
-          val SplitIntoRangesLoopResult(
-            nextCETRangesSoFar,
-            nextCETRange,
-            nextFunc,
-            nextFuncIndex
-          ) =
+          val SplitIntoRangesLoopResult(nextCETRangesSoFar,
+                                        nextCETRange,
+                                        nextFunc,
+                                        nextFuncIndex) =
             processConstants(constantTo = currentOutcome)
 
           splitIntoRangesLoop(
@@ -271,11 +258,9 @@ object CETCalculator {
 
   /** Searches for an outcome which contains a prefix of digits */
   def searchForPrefix[Outcome](digits: Digits, outcomes: Vector[Outcome])(
-      outcomeToPrefix: Outcome => Digits
-  ): Option[Outcome] = {
+      outcomeToPrefix: Outcome => Digits): Option[Outcome] = {
     val indexOrOverByOne = NumberUtil.search(outcomes, digits, outcomeToPrefix)(
-      NumberUtil.lexicographicalOrdering[Int]
-    )
+      NumberUtil.lexicographicalOrdering[Int])
 
     if (indexOrOverByOne == outcomes.length) {
       if (digits.startsWith(outcomeToPrefix(outcomes.last))) {
@@ -299,13 +284,11 @@ object CETCalculator {
     */
   def searchForNumericOutcome(
       digits: Digits,
-      outcomes: Vector[DLCOutcomeType]
-  ): Option[UnsignedNumericOutcome] = {
+      outcomes: Vector[DLCOutcomeType]): Option[UnsignedNumericOutcome] = {
     searchForPrefix(digits, outcomes) {
       case outcome @ (_: EnumOutcome | _: SignedNumericOutcome) =>
         throw new IllegalArgumentException(
-          s"Expected Numeric Outcome, got $outcome"
-        )
+          s"Expected Numeric Outcome, got $outcome")
       case UnsignedNumericOutcome(digits) => digits
     }.asInstanceOf[Option[UnsignedNumericOutcome]]
   }
@@ -384,8 +367,7 @@ object CETCalculator {
     */
   def middleGrouping(
       firstDigitStart: Int,
-      firstDigitEnd: Int
-  ): Vector[Digits] = {
+      firstDigitEnd: Int): Vector[Digits] = {
     (firstDigitStart + 1).until(firstDigitEnd).toVector.map { firstDigit =>
       Vector(firstDigit)
     }
@@ -399,8 +381,7 @@ object CETCalculator {
       start: Long,
       end: Long,
       base: Int,
-      numDigits: Int
-  ): (Digits, Digits, Digits) = {
+      numDigits: Int): (Digits, Digits, Digits) = {
     val startDigits = NumberUtil.decompose(start, base, numDigits)
     val endDigits = NumberUtil.decompose(end, base, numDigits)
 
@@ -409,11 +390,9 @@ object CETCalculator {
       .takeWhile { case (startDigit, endDigit) => startDigit == endDigit }
       .map(_._1)
 
-    (
-      prefixDigits,
-      startDigits.drop(prefixDigits.length),
-      endDigits.drop(prefixDigits.length)
-    )
+    (prefixDigits,
+     startDigits.drop(prefixDigits.length),
+     endDigits.drop(prefixDigits.length))
   }
 
   /** Runs the compression algorithm with all optimizations on the interval
@@ -423,8 +402,7 @@ object CETCalculator {
       start: Long,
       end: Long,
       base: Int,
-      numDigits: Int
-  ): Vector[Digits] = {
+      numDigits: Int): Vector[Digits] = {
     val (prefixDigits, startDigits, endDigits) =
       separatePrefix(start, end, base, numDigits)
 
@@ -461,8 +439,7 @@ object CETCalculator {
       totalCollateral: Satoshis,
       rounding: RoundingIntervals,
       min: Long,
-      max: Long
-  ): Vector[CETOutcome] = {
+      max: Long): Vector[CETOutcome] = {
     val ranges = splitIntoRanges(min, max, totalCollateral, function, rounding)
 
     ranges.flatMap { range =>
@@ -470,27 +447,21 @@ object CETCalculator {
         case ConstantPayoutRange(indexFrom, indexTo) =>
           groupByIgnoringDigits(indexFrom, indexTo, base, numDigits).map {
             decomp =>
-              CETOutcome(
-                decomp,
-                payout = function(indexFrom, rounding, totalCollateral)
-              )
+              CETOutcome(decomp,
+                         payout =
+                           function(indexFrom, rounding, totalCollateral))
           }
         case VariablePayoutRange(indexFrom, indexTo) =>
           indexFrom.to(indexTo).map { num =>
             val decomp = NumberUtil.decompose(num, base, numDigits)
-            CETOutcome(
-              decomp,
-              payout = function(num, rounding, totalCollateral)
-            )
+            CETOutcome(decomp,
+                       payout = function(num, rounding, totalCollateral))
           }
         case SingletonPayoutRange(index) =>
           val decomp = NumberUtil.decompose(index, base, numDigits)
           Vector(
-            CETOutcome(
-              decomp,
-              payout = function(index, rounding, totalCollateral)
-            )
-          )
+            CETOutcome(decomp,
+                       payout = function(index, rounding, totalCollateral)))
       }
     }
   }
@@ -504,8 +475,7 @@ object CETCalculator {
       numDigits: Int,
       function: DLCPayoutCurve,
       totalCollateral: Satoshis,
-      rounding: RoundingIntervals
-  ): Vector[CETOutcome] = {
+      rounding: RoundingIntervals): Vector[CETOutcome] = {
     val min = 0
     val max = Math.pow(base, numDigits).toLong - 1
 
@@ -515,8 +485,7 @@ object CETCalculator {
   def payoutSample(
       func: Long => Long,
       numDigits: Int,
-      numPoints: Long
-  ): Vector[PiecewisePolynomialEndpoint] = {
+      numPoints: Long): Vector[PiecewisePolynomialEndpoint] = {
     val maxVal = (1L << numDigits) - 1
     0L.until(maxVal, maxVal / numPoints)
       .toVector
@@ -530,8 +499,7 @@ object CETCalculator {
   def payoutSampleByInterval(
       func: Long => Long,
       numDigits: Int,
-      interval: Int
-  ): Vector[PiecewisePolynomialEndpoint] = {
+      interval: Int): Vector[PiecewisePolynomialEndpoint] = {
     val maxVal = (1L << numDigits) - 1
     payoutSample(func, numDigits, maxVal / interval)
   }
@@ -539,12 +507,10 @@ object CETCalculator {
   def lineApprox(
       func: Long => Long,
       numDigits: Int,
-      interval: Int
-  ): DLCPayoutCurve = {
+      interval: Int): DLCPayoutCurve = {
     DLCPayoutCurve.polynomialInterpolate(
       payoutSampleByInterval(func, numDigits, interval),
-      serializationVersion = DLCSerializationVersion.Beta
-    )
+      serializationVersion = DLCSerializationVersion.Beta)
   }
 
   /** Computes all combinations of threshold oracles, preserving order. */
@@ -591,8 +557,7 @@ object CETCalculator {
       start: Long,
       end: Long,
       minFail: Long,
-      numDigits: Int
-  ): Digits = {
+      numDigits: Int): Digits = {
     val leftBound = start - minFail
     val leftBoundDigits = NumberUtil.decompose(leftBound, base = 2, numDigits)
     val rightBound = end + minFail
@@ -615,8 +580,7 @@ object CETCalculator {
       end: Long,
       maxErrorExp: Int,
       minFail: Long,
-      numDigits: Int
-  ): Digits = {
+      numDigits: Int): Digits = {
     val rightBound = end + minFail
     val rightBoundDigits = NumberUtil.decompose(rightBound, base = 2, numDigits)
     val (prefix, halvingDigits) =
@@ -633,8 +597,7 @@ object CETCalculator {
       start: Long,
       maxErrorExp: Int,
       minFail: Long,
-      numDigits: Int
-  ): Digits = {
+      numDigits: Int): Digits = {
     val leftBound = start - minFail
     val leftBoundDigits = NumberUtil.decompose(leftBound, base = 2, numDigits)
     val (prefix, halvingDigits) =
@@ -647,8 +610,7 @@ object CETCalculator {
   private def singleCoveringCETCombinations[T](
       primaryCET: T,
       coverCET: T,
-      numOracles: Int
-  ): Vector[T] = {
+      numOracles: Int): Vector[T] = {
     Vector(primaryCET) ++ Vector.fill(numOracles - 1)(coverCET)
   }
 
@@ -658,8 +620,7 @@ object CETCalculator {
   private def inOrOutCombinations[T](
       in: T,
       out: T,
-      num: Int
-  ): Vector[Vector[T]] = {
+      num: Int): Vector[Vector[T]] = {
     0.until(num).foldLeft(Vector(Vector.empty[T])) {
       case (subCombinations, _) =>
         val firstIn = subCombinations.map(combos => in +: combos)
@@ -676,8 +637,7 @@ object CETCalculator {
       primaryCET: T,
       coverCETInner: T,
       coverCETOuter: T,
-      numOracles: Int
-  ): Vector[Vector[T]] = {
+      numOracles: Int): Vector[Vector[T]] = {
     val combinations =
       inOrOutCombinations(coverCETInner, coverCETOuter, numOracles - 1)
 
@@ -691,14 +651,11 @@ object CETCalculator {
   private def doubleCoveringRestrictedCETCombinations[T](
       coverCETInner: T,
       coverCETOuter: T,
-      numOracles: Int
-  ): Vector[Vector[T]] = {
-    doubleCoveringCETCombinations(
-      coverCETInner,
-      coverCETInner,
-      coverCETOuter,
-      numOracles
-    ).tail
+      numOracles: Int): Vector[Vector[T]] = {
+    doubleCoveringCETCombinations(coverCETInner,
+                                  coverCETInner,
+                                  coverCETOuter,
+                                  numOracles).tail
   }
 
   /** Given the primary oracle's CET, computes the set of CETs needed for two
@@ -721,12 +678,9 @@ object CETCalculator {
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
-      numOracles: Int
-  ): Vector[MultiOracleDigits] = {
-    require(
-      numOracles > 1,
-      "For single oracle, just use your cetDigits parameter"
-    )
+      numOracles: Int): Vector[MultiOracleDigits] = {
+    require(numOracles > 1,
+            "For single oracle, just use your cetDigits parameter")
 
     val maxNum = (1L << numDigits) - 1
     val maxError = 1L << maxErrorExp
@@ -779,12 +733,10 @@ object CETCalculator {
           Vector(multiOracleDigits)
         } else {
           val doubleCovering: Vector[Vector[Digits]] =
-            doubleCoveringCETCombinations(
-              cetDigits,
-              coverCET,
-              leftCET,
-              numOracles
-            )
+            doubleCoveringCETCombinations(cetDigits,
+                                          coverCET,
+                                          leftCET,
+                                          numOracles)
           doubleCovering
         }
       } else if (end > rightErrorCET - minFail) { // case: Right CET
@@ -808,18 +760,15 @@ object CETCalculator {
           Vector(singleCover)
         } else {
           val doubleCovering: Vector[Vector[Digits]] =
-            doubleCoveringCETCombinations(
-              cetDigits,
-              coverCET,
-              rightCET,
-              numOracles
-            )
+            doubleCoveringCETCombinations(cetDigits,
+                                          coverCET,
+                                          rightCET,
+                                          numOracles)
           doubleCovering
         }
       } else {
         throw new RuntimeException(
-          s"Unknown CET with case: $cetDigits, $numDigits, $maxErrorExp, $minFailExp"
-        )
+          s"Unknown CET with case: $cetDigits, $numDigits, $maxErrorExp, $minFailExp")
       }
     } else { // case: Large CET
       val builder = Vector.newBuilder[MultiOracleDigits]
@@ -844,11 +793,9 @@ object CETCalculator {
         }
 
         val doubleCovering: Vector[MultiOracleDigits] =
-          doubleCoveringRestrictedCETCombinations(
-            leftInnerCET,
-            leftCET,
-            numOracles
-          )
+          doubleCoveringRestrictedCETCombinations(leftInnerCET,
+                                                  leftCET,
+                                                  numOracles)
 
         builder.++=(doubleCovering)
         builder.result()
@@ -886,11 +833,9 @@ object CETCalculator {
           numToVec(end + 1, numDigits, minFailExp)
         }
 
-        val doubleCover = doubleCoveringRestrictedCETCombinations(
-          rightInnerCET,
-          rightCET,
-          numOracles
-        )
+        val doubleCover = doubleCoveringRestrictedCETCombinations(rightInnerCET,
+                                                                  rightCET,
+                                                                  numOracles)
         builder.++=(doubleCover)
       }
 
@@ -923,19 +868,16 @@ object CETCalculator {
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
-      numOracles: Int
-  ): Vector[MultiOracleOutcome] = {
+      numOracles: Int): Vector[MultiOracleOutcome] = {
     require(minFailExp < maxErrorExp)
 
     primaryCETs.flatMap { case CETOutcome(cetDigits, payout) =>
-      computeCoveringCETsBinary(
-        numDigits,
-        cetDigits,
-        maxErrorExp,
-        minFailExp,
-        maximizeCoverage,
-        numOracles
-      )
+      computeCoveringCETsBinary(numDigits,
+                                cetDigits,
+                                maxErrorExp,
+                                minFailExp,
+                                maximizeCoverage,
+                                numOracles)
         .map(MultiOracleOutcome(_, payout))
     }
   }
@@ -971,17 +913,14 @@ object CETCalculator {
       maxErrorExp: Int,
       minFailExp: Int,
       maximizeCoverage: Boolean,
-      numOracles: Int
-  ): Vector[MultiOracleOutcome] = {
+      numOracles: Int): Vector[MultiOracleOutcome] = {
     val primaryCETs =
       computeCETs(base = 2, numDigits, function, totalCollateral, rounding)
-    computeMultiOracleCETsBinary(
-      numDigits,
-      primaryCETs,
-      maxErrorExp,
-      minFailExp,
-      maximizeCoverage,
-      numOracles
-    )
+    computeMultiOracleCETsBinary(numDigits,
+                                 primaryCETs,
+                                 maxErrorExp,
+                                 minFailExp,
+                                 maximizeCoverage,
+                                 numOracles)
   }
 }

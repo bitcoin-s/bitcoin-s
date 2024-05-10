@@ -34,8 +34,7 @@ case class EventDb(
     attestationOpt: Option[FieldElement],
     outcomeOpt: Option[String],
     announcementSignature: SchnorrDigitalSignature,
-    eventDescriptorTLV: EventDescriptorTLV
-) {
+    eventDescriptorTLV: EventDescriptorTLV) {
 
   lazy val sigOpt: Option[SchnorrDigitalSignature] =
     attestationOpt.map(SchnorrDigitalSignature(nonce, _))

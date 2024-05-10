@@ -10,12 +10,10 @@ case class RValueDb(
     accountCoin: HDCoinType,
     accountIndex: Int,
     chainType: Int,
-    keyIndex: Int
-) {
+    keyIndex: Int) {
 
   val path: BIP32Path = BIP32Path.fromString(
-    s"m/${purpose.constant}'/${accountCoin.toInt}'/$accountIndex'/$chainType'/$keyIndex'"
-  )
+    s"m/${purpose.constant}'/${accountCoin.toInt}'/$accountIndex'/$chainType'/$keyIndex'")
 }
 
 object RValueDbHelper {
@@ -25,8 +23,7 @@ object RValueDbHelper {
       eventName: String,
       account: HDAccount,
       chainType: Int,
-      keyIndex: Int
-  ): RValueDb = {
+      keyIndex: Int): RValueDb = {
     RValueDb(
       nonce = nonce,
       eventName = eventName,

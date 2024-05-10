@@ -25,17 +25,12 @@ trait PeerManagerApi {
   /** Gossips the given message to all peers except the excluded peer. If None
     * given as excluded peer, gossip message to all peers
     */
-  def gossipMessage(
-      msg: NetworkPayload,
-      excludedPeerOpt: Option[Peer]
-  ): Unit
+  def gossipMessage(msg: NetworkPayload, excludedPeerOpt: Option[Peer]): Unit
 
   /** Gossips the [[org.bitcoins.core.p2p.GetHeadersMessage]] to all of our
     * peers to attempt ot get the best block headers
     */
-  def gossipGetHeadersMessage(
-      hashes: Vector[DoubleSha256DigestBE]
-  ): Unit
+  def gossipGetHeadersMessage(hashes: Vector[DoubleSha256DigestBE]): Unit
 
   def sendToRandomPeer(payload: NetworkPayload): Unit
 }

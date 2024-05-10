@@ -11,10 +11,8 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class LnHumanReadablePart extends Bech32HumanReadablePart {
-  require(
-    amount.isEmpty || amount.get.toBigInt > 0,
-    s"Invoice amount must be greater then 0, got $amount"
-  )
+  require(amount.isEmpty || amount.get.toBigInt > 0,
+          s"Invoice amount must be greater then 0, got $amount")
 
   def network: LnParams
 
@@ -71,8 +69,7 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
 
   def apply(
       network: NetworkParameters,
-      amount: LnCurrencyUnit
-  ): LnHumanReadablePart = {
+      amount: LnCurrencyUnit): LnHumanReadablePart = {
     val lnNetwork = LnParams.fromNetworkParameters(network)
     LnHumanReadablePart(lnNetwork, Some(amount))
   }
@@ -99,15 +96,13 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     */
   def apply(
       network: LnParams,
-      amount: Option[LnCurrencyUnit]
-  ): LnHumanReadablePart = {
+      amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
     fromParamsAmount(network, amount)
   }
 
   def fromParamsAmount(
       network: LnParams,
-      amount: Option[LnCurrencyUnit]
-  ): LnHumanReadablePart = {
+      amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
     network match {
       case LnParams.LnBitcoinMainNet => lnbc(amount)
       case LnParams.LnBitcoinTestNet => lntb(amount)
@@ -131,9 +126,7 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     if (lnParamsOpt.isEmpty) {
       Failure(
         new IllegalArgumentException(
-          s"Could not parse a valid network prefix, got $bech32"
-        )
-      )
+          s"Could not parse a valid network prefix, got $bech32"))
     } else {
 
       val lnParams = lnParamsOpt.get
@@ -146,9 +139,7 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
         Failure(
           new IllegalArgumentException(
             s"Parsed an amount, " +
-              s"but could not convert to a valid currency, got: $amountString"
-          )
-        )
+              s"but could not convert to a valid currency, got: $amountString"))
       } else {
         Success(LnHumanReadablePart(lnParams, amount))
       }

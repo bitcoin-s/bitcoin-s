@@ -67,13 +67,12 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def processTransaction(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[WalletApi]
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[WalletApi]
 
   def processTransactions(
       transactions: Vector[Transaction],
-      blockHashOpt: Option[DoubleSha256DigestBE]
-  )(implicit ec: ExecutionContext): Future[WalletApi] = {
+      blockHashOpt: Option[DoubleSha256DigestBE])(implicit
+      ec: ExecutionContext): Future[WalletApi] = {
     transactions.foldLeft(Future.successful(this)) { case (wallet, tx) =>
       wallet.flatMap(_.processTransaction(tx, blockHashOpt))
     }
@@ -88,8 +87,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
       blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult]
+      newTags: Vector[AddressTag]): Future[ProcessTxResult]
 
   /** Processes the give block, updating our DB state if it's relevant to us.
     *
@@ -108,8 +106,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean
-  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
+      markAsReserved: Boolean)
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
 
   def listTransactions(): Future[Vector[TransactionDb]]
 
@@ -131,9 +129,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   }
 
   /** Gets the sum of all UTXOs in this wallet with the address tag */
-  def getBalance(
-      tag: AddressTag
-  )(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
+  def getBalance(tag: AddressTag)(implicit
+      ec: ExecutionContext): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance(tag)
     val unconfirmedF = getUnconfirmedBalance(tag)
 
@@ -176,15 +173,13 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def watchScriptPubKey(scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb]
 
   def markUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]
-  ): Future[Vector[SpendingInfoDb]]
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
 
   /** Marks all utxos that are ours in this transactions as reserved */
   def markUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]]
 
   def unmarkUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]
-  ): Future[Vector[SpendingInfoDb]]
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
 
   /** Unmarks all utxos that are ours in this transactions indicating they are
     * no longer reserved
@@ -213,8 +208,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getNewAddress(
       addressType: AddressType,
-      tags: Vector[AddressTag]
-  ): Future[BitcoinAddress]
+      tags: Vector[AddressTag]): Future[BitcoinAddress]
 
   def getNewAddress(tags: Vector[AddressTag]): Future[BitcoinAddress]
 
@@ -239,12 +233,10 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getAddressInfo(
       spendingInfoDb: SpendingInfoDb,
-      networkParameters: NetworkParameters
-  ): Future[Option[AddressInfo]] = {
+      networkParameters: NetworkParameters): Future[Option[AddressInfo]] = {
     val addressT = BitcoinAddress.fromScriptPubKeyT(
       spk = spendingInfoDb.output.scriptPubKey,
-      np = networkParameters
-    )
+      np = networkParameters)
     addressT match {
       case Success(addr) =>
         getAddressInfo(addr)
@@ -262,8 +254,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getAddressTags(
       address: BitcoinAddress,
-      tagType: AddressTagType
-  ): Future[Vector[AddressTagDb]]
+      tagType: AddressTagType): Future[Vector[AddressTagDb]]
 
   def getAddressTags(): Future[Vector[AddressTagDb]]
 
@@ -275,18 +266,15 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def dropAddressTagType(
       address: BitcoinAddress,
-      addressTagType: AddressTagType
-  ): Future[Int]
+      addressTagType: AddressTagType): Future[Int]
 
   def dropAddressTagName(
       address: BitcoinAddress,
-      tagName: AddressTagName
-  ): Future[Int]
+      tagName: AddressTagName): Future[Int]
 
   /** Generates a new change address */
   protected[wallet] def getNewChangeAddress()(implicit
-      ec: ExecutionContext
-  ): Future[BitcoinAddress]
+      ec: ExecutionContext): Future[BitcoinAddress]
 
   def keyManager: KeyManagerApi
 
@@ -302,8 +290,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
@@ -320,8 +307,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
@@ -336,13 +322,11 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   /** Sends the entire wallet balance to the given address */
   def sweepWallet(address: BitcoinAddress)(implicit
-      ec: ExecutionContext
-  ): Future[Transaction] = sweepWallet(address, None)
+      ec: ExecutionContext): Future[Transaction] = sweepWallet(address, None)
 
   /** Sends the entire wallet balance to the given address */
   def sweepWallet(address: BitcoinAddress, feeRateOpt: Option[FeeUnit])(implicit
-      ec: ExecutionContext
-  ): Future[Transaction] = {
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sweepWallet(address, feeRate)
@@ -351,15 +335,14 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   /** Sends the entire wallet balance to the given address */
   def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
-      ec: ExecutionContext
-  ): Future[Transaction]
+      ec: ExecutionContext): Future[Transaction]
 
   def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      algo: CoinSelectionAlgo
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      algo: CoinSelectionAlgo)(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendWithAlgo(
       address: BitcoinAddress,
@@ -380,8 +363,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def sendToAddress(
       address: BitcoinAddress,
@@ -400,8 +382,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToOutputs(outputs, feeRate)
@@ -409,16 +391,15 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   }
 
   def sendToOutputs(outputs: Vector[TransactionOutput], feeRate: FeeUnit)(
-      implicit ec: ExecutionContext
-  ): Future[Transaction]
+      implicit ec: ExecutionContext): Future[Transaction]
 
   /** Sends funds to each address
     */
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddresses(addresses, amounts, feeRate)
@@ -428,33 +409,29 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def bumpFeeRBF(
       txId: DoubleSha256DigestBE,
-      newFeeRate: FeeUnit
-  ): Future[Transaction]
+      newFeeRate: FeeUnit): Future[Transaction]
 
   /** Bumps the fee of the parent transaction with a new child transaction with
     * the given fee rate
     */
   def bumpFeeCPFP(
       txId: DoubleSha256DigestBE,
-      feeRate: FeeUnit
-  ): Future[Transaction]
+      feeRate: FeeUnit): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction]
+      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
 
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
       tx <- makeOpReturnCommitment(message, hashMessage, feeRate)
@@ -477,28 +454,23 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def getInfo(): Future[WalletInfo]
 
   def findByOutPoints(
-      outPoints: Vector[TransactionOutPoint]
-  ): Future[Vector[SpendingInfoDb]]
+      outPoints: Vector[TransactionOutPoint]): Future[Vector[SpendingInfoDb]]
 
-  def findByOutPoint(
-      outPoint: TransactionOutPoint
-  )(implicit ec: ExecutionContext): Future[Option[SpendingInfoDb]] = {
+  def findByOutPoint(outPoint: TransactionOutPoint)(implicit
+      ec: ExecutionContext): Future[Option[SpendingInfoDb]] = {
     findByOutPoints(Vector(outPoint)).map(_.headOption)
   }
 
   def findByTxIds(
-      txIds: Vector[DoubleSha256DigestBE]
-  ): Future[Vector[TransactionDb]]
+      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[TransactionDb]]
 
-  def findByTxId(
-      txId: DoubleSha256DigestBE
-  )(implicit ec: ExecutionContext): Future[Option[TransactionDb]] = {
+  def findByTxId(txId: DoubleSha256DigestBE)(implicit
+      ec: ExecutionContext): Future[Option[TransactionDb]] = {
     findByTxIds(Vector(txId)).map(_.headOption)
   }
 
-  def findByTxId(
-      txId: DoubleSha256Digest
-  )(implicit ec: ExecutionContext): Future[Option[TransactionDb]] = {
+  def findByTxId(txId: DoubleSha256Digest)(implicit
+      ec: ExecutionContext): Future[Option[TransactionDb]] = {
     findByTxId(txId.flip)
   }
 
@@ -507,8 +479,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]]
 
   def findByScriptPubKey(
-      scriptPubKey: ScriptPubKey
-  ): Future[Vector[SpendingInfoDb]]
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]]
 }
 
 case class WalletInfo(
@@ -519,8 +490,7 @@ case class WalletInfo(
     height: Int,
     blockHash: DoubleSha256DigestBE,
     rescan: Boolean,
-    imported: Boolean
-)
+    imported: Boolean)
 
 /** An HDWallet that uses Neutrino to sync */
 trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi

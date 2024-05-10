@@ -10,8 +10,7 @@ case class FundRawTxHelper[T <: RawTxFinalizer](
     txBuilderWithFinalizer: RawTxBuilderWithFinalizer[T],
     scriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
     feeRate: FeeUnit,
-    reservedUTXOsCallbackF: Future[Unit]
-) {
+    reservedUTXOsCallbackF: Future[Unit]) {
 
   /** Produces the unsigned transaction built by fundrawtransaction */
   def unsignedTx: Transaction = txBuilderWithFinalizer.buildTx()

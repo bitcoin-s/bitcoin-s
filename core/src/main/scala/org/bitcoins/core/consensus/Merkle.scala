@@ -38,8 +38,7 @@ trait Merkle {
     transactions match {
       case Nil =>
         throw new IllegalArgumentException(
-          "We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx"
-        )
+          "We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
       case h +: Nil => h.txId
       case _ +: _ =>
         val leafs = transactions.map(tx => Leaf(tx.txId))
@@ -59,15 +58,13 @@ trait Merkle {
   @tailrec
   final def build(
       subTrees: Seq[MerkleTree],
-      accum: Seq[MerkleTree]
-  ): MerkleTree =
+      accum: Seq[MerkleTree]): MerkleTree =
     subTrees match {
       case Nil =>
         if (accum.size == 1) accum.head
         else if (accum.isEmpty)
           throw new IllegalArgumentException(
-            "Should never have sub tree size of zero, this implies there was zero hashes given"
-          )
+            "Should never have sub tree size of zero, this implies there was zero hashes given")
         else build(accum.reverse, Nil)
       case h +: h1 +: t =>
         val newTree = computeTree(h, h1)

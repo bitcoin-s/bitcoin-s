@@ -33,16 +33,14 @@ case class DLCCETBuilder(
     acceptFinalSPK: ScriptPubKey,
     acceptSerialId: UInt64,
     timeouts: DLCTimeouts,
-    fundingOutputRef: OutputReference
-) {
+    fundingOutputRef: OutputReference) {
 
   private val fundingOutPoint = fundingOutputRef.outPoint
 
   private val fundingInput = TransactionInput(
     fundingOutPoint,
     EmptyScriptSignature,
-    TransactionConstants.disableRBFSequence
-  )
+    TransactionConstants.disableRBFSequence)
 
   private val fundingKeys =
     Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
@@ -71,19 +69,15 @@ case class DLCCETBuilder(
     val (offerPayout, acceptPayout) = contractInfo.getPayouts(outcome)
 
     val outputsWithSerialId =
-      Vector(
-        (cetOfferOutput(offerPayout), offerSerialId),
-        (cetAcceptOutput(acceptPayout), acceptSerialId)
-      )
+      Vector((cetOfferOutput(offerPayout), offerSerialId),
+             (cetAcceptOutput(acceptPayout), acceptSerialId))
 
     val outputs = sortAndFilterOutputs(outputsWithSerialId)
 
-    WitnessTransaction(
-      TransactionConstants.validLockVersion,
-      Vector(fundingInput),
-      outputs,
-      timeouts.contractMaturity.toUInt32,
-      witness
-    )
+    WitnessTransaction(TransactionConstants.validLockVersion,
+                       Vector(fundingInput),
+                       outputs,
+                       timeouts.contractMaturity.toUInt32,
+                       witness)
   }
 }

@@ -25,51 +25,44 @@ object RawTxSigner {
       : (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean =
     (_, _) => true
 
-  def feeInvariant(
-      expectedFeeRate: FeeUnit
-  ): (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean =
+  def feeInvariant(expectedFeeRate: FeeUnit)
+      : (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean =
     addFeeRateInvariant(expectedFeeRate, emptyInvariant)
 
   private def addFeeRateInvariant(
       expectedFeeRate: FeeUnit,
       userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction
-      ) => Boolean
-  ): (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean = {
+          Transaction) => Boolean)
+      : (Vector[ScriptSignatureParams[InputInfo]], Transaction) => Boolean = {
     (utxoInfos, signedTx) =>
       {
         userInvariants(utxoInfos, signedTx) &&
         TxUtil
-          .sanityChecks(
-            isSigned = true,
-            inputInfos = utxoInfos.map(_.inputInfo),
-            expectedFeeRate = expectedFeeRate,
-            tx = signedTx
-          )
+          .sanityChecks(isSigned = true,
+                        inputInfos = utxoInfos.map(_.inputInfo),
+                        expectedFeeRate = expectedFeeRate,
+                        tx = signedTx)
           .isSuccess
       }
   }
 
   def sign(
       utx: Transaction,
-      utxoInfos: Vector[ScriptSignatureParams[InputInfo]]
-  ): Transaction = {
+      utxoInfos: Vector[ScriptSignatureParams[InputInfo]]): Transaction = {
     sign(utx, utxoInfos, emptyInvariant, dummySign = false)
   }
 
   def sign(
       txWithInfo: FinalizedTxWithSigningInfo,
-      expectedFeeRate: FeeUnit
-  ): Transaction = {
+      expectedFeeRate: FeeUnit): Transaction = {
     sign(txWithInfo.finalizedTx, txWithInfo.infos, expectedFeeRate)
   }
 
   def sign(
       utx: Transaction,
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
-      expectedFeeRate: FeeUnit
-  ): Transaction = {
+      expectedFeeRate: FeeUnit): Transaction = {
 
     val invariants = feeInvariant(expectedFeeRate)
 
@@ -82,9 +75,7 @@ object RawTxSigner {
       expectedFeeRate: FeeUnit,
       userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction
-      ) => Boolean
-  ): Transaction = {
+          Transaction) => Boolean): Transaction = {
 
     val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
 
@@ -96,18 +87,14 @@ object RawTxSigner {
       expectedFeeRate: FeeUnit,
       userInvariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction
-      ) => Boolean
-  ): Transaction = {
+          Transaction) => Boolean): Transaction = {
 
     val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
 
-    sign(
-      txWithInfo.finalizedTx,
-      txWithInfo.infos,
-      invariants,
-      dummySign = false
-    )
+    sign(txWithInfo.finalizedTx,
+         txWithInfo.infos,
+         invariants,
+         dummySign = false)
   }
 
   def sign(
@@ -115,29 +102,21 @@ object RawTxSigner {
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction
-      ) => Boolean,
-      dummySign: Boolean
-  ): Transaction = {
+          Transaction) => Boolean,
+      dummySign: Boolean): Transaction = {
     require(
       utxoInfos.length == utx.inputs.length,
-      s"Must provide exactly one UTXOSatisfyingInfo per input, ${utxoInfos.length} != ${utx.inputs.length}"
-    )
-    require(
-      utxoInfos.distinct.length == utxoInfos.length,
-      "All UTXOSatisfyingInfos must be unique. "
-    )
-    require(
-      utxoInfos.forall(utxo =>
-        utx.inputs.exists(_.previousOutput == utxo.outPoint)),
-      "All UTXOSatisfyingInfos must correspond to an input."
-    )
+      s"Must provide exactly one UTXOSatisfyingInfo per input, ${utxoInfos.length} != ${utx.inputs.length}")
+    require(utxoInfos.distinct.length == utxoInfos.length,
+            "All UTXOSatisfyingInfos must be unique. ")
+    require(utxoInfos.forall(utxo =>
+              utx.inputs.exists(_.previousOutput == utxo.outPoint)),
+            "All UTXOSatisfyingInfos must correspond to an input.")
 
     val signedTx =
       if (
         utxoInfos.exists(
-          _.inputInfo.isInstanceOf[UnassignedSegwitNativeInputInfo]
-        )
+          _.inputInfo.isInstanceOf[UnassignedSegwitNativeInputInfo])
       ) {
         throw TxBuilderError.NoSigner.exception
       } else {
@@ -172,13 +151,11 @@ object RawTxSigner {
         txWitness match {
           case EmptyWitness(_) => btx
           case _: TransactionWitness =>
-            WitnessTransaction(
-              btx.version,
-              btx.inputs,
-              btx.outputs,
-              btx.lockTime,
-              txWitness
-            )
+            WitnessTransaction(btx.version,
+                               btx.inputs,
+                               btx.outputs,
+                               btx.lockTime,
+                               txWitness)
         }
       }
 

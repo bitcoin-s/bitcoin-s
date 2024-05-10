@@ -25,18 +25,15 @@ object FilterType extends Factory[FilterType] with StringFactory[FilterType] {
       case Basic.bytes => Basic
       case other: ByteVector =>
         throw new IllegalArgumentException(
-          s"'${other.toHex}' is not a known filter type"
-        )
+          s"'${other.toHex}' is not a known filter type")
     }
 
   /** Currently the only defined filter type */
-  final case object Basic extends FilterType {
+  case object Basic extends FilterType {
     val bytes: ByteVector = hex"0x00"
 
     val M: UInt64 = UInt64(784931)
     val P: UInt8 = UInt8(19)
-
-    override def toString: String = "basic"
   }
 
   def getCode(filterType: FilterType): Short =
@@ -44,8 +41,7 @@ object FilterType extends Factory[FilterType] with StringFactory[FilterType] {
       case Some(code) => code
       case None =>
         throw new IllegalArgumentException(
-          s"Unknown filter type: ${filterType}"
-        )
+          s"Unknown filter type: ${filterType}")
     }
 
   def byCode(code: Short): FilterType =

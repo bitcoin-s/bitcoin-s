@@ -68,8 +68,7 @@ object P2WPKHWitnessV0 {
     P2WPKHWitnessV0Impl(stack)
 
   private[bitcoins] def apply(
-      pubKeyBytes: ECPublicKeyBytes
-  ): P2WPKHWitnessV0 = {
+      pubKeyBytes: ECPublicKeyBytes): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(pubKeyBytes, EmptyDigitalSignature)
   }
 
@@ -79,15 +78,13 @@ object P2WPKHWitnessV0 {
 
   private[bitcoins] def apply(
       publicKeyBytes: ECPublicKeyBytes,
-      signature: ECDigitalSignature
-  ): P2WPKHWitnessV0 = {
+      signature: ECDigitalSignature): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(Seq(publicKeyBytes.bytes, signature.bytes))
   }
 
   def apply(
       publicKey: ECPublicKey,
-      signature: ECDigitalSignature
-  ): P2WPKHWitnessV0 = {
+      signature: ECDigitalSignature): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(publicKey.toPublicKeyBytes(), signature)
   }
 
@@ -100,8 +97,7 @@ object P2WPKHWitnessV0 {
           _: P2PKScriptSignature | _: P2SHScriptSignature |
           TrivialTrueScriptSignature | EmptyScriptSignature) =>
         throw new IllegalArgumentException(
-          s"Expected P2PKHScriptSignature, got $x"
-        )
+          s"Expected P2PKHScriptSignature, got $x")
     }
 }
 
@@ -158,8 +154,7 @@ object P2WSHWitnessV0 {
 
   def apply(
       spk: RawScriptPubKey,
-      scriptSig: ScriptSignature
-  ): P2WSHWitnessV0 = {
+      scriptSig: ScriptSignature): P2WSHWitnessV0 = {
     // need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
     // remove pushops from scriptSig
     val minimalIf = BitcoinScriptUtil.minimalIfOp(scriptSig.asm)
@@ -266,11 +261,11 @@ object TaprootWitness extends Factory[TaprootWitness] {
 }
 
 /** Spending a taproot output via the key path spend */
-case class TaprootKeyPath private (
+case class TaprootKeyPath(
     signature: SchnorrDigitalSignature,
     hashTypeOpt: Option[HashType],
-    annexOpt: Option[ByteVector]
-) extends TaprootWitness {
+    annexOpt: Option[ByteVector])
+    extends TaprootWitness {
 
   val hashType: HashType = hashTypeOpt.getOrElse(HashType.sigHashDefault)
 
@@ -302,8 +297,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
   def apply(
       signature: SchnorrDigitalSignature,
       hashType: HashType,
-      annexOpt: Option[ByteVector]
-  ): TaprootKeyPath = {
+      annexOpt: Option[ByteVector]): TaprootKeyPath = {
     if (hashType == HashType.sigHashDefault) {
       new TaprootKeyPath(signature, None, annexOpt)
     } else {
@@ -314,8 +308,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
   def apply(
       signature: SchnorrDigitalSignature,
       hashTypeOpt: Option[HashType],
-      annexOpt: Option[ByteVector]
-  ): TaprootKeyPath = {
+      annexOpt: Option[ByteVector]): TaprootKeyPath = {
     if (hashTypeOpt.contains(HashType.sigHashDefault)) {
       new TaprootKeyPath(signature, None, annexOpt)
     } else {
@@ -325,8 +318,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
 
   def apply(
       signature: SchnorrDigitalSignature,
-      annexOpt: Option[ByteVector]
-  ): TaprootKeyPath = {
+      annexOpt: Option[ByteVector]): TaprootKeyPath = {
     TaprootKeyPath(signature, None, annexOpt)
   }
 
@@ -338,8 +330,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
     val hasAnnex = TaprootScriptPath.hasAnnex(vec)
     require(
       vec.length == 1 || (hasAnnex && vec.length == 2),
-      s"Taproot keypath can only have at most 2 stack elements, got=${vec.length}"
-    )
+      s"Taproot keypath can only have at most 2 stack elements, got=${vec.length}")
 
     val annexOpt = {
       if (hasAnnex) {
@@ -367,8 +358,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
       new TaprootKeyPath(sig, Some(hashType), annexOpt)
     } else {
       sys.error(
-        s"Unknown sig bytes length, should be 64 or 65, got=${sigBytes.length}"
-      )
+        s"Unknown sig bytes length, should be 64 or 65, got=${sigBytes.length}")
     }
 
     keyPath
@@ -388,10 +378,8 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
 
 /** Spending a taproot output via the script path */
 case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
-  require(
-    TaprootScriptPath.isValid(stack),
-    s"Invalid witness stack for TaprootScriptPath, got=$stack"
-  )
+  require(TaprootScriptPath.isValid(stack),
+          s"Invalid witness stack for TaprootScriptPath, got=$stack")
 
   val controlBlock: TapscriptControlBlock = {
     if (TaprootScriptPath.hasAnnex(stack)) {
@@ -489,8 +477,7 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
   def apply(
       controlBlock: TapscriptControlBlock,
       annexOpt: Option[ByteVector],
-      spk: RawScriptPubKey
-  ): TaprootScriptPath = {
+      spk: RawScriptPubKey): TaprootScriptPath = {
     annexOpt match {
       case Some(annex) =>
         fromStack(Vector(annex, controlBlock.bytes, spk.asmBytes))
@@ -502,17 +489,14 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
   def verifyTaprootCommitment(
       controlBlock: ControlBlock,
       program: TaprootScriptPubKey,
-      tapLeafHash: Sha256Digest
-  ): Boolean = {
+      tapLeafHash: Sha256Digest): Boolean = {
     val internalPubKey = controlBlock.p
     val merkleRoot = computeTaprootMerkleRoot(controlBlock, tapLeafHash)
 
     val parity = (controlBlock.bytes.head & 1) == 1
-    program.pubKey.checkTapTweak(
-      internal = internalPubKey,
-      merkleRootOpt = Some(merkleRoot),
-      parity = parity
-    )
+    program.pubKey.checkTapTweak(internal = internalPubKey,
+                                 merkleRootOpt = Some(merkleRoot),
+                                 parity = parity)
   }
 
   /** Computes the hash of the script that is a leaf in the tapscript tree
@@ -537,8 +521,7 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
     */
   def computeTaprootMerkleRoot(
       controlBlock: ControlBlock,
-      tapLeafHash: Sha256Digest
-  ): Sha256Digest = {
+      tapLeafHash: Sha256Digest): Sha256Digest = {
     val pathLen =
       (controlBlock.bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) / TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE
     var k = tapLeafHash

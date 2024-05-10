@@ -51,20 +51,17 @@ case class RawTxBuilder() {
 
   /** Returns a RawTxBuilderResult ready for a RawTxFinalizer. */
   def result(): RawTxBuilderResult = {
-    RawTxBuilderResult(
-      version,
-      inputsBuilder.result(),
-      outputsBuilder.result(),
-      lockTime
-    )
+    RawTxBuilderResult(version,
+                       inputsBuilder.result(),
+                       outputsBuilder.result(),
+                       lockTime)
   }
 
   /** Returns a RawTxBuilderWithFinalizer where building can continue and where
     * buildTx can be called once building is completed.
     */
   def setFinalizer[F <: RawTxFinalizer](
-      finalizer: F
-  ): RawTxBuilderWithFinalizer[F] = {
+      finalizer: F): RawTxBuilderWithFinalizer[F] = {
     RawTxBuilderWithFinalizer(this, finalizer)
   }
 
@@ -113,9 +110,8 @@ case class RawTxBuilder() {
   /** Adds a collection of inputs and/or outputs to the input and/or output
     * lists
     */
-  @inline final def ++=[T >: TransactionInput with TransactionOutput](
-      inputsOrOutputs: Iterable[T]
-  ): this.type = {
+  @inline final def ++=[T >: TransactionInput & TransactionOutput](
+      inputsOrOutputs: Iterable[T]): this.type = {
     val vec = inputsOrOutputs.iterator.toVector
     val inputs = vec.collect { case input: TransactionInput =>
       input
@@ -149,8 +145,7 @@ case class RawTxBuilder() {
   */
 case class RawTxBuilderWithFinalizer[F <: RawTxFinalizer](
     builder: RawTxBuilder,
-    finalizer: F
-) {
+    finalizer: F) {
 
   /** Completes the builder and finalizes the result */
   def buildTx(): Transaction = {
@@ -171,9 +166,8 @@ case class RawTxBuilderWithFinalizer[F <: RawTxFinalizer](
     this
   }
 
-  @inline final def ++=[T >: TransactionInput with TransactionOutput](
-      inputsOrOutputs: Iterable[T]
-  ): this.type = {
+  @inline final def ++=[T >: TransactionInput & TransactionOutput](
+      inputsOrOutputs: Iterable[T]): this.type = {
     builder ++= inputsOrOutputs
     this
   }

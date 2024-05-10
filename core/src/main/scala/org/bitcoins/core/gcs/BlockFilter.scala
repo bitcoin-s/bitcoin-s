@@ -34,8 +34,7 @@ object BlockFilter {
     */
   def apply(
       block: Block,
-      prevOutputScripts: Vector[ScriptPubKey]
-  ): GolombFilter = {
+      prevOutputScripts: Vector[ScriptPubKey]): GolombFilter = {
     val keyBytes: ByteVector = block.blockHeader.hash.bytes.take(16)
 
     val key: SipHashKey = SipHashKey(keyBytes)
@@ -55,20 +54,17 @@ object BlockFilter {
 
   def fromBytes(
       bytes: ByteVector,
-      blockHash: DoubleSha256Digest
-  ): GolombFilter = {
+      blockHash: DoubleSha256Digest): GolombFilter = {
     val n = CompactSizeUInt.fromBytes(bytes)
     val filterBytes = bytes.drop(n.bytes.length)
     val keyBytes: ByteVector = blockHash.bytes.take(16)
     val key: SipHashKey = SipHashKey(keyBytes)
 
-    GolombFilter(
-      key,
-      FilterType.Basic.M,
-      FilterType.Basic.P,
-      n,
-      filterBytes.toBitVector
-    )
+    GolombFilter(key,
+                 FilterType.Basic.M,
+                 FilterType.Basic.P,
+                 n,
+                 filterBytes.toBitVector)
   }
 
   def fromHex(hex: String, blockHash: DoubleSha256Digest): GolombFilter = {

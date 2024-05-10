@@ -17,10 +17,8 @@ trait RawNotFoundMessageSerializer
     // and NotFoundMessages have the same structure, therefore we can piggy back
     // off of the serializer used by InventoryMessage
     val inventoryMessage = InventoryMessage(bytes)
-    NotFoundMessage(
-      inventoryMessage.inventoryCount,
-      inventoryMessage.inventories
-    )
+    NotFoundMessage(inventoryMessage.inventoryCount,
+                    inventoryMessage.inventories)
 
   }
 
@@ -28,10 +26,8 @@ trait RawNotFoundMessageSerializer
     // Since InventoryMessages and NotFoundMessages have the same format
     // we can just create an inventory message then piggy back off of the
     // serializer used by inventory message
-    val inventoryMessage = InventoryMessage(
-      notFoundMessage.inventoryCount,
-      notFoundMessage.inventories
-    )
+    val inventoryMessage = InventoryMessage(notFoundMessage.inventoryCount,
+                                            notFoundMessage.inventories)
     inventoryMessage.bytes
   }
 

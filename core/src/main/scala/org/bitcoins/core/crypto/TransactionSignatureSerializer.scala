@@ -25,9 +25,7 @@ sealed abstract class TransactionSignatureSerializer {
     */
   private lazy val errorHash: DoubleSha256Digest = DoubleSha256Digest(
     BytesUtil.decodeHex(
-      "0100000000000000000000000000000000000000000000000000000000000000"
-    )
-  )
+      "0100000000000000000000000000000000000000000000000000000000000000"))
 
   /** Implements the signature serialization algorithim that Satoshi Nakamoto
     * originally created and the new signature serialization algorithm as
@@ -38,38 +36,32 @@ sealed abstract class TransactionSignatureSerializer {
   def serializeForSignature(
       txSigComponent: TxSigComponent,
       hashType: HashType,
-      taprootOptions: TaprootSerializationOptions
-  ): ByteVector = {
+      taprootOptions: TaprootSerializationOptions): ByteVector = {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
     val output = txSigComponent.output
     val script = BitcoinScriptUtil.calculateScriptForSigning(
       txSigComponent,
-      output.scriptPubKey.asm
-    )
+      output.scriptPubKey.asm)
 
     txSigComponent match {
       case _: BaseTxSigComponent | _: WitnessTxSigComponentRaw |
           _: WitnessTxSigComponentRebuilt =>
-        serializeForSignature(
-          spendingTransaction,
-          inputIndex,
-          hashType,
-          Vector(output),
-          script,
-          txSigComponent.sigVersion,
-          taprootOptions
-        )
+        serializeForSignature(spendingTransaction,
+                              inputIndex,
+                              hashType,
+                              Vector(output),
+                              script,
+                              txSigComponent.sigVersion,
+                              taprootOptions)
       case t: TaprootTxSigComponent =>
-        serializeForSignature(
-          spendingTransaction,
-          inputIndex,
-          hashType,
-          t.outputs,
-          script,
-          txSigComponent.sigVersion,
-          taprootOptions
-        )
+        serializeForSignature(spendingTransaction,
+                              inputIndex,
+                              hashType,
+                              t.outputs,
+                              script,
+                              txSigComponent.sigVersion,
+                              taprootOptions)
     }
 
   }
@@ -81,16 +73,14 @@ sealed abstract class TransactionSignatureSerializer {
       outputs: Vector[TransactionOutput],
       script: Seq[ScriptToken],
       sigVersion: SignatureVersion,
-      taprootOptions: TaprootSerializationOptions
-  ): ByteVector = {
+      taprootOptions: TaprootSerializationOptions): ByteVector = {
     val keyVersion: Byte = 0.toByte
 
     sigVersion match {
       case SigVersionBase =>
         require(
           outputs.length == 1,
-          s"Only one output needed for the original satoshis signature algorithm, got=$outputs"
-        )
+          s"Only one output needed for the original satoshis signature algorithm, got=$outputs")
         // Clear input scripts in preparation for signing. If we're signing a fresh
         // CScript's inside the Bitcoin Core codebase retain their compactSizeUInt
         // while clearing out all of the actual asm operations in the CScript
@@ -100,15 +90,12 @@ sealed abstract class TransactionSignatureSerializer {
         } yield TransactionInput(
           input.previousOutput,
           NonStandardScriptSignature(s.compactSizeUInt.hex),
-          input.sequence
-        )
+          input.sequence)
 
         // make sure all scriptSigs have empty asm
         inputSigsRemoved.foreach(input =>
-          require(
-            input.scriptSignature.asm.isEmpty,
-            "Input asm was not empty " + input.scriptSignature.asm
-          ))
+          require(input.scriptSignature.asm.isEmpty,
+                  "Input asm was not empty " + input.scriptSignature.asm))
 
         // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
         // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
@@ -130,8 +117,7 @@ sealed abstract class TransactionSignatureSerializer {
         val inputWithConnectedScript = TransactionInput(
           inputToSign.previousOutput,
           scriptSig,
-          inputToSign.sequence
-        )
+          inputToSign.sequence)
 
         // update the input at index i with inputWithConnectScript
         val updatedInputs = for {
@@ -146,8 +132,7 @@ sealed abstract class TransactionSignatureSerializer {
           spendingTransaction.version,
           updatedInputs,
           spendingTransaction.outputs,
-          spendingTransaction.lockTime
-        )
+          spendingTransaction.lockTime)
         val sigHashBytes = Int32(hashType.num).bytes.reverse
 
         hashType match {
@@ -181,8 +166,7 @@ sealed abstract class TransactionSignatureSerializer {
           case _: SIGHASH_ANYONECANPAY =>
             val txWithInputsRemoved = sigHashAnyoneCanPay(
               txWithInputSigsRemoved,
-              inputWithConnectedScript
-            )
+              inputWithConnectedScript)
             txWithInputsRemoved.bytes ++ sigHashBytes
 
           case _: SIGHASH_ALL_ANYONECANPAY =>
@@ -207,8 +191,7 @@ sealed abstract class TransactionSignatureSerializer {
       case SigVersionWitnessV0 =>
         require(
           outputs.length == 1,
-          s"Only one output needed for the original satoshis signature algorithm, got=$outputs"
-        )
+          s"Only one output needed for the original satoshis signature algorithm, got=$outputs")
         val output = outputs.head
         val amount = output.value
         val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
@@ -255,8 +238,7 @@ sealed abstract class TransactionSignatureSerializer {
             i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
             scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
             outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ Int32(
-              hashType.num
-            ).bytes.reverse
+              hashType.num).bytes.reverse
         serializationForSig
 
       case taprootSigVersion: SigVersionTaproot =>
@@ -345,10 +327,8 @@ sealed abstract class TransactionSignatureSerializer {
 
         val tapScriptBytes = {
           if (sigVersion == SigVersionTapscript) {
-            require(
-              taprootOptions.tapLeafHashOpt.isDefined,
-              "Must have a tapleaf hash to verify a tapscript"
-            )
+            require(taprootOptions.tapLeafHashOpt.isDefined,
+                    "Must have a tapleaf hash to verify a tapscript")
             taprootOptions.tapLeafHashOpt.get.bytes ++
               ByteVector.fromByte(keyVersion) ++
               codeSeparatorPos.bytes.reverse
@@ -367,17 +347,14 @@ sealed abstract class TransactionSignatureSerializer {
           if (isNotAnyoneCanPay) {
             if (!isNotSigHashSingle) {
               epoch ++ ByteVector.fromByte(
-                hashType.byte
-              ) ++ version ++ locktimeBytes ++
+                hashType.byte) ++ version ++ locktimeBytes ++
                 outPointHash ++ amounts ++ spentSPKs ++
                 sequenceHash ++ ByteVector.fromByte(
-                  spendType
-                ) ++ inputIndexBytes ++
+                  spendType) ++ inputIndexBytes ++
                 annexBytes ++ outputHash ++ tapScriptBytes
             } else {
               epoch ++ ByteVector.fromByte(
-                hashType.byte
-              ) ++ version ++ locktimeBytes ++
+                hashType.byte) ++ version ++ locktimeBytes ++
                 outPointHash ++ amounts ++ spentSPKs ++
                 sequenceHash ++ outputHash ++
                 ByteVector.fromByte(spendType) ++
@@ -389,17 +366,14 @@ sealed abstract class TransactionSignatureSerializer {
               // different ordering if we use SIGHASH_ANYONECANPAY
               epoch ++ ByteVector
                 .fromByte(
-                  hashType.byte
-                ) ++ version ++ locktimeBytes ++ outputHash ++
+                  hashType.byte) ++ version ++ locktimeBytes ++ outputHash ++
                 ByteVector.fromByte(
-                  spendType
-                ) ++ outPointHash ++ amounts ++ spentSPKs ++
+                  spendType) ++ outPointHash ++ amounts ++ spentSPKs ++
                 sequenceHash ++ annexBytes ++ tapScriptBytes
             } else {
               // different ordering if we use SIGHASH_ANYONECANPAY
               epoch ++ ByteVector.fromByte(
-                hashType.byte
-              ) ++ version ++ locktimeBytes ++ ByteVector
+                hashType.byte) ++ version ++ locktimeBytes ++ ByteVector
                 .fromByte(spendType) ++
                 outPointHash ++ amounts ++ spentSPKs ++
                 sequenceHash ++ annexBytes ++ outputHash ++ tapScriptBytes
@@ -417,8 +391,7 @@ sealed abstract class TransactionSignatureSerializer {
   def hashForSignature(
       txSigComponent: TxSigComponent,
       hashType: HashType,
-      taprootOptions: TaprootSerializationOptions
-  ): HashDigest = {
+      taprootOptions: TaprootSerializationOptions): HashDigest = {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
     if (
@@ -435,11 +408,9 @@ sealed abstract class TransactionSignatureSerializer {
       errorHash
     } else {
       val serializedTxForSignature =
-        serializeForSignature(
-          txSigComponent = txSigComponent,
-          hashType = hashType,
-          taprootOptions = taprootOptions
-        )
+        serializeForSignature(txSigComponent = txSigComponent,
+                              hashType = hashType,
+                              taprootOptions = taprootOptions)
 
       val hash = txSigComponent.sigVersion match {
         case _: SigVersionTaproot =>
@@ -461,32 +432,27 @@ sealed abstract class TransactionSignatureSerializer {
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
       hashType: HashType,
-      taprootOptions: TaprootSerializationOptions
-  ): ByteVector = {
+      taprootOptions: TaprootSerializationOptions): ByteVector = {
     val idx = TxUtil.inputIndex(signingInfo.inputInfo, spendingTransaction)
 
     require(
       signingInfo.prevTransaction != EmptyTransaction,
-      "prevTransaction can only be an EmptyTransaction when dummy signing"
-    )
+      "prevTransaction can only be an EmptyTransaction when dummy signing")
 
     val inputIndex = UInt32(idx)
     val output = signingInfo.output
     val script = BitcoinScriptUtil.calculateScriptForSigning(
       spendingTransaction,
       signingInfo,
-      output.scriptPubKey.asm
-    )
+      output.scriptPubKey.asm)
 
-    serializeForSignature(
-      spendingTransaction,
-      inputIndex,
-      hashType,
-      Vector(output),
-      script,
-      signingInfo.sigVersion,
-      taprootOptions = taprootOptions
-    )
+    serializeForSignature(spendingTransaction,
+                          inputIndex,
+                          hashType,
+                          Vector(output),
+                          script,
+                          signingInfo.sigVersion,
+                          taprootOptions = taprootOptions)
   }
 
   /** Hashes a
@@ -500,8 +466,7 @@ sealed abstract class TransactionSignatureSerializer {
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
       hashType: HashType,
-      taprootOptions: TaprootSerializationOptions
-  ): DoubleSha256Digest = {
+      taprootOptions: TaprootSerializationOptions): DoubleSha256Digest = {
     val inputIndexOpt =
       TxUtil.inputIndexOpt(signingInfo.inputInfo, spendingTransaction)
 
@@ -516,12 +481,10 @@ sealed abstract class TransactionSignatureSerializer {
       errorHash
     } else {
       val serializedTxForSignature =
-        serializeForSignature(
-          spendingTransaction,
-          signingInfo,
-          hashType,
-          taprootOptions
-        )
+        serializeForSignature(spendingTransaction,
+                              signingInfo,
+                              hashType,
+                              taprootOptions)
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }
@@ -531,18 +494,15 @@ sealed abstract class TransactionSignatureSerializer {
     */
   private def setSequenceNumbersZero(
       inputs: Seq[TransactionInput],
-      inputIndex: UInt32
-  ): Seq[TransactionInput] =
+      inputIndex: UInt32): Seq[TransactionInput] =
     for {
       (input, index) <- inputs.zipWithIndex
     } yield {
       if (UInt32(index) == inputIndex) input
       else
-        TransactionInput(
-          input.previousOutput,
-          input.scriptSignature,
-          UInt32.zero
-        )
+        TransactionInput(input.previousOutput,
+                         input.scriptSignature,
+                         UInt32.zero)
     }
 
   /** Executes the [[SIGHASH_NONE SIGHASH_NONE]] procedure on a spending
@@ -550,20 +510,17 @@ sealed abstract class TransactionSignatureSerializer {
     */
   private def sigHashNone(
       spendingTransaction: Transaction,
-      inputIndex: UInt32
-  ): Transaction = {
+      inputIndex: UInt32): Transaction = {
     // following this implementation from bitcoinj
     // [[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957]]
     // means that no outputs are signed at all
     // set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
     val updatedInputs: Seq[TransactionInput] =
       setSequenceNumbersZero(spendingTransaction.inputs, inputIndex)
-    val sigHashNoneTx = BaseTransaction(
-      spendingTransaction.version,
-      updatedInputs,
-      Nil,
-      spendingTransaction.lockTime
-    )
+    val sigHashNoneTx = BaseTransaction(spendingTransaction.version,
+                                        updatedInputs,
+                                        Nil,
+                                        spendingTransaction.lockTime)
     // append hash type byte onto the end of the tx bytes
     sigHashNoneTx
   }
@@ -573,8 +530,7 @@ sealed abstract class TransactionSignatureSerializer {
     */
   private def sigHashSingle(
       spendingTransaction: Transaction,
-      inputIndex: UInt32
-  ): Transaction = {
+      inputIndex: UInt32): Transaction = {
     // following this implementation from bitcoinj
     // [[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964]]
     // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
@@ -593,12 +549,10 @@ sealed abstract class TransactionSignatureSerializer {
     // the input at the inputIndex
     val updatedInputs: Seq[TransactionInput] =
       setSequenceNumbersZero(spendingTransaction.inputs, inputIndex)
-    val sigHashSingleTx = BaseTransaction(
-      spendingTransaction.version,
-      updatedInputs,
-      updatedOutputs,
-      spendingTransaction.lockTime
-    )
+    val sigHashSingleTx = BaseTransaction(spendingTransaction.version,
+                                          updatedInputs,
+                                          updatedOutputs,
+                                          spendingTransaction.lockTime)
     sigHashSingleTx
   }
 
@@ -614,14 +568,11 @@ sealed abstract class TransactionSignatureSerializer {
     */
   private def sigHashAnyoneCanPay(
       spendingTransaction: Transaction,
-      input: TransactionInput
-  ): Transaction = {
-    BaseTransaction(
-      spendingTransaction.version,
-      Seq(input),
-      spendingTransaction.outputs,
-      spendingTransaction.lockTime
-    )
+      input: TransactionInput): Transaction = {
+    BaseTransaction(spendingTransaction.version,
+                    Seq(input),
+                    spendingTransaction.outputs,
+                    spendingTransaction.lockTime)
   }
 
   /** Removes

@@ -32,7 +32,7 @@ class TransactionTest extends BitcoinSUnitTest {
   }
 
   it must "always have TXID of a base transaction be SHA256(SHA256(hex))" in {
-    forAll(TransactionGenerators.baseTransaction) { btx: BaseTransaction =>
+    forAll(TransactionGenerators.baseTransaction) { (btx: BaseTransaction) =>
       assert(btx.txId == CryptoUtil.doubleSHA256(btx.bytes))
     }
   }
@@ -41,7 +41,7 @@ class TransactionTest extends BitcoinSUnitTest {
     "wtxid must be the same as the SHA256(SHA256(hex)) of a wtx and " +
     "wtxid and txid are not the same for witness transactions" in {
       forAll(TransactionGenerators.witnessTransaction) {
-        wtx: WitnessTransaction =>
+        (wtx: WitnessTransaction) =>
           assert(wtx.wTxId == CryptoUtil.doubleSHA256(wtx.bytes))
           assert(wtx.wTxId != wtx.txId)
       }

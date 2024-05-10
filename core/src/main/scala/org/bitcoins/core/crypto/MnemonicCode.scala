@@ -25,13 +25,11 @@ sealed abstract class MnemonicCode
     }
   )
 
-  require(
-    {
-      val entropy = toEntropyWithChecksum
-      MnemonicCode.isEntropyWithChecksumValid(entropy, words)
-    },
-    "Entropy checksum is not valid!"
-  )
+  require({
+            val entropy = toEntropyWithChecksum
+            MnemonicCode.isEntropyWithChecksumValid(entropy, words)
+          },
+          "Entropy checksum is not valid!")
 
   /** The mnemonic code itself
     */
@@ -165,8 +163,7 @@ object MnemonicCode {
   }
 
   private[crypto] def fromEntropyWithCheck(
-      entropyWithChecksum: BitVector
-  ): MnemonicCode = {
+      entropyWithChecksum: BitVector): MnemonicCode = {
     val bitGroups = entropyWithChecksum.grouped(BIT_GROUP_LENGTH)
     val words = bitGroups.map { group =>
       val index = group.toInt(signed = false)
@@ -179,10 +176,8 @@ object MnemonicCode {
   /** Generates the specified bits of entropy
     */
   private def getEntropy(bits: Int): BitVector = {
-    require(
-      bits % 8 == 0,
-      s"Given amount if bits ($bits) must be a multiple of 8!"
-    )
+    require(bits % 8 == 0,
+            s"Given amount if bits ($bits) must be a multiple of 8!")
 
     val bytes = CryptoUtil.randomBytes(bits / 8)
     val bitVector = BitVector(bytes)
@@ -217,15 +212,13 @@ object MnemonicCode {
       entropyBits: Int,
       checksumLength: Int,
       entropyAndChecksumBits: Int,
-      words: Int
-  )
+      words: Int)
 
   /** Taken from
     * [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic BIP39]]
     */
   private[crypto] def getMnemonicCodeInfo(
-      words: Vector[String]
-  ): MnemonicCodeInfo =
+      words: Vector[String]): MnemonicCodeInfo =
     words.length match {
       case 12 => MnemonicCodeInfo(128, 4, 132, 12)
       case 15 => MnemonicCodeInfo(160, 5, 165, 15)
@@ -244,8 +237,7 @@ object MnemonicCode {
     */
   def isEntropyWithChecksumValid(
       entropyWithChecksum: BitVector,
-      words: Vector[String]
-  ): Boolean = {
+      words: Vector[String]): Boolean = {
 
     val codeInfo = MnemonicCode.getMnemonicCodeInfo(words)
     val entropyNoChecksum = entropyWithChecksum.take(codeInfo.entropyBits)

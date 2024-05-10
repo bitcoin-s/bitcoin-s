@@ -43,21 +43,19 @@ trait DLCOracleApi {
       isSigned: Boolean,
       numDigits: Int,
       unit: String,
-      precision: Int32
-  ): Future[OracleAnnouncementTLV]
+      precision: Int32): Future[OracleAnnouncementTLV]
 
   def createNewEnumAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      outcomes: Vector[String]
-  ): Future[OracleAnnouncementTLV]
+      outcomes: Vector[String]): Future[OracleAnnouncementTLV]
 
   def createNewAnnouncement(
       eventName: String,
       maturationTime: Instant,
       descriptor: EventDescriptorTLV,
-      signingVersion: SigningVersion = SigningVersion.latest
-  ): Future[OracleAnnouncementTLV]
+      signingVersion: SigningVersion = SigningVersion.latest)
+      : Future[OracleAnnouncementTLV]
 
   /** Signs an enumerated announcement
     * @param eventName
@@ -75,13 +73,11 @@ trait DLCOracleApi {
     */
   def signEnum(
       oracleEventTLV: OracleEventTLV,
-      outcome: EnumAttestation
-  ): Future[EventDb]
+      outcome: EnumAttestation): Future[EventDb]
 
   def createAttestation(
       nonce: SchnorrNonce,
-      outcome: DLCAttestationType
-  ): Future[EventDb]
+      outcome: DLCAttestationType): Future[EventDb]
 
   def signDigits(eventName: String, num: Long): Future[OracleEvent]
 
@@ -102,8 +98,7 @@ trait DLCOracleApi {
     *   the deleted announcement
     */
   def deleteAnnouncement(
-      announcementTLV: OracleAnnouncementTLV
-  ): Future[OracleAnnouncementTLV]
+      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV]
 
   /** Deletes attestations for the given event
     *

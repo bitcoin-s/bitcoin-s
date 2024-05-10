@@ -19,15 +19,15 @@ sealed trait MsgUnassigned extends TypeIdentifier
 
 object TypeIdentifier extends Factory[TypeIdentifier] {
 
-  final case object MsgTx extends TypeIdentifier {
+  case object MsgTx extends TypeIdentifier {
     override val num = UInt32.one
   }
 
-  final case object MsgBlock extends TypeIdentifier {
+  case object MsgBlock extends TypeIdentifier {
     override val num = UInt32(2)
   }
 
-  final case object MsgFilteredBlock extends TypeIdentifier {
+  case object MsgFilteredBlock extends TypeIdentifier {
     override val num = UInt32(3)
   }
 
@@ -35,7 +35,7 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
     * `getdata` message, this indicates the response should be a `cmpctblock`
     * message. Only for use in `getdata` messages.
     */
-  final case object MsgCompactBlock extends TypeIdentifier {
+  case object MsgCompactBlock extends TypeIdentifier {
     val num: UInt32 = UInt32(4)
   }
 
@@ -44,7 +44,7 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
     * nonempty, the witness serialization will be used. Only for use in
     * `getdata` messages.
     */
-  final case object MsgWitnessTx extends TypeIdentifier {
+  case object MsgWitnessTx extends TypeIdentifier {
 
     val num: UInt32 = MsgTx.num | MsgWitnessFlag
   }
@@ -54,25 +54,23 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
     * with transactions that have a witness using witness serialization. Only
     * for use in `getdata` messages.
     */
-  final case object MsgWitnessBlock extends TypeIdentifier {
+  case object MsgWitnessBlock extends TypeIdentifier {
     val num: UInt32 = MsgBlock.num | MsgWitnessFlag
   }
 
   /** Reserved for future use, not used as of Protocol Version 70015.
     */
-  final case object MsgFilteredWitnessBlock extends TypeIdentifier {
+  case object MsgFilteredWitnessBlock extends TypeIdentifier {
     val num: UInt32 = MsgFilteredBlock.num | MsgWitnessFlag
   }
 
-  private lazy val assigned = Vector(
-    MsgTx,
-    MsgBlock,
-    MsgFilteredBlock,
-    MsgCompactBlock,
-    MsgWitnessTx,
-    MsgWitnessBlock,
-    MsgFilteredWitnessBlock
-  )
+  private lazy val assigned = Vector(MsgTx,
+                                     MsgBlock,
+                                     MsgFilteredBlock,
+                                     MsgCompactBlock,
+                                     MsgWitnessTx,
+                                     MsgWitnessBlock,
+                                     MsgFilteredWitnessBlock)
 
   /** from the docs at https://bitcoin.org/en/developer-reference#data-messages
     * These (witness block and tx) are the same as their respective type

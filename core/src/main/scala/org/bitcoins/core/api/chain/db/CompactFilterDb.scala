@@ -9,12 +9,10 @@ case class CompactFilterDb(
     filterType: FilterType,
     bytes: ByteVector,
     height: Int,
-    blockHashBE: DoubleSha256DigestBE
-) {
+    blockHashBE: DoubleSha256DigestBE) {
   require(
     CryptoUtil.doubleSHA256(bytes).flip == hashBE,
-    s"Bytes must hash to hashBE! It looks like you didn't construct CompactFilterDb correctly"
-  )
+    s"Bytes must hash to hashBE! It looks like you didn't construct CompactFilterDb correctly")
 
   def golombFilter: GolombFilter =
     filterType match {
@@ -31,20 +29,16 @@ object CompactFilterDbHelper {
   def fromGolombFilter(
       golombFilter: GolombFilter,
       blockHash: DoubleSha256DigestBE,
-      height: Int
-  ): CompactFilterDb =
+      height: Int): CompactFilterDb =
     fromFilterBytes(golombFilter.bytes, blockHash, height)
 
   def fromFilterBytes(
       filterBytes: ByteVector,
       blockHash: DoubleSha256DigestBE,
-      height: Int
-  ): CompactFilterDb =
-    CompactFilterDb(
-      CryptoUtil.doubleSHA256(filterBytes).flip,
-      FilterType.Basic,
-      filterBytes,
-      height,
-      blockHash
-    )
+      height: Int): CompactFilterDb =
+    CompactFilterDb(CryptoUtil.doubleSHA256(filterBytes).flip,
+                    FilterType.Basic,
+                    filterBytes,
+                    height,
+                    blockHash)
 }

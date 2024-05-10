@@ -46,11 +46,9 @@ case class DLCDb(
   }
 
   def updateFundingOutPoint(outPoint: TransactionOutPoint): DLCDb = {
-    copy(
-      fundingOutPointOpt = Some(outPoint),
-      fundingTxIdOpt = Some(outPoint.txIdBE),
-      lastUpdated = TimeUtil.now
-    )
+    copy(fundingOutPointOpt = Some(outPoint),
+         fundingTxIdOpt = Some(outPoint.txIdBE),
+         lastUpdated = TimeUtil.now)
   }
 
   def updateClosingTxId(txId: DoubleSha256DigestBE): DLCDb = {

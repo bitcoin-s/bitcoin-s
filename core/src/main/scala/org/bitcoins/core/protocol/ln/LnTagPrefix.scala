@@ -60,18 +60,16 @@ object LnTagPrefix extends StringFactory[LnTagPrefix] {
   }
 
   private lazy val allKnown: Map[Char, LnTagPrefix] =
-    List(
-      PaymentHash,
-      Description,
-      NodeId,
-      DescriptionHash,
-      ExpiryTime,
-      CltvExpiry,
-      FallbackAddress,
-      RoutingInfo,
-      Features,
-      Secret
-    )
+    List(PaymentHash,
+         Description,
+         NodeId,
+         DescriptionHash,
+         ExpiryTime,
+         CltvExpiry,
+         FallbackAddress,
+         RoutingInfo,
+         Features,
+         Secret)
       .map(prefix => prefix.value -> prefix)
       .toMap
 

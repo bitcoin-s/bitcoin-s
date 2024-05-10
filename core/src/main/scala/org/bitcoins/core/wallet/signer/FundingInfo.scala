@@ -33,20 +33,18 @@ object BitcoinFundingInfo {
 
   private case class BitcoinFundingInfoImpl(
       transaction: Transaction,
-      utxos: Seq[InputSigningInfo[InputInfo]]
-  ) extends BitcoinFundingInfo
+      utxos: Seq[InputSigningInfo[InputInfo]])
+      extends BitcoinFundingInfo
 
   def apply(
       tx: BaseTransaction,
-      utxos: Seq[InputSigningInfo[InputInfo]]
-  ): BitcoinFundingInfo = {
+      utxos: Seq[InputSigningInfo[InputInfo]]): BitcoinFundingInfo = {
     BitcoinFundingInfoImpl(tx, utxos)
   }
 
   def apply(
       wtx: WitnessTransaction,
-      utxos: Seq[InputSigningInfo[InputInfo]]
-  ): BitcoinFundingInfo = {
+      utxos: Seq[InputSigningInfo[InputInfo]]): BitcoinFundingInfo = {
     BitcoinFundingInfoImpl(wtx, utxos)
   }
 }

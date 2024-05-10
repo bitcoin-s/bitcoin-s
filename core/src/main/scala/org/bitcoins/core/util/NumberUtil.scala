@@ -19,8 +19,7 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
   def pow2(exponent: Int): BigInt = {
     require(
       exponent < 64,
-      "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent
-    )
+      "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
   }
 
@@ -45,8 +44,7 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
       from: UInt32,
       to: UInt32,
       pad: Boolean,
-      f: UInt8 => To
-  ): Try[Vector[To]] = {
+      f: UInt8 => To): Try[Vector[To]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero
     val ret = Vector.newBuilder[To]
@@ -56,15 +54,12 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     if (from > eight || to > eight) {
       Failure(
         new IllegalArgumentException(
-          "Can't have convert bits 'from' or 'to' parameter greater than 8"
-        )
-      )
+          "Can't have convert bits 'from' or 'to' parameter greater than 8"))
     } else {
-      data.map { h: UInt8 =>
+      data.map { (h: UInt8) =>
         if ((h >> fromU8.toInt) != UInt8.zero) {
           Failure(
-            new IllegalArgumentException("Invalid input for bech32: " + h)
-          )
+            new IllegalArgumentException("Invalid input for bech32: " + h))
         } else {
           acc = (acc << from) | UInt32(h.toLong)
           bits = bits + from
@@ -94,16 +89,15 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
       from: UInt32,
       to: UInt32,
       pad: Boolean,
-      f: Byte => T
-  ): Try[Vector[T]] = {
-    val wrapperF: UInt8 => T = { u8: UInt8 =>
+      f: Byte => T): Try[Vector[T]] = {
+    val wrapperF: UInt8 => T = { (u8: UInt8) =>
       f(UInt8.toByte(u8))
     }
     convert[T](UInt8.toUInt8s(data), from, to, pad, wrapperF)
   }
 
   def convertUInt8sToUInt5s(u8s: Vector[UInt8]): Vector[UInt5] = {
-    val f = { u8: UInt8 =>
+    val f = { (u8: UInt8) =>
       UInt5.fromByte(UInt8.toByte(u8))
     }
     val u8sTry =
@@ -114,19 +108,16 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
 
   def convertUInt5sToUInt8(
       u5s: Vector[UInt5],
-      pad: Boolean = false
-  ): Vector[UInt8] = {
+      pad: Boolean = false): Vector[UInt8] = {
     val u8s = u5s.map(_.toUInt8)
     val u8sTry =
-      NumberUtil.convert[UInt8](
-        u8s,
-        UInt32(5),
-        UInt32(8),
-        pad = pad,
-        { u8: UInt8 =>
-          u8
-        }
-      )
+      NumberUtil.convert[UInt8](u8s,
+                                UInt32(5),
+                                UInt32(8),
+                                pad = pad,
+                                { (u8: UInt8) =>
+                                  u8
+                                })
     // should always be able to convert from uint5 => uint8
     u8sTry.get
   }
@@ -256,10 +247,8 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     }
 
     // ~0x007fffff = 0xff800000
-    require(
-      (compact & UInt32(0xff800000L)) == UInt32.zero,
-      s"Exponent/sign bit must not be set yet in compact encoding"
-    )
+    require((compact & UInt32(0xff800000L)) == UInt32.zero,
+            s"Exponent/sign bit must not be set yet in compact encoding")
     require(size < 256, "Size of compact encoding can't be more than 2^256")
 
     compact = compact | UInt32(size << 24)
@@ -395,8 +384,7 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
   }
 
   def lexicographicalOrdering[T](implicit
-      ord: Ordering[T]
-  ): Ordering[Vector[T]] = {
+      ord: Ordering[T]): Ordering[Vector[T]] = {
     new Ordering[Vector[T]] {
       override def compare(x: Vector[T], y: Vector[T]): Int = {
         val xe = x.iterator
@@ -422,8 +410,7 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
       elem: B,
       from: Int,
       to: Int,
-      unwrap: Wrapper => A
-  )(implicit ord: Ordering[B]): Int = {
+      unwrap: Wrapper => A)(implicit ord: Ordering[B]): Int = {
     if (from < 0) search(seq, elem, from = 0, to, unwrap)
     else if (to > seq.length) search(seq, elem, from, seq.length, unwrap)
     else if (to <= from) from
@@ -440,20 +427,17 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
   def search[A, B >: A, Wrapper](
       seq: IndexedSeq[Wrapper],
       elem: B,
-      unwrap: Wrapper => A
-  )(implicit ord: Ordering[B]): Int = {
+      unwrap: Wrapper => A)(implicit ord: Ordering[B]): Int = {
     search(seq, elem, from = 0, to = seq.length, unwrap)
   }
 
   def search[A, B >: A](seq: IndexedSeq[A], elem: B, from: Int, to: Int)(
-      implicit ord: Ordering[B]
-  ): Int = {
+      implicit ord: Ordering[B]): Int = {
     search(seq, elem, from, to, identity[A])
   }
 
   def search[A, B >: A](seq: IndexedSeq[A], elem: B)(implicit
-      ord: Ordering[B]
-  ): Int = {
+      ord: Ordering[B]): Int = {
     search(seq, elem, from = 0, to = seq.length)
   }
 }

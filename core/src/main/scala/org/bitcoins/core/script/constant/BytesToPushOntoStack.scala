@@ -30,16 +30,14 @@ object BytesToPushOntoStack
   def fromNumber(num: Long): BytesToPushOntoStack = {
     if (num > 75)
       throw new IllegalArgumentException(
-        "We cannot have a BytesToPushOntoStack for greater than 75 bytes"
-      )
+        "We cannot have a BytesToPushOntoStack for greater than 75 bytes")
     else {
       val bytesToPushOntoStackOpt = operations.find(_.opCode == num)
       bytesToPushOntoStackOpt match {
         case Some(bytesToPushOntoStack) => bytesToPushOntoStack
         case None =>
           throw new IllegalArgumentException(
-            s"We cannot have a BytesToPushOntoStack for greater than 75 bytes, got=$num"
-          )
+            s"We cannot have a BytesToPushOntoStack for greater than 75 bytes, got=$num")
       }
     }
   }

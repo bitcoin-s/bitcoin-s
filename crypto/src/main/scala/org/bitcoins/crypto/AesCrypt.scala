@@ -69,7 +69,6 @@ object AesEncryptedData extends Factory[AesEncryptedData] {
 /** Represents a salt used to derive a AES key from a human-readable passphrase.
   */
 case class AesSalt(bytes: ByteVector) extends AnyVal
-
 object AesSalt extends Factory[AesSalt] {
 
   override def fromBytes(bytes: ByteVector): AesSalt = new AesSalt(bytes)

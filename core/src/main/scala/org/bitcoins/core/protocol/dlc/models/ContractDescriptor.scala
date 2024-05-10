@@ -30,12 +30,10 @@ sealed trait ContractDescriptor extends TLVSerializable[ContractDescriptorTLV] {
 
 object ContractDescriptor
     extends TLVDeserializable[ContractDescriptorTLV, ContractDescriptor](
-      ContractDescriptorTLV
-    ) {
+      ContractDescriptorTLV) {
 
   val empty: ContractDescriptor = EnumContractDescriptor(
-    Vector(EnumOutcome("") -> Satoshis.zero)
-  )
+    Vector(EnumOutcome("") -> Satoshis.zero))
 
   override def fromTLV(tlv: ContractDescriptorTLV): ContractDescriptor = {
     tlv match {
@@ -48,8 +46,8 @@ object ContractDescriptor
 
 /** The ContractDescriptor for enumerated outcome DLCs */
 case class EnumContractDescriptor(
-    outcomeValueMap: Vector[(EnumOutcome, Satoshis)]
-) extends ContractDescriptor
+    outcomeValueMap: Vector[(EnumOutcome, Satoshis)])
+    extends ContractDescriptor
     with TLVSerializable[ContractDescriptorV0TLV]
     with SeqWrapper[(EnumOutcome, Satoshis)] {
 
@@ -75,8 +73,7 @@ case class EnumContractDescriptor(
 
 object EnumContractDescriptor
     extends TLVDeserializable[ContractDescriptorV0TLV, EnumContractDescriptor](
-      ContractDescriptorV0TLV
-    ) {
+      ContractDescriptorV0TLV) {
 
   def fromStringVec(vec: Vector[(String, Satoshis)]): EnumContractDescriptor = {
     EnumContractDescriptor(vec.map { case (str, amt) =>
@@ -97,8 +94,8 @@ object EnumContractDescriptor
 case class NumericContractDescriptor(
     outcomeValueFunc: DLCPayoutCurve,
     numDigits: Int,
-    roundingIntervals: RoundingIntervals
-) extends ContractDescriptor
+    roundingIntervals: RoundingIntervals)
+    extends ContractDescriptor
     with TLVSerializable[ContractDescriptorV1TLV] {
 
   private val minValue: Long = 0L
@@ -125,23 +122,19 @@ case class NumericContractDescriptor(
   }
 
   override def toTLV: ContractDescriptorV1TLV = {
-    ContractDescriptorV1TLV(
-      numDigits,
-      outcomeValueFunc.toTLV,
-      roundingIntervals.toTLV
-    )
+    ContractDescriptorV1TLV(numDigits,
+                            outcomeValueFunc.toTLV,
+                            roundingIntervals.toTLV)
   }
 }
 
 object NumericContractDescriptor
-    extends TLVDeserializable[
-      ContractDescriptorV1TLV,
-      NumericContractDescriptor
-    ](ContractDescriptorV1TLV) {
+    extends TLVDeserializable[ContractDescriptorV1TLV,
+                              NumericContractDescriptor](
+      ContractDescriptorV1TLV) {
 
   override def fromTLV(
-      tlv: ContractDescriptorV1TLV
-  ): NumericContractDescriptor = {
+      tlv: ContractDescriptorV1TLV): NumericContractDescriptor = {
     NumericContractDescriptor(
       DLCPayoutCurve.fromTLV(tlv.payoutFunction),
       tlv.numDigits,

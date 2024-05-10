@@ -126,7 +126,10 @@ case object OP_2SWAP extends StackOperation {
 
 object StackOperation extends ScriptOperationFactory[StackOperation] {
 
-  override val operations =
+  override val operations: scala.collection.immutable.Vector[
+    org.bitcoins.core.script.stack.StackOperation
+      with Product
+      with java.io.Serializable] =
     Vector(
       OP_DUP,
       OP_TOALTSTACK,

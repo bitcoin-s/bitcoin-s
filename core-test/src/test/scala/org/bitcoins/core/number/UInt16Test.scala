@@ -74,14 +74,14 @@ class UInt16Test extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry" in {
-    forAll(NumberGenerator.uInt16) { uInt16: UInt16 =>
+    forAll(NumberGenerator.uInt16) { (uInt16: UInt16) =>
       assert(UInt16(uInt16.hex) == uInt16)
       assert(UInt16(uInt16.hex).hex == uInt16.hex)
     }
   }
 
   it must "add zero correctly" in {
-    forAll(NumberGenerator.uInt16) { num: UInt16 =>
+    forAll(NumberGenerator.uInt16) { (num: UInt16) =>
       assert(num + UInt16.zero == num)
     }
   }
@@ -106,7 +106,7 @@ class UInt16Test extends BitcoinSUnitTest {
   }
 
   it must "subtract zero correctly" in {
-    forAll(NumberGenerator.uInt16) { uInt16: UInt16 =>
+    forAll(NumberGenerator.uInt16) { (uInt16: UInt16) =>
       assert(uInt16 - UInt16.zero == uInt16)
     }
   }
@@ -134,13 +134,13 @@ class UInt16Test extends BitcoinSUnitTest {
   }
 
   it must "multiplying by zero correctly" in {
-    forAll(NumberGenerator.uInt16) { uInt16: UInt16 =>
+    forAll(NumberGenerator.uInt16) { (uInt16: UInt16) =>
       assert(uInt16 * UInt16.zero == UInt16.zero)
     }
   }
 
   it must "multiply by one correctly" in {
-    forAll(NumberGenerator.uInt16) { uInt16: UInt16 =>
+    forAll(NumberGenerator.uInt16) { (uInt16: UInt16) =>
       assert(uInt16 * UInt16.one == uInt16)
     }
   }

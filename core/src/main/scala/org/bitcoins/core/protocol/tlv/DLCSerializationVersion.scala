@@ -34,8 +34,7 @@ object DLCSerializationVersion extends StringFactory[DLCSerializationVersion] {
       case Some(version) => version
       case None =>
         sys.error(
-          s"Could not find DLC serialization version associated with str=$str"
-        )
+          s"Could not find DLC serialization version associated with str=$str")
     }
   }
 

@@ -11,13 +11,12 @@ trait NeutrinoWalletApi { self: WalletApi =>
 
   def processCompactFilter(
       blockHash: DoubleSha256DigestBE,
-      blockFilter: GolombFilter
-  ): Future[NeutrinoHDWalletApi] =
+      blockFilter: GolombFilter): Future[NeutrinoHDWalletApi] =
     processCompactFilters(Vector((blockHash, blockFilter)))
 
   def processCompactFilters(
-      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]
-  ): Future[NeutrinoHDWalletApi]
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])
+      : Future[NeutrinoHDWalletApi]
 
   /** Recreates the account using BIP-157 approach
     *
@@ -56,20 +55,16 @@ trait NeutrinoWalletApi { self: WalletApi =>
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
       useCreationTime: Boolean,
-      force: Boolean
-  )(implicit ec: ExecutionContext): Future[RescanState]
+      force: Boolean)(implicit ec: ExecutionContext): Future[RescanState]
 
   /** Helper method to rescan the ENTIRE blockchain. */
   def fullRescanNeutrinoWallet(addressBatchSize: Int, force: Boolean = false)(
-      implicit ec: ExecutionContext
-  ): Future[RescanState] =
-    rescanNeutrinoWallet(
-      startOpt = None,
-      endOpt = None,
-      addressBatchSize = addressBatchSize,
-      useCreationTime = false,
-      force = force
-    )
+      implicit ec: ExecutionContext): Future[RescanState] =
+    rescanNeutrinoWallet(startOpt = None,
+                         endOpt = None,
+                         addressBatchSize = addressBatchSize,
+                         useCreationTime = false,
+                         force = force)
 
   def discoveryBatchSize(): Int
 
@@ -79,7 +74,6 @@ object NeutrinoWalletApi {
 
   case class BlockMatchingResponse(
       blockHash: DoubleSha256DigestBE,
-      blockHeight: Int
-  )
+      blockHeight: Int)
 
 }

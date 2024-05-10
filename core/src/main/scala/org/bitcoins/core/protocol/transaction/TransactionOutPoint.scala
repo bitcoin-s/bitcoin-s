@@ -45,11 +45,9 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
   * @see
   *   http://stackoverflow.com/questions/2711522/what-happens-if-i-assign-a-negative-value-to-an-unsigned-variable
   */
-final object EmptyTransactionOutPoint
-    extends TransactionOutPoint(
-      txId = DoubleSha256Digest.empty,
-      vout = UInt32.max
-    ) {
+object EmptyTransactionOutPoint
+    extends TransactionOutPoint(txId = DoubleSha256Digest.empty,
+                                vout = UInt32.max) {
   override def toString(): String = "EmptyTransactionOutPoint"
 }
 

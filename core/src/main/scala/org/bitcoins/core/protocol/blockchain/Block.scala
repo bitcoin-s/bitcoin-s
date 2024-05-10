@@ -52,8 +52,8 @@ object Block extends Factory[Block] {
   private case class BlockImpl(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
-      transactions: Seq[Transaction]
-  ) extends Block {
+      transactions: Seq[Transaction])
+      extends Block {
 
     override def toString: String = {
       s"Block(blockHeader=${blockHeader}, txCount=${txCount.toLong})"
@@ -63,8 +63,7 @@ object Block extends Factory[Block] {
   def apply(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
-      transactions: Seq[Transaction]
-  ): Block = {
+      transactions: Seq[Transaction]): Block = {
     BlockImpl(blockHeader, txCount, transactions)
   }
 

@@ -9,11 +9,11 @@ class RawSerializerHelperSpec extends Properties("RawSerializerHelperSpec") {
 
   property("serialization symmetry of txs") = {
     Prop.forAll(TransactionGenerators.smallOutputs) {
-      txs: Seq[TransactionOutput] =>
+      (txs: Seq[TransactionOutput]) =>
         val serialized =
           RawSerializerHelper.writeCmpctSizeUInt(
             txs,
-            { tx: TransactionOutput =>
+            { (tx: TransactionOutput) =>
               tx.bytes
             }
           )

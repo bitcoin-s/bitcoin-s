@@ -12,8 +12,7 @@ trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
     val header = NetworkHeader.fromBytes(headerBytes)
     if (header.payloadSize.toInt > payloadBytes.length) {
       throw new RuntimeException(
-        s"We do not have enough bytes for payload! Expected=${header.payloadSize.toInt} got=${payloadBytes.length}"
-      )
+        s"We do not have enough bytes for payload! Expected=${header.payloadSize.toInt} got=${payloadBytes.length}")
     } else {
       val payload = NetworkPayload(header, payloadBytes)
       val n = NetworkMessage(header, payload)

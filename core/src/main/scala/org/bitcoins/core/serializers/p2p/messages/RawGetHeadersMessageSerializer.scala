@@ -40,14 +40,13 @@ trait RawGetHeadersMessageSerializer
     */
   private def parseHashes(
       bytes: ByteVector,
-      numHashes: CompactSizeUInt
-  ): (List[DoubleSha256Digest], ByteVector) = {
+      numHashes: CompactSizeUInt): (List[DoubleSha256Digest], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
         remainingHashes: Long,
-        accum: List[DoubleSha256Digest]
-    ): (List[DoubleSha256Digest], ByteVector) = {
+        accum: List[DoubleSha256Digest])
+        : (List[DoubleSha256Digest], ByteVector) = {
       if (remainingHashes <= 0) (accum, remainingBytes)
       else {
         val hash = DoubleSha256Digest(remainingBytes.take(32))

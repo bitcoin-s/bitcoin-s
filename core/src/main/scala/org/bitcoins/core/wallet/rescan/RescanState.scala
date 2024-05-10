@@ -36,8 +36,7 @@ object RescanState {
   case class RescanStarted(
       private val completeRescanEarlyP: Promise[Option[Int]],
       blocksMatchedF: Future[Vector[BlockMatchingResponse]],
-      recursiveRescanP: Promise[RescanState]
-  )(implicit ec: ExecutionContext)
+      recursiveRescanP: Promise[RescanState])(implicit ec: ExecutionContext)
       extends RescanState {
 
     private val _isCompletedEarly: AtomicBoolean = new AtomicBoolean(false)
@@ -122,9 +121,8 @@ object RescanState {
     }
   }
 
-  def awaitSingleRescanDone(
-      rescanState: RescanState
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+  def awaitSingleRescanDone(rescanState: RescanState)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     rescanState match {
       case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
           RescanState.RescanNotNeeded =>
@@ -139,9 +137,8 @@ object RescanState {
     * early, or the rescan completes. If you are interested in just the stream
     * completing beacuse the rescan was fully executed, use [[awaitComplete())]]
     */
-  def awaitRescanDone(
-      rescanState: RescanState
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+  def awaitRescanDone(rescanState: RescanState)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     rescanState match {
       case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
           RescanState.RescanNotNeeded =>
@@ -155,9 +152,8 @@ object RescanState {
     * means that the rescan was NOT terminated externally by completing the akka
     * stream that underlies the rescan logic.
     */
-  def awaitRescanComplete(
-      rescanState: RescanState
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+  def awaitRescanComplete(rescanState: RescanState)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     rescanState match {
       case RescanState.RescanDone | RescanState.RescanAlreadyStarted |
           RescanState.RescanNotNeeded =>
@@ -167,9 +163,7 @@ object RescanState {
           if (started.isCompletedEarly) {
             Future.failed(
               new RuntimeException(
-                s"Rescan was completed early, so cannot fulfill this request"
-              )
-            )
+                s"Rescan was completed early, so cannot fulfill this request"))
           } else {
             Future.unit
           }

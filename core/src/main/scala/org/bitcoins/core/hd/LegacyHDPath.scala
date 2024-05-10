@@ -19,8 +19,7 @@ object LegacyHDPath extends HDPathFactory[LegacyHDPath] {
       coinType: HDCoinType,
       accountIndex: Int,
       chainType: HDChainType,
-      addressIndex: Int
-  ): LegacyHDPath = {
+      addressIndex: Int): LegacyHDPath = {
 
     val address =
       assembleAddress(coinType, accountIndex, chainType, addressIndex)

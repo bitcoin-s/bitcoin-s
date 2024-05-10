@@ -23,8 +23,7 @@ abstract class NetworkUtil {
     */
   def parseInetSocketAddress(
       address: String,
-      defaultPort: => Int
-  ): InetSocketAddress = {
+      defaultPort: => Int): InetSocketAddress = {
     val uri = new URI("tcp://" + address)
     val port = if (uri.getPort < 0) defaultPort else uri.getPort
     InetSocketAddress.createUnresolved(uri.getHost, port)
@@ -33,8 +32,7 @@ abstract class NetworkUtil {
   /** Parses IPV4,IPV6 ad TorV3 address bytes to string address */
   def parseInetSocketAddress(
       address: ByteVector,
-      port: Int
-  ): InetSocketAddress = {
+      port: Int): InetSocketAddress = {
     val uri: URI = {
       address.size match {
         case AddrV2Message.IPV4_ADDR_LENGTH =>
@@ -50,8 +48,7 @@ abstract class NetworkUtil {
           new URI("tcp://" + hostAddress)
         case unknownSize =>
           sys.error(
-            s"Attempted to parse InetSocketAddress with unknown size, got=${unknownSize}"
-          )
+            s"Attempted to parse InetSocketAddress with unknown size, got=${unknownSize}")
       }
     }
     InetSocketAddress.createUnresolved(uri.getHost, port)
@@ -69,8 +66,7 @@ abstract class NetworkUtil {
       .bytes
     val address =
       ByteVector(
-        pubkey ++ checksum.take(2).toArray ++ version
-      ).toBase32 + ".onion"
+        pubkey ++ checksum.take(2).toArray ++ version).toBase32 + ".onion"
     address.toLowerCase
   }
 
@@ -165,8 +161,7 @@ abstract class NetworkUtil {
     */
   def isBlockHeaderStale(
       blockHeader: BlockHeader,
-      chainParams: ChainParams
-  ): Boolean = {
+      chainParams: ChainParams): Boolean = {
     val seconds = blockHeader.time.toLong
     val expected: Duration = chainParams.powTargetSpacing * 3
     (Instant.now.getEpochSecond - seconds) > expected.toSeconds
@@ -183,19 +178,16 @@ abstract class NetworkUtil {
     *   parse to a message
     */
   def parseIndividualMessages(
-      bytes: ByteVector
-  ): (Vector[NetworkMessage], ByteVector) = {
+      bytes: ByteVector): (Vector[NetworkMessage], ByteVector) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
-        accum: Vector[NetworkMessage]
-    ): (Vector[NetworkMessage], ByteVector) = {
+        accum: Vector[NetworkMessage]): (Vector[NetworkMessage], ByteVector) = {
       if (remainingBytes.length <= 0) {
         (accum, remainingBytes)
       } else {
         val headerTry = Try(
-          NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize))
-        )
+          NetworkHeader.fromBytes(remainingBytes.take(NetworkHeader.bytesSize)))
         headerTry match {
           case Success(header) =>
             val payloadBytes = remainingBytes

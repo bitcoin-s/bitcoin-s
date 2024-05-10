@@ -8,5 +8,4 @@ import org.bitcoins.core.hd.HDPurpose
 case class KeyManagerParams(
     seedPath: Path,
     purpose: HDPurpose,
-    network: NetworkParameters
-)
+    network: NetworkParameters)

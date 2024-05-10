@@ -17,8 +17,7 @@ sealed abstract class RawSerializerHelper {
     */
   final def parseCmpctSizeUIntSeq[T <: NetworkElement](
       bytes: ByteVector,
-      constructor: ByteVector => T
-  ): (Seq[T], ByteVector) = {
+      constructor: ByteVector => T): (Seq[T], ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
     val (_, payload) = bytes.splitAt(count.byteSize.toInt)
     var counter = 0
@@ -42,8 +41,7 @@ sealed abstract class RawSerializerHelper {
     val result = b.result()
     require(
       result.size == count.num.toInt,
-      s"Could not parse the amount of required elements, got: ${result.size} required: ${count}"
-    )
+      s"Could not parse the amount of required elements, got: ${result.size} required: ${count}")
     (result, remaining)
   }
 
@@ -52,8 +50,7 @@ sealed abstract class RawSerializerHelper {
     */
   final def writeCmpctSizeUInt[T](
       ts: Seq[T],
-      serializer: T => ByteVector
-  ): ByteVector = {
+      serializer: T => ByteVector): ByteVector = {
     val serialized = write(ts, serializer)
     val cmpct = CompactSizeUInt(UInt64(ts.size))
     cmpct.bytes ++ serialized
@@ -63,9 +60,8 @@ sealed abstract class RawSerializerHelper {
     * [[scodec.bits.ByteVector]]
     */
   final def writeNetworkElements[T <: NetworkElement](
-      ts: Seq[T]
-  ): ByteVector = {
-    val f = { t: T =>
+      ts: Seq[T]): ByteVector = {
+    val f = { (t: T) =>
       t.bytes
     }
     write(ts, f)

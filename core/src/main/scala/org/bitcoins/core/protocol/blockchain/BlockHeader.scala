@@ -149,8 +149,8 @@ object BlockHeader extends Factory[BlockHeader] {
       merkleRootHash: DoubleSha256Digest,
       time: UInt32,
       nBits: UInt32,
-      nonce: UInt32
-  ) extends BlockHeader
+      nonce: UInt32)
+      extends BlockHeader
 
   def apply(
       version: Int32,
@@ -158,16 +158,13 @@ object BlockHeader extends Factory[BlockHeader] {
       merkleRootHash: DoubleSha256Digest,
       time: UInt32,
       nBits: UInt32,
-      nonce: UInt32
-  ): BlockHeader = {
-    BlockHeaderImpl(
-      version,
-      previousBlockHash,
-      merkleRootHash,
-      time,
-      nBits,
-      nonce
-    )
+      nonce: UInt32): BlockHeader = {
+    BlockHeaderImpl(version,
+                    previousBlockHash,
+                    merkleRootHash,
+                    time,
+                    nBits,
+                    nonce)
   }
 
   def fromBytes(bytes: ByteVector): BlockHeader =
@@ -185,8 +182,7 @@ object BlockHeader extends Factory[BlockHeader] {
   case class TargetDifficultyHelper(
       difficulty: BigInt,
       isNegative: Boolean,
-      isOverflow: Boolean
-  )
+      isOverflow: Boolean)
 
   def getBlockProof(header: BlockHeader): BigInt = {
     val target = NumberUtil.targetExpansion(header.nBits)

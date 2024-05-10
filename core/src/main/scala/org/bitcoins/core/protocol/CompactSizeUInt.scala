@@ -29,10 +29,8 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
 
   def toInt: Int = {
     val l = toLong
-    require(
-      Int.MinValue <= l && l <= Int.MaxValue,
-      "Cannot convert CompactSizeUInt toInt, got: " + this
-    )
+    require(Int.MinValue <= l && l <= Int.MaxValue,
+            "Cannot convert CompactSizeUInt toInt, got: " + this)
     l.toInt
   }
 
@@ -43,8 +41,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
 
   private case class CompactSizeUIntImpl(
       num: UInt64,
-      override val byteSize: Long
-  ) extends CompactSizeUInt
+      override val byteSize: Long)
+      extends CompactSizeUInt
 
   val zero: CompactSizeUInt = CompactSizeUInt(UInt64.zero)
 
