@@ -188,7 +188,7 @@ trait BaseAsyncTest
   def forAllParallel[A](
       gen: Gen[A]
   )(func: A => Assertion): Future[Assertion] = {
-    forAllAsync(gen) { a: A =>
+    forAllAsync(gen) { (a: A) =>
       FutureUtil.makeAsync { () =>
         func(a)
       }

@@ -110,6 +110,7 @@ lazy val asyncUtilsTestJS = asyncUtilsTest.js
 lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit-core"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-testkit-core",
             libraryDependencies ++= Deps.testkitCore.value)
@@ -722,11 +723,13 @@ lazy val docs = project
 
 lazy val keyManager = project
   .in(file("key-manager"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(coreJVM, appCommons)
 
 lazy val keyManagerTest = project
   .in(file("key-manager-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-keymanager-test",
             libraryDependencies ++= Deps.keyManagerTest)
