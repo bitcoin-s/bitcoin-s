@@ -84,8 +84,8 @@ val chainApi = new ChainQueryApi {
 ```
 
 ```scala mdoc:compile-only
-implicit val ec = scala.concurrent.ExecutionContext.global
-implicit val system = ActorSystem("System")
+implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+implicit val system: ActorSystem = ActorSystem("System")
 
 val config = ConfigFactory.parseString {
     """
@@ -99,10 +99,10 @@ val config = ConfigFactory.parseString {
 val datadir = Files.createTempDirectory("bitcoin-s-wallet")
 
 
-implicit val walletConfig = WalletAppConfig(datadir, Vector(config))
+implicit val walletConfig: WalletAppConfig = WalletAppConfig(datadir, Vector(config))
 
 // we also need to store chain state for syncing purposes
-implicit val chainConfig = ChainAppConfig(datadir, Vector(config))
+implicit val chainConfig: ChainAppConfig = ChainAppConfig(datadir, Vector(config))
 
 // when this future completes, we have
 // created the necessary directories and
@@ -126,7 +126,7 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
     }
 
     
-    val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
+    val getBlockHeaderFunc = { (hash: DoubleSha256DigestBE) =>
         bitcoind.getBlockHeader(hash).map(_.blockHeader)
     }
 

@@ -31,8 +31,8 @@ import java.nio.file.Files
 
 ```scala mdoc:compile-only
 
-implicit val ec = ExecutionContext.global
-implicit val system = ActorSystem("System")
+implicit val ec: ExecutionContext = ExecutionContext.global
+implicit val system: ActorSystem = ActorSystem("System")
 // We are assuming that a `bitcoind` regtest node is running the background.
 // You can see our `bitcoind` guides to see how to connect
 // to a local or remote `bitcoind` node.
@@ -59,7 +59,7 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-implicit val chainConfig = ChainAppConfig(datadir, Vector(config))
+implicit val chainConfig: ChainAppConfig = ChainAppConfig(datadir, Vector(config))
 
 // Initialize the needed database tables if they don't exist:
 val chainProjectInitF = chainConfig.start()

@@ -105,15 +105,15 @@ val bitcoind = Await.result(bitcoindRpcClientF, 10.seconds)
 
 val getBestBlockHashFunc = () => bitcoind.getBestBlockHash
 
-val getBlockHeaderFunc = { hash: DoubleSha256DigestBE => bitcoind.getBlockHeaderRaw(hash) }
+val getBlockHeaderFunc = { (hash: DoubleSha256DigestBE) => bitcoind.getBlockHeaderRaw(hash) }
 
-val getBlockFunc = {hash: DoubleSha256DigestBE => bitcoind.getBlockRaw(hash) }
+val getBlockFunc = { (hash: DoubleSha256DigestBE) => bitcoind.getBlockRaw(hash) }
 
 val genesisHashBEF = bitcoind.getBlockHash(0)
 
 //yay! We are now all setup. Using our 3 functions above and a wallet, we can now sync
 //a fresh wallet
-implicit val walletAppConfig = WalletAppConfig.fromDefaultDatadir()
+implicit val walletAppConfig: WalletAppConfig = WalletAppConfig.fromDefaultDatadir()
 
 val feeRateProvider: FeeRateApi = MempoolSpaceProvider.fromBlockTarget(6, proxyParams = None)
 val wallet = Wallet(bitcoind, bitcoind, feeRateProvider)

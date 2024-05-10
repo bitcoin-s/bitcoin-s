@@ -110,7 +110,7 @@ class AsyncUtilTest extends BitcoinSJvmTest {
     val expectedCount = 1000
     val counters = Vector.fill(numCounters)(new AtomicInteger(0))
 
-    //try to run all these in parallel, and see if it works
+    // try to run all these in parallel, and see if it works
     val async: Vector[Future[Unit]] = counters.map { counter =>
       AsyncUtil.retryUntilSatisfiedF(
         () => incrementAndCheckF(counter, expectedCount),
@@ -122,15 +122,15 @@ class AsyncUtilTest extends BitcoinSJvmTest {
   }
 
   it must "handle blocking tasks ok" in {
-    //schedule a blocking task first
+    // schedule a blocking task first
     val start = TimeUtil.currentEpochMs
     val sleepMs = 10000
     val stop = start + sleepMs
     def blockingTask(): Boolean = {
       while (stop < System.currentTimeMillis()) {
-        //do nothing, block until 10 seconds has passed
-        //can't do the dumb thing and use Thread.sleep()
-        //as that isn't available on scalajs
+        // do nothing, block until 10 seconds has passed
+        // can't do the dumb thing and use Thread.sleep()
+        // as that isn't available on scalajs
       }
       true
     }
@@ -138,12 +138,12 @@ class AsyncUtilTest extends BitcoinSJvmTest {
     val _ =
       AsyncUtil.awaitCondition(() => blockingTask())
 
-    //schedule a non blocking task second
+    // schedule a non blocking task second
     val counter1 = new AtomicInteger(0)
     val secondF =
       AsyncUtil.awaitCondition(() => incrementAndCheck(counter1, 10))
 
-    //the second task should not be blocked to completion by the first
+    // the second task should not be blocked to completion by the first
     for {
       _ <- secondF
     } yield {
@@ -159,16 +159,16 @@ class AsyncUtilTest extends BitcoinSJvmTest {
         .map(_ => true)
     }
 
-    //schedule a blocking task first
+    // schedule a blocking task first
     val _ =
       AsyncUtil.awaitConditionF(() => blockingTask())
 
-    //schedule a non blocking task second
+    // schedule a non blocking task second
     val counter1 = new AtomicInteger(0)
     val secondF =
       AsyncUtil.awaitConditionF(() => incrementAndCheckF(counter1, 10))
 
-    //the second task should not be blocked to completion by the first
+    // the second task should not be blocked to completion by the first
     for {
       _ <- secondF
     } yield succeed

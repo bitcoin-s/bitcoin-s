@@ -34,8 +34,8 @@ This gives you the ability to start spending money immediately with that bitcoin
 
 ```scala mdoc:compile-only
 
-implicit val system = ActorSystem("bitcoind-testkit-example")
-implicit val ec = system.dispatcher
+implicit val system: ActorSystem = ActorSystem("bitcoind-testkit-example")
+implicit val ec: ExecutionContext = system.dispatcher
 
 //pick our bitcoind version we want to spin up
 val bitcoindV = BitcoindVersion.newest
@@ -106,8 +106,8 @@ Make sure to run `sbt downloadBitcoind downloadEclair` before running this so yo
 //4. assert the node has received the payment
 //5. cleanup
 
-implicit val system = ActorSystem("eclair-testkit-example")
-implicit val ec = system.dispatcher
+implicit val system: ActorSystem = ActorSystem("eclair-testkit-example")
+implicit val ec: ExecutionContext = system.dispatcher
 
 //we need a bitcoind to connect eclair nodes to
 lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {

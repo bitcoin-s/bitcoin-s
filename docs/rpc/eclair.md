@@ -5,7 +5,7 @@ title: Eclair
 
 This is a RPC client for [Eclair](https://github.com/acinq/eclair). It assumes that a bitcoind instance is running.
 
-Currently this RPC client is written for [v0.5.0](https://github.com/ACINQ/eclair/releases/tag/v0.5.0) version of Eclair.
+Currently this RPC client is written for [v0.10.0](https://github.com/ACINQ/eclair/releases/tag/v0.10.0) version of Eclair.
 
 ## Configuration of Eclair
 
@@ -18,7 +18,7 @@ You can find the configuration we use for our testing infrastrture for eclair [h
 
 You need to download the jar from the [eclair's github](https://github.com/ACINQ/eclair/releases/tag/v0.5.0).
 
-To run Eclair by unzipping the `eclair-node-0.5.0-ac08560-bin.zip` and then running
+To run Eclair by unzipping the `eclair-node-0.10.0-a63d2c2-bin.zip` and then running
 
 ```bash
 $ ./eclair-node-0.5.0-ac08560/bin/eclair-node.sh
@@ -38,15 +38,16 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import java.nio.file.Paths
+import scala.concurrent.ExecutionContext
 ```
 
 ```scala mdoc:compile-only
 
-implicit val system = ActorSystem(s"eclair-rpc-${System.currentTimeMillis}")
-implicit val ec = system.dispatcher
+implicit val system: ActorSystem = ActorSystem(s"eclair-rpc-${System.currentTimeMillis}")
+implicit val ec: ExecutionContext = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
-val binaryPath = Paths.get("path", "to", "eclair-node-0.5.0-ac08560", "bin", "eclair-node.sh")
+val binaryPath = Paths.get("path", "to", "eclair-node-0.10.0-a63d2c2", "bin", "eclair-node.sh")
 val instance = EclairInstanceLocal.fromDatadir(datadirPath.toFile, logbackXml = None, proxyParams = None)
 val client = new EclairRpcClient(instance, Some(binaryPath.toFile))
 
@@ -62,5 +63,5 @@ for {
 
 ### Connecting to the websocket
 
-As of `v0.3.3` eclair supports a websocket endpoint. This means you can receive updates of what is happening with eclair
+As of `v0.10.0` eclair supports a websocket endpoint. This means you can receive updates of what is happening with eclair
 in real time. You can see an example of us testing this [here](https://github.com/bitcoin-s/bitcoin-s/blob/a043d3858ef33da51229ee59c478d2a6c9d5a46f/eclair-rpc-test/src/test/scala/org/bitcoins/eclair/rpc/EclairRpcClientTest.scala#L591)
