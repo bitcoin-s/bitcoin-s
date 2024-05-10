@@ -368,6 +368,7 @@ lazy val coreTestJS = coreTest.js
 
 lazy val appCommons = project
   .in(file("app-commons"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     coreJVM % testAndCompile

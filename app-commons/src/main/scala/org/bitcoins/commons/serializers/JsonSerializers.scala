@@ -126,7 +126,7 @@ object JsonSerializers {
       (__ \ "reqSigs").readNullable[Int] and
       (__ \ "type").read[ScriptType] and
       (__ \ "addresses")
-        .readNullable[Vector[BitcoinAddress]])(RpcScriptPubKeyPreV22)
+        .readNullable[Vector[BitcoinAddress]])(RpcScriptPubKeyPreV22.apply)
 
   implicit val rpcScriptPubKeyPostV22Reads: Reads[RpcScriptPubKeyPostV22] =
     ((__ \ "asm").read[String] and
@@ -134,7 +134,8 @@ object JsonSerializers {
       (__ \ "type").read[ScriptType] and
       (__ \ "addresses")
         .readNullable[Vector[BitcoinAddress]] and
-      (__ \ "address").readNullable[BitcoinAddress])(RpcScriptPubKeyPostV22)
+      (__ \ "address")
+        .readNullable[BitcoinAddress])(RpcScriptPubKeyPostV22.apply)
 
   implicit val rpcTransactionOutputPreV22Reads
       : Reads[RpcTransactionOutputPreV22] =
@@ -149,7 +150,7 @@ object JsonSerializers {
   implicit val decodeScriptResultV22Reads: Reads[DecodeScriptResultV22] =
     ((__ \ "asm").read[String] and
       (__ \ "type").readNullable[ScriptType] and
-      (__ \ "address").read[BitcoinAddress])(DecodeScriptResultV22)
+      (__ \ "address").read[BitcoinAddress])(DecodeScriptResultV22.apply)
 
   implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] =
     Json.reads[FundRawTransactionResult]
@@ -250,7 +251,7 @@ object JsonSerializers {
       (__ \ "bip152_hb_from").read[Boolean] and
       (__ \ "permissions").read[Vector[String]] and
       (__ \ "transport_protocol_type").read[String] and
-      (__ \ "session_id").read[String])(PeerInfoResponseV25)
+      (__ \ "session_id").read[String])(PeerInfoResponseV25.apply)
 
   implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
     Json.reads[NodeBanPostV22]
@@ -334,7 +335,7 @@ object JsonSerializers {
         case arr: JsArray =>
           arr
             .validate[Vector[DoubleSha256DigestBE]]
-            .map(GetRawMempoolTxIds)
+            .map(GetRawMempoolTxIds.apply)
         case x @ (_: JsNumber | _: JsString | JsNull | _: JsObject |
             _: JsBoolean) =>
           JsError(s"Invalid json for getrawmempool, got=$x")
@@ -346,7 +347,7 @@ object JsonSerializers {
     override def reads(json: JsValue): JsResult[GetRawMempoolVerbose] = {
       json
         .validate[Map[DoubleSha256DigestBE, GetRawMempoolVerboseResult]]
-        .map(GetRawMempoolVerbose)
+        .map(GetRawMempoolVerbose.apply)
     }
   }
 
@@ -408,7 +409,7 @@ object JsonSerializers {
       (__ \ "comment").readNullable[String] and
       (__ \ "to").readNullable[String] and
       (__ \ "details").read[Vector[TransactionDetails]] and
-      (__ \ "hex").read[Transaction])(GetTransactionResult)
+      (__ \ "hex").read[Transaction])(GetTransactionResult.apply)
 
   implicit val getWalletInfoResultReadsPostV22
       : Reads[GetWalletInfoResultPostV22] =
@@ -458,7 +459,7 @@ object JsonSerializers {
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String])(Payment)
+      (__ \ "to").readNullable[String])(Payment.apply)
 
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] =
     Json.reads[ListSinceBlockResult]
