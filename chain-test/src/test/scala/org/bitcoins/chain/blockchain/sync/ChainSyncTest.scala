@@ -16,7 +16,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
   behavior of "ChainSync"
 
   it must "sync our chain handler when it is not synced with bitcoind" in {
-    bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc =>
+    (bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc) =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
       // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
@@ -45,7 +45,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
   }
 
   it must "not fail when syncing a chain handler that is synced with it's external data source" in {
-    bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc =>
+    (bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc) =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
       // first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
@@ -53,7 +53,7 @@ class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
         bitcoind.getBestBlockHash()
       }
 
-      val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
+      val getBlockHeaderFunc = { (hash: DoubleSha256DigestBE) =>
         bitcoind.getBlockHeader(hash).map(_.blockHeader)
       }
 

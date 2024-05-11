@@ -18,7 +18,7 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
   behavior of "CompactFilterDAO"
 
   it must "retrieve getBestFilter when there are no filters in the db" in {
-    compactFilterDAO: CompactFilterDAO =>
+    (compactFilterDAO: CompactFilterDAO) =>
       compactFilterDAO.getBestFilter
         .map(opt => assert(opt.isEmpty))
   }

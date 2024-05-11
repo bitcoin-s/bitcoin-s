@@ -20,7 +20,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
     withChainHandlerGenesisFilter(test)
 
   it must "process a new valid block header with a callback" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val resultP: Promise[Boolean] = Promise()
 
       val callback: OnBlockHeaderConnected = {
@@ -45,7 +45,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
   }
 
   it must "process a new valid compact filter header with a callback" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val resultP: Promise[Boolean] = Promise()
 
       val callback: OnCompactFilterHeaderConnected = {
@@ -86,7 +86,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
   }
 
   it must "process a new valid compact filter with a callback" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val resultP: Promise[Boolean] = Promise()
 
       val callback: OnCompactFilterConnected = {

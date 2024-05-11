@@ -26,7 +26,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   private val genesisHeaderDb = ChainTestUtil.genesisHeaderDb
   it should "insert and read the genesis block header back" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val readF = blockHeaderDAO.read(genesisHeaderDb.hashBE)
 
       val assert1 = readF.map { readHeader =>
@@ -45,7 +45,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "delete a block header in the database" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
       val createdF = blockHeaderDAO.create(blockHeader)
@@ -65,7 +65,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "fail to find a header closest to a epoch second" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -76,7 +76,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "find the closest block to the given epoch second" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -89,7 +89,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "find the block at given epoch second" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -102,7 +102,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "find all the headers before to the given epoch second" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -118,7 +118,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "retrieve the best chain tip saved in the database" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
       val createdF = blockHeaderDAO.create(blockHeader)
@@ -147,7 +147,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "return the genesis block when retrieving block headers from an empty database" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val chainTipsF = blockHeaderDAO.getBestChainTips
       chainTipsF.map { tips =>
         assert(tips.headOption.contains(genesisHeaderDb))
@@ -155,7 +155,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "retrieve all chainTips in the last difficulty interval, not just the heaviest chain tip" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
 
       // now we have 2 competing tips, chainTips should return both competing headers
@@ -187,7 +187,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "deduplicate blockchains so in reorg situations we do not return duplicates" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val reorgFixtureF = buildBlockHeaderDAOCompetingHeaders(blockHeaderDAO)
 
       // now we have 2 competing tips, so we should return 2 chains
@@ -202,7 +202,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "retrieve a block header by height" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
       val createdF = blockHeaderDAO.create(blockHeader)
@@ -235,7 +235,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "find the height of the longest chain" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -259,7 +259,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "find the height of two headers that are competing to be the longest chain" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -275,7 +275,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       }
   }
 
-  it must "find a header with height 1" in { blockHeaderDAO: BlockHeaderDAO =>
+  it must "find a header with height 1" in { (blockHeaderDAO: BlockHeaderDAO) =>
     val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
     val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -292,7 +292,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "get an ancestor at a specified height" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -305,7 +305,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "implement getNAncestors correctly" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
@@ -356,7 +356,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       } yield lastAssert
   }
 
-  it must "get the correct chain tip" in { blockerHeaderDAO: BlockHeaderDAO =>
+  it must "get the correct chain tip" in { (blockerHeaderDAO: BlockHeaderDAO) =>
     val db1 =
       BlockHeaderDbHelper.fromBlockHeader(
         1,
@@ -378,7 +378,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "successfully map a max chain work block" in {
-    blockerHeaderDAO: BlockHeaderDAO =>
+    (blockerHeaderDAO: BlockHeaderDAO) =>
       val bytes = ByteVector.fill(32)(0xff)
       val chainWork = BigInt(1, bytes.toArray)
 
@@ -396,7 +396,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "get blockchains from the genesis header" in {
-    blockHeaderDAO: BlockHeaderDAO =>
+    (blockHeaderDAO: BlockHeaderDAO) =>
       val blockchainsF = blockHeaderDAO.getBlockchains()
       for {
         blockchains <- blockchainsF
@@ -408,7 +408,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
   }
 
   it must "successfully getBlockchainsBetweenHeights" in {
-    blockerHeaderDAO: BlockHeaderDAO =>
+    (blockerHeaderDAO: BlockHeaderDAO) =>
       val duplicate3 = BlockHeader(
         version = Int32.one,
         previousBlockHash = ChainTestUtil.blockHeader562463.hash,
