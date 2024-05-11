@@ -94,7 +94,7 @@ trait BitcoinSWalletTest
   )(implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
-      destroy = { funded: FundedWallet =>
+      destroy = { (funded: FundedWallet) =>
         for {
           _ <- destroyWallet(funded.wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
@@ -108,7 +108,7 @@ trait BitcoinSWalletTest
   )(implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
-      destroy = { funded: FundedWallet =>
+      destroy = { (funded: FundedWallet) =>
         for {
           _ <- destroyWallet(funded.wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
@@ -127,7 +127,7 @@ trait BitcoinSWalletTest
     makeDependentFixture(
       build =
         () => FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi),
-      destroy = { funded: FundedDLCWallet =>
+      destroy = { (funded: FundedDLCWallet) =>
         for {
           _ <- destroyDLCWallet(funded.wallet)
         } yield ()

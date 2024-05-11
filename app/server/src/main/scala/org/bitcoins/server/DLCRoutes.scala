@@ -81,8 +81,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
             Obj(
               "hash" -> io.hash.hex,
               "receivedAt" -> Num(io.receivedAt.getEpochSecond.toDouble),
-              "peer" -> io.peer.map(Str).getOrElse(Null),
-              "message" -> io.message.map(Str).getOrElse(Null),
+              "peer" -> io.peer.map(Str.apply).getOrElse(Null),
+              "message" -> io.message.map(Str.apply).getOrElse(Null),
               "offerTLV" -> io.offerTLV.hex
             )
           }

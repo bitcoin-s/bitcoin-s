@@ -41,7 +41,7 @@ abstract class SyncUtil extends BitcoinSLogger {
   def getBlockHeaderFunc(bitcoind: BitcoindRpcClient)(implicit
       ec: ExecutionContext
   ): DoubleSha256DigestBE => Future[BlockHeader] = {
-    hash: DoubleSha256DigestBE =>
+    (hash: DoubleSha256DigestBE) =>
       bitcoind.getBlockHeader(hash).map(_.blockHeader)
   }
 

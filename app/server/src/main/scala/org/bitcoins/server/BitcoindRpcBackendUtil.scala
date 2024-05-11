@@ -241,7 +241,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
     val rawTxSub = zmqConfig.rawTx.map { zmq =>
       val rawTxListener: Option[Transaction => Unit] = Some {
-        { tx: Transaction =>
+        { (tx: Transaction) =>
           logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
           val f = wallet.processTransaction(tx, None)
           f.failed.foreach { err =>
@@ -262,7 +262,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
 
     val rawBlockSub = zmqConfig.rawBlock.map { zmq =>
       val rawBlockListener: Option[Block => Unit] = Some {
-        { block: Block =>
+        { (block: Block) =>
           logger.info(
             s"Received block ${block.blockHeader.hashBE.hex}, processing"
           )
@@ -546,7 +546,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     }
 
     val (queue, doneF) = queueSource
-      .mapAsync(parallelism = numParallelism) { height: Int =>
+      .mapAsync(parallelism = numParallelism) { (height: Int) =>
         bitcoind.getBlockHash(height)
       }
       .map { hash =>

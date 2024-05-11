@@ -54,7 +54,7 @@ object TestAsyncUtil extends TestAsyncUtil {
         val line = stackElement.getLineNumber
         val pos = org.scalactic.source.Position(file, path, line)
         val newErr = new TestFailedException(
-          { _: StackDepthException =>
+          { (_: StackDepthException) =>
             Some(retryErr.message)
           },
           None,
@@ -68,7 +68,7 @@ object TestAsyncUtil extends TestAsyncUtil {
     }
 
     fut.transform(
-      { elem: T =>
+      { (elem: T) =>
         elem
       },
       transformRetry

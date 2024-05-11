@@ -152,12 +152,14 @@ lazy val clightningRpc = project
 
 lazy val lnurl = project
   .in(file("lnurl"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(name := "bitcoin-s-lnurl")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(appCommons, asyncUtilsJVM, tor)
 
 lazy val lnurlTest = project
   .in(file("lnurl-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(name := "bitcoin-s-lnurl-test")
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(lnurl, testkit)
@@ -315,6 +317,7 @@ lazy val `bitcoin-s` = project
 
 lazy val secp256k1jni = project
   .in(file("secp256k1jni"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     libraryDependencies ++= Deps.secp256k1jni,
@@ -389,6 +392,7 @@ lazy val appCommonsTest = project
 
 lazy val oracleServer = project
   .in(file("app/oracle-server"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
   .settings(CommonSettings.dockerBuildxSettings: _*)
@@ -407,6 +411,7 @@ lazy val oracleServer = project
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
@@ -416,6 +421,7 @@ lazy val oracleServerTest = project
 
 lazy val serverRoutes = project
   .in(file("app/server-routes"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-server-routes")
   .settings(libraryDependencies ++= Deps.serverRoutes)
@@ -423,6 +429,7 @@ lazy val serverRoutes = project
 
 lazy val appServer = project
   .in(file("app/server"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
   .settings(CommonSettings.dockerBuildxSettings: _*)
@@ -449,6 +456,7 @@ lazy val appServer = project
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
@@ -460,6 +468,7 @@ lazy val appServerTest = project
 lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(scalacOptions += "-Xsource:3")
   .settings(
     name := "bitcoin-s-cli"
   )
@@ -473,6 +482,7 @@ lazy val cli = project
 
 lazy val cliTest = project
   .in(file("app/cli-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(
     cli,
@@ -520,6 +530,7 @@ lazy val dbCommonsTest = project
 
 lazy val esplora = project
   .in(file("esplora"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-esplora",
@@ -529,6 +540,7 @@ lazy val esplora = project
 
 lazy val esploraTest = project
   .in(file("esplora-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-esplora-test",
@@ -538,6 +550,7 @@ lazy val esploraTest = project
 
 lazy val feeProvider = project
   .in(file("fee-provider"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider",
@@ -547,6 +560,7 @@ lazy val feeProvider = project
 
 lazy val feeProviderTest = project
   .in(file("fee-provider-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-fee-provider-test",
@@ -667,6 +681,7 @@ lazy val nodeTest =
 lazy val testkit = project
   .in(file("testkit"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(scalacOptions += "-Xsource:3")
   .settings(
     name := "bitcoin-s-testkit",
     libraryDependencies ++= Deps.testkit.value

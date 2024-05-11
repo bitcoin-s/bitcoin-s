@@ -56,7 +56,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
-      { x: NeutrinoNodeConnectedWithBitcoind =>
+      { (x: NeutrinoNodeConnectedWithBitcoind) =>
         NodeUnitTest.destroyNode(x.node, appConfig)
       }
     )(test)
@@ -83,7 +83,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
-      { x: NeutrinoNodeConnectedWithBitcoind =>
+      { (x: NeutrinoNodeConnectedWithBitcoind) =>
         tearDownNode(x.node, appConfig)
       }
     )(test)
@@ -115,7 +115,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      { x: NeutrinoNodeConnectedWithBitcoinds =>
+      { (x: NeutrinoNodeConnectedWithBitcoinds) =>
         tearDownNode(x.node, appConfig)
       }
     )(test)
@@ -144,7 +144,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      { x: NeutrinoNodeConnectedWithBitcoinds =>
+      { (x: NeutrinoNodeConnectedWithBitcoinds) =>
         tearDownNode(x.node, appConfig)
       }
     )(test)
@@ -173,7 +173,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
-      { x: NeutrinoNodeConnectedWithBitcoind =>
+      { (x: NeutrinoNodeConnectedWithBitcoind) =>
         tearDownNode(x.node, appConfig)
       }
     )(test)
@@ -194,7 +194,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
             bitcoind,
             walletCallbacks = walletCallbacks
           )(system, appConfig),
-      { x: NeutrinoNodeFundedWalletBitcoind =>
+      { (x: NeutrinoNodeFundedWalletBitcoind) =>
         tearDownNodeWithBitcoind(x, appConfig)
       }
     )(test)

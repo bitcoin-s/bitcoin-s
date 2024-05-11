@@ -73,7 +73,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
           walletB <- FundWalletUtil
             .createFundedDLCWallet(nodeApi, chainQueryApi)(config2, system)
         } yield (walletA, walletB),
-      destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      destroy = { (fundedWallets: (FundedDLCWallet, FundedDLCWallet)) =>
         for {
           _ <- destroyDLCWallet(fundedWallets._1.wallet)
           _ <- destroyDLCWallet(fundedWallets._2.wallet)
@@ -91,7 +91,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       build = () => {
         createDualFundedDLCWallet(nodeApi = bitcoind, chainQueryApi = bitcoind)
       },
-      destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      destroy = { (fundedWallets: (FundedDLCWallet, FundedDLCWallet)) =>
         destroyDLCWallets(
           dlcWallet1 = fundedWallets._1.wallet,
           dlcWallet2 = fundedWallets._2.wallet
@@ -143,7 +143,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
           chainQueryApi = chainQueryApi
         )
       },
-      destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
+      destroy = { (dlcWallets: (InitializedDLCWallet, InitializedDLCWallet)) =>
         destroyDLCWallets(
           dlcWallet1 = dlcWallets._1.wallet,
           dlcWallet2 = dlcWallets._2.wallet
@@ -164,7 +164,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
           bitcoind = bitcoind
         )
       },
-      destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
+      destroy = { (dlcWallets: (InitializedDLCWallet, InitializedDLCWallet)) =>
         destroyDLCWallets(
           dlcWallet1 = dlcWallets._1.wallet,
           dlcWallet2 = dlcWallets._2.wallet

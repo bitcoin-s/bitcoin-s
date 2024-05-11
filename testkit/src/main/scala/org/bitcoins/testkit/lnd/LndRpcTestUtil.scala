@@ -173,7 +173,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     } yield {
       logger.debug("Successfully shutdown lnd and it's corresponding bitcoind")
     }
-    shutdownF.failed.foreach { err: Throwable =>
+    shutdownF.failed.foreach { (err: Throwable) =>
       logger.info(
         s"Killed a bitcoind instance, but could not find an lnd process to kill"
       )
