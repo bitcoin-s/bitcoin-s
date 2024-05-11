@@ -30,7 +30,7 @@ case class BlockHeaderDAO()(implicit
       case PostgreSQL => mappers.bigIntPostgresMapper
     }
 
-  override val table =
+  override val table: slick.lifted.TableQuery[BlockHeaderDAO.this.BlockHeaderTable] =
     profile.api.TableQuery[BlockHeaderTable]
 
   /** Creates all of the given [[BlockHeaderDb]] in the database */
