@@ -50,7 +50,7 @@ object CallbackUtil extends BitcoinSLogger {
     }
 
     val onHeaderSink = {
-      Sink.foreachAsync(1) { headers: Vector[BlockHeader] =>
+      Sink.foreachAsync(1) { (headers: Vector[BlockHeader]) =>
         logger.debug(
           s"Executing block header with header count=${headers.length}"
         )

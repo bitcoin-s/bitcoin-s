@@ -24,7 +24,7 @@ class BitcoinSServerMainBitcoindTest
   behavior of "BitcoinSServerMain"
 
   it must "start our app server with bitcoind as a backend" in {
-    config: BitcoinSAppConfig =>
+    (config: BitcoinSAppConfig) =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
       val cliConfig = Config(
@@ -50,7 +50,7 @@ class BitcoinSServerMainBitcoindTest
       }
   }
 
-  it must "load wallet" in { config: BitcoinSAppConfig =>
+  it must "load wallet" in { (config: BitcoinSAppConfig) =>
     val alice = None
     val bob = Some("bob")
 
@@ -125,7 +125,7 @@ class BitcoinSServerMainBitcoindTest
   }
 
   it must "fail to send requests to the app server if the password is bad" in {
-    config: BitcoinSAppConfig =>
+    (config: BitcoinSAppConfig) =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
       val cliConfig =

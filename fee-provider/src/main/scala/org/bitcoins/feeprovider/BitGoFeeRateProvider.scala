@@ -46,6 +46,7 @@ case class BitGoFeeRateProvider(
       feeRanges: Map[Int, SatoshisPerKiloByte],
       blockTarget: Int
   ): SatoshisPerKiloByte = {
+    import org.bitcoins.core.satoshisPerKiloByteOrdering
     // first we keep only fee ranges with a max block delay below the limit
     val belowLimit = feeRanges.filter(_._1 <= blockTarget)
     // out of all the remaining fee ranges, we select the one with the minimum higher bound

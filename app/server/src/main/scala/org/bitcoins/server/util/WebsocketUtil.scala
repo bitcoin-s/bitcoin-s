@@ -270,19 +270,19 @@ object WebsocketUtil extends BitcoinSLogger {
       walletQueue: SourceQueueWithComplete[WsNotification[_]]
   )(implicit system: ActorSystem): DLCWalletCallbackStreamManager = {
     import system.dispatcher
-    val onStateChange: OnDLCStateChange = { status: DLCStatus =>
+    val onStateChange: OnDLCStateChange = { (status: DLCStatus) =>
       val notification = WalletNotification.DLCStateChangeNotification(status)
       val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
-    val onOfferAdd: OnDLCOfferAdd = { offerDb: IncomingDLCOfferDb =>
+    val onOfferAdd: OnDLCOfferAdd = { (offerDb: IncomingDLCOfferDb) =>
       val notification = WalletNotification.DLCOfferAddNotification(offerDb)
       val offerF = walletQueue.offer(notification)
       offerF.map(_ => ())
     }
 
-    val onOfferRemove: OnDLCOfferRemove = { offerHash: Sha256Digest =>
+    val onOfferRemove: OnDLCOfferRemove = { (offerHash: Sha256Digest) =>
       val notification =
         WalletNotification.DLCOfferRemoveNotification(offerHash)
       val offerF = walletQueue.offer(notification)

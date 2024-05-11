@@ -814,7 +814,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "Successfully shutdown eclair"
       )
     }
-    shutdownF.failed.foreach { err: Throwable =>
+    shutdownF.failed.foreach { (err: Throwable) =>
       logger.error(
         s"Could kill eclair process",
         err

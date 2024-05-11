@@ -58,7 +58,7 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
           _ <- nodeB.start()
         } yield (nodeA, nodeB)
       },
-      destroy = { nodes: (DLCNode, DLCNode) =>
+      destroy = { (nodes: (DLCNode, DLCNode)) =>
         for {
           _ <- destroyDLCWallet(nodes._1.wallet.asInstanceOf[DLCWallet])
           _ <- destroyDLCWallet(nodes._2.wallet.asInstanceOf[DLCWallet])

@@ -100,10 +100,10 @@ trait ChainUnitTest
                                         ]]
     )(implicit pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
-        fixture: FixtureParam =>
+        (fixture: FixtureParam) =>
           partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](
             fixture,
-            { _: FixtureParam =>
+            { (_: FixtureParam) =>
               Future(fail("Incorrect tag/fixture for this test"))
             }
           )
@@ -131,10 +131,10 @@ trait ChainUnitTest
                                         ]]
     )(implicit pos: org.scalactic.source.Position): Unit = {
       val testFun: FixtureParam => Future[compatible.Assertion] = {
-        fixture: FixtureParam =>
+        (fixture: FixtureParam) =>
           partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](
             fixture,
-            { _: FixtureParam =>
+            { (_: FixtureParam) =>
               Future(fail("Incorrect tag/fixture for this test"))
             }
           )
@@ -281,7 +281,7 @@ trait ChainUnitTest
   ): Future[(ChainHandler, ZMQSubscriber)] = {
     val zmqRawBlockUriOpt: Option[InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
-    val handleRawBlock: Block => Unit = { block: Block =>
+    val handleRawBlock: Block => Unit = { (block: Block) =>
       val chainApiF =
         ChainHandler.fromDatabase()(executionContext, chainAppConfig)
 
@@ -368,7 +368,7 @@ trait ChainUnitTest
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
       BitcoinSFixture.composeBuildersAndWrap(
         builder = () => BitcoinSFixture.createBitcoind(),
-        dependentBuilder = { rpc: BitcoindRpcClient =>
+        dependentBuilder = { (rpc: BitcoindRpcClient) =>
           createChainHandlerWithBitcoindZmq(rpc)(chainAppConfig)
         },
         wrap = BitcoindChainHandlerViaZmq.apply
@@ -772,7 +772,7 @@ object ChainUnitTest extends ChainVerificationLogger {
       bitcoind.getBestBlockHash()
     }
 
-    val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
+    val getBlockHeaderFunc = { (hash: DoubleSha256DigestBE) =>
       bitcoind.getBlockHeader(hash).map(_.blockHeader)
     }
 

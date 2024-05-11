@@ -15,7 +15,7 @@ case class CommonRoutes(datadir: Path) extends ServerRoute {
     case ServerCommand("getversion", _) =>
       complete {
         val version =
-          Option(EnvUtil.getVersion).map(ujson.Str).getOrElse(ujson.Null)
+          Option(EnvUtil.getVersion).map(ujson.Str.apply).getOrElse(ujson.Null)
         val vec = Vector(("version", version))
         val obj = ujson.Obj.from(vec)
         Server.httpSuccess(obj)

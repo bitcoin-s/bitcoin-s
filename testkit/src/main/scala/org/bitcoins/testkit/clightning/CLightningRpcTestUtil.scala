@@ -157,7 +157,7 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
         "Successfully shutdown clightning and it's corresponding bitcoind"
       )
     }
-    shutdownF.failed.foreach { err: Throwable =>
+    shutdownF.failed.foreach { (err: Throwable) =>
       logger.info(
         s"Killed a bitcoind instance, but could not find an clightning process to kill"
       )
