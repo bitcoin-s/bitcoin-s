@@ -380,10 +380,10 @@ object OutgoingPaymentStatus {
       paymentPreimage: PaymentPreimage,
       feesPaid: MilliSatoshis,
       route: Seq[Hop],
-      completedAt: Instant // milliseconds
+      completedAt: RelayTimestamp
   ) extends OutgoingPaymentStatus
 
-  case class Failed(failures: Seq[PaymentFailure], completedAt: Instant)
+  case class Failed(failures: Seq[PaymentFailure], completedAt: RelayTimestamp)
       extends OutgoingPaymentStatus
 }
 
