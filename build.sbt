@@ -83,6 +83,7 @@ lazy val coreJS = core.js
 lazy val asyncUtils = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("async-utils"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-async-utils",
             libraryDependencies ++= Deps.asyncUtils.value)
@@ -124,6 +125,7 @@ lazy val testkitCoreJS = testkitCore.js
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     asyncUtilsJVM,
@@ -133,6 +135,7 @@ lazy val bitcoindRpc = project
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
@@ -143,6 +146,7 @@ lazy val lndRpc = project
 
 lazy val clightningRpc = project
   .in(file("clightning-rpc"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
@@ -592,6 +596,7 @@ lazy val bench = project
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.eclairRpcTest.value,
@@ -601,6 +606,7 @@ lazy val eclairRpcTest = project
 
 lazy val clightningRpcTest = project
   .in(file("clightning-rpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.clightningRpcTest.value,
@@ -610,6 +616,7 @@ lazy val clightningRpcTest = project
 
 lazy val lndRpcTest = project
   .in(file("lnd-rpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.eclairRpcTest.value,
