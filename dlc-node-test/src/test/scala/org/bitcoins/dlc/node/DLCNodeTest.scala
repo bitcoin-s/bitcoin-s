@@ -20,7 +20,7 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
     witTwoFundedDLCNodes(test)
   }
 
-  it must "check a connection" in { nodes: (DLCNode, DLCNode) =>
+  it must "check a connection" in { (nodes: (DLCNode, DLCNode)) =>
     val nodeA = nodes._1
     val nodeB = nodes._2
 
@@ -82,7 +82,7 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
     }
   }
 
-  it must "setup a DLC" in { nodes: (DLCNode, DLCNode) =>
+  it must "setup a DLC" in { (nodes: (DLCNode, DLCNode)) =>
     val nodeA = nodes._1
     val nodeB = nodes._2
     val walletA = nodeA.wallet

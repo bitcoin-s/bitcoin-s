@@ -84,9 +84,10 @@ class TorController(
   }
 
   // we should not restart a failing tor session
-  override val supervisorStrategy = OneForOneStrategy(loggingEnabled = true) {
-    case _ => SupervisorStrategy.Escalate
-  }
+  override val supervisorStrategy: org.apache.pekko.actor.OneForOneStrategy =
+    OneForOneStrategy(loggingEnabled = true) { case _ =>
+      SupervisorStrategy.Escalate
+    }
 
 }
 

@@ -38,7 +38,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
   }
 
   it must "setup a DLC" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
       val port = RpcUtil.randomPort
@@ -105,7 +105,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
   }
 
   it must "receive an offer over" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
       val port = RpcUtil.randomPort

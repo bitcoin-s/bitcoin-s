@@ -71,7 +71,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "be able to connect, initialize all peers" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val node = nodeConnectedWithBitcoind.node
       def peerManager = node.peerManager
       def peers = peerManager.peers
@@ -106,7 +106,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "store peers after successful initialization" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val node = nodeConnectedWithBitcoind.node
       val peerManager = node.peerManager
       def peers = peerManager.peers
@@ -158,7 +158,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "receive notification that a block occurred on the p2p network for neutrino" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
       val peerManager = node.peerManager
@@ -191,7 +191,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "stay in sync with a bitcoind instance for neutrino" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
@@ -240,7 +240,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   // intended for test fixtures
   it must "sync filters when multiple header messages are sent in succession" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
@@ -261,7 +261,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "start syncing compact filter headers / compact filters when block header is seen" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       // see: https://github.com/bitcoin-s/bitcoin-s/issues/4933
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
@@ -286,7 +286,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "sync block headers that occurred while were syncing compact filters during IBD" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       // see: https://github.com/bitcoin-s/bitcoin-s/issues/5017
 
       // problem: We are generating blocks with bitcoinds(0)
@@ -325,7 +325,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "count peer connections correctly" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
       for {
@@ -344,7 +344,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "start syncing compact filters on startup when block headers / filter headers are synced" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       // https://github.com/bitcoin-s/bitcoin-s/issues/5221
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
@@ -375,7 +375,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "handle reorgs correctly" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       // https://github.com/bitcoin-s/bitcoin-s/issues/5017
       val node = nodeConnectedWithBitcoind.node
       val bitcoinds = nodeConnectedWithBitcoind.bitcoinds
@@ -406,7 +406,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "honor bitcoin-s.node.maxConnectedPeers" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds) =>
       val max = 1
       val nodeF = getCustomMaxConnectedPeers(
         initNode = nodeConnectedWithBitcoind.node,

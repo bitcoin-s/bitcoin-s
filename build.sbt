@@ -160,11 +160,13 @@ lazy val lnurlTest = project
 
 lazy val tor = project
   .in(file("tor"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(coreJVM, appCommons, asyncUtilsJVM)
 
 lazy val torTest = project
   .in(file("tor-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(tor, testkit)
 
@@ -618,6 +620,7 @@ lazy val lndRpcTest = project
 lazy val node =
   project
     .in(file("node"))
+    .settings(scalacOptions += "-Xsource:3")
     .settings(CommonSettings.prodSettings: _*)
     .settings(
       name := "bitcoin-s-node",
@@ -635,6 +638,7 @@ lazy val node =
 lazy val nodeTest =
   project
     .in(file("node-test"))
+    .settings(scalacOptions += "-Xsource:3")
     .settings(CommonSettings.testSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
@@ -784,6 +788,7 @@ lazy val dlcWalletTest = project
 
 lazy val dlcNode = project
   .in(file("dlc-node"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-node",
@@ -793,6 +798,7 @@ lazy val dlcNode = project
 
 lazy val dlcNodeTest = project
   .in(file("dlc-node-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-node-test",
