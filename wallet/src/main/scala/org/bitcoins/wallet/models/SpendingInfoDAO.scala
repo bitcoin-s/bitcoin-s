@@ -22,6 +22,7 @@ case class SpendingInfoDAO()(implicit
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
+  import org.bitcoins.core.currency.currencyUnitNumeric
 
   /** The table inside our database we are inserting into */
   override val table: profile.api.TableQuery[SpendingInfoTable] =

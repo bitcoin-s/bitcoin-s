@@ -30,6 +30,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   self: Wallet =>
 
   import walletConfig.profile.api._
+  import org.bitcoins.core.currency.currencyUnitNumeric
 
   /////////////////////
   // Public facing API

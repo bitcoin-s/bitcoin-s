@@ -30,11 +30,11 @@ class WalletUnitTest extends BitcoinSWalletTest {
   behavior of "Wallet - unit test"
 
   it must "write the mnemonic seed in the correct directory" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       assert(Files.exists(wallet.walletConfig.seedPath))
   }
 
-  it should "create a new wallet" in { wallet: Wallet =>
+  it should "create a new wallet" in { (wallet: Wallet) =>
     for {
       accounts <- wallet.listAccounts()
       addresses <- wallet.listAddresses()
@@ -44,7 +44,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     }
   }
 
-  it should "generate addresses" in { wallet: Wallet =>
+  it should "generate addresses" in { (wallet: Wallet) =>
     for {
       addr <- wallet.getNewAddress()
       otherAddr <- wallet.getNewAddress()
@@ -131,7 +131,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     } yield res
   }
 
-  it should "match block filters" in { wallet: Wallet =>
+  it should "match block filters" in { (wallet: Wallet) =>
     for {
       height <- wallet.chainQueryApi.getFilterCount()
       filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
@@ -159,7 +159,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       val twiceF = Wallet
         .initialize(wallet, bip39PasswordOpt)
@@ -172,7 +172,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "be able to detect an incompatible key manager with a wallet" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       recoverToSucceededIf[RuntimeException] {
         Wallet
@@ -188,7 +188,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "be able to detect different master xpubs on wallet startup" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       // create new config with different entropy
       // to make the keymanagers differetn
       val config = ConfigFactory.parseString(
@@ -211,7 +211,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       }
   }
 
-  it must "be able to sign a psbt with a key path" in { wallet: Wallet =>
+  it must "be able to sign a psbt with a key path" in { (wallet: Wallet) =>
     val dummyKey = ECPublicKey.freshPublicKey
 
     for {
@@ -240,7 +240,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "be able to sign a psbt with our own p2pkh utxo" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       for {
         addr <- wallet.getNewAddress(AddressType.Legacy)
         addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
@@ -264,7 +264,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "be able to sign a psbt with our own p2sh segwit utxo" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       for {
         addr <- wallet.getNewAddress(AddressType.NestedSegWit)
         addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
@@ -288,7 +288,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "be able to sign a psbt with our own p2wpkh utxo" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       for {
         addr <- wallet.getNewAddress(AddressType.SegWit)
         addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
@@ -312,14 +312,14 @@ class WalletUnitTest extends BitcoinSWalletTest {
       }
   }
 
-  it must "be able to sign a psbt with no wallet utxos" in { wallet: Wallet =>
+  it must "be able to sign a psbt with no wallet utxos" in { (wallet: Wallet) =>
     val psbt = dummyPSBT()
     for {
       signed <- wallet.signPSBT(psbt)
     } yield assert(signed == psbt)
   }
 
-  it must "get correct txs to broadcast" in { wallet: Wallet =>
+  it must "get correct txs to broadcast" in { (wallet: Wallet) =>
     for {
       addr <- wallet.getNewAddress(AddressType.SegWit)
       addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
@@ -338,7 +338,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it must "generate addresses for a wallet initialized with a old seed" in {
-    wallet: Wallet =>
+    (wallet: Wallet) =>
       for {
         isEmpty <- wallet.isEmpty()
         _ = assert(isEmpty)

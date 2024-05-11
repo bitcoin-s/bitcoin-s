@@ -20,7 +20,9 @@ case class DLCRemoteTxDAO()(implicit
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
 
-  override val table = TableQuery[DLCRemoteTxTable]
+  override val table
+      : slick.lifted.TableQuery[DLCRemoteTxDAO.this.DLCRemoteTxTable] =
+    TableQuery[DLCRemoteTxTable]
 
   class DLCRemoteTxTable(tag: Tag)
       extends TxTable[TransactionDb](tag, schemaName, "watch_only_tx_table") {

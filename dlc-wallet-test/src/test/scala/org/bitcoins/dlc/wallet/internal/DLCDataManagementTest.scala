@@ -18,7 +18,7 @@ class DLCDataManagementTest extends BitcoinSDualWalletTest {
   behavior of "DLCDataManagement"
 
   it must "retrieve a acceptdb state from getDLCFundingData" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
 
@@ -49,7 +49,7 @@ class DLCDataManagementTest extends BitcoinSDualWalletTest {
       }
   }
   it must "retrieve a signdb state from getDLCFundingData" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
 

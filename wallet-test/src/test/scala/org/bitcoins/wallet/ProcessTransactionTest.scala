@@ -201,7 +201,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       spendingTxF
   }
 
-  it must "get the unconfirmed balance of an account" in { wallet: Wallet =>
+  it must "get the unconfirmed balance of an account" in { (wallet: Wallet) =>
     val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
     for {
       address <- wallet.getNewAddress()

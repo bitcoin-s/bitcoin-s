@@ -145,12 +145,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "correctly negotiate a dlc" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleDLCOffer)
   }
 
   it must "correctly negotiate a non winner take all dlc" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       testNegotiate(
         fundedDLCWallets,
         DLCWalletUtil.sampleDLCOfferNonWinnerTakeAll
@@ -158,14 +158,14 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "correctly negotiate a dlc with a multi-nonce oracle info" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleMultiNonceDLCOffer)
   }
 
   // This could happen inputs can end up in different orders when
   // using postgres or using different coin selection algos
   it must "correctly negotiate a dlc with reordered inputs" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       // construct a contract info that uses many inputs
       val totalCol = Bitcoins(11).satoshis
       val col = totalCol / Satoshis.two
@@ -232,7 +232,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   // This could happen inputs can end up in different orders when
   // using postgres or using different coin selection algos
   it must "correctly negotiate a dlc with tlvs & with reordered inputs" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       // construct a contract info that uses many inputs
       val totalCol = Bitcoins(11).satoshis
       val col = totalCol / Satoshis(2)
@@ -297,7 +297,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "correctly negotiate a dlc using TLVs" in {
-    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = fundedDLCWallets._1.wallet
       val walletB = fundedDLCWallets._2.wallet
 
@@ -449,7 +449,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add its own sigs" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -462,7 +462,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add dlc funding sigs that do not correspond to the DLC" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -475,7 +475,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add dlc funding sigs that are invalid" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -492,7 +492,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add dlc cet sigs that are invalid" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -505,7 +505,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to add an invalid dlc refund sig" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -517,7 +517,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to sign dlc with cet sigs that are invalid" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -530,7 +530,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to sign dlc with an invalid refund sig" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -543,7 +543,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "cancel an offered DLC" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
 
       val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
@@ -596,7 +596,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "cancel an accepted DLC" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -634,7 +634,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "cancel a signed DLC" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -691,7 +691,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to cancel a broadcasted DLC" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -729,7 +729,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "fail to refund a DLC that hasn't reached its timeout" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -767,7 +767,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "setup and execute with oracle example" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
@@ -1187,7 +1187,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
   }
 
   it must "setup a DLC and allow re-use of inputs on the accept side" in {
-    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+    (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
       val offerData: DLCOffer =

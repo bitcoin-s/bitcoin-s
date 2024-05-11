@@ -75,7 +75,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
   }
 
   it must "create an offer, out of band unreserve the utxo, and then cancel the offer" in {
-    fundedWallet: FundedDLCWallet =>
+    (fundedWallet: FundedDLCWallet) =>
       // see: https://github.com/bitcoin-s/bitcoin-s/issues/3813#issue-1051117559
       val wallet = fundedWallet.wallet
       val offerF = wallet.createDLCOffer(
