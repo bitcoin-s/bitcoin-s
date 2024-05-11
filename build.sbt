@@ -475,6 +475,7 @@ lazy val cliTest = project
 
 lazy val chain = project
   .in(file("chain"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
@@ -484,6 +485,7 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",

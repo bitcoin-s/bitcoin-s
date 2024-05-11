@@ -14,7 +14,7 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
 
   behavior of "ChainStateDescriptorDAO"
 
-  it should "set and get sync flag" in { dao: ChainStateDescriptorDAO =>
+  it should "set and get sync flag" in { (dao: ChainStateDescriptorDAO) =>
     for {
       read <- dao.read(SyncDescriptor.tpe)
       _ = assert(read.isEmpty)
@@ -46,7 +46,7 @@ class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
 
   }
 
-  it should "set and get ibd flag" in { dao: ChainStateDescriptorDAO =>
+  it should "set and get ibd flag" in { (dao: ChainStateDescriptorDAO) =>
     for {
       read <- dao.read(IsInitialBlockDownload.tpe)
       _ = assert(read.isEmpty)

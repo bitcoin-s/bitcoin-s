@@ -39,7 +39,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   behavior of "MainnetChainHandler"
 
   it must "benchmark ChainHandler.processHeaders()" in {
-    chainHandler: ChainHandlerCached =>
+    (chainHandler: ChainHandlerCached) =>
       val blockHeaders =
         headersResult.drop(
           ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT
@@ -104,7 +104,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "have getBestBlockHash return the header with the most work, not the highest" in {
-    tempHandler: ChainHandlerCached =>
+    (tempHandler: ChainHandlerCached) =>
       val dummyHeader =
         BlockHeaderDbHelper.fromBlockHeader(
           1,
@@ -141,7 +141,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "be able to process and fetch real headers from mainnet" in {
-    chainHandler: ChainHandlerCached =>
+    (chainHandler: ChainHandlerCached) =>
       val blockHeaders =
         headersResult.drop(
           ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT
@@ -204,7 +204,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "properly recalculate chain work" in {
-    tempHandler: ChainHandlerCached =>
+    (tempHandler: ChainHandlerCached) =>
       val headersWithNoWork = Vector(
         BlockHeaderDbHelper
           .fromBlockHeader(3, BigInt(0), ChainTestUtil.blockHeader562464),

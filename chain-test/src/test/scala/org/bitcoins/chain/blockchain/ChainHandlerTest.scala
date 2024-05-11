@@ -70,7 +70,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "process a new valid block header, and then be able to fetch that header" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val newValidHeader =
         BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
       val processedHeaderF =
@@ -104,14 +104,14 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "not fail ChainHandler.processHeaders() with empty headers collection" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       for {
         _ <- chainHandler.processHeaders(Vector.empty)
       } yield succeed
   }
 
   it must "fail if we give a header that cannot be connected to anything" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val newHeader = BlockHeaderHelper.badPrevHash
       recoverToSucceededIf[RuntimeException] {
         for {
@@ -123,7 +123,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   // B
   // C -> D
   it must "handle a very basic reorg where one chain is one block behind the best chain" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerCF = reorgFixtureF.map(_.chainApi)
       // header B, best hash ATM
@@ -170,7 +170,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   // G -> A -> B
   // G -> C -> D -> E
   it must "handle a reorg where one chain is two blocks behind the best chain" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       for {
         genesis <- chainHandler.getBestBlockHeader()
 
@@ -196,7 +196,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "NOT reorg to a shorter chain that just received a new block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerCF = reorgFixtureF.map(_.chainApi)
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
@@ -234,7 +234,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield assert(bestHash == headerE.hashBE)
   }
 
-  it must "get the highest filter header" in { chainHandler: ChainHandler =>
+  it must "get the highest filter header" in { (chainHandler: ChainHandler) =>
     {
       for {
         initFhCount <- chainHandler.getFilterHeaderCount()
@@ -256,7 +256,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "NOT create a filter header for an unknown block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       {
         val firstFilterHeader = FilterHeader(
           filterHash =
@@ -271,91 +271,92 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "verify a batch of filter headers" in { chainHandler: ChainHandler =>
-    val goodBatch = Vector(
-      ChainTestUtil.genesisFilterHeaderDb,
-      CompactFilterHeaderDb(
-        hashBE = DoubleSha256DigestBE.fromHex(
-          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
-        ),
-        previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
-        height = 1,
-        filterHashBE = DoubleSha256DigestBE.fromHex(
-          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
-        ),
-        blockHashBE = DoubleSha256DigestBE.fromHex(
-          "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf"
+  it must "verify a batch of filter headers" in {
+    (chainHandler: ChainHandler) =>
+      val goodBatch = Vector(
+        ChainTestUtil.genesisFilterHeaderDb,
+        CompactFilterHeaderDb(
+          hashBE = DoubleSha256DigestBE.fromHex(
+            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
+          ),
+          previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
+          height = 1,
+          filterHashBE = DoubleSha256DigestBE.fromHex(
+            "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
+          ),
+          blockHashBE = DoubleSha256DigestBE.fromHex(
+            "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf"
+          )
         )
       )
-    )
 
-    val invalidGenesisFilterHeaderBatch = Vector(
-      ChainTestUtil.genesisFilterHeaderDb.copy(
-        hashBE = ChainTestUtil.genesisFilterHeaderDb.previousFilterHeaderBE,
-        previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE
-      )
-    )
-
-    val invalidFilterHeaderBatch = Vector(
-      ChainTestUtil.genesisFilterHeaderDb.copy(height = 1)
-    )
-
-    val selfReferenceFilterHeaderBatch = Vector(
-      ChainTestUtil.genesisFilterHeaderDb,
-      CompactFilterHeaderDb(
-        hashBE = DoubleSha256DigestBE.fromHex(
-          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
-        ),
-        previousFilterHeaderBE = DoubleSha256DigestBE.fromHex(
-          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
-        ),
-        height = 1,
-        filterHashBE = DoubleSha256DigestBE.fromHex(
-          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
-        ),
-        blockHashBE = DoubleSha256DigestBE.fromHex(
-          "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf"
+      val invalidGenesisFilterHeaderBatch = Vector(
+        ChainTestUtil.genesisFilterHeaderDb.copy(
+          hashBE = ChainTestUtil.genesisFilterHeaderDb.previousFilterHeaderBE,
+          previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE
         )
       )
-    )
 
-    val unknownFilterHeaderBatch = Vector(
-      ChainTestUtil.genesisFilterHeaderDb,
-      CompactFilterHeaderDb(
-        hashBE = DoubleSha256DigestBE.fromHex(
-          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
-        ),
-        previousFilterHeaderBE = DoubleSha256DigestBE.fromHex(
-          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
-        ),
-        height = 1,
-        filterHashBE = DoubleSha256DigestBE.fromHex(
-          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
-        ),
-        blockHashBE = DoubleSha256DigestBE.fromHex(
-          "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf"
+      val invalidFilterHeaderBatch = Vector(
+        ChainTestUtil.genesisFilterHeaderDb.copy(height = 1)
+      )
+
+      val selfReferenceFilterHeaderBatch = Vector(
+        ChainTestUtil.genesisFilterHeaderDb,
+        CompactFilterHeaderDb(
+          hashBE = DoubleSha256DigestBE.fromHex(
+            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
+          ),
+          previousFilterHeaderBE = DoubleSha256DigestBE.fromHex(
+            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
+          ),
+          height = 1,
+          filterHashBE = DoubleSha256DigestBE.fromHex(
+            "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
+          ),
+          blockHashBE = DoubleSha256DigestBE.fromHex(
+            "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf"
+          )
         )
       )
-    )
 
-    for {
-      _ <- chainHandler.verifyFilterHeaders(goodBatch)
-      _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(invalidGenesisFilterHeaderBatch)
+      val unknownFilterHeaderBatch = Vector(
+        ChainTestUtil.genesisFilterHeaderDb,
+        CompactFilterHeaderDb(
+          hashBE = DoubleSha256DigestBE.fromHex(
+            "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
+          ),
+          previousFilterHeaderBE = DoubleSha256DigestBE.fromHex(
+            "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
+          ),
+          height = 1,
+          filterHashBE = DoubleSha256DigestBE.fromHex(
+            "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
+          ),
+          blockHashBE = DoubleSha256DigestBE.fromHex(
+            "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf"
+          )
+        )
       )
-      _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(invalidFilterHeaderBatch)
-      )
-      _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(selfReferenceFilterHeaderBatch)
-      )
-      _ <- recoverToSucceededIf[IllegalArgumentException](
-        chainHandler.verifyFilterHeaders(unknownFilterHeaderBatch)
-      )
-    } yield succeed
+
+      for {
+        _ <- chainHandler.verifyFilterHeaders(goodBatch)
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          chainHandler.verifyFilterHeaders(invalidGenesisFilterHeaderBatch)
+        )
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          chainHandler.verifyFilterHeaders(invalidFilterHeaderBatch)
+        )
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          chainHandler.verifyFilterHeaders(selfReferenceFilterHeaderBatch)
+        )
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          chainHandler.verifyFilterHeaders(unknownFilterHeaderBatch)
+        )
+      } yield succeed
   }
 
-  it must "get the highest filter" in { chainHandler: ChainHandler =>
+  it must "get the highest filter" in { (chainHandler: ChainHandler) =>
     {
       for {
         count <- chainHandler.getFilterCount()
@@ -373,7 +374,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
-  it must "NOT create an unknown filter" in { chainHandler: ChainHandler =>
+  it must "NOT create an unknown filter" in { (chainHandler: ChainHandler) =>
     {
       val unknownHashF = for {
         _ <- insertGenesisFilterHeaderAndFilter(chainHandler)
@@ -400,7 +401,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "NOT create a filter of an unknown block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       {
         val blockHashBE =
           DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
@@ -424,7 +425,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "create a filter checkpoint map" in { chainHandler: ChainHandler =>
+  it must "create a filter checkpoint map" in { (chainHandler: ChainHandler) =>
     for {
       realBlockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
       filterHashBE =
@@ -441,7 +442,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "generate a range for a filter header query for the genesis block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val genesisHeader =
         chainHandler.chainConfig.chain.genesisBlock.blockHeader
       val assert1F = for {
@@ -489,7 +490,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "generate the correct range of filter headers if a block header is reorged" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerF = reorgFixtureF.map(_.chainApi)
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
@@ -569,7 +570,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "return None for ChainHandler.nextBlockHeaderBatchRange if we are synced" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val assert1F = for {
         bestBlockHash <- chainHandler.getBestBlockHash()
         rangeOpt <-
@@ -585,7 +586,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "nextBlockHeaderBatchRange must honor the batchSize query" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerF = reorgFixtureF.map(_.chainApi)
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
@@ -699,7 +700,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "generate the correct range of block filters if a header is reorged" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerF = reorgFixtureF.map(_.chainApi)
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
@@ -776,7 +777,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "generate a range for a block filter query for the genesis block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val genesisHeader =
         chainHandler.chainConfig.chain.genesisBlock.blockHeader
       val assert1F = for {
@@ -822,7 +823,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "nextFilterHeaderBatchRange must honor the batchSize query" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerF = reorgFixtureF.map(_.chainApi)
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
@@ -923,7 +924,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "read compact filters for the database" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       for {
         _ <- insertGenesisFilterHeaderAndFilter(chainHandler)
         bestBlock <- chainHandler.getBestBlockHeader()
@@ -937,7 +938,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "return the number of confirmations for the chain tip" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       for {
         bestBlockHashBE <- chainHandler.getBestBlockHash()
         confirmations <- chainHandler.getNumberOfConfirmations(bestBlockHashBE)
@@ -947,7 +948,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "return the number of confirmations" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val headers = 0.until(20).foldLeft(Vector(genesis)) { (accum, _) =>
         accum :+ BlockHeaderHelper.buildNextHeader(accum.last)
       }
@@ -963,7 +964,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "return none for the number of confirmations for a non-existent block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       chainHandler.getNumberOfConfirmations(DoubleSha256DigestBE.empty).map {
         result =>
           assert(result.isEmpty)
@@ -973,7 +974,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   // G -> A -> B
   // G -> C -> D -> E
   it must "return none for the number of confirmations for a reorged block" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       for {
         genesis <- chainHandler.getBestBlockHeader()
 
@@ -996,20 +997,21 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield assert(confs.isEmpty)
   }
 
-  it must "return the height by block stamp" in { chainHandler: ChainHandler =>
-    for {
-      bestBlock <- chainHandler.getBestBlockHeader()
-      stamp1 = BlockStamp.BlockHash(bestBlock.hashBE)
-      stamp2 = BlockStamp.BlockHeight(bestBlock.height)
-      height1 <- chainHandler.getHeightByBlockStamp(stamp1)
-      height2 <- chainHandler.getHeightByBlockStamp(stamp2)
-    } yield {
-      assert(height1 == height2)
-    }
+  it must "return the height by block stamp" in {
+    (chainHandler: ChainHandler) =>
+      for {
+        bestBlock <- chainHandler.getBestBlockHeader()
+        stamp1 = BlockStamp.BlockHash(bestBlock.hashBE)
+        stamp2 = BlockStamp.BlockHeight(bestBlock.height)
+        height1 <- chainHandler.getHeightByBlockStamp(stamp1)
+        height2 <- chainHandler.getHeightByBlockStamp(stamp2)
+      } yield {
+        assert(height1 == height2)
+      }
   }
 
   it must "fail to return the height by block time" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       recoverToSucceededIf[RuntimeException] {
         for {
           bestBlock <- chainHandler.getBestBlockHeader()
@@ -1020,14 +1022,14 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "fail to return the height by block stamp with an unknown hash" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       recoverToSucceededIf[UnknownBlockHash] {
         val stamp = BlockStamp.BlockHash(DoubleSha256DigestBE.empty)
         chainHandler.getHeightByBlockStamp(stamp)
       }
   }
 
-  it must "find filters between heights" in { chainHandler: ChainHandler =>
+  it must "find filters between heights" in { (chainHandler: ChainHandler) =>
     for {
       _ <- insertGenesisFilterHeaderAndFilter(chainHandler)
       filters <- chainHandler.getFiltersBetweenHeights(0, 1)
@@ -1054,7 +1056,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "get the correct height from an epoch second" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       for {
         height <-
           chainHandler.epochSecondToBlockHeight(TimeUtil.currentEpochSecond)
@@ -1064,7 +1066,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
   }
 
   it must "not throw an exception when processing a filter we have already  seen" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val filter = ChainTestUtil.genesisFilterMessage
       val filters = Vector.fill(2)(filter)
       for {
@@ -1077,14 +1079,14 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "process no filters" in { chainHandler: ChainHandler =>
+  it must "process no filters" in { (chainHandler: ChainHandler) =>
     chainHandler.processFilters(Vector.empty).map { newHandler =>
       assert(chainHandler == newHandler)
     }
   }
 
   it must "check isMissingChainWork when there is over a 100 headers" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val genesis = ChainTestUtil.genesisHeaderDb
       val headers = 0.to(101).foldLeft(Vector(genesis)) { (accum, _) =>
         val next = BlockHeaderHelper.buildNextHeader(accum.last)
@@ -1104,7 +1106,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield assert(isMissingLast100)
   }
 
-  it must "get best filter" in { chainHandler: ChainHandler =>
+  it must "get best filter" in { (chainHandler: ChainHandler) =>
     for {
       _ <- insertGenesisFilterHeaderAndFilter(chainHandler)
       bestFilterHeaderOpt <- chainHandler.getBestFilterHeader()
@@ -1116,7 +1118,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
     }
   }
 
-  it must "execute sync callback" in { chainHandler: ChainHandler =>
+  it must "execute sync callback" in { (chainHandler: ChainHandler) =>
     @volatile var values = Vector.empty[Boolean]
     val callback: OnSyncFlagChanged = { (value: Boolean) =>
       Future {

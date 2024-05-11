@@ -20,7 +20,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   behavior of "ChainHandlerCached"
 
   it must "throw an error when we have no chains" in {
-    chainHandlerCached: ChainHandlerCached =>
+    (chainHandlerCached: ChainHandlerCached) =>
       val handler = chainHandlerCached.copy(blockchains = Vector.empty)
 
       recoverToSucceededIf[RuntimeException] {
@@ -30,7 +30,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   }
 
   it must "get best filter header with zero blockchains in memory" in {
-    chainHandlerCached: ChainHandlerCached =>
+    (chainHandlerCached: ChainHandlerCached) =>
       val noChainsChainHandler =
         chainHandlerCached.copy(blockchains = Vector.empty)
 
@@ -43,7 +43,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   }
 
   it must "generate a range for a block filter query for the genesis block" in {
-    chainHandler: ChainHandlerCached =>
+    (chainHandler: ChainHandlerCached) =>
       val genesisHeader =
         chainHandler.chainConfig.chain.genesisBlock.blockHeader
       val assert1F = for {
@@ -91,7 +91,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   }
 
   it must "generate the correct range of block filters if a header is reorged" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
       val chainHandlerF = reorgFixtureF.map(_.chainApi)
       val newHeaderBF = reorgFixtureF.map(_.headerDb1)
@@ -169,7 +169,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   }
 
   it must "return None for ChainHandler.nextBlockHeaderBatchRange if we are synced" in {
-    chainHandler: ChainHandler =>
+    (chainHandler: ChainHandler) =>
       val assert1F = for {
         bestBlockHash <- chainHandler.getBestBlockHash()
         rangeOpt <-
