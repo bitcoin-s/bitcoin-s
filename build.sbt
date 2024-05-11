@@ -493,6 +493,7 @@ lazy val chainTest = project
 
 lazy val dbCommons = project
   .in(file("db-commons"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-db-commons",
@@ -502,6 +503,7 @@ lazy val dbCommons = project
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-db-commons-test"
