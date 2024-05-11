@@ -1277,8 +1277,8 @@ object JsonReaders {
         preimage <- (js \ "paymentPreimage").validate[PaymentPreimage]
         feesPaid <- (js \ "feesPaid").validate[MilliSatoshis]
         route <- (js \ "route").validate[Seq[Hop]]
-        completed <- (js \ "completedAt" \ "unix")
-          .validate[Instant](instantReadsMilliseconds)
+        completed <- (js \ "completedAt")
+          .validate[RelayTimestamp]
       } yield OutgoingPaymentStatus.Succeeded(
         paymentPreimage = preimage,
         feesPaid = feesPaid,
@@ -1305,6 +1305,9 @@ object JsonReaders {
 
   implicit val paymentFailureReads: Reads[PaymentFailure] =
     Json.reads[PaymentFailure]
+
+  implicit val relayTimestampReads: Reads[RelayTimestamp] =
+    Json.reads[RelayTimestamp]
 
   implicit val paymentFailedReads: Reads[OutgoingPaymentStatus.Failed] =
     Json.reads[OutgoingPaymentStatus.Failed]
@@ -1468,8 +1471,6 @@ object JsonReaders {
 
   implicit val sentPaymentReads: Reads[SentPayment] = Json.reads[SentPayment]
 
-  implicit val relayTimestampReads: Reads[RelayTimestamp] =
-    Json.reads[RelayTimestamp]
   implicit val relayedPaymentReads: Reads[RelayedPayment] = Reads { js =>
     for {
       amountIn <- (js \ "amountIn").validate[MilliSatoshis]
