@@ -49,7 +49,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "catch errors and not fail when processing an invalid payload" in {
-    param: FixtureParam =>
+    (param: FixtureParam) =>
       val node = param.node
 
       val peerManager = node.peerManager
@@ -91,7 +91,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "verify OnBlockReceived callbacks are executed" in {
-    param: FixtureParam =>
+    (param: FixtureParam) =>
       val node = param.node
       val bitcoind = param.bitcoind
 
@@ -116,7 +116,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "verify OnBlockHeadersReceived callbacks are executed" in {
-    param: FixtureParam =>
+    (param: FixtureParam) =>
       val node = param.node
       val bitcoind = param.bitcoind
 
@@ -142,7 +142,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "verify OnCompactFilterReceived callbacks are executed" in {
-    param: FixtureParam =>
+    (param: FixtureParam) =>
       val node = param.node
       val bitcoind = param.bitcoind
 
@@ -168,7 +168,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "verify OnTxReceived callbacks are executed" in {
-    param: FixtureParam =>
+    (param: FixtureParam) =>
       val node = param.node
       val bitcoind = param.bitcoind
 
@@ -192,7 +192,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "detect bitcoin-s.node.query-wait-time timing out" in {
-    param: FixtureParam =>
+    (param: FixtureParam) =>
       val initNode = param.node
       val bitcoind = param.bitcoind
       val queryWaitTime = 5.second

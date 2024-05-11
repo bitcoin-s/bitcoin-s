@@ -40,7 +40,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
   behavior of "ReConnectionTest"
 
   it must "disconnect a peer after a period of inactivity" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind) =>
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val timeout = 5.seconds
       val startedF =
@@ -67,7 +67,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "reconnect a peer when inactivity checks run and we have 0 peers" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+    (nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind) =>
       // see: https://github.com/bitcoin-s/bitcoin-s/issues/5162
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
       val timeout = 5.second

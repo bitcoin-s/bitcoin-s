@@ -113,7 +113,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     Flow[ByteString]
       .statefulMap(() => ByteString.empty)(
         parseHelper,
-        { _: ByteString => None }
+        { (_: ByteString) => None }
       )
       .log(
         "parseToNetworkMsgFlow",
