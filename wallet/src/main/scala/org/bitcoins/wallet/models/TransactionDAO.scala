@@ -118,7 +118,9 @@ case class TransactionDAO()(implicit
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
 
-  override val table = TableQuery[TransactionTable]
+  override val table
+      : slick.lifted.TableQuery[TransactionDAO.this.TransactionTable] =
+    TableQuery[TransactionTable]
 
   def findAllUnconfirmed(): Future[Vector[TransactionDb]] = {
     val query = table.filter(_.blockHash === Rep.None[DoubleSha256DigestBE])

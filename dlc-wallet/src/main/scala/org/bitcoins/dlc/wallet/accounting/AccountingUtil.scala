@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet.accounting
 import org.bitcoins.core.dlc.accounting.DLCAccounting
 
 object AccountingUtil {
+  import org.bitcoins.core.currency.currencyUnitNumeric
 
   /** Calculates the profit and loss for the given dlc */
   def calculatePnl(financials: DLCAccountingDbs): DLCAccounting = {

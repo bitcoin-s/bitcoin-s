@@ -741,6 +741,7 @@ lazy val keyManagerTest = project
 
 lazy val wallet = project
   .in(file("wallet"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
@@ -750,6 +751,7 @@ lazy val wallet = project
 
 lazy val walletTest = project
   .in(file("wallet-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",
@@ -759,6 +761,7 @@ lazy val walletTest = project
 
 lazy val dlcWallet = project
   .in(file("dlc-wallet"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-wallet",
@@ -768,6 +771,7 @@ lazy val dlcWallet = project
 
 lazy val dlcWalletTest = project
   .in(file("dlc-wallet-test"))
+  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-wallet-test",

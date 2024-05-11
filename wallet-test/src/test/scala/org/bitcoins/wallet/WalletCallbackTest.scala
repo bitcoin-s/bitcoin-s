@@ -31,7 +31,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   behavior of "WalletCallbacks"
 
   it must "verify OnNewAddressGenerated callbacks are executed" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[BitcoinAddress] = Promise()
 
       val callback: OnNewAddressGenerated = (addr: BitcoinAddress) => {
@@ -56,7 +56,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   }
 
   it must "verify OnTransactionProcessed callbacks are executed" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[Transaction] = Promise()
 
       val callback: OnTransactionProcessed = (tx: Transaction) => {
@@ -81,7 +81,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   }
 
   it must "verify OnTransactionProcessed callbacks are not executed for a transaction unrelated to the wallet" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[Transaction] = Promise()
 
       val callback: OnTransactionProcessed = (tx: Transaction) => {
@@ -119,7 +119,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   }
 
   it must "verify OnTransactionBroadcast callbacks are executed" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[Transaction] = Promise()
 
       val callback: OnTransactionBroadcast = (tx: Transaction) => {
@@ -142,7 +142,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   }
 
   it must "verify OnReservedUtxos callbacks are executed when reserving" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[Vector[SpendingInfoDb]] = Promise()
 
       val callback: OnReservedUtxos = (infos: Vector[SpendingInfoDb]) => {
@@ -169,7 +169,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   }
 
   it must "verify OnReservedUtxos callbacks are executed when un-reserving" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[Vector[SpendingInfoDb]] = Promise()
 
       val callback: OnReservedUtxos = (infos: Vector[SpendingInfoDb]) => {
@@ -195,7 +195,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
   }
 
   it must "verify OnBlockProcessed callbacks are executed" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val resultP: Promise[Block] = Promise()
       val block = RegTestNetChainParams.genesisBlock
       val callback: OnBlockProcessed = (b: Block) => {

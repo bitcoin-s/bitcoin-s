@@ -14,7 +14,7 @@ import scala.concurrent.Future
 
 trait FundTransactionHandling extends WalletLogger { self: Wallet =>
   import walletConfig.profile.api._
-
+  import org.bitcoins.core.currency.currencyUnitNumeric
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,

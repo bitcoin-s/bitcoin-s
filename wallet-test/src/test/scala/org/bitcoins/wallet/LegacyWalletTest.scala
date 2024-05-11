@@ -12,7 +12,7 @@ class LegacyWalletTest extends BitcoinSWalletTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withLegacyWallet(test)
 
-  it should "generate legacy addresses" in { wallet: Wallet =>
+  it should "generate legacy addresses" in { (wallet: Wallet) =>
     for {
       addr <- wallet.getNewAddress()
       account <- wallet.getDefaultAccount()

@@ -39,7 +39,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
         .dummyForEventsAndKeys(
           priv,
           kValue.schnorrNonce,
-          outcomes.map(EnumOutcome)
+          outcomes.map(EnumOutcome.apply)
         )
     }
 

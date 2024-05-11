@@ -25,7 +25,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   behavior of "AddressHandling"
 
   it must "generate a new address for the default account and then find it" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val addressF = wallet.getNewAddress()
 
@@ -38,7 +38,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "generate an address for a non default account and then find it" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       val addressF = wallet.getNewAddress(account1)
@@ -62,7 +62,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "generate the same unused address until it receives funds" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
 
       for {
@@ -80,7 +80,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "be safe to call getNewAddress multiple times in a row" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val addressesF = Future.sequence {
         Vector.fill(10)(wallet.getNewAddress())
@@ -98,7 +98,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       }
   }
 
-  it must "get the correct spent addresses" in { fundedWallet: FundedWallet =>
+  it must "get the correct spent addresses" in { (fundedWallet: FundedWallet) =>
     val wallet = fundedWallet.wallet
 
     for {
@@ -120,38 +120,40 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     }
   }
 
-  it must "get the correct funded addresses" in { fundedWallet: FundedWallet =>
-    val wallet = fundedWallet.wallet
+  it must "get the correct funded addresses" in {
+    (fundedWallet: FundedWallet) =>
+      val wallet = fundedWallet.wallet
 
-    for {
-      unspentDbs <- wallet.spendingInfoDAO.findAllUnspent()
-      fundedAddresses <- wallet.listFundedAddresses()
-    } yield {
-      val diff = unspentDbs
-        .map(_.output)
-        .diff(
-          fundedAddresses.map(tuple =>
-            TransactionOutput(tuple._2, tuple._1.scriptPubKey))
-        )
-      assert(diff.isEmpty, s"Extra funded addresses $diff")
-    }
+      for {
+        unspentDbs <- wallet.spendingInfoDAO.findAllUnspent()
+        fundedAddresses <- wallet.listFundedAddresses()
+      } yield {
+        val diff = unspentDbs
+          .map(_.output)
+          .diff(
+            fundedAddresses.map(tuple =>
+              TransactionOutput(tuple._2, tuple._1.scriptPubKey))
+          )
+        assert(diff.isEmpty, s"Extra funded addresses $diff")
+      }
   }
 
-  it must "get the correct unused addresses" in { fundedWallet: FundedWallet =>
-    val wallet = fundedWallet.wallet
+  it must "get the correct unused addresses" in {
+    (fundedWallet: FundedWallet) =>
+      val wallet = fundedWallet.wallet
 
-    for {
-      addrDbs <- wallet.spendingInfoDAO.findAllSpendingInfos()
-      fundedAddresses <- wallet.listUnusedAddresses()
-    } yield {
-      val intersect = addrDbs
-        .map(_.output.scriptPubKey)
-        .intersect(fundedAddresses.map(_.scriptPubKey))
-      assert(intersect.isEmpty, s"Returned used addresses $intersect")
-    }
+      for {
+        addrDbs <- wallet.spendingInfoDAO.findAllSpendingInfos()
+        fundedAddresses <- wallet.listUnusedAddresses()
+      } yield {
+        val intersect = addrDbs
+          .map(_.output.scriptPubKey)
+          .intersect(fundedAddresses.map(_.scriptPubKey))
+        assert(intersect.isEmpty, s"Returned used addresses $intersect")
+      }
   }
 
-  it must "tag an address" in { fundedWallet: FundedWallet =>
+  it must "tag an address" in { (fundedWallet: FundedWallet) =>
     val wallet = fundedWallet.wallet
 
     for {
@@ -170,7 +172,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     }
   }
 
-  it must "drop an address tag" in { fundedWallet: FundedWallet =>
+  it must "drop an address tag" in { (fundedWallet: FundedWallet) =>
     val wallet = fundedWallet.wallet
 
     for {
@@ -190,7 +192,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     } yield assert(num == 1)
   }
 
-  it must "drop an address tag type" in { fundedWallet: FundedWallet =>
+  it must "drop an address tag type" in { (fundedWallet: FundedWallet) =>
     val wallet = fundedWallet.wallet
 
     for {
@@ -223,7 +225,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     }
   }
 
-  it must "add public key scripts to watch" in { fundedWallet: FundedWallet =>
+  it must "add public key scripts to watch" in { (fundedWallet: FundedWallet) =>
     val wallet = fundedWallet.wallet
     val spk = EmptyScriptPubKey
     for {
@@ -240,7 +242,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "correctly identify change addresses" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
 
       for {
@@ -256,7 +258,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "create an address and not have an associated utxo until we deposit" in {
-    fundedWallet: FundedWallet =>
+    (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val addressF = wallet.getNewAddress()
       val spendingInfoDAO = wallet.spendingInfoDAO

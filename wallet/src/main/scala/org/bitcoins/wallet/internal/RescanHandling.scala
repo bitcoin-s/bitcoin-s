@@ -179,7 +179,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private lazy val walletCreationBlockHeight: Future[BlockHeight] =
     chainQueryApi
       .epochSecondToBlockHeight(creationTime.getEpochSecond)
-      .map(BlockHeight)
+      .map(BlockHeight.apply)
 
   private def buildRescanFlow(
       account: HDAccount,
