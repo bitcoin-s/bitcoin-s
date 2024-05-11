@@ -165,7 +165,8 @@ object CommonSettings {
       "-Xlint:constant",
       "-Xlint:nonlocal-return",
       "-Xlint:implicit-not-found",
-      "-Xlint:serial"
+      "-Xlint:serial",
+      "-quickfix:any"
     )
   }
 

@@ -141,7 +141,6 @@ lazy val eclairRpc = project
 
 lazy val lndRpc = project
   .in(file("lnd-rpc"))
-  .settings(scalacOptions += "-Xsource:3")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, appCommons)
 
