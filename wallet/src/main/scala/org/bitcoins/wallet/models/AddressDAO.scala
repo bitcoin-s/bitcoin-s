@@ -412,7 +412,7 @@ case class AddressDAO()(implicit
         hashedPubKey,
         scriptPubKeyId,
         scriptWitness
-      ).<>((AddressRecord.apply _).tupled, AddressRecord.unapply)
+      ).<>(AddressRecord.apply, AddressRecord.unapply)
 
     def fk_scriptPubKeyId: ForeignKeyQuery[_, ScriptPubKeyDb] = {
       foreignKey(
