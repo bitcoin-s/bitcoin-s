@@ -279,6 +279,6 @@ case class DLCDAO()(implicit
         aggregateSignatureOpt,
         serializationVersion,
         peerOpt
-      ).<>(DLCDb.tupled, DLCDb.unapply)
+      ).<>(DLCDb.apply, DLCDb.unapply)
   }
 }
