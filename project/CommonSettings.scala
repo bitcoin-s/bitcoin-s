@@ -194,7 +194,8 @@ object CommonSettings {
       "-deprecation",
       "-feature",
       "-Ypatmat-exhaust-depth",
-      "off"
+      "off",
+      "-explain"
     ) ++ commonCompilerOpts ++ {
       if (scalaVersion.startsWith("2.13")) {
         scala2_13SourceCompilerOpts ++ scala2_13CompilerLinting
