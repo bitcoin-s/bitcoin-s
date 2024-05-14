@@ -34,13 +34,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest-large, ubuntu-latest, windows-latest] #
+        os: [macos-14-large, ubuntu-latest, windows-latest] #
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-latest-large
+        - os: macos-14-large
           TARGET: mac
         - os: ubuntu-latest
           TARGET: linux
@@ -134,11 +134,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest-large, ubuntu-latest] # windows-latest
+        os: [macos-14-large, ubuntu-latest] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-latest-large
+        - os: macos-14-large
           TARGET: mac
           FORMAT: zip # dmg
         - os: ubuntu-latest
