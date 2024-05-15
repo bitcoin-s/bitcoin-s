@@ -10,8 +10,7 @@ If you are a typescript developer, [you can access the backend via our typescrip
 
 # Executive Summary
 
-This release reworks the `node` implementation to use pekko streams. This release of bitcoin-s
-also moves away from akka to pekko due to akka's licensing changes.
+This release updates our RPC support, adds descriptors to `core` and updated our build to work towards support of scala3.
 
 ## Running bitcoin-s
 
@@ -78,6 +77,9 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## bitcoind rpc
 
+This release adds support for `25.x`, `26.x`, and `27.x` of bitcoind's RPC interface.
+
+This release removes support for `0.21`, `22.x`, `23.x`, and `24.x` of bitcoind's RPC interface.
 
 18cb4f3ddf8 Add -datadir to when obtaining bitcoind -version to avoid using default datadir (#5574)
 c8266cfb511 Implement `getrawmempool` verbose (#5573)
@@ -99,6 +101,9 @@ d162242a39b 2024 03 24 v21 rpc refactor (#5494)
 
 ## Build
 
+This release adds the `-Xsource:3` compiler flag to all modules except [`lnd-rpc`](https://github.com/bitcoin-s/bitcoin-s/issues/5591).
+
+This release also bumps the java version in our docker files from `17` -> `21`.
 
 2b1f85e55c8 2024 05 14 mac electron release (#5594)
 a6b7fada504 Get rest of codebase compiling with -Xsource:3 (#5592)
@@ -135,6 +140,9 @@ dc16ddfc2de Migrate from `setup-scala` github action to `setup-java` github acti
 
 ## Core
 
+This release adds support for [descriptors](https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki).
+This release does not integrate the descriptors into our wallet module, yet.
+
 a6d93622f89 2024 04 16 descriptor fidelity (#5529)
 0fa3be37ddf 2024 04 08 Descriptors (#5525)
 2536fd31386 `TapscriptTree`, `TapBranch`, `TapLeaf` (#5520)
@@ -144,6 +152,13 @@ c2cbaae88f6 Add invariant to make sure we can't have p2sh(p2sh()) (#5507)
 99c1292ddc9 Add `xor` operator as `NumberType.{^,xor()}` (#5500)
 
 ## Crypto
+
+This release changes the behavior of `ECPublicKey.bytes`. Previously we would _always_ return the compressed version
+of the public key, even if we created the `ECPublicKey` instance with a non-compressed byte representation.
+Now `ECPublicKey.bytes` will return the byte representation that was passed as a parameter.
+
+This release also repurposes the `PublicKey` trait. Now it is extended by all public key types in the codebase
+rather than just `ECPublicKey` types. This was needed for descriptor support in `core`.
 
 b83661e73f7 Repurpose PublicKey trait, extend it with {SchnorrPublicKey, ECPublicKeyApi, XOnlyPubKey} (#5517)
 41c835761ca Make `ECPublicKey` return `bytes` that were passed as a parameter  (#5502)
@@ -180,6 +195,8 @@ c2b8ae98eeb Re-enable mempool api tests (#5560)
 ## Lnurl
 
 ## node
+
+This release fixes a bug where we could deadlock our node's stream when attempting to send a message to our peer.
 
 36ec8a29118 Rework PeerManagerApi.{sendToRandomPeer, gossipMessage} to return Unit rather than Future[Unit], this removes the possibility of deadlocking on a full queue (#5561)
 302110cb56c Bump max connected peers default to 2 (#5515)
